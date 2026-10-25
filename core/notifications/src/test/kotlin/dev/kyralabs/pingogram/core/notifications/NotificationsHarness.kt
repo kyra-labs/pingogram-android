@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeDirectShareRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,7 @@ internal class NotificationsHarness(
         )
     val auth = TdlibAuthRepository(client, dispatcher)
     val chatLock = FakeChatLockRepository()
+    val directShare = FakeDirectShareRepository()
 
     val builder = ConversationNotificationBuilder(context)
     val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files)
@@ -62,7 +64,7 @@ internal class NotificationsHarness(
     val parts =
         AccountNotificationParts(
             builder = builder,
-            shortcuts = ConversationShortcutsFactory(context, dispatcher),
+            shortcuts = ConversationShortcutsFactory(context, dispatcher, directShare),
             appearance = FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
             ioDispatcher = dispatcher,
         )

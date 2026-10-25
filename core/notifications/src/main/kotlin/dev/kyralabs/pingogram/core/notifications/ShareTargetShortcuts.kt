@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.ImmutableMap
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -41,7 +43,9 @@ import kotlin.time.Duration.Companion.seconds
  * its order (pinned chats first), where the user can send messages, published as conversation shortcuts
  * ([ConversationShortcuts.publishShareTargets]), so the system's share sheet offers them, with their avatars
  * ([AvatarIcons]). Saved Messages is left out: it has no avatar of its own there, and the share sheet lists it first.
- * Locked chats are left out too, unlocked or not (`docs/adr/0029-locked-chats.md`).
+ * Locked chats are left out too, unlocked or not (`docs/adr/0029-locked-chats.md`). While Privacy and security →
+ * "Chats in the share sheet" is off ([DirectShareRepository]), nothing is published, and the share targets already
+ * there are withdrawn ([ConversationShortcuts.withdrawShareTargets]) as it turns off and at each start.
  *
  * It follows the chat list while someone is logged in, publishing [PUBLISH_DELAY] after the first [MAX_TARGETS]
  * chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
@@ -63,6 +67,7 @@ class ShareTargetShortcuts
         private val userRepository: UserRepository,
         private val groupRepository: GroupRepository,
         private val chatLock: ChatLockRepository,
+        private val directShare: DirectShareRepository,
         private val avatars: AvatarIcons,
         private val shortcuts: ConversationShortcuts,
         private val scope: CoroutineScope,
@@ -74,6 +79,7 @@ class ShareTargetShortcuts
             userRepository: UserRepository,
             groupRepository: GroupRepository,
             chatLock: ChatLockRepository,
+            directShare: DirectShareRepository,
             avatars: AvatarIcons,
             shortcuts: ConversationShortcutsFactory,
             graphs: AccountGraphs,
@@ -84,22 +90,36 @@ class ShareTargetShortcuts
             userRepository = userRepository,
             groupRepository = groupRepository,
             chatLock = chatLock,
+            directShare = directShare,
             avatars = avatars,
             shortcuts = shortcuts.of(graphs.activeSlot.value),
             scope = scope,
         )
 
-        /** Starts following the chat list; call once per process. */
+        /**
+         * Starts following the chat list and the setting; call once per process. One coroutine publishes and withdraws,
+         * so turning the setting off cancels a publication on its way.
+         */
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         fun start() {
             scope.launch {
-                authRepository.authStep
-                    .map { it == AuthStep.Ready }
+                combine(
+                    authRepository.authStep.map { it == AuthStep.Ready }.distinctUntilChanged(),
+                    directShare.enabled.distinctUntilChanged(),
+                ) { ready, offered -> ready to offered }
                     .distinctUntilChanged()
-                    .flatMapLatest { ready -> if (ready) recentChats() else flowOf(emptyList()) }
-                    .distinctUntilChanged()
-                    .debounce(PUBLISH_DELAY)
-                    .collectLatest { targets -> if (targets.isNotEmpty()) publish(targets) }
+                    .flatMapLatest { (ready, offered) ->
+                        when {
+                            !offered -> flowOf(null)
+                            ready -> recentChats().distinctUntilChanged().debounce(PUBLISH_DELAY)
+                            else -> emptyFlow()
+                        }
+                    }.collectLatest { targets ->
+                        when {
+                            targets == null -> shortcuts.withdrawShareTargets()
+                            targets.isNotEmpty() -> publish(targets)
+                        }
+                    }
             }
         }
 

@@ -56,6 +56,7 @@ internal fun PrivacySecurityRoute(
     phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
+    directShareViewModel: DirectShareViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
@@ -64,6 +65,7 @@ internal fun PrivacySecurityRoute(
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
+    val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -72,12 +74,14 @@ internal fun PrivacySecurityRoute(
         phoneNumberVisibilityViewModel,
         frequentContactsViewModel,
         idVisibilityViewModel,
+        directShareViewModel,
     ) {
         merge(
             secretChatPreviewsViewModel.errors,
             phoneNumberVisibilityViewModel.errors,
             frequentContactsViewModel.errors,
             idVisibilityViewModel.errors,
+            directShareViewModel.errors,
         ).collect { error ->
             launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
         }
@@ -110,6 +114,8 @@ internal fun PrivacySecurityRoute(
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
         idsShown = idsShown,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
+        directShare = directShare,
+        onDirectShareChange = directShareViewModel::onCheckedChange,
     )
 }
 
@@ -122,8 +128,8 @@ internal fun PrivacySecurityRoute(
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
- *   code only (`core:ui`'s `phoneNumberToShow`), and "Show IDs" ([idsShown], off by default) on profiles and info
- *   pages;
+ *   code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles and info
+ *   pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
  * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
@@ -148,6 +154,8 @@ internal fun PrivacySecurityScreen(
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
     idsShown: Boolean? = null,
     onIdsShownChange: (Boolean) -> Unit = {},
+    directShare: Boolean? = null,
+    onDirectShareChange: (Boolean) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
@@ -168,7 +176,14 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
-                OnScreenSection(phoneNumbersHidden, onPhoneNumbersHiddenChange, idsShown, onIdsShownChange)
+                OnScreenSection(
+                    hidden = phoneNumbersHidden,
+                    onCheckedChange = onPhoneNumbersHiddenChange,
+                    idsShown = idsShown,
+                    onIdsShownChange = onIdsShownChange,
+                    directShare = directShare,
+                    onDirectShareChange = onDirectShareChange,
+                )
                 SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,
