@@ -11,7 +11,9 @@ import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
 import dev.kyralabs.pingogram.feature.calls.CallRatingRequest
+import dev.kyralabs.pingogram.feature.calls.CallUsers
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -50,7 +52,8 @@ class CallViewModel
     internal constructor(
         private val savedStateHandle: SavedStateHandle,
         private val callManager: CallManager,
-        private val userRepository: UserRepository,
+        // The call's account's users (`docs/adr/0031-multiple-accounts.md`).
+        private val users: CallUsers,
         private val microphone: MicrophoneAccess,
         private val camera: CameraAccess,
         private val clock: CallClock,
@@ -302,6 +305,9 @@ class CallViewModel
             callManager.startCall(userId, withVideo = video && cameraAllowed)
         }
 
+        /** The slot of the account the call came to or goes out from; the first account's before Telegram made it. */
+        val callSlot: Int get() = callManager.call.value?.slot ?: 0
+
         /** Answers, a video call with the camera on where it is allowed already (otherwise the user turns it on). */
         private suspend fun answer() {
             savedStateHandle[KEY_DONE] = true
@@ -309,17 +315,16 @@ class CallViewModel
             callManager.answer(withVideo = video)
         }
 
-        /** The other person of the call (or of the permission step), as TDLib knows them. */
+        /** The other person of the call (or of the permission step), as their account's TDLib knows them. */
         private fun person(): Flow<CallPerson?> =
-            combine(callManager.call, permissionStep) { call, step -> call?.userId ?: step?.userId ?: startUserId }
-                .distinctUntilChanged()
-                .flatMapLatest { userId ->
-                    if (userId ==
-                        null
-                    ) {
+            combine(callManager.call, permissionStep) { call, step ->
+                call?.slot to (call?.userId ?: step?.userId ?: startUserId)
+            }.distinctUntilChanged()
+                .flatMapLatest { (slot, userId) ->
+                    if (userId == null) {
                         flowOf(null)
                     } else {
-                        userRepository.user(userId).map { it.toPerson(userId) }
+                        users.of(slot).user(userId).map { it.toPerson(userId) }
                     }
                 }
 

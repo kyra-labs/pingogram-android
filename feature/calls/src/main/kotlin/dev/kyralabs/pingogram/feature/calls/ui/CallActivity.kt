@@ -274,8 +274,10 @@ class CallActivity : ComponentActivity() {
      * user's), once the screen is unlocked: the chats never show over the lock screen.
      */
     private fun declineAndMessage(userId: Long) {
+        // The caller's chat in the account the call came to (`docs/adr/0031-multiple-accounts.md`).
+        val slot = viewModel.callSlot
         viewModel.onEvent(CallEvent.HangUp)
-        val chat = NotificationIntents.openChat(this, chatId = userId) ?: return
+        val chat = NotificationIntents.openChat(this, chatId = userId, slot = slot) ?: return
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard.isKeyguardLocked) {
             keyguard.requestDismissKeyguard(

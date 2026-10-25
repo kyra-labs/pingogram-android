@@ -14,8 +14,10 @@ import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
+import dev.kyralabs.pingogram.feature.calls.CallIds
 import dev.kyralabs.pingogram.feature.calls.CallLine
 import dev.kyralabs.pingogram.feature.calls.CallManager
+import dev.kyralabs.pingogram.feature.calls.CallUsers
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.ENGINE_PROTOCOL
 import dev.kyralabs.pingogram.feature.calls.FakeCallClock
@@ -83,7 +85,7 @@ class CallViewModelTest {
             FakeCallForeground(),
             FakeCallTones(),
             clock,
-            { "Ada" },
+            { _, _ -> "Ada" },
             { FakeNetworkRepository() },
             CallLine(),
             backgroundScope,
@@ -100,7 +102,8 @@ class CallViewModelTest {
                     if (userId != null) put(CallActivity.EXTRA_USER_ID, userId)
                 },
             ),
-    ) = CallViewModel(handle, manager, users, { microphone }, camera, clock).also { viewModel ->
+        callUsers: CallUsers = CallUsers { users },
+    ) = CallViewModel(handle, manager, callUsers, { microphone }, camera, clock).also { viewModel ->
         created += viewModel
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -170,6 +173,33 @@ class CallViewModelTest {
 
             assertEquals(listOf(3 to ENGINE_PROTOCOL), repository.accepted)
             assertEquals(CallStage.Connecting, (viewModel.uiState.value as CallUiState.InCall).stage)
+        }
+
+    @Test
+    fun `a call to another account shows the caller as that account knows them`() =
+        runTest(dispatcher) {
+            val otherAccount = FakeUserRepository().apply { add(user(42, "Grace", "Hopper")) }
+            val manager = manager()
+            val callId = CallIds.of(slot = 1, tdlibId = 3)
+            repository.update(
+                Call(callId, 42, isOutgoing = false, isVideo = false, state = CallState.Pending(true, true)),
+            )
+            runCurrent()
+
+            val viewModel =
+                viewModel(manager, CallActivity.ACTION_SHOW, callUsers = { slot ->
+                    if (slot ==
+                        1
+                    ) {
+                        otherAccount
+                    } else {
+                        users
+                    }
+                })
+            runCurrent()
+
+            assertEquals("Grace Hopper", (viewModel.uiState.value as CallUiState.InCall).person.name)
+            assertEquals(1, viewModel.callSlot)
         }
 
     @Test

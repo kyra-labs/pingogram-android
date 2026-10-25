@@ -18,6 +18,9 @@ interface AccountGraphs {
 
     /** The slot of the account the screens show. */
     val activeSlot: StateFlow<Int>
+
+    /** The repositories of the account in [slot]; null when it is not on the device. */
+    fun repositories(slot: Int): AccountRepositories?
 }
 
 /** One account on the device: its slot (0 for the first) and its [repositories]. */

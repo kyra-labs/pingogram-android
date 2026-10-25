@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraph
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,9 @@ class DefaultAccountGraphs
             devices.registry
                 .map { it.active }
                 .stateIn(scope, SharingStarted.Eagerly, devices.registry.value.active)
+
+        override fun repositories(slot: Int): AccountRepositories? =
+            devices.all().firstOrNull { it.slot.index == slot }?.component
 
         private fun graphs(): ImmutableList<AccountGraph> =
             devices.all().map { AccountGraph(it.slot.index, it.component) }.toImmutableList()

@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.calls.CallPhase
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.GroupCallPhase
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.slot
 import dev.kyralabs.pingogram.feature.calls.ui.CallActivity
 import dev.kyralabs.pingogram.feature.calls.ui.GroupCallActivity
 import kotlinx.coroutines.CoroutineScope
@@ -99,6 +100,7 @@ class CallNotifications
                     answer = CallActivity.pendingIntent(context, CallActivity.ACTION_ANSWER),
                     decline = CallActionReceiver.pendingIntent(context, CallActionReceiver.ACTION_DECLINE),
                     fullScreen = canUseFullScreenIntent(),
+                    slot = call.slot,
                 )
             } else {
                 builder.ongoing(
@@ -111,6 +113,7 @@ class CallNotifications
                         CallActionReceiver
                             .pendingIntent(context, CallActionReceiver.ACTION_STOP_SHARING)
                             .takeIf { call.video.isSharingScreen },
+                    slot = call.slot,
                 )
             }
         }
