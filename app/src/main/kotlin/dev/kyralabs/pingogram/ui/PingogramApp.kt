@@ -360,7 +360,7 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only
  * the items and never the `NavHost` content. Tapping the item of the tab the user is on, not a screen pushed above it,
  * reports it to [tabReselection], whose screen scrolls back to the top. With an [accountMenu], a long press on the
- * Settings item opens it ([accountMenuTrigger], [AccountMenuPopup]).
+ * Settings item opens it ([rememberAccountMenuTrigger], [AccountMenuPopup]).
  */
 @Composable
 private fun PingogramNavigationItems(
@@ -393,7 +393,9 @@ private fun PingogramNavigationItems(
             navigationSuiteType = navigationSuiteType,
             modifier =
                 if (menu != null) {
-                    accountMenuTrigger(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd)
+                    Modifier.accountMenuTrigger(
+                        rememberAccountMenuTrigger(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd),
+                    )
                 } else {
                     Modifier
                 },

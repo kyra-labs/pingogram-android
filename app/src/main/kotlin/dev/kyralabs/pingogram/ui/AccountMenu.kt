@@ -16,12 +16,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
@@ -81,54 +81,69 @@ internal fun AccountMenuAnchor(
     }
     val expanded = rememberSaveable { mutableStateOf(false) }
     Box(modifier) {
-        content(accountMenuTrigger(menu, expanded, onSwitch, onAdd))
+        content(Modifier.accountMenuTrigger(rememberAccountMenuTrigger(menu, expanded, onSwitch, onAdd)))
         AccountMenuPopup(menu, expanded, onSwitch, onAdd)
     }
 }
 
 /**
- * The account menu's trigger on a tab: a long press (with the `LongPress` haptic) opens it ([expanded]), and screen
- * readers get its choices as custom actions. For elements that cannot be wrapped in [AccountMenuAnchor] without
- * changing their layout (the rail's items), with [AccountMenuPopup] inside them.
+ * What the account menu's trigger on a tab does ([Modifier.accountMenuTrigger]): a long press (with the `LongPress`
+ * haptic) opens it ([expanded]), and screen readers get its choices as custom actions. For elements that cannot be
+ * wrapped in [AccountMenuAnchor] without changing their layout (the rail's items), with [AccountMenuPopup] inside them.
  */
 @Composable
-internal fun accountMenuTrigger(
+internal fun rememberAccountMenuTrigger(
     menu: AccountMenuState,
     expanded: MutableState<Boolean>,
     onSwitch: (slot: Int) -> Unit,
     onAdd: () -> Unit,
-): Modifier {
+): AccountMenuTrigger {
     val haptics = LocalHapticFeedback.current
     val resources = LocalResources.current
-    val currentMenu by rememberUpdatedState(menu)
-    val currentOnSwitch by rememberUpdatedState(onSwitch)
-    val currentOnAdd by rememberUpdatedState(onAdd)
-    return Modifier
-        .onLongPress {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            expanded.value = true
-        }.semantics {
-            customActions =
-                currentMenu.accounts.filterNot { it.isActive }.map { account ->
+    val currentMenu = rememberUpdatedState(menu)
+    val currentOnSwitch = rememberUpdatedState(onSwitch)
+    val currentOnAdd = rememberUpdatedState(onAdd)
+    return remember(haptics, resources, expanded) {
+        AccountMenuTrigger(
+            open = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                expanded.value = true
+            },
+            actions = {
+                val menuNow = currentMenu.value
+                menuNow.accounts.filterNot { it.isActive }.map { account ->
                     CustomAccessibilityAction(
                         resources.getString(R.string.account_menu_switch, account.name.bidiIsolated()),
                     ) {
-                        currentOnSwitch(account.slot)
+                        currentOnSwitch.value(account.slot)
                         true
                     }
                 } +
-                listOfNotNull(
-                    if (currentMenu.canAdd) {
-                        CustomAccessibilityAction(resources.getString(R.string.account_menu_add)) {
-                            currentOnAdd()
-                            true
-                        }
-                    } else {
-                        null
-                    },
-                )
-        }
+                    listOfNotNull(
+                        if (menuNow.canAdd) {
+                            CustomAccessibilityAction(resources.getString(R.string.account_menu_add)) {
+                                currentOnAdd.value()
+                                true
+                            }
+                        } else {
+                            null
+                        },
+                    )
+            },
+        )
+    }
 }
+
+/** The account menu's trigger, made by [rememberAccountMenuTrigger]: how it opens and its screen readers' actions. */
+@Stable
+internal class AccountMenuTrigger(
+    val open: () -> Unit,
+    val actions: () -> List<CustomAccessibilityAction>,
+)
+
+/** Puts [trigger] on a tab: its long press opens the account menu, its choices are the tab's custom actions. */
+internal fun Modifier.accountMenuTrigger(trigger: AccountMenuTrigger): Modifier =
+    onLongPress(trigger.open).semantics { customActions = trigger.actions() }
 
 /** The account menu's popup while [expanded], anchored to the layout it is composed in. */
 @Composable
