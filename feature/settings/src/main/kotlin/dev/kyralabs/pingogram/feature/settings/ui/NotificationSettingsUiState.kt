@@ -120,9 +120,7 @@ sealed interface NotificationSettingsEffect {
     /** Open the app's notification settings in Android's settings. */
     data object OpenAppNotificationSettings : NotificationSettingsEffect
 
-    /** Open the notification channel of [scope]'s messages in Android's settings. */
-
-    /** Open [scope]'s channel of the account in [slot] in Android's settings. */
+    /** Open the notification channel of [scope]'s messages, the account in [slot]'s, in Android's settings. */
     data class OpenChannelSettings(
         val scope: NotificationScope,
         val slot: Int = 0,
