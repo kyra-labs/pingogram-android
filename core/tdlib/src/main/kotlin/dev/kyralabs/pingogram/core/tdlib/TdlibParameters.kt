@@ -73,6 +73,7 @@ internal data class DeviceInfo(
 }
 
 /** The values from the parameters table in `docs/TDLIB.md`. */
+@Suppress("LongParameterList") // One per source of TDLib's parameters; a class would only move the list.
 internal fun tdlibParameters(
     config: TdlibConfig,
     servers: TdlibServers,

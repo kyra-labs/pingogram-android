@@ -140,9 +140,7 @@ private fun Sessions(
         footer = if (sessions.others.isEmpty()) ttl else null,
     ) {
         sessions.current?.let { current ->
-            item(key = current.id) { shapes ->
-                SessionRow(current, isBusy = false, shapes = shapes, isOnTestServers = state.isOnTestServers)
-            }
+            item(key = current.id) { SessionRow(current, false, it, isOnTestServers = state.isOnTestServers) }
         }
         if (hasOthers) {
             item(key = TERMINATE_ALL) { shapes ->

@@ -65,8 +65,9 @@ class ActiveSessionsViewModel
 
         init {
             authRepository.servers
-                .onEach { servers -> mutableUiState.update { it.copy(isOnTestServers = servers == TelegramServers.Test) } }
-                .launchIn(viewModelScope)
+                .onEach { servers ->
+                    mutableUiState.update { it.copy(isOnTestServers = servers == TelegramServers.Test) }
+                }.launchIn(viewModelScope)
             load(keepContent = false)
         }
 

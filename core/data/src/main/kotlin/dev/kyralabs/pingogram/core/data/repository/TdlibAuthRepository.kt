@@ -67,16 +67,13 @@ class TdlibAuthRepository(
 
     override val servers: Flow<TelegramServers> = client.servers.map { it.toTelegramServers() }
 
-    override suspend fun setPhoneNumber(phoneNumber: String): Outcome<Unit> {
-        val servers = telegramServersFor(phoneNumber).toTdlibServers()
-        if (!client.switchServers(servers)) return Outcome.Failure(DomainError.Network)
-        // TDLib may have restarted meanwhile on other servers (a logout): never send a number to the wrong ones.
-        if (client.servers.value != servers) return Outcome.Failure(DomainError.Network)
-        return client
-            .authRequest(
-                TdApi.SetAuthenticationPhoneNumber(phoneNumber, phoneNumberAuthenticationSettings()),
-            ).map {}
-    }
+    override suspend fun setPhoneNumber(phoneNumber: String): Outcome<Unit> =
+        client.onServers(telegramServersFor(phoneNumber).toTdlibServers()) {
+            client
+                .authRequest(
+                    TdApi.SetAuthenticationPhoneNumber(phoneNumber, phoneNumberAuthenticationSettings()),
+                ).map {}
+        }
 
     override suspend fun resendCode(): Outcome<Unit> =
         client.authRequest(TdApi.ResendAuthenticationCode(TdApi.ResendCodeReasonUserRequest())).map {}
@@ -84,13 +81,12 @@ class TdlibAuthRepository(
     override suspend fun checkCode(code: String): Outcome<Unit> =
         client.authRequest(TdApi.CheckAuthenticationCode(code)).map {}
 
-    override suspend fun requestQrCode(): Outcome<Unit> {
-        // Test accounts sign in with their number only; a QR code is for the user's own account.
-        if (!client.switchServers(TdlibServers.Production)) return Outcome.Failure(DomainError.Network)
-        if (client.servers.value != TdlibServers.Production) return Outcome.Failure(DomainError.Network)
-        // No other accounts: Pingogram has one account per installation for now.
-        return client.authRequest(TdApi.RequestQrCodeAuthentication(LongArray(0))).map {}
-    }
+    // Test accounts sign in with their number only; a QR code is for the user's own account.
+    override suspend fun requestQrCode(): Outcome<Unit> =
+        client.onServers(TdlibServers.Production) {
+            // No other accounts: Pingogram has one account per installation for now.
+            client.authRequest(TdApi.RequestQrCodeAuthentication(LongArray(0))).map {}
+        }
 
     // TDLib accepts neither setAuthenticationPhoneNumber nor requestQrCodeAuthentication while it waits for the QR
     // code to be scanned (td/telegram/AuthManager.cpp). logOut on an unauthorized session destroys its keys and
@@ -145,9 +141,17 @@ internal fun phoneNumberAuthenticationSettings() =
         authenticationTokens = emptyArray()
     }
 
-/** [TdlibClient.useServers], waiting as long as an authentication request; false when it took longer. */
-private suspend fun TdlibClient.switchServers(servers: TdlibServers): Boolean =
-    withTimeoutOrNull(AUTH_REQUEST_TIMEOUT) { useServers(servers) } != null
+/**
+ * [request] on [servers]: [TdlibClient.useServers] first, waiting as long as an authentication request, then [request]
+ * only if TDLib is still on [servers] (not restarted meanwhile by a logout), so a number never reaches the wrong ones.
+ */
+private suspend fun <T> TdlibClient.onServers(
+    servers: TdlibServers,
+    request: suspend () -> Outcome<T>,
+): Outcome<T> {
+    val switched = withTimeoutOrNull(AUTH_REQUEST_TIMEOUT) { useServers(servers) } != null
+    return if (switched && this.servers.value == servers) request() else Outcome.Failure(DomainError.Network)
+}
 
 private fun TdlibServers.toTelegramServers() =
     when (this) {

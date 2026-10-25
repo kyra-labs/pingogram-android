@@ -75,13 +75,13 @@ internal object SettingsPreviewData {
             username = "ada",
         )
 
+    /** Signed in with a test account on Telegram's test servers (`REQUIREMENTS.md` FR-A9). */
+    val testServerAccount = account.copy(phoneNumber = "+999 66 2 1234", isOnTestServers = true)
+
     /**
      * The account with a photo and Telegram Premium; the photo shows where Coil has a preview image (screenshot tests),
      * else its placeholder.
      */
-    /** Signed in with a test account on Telegram's test servers (`REQUIREMENTS.md` FR-A9). */
-    val testServerAccount = account.copy(phoneNumber = "+999 66 2 1234", isOnTestServers = true)
-
     val premiumAccount =
         account.copy(
             photo = ProfilePhoto(small = FileRef(1, 0), big = FileRef(2, 0), minithumbnail = null),

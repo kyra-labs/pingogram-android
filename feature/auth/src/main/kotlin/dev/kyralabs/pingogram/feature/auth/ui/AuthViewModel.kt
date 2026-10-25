@@ -170,10 +170,9 @@ class AuthViewModel internal constructor(
      * to. The phone number step the new instance starts at is not that step either.
      */
     private fun isServerSwitch(step: AuthStep): Boolean {
-        val switchesServers = model.pendingAction == AuthAction.SubmitPhoneNumber ||
-            model.pendingAction == AuthAction.RequestQrCode
-        val restartStep = step == AuthStep.LoggingOut || step == AuthStep.Closed || step == AuthStep.Initializing
-        return switchesServers && (restartStep || step == AuthStep.WaitPhoneNumber && model.step == step)
+        val switchesServers = model.pendingAction in ServerSwitchingActions
+        val restartStep = step in RestartSteps || (step == AuthStep.WaitPhoneNumber && model.step == step)
+        return switchesServers && restartStep
     }
 
     private fun completeAwaitedStep() {
@@ -731,3 +730,9 @@ private val InputChecks =
         AuthAction.SubmitNewPassword,
         AuthAction.SubmitEmailCode,
     )
+
+/** Requests that may restart TDLib on other servers first ([AuthViewModel]'s server switch). */
+private val ServerSwitchingActions = setOf(AuthAction.SubmitPhoneNumber, AuthAction.RequestQrCode)
+
+/** The steps TDLib reports while it restarts. */
+private val RestartSteps = setOf(AuthStep.LoggingOut, AuthStep.Closed, AuthStep.Initializing)

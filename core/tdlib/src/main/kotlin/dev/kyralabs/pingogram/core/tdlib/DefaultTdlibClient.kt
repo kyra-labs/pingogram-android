@@ -144,12 +144,12 @@ class DefaultTdlibClient internal constructor(
     private fun configureLogging() {
         // Before the first client exists, so TDLib never logs above this level (REQUIREMENTS.md §6.2).
         val settings = logSettings()
-        native.execute(TdApi.SetLogVerbosityLevel(settings.verbosity)).warnOnFailure("SetLogVerbosityLevel")
+        native.execute(TdApi.SetLogVerbosityLevel(settings.verbosity)).warnOnFailure(log, "SetLogVerbosityLevel")
         settings.file?.let { file ->
             file.parentFile?.mkdirs()
             native
                 .execute(TdApi.SetLogStream(TdApi.LogStreamFile(file.path, settings.maxFileSize, false)))
-                .warnOnFailure("SetLogStream")
+                .warnOnFailure(log, "SetLogStream")
         }
     }
 
@@ -225,10 +225,6 @@ class DefaultTdlibClient internal constructor(
                 this != AuthState.Closing &&
                 this != AuthState.Closed
 
-    private fun <T> TdResult<T>.warnOnFailure(what: String) {
-        if (this is TdResult.Failure) log.warn("$what failed: ${error.code} ${error.message}")
-    }
-
     private class Session(
         val client: NativeClient,
     ) {
@@ -285,3 +281,10 @@ internal data class TdlibLogSettings(
 @Suppress("UNCHECKED_CAST") // Guaranteed by TDLib as above; the cast is erased, so it cannot fail here anyway.
 private fun <T : TdApi.Object> TdApi.Object.toTdResult(): TdResult<T> =
     if (this is TdApi.Error) TdResult.Failure(TdError(code, message)) else TdResult.Success(this as T)
+
+private fun <T> TdResult<T>.warnOnFailure(
+    log: TdlibLog,
+    what: String,
+) {
+    if (this is TdResult.Failure) log.warn("$what failed: ${error.code} ${error.message}")
+}
