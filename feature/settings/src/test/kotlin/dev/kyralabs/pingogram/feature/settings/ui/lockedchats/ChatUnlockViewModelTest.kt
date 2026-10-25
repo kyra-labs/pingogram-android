@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -85,6 +87,12 @@ class ChatUnlockViewModelTest {
             appLock.wait = 30.seconds
             enter(viewModel, "1111")
             assertEquals(PasscodeMessage.Wait(30), viewModel.uiState.value.entry.message)
+
+            // The wait is over: the countdown ends, and with it the test.
+            appLock.wait = Duration.ZERO
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.entry.message)
         }
 
     @Test
