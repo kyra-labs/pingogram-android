@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.rememberExtraPaneWidth
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.trace.OpenChatTrace
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
@@ -409,6 +410,7 @@ private class PaneOpener(
         chatId: Long,
         messageId: Long?,
     ) {
+        OpenChatTrace.begin(chatId)
         if (!twoPanes.value) {
             message.value = null
             callbacks.value.onOpenChat(chatId, messageId)

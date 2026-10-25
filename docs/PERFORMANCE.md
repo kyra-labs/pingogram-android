@@ -13,7 +13,7 @@ regresses by more than 10%.
 | Warm start | ≤ 400 ms | same |
 | Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms | `ScrollBenchmark` + JankStats |
 | Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, jank rate < 1% | same |
-| Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `TraceSectionMetric("openChat")` |
+| Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `OpenChatBenchmark`: `TraceSectionMetric("openChat")`, an async section from the tap in the chat list (`:app`) to the frame after the first messages (`feature:chat`) |
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |

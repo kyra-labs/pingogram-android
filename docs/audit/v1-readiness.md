@@ -44,7 +44,7 @@ What blocks 1.0, in order:
 |---|---|---|---|
 | Cold start ≤ 1.2 s, warm ≤ 400 ms | Needs device (passes on the owner's phone) | `StartupBenchmark`: 487 ms cold, 135 ms warm with the profile (Galaxy S24 Ultra). Not yet measured on §1's mid-range reference device | Owner |
 | Scroll at native rate, P90 ≤ 8–10 ms, jank < 1% | **Fail** | Chat list P90 10.4 ms (budget 8 ms); conversation late frames > 1% in the device baseline (`docs/PERFORMANCE.md` §9). #150 prefetches rows while the lists scroll (JVM scroll cost 2–21% lower); the device numbers are not measured again yet | A, owner (device run) |
-| Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms | **Fail** (not measured) | No `OpenChatBenchmark`, and no `openChat` trace section measured (§9 lists both) | A |
+| Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms | Needs device (open chat); **Fail** (send, not measured) | `OpenChatBenchmark` measures the `openChat` trace section, from the tap in the chat list to the first messages drawn, opening Saved Messages with its history cached; not run on the phone yet. Optimistic send has no measurement | Owner (device run), A (send) |
 | Memory ≤ 120 MB idle, ≤ 250 MB in a media chat | Needs device | `TdlibMessageRepository` keeps 3 chats (LRU). `onTrimMemory` now clears it (*fixed here*: the trim was never called) | R |
 | APK ≤ 50 MB arm64, universal ≤ 125 MB | Pass (*fixed here*) | The release workflow now fails when an APK is over budget. It had no size gate before | R |
 | Battery ≤ 1.5% / 8 h, data ≤ 2 MB / 24 h, no polling | Needs device | No polling, alarms or periodic work in the code (checked: no `AlarmManager`, no `PeriodicWorkRequest`). Battery Historian and data runs are manual | Owner |
