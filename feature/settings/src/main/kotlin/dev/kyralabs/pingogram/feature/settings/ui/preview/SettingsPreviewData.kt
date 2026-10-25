@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryItem
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesUiState
+import dev.kyralabs.pingogram.feature.settings.ui.OtherAccountUiModel
 import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
@@ -90,6 +91,30 @@ internal object SettingsPreviewData {
         )
 
     val content = SettingsUiState(account = account)
+
+    /** The device's other accounts (`docs/adr/0031-multiple-accounts.md`): one with unread chats, one without. */
+    val otherAccounts =
+        persistentListOf(
+            OtherAccountUiModel(
+                slot = 1,
+                userId = 43,
+                name = "Grace Hopper",
+                photo = null,
+                phoneNumber = "+1 202 555 0143",
+                unreadChats = 3,
+            ),
+            OtherAccountUiModel(
+                slot = 2,
+                userId = 44,
+                name = "Alan Turing",
+                photo = null,
+                phoneNumber = "+44 7700 900461",
+                unreadChats = 0,
+            ),
+        )
+
+    /** Settings home on a device with three accounts, at the limit, so without "Add account". */
+    val withOtherAccounts = content.copy(otherAccounts = otherAccounts)
 
     val storage =
         DataStorageUiState(

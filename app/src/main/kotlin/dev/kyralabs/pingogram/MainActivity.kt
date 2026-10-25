@@ -27,6 +27,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.account.AccountMenuViewModel
 import dev.kyralabs.pingogram.account.restartOnAccountSwitch
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
@@ -127,6 +128,9 @@ class MainActivity : ComponentActivity() {
 
     /** Opens Telegram links, from intents and tapped in the app; the activity's, so a lookup survives rotation. */
     private val links: LinkViewModel by viewModels()
+
+    /** The Settings tab's account menu (docs/adr/0031-multiple-accounts.md). */
+    private val accountMenu: AccountMenuViewModel by viewModels()
 
     /** Hands what another app shared to the share sheet or a chat's composer. */
     @Inject
@@ -230,7 +234,7 @@ class MainActivity : ComponentActivity() {
                                 locked = locked,
                                 lockScreen = { AppLockRoute() },
                                 modifier = Modifier.semantics { testTagsAsResourceId = true },
-                            ) { App(uiState, viewModel, links, shares) }
+                            ) { App(uiState, viewModel, links, shares, accountMenu) }
                         }
                     }
                 }
@@ -357,6 +361,7 @@ private fun App(
     viewModel: MainActivityViewModel,
     links: LinkViewModel,
     shares: ShareInbox,
+    accountMenu: AccountMenuViewModel,
 ) {
     val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
     val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
@@ -374,5 +379,6 @@ private fun App(
         shares = shares,
         shareToOpen = shareToOpen,
         onShareOpened = viewModel::onShareOpened,
+        accounts = accountMenu,
     )
 }

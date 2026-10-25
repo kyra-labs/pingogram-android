@@ -8,6 +8,14 @@
     <string name="nav_settings">Settings</string>
     <!-- The search button next to the navigation bar and at the top of the rail -->
     <string name="nav_search">Search</string>
+    <!-- The Settings tab's long press (docs/adr/0031-multiple-accounts.md): the device's accounts. -->
+    <string name="account_menu_switch">Switch to %1$s</string>
+    <string name="account_menu_add">Add account</string>
+    <string name="account_menu_current">Current account</string>
+    <plurals name="account_menu_unread_chats">
+        <item quantity="one">%1$d unread chat</item>
+        <item quantity="other">%1$d unread chats</item>
+    </plurals>
 
     <!-- App shortcuts (res/xml/shortcuts.xml), shown when the launcher icon is long-pressed: the short label at most
          about 10 characters, the long one where the launcher has room -->

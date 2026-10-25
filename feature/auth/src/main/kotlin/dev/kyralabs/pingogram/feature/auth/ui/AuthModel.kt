@@ -22,6 +22,11 @@ internal data class AuthModel(
     val editingEmail: Boolean = false,
     /** QR login was left: TDLib restarts, and the flow continues with phone number entry. */
     val restarting: Boolean = false,
+    /**
+     * Another account is being added while one is signed in (`docs/adr/0031-multiple-accounts.md`): the flow starts at
+     * phone number entry, without the welcome screen, and back there leaves it for the account shown before.
+     */
+    val addingAccount: Boolean = false,
     val pendingAction: AuthAction? = null,
     val floodWaitSeconds: Long? = null,
     /** The whole flood wait, for its progress: the seconds Telegram asked to wait. */

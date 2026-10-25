@@ -79,7 +79,8 @@ internal fun SettingsRoute(
 /**
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a medium flexible top bar ([SettingsTopBar]) that
  * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile)
- * and groups of segmented rows ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
+ * with the device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
+ * ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
  * have them: General (Appearance, Notifications, Data and storage, Language), Privacy and security, About, and
  * "Log out" on its own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar
  * and ends clear of it ([screenContentWindowInsets]). As the list of a list-detail layout, its page rows are
@@ -113,6 +114,12 @@ internal fun SettingsScreen(
                     selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
                 )
             }
+            OtherAccountsGroup(
+                accounts = state.otherAccounts,
+                canAdd = state.canAddAccount,
+                onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
+                onAdd = { onEvent(SettingsEvent.AddAccount) },
+            )
             PageGroups(onOpenPage, selection)
             SettingsGroup {
                 item { shapes ->
@@ -144,6 +151,12 @@ private fun SettingsScreenPreview() {
 @Composable
 private fun SettingsScreenExpandedPreview() {
     PingogramPreview { SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun SettingsScreenOtherAccountsPreview() {
+    PingogramPreview { SettingsScreen(state = SettingsPreviewData.withOtherAccounts, onEvent = {}, onOpenPage = {}) }
 }
 
 @PingogramPreviews

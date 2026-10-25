@@ -12,6 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -20,12 +24,14 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import org.junit.Assert.assertEquals
@@ -131,6 +137,78 @@ class PingogramNavigationBarTest {
         assertTrue("$before → $during → $after", during.all { it in range })
     }
 
+    // The Settings tab's account menu (docs/adr/0031-multiple-accounts.md)
+
+    @Test
+    fun `a long press on the Settings tab opens the account menu, without selecting the tab`() {
+        setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
+
+        labeledTab(R.string.nav_settings).performTouchInput { longClick() }
+
+        composeRule.onNode(hasText("Grace Hopper")).assertExists()
+        composeRule.onNode(hasText(string(R.string.account_menu_add))).assertExists()
+        assertEquals(emptyList<TopLevelDestination>(), selections)
+    }
+
+    @Test
+    fun `another account in the menu switches to it, and Add account adds one`() {
+        setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
+
+        labeledTab(R.string.nav_settings).performTouchInput { longClick() }
+        composeRule.onNode(hasText("Grace Hopper")).performClick()
+        labeledTab(R.string.nav_settings).performTouchInput { longClick() }
+        composeRule.onNode(hasText(string(R.string.account_menu_add))).performClick()
+
+        assertEquals(listOf(1), switches)
+        assertEquals(1, adds)
+        composeRule.onNode(hasText("Grace Hopper")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the shown account in the menu only closes it`() {
+        setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
+
+        labeledTab(R.string.nav_settings).performTouchInput { longClick() }
+        composeRule.onNode(hasText("Ada Lovelace")).performClick()
+
+        assertEquals(emptyList<Int>(), switches)
+        composeRule.onNode(hasText("Ada Lovelace")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `with an account menu, a tap on the Settings tab still selects it`() {
+        setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
+
+        labeledTab(R.string.nav_settings).performClick()
+
+        assertEquals(listOf(TopLevelDestination.Settings), selections)
+        composeRule.onNode(hasText("Grace Hopper")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `screen readers switch accounts and add one through the Settings tab's actions`() {
+        setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
+        val tab = labeledTab(R.string.nav_settings)
+
+        tab.performCustomAction(string(R.string.account_menu_switch, "Alan Turing".bidiIsolated()))
+        tab.performCustomAction(string(R.string.account_menu_add))
+
+        assertEquals(listOf(2), switches)
+        assertEquals(1, adds)
+        // The shown account is no action, and the other tabs have none.
+        labeledTab(R.string.nav_chats).assert(hasNoCustomActions())
+    }
+
+    @Test
+    fun `without an account menu, a long press on the Settings tab opens nothing`() {
+        setBar(selected = TopLevelDestination.Chats)
+
+        labeledTab(R.string.nav_settings).performTouchInput { longClick() }
+
+        composeRule.onNode(hasText(string(R.string.account_menu_add))).assertDoesNotExist()
+        labeledTab(R.string.nav_settings).assert(hasNoCustomActions())
+    }
+
     // The floating bar showing and hiding (FloatingNavigationBar)
 
     @Test
@@ -215,13 +293,26 @@ class PingogramNavigationBarTest {
             .fetchSemanticsNode()
             .boundsInRoot.left
 
-    private fun setBar(selected: TopLevelDestination) {
+    private fun setBar(
+        selected: TopLevelDestination,
+        accountMenu: AccountMenuActions? = null,
+    ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                PingogramNavigationBar(selected = selected, onSelect = { selections += it }, onSearch = { searches++ })
+                PingogramNavigationBar(
+                    selected = selected,
+                    onSelect = { selections += it },
+                    onSearch = { searches++ },
+                    accountMenu = accountMenu,
+                )
             }
         }
     }
+
+    private val switches = mutableListOf<Int>()
+    private var adds = 0
+
+    private fun accountMenu() = AccountMenuActions(PreviewMenu, onSwitch = { switches += it }, onAdd = { adds++ })
 
     private fun labeledTab(
         @StringRes label: Int,
@@ -233,7 +324,18 @@ class PingogramNavigationBarTest {
 
     private fun string(
         @StringRes id: Int,
-    ): String = RuntimeEnvironment.getApplication().getString(id)
+        vararg args: Any,
+    ): String = RuntimeEnvironment.getApplication().getString(id, *args)
+
+    /** Runs the node's custom accessibility action labelled [label], as a screen reader does. */
+    private fun SemanticsNodeInteraction.performCustomAction(label: String) {
+        val actions = fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        composeRule.runOnUiThread { actions.single { it.label == label }.action() }
+        composeRule.waitForIdle()
+    }
+
+    private fun hasNoCustomActions() =
+        SemanticsMatcher("has no custom actions") { SemanticsActions.CustomActions !in it.config }
 
     private companion object {
         const val LARGE_FONT_SCALE = 2f
