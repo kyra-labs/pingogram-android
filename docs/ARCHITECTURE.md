@@ -9,6 +9,7 @@
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
 │   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
+│   · chat records round video messages with CameraX too         │
 │   · feedback (the report testers share themselves)             │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
@@ -955,6 +956,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Round video messages (FR-C5, `docs/adr/0032-round-video-messages.md`) go through the same `ChatRecorder`, whose
+  record button a tap switches to video (`RecordModeUiState`, kept in `ComposerSettingsRepository.recordsVideoMessages`
+  where the device has a camera): `feature:chat`'s `videonote/` package records them on `VideoNoteRecorder`
+  (`CameraXVideoNoteRecorder`: CameraX's `Preview` and `VideoCapture` of a `Recorder` in one `UseCaseGroup` with a 1:1
+  `ViewPort`, bound to a lifecycle of its own that is resumed only while it records, a persistent recording so a flip
+  rebinds the other camera; SD quality cropped square, about 1 Mbit/s, at most 60 s) into the files
+  `VideoNoteRepository.newVideoNoteFiles` (`TdlibVideoNoteRepository`, `core:data`) makes in the upload cache
+  (`uploads/<uuid>/video_note.mp4` and the first frame's `video_note.jpg`), and sends them with `sendVideoNote`
+  (`inputMessageVideoNote`, through the thread's `TopicVideoNoteRepository` in a topic), cleaned up as voice notes
+  are. The preview is the recorder's `SurfaceRequest` (`ChatViewModel.videoNotePreview`), drawn by camera-compose's
+  `CameraXViewfinder` in the round preview over the messages. CameraX is in two feature modules now, `feature:scanner`
+  and `feature:chat`, at one catalog version: an upgrade changes both, and a third camera feature moves them into a
+  `:core:camera` module.
 - Without compression (`AttachmentKind.Original`, the attach preview's switch, its default `ComposerSettingsRepository.sendPhotosInOriginalQuality`
   in Data and storage): `ChatAttachments` keeps the gallery's URIs of the preview's items and, on sending, prepares
   each again as a file. `AttachmentPreparer` copies a JPEG's image data byte for byte without its metadata

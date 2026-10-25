@@ -260,6 +260,10 @@ regresses by more than 10%.
   - arm64-v8a has 1.8 MB left and universal 1.9 MB, about 1.6 MB for `gms`. The owner set the universal
     budget from these sizes (2026-10-23); the next addition that grows the native libraries (group video,
     `docs/adr/0019-video-and-group-calls-scope.md`) needs the budget looked at again.
+  - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
+    code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
+    its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
+    release builds; CI's `apk size` job checks it on the pull request.
 - TDLib database and files live in `filesDir` (excluded from backup), cache limit setting
   (default 4 GB) enforced via `optimizeStorage`.
 

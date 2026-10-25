@@ -7,15 +7,48 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 
 /**
- * A voice message being recorded in the composer (`REQUIREMENTS.md` FR-C5): held under the finger, or [isLocked]
- * (hands-free) and then maybe [isPaused]. How long and how loud is in its [meter], which changes many times a second
- * without changing this state.
+ * A voice message, or a round [video] message, being recorded in the composer (`REQUIREMENTS.md` FR-C5,
+ * `docs/adr/0032-round-video-messages.md`): held under the finger, or [isLocked] (hands-free) and then maybe
+ * [isPaused]. How long and how loud is in its [meter], which changes many times a second without changing this state.
  */
 @Immutable
 data class VoiceRecordingUiState(
     val isLocked: Boolean = false,
     val isPaused: Boolean = false,
     val meter: RecordingMeter = RecordingMeter(),
+    val video: VideoRecordingUiState? = null,
+)
+
+/**
+ * What a round video message being recorded adds: which camera it records from ([isFront]), whether the other one can
+ * take over ([canFlip]), and whether it ended as the screen stopped ([isStopped]), when it can only be sent or deleted.
+ */
+@Immutable
+data class VideoRecordingUiState(
+    val isFront: Boolean = true,
+    val canFlip: Boolean = false,
+    val isStopped: Boolean = false,
+)
+
+/**
+ * What the composer's record button records (`docs/adr/0032-round-video-messages.md`): voice messages, or [video]
+ * messages once a tap switched it, where the device has a camera to switch to ([canSwitch]); and the sheet that says
+ * why video needs the camera and the microphone, while it shows ([rationale]).
+ */
+@Immutable
+data class RecordModeUiState(
+    val video: Boolean = false,
+    val canSwitch: Boolean = false,
+    val rationale: CameraRationale? = null,
+)
+
+/**
+ * Why video messages need the camera and the microphone, before Android asks; once Android no longer asks
+ * ([deniedForGood]), the sheet offers the app's settings instead.
+ */
+@Immutable
+data class CameraRationale(
+    val deniedForGood: Boolean = false,
 )
 
 /**
