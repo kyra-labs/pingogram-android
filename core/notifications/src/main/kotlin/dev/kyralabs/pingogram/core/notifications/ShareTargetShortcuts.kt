@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
+import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -46,13 +47,16 @@ import kotlin.time.Duration.Companion.seconds
  * chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
  * conversation shortcut (`NotificationRenderer`). Android 11+ only, like the conversation shortcuts.
  *
+ * The targets are the shown account's (`docs/adr/0031-multiple-accounts.md`), as its repositories are; their shortcut
+ * ids carry its slot, so a share to one opens in that account. Switching accounts starts the app again, with the
+ * other account's targets.
+ *
  * `PingogramApplication` calls [start] in every process; it returns at once, all of it running on the application
  * scope.
  */
 @Singleton
 @Suppress("LongParameterList") // Injected: the repositories it combines, the parts that publish, the app's scope.
 class ShareTargetShortcuts
-    @Inject
     internal constructor(
         private val authRepository: AuthRepository,
         private val chatRepository: ChatRepository,
@@ -61,8 +65,30 @@ class ShareTargetShortcuts
         private val chatLock: ChatLockRepository,
         private val avatars: AvatarIcons,
         private val shortcuts: ConversationShortcuts,
-        @param:ApplicationScope private val scope: CoroutineScope,
+        private val scope: CoroutineScope,
     ) {
+        @Inject
+        internal constructor(
+            authRepository: AuthRepository,
+            chatRepository: ChatRepository,
+            userRepository: UserRepository,
+            groupRepository: GroupRepository,
+            chatLock: ChatLockRepository,
+            avatars: AvatarIcons,
+            shortcuts: ConversationShortcutsFactory,
+            graphs: AccountGraphs,
+            @ApplicationScope scope: CoroutineScope,
+        ) : this(
+            authRepository = authRepository,
+            chatRepository = chatRepository,
+            userRepository = userRepository,
+            groupRepository = groupRepository,
+            chatLock = chatLock,
+            avatars = avatars,
+            shortcuts = shortcuts.of(graphs.activeSlot.value),
+            scope = scope,
+        )
+
         /** Starts following the chat list; call once per process. */
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         fun start() {

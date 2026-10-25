@@ -50,6 +50,8 @@ data class WidgetChat(
     val hasUnreadMention: Boolean,
     val isMuted: Boolean,
     val avatar: Bitmap? = null,
+    /** The account whose chat it is (`docs/adr/0031-multiple-accounts.md`), which the row opens it in. */
+    val slot: Int = 0,
 )
 
 /**
@@ -64,6 +66,7 @@ internal fun widgetChats(
     myUserId: Long?,
     resources: Resources,
     limit: Int,
+    slot: Int = 0,
 ): List<WidgetChat> =
     chats.take(limit).map { chat ->
         val userId = (chat.type as? ChatType.Private)?.userId
@@ -81,6 +84,7 @@ internal fun widgetChats(
             unreadCount = chat.unreadCount,
             hasUnreadMention = chat.unreadMentionCount > 0,
             isMuted = chat.isMuted,
+            slot = slot,
         )
     }
 

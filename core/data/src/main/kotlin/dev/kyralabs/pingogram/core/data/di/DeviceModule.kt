@@ -12,10 +12,12 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationReposito
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
@@ -44,6 +46,9 @@ interface DeviceModule {
 
     @Binds
     fun deviceAccountsRepository(repository: DefaultDeviceAccountsRepository): DeviceAccountsRepository
+
+    @Binds
+    fun accountGraphs(graphs: DefaultAccountGraphs): AccountGraphs
 
     @Binds
     fun deviceContactsRepository(repository: AndroidDeviceContactsRepository): DeviceContactsRepository

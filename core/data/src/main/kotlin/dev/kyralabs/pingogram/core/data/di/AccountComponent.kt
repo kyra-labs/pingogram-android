@@ -5,6 +5,7 @@ import dagger.Component
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineScope

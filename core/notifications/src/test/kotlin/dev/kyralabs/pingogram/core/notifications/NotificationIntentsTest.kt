@@ -53,4 +53,35 @@ class NotificationIntentsTest {
             ),
         )
     }
+
+    @Test
+    fun `another account's intent names its account and differs from the first account's`() {
+        val first = NotificationIntents.openChat(context, chatId = 1)!!
+        val second = NotificationIntents.openChat(context, chatId = 1, slot = 2)!!
+
+        assertEquals(0, NotificationIntents.accountOf(first))
+        assertEquals(2, NotificationIntents.accountOf(second))
+        assertEquals(1L, NotificationIntents.chatIdOf(second))
+        assertEquals(false, first.filterEquals(second))
+    }
+
+    @Test
+    fun `the locked chats' intent names its account`() {
+        val intent = NotificationIntents.openLockedChatsPendingIntent(context, slot = 1)
+
+        assertEquals(true, intent != null)
+        assertNull(NotificationIntents.accountOf(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/durov"))))
+    }
+
+    @Test
+    fun `shortcut ids carry another account's slot, the first account's stay as they were`() {
+        assertEquals("chat_-100", NotificationIntents.shortcutId(-100))
+        assertEquals("chat_1_-100", NotificationIntents.shortcutId(-100, slot = 1))
+        assertEquals(-100L, NotificationIntents.chatIdOfShortcut("chat_1_-100"))
+        assertEquals(1, NotificationIntents.accountOfShortcut("chat_1_-100"))
+        assertEquals(0, NotificationIntents.accountOfShortcut("chat_42"))
+        assertEquals(42L, NotificationIntents.chatIdOfShortcut("chat_42"))
+        assertNull(NotificationIntents.chatIdOfShortcut("chat_x_1"))
+        assertNull(NotificationIntents.accountOfShortcut("other_1"))
+    }
 }

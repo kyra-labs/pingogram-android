@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -67,6 +68,7 @@ class RecentChatsWidgetUpdater
         private val chatLock: ChatLockRepository,
         private val avatars: AvatarIcons,
         private val widgets: RecentChatsWidgets,
+        private val graphs: AccountGraphs,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         /** Whether a widget is placed; null until asked. */
@@ -145,7 +147,7 @@ class RecentChatsWidgetUpdater
                     userRepository.myUserId,
                     loaded,
                 ) { chats, users, me, done ->
-                    val rows = widgetChats(chats, users, me, context.resources, MAX_CHATS)
+                    val rows = widgetChats(chats, users, me, context.resources, MAX_CHATS, graphs.activeSlot.value)
                     if (rows.isEmpty() && !done) null else Rows(rows, chats.take(MAX_CHATS).map { it.photo })
                 }.distinctUntilChanged()
                     .debounce(UPDATE_DELAY)

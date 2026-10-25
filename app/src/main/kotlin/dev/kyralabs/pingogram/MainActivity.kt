@@ -28,7 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.account.AccountMenuViewModel
-import dev.kyralabs.pingogram.account.restartOnAccountSwitch
+import dev.kyralabs.pingogram.account.AccountRestart
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
@@ -152,9 +152,11 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var chatLock: ChatLockRepository
 
-    /** The device's accounts: a switch opens the app again for the other one ([restartOnAccountSwitch]). */
+    /** The device's accounts: a switch opens the app again for the other one ([AccountRestart]). */
     @Inject
     lateinit var accounts: Accounts
+
+    private lateinit var accountRestart: AccountRestart
 
     @Inject
     @Dispatcher(IO)
@@ -194,9 +196,12 @@ class MainActivity : ComponentActivity() {
             splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
             splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
             enableEdgeToEdge()
-            if (savedInstanceState == null) handle(intent)
-            // Opens the app again for the other account when the shown one changes.
-            languageApplied = followAppLanguage().also { restartOnAccountSwitch(accounts) }
+            // Hands the intent on, or switches to its account first; opens the app again when the shown one changes.
+            accountRestart =
+                AccountRestart(this, accounts, ::handle).apply {
+                    start(intent.takeIf { savedInstanceState == null })
+                }
+            languageApplied = followAppLanguage()
             setContent {
                 val appearance by viewModel.appearance.collectAsStateWithLifecycle()
                 val lock by viewModel.lock.collectAsStateWithLifecycle()
@@ -278,7 +283,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handle(intent)
+        accountRestart.onNewIntent(intent)
     }
 
     /**

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.notifications
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.app.RemoteInput
 import androidx.work.Data
 
@@ -16,6 +17,9 @@ internal sealed interface NotificationAction {
     /** The TDLib notification group acted on, whose notification shows it. */
     val groupId: Int
 
+    /** The account of the notification (`docs/adr/0031-multiple-accounts.md`); 0 for earlier versions' intents. */
+    val slot: Int
+
     /** Sends [text] to chat [chatId], quoting [replyToMessageId] if not null, then reads [messageIds]. */
     data class Reply(
         override val groupId: Int,
@@ -23,8 +27,9 @@ internal sealed interface NotificationAction {
         val messageIds: List<Long>,
         val replyToMessageId: Long?,
         val text: String,
+        override val slot: Int = 0,
     ) : NotificationAction {
-        override fun toString() = "Reply(groupId=$groupId, chatId=$chatId, ${messageIds.size} messages)"
+        override fun toString() = "Reply(slot=$slot, groupId=$groupId, chatId=$chatId, ${messageIds.size} messages)"
     }
 
     /** Reads [messageIds] of chat [chatId]. */
@@ -32,12 +37,14 @@ internal sealed interface NotificationAction {
         override val groupId: Int,
         val chatId: Long,
         val messageIds: List<Long>,
+        override val slot: Int = 0,
     ) : NotificationAction
 
     /** The user swiped the notification away, up to notification [maxNotificationId]. */
     data class Dismiss(
         override val groupId: Int,
         val maxNotificationId: Int,
+        override val slot: Int = 0,
     ) : NotificationAction
 
     /** The action as work data for [NotificationActionWorker]. */
@@ -45,6 +52,7 @@ internal sealed interface NotificationAction {
         Data
             .Builder()
             .putInt(KEY_GROUP_ID, groupId)
+            .putInt(KEY_ACCOUNT, slot)
             .apply {
                 when (val action = this@NotificationAction) {
                     is Reply -> {
@@ -77,6 +85,7 @@ internal sealed interface NotificationAction {
             read(
                 action = data.getString(KEY_ACTION),
                 groupId = data.getInt(KEY_GROUP_ID, NONE.toInt()),
+                slot = data.getInt(KEY_ACCOUNT, 0),
                 chatId = data.getLong(KEY_CHAT_ID, NONE),
                 messageIds = data.getLongArray(KEY_MESSAGE_IDS),
                 replyTo = data.getLong(KEY_REPLY_TO, NONE),
@@ -89,6 +98,7 @@ internal sealed interface NotificationAction {
             read(
                 action = intent.action?.removePrefix(INTENT_ACTION_PREFIX),
                 groupId = intent.getIntExtra(KEY_GROUP_ID, NONE.toInt()),
+                slot = intent.getIntExtra(KEY_ACCOUNT, 0),
                 chatId = intent.getLongExtra(KEY_CHAT_ID, NONE),
                 messageIds = intent.getLongArrayExtra(KEY_MESSAGE_IDS),
                 replyTo = intent.getLongExtra(KEY_REPLY_TO, NONE),
@@ -104,7 +114,7 @@ internal sealed interface NotificationAction {
             context: Context,
             conversation: ConversationNotification,
         ): PendingIntent =
-            broadcast(context, ACTION_REPLY, conversation.groupId, PendingIntent.FLAG_MUTABLE) {
+            broadcast(context, ACTION_REPLY, conversation, PendingIntent.FLAG_MUTABLE) {
                 putExtra(KEY_CHAT_ID, conversation.chatId)
                 putExtra(KEY_MESSAGE_IDS, conversation.messageIds.toLongArray())
                 putExtra(KEY_REPLY_TO, conversation.replyToMessageId ?: NONE)
@@ -115,7 +125,7 @@ internal sealed interface NotificationAction {
             context: Context,
             conversation: ConversationNotification,
         ): PendingIntent =
-            broadcast(context, ACTION_MARK_AS_READ, conversation.groupId, PendingIntent.FLAG_IMMUTABLE) {
+            broadcast(context, ACTION_MARK_AS_READ, conversation, PendingIntent.FLAG_IMMUTABLE) {
                 putExtra(KEY_CHAT_ID, conversation.chatId)
                 putExtra(KEY_MESSAGE_IDS, conversation.messageIds.toLongArray())
             }
@@ -125,25 +135,28 @@ internal sealed interface NotificationAction {
             context: Context,
             conversation: ConversationNotification,
         ): PendingIntent =
-            broadcast(context, ACTION_DISMISS, conversation.groupId, PendingIntent.FLAG_IMMUTABLE) {
+            broadcast(context, ACTION_DISMISS, conversation, PendingIntent.FLAG_IMMUTABLE) {
                 putExtra(KEY_MAX_NOTIFICATION_ID, conversation.maxNotificationId)
             }
 
         /**
-         * An explicit broadcast to [NotificationActionReceiver]; one per action and group (the request code), kept up
-         * to date with the notification.
+         * An explicit broadcast to [NotificationActionReceiver]; one per action and group (the request code) of each
+         * account (another account's in its data), kept up to date with the notification.
          */
         private fun broadcast(
             context: Context,
             action: String,
-            groupId: Int,
+            conversation: ConversationNotification,
             mutability: Int,
             extras: Intent.() -> Unit,
         ): PendingIntent {
+            val groupId = conversation.groupId
             val intent =
                 Intent(context, NotificationActionReceiver::class.java)
                     .setAction(INTENT_ACTION_PREFIX + action)
                     .putExtra(KEY_GROUP_ID, groupId)
+                    .putExtra(KEY_ACCOUNT, conversation.slot)
+                    .apply { if (conversation.slot != 0) data = Uri.parse("$ACCOUNT_URI${conversation.slot}") }
                     .apply(extras)
             return PendingIntent.getBroadcast(context, groupId, intent, PendingIntent.FLAG_UPDATE_CURRENT or mutability)
         }
@@ -152,6 +165,7 @@ internal sealed interface NotificationAction {
         private fun read(
             action: String?,
             groupId: Int,
+            slot: Int,
             chatId: Long,
             messageIds: LongArray?,
             replyTo: Long,
@@ -162,16 +176,16 @@ internal sealed interface NotificationAction {
             return when (action) {
                 ACTION_REPLY -> {
                     text?.takeIf { it.isNotBlank() }?.let {
-                        Reply(groupId, chatId, ids, replyTo.takeIf { id -> id != NONE }, it)
+                        Reply(groupId, chatId, ids, replyTo.takeIf { id -> id != NONE }, it, slot)
                     }
                 }
 
                 ACTION_MARK_AS_READ -> {
-                    MarkAsRead(groupId, chatId, ids)
+                    MarkAsRead(groupId, chatId, ids, slot)
                 }
 
                 ACTION_DISMISS -> {
-                    Dismiss(groupId, maxNotificationId)
+                    Dismiss(groupId, maxNotificationId, slot)
                 }
 
                 else -> {
@@ -187,6 +201,10 @@ internal sealed interface NotificationAction {
 
         private const val KEY_ACTION = "action"
         private const val KEY_GROUP_ID = "group_id"
+        private const val KEY_ACCOUNT = "account"
+
+        /** Another account's broadcasts' data, so their pending intents differ from the first account's. */
+        private const val ACCOUNT_URI = "pingogram://notification-account/"
         private const val KEY_CHAT_ID = "chat_id"
         private const val KEY_MESSAGE_IDS = "message_ids"
         private const val KEY_REPLY_TO = "reply_to"

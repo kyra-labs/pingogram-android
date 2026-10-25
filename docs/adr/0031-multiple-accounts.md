@@ -100,9 +100,9 @@ What Pingogram has today, all written for one account:
 - **Which account opens**: a notification, a conversation shortcut and a Direct Share target carry their slot; opening
   one switches to that account first (after the passcode lock), then opens the chat. Telegram links and shares from
   other apps open in the active account.
-- **The notification's account**: with more than one account, a notification's text and its group summary start
-  with the account's first name and "・" ("Ada・New message"), as Telegram's do; `MessagingStyle`'s messages keep
-  their senders.
+- **The notification's account**: with more than one account, each notification and its group summary name the
+  account by its first name in their header (the notification's subtext: "Pingogram • Ada • now"), as Telegram's
+  Android app does; `MessagingStyle`'s messages keep their senders and texts as they are.
 
 ### Lock, widget, push, logout, limits
 
@@ -127,7 +127,9 @@ What Pingogram has today, all written for one account:
    account.
 3. Adding an account and the switcher (Settings card, the tab's long press), switching, logging out of one; in two
    pull requests: the accounts underneath, hidden (3a), then what shows them on screen (3b).
-4. Background accounts: their notifications, shortcuts, channel groups, calls; opening the right account.
+4. Background accounts, in three pull requests: their notifications, shortcuts and channel groups, and opening the
+   right account from them (4a); calls of every account (4b); "Notifications from all accounts" and the notification
+   settings' channels of the shown account, then the switcher shown (4c).
 5. Push per account (`gms`) and "Keep connected" for all (`foss`).
 6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher).
 

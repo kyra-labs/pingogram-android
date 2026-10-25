@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.di
 
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Modifier

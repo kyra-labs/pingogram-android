@@ -82,7 +82,7 @@ class NotificationRendererTest {
                     NotificationCompat.getAction(notification, it)!!.semanticAction
                 },
             )
-            assertEquals(ConversationShortcuts.shortcutId(100), notification.shortcutId)
+            assertEquals(NotificationIntents.shortcutId(100), notification.shortcutId)
             assertNotNull(notification.contentIntent)
             assertNotNull(harness.summary())
         }
