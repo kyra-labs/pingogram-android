@@ -29,18 +29,21 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import java.text.NumberFormat
 import kotlin.math.roundToInt
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The rows of automatic download (docs/PERFORMANCE.md §7): Data and storage's group of networks, and a network's page.
 
 /**
  * "Automatic download": a row per kind of network that says what downloads by itself on it and opens its page, and,
- * while Data Saver is on, a note that nothing does on mobile data meanwhile.
+ * while Data Saver is on, a note that nothing does on mobile data meanwhile. While the settings differ from the
+ * defaults, "Reset automatic download" ([onReset]) puts them back.
  */
 @Composable
 internal fun AutoDownloadGroup(
     settings: AutoDownloadSettings,
     isDataSaverOn: Boolean,
     onOpen: (AutoDownloadNetwork) -> Unit,
+    onReset: () -> Unit = {},
 ) {
     SettingsGroup(
         title = stringResource(R.string.settings_section_auto_download),
@@ -57,8 +60,21 @@ internal fun AutoDownloadGroup(
                 )
             }
         }
+        if (settings != AutoDownloadSettings()) {
+            item(key = RESET) { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_auto_download_reset),
+                    shapes = shapes,
+                    icon = UiR.drawable.ic_refresh,
+                    supportingContent = { Text(stringResource(R.string.settings_auto_download_reset_summary)) },
+                    onClick = onReset,
+                )
+            }
+        }
     }
 }
+
+private const val RESET = "reset"
 
 @DrawableRes
 private fun AutoDownloadNetwork.iconRes(): Int =

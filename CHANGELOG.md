@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Data and storage: "Reset automatic download" puts every network's defaults back, "Prefer IPv6" connects over IPv6
+  where your network and Telegram offer it, and "Delete cloud drafts" deletes the unsent messages saved in all your
+  chats, on all your devices (secret chats' drafts stay).
 - Custom emoji sets in Settings → Stickers → Emoji: your emoji sets in their order, which you can drag, archive, remove
   and share, with trending and archived emoji sets to add. Custom emoji set links (t.me/addemoji/…) open the set, ready
   to add. Pingogram shows custom emoji in messages; it doesn't offer any to send yet.

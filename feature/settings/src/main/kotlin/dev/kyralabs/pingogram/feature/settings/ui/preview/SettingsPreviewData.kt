@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
@@ -102,6 +103,10 @@ internal object SettingsPreviewData {
 
     val storageError =
         DataStorageUiState(autoDownload = AutoDownloadSettings(), usage = StorageUsageState.Error(DomainError.Network))
+
+    /** Data and storage with roaming downloading photos, which "Reset automatic download" would undo. */
+    val storageChanged =
+        storage.copy(autoDownload = AutoDownloadSettings(roaming = AutoDownloadRules(photos = true)))
 
     /** Wi-Fi with the defaults: photos, videos up to 10 MB, files up to 3 MB, voice and video messages. */
     val autoDownloadWiFi =

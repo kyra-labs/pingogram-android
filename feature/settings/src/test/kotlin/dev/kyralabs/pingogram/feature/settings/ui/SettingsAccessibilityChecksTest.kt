@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerC
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
@@ -349,6 +350,20 @@ class SettingsAccessibilityChecksTest {
                 onOpenProxies = {},
                 onOpenNetworkUsage = {},
                 onBack = {},
+            )
+        }
+
+    @Test
+    fun dataStorageOptions() =
+        check {
+            DataStorageScreen(
+                SettingsPreviewData.storageChanged,
+                onEvent = {},
+                onOpenAutoDownload = {},
+                onOpenProxies = {},
+                onOpenNetworkUsage = {},
+                onBack = {},
+                options = DataOptionsUiState(prefersIpv6 = true),
             )
         }
 
