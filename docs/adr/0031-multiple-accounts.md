@@ -132,7 +132,8 @@ What Pingogram has today, all written for one account:
    settings' channels of the shown account (4c). The switcher shows once stage 5 is in too, as an account in the
    background notifies only with its push or its connection.
 5. Push per account (`gms`) and "Keep connected" for all (`foss`).
-6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher).
+6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher), in two
+   pull requests: each widget keeping its account (6a), then the switcher shown, with the CHANGELOG (6b).
 
 ## Decisions (owner, 2026-10-25: as Telegram's app)
 

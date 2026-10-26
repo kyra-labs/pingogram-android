@@ -3,16 +3,21 @@ package dev.kyralabs.pingogram.widget
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
+import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -21,31 +26,33 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Keeps the home screen widget of recent chats current (`docs/adr/0017-home-screen-widget.md`), without polling: it
+ * Keeps the home screen widgets of recent chats current (`docs/adr/0017-home-screen-widget.md`), without polling: it
  * follows the login, the passcode lock and the main chat list while the app's process runs, and only while a widget
- * is placed ([RecentChatsWidgets.hasWidgets], then the receiver's [onWidgetsChanged]). Each change of what the widget
- * shows becomes [content] and one update of the placed widgets ([RecentChatsWidgets.updateAll], Glance's own work),
- * [UPDATE_DELAY] after the chats last changed, so a busy chat list redraws it rarely. With a passcode set the widget
+ * is placed ([RecentChatsWidgets.slots], then [onWidgetShown] and [onWidgetsChanged]). Each widget keeps the account
+ * it was placed in (`docs/adr/0031-multiple-accounts.md`), so the updater follows the accounts of the placed widgets,
+ * each one's [content] apart; a widget whose account left the device moves to the shown account. Each change of what
+ * a widget shows becomes one update of the placed widgets ([RecentChatsWidgets.updateAll], Glance's own work),
+ * [UPDATE_DELAY] after the chats last changed, so a busy chat list redraws them rarely. With a passcode set a widget
  * names no chat ([RecentChatsContent.Locked]); locked chats (`docs/adr/0029-locked-chats.md`), which need a passcode,
  * are left out besides, should the widget ever show chats behind one.
  *
@@ -56,28 +63,38 @@ import kotlin.time.Duration.Companion.seconds
  * scope.
  */
 @Singleton
-@Suppress("LongParameterList") // Injected: the repositories it combines, the avatars, the widgets and the app's scope.
 class RecentChatsWidgetUpdater
-    @Inject
     internal constructor(
-        @param:ApplicationContext private val context: Context,
-        private val authRepository: AuthRepository,
+        private val context: Context,
         private val passcodeRepository: PasscodeRepository,
-        private val chatRepository: ChatRepository,
-        private val userRepository: UserRepository,
-        private val chatLock: ChatLockRepository,
-        private val avatars: AvatarIcons,
         private val widgets: RecentChatsWidgets,
-        private val graphs: AccountGraphs,
-        @param:ApplicationScope private val scope: CoroutineScope,
+        private val accounts: Flow<Map<Int, WidgetAccount>>,
+        private val activeSlot: StateFlow<Int>,
+        private val scope: CoroutineScope,
     ) {
-        /** Whether a widget is placed; null until asked. */
-        private val placed = MutableStateFlow<Boolean?>(null)
+        @Inject
+        internal constructor(
+            @ApplicationContext context: Context,
+            passcodeRepository: PasscodeRepository,
+            widgets: RecentChatsWidgets,
+            accounts: WidgetAccounts,
+            graphs: AccountGraphs,
+            @ApplicationScope scope: CoroutineScope,
+        ) : this(context, passcodeRepository, widgets, accounts.accounts, graphs.activeSlot, scope)
 
-        private val mutableContent = MutableStateFlow<RecentChatsContent>(RecentChatsContent.Loading)
+        /** The accounts of the placed widgets, by slot; null until asked. */
+        private val placed = MutableStateFlow<Set<Int>?>(null)
 
-        /** What the widgets show now; [RecentChatsContent.Loading] while no widget is placed. */
-        val content: StateFlow<RecentChatsContent> = mutableContent.asStateFlow()
+        private val contents = MutableStateFlow<Map<Int, RecentChatsContent>>(emptyMap())
+
+        /** The shown account's slot, which a widget placed now keeps. */
+        val shownSlot: Int get() = activeSlot.value
+
+        /** What the widgets of the account in [slot] show now; [RecentChatsContent.Loading] while none is placed. */
+        fun content(slot: Int): Flow<RecentChatsContent> = contents.map { it.contentOf(slot) }.distinctUntilChanged()
+
+        /** What the widgets of the account in [slot] show at this moment, for the first frame. */
+        fun currentContent(slot: Int): RecentChatsContent = contents.value.contentOf(slot)
 
         /** Starts following what the widgets show; call once per process. */
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -87,29 +104,67 @@ class RecentChatsWidgetUpdater
             // §2). The system shows the widget's last content meanwhile.
             val started = scope.async { delay(START_UPDATE_DELAY) }
             scope.launch {
-                if (placed.value == null) placed.compareAndSet(null, widgets.hasWidgets())
+                if (placed.value == null) placed.compareAndSet(null, widgets.slots())
                 placed
                     .filterNotNull()
                     .distinctUntilChanged()
-                    .flatMapLatest { if (it) contents() else emptyFlow() }
-                    .collectLatest { content ->
-                        mutableContent.value = content
+                    .flatMapLatest { slots -> if (slots.isEmpty()) flowOf(emptyMap()) else contentsOf(slots) }
+                    .collectLatest { shown ->
+                        contents.value = shown
+                        if (shown.isEmpty()) return@collectLatest
                         started.await()
                         widgets.updateAll()
                     }
             }
+            scope.launch { accounts.collect { known -> moveWidgetsOfGone(known.keys) } }
         }
 
-        /** The first widget was placed ([present]), the system asked for its content, or the last one was removed. */
+        /** A widget of the account in [slot] asked for its content. */
+        fun onWidgetShown(slot: Int) {
+            placed.update { (it ?: emptySet()) + slot }
+        }
+
+        /** Widgets were placed or removed; [present] false: the last one was. */
         fun onWidgetsChanged(present: Boolean) {
-            placed.value = present
-            if (!present) mutableContent.value = RecentChatsContent.Loading
+            if (!present) {
+                placed.value = emptySet()
+                return
+            }
+            scope.launch { placed.value = widgets.slots() }
+        }
+
+        /** Each placed account's content, as they change; an account not on the device (yet) signed out. */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        private fun contentsOf(slots: Set<Int>): Flow<Map<Int, RecentChatsContent>> =
+            accounts
+                .map { known -> slots.associateWith { known[it] } }
+                .distinctUntilChanged()
+                .flatMapLatest { bySlot ->
+                    combine(
+                        bySlot.map { (slot, account) ->
+                            (account?.let { contents(slot, it) } ?: flowOf(RecentChatsContent.SignedOut))
+                                .map { slot to it }
+                        },
+                    ) { it.toMap() }
+                }
+
+        /** Widgets of accounts that left the device keep the shown account from now on. */
+        private suspend fun moveWidgetsOfGone(known: Set<Int>) {
+            if (known.isEmpty()) return
+            val gone = placed.value.orEmpty() - known
+            if (gone.isEmpty()) return
+            val to = activeSlot.value.takeIf { it in known } ?: known.min()
+            gone.forEach { widgets.move(from = it, to = to) }
+            placed.value = widgets.slots()
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
-        private fun contents(): Flow<RecentChatsContent> =
+        private fun contents(
+            slot: Int,
+            account: WidgetAccount,
+        ): Flow<RecentChatsContent> =
             combine(
-                authRepository.authStep,
+                account.auth.authStep,
                 passcodeRepository.settings.map { it.isSet }.distinctUntilChanged(),
             ) { step, locked ->
                 when {
@@ -124,14 +179,18 @@ class RecentChatsWidgetUpdater
                         State.Loading -> flowOf(RecentChatsContent.Loading)
                         State.SignedOut -> flowOf(RecentChatsContent.SignedOut)
                         State.Locked -> flowOf(RecentChatsContent.Locked)
-                        State.Chats -> chats()
+                        State.Chats -> chats(slot, account)
                     }
                 }
 
         /** The rows of the most recent chats with their avatars, as they change; loading the first chats if needed. */
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-        private fun chats(): Flow<RecentChatsContent> =
+        private fun chats(
+            slot: Int,
+            account: WidgetAccount,
+        ): Flow<RecentChatsContent> =
             channelFlow {
+                val chatRepository = account.chats
                 val loaded = MutableStateFlow(false)
                 launch {
                     if (chatRepository.chatList(ChatListType.Main).first().size < MAX_CHATS) {
@@ -139,23 +198,20 @@ class RecentChatsWidgetUpdater
                     }
                     loaded.value = true
                 }
-                combine(
-                    combine(chatRepository.chatList(ChatListType.Main), chatLock.lockedChatIds) { chats, locked ->
-                        if (locked.isEmpty()) chats else chats.filterNot { it.id in locked }
-                    },
-                    userRepository.users,
-                    userRepository.myUserId,
-                    loaded,
-                ) { chats, users, me, done ->
-                    val rows = widgetChats(chats, users, me, context.resources, MAX_CHATS, graphs.activeSlot.value)
-                    if (rows.isEmpty() && !done) null else Rows(rows, chats.take(MAX_CHATS).map { it.photo })
+                val chats =
+                    combine(chatRepository.chatList(ChatListType.Main), account.chatLock.lockedChatIds) { all, locked ->
+                        if (locked.isEmpty()) all else all.filterNot { it.id in locked }
+                    }
+                combine(chats, account.users.users, account.users.myUserId, loaded) { list, users, me, done ->
+                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot)
+                    if (rows.isEmpty() && !done) null else Rows(rows, list.take(MAX_CHATS).map { it.photo })
                 }.distinctUntilChanged()
                     .debounce(UPDATE_DELAY)
-                    .mapLatest { rows -> rows?.withAvatars() ?: RecentChatsContent.Loading }
+                    .mapLatest { rows -> rows?.withAvatars(account.avatars) ?: RecentChatsContent.Loading }
                     .collect { send(it) }
             }
 
-        private suspend fun Rows.withAvatars(): RecentChatsContent {
+        private suspend fun Rows.withAvatars(avatars: AvatarIcons): RecentChatsContent {
             val size = (AVATAR_SIZE_DP * context.resources.displayMetrics.density).roundToInt()
             return RecentChatsContent.Chats(
                 rows.mapIndexed { index, row ->
@@ -186,3 +242,41 @@ class RecentChatsWidgetUpdater
             const val AVATAR_SIZE_DP = 40f
         }
     }
+
+/** What the widget reads of one account: its login, chats, users, locked chats, and avatars from its files. */
+internal data class WidgetAccount(
+    val auth: AuthRepository,
+    val chats: ChatRepository,
+    val users: UserRepository,
+    val chatLock: ChatLockRepository,
+    val avatars: AvatarIcons,
+)
+
+/** Every account on the device as the widget reads it, by slot; each account's avatars made once. */
+@Singleton
+internal class WidgetAccounts
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        graphs: AccountGraphs,
+        private val appearance: AppearanceRepository,
+        @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+    ) {
+        private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
+
+        val accounts: Flow<Map<Int, WidgetAccount>> =
+            graphs.accounts.map { list -> list.associate { it.slot to account(it.repositories) } }
+
+        private fun account(repositories: AccountRepositories) =
+            made.getOrPut(repositories) {
+                WidgetAccount(
+                    auth = repositories.authRepository(),
+                    chats = repositories.chatRepository(),
+                    users = repositories.userRepository(),
+                    chatLock = repositories.chatLockRepository(),
+                    avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
+                )
+            }
+    }
+
+private fun Map<Int, RecentChatsContent>.contentOf(slot: Int) = this[slot] ?: RecentChatsContent.Loading
