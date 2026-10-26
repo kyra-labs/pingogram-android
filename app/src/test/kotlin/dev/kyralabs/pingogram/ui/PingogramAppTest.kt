@@ -440,7 +440,9 @@ class PingogramAppTest {
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        text(SettingsR.string.settings_privacy_security).performScrollTo().performClick()
+        text(SettingsR.string.settings_privacy_security)
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
