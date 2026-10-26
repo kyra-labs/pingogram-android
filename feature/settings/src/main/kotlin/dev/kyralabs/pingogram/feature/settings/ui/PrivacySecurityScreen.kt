@@ -7,12 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,17 +24,12 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncHost
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -107,21 +100,6 @@ internal fun PrivacySecurityRoute(
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
     )
-}
-
-/** Shows what the page's switches could not save as snackbars in [snackbarHostState]. */
-@Composable
-private fun SwitchErrors(
-    snackbarHostState: SnackbarHostState,
-    vararg errors: Flow<DomainError>,
-) {
-    val resources = LocalResources.current
-    val showErrorDetails = isDebuggable()
-    LaunchedEffect(snackbarHostState, *errors) {
-        merge(*errors).collect { error ->
-            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
-        }
-    }
 }
 
 /**
