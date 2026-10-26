@@ -147,6 +147,7 @@ class SettingsAccessibilityChecksTest {
                 onBack = {},
                 phoneNumbersHidden = false,
                 idsShown = true,
+                directShare = true,
             )
         }
 

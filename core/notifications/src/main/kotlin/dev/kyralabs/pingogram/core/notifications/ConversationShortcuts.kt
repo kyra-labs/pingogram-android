@@ -11,7 +11,11 @@ import androidx.core.graphics.drawable.IconCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -23,10 +27,12 @@ import javax.inject.Singleton
  * priority; and of the most recent chats ([publishShareTargets], [ShareTargetShortcuts]). A shortcut opens its chat
  * ([NotificationIntents.openChat]).
  *
- * Every one is a Direct Share target too (`REQUIREMENTS.md` FR-N2): it carries
- * [NotificationIntents.SHARE_TARGET_CATEGORY], which the app's share target (`res/xml/shortcuts.xml`) names, so the
- * system's share sheet lists the chat, and a share to it reaches `MainActivity` with the shortcut's id. Before Android
- * 11 there is no conversation section, and pushing a shortcut is rate-limited there, so nothing is published.
+ * Every one is a Direct Share target too (`REQUIREMENTS.md` FR-N2), while [directShare] says so (Privacy and security →
+ * "Chats in the share sheet", on by default): it carries [NotificationIntents.SHARE_TARGET_CATEGORY], which the app's
+ * share target (`res/xml/shortcuts.xml`) names, so the system's share sheet lists the chat, and a share to it reaches
+ * `MainActivity` with the shortcut's id. Turned off, shortcuts are pushed without it and [withdrawShareTargets] removes
+ * those that carry it. Before Android 11 there is no conversation section, and pushing a shortcut is rate-limited
+ * there, so nothing is published.
  *
  * One per account ([ConversationShortcutsFactory], `docs/adr/0031-multiple-accounts.md`): the account in [slot] has
  * its own shortcuts, whose ids carry the slot ([NotificationIntents.shortcutId]) and open the chat in that account.
@@ -35,6 +41,7 @@ internal class ConversationShortcuts(
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher,
     private val slot: Int = 0,
+    private val directShare: Flow<Boolean> = flowOf(true),
 ) {
     /** What was last published per chat, so an unchanged shortcut is not published again on every message. */
     private val published = ConcurrentHashMap<Long, ShortcutContent>()
@@ -119,19 +126,20 @@ internal class ConversationShortcuts(
         rank: Int?,
         key: String? = null,
     ): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
         val previous = published[chat.chatId]
+        val shareable = directShare.first()
         val content =
-            ShortcutContent(chat.title, System.identityHashCode(chat.icon), rank ?: previous?.rank ?: 0)
-        val isPublished =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (previous == content || push(chat, content.rank, key))
+            ShortcutContent(chat.title, System.identityHashCode(chat.icon), rank ?: previous?.rank ?: 0, shareable)
+        val isPublished = previous == content || push(chat, content, key)
         if (isPublished) published[chat.chatId] = content
         return isPublished
     }
 
-    /** Pushes the shortcut of [chat] at [rank], with a share target's [key]; false if that failed. */
+    /** Pushes the shortcut of [chat] as [content] says, with a share target's [key]; false if that failed. */
     private suspend fun push(
         chat: ChatShortcut,
-        rank: Int,
+        content: ShortcutContent,
         key: String?,
     ): Boolean {
         val intent = NotificationIntents.openChat(context, chat.chatId, slot) ?: return false
@@ -145,8 +153,8 @@ internal class ConversationShortcuts(
                 .setIntent(intent)
                 .setLongLived(true)
                 .setLocusId(LocusIdCompat(id))
-                .setCategories(setOf(NotificationIntents.SHARE_TARGET_CATEGORY))
-                .setRank(rank)
+                .apply { if (content.shareable) setCategories(setOf(NotificationIntents.SHARE_TARGET_CATEGORY)) }
+                .setRank(content.rank)
                 .apply { chat.person?.let(::setPerson) }
                 .apply { key?.let { setExtras(PersistableBundle().apply { putString(KEY_EXTRA, it) }) } }
                 .build()
@@ -178,6 +186,35 @@ internal class ConversationShortcuts(
         }
     }
 
+    /**
+     * Removes the conversation shortcuts that are Direct Share targets, cached ones too, of every account (the setting
+     * is the device's): "Chats in the share sheet" was turned off. A notification's chat gets its shortcut again,
+     * without the share target's category, with its next update.
+     */
+    suspend fun withdrawShareTargets() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        published.clear()
+        shareTargets = emptySet()
+        shareKeys = HashMap()
+        withContext(ioDispatcher) {
+            try {
+                val flags = ShortcutManagerCompat.FLAG_MATCH_DYNAMIC or ShortcutManagerCompat.FLAG_MATCH_CACHED
+                val ids =
+                    ShortcutManagerCompat
+                        .getShortcuts(context, flags)
+                        .filter { NotificationIntents.SHARE_TARGET_CATEGORY in it.categories.orEmpty() }
+                        .map { it.id }
+                        .filter { NotificationIntents.chatOfShortcut(it) != null }
+                if (ids.isNotEmpty()) {
+                    ShortcutManagerCompat.removeDynamicShortcuts(context, ids)
+                    ShortcutManagerCompat.removeLongLivedShortcuts(context, ids)
+                }
+            } catch (_: IllegalStateException) {
+                // The user is locked: before the first unlock after a reboot. The next start tries again.
+            }
+        }
+    }
+
     /** Removes every conversation shortcut of the account, cached ones too, e.g. when it logs out. */
     suspend fun removeAll() {
         published.clear()
@@ -202,13 +239,14 @@ internal class ConversationShortcuts(
     }
 
     /**
-     * What a shortcut shows, and its rank; the icon by identity: [AvatarIcons] hands out the same icon for the same
-     * avatar.
+     * What a shortcut shows, its rank and whether it is a share target; the icon by identity: [AvatarIcons] hands out
+     * the same icon for the same avatar.
      */
     private data class ShortcutContent(
         val title: String,
         val iconIdentity: Int,
         val rank: Int,
+        val shareable: Boolean,
     )
 
     /** The id of chat [chatId]'s shortcut, which its notifications name too. */
@@ -228,11 +266,12 @@ internal class ConversationShortcutsFactory
     constructor(
         @param:ApplicationContext private val context: Context,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+        private val directShare: DirectShareRepository,
     ) {
         private val bySlot = ConcurrentHashMap<Int, ConversationShortcuts>()
 
         fun of(slot: Int): ConversationShortcuts =
-            bySlot.getOrPut(slot) { ConversationShortcuts(context, ioDispatcher, slot) }
+            bySlot.getOrPut(slot) { ConversationShortcuts(context, ioDispatcher, slot, directShare.enabled) }
     }
 
 /**

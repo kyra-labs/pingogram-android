@@ -16,6 +16,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notification channels; its calls ring; its pushes arrive (Google Play build). Settings → Notifications →
   "Notifications from all accounts" lets only the account you use notify. Each home screen widget keeps the account
   it was placed in.
+- Privacy and security: "Chats in the share sheet" (on by default) can take your recent chats, with their names and
+  photos, out of Android's share sheet. Pingogram stays there, and you choose the chat in its own list.
 - Notifications → Private chats: "New stories" chooses which stories notify you (Telegram's automatic choice of the 5
   people you write to most, all, or none), and "Name who posted" whether the notification says whose story it is.
 - Privacy and security: "Show IDs" (off by default) shows the ID of a person on their profile, and of a group or

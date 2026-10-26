@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.core.notifications
 
+import android.graphics.Bitmap
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
@@ -11,6 +13,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chatPosition
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -34,6 +37,7 @@ class ShareTargetShortcutsTest {
     private fun TestScope.started(
         authState: AuthState = AuthState.Ready,
         lockedChats: Set<Long> = emptySet(),
+        directShare: Boolean = true,
     ): NotificationsHarness {
         val harness = NotificationsHarness(this)
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -45,14 +49,16 @@ class ShareTargetShortcutsTest {
                 dispatcher,
             )
         harness.client.authState.value = authState
+        harness.directShare.enabled.value = directShare
         ShareTargetShortcuts(
             authRepository = harness.auth,
             chatRepository = harness.chats,
             userRepository = harness.users,
             groupRepository = harness.groups,
             chatLock = FakeChatLockRepository(locked = lockedChats),
+            directShare = harness.directShare,
             avatars = avatars,
-            shortcuts = ConversationShortcuts(harness.context, dispatcher),
+            shortcuts = ConversationShortcuts(harness.context, dispatcher, directShare = harness.directShare.enabled),
             scope = backgroundScope,
         ).start()
         runCurrent()
@@ -209,5 +215,64 @@ class ShareTargetShortcutsTest {
             settle()
 
             assertTrue(ShortcutManagerCompat.getDynamicShortcuts(harness.context).isEmpty())
+        }
+
+    @Test
+    fun `turned off, the share targets are withdrawn and none published until it is on again`() =
+        runTest {
+            val harness = started()
+            harness.chats(count = 3)
+            runCurrent()
+            settle()
+            assertEquals(3, ShortcutManagerCompat.getDynamicShortcuts(harness.context).size)
+
+            harness.directShare.enabled.value = false
+            runCurrent()
+            assertTrue(ShortcutManagerCompat.getDynamicShortcuts(harness.context).isEmpty())
+
+            harness.chats(count = 4)
+            runCurrent()
+            settle()
+            assertTrue(ShortcutManagerCompat.getDynamicShortcuts(harness.context).isEmpty())
+
+            harness.directShare.enabled.value = true
+            runCurrent()
+            settle()
+            val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(harness.context)
+            assertEquals(4, shortcuts.size)
+            assertTrue(shortcuts.all { NotificationIntents.SHARE_TARGET_CATEGORY in it.categories.orEmpty() })
+        }
+
+    @Test
+    fun `a start with it off withdraws what an earlier process published`() =
+        runTest {
+            started().run {
+                chats(count = 3)
+                runCurrent()
+            }
+            settle()
+
+            val harness = started(directShare = false)
+            harness.chats(count = 3)
+            runCurrent()
+            settle()
+
+            assertTrue(ShortcutManagerCompat.getDynamicShortcuts(harness.context).isEmpty())
+        }
+
+    @Test
+    fun `while off, a conversation shortcut is pushed without the share target's category`() =
+        runTest {
+            val harness = started(directShare = false)
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val shortcuts = ConversationShortcuts(harness.context, dispatcher, directShare = flowOf(false))
+            val icon = IconCompat.createWithBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
+
+            shortcuts.publishShareTargets(listOf(ShareTarget(7, "Ada") { ChatShortcut(7, "Ada", icon, null) }))
+            runCurrent()
+
+            val pushed = ShortcutManagerCompat.getDynamicShortcuts(harness.context).single()
+            assertEquals(NotificationIntents.shortcutId(7), pushed.id)
+            assertTrue(NotificationIntents.SHARE_TARGET_CATEGORY !in pushed.categories.orEmpty())
         }
 }
