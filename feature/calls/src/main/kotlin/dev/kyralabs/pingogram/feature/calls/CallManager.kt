@@ -74,7 +74,8 @@ class CallManager
     // Injected: TDLib's calls, engine, Telecom, service, tones, clock, names, network, the line voice chats share.
     @Suppress("LongParameterList")
     internal constructor(
-        private val callRepository: CallRepository,
+        // Every account's calls (`docs/adr/0031-multiple-accounts.md`), with ids that carry the account (CallIds).
+        @param:AllAccounts private val callRepository: CallRepository,
         private val engine: CallEngine,
         private val system: CallSystem,
         private val foreground: CallForeground,
@@ -367,7 +368,12 @@ class CallManager
             publish()
             foreground.start(withMicrophone = call.isOutgoing)
             call.scope.launch {
-                val request = SystemCallRequest.user(names.name(call.userId), call.userId, call.isOutgoing)
+                val request =
+                    SystemCallRequest.user(
+                        names.name(call.callId?.let(CallIds::slotOf), call.userId),
+                        call.userId,
+                        call.isOutgoing,
+                    )
                 mutex.withLock {
                     if (live !== call || call.phase is CallPhase.Ended) return@launch
                     val system = system.add(call.scope, request, listener(call))

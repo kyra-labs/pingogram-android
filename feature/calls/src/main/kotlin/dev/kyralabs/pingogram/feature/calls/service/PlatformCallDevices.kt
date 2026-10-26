@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallTones
+import dev.kyralabs.pingogram.feature.calls.CallUsers
 import dev.kyralabs.pingogram.feature.calls.CallerNames
 import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.R
@@ -74,14 +75,18 @@ internal object SystemCallClock : CallClock {
     override fun elapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
 }
 
-/** The user's name as the app shows it; "Someone" while TDLib does not know them. */
+/** The user's name as the app shows it, from their account's users; "Someone" while TDLib does not know them. */
 internal class UserCallerNames
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
-        private val userRepository: UserRepository,
+        private val users: CallUsers,
     ) : CallerNames {
-        override suspend fun name(userId: Long): String {
+        override suspend fun name(
+            slot: Int?,
+            userId: Long,
+        ): String {
+            val userRepository = users.of(slot)
             val user = userRepository.user(userId).first() ?: userRepository.getUser(userId).getOrNull()
             return user?.fullName()?.resolve(context.resources)?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.call_someone)

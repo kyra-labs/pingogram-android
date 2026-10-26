@@ -37,9 +37,15 @@ fun interface CallClock {
     fun elapsedRealtimeMillis(): Long
 }
 
-/** The name of a user as the system's UI, a car or a watch shows it. */
+/**
+ * The name of a user as the system's UI, a car or a watch shows it; the user of the account in [slot]
+ * (`docs/adr/0031-multiple-accounts.md`), null for the shown account.
+ */
 fun interface CallerNames {
-    suspend fun name(userId: Long): String
+    suspend fun name(
+        slot: Int?,
+        userId: Long,
+    ): String
 }
 
 /** The title of a voice chat's chat, as the system's UI, a car or a watch shows it; chat 0 is a conference call's. */

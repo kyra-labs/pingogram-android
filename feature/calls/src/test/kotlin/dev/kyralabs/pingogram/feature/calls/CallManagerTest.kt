@@ -41,6 +41,9 @@ class CallManagerTest {
     private val network = FakeNetworkRepository()
     private val line = CallLine()
 
+    /** The account each name was asked of (`CallerNames`), by user. */
+    private val namesAsked = mutableListOf<Pair<Int?, Long>>()
+
     private fun TestScope.manager() =
         CallManager(
             repository,
@@ -49,7 +52,7 @@ class CallManagerTest {
             foreground,
             tones,
             clock,
-            { "Ada" },
+            { slot, userId -> "Ada".also { namesAsked += slot to userId } },
             { network },
             line,
             backgroundScope,
@@ -179,6 +182,34 @@ class CallManagerTest {
             assertEquals(CallPhase.Connecting, manager.call.value?.phase)
             assertTrue(system.calls.single().answered)
             assertEquals("start+mic", foreground.events.last())
+        }
+
+    @Test
+    fun `a call to an account in the background rings, named from that account, and answers there`() =
+        runTest {
+            val manager = manager()
+            val callId = CallIds.of(slot = 2, tdlibId = 3)
+
+            repository.update(
+                call(CallState.Pending(isCreated = true, isReceived = true), id = callId, isOutgoing = false),
+            )
+            runCurrent()
+
+            assertEquals(2, manager.call.value?.slot)
+            assertEquals(listOf(2 to 42L), namesAsked)
+            manager.answer()
+            runCurrent()
+            assertEquals(listOf(callId to ENGINE_PROTOCOL), repository.accepted)
+        }
+
+    @Test
+    fun `an outgoing call is named from the account it goes out from`() =
+        runTest {
+            val manager = manager()
+
+            callOut(manager)
+
+            assertEquals(0 to 42L, namesAsked.single())
         }
 
     @Test
