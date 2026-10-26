@@ -77,18 +77,10 @@ class RecentChatsWidgetUpdater
             @ApplicationContext context: Context,
             passcodeRepository: PasscodeRepository,
             widgets: RecentChatsWidgets,
+            accounts: WidgetAccounts,
             graphs: AccountGraphs,
-            appearance: AppearanceRepository,
-            @Dispatcher(IO) ioDispatcher: CoroutineDispatcher,
             @ApplicationScope scope: CoroutineScope,
-        ) : this(
-            context,
-            passcodeRepository,
-            widgets,
-            widgetAccounts(context, graphs, appearance, ioDispatcher),
-            graphs.activeSlot,
-            scope,
-        )
+        ) : this(context, passcodeRepository, widgets, accounts.accounts, graphs.activeSlot, scope)
 
         /** The accounts of the placed widgets, by slot; null until asked. */
         private val placed = MutableStateFlow<Set<Int>?>(null)
@@ -236,8 +228,6 @@ class RecentChatsWidgetUpdater
 
         private enum class State { Loading, SignedOut, Locked, Chats }
 
-        private fun Map<Int, RecentChatsContent>.contentOf(slot: Int) = this[slot] ?: RecentChatsContent.Loading
-
         internal companion object {
             /** How many chats the widget shows at most: a tall widget's worth; each avatar travels as a bitmap. */
             const val MAX_CHATS = 10
@@ -263,26 +253,30 @@ internal data class WidgetAccount(
 )
 
 /** Every account on the device as the widget reads it, by slot; each account's avatars made once. */
-private fun widgetAccounts(
-    context: Context,
-    graphs: AccountGraphs,
-    appearance: AppearanceRepository,
-    ioDispatcher: CoroutineDispatcher,
-): Flow<Map<Int, WidgetAccount>> {
-    val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
-    return graphs.accounts.map { list ->
-        list.associate { graph ->
-            val repositories = graph.repositories
-            graph.slot to
-                made.getOrPut(repositories) {
-                    WidgetAccount(
-                        auth = repositories.authRepository(),
-                        chats = repositories.chatRepository(),
-                        users = repositories.userRepository(),
-                        chatLock = repositories.chatLockRepository(),
-                        avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
-                    )
-                }
-        }
+@Singleton
+internal class WidgetAccounts
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        graphs: AccountGraphs,
+        private val appearance: AppearanceRepository,
+        @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+    ) {
+        private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
+
+        val accounts: Flow<Map<Int, WidgetAccount>> =
+            graphs.accounts.map { list -> list.associate { it.slot to account(it.repositories) } }
+
+        private fun account(repositories: AccountRepositories) =
+            made.getOrPut(repositories) {
+                WidgetAccount(
+                    auth = repositories.authRepository(),
+                    chats = repositories.chatRepository(),
+                    users = repositories.userRepository(),
+                    chatLock = repositories.chatLockRepository(),
+                    avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
+                )
+            }
     }
-}
+
+private fun Map<Int, RecentChatsContent>.contentOf(slot: Int) = this[slot] ?: RecentChatsContent.Loading
