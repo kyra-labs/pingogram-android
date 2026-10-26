@@ -1248,7 +1248,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `TelecomCallSystem` on Jetpack's `core-telecom`, `AudioManagerCall` without Telecom) for routes, hold, mute and
   answering from headsets, the foreground service (`CallService`: `phoneCall`, `microphone` once talking, the proximity
   wake lock at the earpiece) and the ringback and busy tones (`ToneGenerator`). Its parts are interfaces bound in
-  `CallsModule`, so its tests run on the JVM.
+  `CallsModule`, so its tests run on the JVM. Every account's one-to-one calls (`docs/adr/0031-multiple-accounts.md`):
+  `CallManager` runs `AllAccountsCallRepository` (`@AllAccounts`), every account's `CallRepository` as one, whose call
+  ids carry the account's slot above TDLib's (`CallIds`), so a call to an account in the background rings, answers and
+  ends in that account; new calls go out from the shown account. Its caller's name, picture and chat come from that
+  account (`CallerNames`, `CallUsers`, `CallNotificationBuilder`, "Message"). Voice chats stay the shown account's.
 - **Notifications**: `CallNotifications` posts `core:notifications`' `CallNotificationBuilder` (call style) as the call
   changes, with the service's id; "Decline" and "Hang up" go to `CallActionReceiver`, "Answer" and the full-screen
   intent to `CallActivity`. `NotificationRenderer` skips TDLib's call notification groups.

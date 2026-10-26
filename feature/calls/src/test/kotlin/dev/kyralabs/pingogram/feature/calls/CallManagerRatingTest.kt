@@ -34,7 +34,7 @@ class CallManagerRatingTest {
             FakeCallForeground(),
             FakeCallTones(),
             clock,
-            { "Ada" },
+            { _, _ -> "Ada" },
             { FakeNetworkRepository() },
             CallLine(),
             backgroundScope,

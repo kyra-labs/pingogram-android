@@ -33,7 +33,7 @@ class CallManagerScreenTest {
             foreground,
             FakeCallTones(),
             FakeCallClock(),
-            { "Ada" },
+            { _, _ -> "Ada" },
             { FakeNetworkRepository() },
             CallLine(),
             backgroundScope,
