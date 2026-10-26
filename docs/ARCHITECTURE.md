@@ -1148,7 +1148,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   are in a channel group named after it. An account that leaves the device takes its notifications, shortcuts and
   channels with it. Intents, shortcut ids and the actions' work carry the slot: `MainActivity`'s `AccountRestart`
   switches to an intent's account first and opens the app again with it, and `NotificationActionWorker` acts on that
-  account's repositories. Direct Share targets and the widget are the shown account's, with its slot.
+  account's repositories. Direct Share targets are the shown account's, with its slot; each widget keeps its own
+  (Home screen widget, below).
   "Notifications from all accounts" (`core:domain`'s `AccountNotificationsRepository`,
   `DataStoreAccountNotificationsRepository`, the settings file, on by default) hides the other accounts' notifications
   while off; showing them again posts them quietly. Settings → Notifications (`NotificationAccounts`) shows the switch
@@ -1357,16 +1358,20 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 
 `docs/adr/0017-home-screen-widget.md`. Jetpack Glance, in `:app`'s `widget/` package; nothing polls.
 
-- **Content**: `RecentChatsWidgetUpdater` (singleton, started by `PingogramApplication`) follows `AuthRepository`,
-  `PasscodeRepository` and the first 10 chats of `ChatRepository.chatList(Main)` with `UserRepository`'s names, only
-  while a widget is placed (`RecentChatsWidgets`: `GlanceAppWidgetManager` behind a seam for tests). It maps them into
-  `RecentChatsContent` (loading, signed out, locked, the chats as `WidgetChat` rows with `AvatarIcons`' bitmaps at
-  40 dp) and calls `updateAll` 1 s after the chats last changed. A process started for the widget loads the first
-  chats itself (`loadChats`) if TDLib has fewer.
-- **Drawing**: `RecentChatsWidget` (a `GlanceAppWidget`) collects the updater's `content` and the Appearance settings
-  in `provideGlance`, and draws `RecentChatsWidgetContent` in `GlanceTheme` with the wallpaper's colors or the color
-  theme's (`glance-material3`). `RecentChatsWidgetReceiver` tells the updater when the first widget comes and the last
-  goes. Rows open their chat with `NotificationIntents.openChat`; "New chat" sends `tg://new` to `MainActivity`.
+- **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
+  widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.
+  A widget whose account leaves the device takes the shown account then (`RecentChatsWidgets.move`).
+- **Content**: `RecentChatsWidgetUpdater` (singleton, started by `PingogramApplication`) follows, for each account the
+  placed widgets keep (`RecentChatsWidgets.slots`: `GlanceAppWidgetManager` and the widgets' states behind a seam for
+  tests), that account's login, its first 10 chats of `chatList(Main)` with its users' names and its locked chats
+  (`WidgetAccount`, from `AccountGraphs`), and the app's `PasscodeRepository`; nothing while no widget is placed. It
+  maps them into each account's `RecentChatsContent` (loading, signed out, locked, the chats as `WidgetChat` rows with
+  that account's `AvatarIcons`' bitmaps at 40 dp and its slot) and calls `updateAll` 1 s after the chats last
+  changed. A process started for the widget loads the first chats itself (`loadChats`) if TDLib has fewer.
+- **Drawing**: `RecentChatsWidget` (a `GlanceAppWidget`) collects its account's `content(slot)` and the Appearance
+  settings in `provideGlance`, and draws `RecentChatsWidgetContent` in `GlanceTheme` with the wallpaper's colors or the
+  color theme's (`glance-material3`). `RecentChatsWidgetReceiver` tells the updater when widgets come and go. Rows open
+  their chat in its account with `NotificationIntents.openChat`; "New chat" sends `tg://new` to `MainActivity`.
 - Goldens draw the real `RemoteViews` (`GlanceRemoteViews`) in an `AppWidgetHostView`, the only parent Android fills a
   widget's list in.
 
