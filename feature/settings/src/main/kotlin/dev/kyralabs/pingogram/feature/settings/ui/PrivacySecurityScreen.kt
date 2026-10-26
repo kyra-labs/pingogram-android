@@ -7,12 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,16 +24,12 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncHost
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -56,6 +50,7 @@ internal fun PrivacySecurityRoute(
     phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
+    directShareViewModel: DirectShareViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
@@ -64,24 +59,16 @@ internal fun PrivacySecurityRoute(
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
+    val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val resources = LocalResources.current
-    val showErrorDetails = isDebuggable()
-    LaunchedEffect(
-        secretChatPreviewsViewModel,
-        phoneNumberVisibilityViewModel,
-        frequentContactsViewModel,
-        idVisibilityViewModel,
-    ) {
-        merge(
-            secretChatPreviewsViewModel.errors,
-            phoneNumberVisibilityViewModel.errors,
-            frequentContactsViewModel.errors,
-            idVisibilityViewModel.errors,
-        ).collect { error ->
-            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
-        }
-    }
+    SwitchErrors(
+        snackbarHostState,
+        secretChatPreviewsViewModel.errors,
+        phoneNumberVisibilityViewModel.errors,
+        frequentContactsViewModel.errors,
+        idVisibilityViewModel.errors,
+        directShareViewModel.errors,
+    )
     LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
         contactSyncViewModel.onStarted()
@@ -110,6 +97,8 @@ internal fun PrivacySecurityRoute(
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
         idsShown = idsShown,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
+        directShare = directShare,
+        onDirectShareChange = directShareViewModel::onCheckedChange,
     )
 }
 
@@ -122,8 +111,8 @@ internal fun PrivacySecurityRoute(
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
- *   code only (`core:ui`'s `phoneNumberToShow`), and "Show IDs" ([idsShown], off by default) on profiles and info
- *   pages;
+ *   code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles and info
+ *   pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
  * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
@@ -148,6 +137,8 @@ internal fun PrivacySecurityScreen(
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
     idsShown: Boolean? = null,
     onIdsShownChange: (Boolean) -> Unit = {},
+    directShare: Boolean? = null,
+    onDirectShareChange: (Boolean) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
@@ -168,7 +159,14 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
-                OnScreenSection(phoneNumbersHidden, onPhoneNumbersHiddenChange, idsShown, onIdsShownChange)
+                OnScreenSection(
+                    hidden = phoneNumbersHidden,
+                    onCheckedChange = onPhoneNumbersHiddenChange,
+                    idsShown = idsShown,
+                    onIdsShownChange = onIdsShownChange,
+                    directShare = directShare,
+                    onDirectShareChange = onDirectShareChange,
+                )
                 SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,

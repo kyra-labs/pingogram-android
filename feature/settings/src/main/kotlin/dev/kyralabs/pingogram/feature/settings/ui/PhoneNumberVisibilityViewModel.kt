@@ -45,7 +45,8 @@ class PhoneNumberVisibilityViewModel
 
 /**
  * "On screen": "Hide phone numbers" as a switch row whose summary says what it shows instead and what for, then "Show
- * IDs" ([idsShown]), whose summary says where; each once its setting is read, the group once either is.
+ * IDs" ([idsShown]), whose summary says where, and "Chats in the share sheet" ([directShare]), whose summary says what
+ * Android's share sheet offers either way; each once its setting is read, the group once any is.
  */
 @Composable
 internal fun OnScreenSection(
@@ -53,8 +54,10 @@ internal fun OnScreenSection(
     onCheckedChange: (Boolean) -> Unit,
     idsShown: Boolean? = null,
     onIdsShownChange: (Boolean) -> Unit = {},
+    directShare: Boolean? = null,
+    onDirectShareChange: (Boolean) -> Unit = {},
 ) {
-    if (hidden == null && idsShown == null) return
+    if (hidden == null && idsShown == null && directShare == null) return
     SettingsGroup(title = stringResource(R.string.settings_section_on_screen)) {
         if (hidden != null) {
             item { shapes ->
@@ -75,6 +78,17 @@ internal fun OnScreenSection(
                     checked = idsShown,
                     shapes = shapes,
                     onCheckedChange = onIdsShownChange,
+                )
+            }
+        }
+        if (directShare != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_direct_share),
+                    summary = stringResource(R.string.settings_direct_share_summary),
+                    checked = directShare,
+                    shapes = shapes,
+                    onCheckedChange = onDirectShareChange,
                 )
             }
         }

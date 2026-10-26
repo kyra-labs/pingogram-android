@@ -1132,7 +1132,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MainActivity`, and `ShareTargetShortcuts` (started by `PingogramApplication`) publishes the 8 most recent chats of
   the main chat list where the user can write, Saved Messages left out, 5 s after they last changed (Direct share,
   below), leaving the targets Android already has unchanged (their key and rank in the shortcut's extras, read once
-  per process), so a start does not push them all again. No bubbles yet (they need a resizable chat activity of their own).
+  per process), so a start does not push them all again. Privacy and security's "Chats in the share sheet" turns that
+  off (`core:domain`'s `DirectShareRepository`, `DataStoreDirectShareRepository`, the settings file, on by default):
+  `ConversationShortcuts` then pushes shortcuts without the category, reading the setting at each push, and
+  `ShareTargetShortcuts` publishes nothing and withdraws the shortcuts that carry it, of every account, dynamic and
+  cached (`withdrawShareTargets`), as it turns off and at each start while off; a notification's chat gets its shortcut
+  again, without the category, with its next update. `MainActivity`'s share filters stay, so the share sheet still
+  lists Pingogram, whose own chat picker takes the share. No bubbles yet (they need a resizable chat activity of their
+  own).
 - Android Auto and Wear OS take these notifications as they are (`docs/ANDROID_AUTO.md`): `:app`'s `gms` flavor declares
   Android Auto's notification use (`res/xml/automotive_app_desc.xml`, a meta-data name, no library), and the
   `MessagingStyle`, Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car
