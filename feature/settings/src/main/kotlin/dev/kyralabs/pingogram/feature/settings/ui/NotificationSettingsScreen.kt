@@ -49,7 +49,7 @@ internal fun NotificationSettingsRoute(
     val context = LocalContext.current
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
-    val check = rememberAccessCheck(onChecked = viewModel::onEvent)
+    val check = rememberAccessCheck(slot = { viewModel.uiState.value.accountSlot }, onChecked = viewModel::onEvent)
     LifecycleResumeEffect(check) {
         check()
         onPauseOrDispose {}
@@ -85,7 +85,7 @@ internal fun NotificationSettingsRoute(
                     context.openSystemSettings(
                         Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            .putExtra(Settings.EXTRA_CHANNEL_ID, PingogramChannel.of(effect.scope).id),
+                            .putExtra(Settings.EXTRA_CHANNEL_ID, PingogramChannel.of(effect.scope).idFor(effect.slot)),
                     )
                 }
             }
@@ -165,6 +165,12 @@ internal fun NotificationSettingsScreen(
             }
         }
         ScopeGroups(state, onEvent, onOpen)
+        state.fromAllAccounts?.let { all ->
+            AccountsGroup(
+                fromAllAccounts = all,
+                onChange = { onEvent(NotificationSettingsEvent.SetFromAllAccounts(it)) },
+            )
+        }
         ReactionsGroup(
             contactJoined = state.contactJoined,
             onOpenReactions = { onOpen(NotificationSettingsPage.Reactions) },

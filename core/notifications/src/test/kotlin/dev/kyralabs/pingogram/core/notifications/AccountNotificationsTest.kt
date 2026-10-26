@@ -160,4 +160,22 @@ class AccountNotificationsTest {
             assertNull(first.posted(7, slot = 1))
             assertNotNull(first.posted(7, slot = 0))
         }
+
+    @Test
+    fun `with notifications from the shown account only, the others' go, and come back when turned on again`() =
+        runTest {
+            val (first, second) = twoAccounts()
+            first.newMessage()
+            second.newMessage()
+            runCurrent()
+
+            first.shown.value = setOf(0)
+            runCurrent()
+            assertNull(first.posted(7, slot = 1))
+            assertNotNull(first.posted(7, slot = 0))
+
+            first.shown.value = null
+            runCurrent()
+            assertEquals(android.app.Notification.GROUP_ALERT_SUMMARY, first.posted(7, slot = 1)?.groupAlertBehavior)
+        }
 }

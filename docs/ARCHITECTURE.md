@@ -1156,6 +1156,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   channels with it. Intents, shortcut ids and the actions' work carry the slot: `MainActivity`'s `AccountRestart`
   switches to an intent's account first and opens the app again with it, and `NotificationActionWorker` acts on that
   account's repositories. Direct Share targets and the widget are the shown account's, with its slot.
+  "Notifications from all accounts" (`core:domain`'s `AccountNotificationsRepository`,
+  `DataStoreAccountNotificationsRepository`, the settings file, on by default) hides the other accounts' notifications
+  while off; showing them again posts them quietly. Settings → Notifications (`NotificationAccounts`) shows the switch
+  with more than one account and opens the shown account's channels.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go
   through `NotificationActionReceiver` to `NotificationActionWorker`, expedited one-time work (WorkManager with
   `HiltWorkerFactory`, initialized on demand by `PingogramApplication`'s `Configuration.Provider`), which waits for

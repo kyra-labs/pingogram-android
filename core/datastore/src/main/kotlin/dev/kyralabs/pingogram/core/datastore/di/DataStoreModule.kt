@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.datastore.DataStoreAccountNotificationsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
@@ -24,6 +25,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptReposito
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
+import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
@@ -54,6 +56,11 @@ interface DataStoreModule {
 
     @Binds
     fun keepConnectedRepository(repository: DataStoreKeepConnectedRepository): KeepConnectedRepository
+
+    @Binds
+    fun accountNotificationsRepository(
+        repository: DataStoreAccountNotificationsRepository,
+    ): AccountNotificationsRepository
 
     @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository

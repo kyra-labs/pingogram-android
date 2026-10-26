@@ -379,6 +379,17 @@ class SettingsAccessibilityChecksTest {
         }
 
     @Test
+    fun notificationsWithAccounts() =
+        check {
+            NotificationSettingsScreen(
+                state = SettingsPreviewData.notificationsWithAccounts.copy(scopes = ScopeSettingsState.Loading),
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+            )
+        }
+
+    @Test
     fun dataStorage() =
         check {
             DataStorageScreen(

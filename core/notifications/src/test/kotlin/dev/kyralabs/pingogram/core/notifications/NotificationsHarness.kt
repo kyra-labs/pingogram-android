@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDirectShareRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import org.robolectric.RuntimeEnvironment
@@ -68,7 +69,13 @@ internal class NotificationsHarness(
             appearance = FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
             ioDispatcher = dispatcher,
         )
-    val renderer = NotificationRenderer(context, accounts, parts, NotificationChannels(context), backgroundScope)
+
+    /** Whether each slot shows its notifications ("Notifications from all accounts"); every slot does at first. */
+    val shown = MutableStateFlow<Set<Int>?>(null)
+    val renderer =
+        NotificationRenderer(context, accounts, parts, NotificationChannels(context), backgroundScope) { slot ->
+            shown.map { it == null || slot in it }
+        }
 
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 

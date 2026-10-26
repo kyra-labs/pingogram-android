@@ -462,6 +462,9 @@ internal object SettingsPreviewData {
             contactJoined = true,
         )
 
+    /** Two accounts on the device, the second shown, and "Notifications from all accounts" on. */
+    val notificationsWithAccounts = notifications.copy(accountSlot = 1, fromAllAccounts = true)
+
     /** Android shows no notification of Pingogram, and the channels' channel is off. */
     val notificationsBlocked =
         notifications.copy(
