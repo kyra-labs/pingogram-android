@@ -25,6 +25,7 @@ Calls (`feature:calls`, session C) were not audited here.
 | `SettingsAccessibilityChecksTest` | `feature:settings` | 13 settings pages with content |
 | `ProfileAccessibilityChecksTest` | `feature:profile` | Profile, group info, members, member rights, permissions, editing, invite links |
 | `ContactsAccessibilityChecksTest` | `feature:contacts` | The Contacts tab, Add contact ("not on Telegram" too), Edit contact |
+| `ChatsAccessibilityChecksTest` | `feature:chats` | Every state the module's goldens show, at 100% and 200% font: the chat list (with the archive row, selection, the connection pill, the story rings, the notification request), the archive, global search, New chat, New group and New channel's steps, Archive settings |
 | `AuthAccessibilityChecksTest` | `feature:auth` | Welcome, phone number (with its error), country picker, code, password, registration, QR login, email code |
 | `AppShellAccessibilityTest` | `:app` | The floating navigation bar and the chat list's chrome, at 100% and 200% font scale |
 
@@ -37,7 +38,7 @@ Existing tests already covered:
 - roles: switches, radio groups, tabs;
 - live regions: countdowns, connection;
 - custom actions on rows;
-- 200% font goldens of most screens;
+- 200% font goldens in every feature module;
 - right-to-left goldens;
 - reduced motion.
 
@@ -60,6 +61,8 @@ Existing tests already covered:
 | F13 | `ChatPermissionsScreen` (slow mode) | `onValueChangeFinished` read the step of the last composition, so TalkBack's adjust action could save the previous delay | Accessible adjust actions | It reads the slider's state |
 | F14 | `LanguageScreen` | Each language's own name ("العربية") took the layout's direction and the UI language's voice | Text direction (§9) | Marked with its locale (`SpanStyle.localeList`) in `userContent` |
 | F15 | Settings and info page titles, contact form and Contacts titles, the phone number of an invitation row | `maxLines = 1` without an ellipsis cut text at 200% font | No truncation | `TextOverflow.Ellipsis` |
+| F16 | `ContactSyncItems` (the phone's contacts to invite) | At 200% font the number ended in an ellipsis, its last digits lost | 200% font without loss | Two lines at most: it wraps between its groups |
+| F17 | `NewChatButton` | Hidden in selection mode, the button was only scaled down to 20% and faded (Material's `animateFloatingActionButton`): screen readers found a 16 dp "New chat", the keyboard could focus it, and a tap in that corner opened New chat | Hidden content leaves the semantics tree; 48 dp targets | While hidden it takes no taps or focus and leaves the semantics tree; found by `ChatsAccessibilityChecksTest` |
 
 Already good, from the same reading:
 

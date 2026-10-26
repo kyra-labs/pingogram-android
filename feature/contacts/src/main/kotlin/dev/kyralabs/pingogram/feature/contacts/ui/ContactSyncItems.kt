@@ -230,9 +230,10 @@ internal fun InviteRow(
             )
         },
         supportingContent = {
+            // Two lines at most: at large font scales a number wraps between its groups rather than lose digits.
             Text(
                 text = number,
-                maxLines = 1,
+                maxLines = NUMBER_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium.numericContent,
             )
@@ -293,3 +294,5 @@ private fun ContactSyncItemsPreview() {
         }
     }
 }
+
+private const val NUMBER_MAX_LINES = 2

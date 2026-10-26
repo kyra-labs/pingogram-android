@@ -241,6 +241,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   twice at the start for "Hide phone numbers".
 
 ### Fixed
+- Contacts: at the largest font sizes, a phone number in the list of contacts to invite wraps to a second line instead
+  of losing its last digits.
+- Chats: while you select chats, the hidden "New chat" button no longer reacts to a tap in its corner, and screen
+  readers no longer find it.
 - Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a
   conversation's title now says "Waiting for network…", "Connecting…" or "Updating…" in place of the status while
   Pingogram is not connected.

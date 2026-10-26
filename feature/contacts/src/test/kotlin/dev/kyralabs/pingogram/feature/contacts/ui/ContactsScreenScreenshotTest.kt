@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
  * Goldens of the Contacts tab (`docs/DESIGN_SYSTEM.md` §12): the list in every look the audit asks for, a medium and an
  * expanded window, the long list with its index, search results, no contacts, an error, and contacts sync: its offer,
  * its paused state, its row with the phone's contacts to invite, and its rationale (the sheet's content, on the
- * sheet's `surfaceContainerLow`).
+ * sheet's `surfaceContainerLow`). At 200% font: the list, search results and the sync row with the phone's contacts.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -41,6 +41,18 @@ class ContactsScreenScreenshotTest {
     @Test
     @Config(qualifiers = EXPANDED)
     fun expanded() = capture(ScreenshotVariant.Expanded)
+
+    @Test
+    @Config(qualifiers = COMPACT_TALL, fontScale = FONT_SCALE_200)
+    fun fontScale200() = capture(ScreenshotVariant.Light)
+
+    @Test
+    @Config(qualifiers = COMPACT_TALL, fontScale = FONT_SCALE_200)
+    fun resultsFontScale200() = capture(ScreenshotVariant.Light, ContactsPreviewData.results)
+
+    @Test
+    @Config(qualifiers = COMPACT_TALL, fontScale = FONT_SCALE_200)
+    fun syncOnFontScale200() = capture(ScreenshotVariant.Light, ContactsPreviewData.syncOn)
 
     @Test
     fun longList() = capture(ScreenshotVariant.Light, ContactsPreviewData.long)
