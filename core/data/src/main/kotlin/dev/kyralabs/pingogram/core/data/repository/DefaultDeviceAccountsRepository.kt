@@ -74,9 +74,9 @@ class DefaultDeviceAccountsRepository
 
         internal companion object {
             /**
-             * Off until every part of the app follows each account (stage 4 of ADR 0031: notifications, calls, push);
-             * before that, a second account's notifications would show as the first's.
+             * On since every part of the app follows each account (stages 4 to 6 of ADR 0031: notifications, calls,
+             * push, Keep connected, the widget); set false to take the switcher off the screens again.
              */
-            const val IS_AVAILABLE = false
+            const val IS_AVAILABLE = true
         }
     }

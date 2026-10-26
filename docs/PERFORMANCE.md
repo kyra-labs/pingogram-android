@@ -22,6 +22,10 @@ regresses by more than 10%.
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
 
+The memory budgets are for one account. Each further account signed in (`docs/adr/0031-multiple-accounts.md`) keeps
+its own TDLib client, connection and caches running; how much that adds is not measured yet, and its budget is set
+from the first measurement on the owner's phone (`dumpsys meminfo` with one, two and three accounts idle).
+
 ## 2. Startup
 
 - `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber` and the
