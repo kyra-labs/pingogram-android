@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-26
+
 ### Added
 - Several accounts: sign in to up to 3 Telegram accounts (a fourth while one has Telegram Premium) and switch between
   them from Settings or with a long press on the Settings tab, as in Telegram's apps. Every account stays connected:
@@ -1032,7 +1034,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
