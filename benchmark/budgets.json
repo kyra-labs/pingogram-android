@@ -15,6 +15,6 @@
     "frameOverrunMs.latePercent": 1
   },
   "OpenChatBenchmark.*": {
-    "openChatMs.median": 150
+    "openChatSumMs.median": 150
   }
 }
