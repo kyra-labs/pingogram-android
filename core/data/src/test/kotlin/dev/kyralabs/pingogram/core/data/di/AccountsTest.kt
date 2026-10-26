@@ -3,10 +3,13 @@ package dev.kyralabs.pingogram.core.data.di
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.account.AccountRegistry
 import dev.kyralabs.pingogram.core.data.account.AccountRegistryFile
+import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
 import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
+import dev.kyralabs.pingogram.core.data.repository.DefaultDevicePushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
 import dev.kyralabs.pingogram.core.tdlib.AuthState
@@ -42,6 +45,10 @@ class AccountsTest {
     private val steps = mutableMapOf<Int, MutableStateFlow<AuthStep>>()
     private val users = mutableMapOf<Int, MutableStateFlow<Long?>>()
     private val loggedOut = mutableListOf<Int>()
+    private val pushes = mutableMapOf<Int, FakePush>()
+
+    private fun push(slot: Int) = pushes.getOrPut(slot) { FakePush() }
+
     private val deleted = mutableListOf<Int>()
 
     private fun TestScope.accounts(start: Boolean = true): Accounts {
@@ -97,6 +104,7 @@ class AccountsTest {
             when (name) {
                 "authRepository" -> auth
                 "userRepository" -> userRepository
+                "pushRepository" -> push(slot)
                 "updateCaches" -> emptySet<Any>()
                 "networkTypeReporter" -> reporter
                 else -> null
@@ -172,6 +180,80 @@ class AccountsTest {
             assertEquals(listOf(listOf(0, 2), listOf(0, 2, 1)), seen)
             assertEquals(1, graphs.activeSlot.value)
         }
+
+    @Test
+    fun `the signed-in users are each signed-in account's, by slot`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 1), active = 0))
+            val accounts = accounts()
+            val seen = mutableListOf<Map<Int, Long>>()
+            backgroundScope.launch(StandardTestDispatcher(testScheduler)) {
+                AccountsSignedInUsers { accounts }.users().collect { seen += it }
+            }
+            runCurrent()
+
+            signIn(slot = 1, userId = 20)
+
+            assertEquals(listOf(emptyMap(), mapOf(1 to 20L)), seen)
+        }
+
+    @Test
+    fun `a push goes to the account it names, or to every account when it names none`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 1), active = 0))
+            val devicePush = DefaultDevicePushRepository(accounts(), backgroundScope)
+            push(1).receiverId.value = 9
+            push(0).receiverOfPush = 9
+
+            devicePush.processPush(mapOf("p" to "x"), 0, null)
+            assertEquals(listOf(0, 1), listOf(push(0).processed, push(1).processed))
+
+            push(0).receiverOfPush = 4
+            devicePush.processPush(mapOf("p" to "x"), 0, null)
+            assertEquals(listOf(1, 2), listOf(push(0).processed, push(1).processed))
+        }
+
+    @Test
+    fun `every account's push starts, and takes a new token`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 2), active = 0))
+            val devicePush = DefaultDevicePushRepository(accounts(), backgroundScope)
+
+            devicePush.start()
+            runCurrent()
+            devicePush.onNewToken("t")
+
+            assertEquals(listOf(true, true), listOf(push(0).started, push(2).started))
+            assertEquals(listOf("t"), push(2).tokens)
+        }
+
+    /** An account's push as [DefaultDevicePushRepository] uses it. */
+    private class FakePush : PushRepository {
+        var started = false
+        val tokens = mutableListOf<String>()
+        var receiverOfPush: Long? = null
+        var processed = 0
+        override val receiverId = MutableStateFlow<Long?>(null)
+
+        override fun start() {
+            started = true
+        }
+
+        override fun onNewToken(token: String) {
+            tokens += token
+        }
+
+        override suspend fun receiverIdOf(data: Map<String, String>): Long? = receiverOfPush
+
+        override suspend fun processPush(
+            data: Map<String, String>,
+            sentTimeMillis: Long,
+            notificationSound: String?,
+        ): Outcome<Unit> {
+            processed++
+            return Outcome.Success(Unit)
+        }
+    }
 
     @Test
     fun `adding takes the first free slot, starts its client, shows it and saves it`() =

@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.data.account.SignedInUsers
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.data.export.DocumentTree
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
@@ -57,4 +58,7 @@ interface AccountDependencies {
     fun lockedChatIdsRepository(): LockedChatIdsRepository
 
     fun pushTokenSource(): Optional<PushTokenSource>
+
+    /** The other accounts' users, which an account's push registration names. */
+    fun signedInUsers(): SignedInUsers
 }

@@ -3,8 +3,8 @@ package dev.kyralabs.pingogram.background
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
-import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +17,9 @@ import javax.inject.Singleton
 
 /**
  * Runs "Keep connected" (`foss`, `docs/adr/0003-keep-connected-foreground-service.md`): [KeepConnectedService] runs
- * while the setting is on and an account is logged in, so TDLib's connection stays open in the background.
+ * while the setting is on and an account is logged in, so TDLib's connection stays open in the background. Any account
+ * of the device counts (`docs/adr/0031-multiple-accounts.md`): the service keeps the process, in which every account's
+ * client runs.
  *
  * - It is started only while the app is in the foreground ([foreground]): Android 12+ refuses to start foreground
  *   services from the background, except for the exemptions [KeepConnectedBootReceiver] uses after a reboot or an
@@ -32,7 +34,8 @@ import javax.inject.Singleton
 @Singleton
 class KeepConnectedController internal constructor(
     private val keepConnectedRepository: KeepConnectedRepository,
-    private val authRepository: AuthRepository,
+    /** The device's accounts' login steps together: signed in while one is. */
+    private val authSteps: Flow<AuthStep>,
     private val foreground: Flow<Boolean>,
     private val service: KeepConnectedServiceControl,
     private val scope: CoroutineScope,
@@ -40,12 +43,12 @@ class KeepConnectedController internal constructor(
     @Inject
     internal constructor(
         keepConnectedRepository: KeepConnectedRepository,
-        authRepository: AuthRepository,
+        accounts: Accounts,
         service: AndroidKeepConnectedServiceControl,
         @ApplicationScope scope: CoroutineScope,
     ) : this(
         keepConnectedRepository,
-        authRepository,
+        accounts.combinedAuthSteps(),
         ProcessLifecycleOwner
             .get()
             .lifecycle.currentStateFlow
@@ -58,7 +61,7 @@ class KeepConnectedController internal constructor(
         scope.launch {
             combine(
                 keepConnectedRepository.keepConnected,
-                authRepository.authStep.map { it.toSession() }.distinctUntilChanged(),
+                authSteps.map { it.toSession() }.distinctUntilChanged(),
                 foreground.distinctUntilChanged(),
             ) { enabled, session, inForeground -> Triple(enabled, session, inForeground) }
                 .distinctUntilChanged()

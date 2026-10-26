@@ -183,6 +183,11 @@ locally; it does not unregister on `logOut`, so the app deletes the FCM token in
 with the FCM credentials uploaded for the `api_id` at my.telegram.org, and only on the production DC
 (`docs/adr/0004-push-delivery.md`).
 
+With several accounts (`docs/adr/0031-multiple-accounts.md`), each account registers the one token with the other
+signed-in accounts' user ids as `other_user_ids` and keeps the `pushReceiverId` it answers. A push goes to the account
+whose id `getPushReceiverId(payload)` returns, asked of any account's client, or to every account when none matches
+(before the registrations of a new process came back); the token is deleted only when the last account logs out.
+
 ## Authorization state machine
 
 ```

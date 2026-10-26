@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushTokenSource
+import dev.kyralabs.pingogram.core.tdlib.AccountSlot
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.Optional
@@ -32,8 +34,18 @@ class TdlibPushRepositoryTest {
     private val tokenSource = FakePushTokenSource()
     private val notifications = FakeNotificationRepository()
 
+    /** The device's signed-in accounts' users by slot; this account is slot 0. */
+    private val signedIn = MutableStateFlow<Map<Int, Long>>(emptyMap())
+
     private fun TestScope.repository(source: PushTokenSource? = tokenSource) =
-        TdlibPushRepository(client, backgroundScope, notifications, Optional.ofNullable(source))
+        TdlibPushRepository(
+            client,
+            backgroundScope,
+            notifications,
+            Optional.ofNullable(source),
+            AccountSlot.First,
+            { signedIn },
+        )
 
     private fun registered(): List<Pair<String, Boolean>> =
         client.sentOf<TdApi.RegisterDevice>().map { function ->
@@ -315,4 +327,52 @@ class TdlibPushRepositoryTest {
             maxNotificationId: Int,
         ): Outcome<Unit> = error("not used")
     }
+
+    // Several accounts (docs/adr/0031-multiple-accounts.md)
+
+    @Test
+    fun `the registration names the other signed-in accounts' users, again as they change, and keeps its id`() =
+        runTest {
+            client.on(TdApi.RegisterDevice::class) { TdResult.Success(TdApi.PushReceiverId(77)) }
+            tokenSource.current = "token"
+            signedIn.value = mapOf(0 to 1L, 1 to 2L)
+            val repository = repository().apply { start() }
+            client.authState.value = AuthState.Ready
+            runCurrent()
+
+            signedIn.value = mapOf(0 to 1L, 1 to 2L, 2 to 3L)
+            runCurrent()
+
+            assertEquals(
+                listOf(listOf(2L), listOf(2L, 3L)),
+                client.sentOf<TdApi.RegisterDevice>().map { it.otherUserIds.toList() },
+            )
+            assertEquals(77L, repository.receiverId.value)
+        }
+
+    @Test
+    fun `logging out while another account is signed in keeps the app's token`() =
+        runTest {
+            registerAnswers()
+            tokenSource.current = "token"
+            signedIn.value = mapOf(0 to 1L, 1 to 2L)
+            val repository = repository().apply { start() }
+            client.authState.value = AuthState.Ready
+            runCurrent()
+
+            signedIn.value = mapOf(1 to 2L)
+            client.authState.value = AuthState.LoggingOut
+            runCurrent()
+
+            assertEquals(0, tokenSource.deletions)
+            assertNull(repository.receiverId.value)
+        }
+
+    @Test
+    fun `the receiver id of a push comes from TDLib`() =
+        runTest {
+            client.on(TdApi.GetPushReceiverId::class) { TdResult.Success(TdApi.PushReceiverId(5)) }
+
+            assertEquals(5L, repository().receiverIdOf(mapOf("p" to "x")))
+        }
 }

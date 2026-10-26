@@ -4,6 +4,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
+import dev.kyralabs.pingogram.core.data.account.SignedInUsers
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
@@ -16,6 +18,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
+import dev.kyralabs.pingogram.core.data.repository.DefaultDevicePushRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
@@ -25,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
+import dev.kyralabs.pingogram.core.domain.repository.DevicePushRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
@@ -49,6 +53,12 @@ interface DeviceModule {
 
     @Binds
     fun accountGraphs(graphs: DefaultAccountGraphs): AccountGraphs
+
+    @Binds
+    fun devicePushRepository(repository: DefaultDevicePushRepository): DevicePushRepository
+
+    @Binds
+    fun signedInUsers(users: AccountsSignedInUsers): SignedInUsers
 
     @Binds
     fun deviceContactsRepository(repository: AndroidDeviceContactsRepository): DeviceContactsRepository

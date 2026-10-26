@@ -1173,6 +1173,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   engine then produces the notifications above (`NewPushMessage` until it has synced), in the process FCM started.
   Firebase starts where it is first needed (`FirebaseStart`: the token source, the messaging service's `onCreate`),
   not in its `FirebaseInitProvider`, which the flavor's manifest removes.
+  Every account (`docs/adr/0031-multiple-accounts.md`): the connection and the messaging service use `core:domain`'s
+  `DevicePushRepository` (`DefaultDevicePushRepository`), which starts each account's `TdlibPushRepository`, hands a new
+  token to all of them and a push to the account whose receiver id (`registerDevice`'s answer) the push names
+  (`getPushReceiverId`), or to every account when none matches. Each account's registration names the other
+  signed-in accounts' users (`other_user_ids`, `SignedInUsers`), and only the last one signed in deletes the token.
 - Android 13+: the chat list asks for `POST_NOTIFICATIONS` with a card above the list (`NotificationPromptHost`,
   `feature:chats`); "Not now" and the first request are kept in DataStore (`NotificationPromptRepository`), so it never
   nags, and after a final refusal it offers the app's notification settings.
@@ -1198,7 +1203,7 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
   (`KeepConnectedService`, type `specialUse`, its own low-importance "Connection" channel), run by
-  `KeepConnectedController` from the setting (`KeepConnectedRepository`, DataStore), the login and the app being in
+  `KeepConnectedController` from the setting (`KeepConnectedRepository`, DataStore), any account's login and the app being in
   the foreground, with a boot receiver enabled only while the setting is on
   (`docs/adr/0003-keep-connected-foreground-service.md`). `gms`: `FirebasePushConnection`, which starts
   `TdlibPushRepository` (Push, above).
