@@ -48,6 +48,7 @@ class AccountsTest {
     private val pushes = mutableMapOf<Int, FakePush>()
 
     private fun push(slot: Int) = pushes.getOrPut(slot) { FakePush() }
+
     private val deleted = mutableListOf<Int>()
 
     private fun TestScope.accounts(start: Boolean = true): Accounts {
