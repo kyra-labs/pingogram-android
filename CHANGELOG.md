@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Several accounts: sign in to up to 3 Telegram accounts (a fourth while one has Telegram Premium) and switch between
+  them from Settings or with a long press on the Settings tab, as in Telegram's apps. Every account stays connected:
+  its notifications show with the account's name once there are two, open in that account, and come in their own
+  notification channels; its calls ring; its pushes arrive (Google Play build). Settings → Notifications →
+  "Notifications from all accounts" lets only the account you use notify. Each home screen widget keeps the account
+  it was placed in.
 - Privacy and security: "Chats in the share sheet" (on by default) can take your recent chats, with their names and
   photos, out of Android's share sheet. Pingogram stays there, and you choose the chat in its own list.
 - Notifications → Private chats: "New stories" chooses which stories notify you (Telegram's automatic choice of the 5
