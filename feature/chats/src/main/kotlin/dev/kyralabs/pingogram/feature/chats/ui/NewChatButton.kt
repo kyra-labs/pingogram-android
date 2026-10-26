@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -49,7 +50,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * scrolls back ([state]). It shows and hides ([visible]) with
  * Material's FAB animation, scaling from its bottom end (`animateFloatingActionButton`), and grows into the New chat
  * screen it opens ([onClick]): a container transform from its corners to the screen's square ones
- * ([NewChatTransformKey]), and back. Screen readers hear "New chat" whether or not the label shows.
+ * ([NewChatTransformKey]), and back. Screen readers hear "New chat" whether or not the label shows. Hidden, it is only
+ * scaled down and faded (Material's animation leaves it placed), so it then takes no taps or focus and screen readers do
+ * not find it ([HiddenButton]).
  *
  * The transform is armed only from a tap until the chat list is back and settled ([NewChatButtonState.transforming]):
  * shared bounds add their animations to the destination's transition, and would change how every other transition of
@@ -78,8 +81,10 @@ internal fun NewChatButton(
         },
         icon = { Icon(painter = painterResource(UiR.drawable.ic_edit), contentDescription = null) },
         onClick = {
-            state.transforming = true
-            onClick()
+            if (visible) {
+                state.transforming = true
+                onClick()
+            }
         },
         modifier =
             modifier
@@ -89,12 +94,15 @@ internal fun NewChatButton(
                     shape = shape,
                     counterpartShape = FullBleedShape,
                     enabled = state.transforming,
-                ).semantics { contentDescription = label },
+                ).then(if (visible) Modifier.semantics { contentDescription = label } else HiddenButton),
         expanded = state.expanded,
         shape = shape,
     )
     DisarmTransformWhenBack(state)
 }
+
+/** What the button keeps while hidden: nothing screen readers or the keyboard reach. */
+private val HiddenButton = Modifier.clearAndSetSemantics {}.focusProperties { canFocus = false }
 
 /**
  * Disarms the container transform of [state] once the destination's transition has run and left the chat list shown:
