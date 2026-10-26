@@ -264,8 +264,8 @@ class ShareTargetShortcutsTest {
     fun `while off, a conversation shortcut is pushed without the share target's category`() =
         runTest {
             val harness = started(directShare = false)
-            val shortcuts =
-                ConversationShortcuts(harness.context, StandardTestDispatcher(testScheduler), directShare = flowOf(false))
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val shortcuts = ConversationShortcuts(harness.context, dispatcher, directShare = flowOf(false))
             val icon = IconCompat.createWithBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
 
             shortcuts.publishShareTargets(listOf(ShareTarget(7, "Ada") { ChatShortcut(7, "Ada", icon, null) }))

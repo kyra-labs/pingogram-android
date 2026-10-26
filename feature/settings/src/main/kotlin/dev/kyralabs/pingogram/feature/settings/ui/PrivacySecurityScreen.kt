@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -67,25 +68,14 @@ internal fun PrivacySecurityRoute(
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
     val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val resources = LocalResources.current
-    val showErrorDetails = isDebuggable()
-    LaunchedEffect(
-        secretChatPreviewsViewModel,
-        phoneNumberVisibilityViewModel,
-        frequentContactsViewModel,
-        idVisibilityViewModel,
-        directShareViewModel,
-    ) {
-        merge(
-            secretChatPreviewsViewModel.errors,
-            phoneNumberVisibilityViewModel.errors,
-            frequentContactsViewModel.errors,
-            idVisibilityViewModel.errors,
-            directShareViewModel.errors,
-        ).collect { error ->
-            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
-        }
-    }
+    SwitchErrors(
+        snackbarHostState,
+        secretChatPreviewsViewModel.errors,
+        phoneNumberVisibilityViewModel.errors,
+        frequentContactsViewModel.errors,
+        idVisibilityViewModel.errors,
+        directShareViewModel.errors,
+    )
     LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
         contactSyncViewModel.onStarted()
@@ -117,6 +107,21 @@ internal fun PrivacySecurityRoute(
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
     )
+}
+
+/** Shows what the page's switches could not save as snackbars in [snackbarHostState]. */
+@Composable
+private fun SwitchErrors(
+    snackbarHostState: SnackbarHostState,
+    vararg errors: Flow<DomainError>,
+) {
+    val resources = LocalResources.current
+    val showErrorDetails = isDebuggable()
+    LaunchedEffect(snackbarHostState, *errors) {
+        merge(*errors).collect { error ->
+            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
+        }
+    }
 }
 
 /**
