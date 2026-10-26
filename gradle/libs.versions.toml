@@ -65,7 +65,7 @@ junit4 = "4.13.2"
 kotlin = "2.4.21"
 kotlinxCollectionsImmutable = "0.5.2"
 kotlinxCoroutines = "1.11.0"
-kotlinxSerialization = "1.11.0"
+kotlinxSerialization = "1.12.0"
 ksp = "2.3.12"
 # ktlint engine used by the ktlint Gradle plugin (pingogram.ktlint)
 ktlint = "1.8.0"
