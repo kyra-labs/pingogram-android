@@ -55,8 +55,7 @@ class ContactFormScreenshotTest {
 
     @Test
     @Config(qualifiers = COMPACT_TALL, fontScale = FONT_SCALE_200)
-    fun newContactNotOnTelegramFontScale200() =
-        newContact(ScreenshotVariant.Light, NewContactPreviewData.notOnTelegram)
+    fun newContactNotOnTelegramFontScale200() = newContact(ScreenshotVariant.Light, NewContactPreviewData.notOnTelegram)
 
     @Test
     fun editContactLight() = editContact(ScreenshotVariant.Light, EditContactPreviewData.contact)
