@@ -1271,6 +1271,8 @@
     <string name="settings_hide_phone_numbers_summary">Shows only their country code everywhere in Pingogram, for sharing your screen or streaming</string>
     <string name="settings_show_ids">Show IDs</string>
     <string name="settings_show_ids_summary">Profiles and info pages show the ID that bots and other apps know a person or chat by</string>
+    <string name="settings_direct_share">Chats in the share sheet</string>
+    <string name="settings_direct_share_summary">Android\'s share sheet shows your recent chats, with their names and photos. Turned off, it shows only Pingogram, and you choose the chat here</string>
     <!-- Settings → Appearance → Chat list. -->
     <string name="settings_section_chat_list">Chat list</string>
     <string name="settings_show_stories">Show stories</string>

@@ -113,14 +113,42 @@ class PrivacySecurityScreenScreenshotTest {
             variant,
         ) { Frequent() }
 
-    /** "On screen" with "Show IDs" on under "Hide phone numbers". */
+    /** "On screen" with "Show IDs" on under "Hide phone numbers", then "Chats in the share sheet" off. */
     @Test
-    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    @Config(qualifiers = ON_SCREEN)
     fun showIdsLight() = composeRule.captureScreen(javaClass, "showIdsLight", ThemeMode.Light) { ShowIds() }
 
     @Test
-    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    @Config(qualifiers = ON_SCREEN)
     fun showIdsDark() = composeRule.captureScreen(javaClass, "showIdsDark", ThemeMode.Dark) { ShowIds() }
+
+    @Test
+    @Config(qualifiers = ON_SCREEN)
+    fun showIdsAmoled() = captureShowIds(ScreenshotVariant.Amoled)
+
+    @Test
+    @Config(qualifiers = ON_SCREEN)
+    fun showIdsHighContrast() = captureShowIds(ScreenshotVariant.HighContrast)
+
+    @Test
+    @Config(qualifiers = ON_SCREEN)
+    fun showIdsRtl() = captureShowIds(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h2400dp-xxhdpi")
+    fun showIdsMedium() = captureShowIds(ScreenshotVariant.Medium)
+
+    @Test
+    @Config(qualifiers = "w411dp-h4800dp-xxhdpi", fontScale = FONT_SCALE_200)
+    fun showIdsFontScale200() =
+        composeRule.captureScreen(javaClass, "showIdsFontScale200", ThemeMode.Light) { ShowIds() }
+
+    private fun captureShowIds(variant: ScreenshotVariant) =
+        composeRule.captureScreen(
+            javaClass,
+            "showIds" + variant.goldenName.replaceFirstChar { it.uppercase() },
+            variant,
+        ) { ShowIds() }
 
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, PrivacySecurityUiState.Loading)
@@ -164,6 +192,7 @@ class PrivacySecurityScreenScreenshotTest {
 }
 
 private const val TALL = "w411dp-h1600dp-xxhdpi"
+private const val ON_SCREEN = "w411dp-h2400dp-xxhdpi"
 
 /** The page with contacts sync on and frequent contacts suggested. */
 @Composable
@@ -178,7 +207,7 @@ private fun Frequent() {
     )
 }
 
-/** The page with phone numbers hidden and IDs shown. */
+/** The page with phone numbers hidden, IDs shown and chats left out of the share sheet. */
 @Composable
 private fun ShowIds() {
     PrivacySecurityScreen(
@@ -188,5 +217,6 @@ private fun ShowIds() {
         onBack = {},
         phoneNumbersHidden = true,
         idsShown = true,
+        directShare = false,
     )
 }
