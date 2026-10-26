@@ -29,13 +29,29 @@ val ChatType.notificationScope: NotificationScope
  * @property pinnedMessages a message pinned in a chat notifies (`disable_pinned_message_notifications` off).
  * @property mentions messages that mention or reply to the user notify even in muted chats
  *   (`disable_mention_notifications` off).
+ * @property stories which new stories of the scope's chats notify (`use_default_mute_stories`, `mute_stories`).
+ * @property showStoryPoster story notifications name who posted the story (`show_story_poster`).
  */
 data class ScopeNotificationSettings(
     val isMuted: Boolean,
     val showPreview: Boolean,
     val pinnedMessages: Boolean,
     val mentions: Boolean,
+    val stories: StoryNotifications = StoryNotifications.Automatic,
+    val showStoryPoster: Boolean = true,
 )
+
+/** Which new stories notify, as td_api.tl `scopeNotificationSettings` sets them. */
+enum class StoryNotifications {
+    /** Telegram's default: only the stories of the 5 people the user writes to most (`use_default_mute_stories`). */
+    Automatic,
+
+    /** Every story (`mute_stories` off). */
+    All,
+
+    /** None (`mute_stories` on). */
+    None,
+}
 
 /** [settings] are the new defaults of [scope], made here or on another device. */
 data class ScopeNotificationSettingsChange(
