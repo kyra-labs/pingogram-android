@@ -105,7 +105,7 @@ class CreateChatScreenshotTest(
         private fun type(state: NewChannelTypeUiState): @Composable () -> Unit =
             { NewChannelTypeScreen(state, onEvent = {}, onCopyLink = {}, onShareLink = {}) }
 
-        private val SCREENS: Map<String, @Composable () -> Unit> =
+        internal val SCREENS: Map<String, @Composable () -> Unit> =
             with(CreateChatPreviewData) {
                 mapOf(
                     "membersPicking" to members(picking),
