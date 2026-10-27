@@ -30,10 +30,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -46,6 +48,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -109,6 +113,8 @@ fun GroupCallScreen(
     selfVideo: CallVideo = PlaceholderVideo,
     participantVideo: ParticipantVideo = PlaceholderParticipantVideo,
     pictureInPicture: Boolean = false,
+    onAddPeople: () -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null,
 ) {
     // A Surface, so text and icons take the window's content color.
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxSize()) {
@@ -121,10 +127,17 @@ fun GroupCallScreen(
                 onOpenSettings,
                 GroupCallVideos(video, selfVideo, participantVideo),
                 pictureInPicture,
+                GroupCallExtras(onAddPeople, snackbarHostState),
             )
         }
     }
 }
+
+/** "Add people" in a conference call, and where its results show. */
+private class GroupCallExtras(
+    val onAddPeople: () -> Unit,
+    val snackbarHostState: SnackbarHostState?,
+)
 
 /** What draws a voice chat's videos: a live stream's, the user's own camera (the self-view) and the others'. */
 private class GroupCallVideos(
@@ -143,6 +156,7 @@ private fun BoxScope.GroupCallContent(
     onOpenSettings: () -> Unit,
     videos: GroupCallVideos,
     pictureInPicture: Boolean,
+    extras: GroupCallExtras,
 ) {
     when (state) {
         GroupCallUiState.Loading -> {
@@ -179,7 +193,7 @@ private fun BoxScope.GroupCallContent(
                 // The pinned video, or the first: the one the grid shows first.
                 videos.participants(first.endpointId, first.isScreen, Modifier.fillMaxSize())
             } else {
-                InGroupCall(state, onEvent, onMinimize, videos)
+                InGroupCall(state, onEvent, onMinimize, videos, extras)
             }
         }
     }
@@ -191,6 +205,7 @@ private fun InGroupCall(
     onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
     videos: GroupCallVideos,
+    extras: GroupCallExtras,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxSize()) {
@@ -237,8 +252,9 @@ private fun InGroupCall(
                         .clip(MaterialTheme.shapes.large),
                 )
             } else {
-                Participants(state, videos, onEvent)
+                Participants(state, videos, onEvent, extras.onAddPeople)
             }
+            extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
         }
         if (state.hasControls) Controls(state, onEvent)
     }
@@ -354,6 +370,7 @@ private fun Participants(
     state: GroupCallUiState.InCall,
     videos: GroupCallVideos,
     onEvent: (GroupCallEvent) -> Unit,
+    onAddPeople: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     LazyColumn(
@@ -375,6 +392,11 @@ private fun Participants(
                         .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                         .padding(horizontal = spacing.small, vertical = spacing.small),
                 )
+            }
+        }
+        if (state.canInvite) {
+            item(key = "add", contentType = "add") {
+                AddPeopleRow(onAddPeople, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
             }
         }
         items(state.participants, key = { it.key }, contentType = { "participant" }) { participant ->
@@ -443,6 +465,36 @@ private fun ParticipantRow(
         colors = ListItemDefaults.colors(containerColor = colors.surfaceContainer),
         modifier = modifier.clearAndSetSemantics { contentDescription = "$name, $stateText" },
     )
+}
+
+/** "Add people": the add-person symbol in a `primaryContainer` circle where the avatars sit; opens the picker. */
+@Composable
+private fun AddPeopleRow(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    ListItem(
+        onClick = onClick,
+        leadingContent = {
+            Box(
+                Modifier
+                    .size(MaterialTheme.sizes.avatarSmall)
+                    .background(colors.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(UiR.drawable.ic_person_add),
+                    contentDescription = null,
+                    tint = colors.onPrimaryContainer,
+                )
+            }
+        },
+        colors = ListItemDefaults.colors(containerColor = colors.surfaceContainer),
+        modifier = modifier,
+    ) {
+        Text(stringResource(R.string.group_call_add_people), style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 private fun ParticipantState.label(): Int =

@@ -134,6 +134,7 @@ internal object GroupCallPreviewStates {
             chat = GroupCallChat(chatId = 0, title = "", photo = null),
             isConference = true,
             emojis = persistentListOf("🐝", "🌵", "🎈", "🦊"),
+            canInvite = true,
         )
 }
 

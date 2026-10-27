@@ -122,8 +122,13 @@ class CallActivity : ComponentActivity() {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
+
                         CallEffect.RequestScreenCapture -> screenCapture()
+
                         CallEffect.OpenSettings -> openAppSettings()
+
+                        // Only a conference call invites people, on the voice chat's screen.
+                        is CallEffect.Invited, is CallEffect.InviteFailed -> Unit
                     }
                 }
             }

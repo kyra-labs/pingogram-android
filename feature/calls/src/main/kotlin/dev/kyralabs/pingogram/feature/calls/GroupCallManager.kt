@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.domain.model.ConferenceInviteResult
 import dev.kyralabs.pingogram.core.domain.model.ConferenceJoinParameters
 import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
@@ -162,6 +163,42 @@ class GroupCallManager
                 val id = call.groupCallId
                 scope.launch { repository.leave(id) }
                 finish(call, GroupCallEndReason.Left)
+            }
+        }
+
+        /**
+         * Invites [userIds] into the conference call the user is in (`docs/adr/0025-conference-calls.md`): TDLib sends
+         * each an invitation message in their private chat, to a video call while the user's camera is on. Those
+         * already in the call count as invited; those whose privacy refuses it, or who were removed, come back in
+         * [ConferenceInvites.refused]. A failure only when nobody could be invited for an error (no network, a flood
+         * wait): the first one.
+         */
+        suspend fun invite(userIds: Collection<Long>): Outcome<ConferenceInvites> {
+            val call =
+                mutex.withLock { live?.takeIf { it.canInvite() } } ?: return Outcome.Failure(DomainError.NotFound)
+            var invited = 0
+            val refused = mutableListOf<Long>()
+            var error: DomainError? = null
+            for (userId in userIds) {
+                when (val result = conferences.invite(call.groupCallId, userId, isVideo = call.wantsCamera)) {
+                    is Outcome.Success -> {
+                        when (result.value) {
+                            is ConferenceInviteResult.Invited, ConferenceInviteResult.AlreadyParticipant -> invited++
+                            ConferenceInviteResult.PrivacyRestricted, ConferenceInviteResult.Banned -> refused += userId
+                        }
+                    }
+
+                    is Outcome.Failure -> {
+                        refused += userId
+                        if (error == null) error = result.error
+                    }
+                }
+            }
+            val failure = error
+            return if (invited == 0 && failure != null) {
+                Outcome.Failure(failure)
+            } else {
+                Outcome.Success(ConferenceInvites(invited, refused.toImmutableList()))
             }
         }
 
@@ -822,6 +859,9 @@ class GroupCallManager
                     cameras.firstOrNull { it.isFront == facingFront } ?: cameras.firstOrNull()
                 }
 
+            /** A conference call that is joined and not over: people can be invited into it. */
+            fun canInvite(): Boolean = conference != null && groupCallId != 0 && phase !is GroupCallPhase.Ended
+
             /** Not muted by an administrator, or allowed to unmute: a stream has nothing to unmute. */
             fun canUnmute(): Boolean {
                 val self = self
@@ -843,6 +883,7 @@ class GroupCallManager
                     canUnmute = canUnmute(),
                     isHandRaised = self?.isHandRaised == true,
                     canEnd = info?.canBeManaged == true,
+                    canInvite = canInvite() && phase == GroupCallPhase.Connected,
                     audio = audio,
                     connectedAtMillis = connectedAt,
                     video =

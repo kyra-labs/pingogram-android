@@ -3,9 +3,11 @@ package dev.kyralabs.pingogram.feature.calls
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ConferenceChannel
+import dev.kyralabs.pingogram.core.domain.model.ConferenceInviteResult
 import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -131,6 +133,39 @@ class GroupCallManagerConferenceTest {
                     backgroundScope,
                 )
             assertEquals(JoinResult.Busy, other.joinConference(link))
+        }
+
+    @Test
+    fun `inviting counts who was invited or is in the call already, and names who could not be`() =
+        runTest {
+            val manager = manager()
+            joined(manager)
+            conferences.inviteResults =
+                mapOf(
+                    8L to Outcome.Success(ConferenceInviteResult.AlreadyParticipant),
+                    9L to Outcome.Success(ConferenceInviteResult.PrivacyRestricted),
+                    10L to Outcome.Failure(DomainError.Network),
+                )
+
+            val result = manager.invite(listOf(7L, 8L, 9L, 10L))
+
+            assertEquals(Outcome.Success(ConferenceInvites(invited = 2, refused = persistentListOf(9L, 10L))), result)
+            assertEquals(
+                listOf(7L, 8L, 9L, 10L).map { Triple(CONFERENCE_CALL_ID, it, false) },
+                conferences.invites,
+            )
+        }
+
+    @Test
+    fun `inviting fails with the first error when nobody could be invited, and does nothing outside a conference`() =
+        runTest {
+            val manager = manager()
+            assertEquals(Outcome.Failure(DomainError.NotFound), manager.invite(listOf(7L)))
+
+            joined(manager)
+            conferences.inviteResults = mapOf(7L to Outcome.Failure(DomainError.Network))
+
+            assertEquals(Outcome.Failure(DomainError.Network), manager.invite(listOf(7L)))
         }
 
     private fun participant(

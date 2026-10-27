@@ -6,6 +6,7 @@ import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
@@ -21,9 +22,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,12 +35,15 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
+import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
+import dev.kyralabs.pingogram.feature.calls.ui.invite.InvitePeopleSheet
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -118,12 +125,34 @@ class GroupCallActivity : ComponentActivity() {
                     viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
                 }
             val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
+            val snackbarHostState = remember { SnackbarHostState() }
+            var inviting by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
-                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-                        CallEffect.RequestScreenCapture -> screenCapture()
-                        CallEffect.OpenSettings -> openAppSettings()
+                        CallEffect.RequestCamera -> {
+                            camera.launch(Manifest.permission.CAMERA)
+                        }
+
+                        CallEffect.RequestScreenCapture -> {
+                            screenCapture()
+                        }
+
+                        CallEffect.OpenSettings -> {
+                            openAppSettings()
+                        }
+
+                        is CallEffect.Invited -> {
+                            launch { snackbarHostState.showSnackbar(invitedText(effect)) }
+                        }
+
+                        is CallEffect.InviteFailed -> {
+                            launch {
+                                snackbarHostState.showSnackbar(
+                                    inviteFailedText(effect),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -142,11 +171,44 @@ class GroupCallActivity : ComponentActivity() {
                         selfVideo = selfVideo,
                         participantVideo = participantVideo,
                         pictureInPicture = inPictureInPicture,
+                        onAddPeople = { inviting = true },
+                        snackbarHostState = snackbarHostState,
                     )
+                    val inCall = state as? GroupCallUiState.InCall
+                    if (inviting && inCall?.canInvite == true && !inPictureInPicture) {
+                        InvitePeopleSheet(
+                            excluded = inCall.participantUserIds(),
+                            onInvite = {
+                                inviting = false
+                                viewModel.onEvent(GroupCallEvent.Invite(it))
+                            },
+                            onDismiss = { inviting = false },
+                        )
+                    }
                 }
             }
         }
     }
+
+    private fun invitedText(effect: CallEffect.Invited): String =
+        listOfNotNull(
+            effect.invited.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.call_invite_sent, it, it) },
+            effect.refused.takeIf { it > 0 }?.let {
+                resources.getQuantityString(
+                    R.plurals.call_invite_refused,
+                    it,
+                    it,
+                )
+            },
+        ).joinToString(" ")
+
+    private fun inviteFailedText(effect: CallEffect.InviteFailed): String =
+        errorMessage(
+            resources,
+            effect.error,
+            showDetails =
+                applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        )
 
     private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted))
 

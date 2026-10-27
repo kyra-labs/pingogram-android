@@ -148,4 +148,25 @@
     <string name="call_rating_note">Your rating goes to Telegram, which uses it to improve calls.</string>
     <string name="call_rating_not_now">Not now</string>
     <string name="call_rating_send">Send</string>
+    <string name="group_call_add_people">Add people</string>
+    <string name="call_invite_title">Add people</string>
+    <string name="call_invite_text">Each gets an invitation to the call in their chat with you.</string>
+    <string name="call_invite_search">Search contacts</string>
+    <string name="call_invite_clear">Clear search</string>
+    <string name="call_invite_no_matches">No contacts found</string>
+    <string name="call_invite_no_contacts">No contacts to invite</string>
+    <string name="call_invite_cancel">Cancel</string>
+    <string name="call_invite_add">Add</string>
+    <plurals name="call_invite_add_count">
+        <item quantity="one">Add %d</item>
+        <item quantity="other">Add %d</item>
+    </plurals>
+    <plurals name="call_invite_sent">
+        <item quantity="one">Invitation sent</item>
+        <item quantity="other">%d invitations sent</item>
+    </plurals>
+    <plurals name="call_invite_refused">
+        <item quantity="one">%d person couldn\'t be invited.</item>
+        <item quantity="other">%d people couldn\'t be invited.</item>
+    </plurals>
 </resources>

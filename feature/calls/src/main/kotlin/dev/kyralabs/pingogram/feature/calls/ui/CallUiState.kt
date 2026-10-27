@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.compose.runtime.Immutable
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
@@ -173,4 +174,15 @@ sealed interface CallEffect {
 
     /** Android no longer asks for the camera: open the app's settings, where the user can allow it. */
     data object OpenSettings : CallEffect
+
+    /** People were invited into the conference call: how many, and how many could not be (a snackbar). */
+    data class Invited(
+        val invited: Int,
+        val refused: Int,
+    ) : CallEffect
+
+    /** Nobody could be invited, for [error] (a snackbar). */
+    data class InviteFailed(
+        val error: DomainError,
+    ) : CallEffect
 }
