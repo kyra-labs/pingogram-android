@@ -1020,6 +1020,13 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
   the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
   stays above it instead of giving way.
+- Storage clean-up (`docs/PERFORMANCE.md` §3, owner decision 2026-10-27): `core:notifications`' `StorageOptimization`
+  (started by `PingogramApplication` 5 s after the process) follows `AccountGraphs` and schedules each logged-in
+  account's weekly `StorageOptimizationWorker` (unique periodic work per slot, kept as it is, cancelled at logout),
+  which runs while charging and idle and calls `StorageRepository.optimizeStorage` (`TdlibStorageRepository`:
+  `optimizeStorage` with a 30-day TTL and a 4 GB limit, excluding the chats pinned in the main list and the archive,
+  read with `getChats` and `getChat`). It tries again at the next idle while the account's transfers or a chat export
+  (`WorkManagerChatExportJobs.TAG`) are on their way. "Clear cache" stays `clearCache`.
 - Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
   DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
   Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`

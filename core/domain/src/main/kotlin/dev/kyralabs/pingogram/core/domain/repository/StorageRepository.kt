@@ -22,4 +22,13 @@ interface StorageRepository {
      * @return how many bytes were freed.
      */
     suspend fun clearCache(): Outcome<Long>
+
+    /**
+     * The weekly clean-up (`docs/PERFORMANCE.md` §3): deletes the files [clearCache] would delete that were not used
+     * for 30 days, then the oldest of them until they take at most 4 GB. Files of chats pinned in the main list or the
+     * archive stay, and so do files TDLib got in the last hour.
+     *
+     * @return how many bytes were freed.
+     */
+    suspend fun optimizeStorage(): Outcome<Long>
 }

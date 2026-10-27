@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
+import dev.kyralabs.pingogram.core.notifications.StorageOptimization
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
@@ -54,6 +55,10 @@ class PingogramApplication :
     /** Keeps the home screen widget of recent chats current while one is placed. */
     @Inject
     lateinit var recentChatsWidgetUpdater: dagger.Lazy<RecentChatsWidgetUpdater>
+
+    /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
+    @Inject
+    lateinit var storageOptimization: dagger.Lazy<StorageOptimization>
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -139,6 +144,8 @@ class PingogramApplication :
                 shareTargetShortcuts.get().start()
                 // Redraws the home screen widget when the chats change, only while a widget is placed.
                 recentChatsWidgetUpdater.get().start()
+                // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
+                storageOptimization.get().start()
             }
         }
     }

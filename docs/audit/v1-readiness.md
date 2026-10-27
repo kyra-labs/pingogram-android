@@ -143,10 +143,11 @@ What blocks 1.0, in order:
   `getToken` and `deleteToken` (and `onNewToken`) for `register`, whose token comes through the service's
   `onRegistered`. Moving there changes how the token reaches TDLib, so it waits for a `gms` phone to check it. B.
 
-- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): there is no scheduled job, only "Clear cache". A weekly
-  `PeriodicWorkRequest` would start WorkManager at every app start, which §2 avoids on purpose ("WorkManager starts on
-  demand"). The owner should pick one: a weekly job (and change §2), or optimizing when the user opens Data and
-  storage, or after a week at app start without WorkManager. Owner, then B (Data and storage).
+- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): the owner decided on a weekly job (2026-10-27), and it is
+  in: unique periodic work per account, while charging and idle, waiting for transfers and exports, scheduled 5 s after
+  the start (§2 changed with it). Left: seeing it run on a phone (`adb shell dumpsys jobscheduler | grep -A5
+  storage_optimization`, or run it at once with `adb shell cmd jobscheduler run -f dev.kyralabs.pingogram <job id>`).
+  Owner.
 - **No JankStats or LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): neither is a dependency. LeakCanary is
   ~1 MB and debug-only, and it touches no network; adding it needs the owner's approval (`CLAUDE.md`, dependencies).
   Owner, then A.

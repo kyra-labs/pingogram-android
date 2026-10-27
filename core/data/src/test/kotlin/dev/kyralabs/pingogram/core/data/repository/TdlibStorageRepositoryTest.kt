@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -186,5 +187,83 @@ class TdlibStorageRepositoryTest {
             client.on(TdApi.OptimizeStorage::class, TdResult.Failure(TdError(400, "Request aborted")))
 
             assertEquals(Outcome.Failure(DomainError.Unknown(400, "Request aborted")), repository.clearCache())
+        }
+
+    /** Answers getChats of each list with [ids] and getChat with [chats] by id. */
+    private fun chats(
+        main: LongArray,
+        archive: LongArray,
+        chats: Map<Long, TdApi.Chat>,
+    ) {
+        client.on(TdApi.GetChats::class) { request ->
+            val ids = if (request.chatList is TdApi.ChatListArchive) archive else main
+            TdResult.Success(TdApi.Chats(ids.size, ids))
+        }
+        client.on(TdApi.GetChat::class) { request ->
+            chats[request.chatId]?.let { TdResult.Success(it) } ?: TdResult.Failure(TdError(400, "Chat not found"))
+        }
+    }
+
+    private fun pinnedIn(
+        id: Long,
+        list: TdApi.ChatList,
+        pinned: Boolean = true,
+    ) = TdApiFixtures.chat(id = id, positions = arrayOf(TdApiFixtures.chatPosition(list = list, isPinned = pinned)))
+
+    @Test
+    fun `the weekly clean-up keeps the pinned chats' files, deletes what is old, and keeps 4 GB at most`() =
+        runTest {
+            chats(
+                main = longArrayOf(1, 2, 3),
+                archive = longArrayOf(7, 8),
+                chats =
+                    mapOf(
+                        1L to pinnedIn(1, TdApi.ChatListMain()),
+                        2L to pinnedIn(2, TdApi.ChatListMain()),
+                        3L to pinnedIn(3, TdApi.ChatListMain(), pinned = false),
+                        7L to pinnedIn(7, TdApi.ChatListArchive()),
+                        8L to pinnedIn(8, TdApi.ChatListArchive(), pinned = false),
+                    ),
+            )
+            client.on(TdApi.OptimizeStorage::class, TdResult.Success(deleted(size = 2_000)))
+
+            assertEquals(Outcome.Success(2_000L), repository.optimizeStorage())
+
+            val request = client.sentOf<TdApi.OptimizeStorage>().single()
+            assertArrayEquals(longArrayOf(1, 2, 7), request.excludeChatIds)
+            assertArrayEquals(longArrayOf(), request.chatIds)
+            assertEquals(4L * 1024 * 1024 * 1024, request.size)
+            assertEquals(30 * 24 * 60 * 60, request.ttl)
+            assertEquals(-1, request.immunityDelay)
+            assertEquals(
+                cacheFileTypes().map { it.constructor },
+                request.fileTypes.map { it.constructor },
+            )
+            // The list ends at its first chat that is not pinned: no chat after it is asked for.
+            assertEquals(listOf(1L, 2L, 3L, 7L, 8L), client.sentOf<TdApi.GetChat>().map { it.chatId })
+        }
+
+    @Test
+    fun `a chat pinned in another list only does not count as pinned in this one`() =
+        runTest {
+            chats(
+                main = longArrayOf(4),
+                archive = longArrayOf(),
+                chats = mapOf(4L to pinnedIn(4, TdApi.ChatListFolder(3))),
+            )
+            client.on(TdApi.OptimizeStorage::class, TdResult.Success(deleted(size = 0)))
+
+            repository.optimizeStorage()
+
+            assertArrayEquals(longArrayOf(), client.sentOf<TdApi.OptimizeStorage>().single().excludeChatIds)
+        }
+
+    @Test
+    fun `without the pinned chats the weekly clean-up deletes nothing`() =
+        runTest {
+            chats(main = longArrayOf(1), archive = longArrayOf(), chats = emptyMap())
+
+            assertTrue(repository.optimizeStorage() is Outcome.Failure)
+            assertTrue(client.sentOf<TdApi.OptimizeStorage>().isEmpty())
         }
 }
