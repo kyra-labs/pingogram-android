@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Group calls by link: "Add people" at the top of the participants invites your contacts, each with a message in
+  your chat with them that opens the call.
+
 ### Fixed
 - Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture
   shrinks back into its message without the conversation being rebuilt first.

@@ -219,11 +219,34 @@ class GroupCallViewModel
                     onScreenSharing(event)
                 }
 
+                is GroupCallEvent.Invite -> {
+                    invite(event.userIds)
+                }
+
                 is GroupCallEvent.CameraResult -> {
-                    if (event.granted) {
-                        viewModelScope.launch { manager.setCameraOn(true) }
-                    } else if (!event.canAskAgain) {
-                        savedStateHandle[KEY_CAMERA_REFUSED] = true
+                    onCameraResult(event)
+                }
+            }
+        }
+
+        private fun onCameraResult(result: GroupCallEvent.CameraResult) {
+            if (result.granted) {
+                viewModelScope.launch { manager.setCameraOn(true) }
+            } else if (!result.canAskAgain) {
+                savedStateHandle[KEY_CAMERA_REFUSED] = true
+            }
+        }
+
+        private fun invite(userIds: List<Long>) {
+            if (userIds.isEmpty()) return
+            viewModelScope.launch {
+                when (val result = manager.invite(userIds)) {
+                    is Outcome.Success -> {
+                        effectChannel.send(CallEffect.Invited(result.value.invited, result.value.refused.size))
+                    }
+
+                    is Outcome.Failure -> {
+                        effectChannel.send(CallEffect.InviteFailed(result.error))
                     }
                 }
             }
@@ -449,6 +472,7 @@ class GroupCallViewModel
             canUnmute = canUnmute,
             isHandRaised = isHandRaised,
             canEnd = canEnd,
+            canInvite = canInvite,
             route = audio.route,
             routes = audio.available,
             video =

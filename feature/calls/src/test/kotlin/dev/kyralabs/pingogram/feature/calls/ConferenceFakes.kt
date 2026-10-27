@@ -25,6 +25,12 @@ class FakeConferenceCallRepository : ConferenceCallRepository {
     val verification = MutableStateFlow<ConferenceVerification?>(null)
     val members = MutableStateFlow<ImmutableList<Long>>(persistentListOf())
 
+    /** The invitations asked for: call, user, video. */
+    val invites = mutableListOf<Triple<Int, Long, Boolean>>()
+
+    /** What [invite] answers per user; an invitation sent otherwise. */
+    var inviteResults: Map<Long, Outcome<ConferenceInviteResult>> = emptyMap()
+
     /** While set, a join waits for it to complete. */
     var holdJoin: CompletableDeferred<Unit>? = null
 
@@ -50,7 +56,10 @@ class FakeConferenceCallRepository : ConferenceCallRepository {
         id: Int,
         userId: Long,
         isVideo: Boolean,
-    ): Outcome<ConferenceInviteResult> = Outcome.Success(ConferenceInviteResult.AlreadyParticipant)
+    ): Outcome<ConferenceInviteResult> {
+        invites += Triple(id, userId, isVideo)
+        return inviteResults[userId] ?: Outcome.Success(ConferenceInviteResult.Invited(userId, userId * 10))
+    }
 
     override suspend fun decline(
         chatId: Long,
