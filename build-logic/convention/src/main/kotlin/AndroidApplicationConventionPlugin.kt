@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.buildlogic.PingogramVersion
 import dev.kyralabs.pingogram.buildlogic.ReleaseSigning
 import dev.kyralabs.pingogram.buildlogic.TelegramSecrets
 import dev.kyralabs.pingogram.buildlogic.configureKotlinAndroid
+import dev.kyralabs.pingogram.buildlogic.registerDebugOnlyChecks
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -78,6 +79,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     if (variant.isMinifyEnabled) registerApkSizeCheck(variant)
                 }
             }
+            // LeakCanary and other debug-only tools stay out of every other build type (docs/PERFORMANCE.md §9).
+            registerDebugOnlyChecks()
         }
     }
 }
