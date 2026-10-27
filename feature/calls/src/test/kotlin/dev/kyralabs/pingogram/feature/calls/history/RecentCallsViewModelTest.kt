@@ -193,6 +193,28 @@ class RecentCallsViewModelTest {
         }
 
     @Test
+    fun `a tap on a conference call joins it while it goes on, and says when it is over`() =
+        runTest(dispatcher) {
+            repository.pages[""] =
+                page(
+                    entry(1, date = TODAY_NOON).copy(isGroupCall = true, isActive = true),
+                    entry(2, date = TODAY_NOON - 60).copy(isGroupCall = true),
+                )
+            val viewModel = viewModel()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val (active, ended) = viewModel.calls()
+                viewModel.effect.test {
+                    viewModel.onEvent(RecentCallsEvent.CallBack(active))
+                    assertEquals(RecentCallsEffect.JoinGroupCall(CHAT_ID, 1), awaitItem())
+                    viewModel.onEvent(RecentCallsEvent.CallBack(ended))
+                    assertEquals(RecentCallsEffect.GroupCallEnded, awaitItem())
+                }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `deleting removes the call at once and puts it back when Telegram refuses`() =
         runTest(dispatcher) {
             repository.pages[""] = page(entry(1, date = TODAY_NOON), entry(2, date = TODAY_NOON - 60))

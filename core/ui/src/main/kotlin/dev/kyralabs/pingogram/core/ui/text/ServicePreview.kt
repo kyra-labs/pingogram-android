@@ -34,6 +34,10 @@ internal fun serviceText(
             callText(action, isOutgoing = byMe)
         }
 
+        is ServiceAction.GroupCall -> {
+            groupCallText(action)
+        }
+
         else -> {
             eventText(action) ?: actor.did(action)
         }
@@ -211,6 +215,17 @@ private fun memberRemovedText(
         userId == myUserId && !actor.byMe -> UiText.resource(R.string.preview_removed_you, actor.name)
         else -> actor.did(R.string.preview_you_removed_member, R.string.preview_removed_member, userName(userId))
     }
+
+/** An invitation to a conference call: going on, missed, or over. */
+private fun groupCallText(call: ServiceAction.GroupCall): UiText =
+    UiText.resource(
+        when {
+            call.isActive && call.isVideo -> R.string.preview_group_video_call_active
+            call.isActive -> R.string.preview_group_call_active
+            call.wasMissed -> R.string.preview_group_call_missed
+            else -> R.string.preview_group_call_ended
+        },
+    )
 
 /** From the current user's side: the caller is the sender of the call message. */
 private fun callText(

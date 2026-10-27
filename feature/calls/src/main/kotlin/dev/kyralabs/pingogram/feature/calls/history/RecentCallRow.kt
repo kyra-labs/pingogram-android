@@ -168,7 +168,12 @@ private fun Modifier.rowSemantics(
     onDelete: () -> Unit,
 ): Modifier =
     semantics {
-        val back = if (call.isVideo) R.string.recent_calls_video_call_back else R.string.recent_calls_call_back
+        val back =
+            when {
+                call.isGroupCall -> R.string.recent_calls_join
+                call.isVideo -> R.string.recent_calls_video_call_back
+                else -> R.string.recent_calls_call_back
+            }
         onClick(label = resources.getString(back)) {
             onClick()
             true

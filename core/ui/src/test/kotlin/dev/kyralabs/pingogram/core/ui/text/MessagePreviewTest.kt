@@ -253,6 +253,20 @@ class MessagePreviewTest {
         assertEquals("Declined video call", call(CallDiscardReason.Declined, isOutgoing = false, isVideo = true))
     }
 
+    @Test
+    fun conferenceCallInvitationsSayWhetherTheyGoOn() {
+        fun groupCall(
+            isActive: Boolean,
+            wasMissed: Boolean = false,
+            isVideo: Boolean = false,
+        ) = service(ServiceAction.GroupCall(isActive, wasMissed, isVideo, duration = 0))
+
+        assertEquals("Group call", groupCall(isActive = true))
+        assertEquals("Group video call", groupCall(isActive = true, isVideo = true))
+        assertEquals("Missed group call", groupCall(isActive = false, wasMissed = true))
+        assertEquals("Group call ended", groupCall(isActive = false))
+    }
+
     // Drafts, typing and names
 
     @Test

@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -75,7 +76,8 @@ internal fun DateSeparatorRow(
 /**
  * A service message ("Alice joined the group"), centred in a pill. Long texts wrap within the width of a bubble, the
  * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped,
- * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text.
+ * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text; so does an
+ * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call.
  */
 @Composable
 internal fun ServiceMessageRow(
@@ -85,6 +87,8 @@ internal fun ServiceMessageRow(
 ) {
     val calls = LocalCallStarter.current
     val callUserId = item.callUserId?.takeIf { calls != null && canCallBack }
+    val voiceChats = LocalVoiceChats.current
+    val groupCallChatId = item.groupCallChatId?.takeIf { voiceChats != null && canCallBack }
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val shape = MaterialTheme.shapes.extraLarge
         Row(
@@ -94,7 +98,13 @@ internal fun ServiceMessageRow(
                     .clip(shape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     .then(
-                        if (calls != null && callUserId != null) {
+                        if (voiceChats != null && groupCallChatId != null) {
+                            Modifier.clickable(
+                                onClickLabel = stringResource(R.string.chat_join_group_call),
+                                role = Role.Button,
+                                onClick = { voiceChats.joinInvitation(groupCallChatId, item.id) },
+                            )
+                        } else if (calls != null && callUserId != null) {
                             Modifier.clickable(
                                 onClickLabel = stringResource(R.string.chat_call_back),
                                 role = Role.Button,
@@ -117,7 +127,7 @@ internal fun ServiceMessageRow(
                 // Names in it are isolated (`bidiIsolated`): it takes its language's direction, not the layout's.
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
-            if (callUserId != null) {
+            if (callUserId != null || groupCallChatId != null) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_call_filled),
                     contentDescription = null,

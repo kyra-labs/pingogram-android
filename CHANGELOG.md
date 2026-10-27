@@ -14,6 +14,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   your chat with them that opens the call.
 - Calls: "Add people" turns a call into a group call with the people you pick, and a call the other person turns into
   a group call moves there by itself.
+- Group call invitations show in the chat ("Group call", "Missed group call") and in Recent calls; tap one to join
+  while the call goes on.
 
 ### Fixed
 - Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture

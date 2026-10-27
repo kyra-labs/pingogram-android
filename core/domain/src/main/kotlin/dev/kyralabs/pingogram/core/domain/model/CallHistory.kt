@@ -7,6 +7,9 @@ import kotlinx.collections.immutable.ImmutableList
  * the other person: td_api.tl `messageCall`. [userId] is that person, whose private chat has the same id as they do
  * (td_api.tl: "the identifier of a private chat with a user is equal to the user identifier"). [date] is in seconds
  * since the epoch, [duration] in seconds (0 for a call that was never answered).
+ *
+ * A conference call's invitation (td_api.tl `messageGroupCall`, `docs/adr/0025-conference-calls.md`) is an entry too
+ * ([isGroupCall]), in the private chat it was sent in; while its call goes on ([isActive]), it joins it.
  */
 data class CallHistoryEntry(
     val chatId: Long,
@@ -17,6 +20,8 @@ data class CallHistoryEntry(
     val isVideo: Boolean,
     val outcome: CallOutcome,
     val duration: Int,
+    val isGroupCall: Boolean = false,
+    val isActive: Boolean = false,
 )
 
 /** How a call of the history went, as Telegram's apps word it for the user's side. */

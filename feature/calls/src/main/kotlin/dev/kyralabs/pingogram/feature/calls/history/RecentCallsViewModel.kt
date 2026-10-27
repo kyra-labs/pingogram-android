@@ -99,9 +99,7 @@ class RecentCallsViewModel
                 }
 
                 is RecentCallsEvent.CallBack -> {
-                    effects.trySend(
-                        RecentCallsEffect.Call(event.call.userId, event.call.isVideo),
-                    )
+                    effects.trySend(event.call.callBack())
                 }
 
                 is RecentCallsEvent.Delete -> {
@@ -294,10 +292,29 @@ private fun CallHistoryEntry.toItem(
     kind = kind(),
     time = times.time(date),
     duration = duration.takeIf { outcome == CallOutcome.Answered && it > 0 }?.let { formatDuration(it.toLong()) },
+    isGroupCall = isGroupCall,
+    isActive = isActive,
 )
 
-/** "Missed video call", as the chat list's previews word a call (`core:ui`). */
+/** What a tap does: calls back, joins a conference call that goes on, or says one is over. */
+private fun RecentCallsItem.Call.callBack(): RecentCallsEffect =
+    when {
+        !isGroupCall -> RecentCallsEffect.Call(userId, isVideo)
+        isActive -> RecentCallsEffect.JoinGroupCall(chatId, messageId)
+        else -> RecentCallsEffect.GroupCallEnded
+    }
+
+/** "Missed video call", as the chat list's previews word a call (`core:ui`); "Group call" for an invitation. */
 private fun CallHistoryEntry.kind(): UiText {
+    if (isGroupCall) {
+        return UiText.resource(
+            when {
+                outcome != CallOutcome.Answered -> UiR.string.preview_group_call_missed
+                isVideo -> UiR.string.preview_group_video_call_active
+                else -> UiR.string.preview_group_call_active
+            },
+        )
+    }
     val (voice, video) =
         when (outcome) {
             CallOutcome.Missed -> {

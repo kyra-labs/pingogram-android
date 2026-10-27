@@ -95,4 +95,7 @@ the catalog's `ntgcalls = "<commit>-pingogram1"`) and their source.
   - The other side upgrades (`callDiscardReasonUpgradeToGroupCall(invite_link)`): Pingogram joins by that link without
     asking, as the call goes on, keeping the microphone and the camera.
 
-  Until invitations in chats are in, `messageGroupCall` shows as an unsupported message.
+  - An invitation (`messageGroupCall`) is a service message in the private chat ("Group call", "Missed group call",
+    "Group call ended"); while its call goes on, a tap opens the voice chat's screen, which asks before it joins by the
+    message (`inputGroupCallMessage`). An invitation does not ring: Pingogram shows it as TDLib's notification engine
+    does any message.

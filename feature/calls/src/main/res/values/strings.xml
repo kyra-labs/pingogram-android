@@ -124,6 +124,8 @@
     <!-- What a tap on a row does, for screen readers. -->
     <string name="recent_calls_call_back">Call back</string>
     <string name="recent_calls_video_call_back">Video call back</string>
+    <string name="recent_calls_join">Join the group call</string>
+    <string name="recent_calls_group_call_ended">This group call has ended</string>
     <string name="recent_calls_row_menu">More options</string>
     <string name="recent_calls_delete">Delete from call history</string>
     <string name="recent_calls_deleted">Call deleted from your history</string>

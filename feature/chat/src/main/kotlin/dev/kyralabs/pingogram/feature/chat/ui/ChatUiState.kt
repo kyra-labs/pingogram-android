@@ -342,6 +342,11 @@ sealed interface ChatItem {
         val callUserId: Long? = null,
         /** The call was a video call: calling back calls with the camera on. */
         val callIsVideo: Boolean = false,
+        /**
+         * An invitation to a conference call that goes on (`docs/adr/0025-conference-calls.md`), in this chat:
+         * tapping it opens the call, which asks before it joins.
+         */
+        val groupCallChatId: Long? = null,
     ) : ChatItem {
         override val key: Any get() = id
 

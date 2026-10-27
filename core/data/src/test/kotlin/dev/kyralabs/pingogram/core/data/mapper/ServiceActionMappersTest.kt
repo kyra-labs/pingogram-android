@@ -141,6 +141,20 @@ class ServiceActionMappersTest {
     }
 
     @Test
+    fun `conference call invitations keep whether they go on, were missed, video and duration`() {
+        assertEquals(
+            listOf(
+                ServiceAction.GroupCall(isActive = true, wasMissed = false, isVideo = true, duration = 0),
+                ServiceAction.GroupCall(isActive = false, wasMissed = true, isVideo = false, duration = 0),
+            ),
+            listOf(
+                TdApi.MessageGroupCall(7, true, false, true, 0, emptyArray()).action(),
+                TdApi.MessageGroupCall(7, false, true, false, 0, emptyArray()).action(),
+            ),
+        )
+    }
+
+    @Test
     fun `every other service message maps to Other`() {
         val actions = OTHER_SERVICE_CONTENTS.map { it.getDeclaredConstructor().newInstance().action() }
 
@@ -222,6 +236,7 @@ class ServiceActionMappersTest {
                 "MessagePinMessage",
                 "MessageScreenshotTaken",
                 "MessageCall",
+                "MessageGroupCall",
                 "MessageVideoChatScheduled",
                 "MessageVideoChatStarted",
                 "MessageVideoChatEnded",

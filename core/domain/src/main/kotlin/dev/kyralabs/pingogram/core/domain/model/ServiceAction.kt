@@ -68,6 +68,18 @@ sealed interface ServiceAction {
         val discardReason: CallDiscardReason,
     ) : ServiceAction
 
+    /**
+     * An invitation to a conference call (td_api.tl `messageGroupCall`, `docs/adr/0025-conference-calls.md`): the
+     * sender invited the other person; it joins the call while [isActive]. Over, [wasMissed] says nobody answered,
+     * and [duration] (seconds) how long the call went on.
+     */
+    data class GroupCall(
+        val isActive: Boolean,
+        val wasMissed: Boolean,
+        val isVideo: Boolean,
+        val duration: Int,
+    ) : ServiceAction
+
     /** This basic group became supergroup [supergroupId]; the basic group is closed. */
     data class UpgradedToSupergroup(
         val supergroupId: Long,

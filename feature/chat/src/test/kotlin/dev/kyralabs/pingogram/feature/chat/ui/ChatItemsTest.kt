@@ -178,6 +178,23 @@ class ChatItemsTest : ChatViewModelHarness() {
             assertTrue(calls.getValue(2L).callIsVideo)
         }
 
+    @Test
+    fun `an invitation to a conference call that goes on opens it, an ended one does not`() =
+        runTest {
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        service(1, ServiceAction.GroupCall(true, false, false, 0), chatId = PRIVATE_CHAT),
+                        service(2, ServiceAction.GroupCall(false, true, false, 0), chatId = PRIVATE_CHAT),
+                    ),
+                )
+
+            val invitations = viewModel.items.filterIsInstance<ChatItem.Service>().associateBy { it.id }
+            assertEquals(PRIVATE_CHAT, invitations.getValue(1L).groupCallChatId)
+            assertEquals(null, invitations.getValue(2L).groupCallChatId)
+        }
+
     // Dates
 
     @Test

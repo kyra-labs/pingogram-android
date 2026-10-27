@@ -189,6 +189,29 @@ class GroupCallViewModelTest {
         }
 
     @Test
+    fun `an invitation in a chat asks first, then joins its conference call by the message`() =
+        runTest(dispatcher) {
+            repository.calls.value += CONFERENCE_CALL_ID to groupCall()
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        GroupCallActivity.EXTRA_ACTION to GroupCallActivity.ACTION_JOIN_INVITATION,
+                        GroupCallActivity.EXTRA_INVITATION_CHAT_ID to 42L,
+                        GroupCallActivity.EXTRA_INVITATION_MESSAGE_ID to 7L,
+                    ),
+                )
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN_INVITATION, handle)
+
+            assertEquals(GroupCallUiState.ConfirmConference, viewModel.uiState.value)
+
+            viewModel.onEvent(GroupCallEvent.JoinConference)
+            runCurrent()
+
+            assertEquals(ConferenceTarget.Invitation(42, 7), conferences.joins.single().first)
+            assertTrue((viewModel.uiState.value as GroupCallUiState.InCall).isConference)
+        }
+
+    @Test
     fun `not now on a conference call's link joins nothing and closes the screen, also after a restart`() =
         runTest(dispatcher) {
             val handle = conferenceHandle()

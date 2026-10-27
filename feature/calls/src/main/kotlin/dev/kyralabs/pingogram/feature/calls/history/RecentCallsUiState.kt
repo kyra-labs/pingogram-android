@@ -71,6 +71,9 @@ sealed interface RecentCallsItem {
         val kind: UiText,
         val time: String,
         val duration: String?,
+        /** A conference call's invitation (`docs/adr/0025-conference-calls.md`): a tap joins it while [isActive]. */
+        val isGroupCall: Boolean = false,
+        val isActive: Boolean = false,
     ) : RecentCallsItem
 }
 
@@ -101,6 +104,15 @@ sealed interface RecentCallsEffect {
         val userId: Long,
         val isVideo: Boolean,
     ) : RecentCallsEffect
+
+    /** Open the conference call of invitation [messageId] in chat [chatId], which asks before it joins. */
+    data class JoinGroupCall(
+        val chatId: Long,
+        val messageId: Long,
+    ) : RecentCallsEffect
+
+    /** A conference call that is over was tapped: it cannot be joined, nor called back. */
+    data object GroupCallEnded : RecentCallsEffect
 
     /** A call left the history. */
     data object Deleted : RecentCallsEffect

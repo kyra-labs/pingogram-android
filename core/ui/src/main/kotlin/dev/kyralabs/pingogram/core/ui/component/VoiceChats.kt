@@ -67,6 +67,15 @@ interface VoiceChats {
      * which asks before it joins.
      */
     fun joinConference(link: String)
+
+    /**
+     * Opens the screen of the conference call that the invitation [messageId] in chat [chatId] invites to
+     * (`messageGroupCall`), which asks before it joins.
+     */
+    fun joinInvitation(
+        chatId: Long,
+        messageId: Long,
+    )
 }
 
 /** What a chat's screens show of its voice chat. */

@@ -113,6 +113,29 @@ class TdlibCallHistoryRepositoryTest {
         }
 
     @Test
+    fun `a conference call's invitation is an entry that joins while its call goes on`() =
+        runTest {
+            answer(
+                message(id = 1, content = TdApi.MessageGroupCall(7, true, false, true, 0, emptyArray())),
+                message(id = 2, content = TdApi.MessageGroupCall(7, false, true, false, 0, emptyArray())),
+                message(
+                    id = 3,
+                    content = TdApi.MessageGroupCall(7, false, false, false, 65, emptyArray()),
+                    isOutgoing = true,
+                ),
+            )
+
+            val entries = repository.page().page().entries
+            assertEquals(listOf(true, true, true), entries.map { it.isGroupCall })
+            assertEquals(listOf(true, false, false), entries.map { it.isActive })
+            assertEquals(
+                listOf(CallOutcome.Answered, CallOutcome.Missed, CallOutcome.Answered),
+                entries.map { it.outcome },
+            )
+            assertEquals(65, entries[2].duration)
+        }
+
+    @Test
     fun `a failed search fails the page`() =
         runTest {
             client.on(TdApi.SearchCallMessages::class, TdResult.Failure(TdError(400, "SOMETHING")))
