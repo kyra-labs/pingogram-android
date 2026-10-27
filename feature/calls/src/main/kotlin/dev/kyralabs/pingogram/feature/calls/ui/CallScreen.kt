@@ -152,9 +152,7 @@ fun CallScreen(
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainer) {
         when (state) {
-            CallUiState.Loading, CallUiState.Closed -> {
-                Unit
-            }
+            CallUiState.Loading, CallUiState.Closed -> {}
 
             is CallUiState.NeedsMicrophone -> {
                 MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
@@ -950,9 +948,7 @@ private fun AnswerSlider(
                         onDecline()
                     }
 
-                    null -> {
-                        Unit
-                    }
+                    null -> {}
                 }
             },
             onTap = { scope.launch { slider.nudge(fast, settle) } },

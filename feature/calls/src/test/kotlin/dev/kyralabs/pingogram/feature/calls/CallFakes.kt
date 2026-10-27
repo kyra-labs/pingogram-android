@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -150,7 +151,7 @@ class FakeCallRepository : CallRepository {
     }
 }
 
-private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = persistentMapOf<Int, Call>().putAll(this)
+private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = toImmutableMap()
 
 class FakeCallEngine : CallEngine {
     var failsToLoad = false

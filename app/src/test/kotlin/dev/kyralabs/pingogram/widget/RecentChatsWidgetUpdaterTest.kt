@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -44,6 +45,7 @@ import kotlin.time.Duration.Companion.seconds
  * account, the placed widgets faked. It follows the chats only while a widget is placed, each widget's account apart,
  * and keeps them off the home screen when signed out or locked.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class RecentChatsWidgetUpdaterTest {

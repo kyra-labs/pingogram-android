@@ -72,12 +72,12 @@ class AccountSlotTest {
     private fun createStorage(slot: AccountSlot): List<File> =
         listOf(false, true).map { testDc ->
             TdlibDirectories.of(filesDir, testDc, slot).database.resolve("db.sqlite").apply {
-                parentFile.mkdirs()
+                checkNotNull(parentFile).mkdirs()
                 writeText("database")
             }
         } +
             noBackupFilesDir.resolve(KeystoreDatabaseKeyProvider.keyFileName(slot)).apply {
-                parentFile.mkdirs()
+                checkNotNull(parentFile).mkdirs()
                 writeText("key")
             } +
             noBackupFilesDir.resolve(testServersMarkerName(slot)).apply { createNewFile() }
