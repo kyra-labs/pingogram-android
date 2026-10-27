@@ -16,5 +16,8 @@
   },
   "OpenChatBenchmark.*": {
     "openChatSumMs.median": 150
+  },
+  "SendMessageBenchmark.*": {
+    "sendMessageSumMs.median": 50
   }
 }

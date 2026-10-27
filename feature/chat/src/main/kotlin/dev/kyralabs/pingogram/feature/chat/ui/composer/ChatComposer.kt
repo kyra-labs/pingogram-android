@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.ui.trace.SendMessageTrace
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatLog
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ReplyHandoff
@@ -224,6 +225,8 @@ internal class ChatComposer(
     ) {
         val content = text.content
         if (content.text.isBlank()) return
+        // A scheduled message shows no bubble in the conversation.
+        if (options.scheduledAt == null) SendMessageTrace.begin()
         pendingSave?.cancel()
         // Sending clears the chat's draft, and TDLib reports that too, if there was one.
         if (chatDraft?.isEmpty == false) remember(ComposerDraft.Empty)

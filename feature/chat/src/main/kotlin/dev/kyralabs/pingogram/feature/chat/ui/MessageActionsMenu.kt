@@ -376,7 +376,8 @@ private fun MenuAction(
         onClick = onClick,
         text = { Text(stringResource(action.label)) },
         shape = shape,
-        modifier = Modifier.fillMaxWidth(),
+        // "message_action_Delete": `benchmark/`'s journeys find the actions by it.
+        modifier = Modifier.fillMaxWidth().testTag("message_action_${action.name}"),
         leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
         colors =
             if (action.isDestructive) {
