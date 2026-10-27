@@ -46,6 +46,10 @@ sealed interface CallUiState {
         val video: CallVideoUi = CallVideoUi(),
         /** Ended, and Telegram asks the user to rate it: "Rate this call" shows over the ended call. */
         val rating: CallRatingPrompt? = null,
+        /** "Add people" shows: connected, and both sides can turn the call into a conference call. */
+        val canAddPeople: Boolean = false,
+        /** "Add people" is open: its contact picker shows over the call. */
+        val isAddingPeople: Boolean = false,
     ) : CallUiState {
         /** The incoming call rings: answer or decline. */
         val isIncomingRinging: Boolean get() = !isOutgoing && stage == CallStage.Ringing
@@ -162,6 +166,17 @@ sealed interface CallEvent {
 
     /** "Rate this call" closed without rating: "Not now", the scrim, back, or picture-in-picture. */
     data object DismissRating : CallEvent
+
+    /** "Add people": its contact picker opens. */
+    data object OpenAddPeople : CallEvent
+
+    /** The picker closed without adding anyone. */
+    data object CloseAddPeople : CallEvent
+
+    /** "Add" in "Add people": the call becomes a conference call with [userIds] invited. */
+    data class AddPeople(
+        val userIds: List<Long>,
+    ) : CallEvent
 }
 
 /** What the call screen does once, outside its state. */
@@ -174,6 +189,9 @@ sealed interface CallEffect {
 
     /** Android no longer asks for the camera: open the app's settings, where the user can allow it. */
     data object OpenSettings : CallEffect
+
+    /** The call became a conference call, which the user is in now: the voice chat's screen takes over. */
+    data object OpenGroupCall : CallEffect
 
     /** People were invited into the conference call: how many, and how many could not be (a snackbar). */
     data class Invited(

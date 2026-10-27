@@ -53,8 +53,14 @@ internal object CallPreviewStates {
                 ),
         )
 
-    /** Connected: "Share screen" at the top end (`docs/adr/0026-screen-sharing.md`). */
-    val shareOffered = connected.copy(video = connected.video.copy(canShareScreen = true))
+    /**
+     * Connected: "Add people" (`docs/adr/0025-conference-calls.md`) and "Share screen"
+     * (`docs/adr/0026-screen-sharing.md`) at the top end.
+     */
+    val shareOffered = connected.copy(video = connected.video.copy(canShareScreen = true), canAddPeople = true)
+
+    /** The same actions over a video call, in the overlay's colors. */
+    val actionsOverVideo = video.copy(video = video.video.copy(canShareScreen = true), canAddPeople = true)
 
     /** The user shares the screen in a voice call: "You're sharing your screen" with "Stop" under the header. */
     val sharingScreen = shareOffered.copy(video = shareOffered.video.copy(isSharingScreen = true))

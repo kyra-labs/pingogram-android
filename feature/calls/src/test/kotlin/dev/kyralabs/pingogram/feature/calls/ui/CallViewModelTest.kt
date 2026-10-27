@@ -13,6 +13,8 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.feature.calls.CONFERENCE_CALL_ID
+import dev.kyralabs.pingogram.feature.calls.CONFERENCE_LINK
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
 import dev.kyralabs.pingogram.feature.calls.CallIds
 import dev.kyralabs.pingogram.feature.calls.CallLine
@@ -26,9 +28,13 @@ import dev.kyralabs.pingogram.feature.calls.FakeCallForeground
 import dev.kyralabs.pingogram.feature.calls.FakeCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeCallSystem
 import dev.kyralabs.pingogram.feature.calls.FakeCallTones
+import dev.kyralabs.pingogram.feature.calls.FakeConferenceCallRepository
+import dev.kyralabs.pingogram.feature.calls.FakeGroupCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeNetworkRepository
+import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.groupCall
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -65,6 +71,24 @@ class CallViewModelTest {
     private var microphone = true
     private val camera = FakeCameraAccess()
     private val created = mutableListOf<CallViewModel>()
+    private val line = CallLine()
+    private var groups: GroupCallManager? = null
+    private val groupRepository = FakeGroupCallRepository()
+
+    /** The conference calls a call becomes, one per test. */
+    private fun TestScope.groups(): GroupCallManager =
+        groups ?: GroupCallManager(
+            groupRepository,
+            FakeConferenceCallRepository(),
+            engine,
+            FakeCallSystem(),
+            FakeCallForeground(),
+            clock,
+            { "" },
+            line,
+            { FakeNetworkRepository() },
+            backgroundScope,
+        ).also { groups = it }
 
     init {
         Dispatchers.setMain(dispatcher)
@@ -87,7 +111,8 @@ class CallViewModelTest {
             clock,
             { _, _ -> "Ada" },
             { FakeNetworkRepository() },
-            CallLine(),
+            line,
+            { groups() },
             backgroundScope,
         ).also { it.start() }
 
@@ -103,7 +128,7 @@ class CallViewModelTest {
                 },
             ),
         callUsers: CallUsers = CallUsers { users },
-    ) = CallViewModel(handle, manager, callUsers, { microphone }, camera, clock).also { viewModel ->
+    ) = CallViewModel(handle, manager, groups(), callUsers, { microphone }, camera, clock).also { viewModel ->
         created += viewModel
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -537,6 +562,36 @@ class CallViewModelTest {
         }
 
     @Test
+    fun `add people opens its picker, turns the call into a conference call and hands it to the voice chat's screen`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            val viewModel = viewModel(manager, CallActivity.ACTION_START, userId = 42)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            val ready = CallState.Ready(connection(groupCallSupported = true))
+            repository.update(Call(FakeCallRepository.STARTED_CALL_ID, 42, true, false, ready))
+            runCurrent()
+            engine.sessions
+                .single()
+                .state.value = CallMediaState.Connected
+            runCurrent()
+            assertTrue(viewModel.inCall().canAddPeople)
+
+            viewModel.onEvent(CallEvent.OpenAddPeople)
+            runCurrent()
+            assertTrue(viewModel.inCall().isAddingPeople)
+
+            groupRepository.calls.value += CONFERENCE_CALL_ID to groupCall().copy(inviteLink = CONFERENCE_LINK)
+            viewModel.onEvent(CallEvent.AddPeople(listOf(7L)))
+            runCurrent()
+
+            assertEquals(listOf<CallEffect>(CallEffect.OpenGroupCall), effects)
+            assertEquals(listOf(CONFERENCE_LINK), repository.discardedLinks)
+            assertFalse(viewModel.inCall().isAddingPeople)
+        }
+
+    @Test
     fun `shows nothing to show the call when there is none`() =
         runTest(dispatcher) {
             assertEquals(CallUiState.Closed, viewModel(manager(), CallActivity.ACTION_SHOW).uiState.value)
@@ -547,7 +602,7 @@ class CallViewModelTest {
         assertEquals(listOf("0:07", "12:34", "1:02:03"), listOf(7L, 754L, 3723L).map(::formatDuration))
     }
 
-    private fun connection() =
+    private fun connection(groupCallSupported: Boolean = false) =
         CallConnection(
             ENGINE_PROTOCOL,
             persistentListOf(),
@@ -555,6 +610,7 @@ class CallViewModelTest {
             persistentListOf("😀", "🐶", "🍎", "🚗"),
             true,
             "",
+            groupCallSupported,
         )
 }
 

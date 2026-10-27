@@ -8,10 +8,13 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.ActiveCall
 import dev.kyralabs.pingogram.feature.calls.CallClock
+import dev.kyralabs.pingogram.feature.calls.CallEndReason
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
 import dev.kyralabs.pingogram.feature.calls.CallRatingRequest
 import dev.kyralabs.pingogram.feature.calls.CallUsers
+import dev.kyralabs.pingogram.feature.calls.GroupCallManager
+import dev.kyralabs.pingogram.feature.calls.GroupCallPhase
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -49,9 +53,13 @@ import javax.inject.Inject
 @Suppress("TooManyFunctions") // The screen's events, its two permission steps and the video sinks.
 class CallViewModel
     @Inject
+    // Injected: the call, the conference call it may become, users, microphone, camera, clock.
+    @Suppress("LongParameterList")
     internal constructor(
         private val savedStateHandle: SavedStateHandle,
         private val callManager: CallManager,
+        // The conference call a call becomes (docs/adr/0025-conference-calls.md).
+        private val groupCalls: GroupCallManager,
         // The call's account's users (`docs/adr/0031-multiple-accounts.md`).
         private val users: CallUsers,
         private val microphone: MicrophoneAccess,
@@ -84,8 +92,8 @@ class CallViewModel
                 permissionStep,
                 person(),
                 duration(),
-                callManager.rating,
-            ) { call, step, person, duration, rating ->
+                combine(callManager.rating, savedStateHandle.getStateFlow(KEY_ADDING_PEOPLE, false), ::Pair),
+            ) { call, step, person, duration, (rating, adding) ->
                 // The ended call that asks for a rating, once the call manager let it go.
                 val asking = ratedCall?.takeIf { rating != null && it.rating != null }
                 when {
@@ -102,6 +110,7 @@ class CallViewModel
                         call
                             .toUiState(person ?: CallPerson(call.userId, "", null), duration, hasCamera)
                             .withRating(rating, call.callId)
+                            .let { it.copy(isAddingPeople = adding && it.canAddPeople) }
                     }
 
                     asking != null -> {
@@ -123,6 +132,15 @@ class CallViewModel
         init {
             // After the first frame (docs/PERFORMANCE.md §4): calling loads the engine.
             viewModelScope.launch { takeAction() }
+            viewModelScope.launch {
+                // The call became a conference call: once the user is in it, its screen takes over.
+                combine(callManager.call, groupCalls.call) { call, group ->
+                    call?.phase == CallPhase.Ended(CallEndReason.UpgradedToGroupCall) &&
+                        group?.isConference == true &&
+                        group.phase !is GroupCallPhase.Ended
+                }.first { it }
+                effectChannel.send(CallEffect.OpenGroupCall)
+            }
         }
 
         @Suppress("ReturnCount") // An event without a call or a permission step does nothing.
@@ -134,6 +152,10 @@ class CallViewModel
                     } else {
                         callManager.call.value?.let { askForMicrophone(it.userId, isAnswering = true) }
                     }
+                }
+
+                CallEvent.OpenAddPeople, CallEvent.CloseAddPeople, is CallEvent.AddPeople -> {
+                    onAddPeople(event)
                 }
 
                 CallEvent.HangUp -> {
@@ -308,6 +330,12 @@ class CallViewModel
         /** The slot of the account the call came to or goes out from; the first account's before Telegram made it. */
         val callSlot: Int get() = callManager.call.value?.slot ?: 0
 
+        /** "Add people": its picker opens and closes; "Add" turns the call into a conference call. */
+        private fun onAddPeople(event: CallEvent) {
+            savedStateHandle[KEY_ADDING_PEOPLE] = event == CallEvent.OpenAddPeople
+            if (event is CallEvent.AddPeople) viewModelScope.launch { callManager.upgradeToConference(event.userIds) }
+        }
+
         /** Answers, a video call with the camera on where it is allowed already (otherwise the user turns it on). */
         private suspend fun answer() {
             savedStateHandle[KEY_DONE] = true
@@ -355,6 +383,7 @@ class CallViewModel
 
         private companion object {
             const val KEY_DONE = "call_action_done"
+            const val KEY_ADDING_PEOPLE = "adding_people"
             const val KEY_REFUSED = "microphone_refused"
             const val KEY_CAMERA_REFUSED = "camera_refused"
             const val STOP_TIMEOUT_MS = 5_000L
@@ -426,6 +455,7 @@ private fun ActiveCall.toUiState(
                 isSharingScreen = video.isSharingScreen,
                 remoteIsScreen = video.remoteIsScreen,
             ),
+        canAddPeople = canUpgrade && !isOnHold,
     )
 
 /** "0:07", "12:34", "1:02:03". */

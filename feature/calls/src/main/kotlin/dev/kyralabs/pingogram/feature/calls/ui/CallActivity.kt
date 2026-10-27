@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
+import dev.kyralabs.pingogram.feature.calls.ui.invite.InvitePeopleSheet
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -114,14 +115,7 @@ class CallActivity : ComponentActivity() {
                 }
             val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
-                viewModel.effects.collect { effect ->
-                    when (effect) {
-                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-                        CallEffect.RequestScreenCapture -> screenCapture()
-                        CallEffect.OpenSettings -> openAppSettings()
-                        is CallEffect.Invited, is CallEffect.InviteFailed -> Unit
-                    }
-                }
+                viewModel.effects.collect { onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture) }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
             // A call that ends in picture-in-picture is not rated: its window has no room for the question.
@@ -143,9 +137,54 @@ class CallActivity : ComponentActivity() {
                         video = video,
                         pictureInPicture = inPictureInPicture,
                     )
+                    AddPeopleSheet(state)
                 }
             }
         }
+    }
+
+    /** Does what an effect of the view model asks. */
+    private fun onEffect(
+        effect: CallEffect,
+        requestCamera: () -> Unit,
+        screenCapture: () -> Unit,
+    ) {
+        when (effect) {
+            CallEffect.RequestCamera -> {
+                requestCamera()
+            }
+
+            CallEffect.RequestScreenCapture -> {
+                screenCapture()
+            }
+
+            CallEffect.OpenSettings -> {
+                openAppSettings()
+            }
+
+            CallEffect.OpenGroupCall -> {
+                // The call became a conference call (docs/adr/0025-conference-calls.md): its screen takes over.
+                GroupCallActivity.show(this)
+                finish()
+            }
+
+            // The conference call's screen says what came of the invitations.
+            is CallEffect.Invited, is CallEffect.InviteFailed -> {
+                Unit
+            }
+        }
+    }
+
+    /** "Add people" over the connected call: the other person is in it already. */
+    @Composable
+    private fun AddPeopleSheet(state: CallUiState) {
+        val inCall = state as? CallUiState.InCall
+        if (inCall?.isAddingPeople != true || inPictureInPicture) return
+        InvitePeopleSheet(
+            excluded = setOf(inCall.person.userId),
+            onInvite = { viewModel.onEvent(CallEvent.AddPeople(it)) },
+            onDismiss = { viewModel.onEvent(CallEvent.CloseAddPeople) },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

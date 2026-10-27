@@ -85,7 +85,7 @@ class TdlibCallRepositoryTest {
                     key,
                     arrayOf("😀", "🐶", "🍎", "🚗"),
                     true,
-                    false,
+                    true,
                     "{\"a\":1}",
                 )
 
@@ -110,6 +110,7 @@ class TdlibCallRepositoryTest {
                     emojis = persistentListOf("😀", "🐶", "🍎", "🚗"),
                     allowP2p = true,
                     customParameters = "{\"a\":1}",
+                    isGroupCallSupported = true,
                 ),
                 connection,
             )
@@ -133,11 +134,21 @@ class TdlibCallRepositoryTest {
                 updateCall(call(id = 2, state = TdApi.CallStateError(TdApi.Error(400, "USER_PRIVACY_RESTRICTED")))),
             )
             client.emit(updateCall(call(id = 4, state = TdApi.CallStateHangingUp())))
+            val upgrade = TdApi.CallDiscardReasonUpgradeToGroupCall("https://t.me/call/abc")
+            client.emit(updateCall(call(id = 5, state = TdApi.CallStateDiscarded(upgrade, false, false, false))))
 
             val calls = repository.calls.first()
             assertEquals(CallState.Discarded(CallDiscardReason.Declined, needsRating = true), calls.getValue(1).state)
             assertEquals(CallState.Failed(DomainError.CallPrivacyRestricted), calls.getValue(2).state)
             assertEquals(CallState.HangingUp, calls.getValue(4).state)
+            assertEquals(
+                CallState.Discarded(
+                    CallDiscardReason.UpgradedToGroupCall,
+                    false,
+                    upgradeLink = "https://t.me/call/abc",
+                ),
+                calls.getValue(5).state,
+            )
         }
 
     @Test
@@ -240,6 +251,16 @@ class TdlibCallRepositoryTest {
                 listOf<Any>(3, true, 61, 7L, ""),
                 listOf(sent.callId, sent.isDisconnected, sent.duration, sent.connectionId, sent.inviteLink),
             )
+        }
+
+    @Test
+    fun `ends a call that became a conference call with its link`() =
+        runTest {
+            client.on(TdApi.DiscardCall::class, TdResult.Success(TdApi.Ok()))
+
+            repository().discardCall(3, false, 61.seconds, false, 0, inviteLink = "https://t.me/call/abc")
+
+            assertEquals("https://t.me/call/abc", client.sentOf<TdApi.DiscardCall>().single().inviteLink)
         }
 
     @Test

@@ -1349,7 +1349,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   is on): the voice chat's screen heads its participants with "Add people" in a conference call it is connected to,
   which opens `InvitePeopleSheet` (`feature:calls` `ui/invite/`, `InvitePeopleViewModel`: the contacts of
   `ContactRepository` not in the call, filtered on the device, the query and the picks in its saved state); the counts
-  come back as a `CallEffect` for a snackbar. Upgrading a one-to-one call and invitations in chats come later.
+  come back as a `CallEffect` for a snackbar. Upgrading: the call screen's "Add people" (`ActiveCall.canUpgrade`,
+  TDLib's `is_group_call_supported`) opens the same picker; `CallManager.upgradeToConference` ends the call's media,
+  `GroupCallManager.startConference` creates the conference call on the same line (`CallLine.handOver`) and waits for
+  its link, `discardCall` sends it to the other side, and `inviteAfterUpgrade` invites the picks, whose result the
+  voice chat's screen shows (`upgradeInvites`). A call the other side upgrades (`CallState.Discarded.upgradeLink`) joins
+  that link (`joinConference` with `from`). The call ends as `CallEndReason.UpgradedToGroupCall`, and `CallViewModel`
+  hands over to `GroupCallActivity` (`CallEffect.OpenGroupCall`) once the conference call is under way. Invitations in
+  chats come later.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

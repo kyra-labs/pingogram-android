@@ -68,6 +68,7 @@ class FakeCallRepository : CallRepository {
     /** `is_video` of each createCall and discardCall, in order. */
     val startedVideo = mutableListOf<Boolean>()
     val discardedVideo = mutableListOf<Boolean>()
+    val discardedLinks = mutableListOf<String>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
     val rated = mutableListOf<Rating>()
 
@@ -119,8 +120,10 @@ class FakeCallRepository : CallRepository {
         duration: Duration,
         isVideo: Boolean,
         connectionId: Long,
+        inviteLink: String,
     ): Outcome<Unit> {
         discarded += Discard(callId, isDisconnected, duration)
+        discardedLinks += inviteLink
         discardedVideo += isVideo
         return discardResult
     }

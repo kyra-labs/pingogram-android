@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
+import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
@@ -68,7 +69,12 @@ import kotlin.time.Duration.Companion.seconds
  * when roaming or with Data Saver; WebRTC lowers it further by itself when the connection cannot carry it.
  */
 @Singleton
-@Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
+@Suppress(
+    // One function per action of the user and per transition of the state machine, which stays one class so that every
+    // change happens under its one lock; conference calls (docs/adr/0025-conference-calls.md) added to it.
+    "TooManyFunctions",
+    "LargeClass",
+)
 class CallManager
     @Inject
     // Injected: TDLib's calls, engine, Telecom, service, tones, clock, names, network, the line voice chats share.
@@ -86,6 +92,8 @@ class CallManager
         // thread, not the activities that inject this at their start (`docs/PERFORMANCE.md` §2).
         @param:CallNetwork private val network: dagger.Lazy<NetworkRepository>,
         private val line: CallLine,
+        // The conference calls a call becomes (docs/adr/0025-conference-calls.md); lazy, as few calls do.
+        private val groupCalls: dagger.Lazy<GroupCallManager>,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val mutableCall = MutableStateFlow<ActiveCall?>(null)
@@ -218,6 +226,46 @@ class CallManager
                         (result as? Outcome.Failure)?.error ?: DomainError.Unknown(0, "The call engine could not start")
                     discard(call.first, isDisconnected = false)
                     finish(call.first, CallEndReason.Failed(error))
+                }
+            }
+        }
+
+        /**
+         * Turns the connected call into a conference call with [userIds] invited (`docs/adr/0025-conference-calls.md`),
+         * as Telegram's apps do: the call's media end, a new conference call starts on the same line
+         * ([GroupCallManager.startConference]) with the microphone as it was, the call is discarded with the conference
+         * call's link (the other person's app joins it), then [userIds] get invitations. If the conference call cannot
+         * be made, the call ends with the reason.
+         */
+        @Suppress("ReturnCount") // Guards under the lock: no call, not connected, not supported, already moving.
+        suspend fun upgradeToConference(userIds: List<Long>) {
+            val call =
+                mutex.withLock {
+                    val call = live ?: return
+                    if (call.phase != CallPhase.Connected || !call.groupCallSupported || call.discarding) return
+                    call.discarding = true
+                    finish(call, CallEndReason.UpgradedToGroupCall, keepLine = true)
+                    call
+                }
+            val callId = call.callId ?: return
+            val duration = call.connectedAt?.let { (clock.elapsedRealtimeMillis() - it).milliseconds } ?: Duration.ZERO
+            val conferences = groupCalls.get()
+            when (val started = conferences.startConference(from = this, muted = call.muted)) {
+                is Outcome.Success -> {
+                    callRepository.discardCall(callId, false, duration, call.hadVideo, 0, inviteLink = started.value)
+                    if (call.wantsCamera) conferences.setCameraOn(true)
+                    conferences.inviteAfterUpgrade(userIds)
+                }
+
+                is Outcome.Failure -> {
+                    line.release(this)
+                    callRepository.discardCall(callId, false, duration, call.hadVideo, 0)
+                    mutex.withLock {
+                        if (live === call) {
+                            call.phase = CallPhase.Ended(CallEndReason.Failed(started.error))
+                            publish()
+                        }
+                    }
                 }
             }
         }
@@ -437,6 +485,7 @@ class CallManager
                 is CallState.Ready -> {
                     tones.stop()
                     call.emojis = state.connection.emojis
+                    call.groupCallSupported = state.connection.isGroupCallSupported
                     if (call.session == null && !call.connecting) connect(call, update.id, state.connection)
                 }
 
@@ -445,7 +494,7 @@ class CallManager
                 }
 
                 is CallState.Discarded -> {
-                    finish(call, state.reason.toEndReason(call), askRating = state.needsRating)
+                    onDiscarded(call, state)
                 }
 
                 is CallState.Failed -> {
@@ -681,10 +730,50 @@ class CallManager
             }
         }
 
+        /** TDLib ended [call]; a connected call the other side made a conference call goes on there. */
+        private fun onDiscarded(
+            call: Live,
+            state: CallState.Discarded,
+        ) {
+            val link = state.upgradeLink
+            if (link != null && call.connectedAt != null && !call.discarding) {
+                followUpgrade(call, link)
+            } else {
+                finish(call, state.reason.toEndReason(call), askRating = state.needsRating)
+            }
+        }
+
+        /**
+         * The other person turned the call into a conference call: this side joins it by [link] on the same line, with
+         * the microphone and the camera as they were, and the voice chat's screen takes over.
+         */
+        private fun followUpgrade(
+            call: Live,
+            link: String,
+        ) {
+            finish(call, CallEndReason.UpgradedToGroupCall, keepLine = true)
+            scope.launch {
+                val conferences = groupCalls.get()
+                val joined =
+                    conferences.joinConference(
+                        ConferenceTarget.Link(link),
+                        muted = call.muted,
+                        from = this@CallManager,
+                    )
+                if (joined == JoinResult.Joining) {
+                    if (call.wantsCamera) conferences.setCameraOn(true)
+                } else {
+                    line.release(this@CallManager)
+                }
+            }
+        }
+
+        /** Ends [call] here; [keepLine] for a call that becomes a conference call, which takes the line over. */
         private fun finish(
             call: Live,
             reason: CallEndReason,
             askRating: Boolean = false,
+            keepLine: Boolean = false,
         ) {
             if (call.phase is CallPhase.Ended) return
             call.phase = CallPhase.Ended(reason)
@@ -695,7 +784,7 @@ class CallManager
             }
             if (reason == CallEndReason.Declined && call.isOutgoing) tones.busy() else tones.stop()
             call.system?.end(reason.toSystemCause(call))
-            line.release(this)
+            if (!keepLine) line.release(this)
             val session = call.session
             scope.launch {
                 session?.close()
@@ -773,6 +862,9 @@ class CallManager
             var answered = false
             var connecting = false
             var discarding = false
+
+            /** Both sides can turn the call into a conference call (TDLib's `is_group_call_supported`). */
+            var groupCallSupported = false
             var ringbackStarted = false
             var videoOffered = false
             var system: SystemCall? = null
@@ -820,6 +912,7 @@ class CallManager
                     audio = audio,
                     connectedAtMillis = connectedAt,
                     videoOffered = videoOffered,
+                    canUpgrade = groupCallSupported && phase == CallPhase.Connected && !discarding,
                     video =
                         CallVideo(
                             camera =
@@ -865,6 +958,7 @@ class CallManager
                 CallEndReason.Missed -> SystemEndCause.Missed
                 CallEndReason.Declined -> SystemEndCause.Rejected
                 CallEndReason.Disconnected, is CallEndReason.Failed -> SystemEndCause.Error
+                CallEndReason.UpgradedToGroupCall -> SystemEndCause.Local
             }
 
         private companion object {

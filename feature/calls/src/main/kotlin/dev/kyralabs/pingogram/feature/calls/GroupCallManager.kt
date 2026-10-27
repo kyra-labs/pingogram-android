@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -69,7 +70,12 @@ import kotlin.time.Duration.Companion.seconds
  * Every change happens under [mutex], in the order TDLib's updates and the user's actions arrive.
  */
 @Singleton
-@Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
+@Suppress(
+    // One function per action of the user and per transition of the state machine, which stays one class so that every
+    // change happens under its one lock; conference calls (docs/adr/0025-conference-calls.md) added to it.
+    "TooManyFunctions",
+    "LargeClass",
+)
 class GroupCallManager
     @Inject
     // Injected: TDLib's group calls, engine, Telecom, service, clock, titles, line, network.
@@ -91,6 +97,11 @@ class GroupCallManager
 
         /** The voice chat the user is in, then every change; null without one. An ended one stays for [ENDED_SHOWN]. */
         val call: StateFlow<ActiveGroupCall?> = mutableCall.asStateFlow()
+
+        private val mutableUpgradeInvites = MutableStateFlow<Outcome<ConferenceInvites>?>(null)
+
+        /** What came of inviting people into a call that was one-to-one ([inviteAfterUpgrade]); null once said. */
+        val upgradeInvites: StateFlow<Outcome<ConferenceInvites>?> = mutableUpgradeInvites.asStateFlow()
 
         private val mutex = Mutex()
 
@@ -125,18 +136,83 @@ class GroupCallManager
 
         /**
          * Joins the conference call of [target] (`docs/adr/0025-conference-calls.md`: a `t.me/call` link, an
-         * invitation), muted. [JoinResult.Busy] while the user is in another call.
+         * invitation), [muted] (muted unless it continues a one-to-one call). [JoinResult.Busy] while the user is in
+         * another call; [from], the one-to-one call that became this conference call, hands its line over.
          */
-        suspend fun joinConference(target: ConferenceTarget): JoinResult {
+        suspend fun joinConference(
+            target: ConferenceTarget,
+            muted: Boolean = true,
+            from: Any? = null,
+        ): JoinResult {
             val call =
                 mutex.withLock {
-                    if (live != null || !line.take(this)) return JoinResult.Busy
+                    if (live != null || !takeLine(from)) return JoinResult.Busy
                     Live(chatId = 0, groupCallId = 0, joinAs = null, scope = callScope(), conference = target)
-                        .also { start(it) }
+                        .also {
+                            it.muted = muted
+                            start(it)
+                        }
                 }
             connect(call)
             return JoinResult.Joining
         }
+
+        /**
+         * Starts a new conference call that one-to-one call [from] becomes (`docs/adr/0025-conference-calls.md`),
+         * taking its line over, and joins it [muted]: the call's link once TDLib announced it, which the one-to-one
+         * call is discarded with so that the other person joins too. A failure ends it with the reason.
+         */
+        suspend fun startConference(
+            from: Any,
+            muted: Boolean,
+        ): Outcome<String> {
+            val call =
+                mutex.withLock {
+                    if (live != null || !line.handOver(from, this)) return Outcome.Failure(DomainError.NotFound)
+                    Live(chatId = 0, groupCallId = 0, joinAs = null, scope = callScope(), startsConference = true)
+                        .also {
+                            it.muted = muted
+                            start(it)
+                        }
+                }
+            connect(call)
+            val ended = mutex.withLock { call.phase as? GroupCallPhase.Ended }
+            val link =
+                if (ended != null) {
+                    null
+                } else {
+                    withTimeoutOrNull(LINK_TIMEOUT) {
+                        repository
+                            .groupCall(
+                                call.groupCallId,
+                            ).mapNotNull { it?.inviteLink?.takeIf(String::isNotEmpty) }
+                            .first()
+                    }
+                }
+            if (link == null && ended == null) {
+                // Telegram made the call but did not name its link: nobody else could join it.
+                mutex.withLock { if (live === call) finish(call, GroupCallEndReason.Failed(DomainError.NotFound)) }
+            }
+            return link?.let { Outcome.Success(it) }
+                ?: Outcome.Failure((ended?.reason as? GroupCallEndReason.Failed)?.error ?: DomainError.NotFound)
+        }
+
+        /**
+         * Invites [userIds] into the conference call a one-to-one call just became, for the voice chat's screen to
+         * say what came of it once ([upgradeInvites]); nothing while no one was picked.
+         */
+        suspend fun inviteAfterUpgrade(userIds: Collection<Long>) {
+            if (userIds.isEmpty()) return
+            mutableUpgradeInvites.value = invite(userIds)
+        }
+
+        /** The screen said what came of [inviteAfterUpgrade]. */
+        fun consumeUpgradeInvites() {
+            mutableUpgradeInvites.value = null
+        }
+
+        /** The line for a new call: taken, or handed over from the one-to-one call it continues ([from]). */
+        private fun takeLine(from: Any?): Boolean = if (from != null) line.handOver(from, this) else line.take(this)
 
         /** Starts a voice chat in chat [chatId], as an administrator who may, and joins it. */
         suspend fun startVoiceChat(chatId: Long): Outcome<JoinResult> {
@@ -348,11 +424,13 @@ class GroupCallManager
             clearEnded?.cancel()
             live = call
             publish()
-            foreground.start(withMicrophone = false)
+            // A conference call that continues an unmuted one-to-one call talks from the start.
+            call.microphoneStarted = !call.muted
+            foreground.start(withMicrophone = !call.muted)
             call.scope.launch {
                 val title = titles.title(call.chatId)
                 val request =
-                    if (call.conference != null) {
+                    if (call.isConference) {
                         SystemCallRequest.conference(title)
                     } else {
                         SystemCallRequest.voiceChat(title, call.chatId)
@@ -372,7 +450,7 @@ class GroupCallManager
                 }
             }
             // A conference call's id comes with its join: it is followed from there (connect).
-            if (call.conference == null) follow(call)
+            if (!call.isConference) follow(call)
         }
 
         /** Follows [call]'s group call and participants as TDLib announces them. */
@@ -396,9 +474,7 @@ class GroupCallManager
         /** Creates the engine's call, joins through TDLib, then connects; not under the mutex. */
         private suspend fun connect(call: Live) {
             val session =
-                if (call.conference !=
-                    null
-                ) {
+                if (call.isConference) {
                     createConferenceOrNull(call)
                 } else {
                     createSessionOrNull(call.groupCallId)
@@ -440,7 +516,7 @@ class GroupCallManager
                             session.setCamera(source?.camera, source?.quality ?: VideoQuality.High)
                         }
                     }
-                    if (call.conference != null) {
+                    if (call.isConference) {
                         call.scope.launch { session.unknownSources.collect { mutex.withLock { mapSources(call, it) } } }
                     }
                     session.connect(joined.value)
@@ -730,11 +806,12 @@ class GroupCallManager
             session: GroupCallSession,
         ): Outcome<String> {
             val target = call.conference
-            if (target == null) {
+            if (!call.isConference) {
                 return repository.join(call.groupCallId, call.joinAs, session.audioSourceId, session.joinPayload, true)
             }
-            val parameters = ConferenceJoinParameters(session.audioSourceId, session.joinPayload, true, false)
-            return conferences.join(target, parameters).map { joined ->
+            val parameters = ConferenceJoinParameters(session.audioSourceId, session.joinPayload, call.muted, false)
+            val joined = if (target != null) conferences.join(target, parameters) else conferences.create(parameters)
+            return joined.map { joined ->
                 mutex.withLock {
                     call.groupCallId = joined.groupCallId
                     call.encryption?.groupCallId = joined.groupCallId
@@ -771,7 +848,7 @@ class GroupCallManager
             val encryption = TdlibConferenceEncryption(conferences)
             call.encryption = encryption
             return try {
-                engine.createConference(muted = true, encryption = encryption)
+                engine.createConference(muted = call.muted, encryption = encryption)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -802,9 +879,14 @@ class GroupCallManager
             val joinAs: MessageSender?,
             /** Everything of this voice chat runs in it; cancelled when it ends. */
             val scope: CoroutineScope,
-            /** How a conference call is reached; null for a chat's voice chat. */
+            /** How a conference call is reached; null for a chat's voice chat and a call [startsConference]. */
             val conference: ConferenceTarget? = null,
+            /** A new conference call, which the user starts (`createGroupCall`) as a one-to-one call becomes it. */
+            val startsConference: Boolean = false,
         ) {
+            /** A conference call: end-to-end encrypted, outside any chat. */
+            val isConference: Boolean get() = conference != null || startsConference
+
             /** A conference call's encryption, which needs the call's id once it is known. */
             var encryption: TdlibConferenceEncryption? = null
 
@@ -860,7 +942,7 @@ class GroupCallManager
                 }
 
             /** A conference call that is joined and not over: people can be invited into it. */
-            fun canInvite(): Boolean = conference != null && groupCallId != 0 && phase !is GroupCallPhase.Ended
+            fun canInvite(): Boolean = isConference && groupCallId != 0 && phase !is GroupCallPhase.Ended
 
             /** Not muted by an administrator, or allowed to unmute: a stream has nothing to unmute. */
             fun canUnmute(): Boolean {
@@ -876,7 +958,7 @@ class GroupCallManager
                 ActiveGroupCall(
                     chatId = chatId,
                     groupCallId = groupCallId,
-                    isConference = conference != null,
+                    isConference = isConference,
                     phase = phase,
                     isStream = isStream,
                     isMuted = muted,
@@ -913,6 +995,9 @@ class GroupCallManager
         private companion object {
             /** How long an ended voice chat stays on screen with why it ended. */
             val ENDED_SHOWN = 2.seconds
+
+            /** How long a new conference call waits for TDLib to name its link. */
+            val LINK_TIMEOUT = 10.seconds
 
             /** The most videos of others received at once (`docs/adr/0024-video-in-voice-chats.md`). */
             const val MAX_RECEIVED_VIDEOS = 4

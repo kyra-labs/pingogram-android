@@ -149,6 +149,7 @@
     <string name="call_rating_not_now">Not now</string>
     <string name="call_rating_send">Send</string>
     <string name="group_call_add_people">Add people</string>
+    <string name="call_end_upgraded">Moving to a group call…</string>
     <string name="call_invite_title">Add people</string>
     <string name="call_invite_text">Each gets an invitation to the call in their chat with you.</string>
     <string name="call_invite_search">Search contacts</string>
