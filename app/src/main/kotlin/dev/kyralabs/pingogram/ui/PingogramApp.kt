@@ -51,6 +51,8 @@ import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.component.floatingNavigationBarInsets
+import dev.kyralabs.pingogram.core.ui.navigation.OverlayHost
+import dev.kyralabs.pingogram.core.ui.navigation.rememberOverlayNavigator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
@@ -81,10 +83,11 @@ import dev.kyralabs.pingogram.share.IncomingShare
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
  * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows and in windows of
  * compact height a `WideNavigationRail` with the search button at its top, from a `NavigationSuiteScaffold`, expanded
- * in large windows ([pingogramNavigationSuiteType]). The `NavHost` keeps its
- * place in the composition across both, so rotating or resizing the window never resets its screens. Full-screen
- * destinations (the media viewer) show neither. A dialog destination (the forward sheet) changes nothing of the shell:
- * it follows the screen below it ([screenEntryAsState]).
+ * in large windows ([pingogramNavigationSuiteType]). The `NavHost` keeps its place in the composition across both, so
+ * rotating or resizing the window never resets its screens. Full-screen destinations (the stories viewer, the QR code
+ * scanner) show neither. The media viewer is an overlay destination ([OverlayHost]): it covers the whole shell, which
+ * stays as it is below it. Neither it nor a dialog destination (the forward sheet) changes anything of the shell: it
+ * follows the screen below them ([screenEntryAsState]).
  *
  * A top-level screen can hide the floating bar while it shows a floating toolbar of its own in the bar's place, e.g.
  * the chat list while chats are selected ([HideNavigationBar], through [navigationBarVisibility]). The bar's insets
@@ -170,70 +173,84 @@ fun PingogramApp(
     val openLockedChats =
         remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
     val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
+    // Before the NavHost sets its graph, whose media viewer is an overlay destination.
+    val overlays = rememberOverlayNavigator(navController)
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
-            NavigationSuiteScaffold(
-                navigationItems = {
-                    PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
-                },
-                navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
-                // The scaffold shows its primary action even without navigation.
-                primaryActionContent = { if (showRail) RailSearchButton(adaptiveType, searchOpen, search, openSearch) },
-            ) {
-                Box(Modifier.fillMaxSize()) {
-                    CompositionLocalProvider(
-                        LocalNavigationBarInsets provides
-                            if (floatingBarSpace) floatingNavigationBarInsets() else WindowInsets(0, 0, 0, 0),
-                        LocalNavigationBarVisibility provides navigationBarVisibility,
-                        LocalTabReselection provides tabReselection,
-                        LocalFeedbackLauncher provides openFeedback,
-                        LocalRecentCallsLauncher provides openRecentCalls,
-                        // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on the page.
-                        LocalLockedChatsLauncher provides openLockedChats,
-                        LocalChatLauncher provides openChat,
-                    ) {
-                        AppContent(uiState, search) {
-                            PingogramNavHost(
-                                navController = navController,
-                                uiState = uiState,
-                                search = search,
-                                chatToOpen = chatToOpen,
-                                onChatOpened = onChatOpened,
-                                lockedChatsToOpen = lockedChatsToOpen,
-                                onLockedChatsOpened = onLockedChatsOpened,
-                                onOpenLinkTarget = { target -> links?.show(target) },
+            OverlayHost(overlays) {
+                NavigationSuiteScaffold(
+                    navigationItems = {
+                        PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
+                    },
+                    navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
+                    // The scaffold shows its primary action even without navigation.
+                    primaryActionContent = {
+                        if (showRail) {
+                            RailSearchButton(
+                                adaptiveType,
+                                searchOpen,
+                                search,
+                                openSearch,
                             )
                         }
-                    }
-                    // Compact windows only: composed there even while hidden (FloatingNavigationBar).
-                    if (floatingBar) {
-                        FloatingNavigationBar(
-                            visible = showNavigation && currentTab != null && !navigationBarVisibility.isHidden,
-                            selected = barTab,
-                            // The bar shows only on a tab itself.
-                            onSelect = { navController.selectTab(it, currentTab, tabReselection) },
-                            onSearch = openSearch,
-                            searchOpen = searchOpen,
-                            search = search,
-                            accountMenu = accountMenu,
-                            modifier =
-                                Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .windowInsetsPadding(WindowInsets.navigationBars)
-                                    .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
+                    },
+                ) {
+                    Box(Modifier.fillMaxSize()) {
+                        CompositionLocalProvider(
+                            LocalNavigationBarInsets provides
+                                if (floatingBarSpace) floatingNavigationBarInsets() else WindowInsets(0, 0, 0, 0),
+                            LocalNavigationBarVisibility provides navigationBarVisibility,
+                            LocalTabReselection provides tabReselection,
+                            LocalFeedbackLauncher provides openFeedback,
+                            LocalRecentCallsLauncher provides openRecentCalls,
+                            // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on
+                            // the page.
+                            LocalLockedChatsLauncher provides openLockedChats,
+                            LocalChatLauncher provides openChat,
+                        ) {
+                            AppContent(uiState, search) {
+                                PingogramNavHost(
+                                    navController = navController,
+                                    uiState = uiState,
+                                    search = search,
+                                    chatToOpen = chatToOpen,
+                                    onChatOpened = onChatOpened,
+                                    lockedChatsToOpen = lockedChatsToOpen,
+                                    onLockedChatsOpened = onLockedChatsOpened,
+                                    onOpenLinkTarget = { target -> links?.show(target) },
+                                )
+                            }
+                        }
+                        // Compact windows only: composed there even while hidden (FloatingNavigationBar).
+                        if (floatingBar) {
+                            FloatingNavigationBar(
+                                visible = showNavigation && currentTab != null && !navigationBarVisibility.isHidden,
+                                selected = barTab,
+                                // The bar shows only on a tab itself.
+                                onSelect = { navController.selectTab(it, currentTab, tabReselection) },
+                                onSearch = openSearch,
+                                searchOpen = searchOpen,
+                                search = search,
+                                accountMenu = accountMenu,
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .windowInsetsPadding(WindowInsets.navigationBars)
+                                        .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
+                            )
+                        }
+                        LinkHandling(
+                            links = links,
+                            uiState = uiState,
+                            navController = navController,
+                            onOpenSearch = openSearch,
+                            linkToOpen = linkToOpen,
+                            onLinkOpened = onLinkOpened,
+                            shares = shares,
+                            shareToOpen = shareToOpen,
+                            onShareOpened = onShareOpened,
                         )
                     }
-                    LinkHandling(
-                        links = links,
-                        uiState = uiState,
-                        navController = navController,
-                        onOpenSearch = openSearch,
-                        linkToOpen = linkToOpen,
-                        onLinkOpened = onLinkOpened,
-                        shares = shares,
-                        shareToOpen = shareToOpen,
-                        onShareOpened = onShareOpened,
-                    )
                 }
             }
         }

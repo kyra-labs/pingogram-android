@@ -15,6 +15,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Calls: "Add people" turns a call into a group call with the people you pick, and a call the other person turns into
   a group call moves there by itself.
 
+### Fixed
+- Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture
+  shrinks back into its message without the conversation being rebuilt first.
+- Search: the search field and the filters keep their background, so results no longer show through them as they
+  scroll.
+- Contacts: the contacts no longer reach under the A–Z index, so their icons and "Sync now" stay clear of its letters.
+
 ## [0.6.0] - 2026-10-26
 
 ### Added
