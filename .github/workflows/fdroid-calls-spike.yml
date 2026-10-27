@@ -1,0 +1,191 @@
+name: F-Droid calls spike
+
+# The spike of docs/adr/0030-calls-in-the-fdroid-build.md: can the call engine and WebRTC be built from source, with the
+# NDK alone, as F-Droid's build server would? Run manually (Actions → F-Droid calls spike → Run workflow); it builds
+# nothing Pingogram ships and publishes nothing but its report (the job summary and a "spike-report" artifact).
+#
+# Job "telegram-x" builds Telegram X at the commit F-Droid builds (fdroiddata metadata/org.thunderdog.challegram.yml):
+# its tgcalls and trimmed WebRTC tree (app/jni/tgvoip) with libvpx, FFmpeg and its other native code, by its own
+# Gradle build, as F-Droid's recipe does (`./scripts/setup.sh --skip-sdk-setup`, then the flavor's release build).
+# It records the clone's size and time, the build's time and disk, and the size of every native library, above all
+# libtgcallsjni.so, the call engine and WebRTC, against NTgCalls' libntgcalls.so (20.5 MB on arm64-v8a).
+#
+# Job "ntgcalls-on-tgx-webrtc" checks NTgCalls (the engine Pingogram ships, docs/adr/0015-call-media-engine.md)
+# against that WebRTC tree: which WebRTC headers NTgCalls includes that the tree lacks (screen capture, the frame
+# transformer conference calls rely on, H.264), the first question of building NTgCalls without Chromium's.
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavors:
+        description: "Telegram X flavors to build, space-separated (MarshmallowArm64 MarshmallowArm32 MarshmallowX64)"
+        required: false
+        default: "MarshmallowArm64"
+      ndk:
+        description: "NDK version (F-Droid's recipe: r27d = 27.3.13750724; r28c = 28.2.13676358)"
+        required: false
+        default: "27.3.13750724"
+
+permissions:
+  contents: read
+
+env:
+  # Telegram X 0.28.11.1800, the commit F-Droid's recipe builds.
+  TGX_COMMIT: "807947f544c82301859465cd8453531b4590a75b"
+  # NTgCalls 3.0.5, as .github/workflows/ntgcalls.yml.
+  NTGCALLS_COMMIT: "e8ab467185017827625f664d024824947b5c5d5f"
+
+jobs:
+  telegram-x:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/powershell
+          df -h /
+
+      - name: Install the build tools F-Droid's recipe installs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gperf build-essential cmake libssl-dev zlib1g-dev automake libtool time
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Install the NDK
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "ndk;${{ inputs.ndk }}" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk }}" >> "$GITHUB_ENV"
+
+      - name: Clone Telegram X with its submodules
+        run: |
+          mkdir -p report
+          start=$(date +%s)
+          git clone --quiet https://github.com/TGX-Android/Telegram-X tgx
+          cd tgx
+          git checkout --quiet "$TGX_COMMIT"
+          git lfs install --local
+          git lfs pull
+          git submodule update --init --recursive --depth 1 --jobs 8
+          end=$(date +%s)
+          {
+            echo "## Clone"
+            echo "- commit: $TGX_COMMIT"
+            echo "- time: $(( (end - start) / 60 )) min $(( (end - start) % 60 )) s"
+            echo "- size: $(du -sh . | cut -f1)"
+            echo "- tgcalls and WebRTC (app/jni/tgvoip): $(du -sh app/jni/tgvoip | cut -f1)"
+            echo "- WebRTC's tree (app/jni/tgvoip/third_party/webrtc): $(du -sh app/jni/tgvoip/third_party/webrtc | cut -f1)"
+            echo "- Chromium's base and third_party (webrtc_deps): $(du -sh app/jni/tgvoip/third_party/webrtc_deps | cut -f1)"
+          } >> ../report/report.md
+          df -h /
+
+      - name: Remove what F-Droid's recipe removes
+        working-directory: tgx
+        run: rm -rf tdlib/source app/jni/tgvoip/third_party/webrtc/test
+
+      - name: Configure as F-Droid does
+        working-directory: tgx
+        run: ./scripts/setup.sh --skip-sdk-setup
+
+      - name: Build
+        working-directory: tgx
+        run: |
+          for flavor in ${{ inputs.flavors }}; do
+            start=$(date +%s)
+            status=0
+            /usr/bin/time -v -o "../report/time-$flavor.txt" \
+              ./gradlew --no-daemon --console=plain "assemble${flavor}Release" > "../report/build-$flavor.log" 2>&1 || status=$?
+            end=$(date +%s)
+            {
+              echo "## $flavor"
+              echo "- exit status: $status"
+              echo "- time: $(( (end - start) / 60 )) min $(( (end - start) % 60 )) s"
+              echo "- peak memory: $(grep 'Maximum resident' "../report/time-$flavor.txt" | awk '{print $NF}') kB"
+              echo "- build tree: $(du -sh app/build 2>/dev/null | cut -f1), disk left: $(df -h / | awk 'NR==2 {print $4}')"
+              echo ""
+              echo "Native libraries (stripped, as packaged):"
+              echo '```'
+              find app/build/intermediates -path '*stripped_native_libs*' -name '*.so' -printf '%s\t%p\n' 2>/dev/null |
+                sort -rn | awk -F'\t' '{printf "%8.1f MB  %s\n", $1 / 1048576, $2}' | head -40
+              echo '```'
+              echo "APKs:"
+              echo '```'
+              find app/build/outputs -name '*.apk' -printf '%s\t%p\n' 2>/dev/null |
+                awk -F'\t' '{printf "%8.1f MB  %s\n", $1 / 1048576, $2}'
+              echo '```'
+            } >> ../report/report.md
+            if [ "$status" -ne 0 ]; then
+              { echo "Last lines of the build:"; echo '```'; tail -60 "../report/build-$flavor.log"; echo '```'; } \
+                >> ../report/report.md
+            fi
+          done
+
+      - name: Report
+        if: always()
+        run: cat report/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: spike-report-telegram-x
+          path: report/
+
+  ntgcalls-on-tgx-webrtc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout NTgCalls
+        uses: actions/checkout@v7
+        with:
+          repository: pytgcalls/ntgcalls
+          ref: ${{ env.NTGCALLS_COMMIT }}
+          path: ntgcalls
+          fetch-depth: 1
+
+      - name: Clone Telegram X's WebRTC tree at the commit Telegram X pins
+        run: |
+          git clone --quiet --filter=blob:none --no-checkout https://github.com/TGX-Android/Telegram-X tgx
+          webrtc=$(git -C tgx ls-tree "$TGX_COMMIT" app/jni/tgvoip/third_party/webrtc | awk '{print $3}')
+          tgcalls=$(git -C tgx ls-tree "$TGX_COMMIT" app/jni/tgvoip/third_party/tgcalls | awk '{print $3}')
+          echo "WebRTC $webrtc, tgcalls $tgcalls" | tee commits.txt
+          git init --quiet webrtc
+          git -C webrtc fetch --quiet --depth 1 https://github.com/TGX-Android/webrtc "$webrtc"
+          git -C webrtc checkout --quiet FETCH_HEAD
+
+      - name: Compare the WebRTC headers NTgCalls includes with the tree
+        run: |
+          mkdir -p report
+          grep -rhoE '#include [<"](api|modules|rtc_base|media|pc|call|common_video|common_audio|sdk|p2p|system_wrappers|video|audio)/[^">]+[">]' \
+            --include="*.cpp" --include="*.hpp" --include="*.h" --include="*.cc" ntgcalls 2>/dev/null | sed -E 's/#include [<"]//; s/[">]$//' | sort -u > report/included.txt
+          : > report/missing.txt
+          while read -r header; do
+            [ -f "webrtc/$header" ] || echo "$header" >> report/missing.txt
+          done < report/included.txt
+          {
+            echo "## NTgCalls on Telegram X's WebRTC tree"
+            cat commits.txt
+            echo ""
+            echo "- WebRTC headers NTgCalls includes: $(wc -l < report/included.txt)"
+            echo "- missing from the tree: $(wc -l < report/missing.txt)"
+            echo ""
+            echo '```'
+            head -80 report/missing.txt
+            echo '```'
+            echo ""
+            echo "What the tree has of the APIs Pingogram needs:"
+            for path in api/frame_transformer_interface.h api/crypto/frame_encryptor_interface.h \
+              modules/desktop_capture modules/video_coding/codecs/h264 sdk/android/api/org/webrtc/ScreenCapturerAndroid.java; do
+              if [ -e "webrtc/$path" ]; then echo "- $path: present"; else echo "- $path: missing"; fi
+            done
+          } >> report/report.md
+          cat report/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: spike-report-ntgcalls
+          path: report/
