@@ -38,7 +38,7 @@ private fun Preview(
 ) {
     PingogramPreview {
         Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
-            InvitePeopleContent(state, query, {}, {}, {}, {})
+            InvitePeopleContent(state, query) {}
         }
     }
 }

@@ -46,7 +46,13 @@ class InvitePeopleAccessibilityChecksTest {
     private fun show(state: InvitePeopleUiState) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                InvitePeopleContent(state, "", {}, { toggled += it }, { added++ }, {})
+                InvitePeopleContent(state, "") { event ->
+                    when (event) {
+                        is InvitePeopleEvent.Toggle -> toggled += event.userId
+                        InvitePeopleEvent.Add -> added++
+                        else -> Unit
+                    }
+                }
             }
         }
     }

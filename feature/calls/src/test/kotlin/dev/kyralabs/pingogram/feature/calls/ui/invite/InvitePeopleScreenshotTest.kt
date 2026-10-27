@@ -74,7 +74,7 @@ class InvitePeopleScreenshotTest {
     ) = captureRoboImage {
         CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
             PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, contrast = contrast) {
-                SheetSurface { InvitePeopleContent(state, query, {}, {}, {}, {}) }
+                SheetSurface { InvitePeopleContent(state, query) {} }
             }
         }
     }

@@ -34,7 +34,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,7 +85,8 @@ internal fun InvitePeopleSheet(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     LaunchedEffect(excluded) { viewModel.setExcluded(excluded) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState =
+        rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val scope = rememberCoroutineScope()
     val currentOnInvite by rememberUpdatedState(onInvite)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
@@ -104,14 +105,14 @@ internal fun InvitePeopleSheet(
         },
         sheetState = sheetState,
     ) {
-        InvitePeopleContent(
-            state = state,
-            query = query,
-            onQueryChange = viewModel::setQuery,
-            onToggle = viewModel::toggle,
-            onAdd = { close(viewModel.picked) },
-            onCancel = { close(null) },
-        )
+        InvitePeopleContent(state, query) { event ->
+            when (event) {
+                is InvitePeopleEvent.Query -> viewModel.setQuery(event.text)
+                is InvitePeopleEvent.Toggle -> viewModel.toggle(event.userId)
+                InvitePeopleEvent.Add -> close(viewModel.picked)
+                InvitePeopleEvent.Cancel -> close(null)
+            }
+        }
     }
 }
 
@@ -124,11 +125,8 @@ internal fun InvitePeopleSheet(
 internal fun InvitePeopleContent(
     state: InvitePeopleUiState,
     query: String,
-    onQueryChange: (String) -> Unit,
-    onToggle: (Long) -> Unit,
-    onAdd: () -> Unit,
-    onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    onEvent: (InvitePeopleEvent) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     Column(modifier.fillMaxWidth()) {
@@ -148,59 +146,96 @@ internal fun InvitePeopleContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = spacing.large).padding(bottom = spacing.medium),
         )
-        SearchField(query, onQueryChange)
-        val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-        val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
-        AnimatedContent(
-            targetState = state,
-            contentKey = { it::class },
-            transitionSpec = {
-                fadeIn(effects) togetherWith fadeOut(effects) using
-                    SizeTransform(sizeAnimationSpec = { _, _ -> spatial })
-            },
-            modifier = Modifier.weight(1f, fill = false),
-            label = "invite",
-        ) { shown ->
-            when (shown) {
-                InvitePeopleUiState.Loading -> {
-                    Box(Modifier.fillMaxWidth().heightIn(min = MaterialTheme.sizes.avatarProfile), Alignment.Center) {
-                        DelayedLoadingIndicator()
-                    }
-                }
+        SearchField(query) { onEvent(InvitePeopleEvent.Query(it)) }
+        Body(state, onToggle = { onEvent(InvitePeopleEvent.Toggle(it)) }, modifier = Modifier.weight(1f, fill = false))
+        Actions(
+            picked = (state as? InvitePeopleUiState.Content)?.pickedCount ?: 0,
+            onAdd = { onEvent(InvitePeopleEvent.Add) },
+            onCancel = { onEvent(InvitePeopleEvent.Cancel) },
+        )
+    }
+}
 
-                is InvitePeopleUiState.Error -> {
-                    Note(errorText(shown.error), color = MaterialTheme.colorScheme.error)
-                }
+/** What the sheet's user does. */
+internal sealed interface InvitePeopleEvent {
+    data class Query(
+        val text: String,
+    ) : InvitePeopleEvent
 
-                is InvitePeopleUiState.Content -> {
-                    when {
-                        shown.candidates.isNotEmpty() -> Candidates(shown, onToggle)
-                        shown.noMatches -> Note(stringResource(R.string.call_invite_no_matches))
-                        else -> Note(stringResource(R.string.call_invite_no_contacts))
-                    }
+    data class Toggle(
+        val userId: Long,
+    ) : InvitePeopleEvent
+
+    data object Add : InvitePeopleEvent
+
+    data object Cancel : InvitePeopleEvent
+}
+
+/** The contacts, or why there are none, crossfading as the state changes. */
+@Composable
+private fun Body(
+    state: InvitePeopleUiState,
+    onToggle: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
+    AnimatedContent(
+        targetState = state,
+        contentKey = { it::class },
+        transitionSpec = {
+            fadeIn(effects) togetherWith fadeOut(effects) using SizeTransform(sizeAnimationSpec = { _, _ -> spatial })
+        },
+        modifier = modifier,
+        label = "invite",
+    ) { shown ->
+        when (shown) {
+            InvitePeopleUiState.Loading -> {
+                Box(Modifier.fillMaxWidth().heightIn(min = MaterialTheme.sizes.avatarProfile), Alignment.Center) {
+                    DelayedLoadingIndicator()
+                }
+            }
+
+            is InvitePeopleUiState.Error -> {
+                Note(errorText(shown.error), color = MaterialTheme.colorScheme.error)
+            }
+
+            is InvitePeopleUiState.Content -> {
+                when {
+                    shown.candidates.isNotEmpty() -> Candidates(shown, onToggle)
+                    shown.noMatches -> Note(stringResource(R.string.call_invite_no_matches))
+                    else -> Note(stringResource(R.string.call_invite_no_contacts))
                 }
             }
         }
-        val picked = (state as? InvitePeopleUiState.Content)?.pickedCount ?: 0
-        Row(
-            Modifier.fillMaxWidth().padding(spacing.large),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onCancel, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.call_invite_cancel))
-            }
-            Button(onClick = onAdd, enabled = picked > 0, shapes = ButtonDefaults.shapes()) {
-                Text(
-                    text =
-                        if (picked > 0) {
-                            pluralStringResource(R.plurals.call_invite_add_count, picked, picked)
-                        } else {
-                            stringResource(R.string.call_invite_add)
-                        },
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
+    }
+}
+
+/** "Cancel" at the start, "Add" (with how many are [picked]) at the end, enabled once someone is. */
+@Composable
+private fun Actions(
+    picked: Int,
+    onAdd: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onCancel, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.call_invite_cancel))
+        }
+        Button(onClick = onAdd, enabled = picked > 0, shapes = ButtonDefaults.shapes()) {
+            Text(
+                text =
+                    if (picked > 0) {
+                        pluralStringResource(R.plurals.call_invite_add_count, picked, picked)
+                    } else {
+                        stringResource(R.string.call_invite_add)
+                    },
+                style = MaterialTheme.typography.labelLargeEmphasized,
+            )
         }
     }
 }
@@ -228,14 +263,6 @@ private fun CandidateRow(
     val color = if (picked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
     val name = candidate.name.ifBlank { stringResource(R.string.call_someone) }
     ListItem(
-        headlineContent = {
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyLarge.userContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         leadingContent = {
             Avatar(
                 photo = candidate.photo,
@@ -254,7 +281,14 @@ private fun CandidateRow(
                 .clip(shape)
                 .background(color)
                 .toggleable(value = picked, role = Role.Checkbox, onValueChange = { onToggle() }),
-    )
+    ) {
+        Text(
+            name,
+            style = MaterialTheme.typography.bodyLarge.userContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable

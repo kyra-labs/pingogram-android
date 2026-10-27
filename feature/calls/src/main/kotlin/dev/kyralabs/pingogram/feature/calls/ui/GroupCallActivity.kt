@@ -23,6 +23,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -128,32 +129,8 @@ class GroupCallActivity : ComponentActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
             var inviting by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {
-                viewModel.effects.collect { effect ->
-                    when (effect) {
-                        CallEffect.RequestCamera -> {
-                            camera.launch(Manifest.permission.CAMERA)
-                        }
-
-                        CallEffect.RequestScreenCapture -> {
-                            screenCapture()
-                        }
-
-                        CallEffect.OpenSettings -> {
-                            openAppSettings()
-                        }
-
-                        is CallEffect.Invited -> {
-                            launch { snackbarHostState.showSnackbar(invitedText(effect)) }
-                        }
-
-                        is CallEffect.InviteFailed -> {
-                            launch {
-                                snackbarHostState.showSnackbar(
-                                    inviteFailedText(effect),
-                                )
-                            }
-                        }
-                    }
+                viewModel.effects.collect {
+                    onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture, snackbarHostState)
                 }
             }
             LaunchedEffect(state) { if (state == GroupCallUiState.Closed) finish() }
@@ -174,17 +151,59 @@ class GroupCallActivity : ComponentActivity() {
                         onAddPeople = { inviting = true },
                         snackbarHostState = snackbarHostState,
                     )
-                    val inCall = state as? GroupCallUiState.InCall
-                    if (inviting && inCall?.canInvite == true && !inPictureInPicture) {
-                        InvitePeopleSheet(
-                            excluded = inCall.participantUserIds(),
-                            onInvite = {
-                                inviting = false
-                                viewModel.onEvent(GroupCallEvent.Invite(it))
-                            },
-                            onDismiss = { inviting = false },
-                        )
-                    }
+                    if (inviting) InviteSheet(state, onClose = { inviting = false })
+                }
+            }
+        }
+    }
+
+    /** "Add people" over a conference call it may invite into; [onClose] once it closed, inviting or not. */
+    @Composable
+    private fun InviteSheet(
+        state: GroupCallUiState,
+        onClose: () -> Unit,
+    ) {
+        val inCall = state as? GroupCallUiState.InCall
+        if (inCall?.canInvite != true || inPictureInPicture) return
+        InvitePeopleSheet(
+            excluded = inCall.participantUserIds(),
+            onInvite = {
+                onClose()
+                viewModel.onEvent(GroupCallEvent.Invite(it))
+            },
+            onDismiss = onClose,
+        )
+    }
+
+    /** Does what an effect of the view model asks; a result's snackbar shows while the next effects come. */
+    private fun onEffect(
+        effect: CallEffect,
+        requestCamera: () -> Unit,
+        screenCapture: () -> Unit,
+        snackbarHostState: SnackbarHostState,
+    ) {
+        when (effect) {
+            CallEffect.RequestCamera -> {
+                requestCamera()
+            }
+
+            CallEffect.RequestScreenCapture -> {
+                screenCapture()
+            }
+
+            CallEffect.OpenSettings -> {
+                openAppSettings()
+            }
+
+            is CallEffect.Invited -> {
+                lifecycleScope.launch { snackbarHostState.showSnackbar(invitedText(effect)) }
+            }
+
+            is CallEffect.InviteFailed -> {
+                lifecycleScope.launch {
+                    snackbarHostState.showSnackbar(
+                        inviteFailedText(effect),
+                    )
                 }
             }
         }

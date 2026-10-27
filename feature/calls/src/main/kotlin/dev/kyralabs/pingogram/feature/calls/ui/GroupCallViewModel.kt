@@ -224,12 +224,16 @@ class GroupCallViewModel
                 }
 
                 is GroupCallEvent.CameraResult -> {
-                    if (event.granted) {
-                        viewModelScope.launch { manager.setCameraOn(true) }
-                    } else if (!event.canAskAgain) {
-                        savedStateHandle[KEY_CAMERA_REFUSED] = true
-                    }
+                    onCameraResult(event)
                 }
+            }
+        }
+
+        private fun onCameraResult(result: GroupCallEvent.CameraResult) {
+            if (result.granted) {
+                viewModelScope.launch { manager.setCameraOn(true) }
+            } else if (!result.canAskAgain) {
+                savedStateHandle[KEY_CAMERA_REFUSED] = true
             }
         }
 
