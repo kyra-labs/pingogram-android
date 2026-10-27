@@ -16,6 +16,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   a group call moves there by itself.
 - Group call invitations show in the chat ("Group call", "Missed group call") and in Recent calls; tap one to join
   while the call goes on.
+- Storage: once a week, while the phone charges and is idle, downloaded media not opened for 30 days is deleted, and the
+  cache is kept under 4 GB. Pinned chats keep their files, and nothing is deleted while files or a chat export are on
+  their way; they download again when opened.
 
 ### Fixed
 - Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture

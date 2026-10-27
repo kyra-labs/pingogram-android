@@ -49,7 +49,7 @@ What blocks 1.0, in order:
 | Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms | Needs device | `OpenChatBenchmark` measures the `openChat` trace section, from the tap in the chat list to the first messages drawn, opening Saved Messages with its history cached. `SendMessageBenchmark` (2026-10-27) measures the `sendMessage` section, from the send tap to the bubble on its way drawn, sending to Saved Messages and deleting each message after; its budget is in `benchmark/budgets.json` for `compare.py`. Neither has run on the phone yet (`docs/PERFORMANCE.md` §9 has the command) | Owner (device run) |
 | Memory ≤ 120 MB idle, ≤ 250 MB in a media chat | Needs device | `TdlibMessageRepository` keeps 3 chats (LRU). `onTrimMemory` now clears it (*fixed here*: the trim was never called) | R |
 | APK ≤ 50 MB arm64, universal ≤ 125 MB | Pass (*fixed here*) | The release workflow now fails when an APK is over budget. It had no size gate before | R |
-| Battery ≤ 1.5% / 8 h, data ≤ 2 MB / 24 h, no polling | Needs device | No polling, alarms or periodic work in the code (checked: no `AlarmManager`, no `PeriodicWorkRequest`). Battery Historian and data runs are manual | Owner |
+| Battery ≤ 1.5% / 8 h, data ≤ 2 MB / 24 h, no polling | Needs device | No polling or alarms in the code (checked: no `AlarmManager`); the one periodic work is the weekly storage clean-up, only while charging and idle (`StorageOptimizationWorker`, 2026-10-27). Battery Historian and data runs are manual | Owner |
 | Compose: immutable state, keyed lists, no off-screen recompositions, draw/layout-phase animations | Pass | Compose compiler stability config; `ChatListRecompositionTest`, `ChatRecompositionTest` | — |
 | TDLib calls: suspendable, cancellable, batched | Pass | `TdlibClient.send` is cancellable; `viewMessages` batched in `ChatViewModel` | — |
 
@@ -143,10 +143,11 @@ What blocks 1.0, in order:
   `getToken` and `deleteToken` (and `onNewToken`) for `register`, whose token comes through the service's
   `onRegistered`. Moving there changes how the token reaches TDLib, so it waits for a `gms` phone to check it. B.
 
-- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): there is no scheduled job, only "Clear cache". A weekly
-  `PeriodicWorkRequest` would start WorkManager at every app start, which §2 avoids on purpose ("WorkManager starts on
-  demand"). The owner should pick one: a weekly job (and change §2), or optimizing when the user opens Data and
-  storage, or after a week at app start without WorkManager. Owner, then B (Data and storage).
+- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): the owner decided on a weekly job (2026-10-27), and it is
+  in: unique periodic work per account, while charging and idle, waiting for transfers and exports, scheduled 5 s after
+  the start (§2 changed with it). Left: seeing it run on a phone (`adb shell dumpsys jobscheduler | grep -A5
+  storage_optimization`, or run it at once with `adb shell cmd jobscheduler run -f dev.kyralabs.pingogram <job id>`).
+  Owner.
 - **No JankStats or LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): neither is a dependency. LeakCanary is
   ~1 MB and debug-only, and it touches no network; adding it needs the owner's approval (`CLAUDE.md`, dependencies).
   Owner, then A.
