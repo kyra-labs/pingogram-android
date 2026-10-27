@@ -74,7 +74,10 @@ internal fun MinimizeButton(
     }
 }
 
-/** "Add people" (`docs/adr/0025-conference-calls.md`): the add-person symbol, filled in the overlay's colors over video. */
+/**
+ * "Add people" (`docs/adr/0025-conference-calls.md`): the add-person symbol, filled in the overlay's colors over
+ * video.
+ */
 @Composable
 internal fun AddPeopleButton(
     onClick: () -> Unit,

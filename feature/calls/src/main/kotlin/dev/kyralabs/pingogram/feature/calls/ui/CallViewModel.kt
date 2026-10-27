@@ -154,13 +154,8 @@ class CallViewModel
                     }
                 }
 
-                CallEvent.OpenAddPeople, CallEvent.CloseAddPeople -> {
-                    savedStateHandle[KEY_ADDING_PEOPLE] = event == CallEvent.OpenAddPeople
-                }
-
-                is CallEvent.AddPeople -> {
-                    savedStateHandle[KEY_ADDING_PEOPLE] = false
-                    viewModelScope.launch { callManager.upgradeToConference(event.userIds) }
+                CallEvent.OpenAddPeople, CallEvent.CloseAddPeople, is CallEvent.AddPeople -> {
+                    onAddPeople(event)
                 }
 
                 CallEvent.HangUp -> {
@@ -334,6 +329,12 @@ class CallViewModel
 
         /** The slot of the account the call came to or goes out from; the first account's before Telegram made it. */
         val callSlot: Int get() = callManager.call.value?.slot ?: 0
+
+        /** "Add people": its picker opens and closes; "Add" turns the call into a conference call. */
+        private fun onAddPeople(event: CallEvent) {
+            savedStateHandle[KEY_ADDING_PEOPLE] = event == CallEvent.OpenAddPeople
+            if (event is CallEvent.AddPeople) viewModelScope.launch { callManager.upgradeToConference(event.userIds) }
+        }
 
         /** Answers, a video call with the camera on where it is allowed already (otherwise the user turns it on). */
         private suspend fun answer() {

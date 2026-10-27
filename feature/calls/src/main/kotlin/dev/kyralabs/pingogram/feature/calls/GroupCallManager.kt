@@ -70,7 +70,12 @@ import kotlin.time.Duration.Companion.seconds
  * Every change happens under [mutex], in the order TDLib's updates and the user's actions arrive.
  */
 @Singleton
-@Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
+@Suppress(
+    // One function per action of the user and per transition of the state machine, which stays one class so that every
+    // change happens under its one lock; conference calls (docs/adr/0025-conference-calls.md) added to it.
+    "TooManyFunctions",
+    "LargeClass",
+)
 class GroupCallManager
     @Inject
     // Injected: TDLib's group calls, engine, Telecom, service, clock, titles, line, network.
@@ -171,32 +176,25 @@ class GroupCallManager
                         }
                 }
             connect(call)
-            val id =
-                mutex.withLock {
-                    when (val phase = call.phase) {
-                        is GroupCallPhase.Ended -> {
-                            val reason = phase.reason
-                            return Outcome.Failure(
-                                (reason as? GroupCallEndReason.Failed)?.error ?: DomainError.NotFound,
-                            )
-                        }
-
-                        else -> {
-                            call.groupCallId
-                        }
+            val ended = mutex.withLock { call.phase as? GroupCallPhase.Ended }
+            val link =
+                if (ended != null) {
+                    null
+                } else {
+                    withTimeoutOrNull(LINK_TIMEOUT) {
+                        repository
+                            .groupCall(
+                                call.groupCallId,
+                            ).mapNotNull { it?.inviteLink?.takeIf(String::isNotEmpty) }
+                            .first()
                     }
                 }
-            val link =
-                withTimeoutOrNull(LINK_TIMEOUT) {
-                    repository.groupCall(id).mapNotNull { it?.inviteLink?.takeIf(String::isNotEmpty) }.first()
-                }
-            return if (link != null) {
-                Outcome.Success(link)
-            } else {
+            if (link == null && ended == null) {
                 // Telegram made the call but did not name its link: nobody else could join it.
                 mutex.withLock { if (live === call) finish(call, GroupCallEndReason.Failed(DomainError.NotFound)) }
-                Outcome.Failure(DomainError.NotFound)
             }
+            return link?.let { Outcome.Success(it) }
+                ?: Outcome.Failure((ended?.reason as? GroupCallEndReason.Failed)?.error ?: DomainError.NotFound)
         }
 
         /**

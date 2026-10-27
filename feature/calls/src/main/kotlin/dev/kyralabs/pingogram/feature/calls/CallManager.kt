@@ -69,7 +69,12 @@ import kotlin.time.Duration.Companion.seconds
  * when roaming or with Data Saver; WebRTC lowers it further by itself when the connection cannot carry it.
  */
 @Singleton
-@Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
+@Suppress(
+    // One function per action of the user and per transition of the state machine, which stays one class so that every
+    // change happens under its one lock; conference calls (docs/adr/0025-conference-calls.md) added to it.
+    "TooManyFunctions",
+    "LargeClass",
+)
 class CallManager
     @Inject
     // Injected: TDLib's calls, engine, Telecom, service, tones, clock, names, network, the line voice chats share.
@@ -227,10 +232,10 @@ class CallManager
 
         /**
          * Turns the connected call into a conference call with [userIds] invited (`docs/adr/0025-conference-calls.md`),
-         * as Telegram's apps do: the call's media end, a new conference call starts ([GroupCallManager.startConference])
-         * on the same line with the microphone as it was, the call is discarded with the conference call's link (the
-         * other person's app joins it), then [userIds] get invitations. If the conference call cannot be made, the call
-         * ends with the reason.
+         * as Telegram's apps do: the call's media end, a new conference call starts on the same line
+         * ([GroupCallManager.startConference]) with the microphone as it was, the call is discarded with the conference
+         * call's link (the other person's app joins it), then [userIds] get invitations. If the conference call cannot
+         * be made, the call ends with the reason.
          */
         @Suppress("ReturnCount") // Guards under the lock: no call, not connected, not supported, already moving.
         suspend fun upgradeToConference(userIds: List<Long>) {
@@ -489,12 +494,7 @@ class CallManager
                 }
 
                 is CallState.Discarded -> {
-                    val link = state.upgradeLink
-                    if (link != null && call.connectedAt != null && !call.discarding) {
-                        followUpgrade(call, link)
-                    } else {
-                        finish(call, state.reason.toEndReason(call), askRating = state.needsRating)
-                    }
+                    onDiscarded(call, state)
                 }
 
                 is CallState.Failed -> {
@@ -727,6 +727,19 @@ class CallManager
                         }
                     }
                 }
+            }
+        }
+
+        /** TDLib ended [call]; a connected call the other side made a conference call goes on there. */
+        private fun onDiscarded(
+            call: Live,
+            state: CallState.Discarded,
+        ) {
+            val link = state.upgradeLink
+            if (link != null && call.connectedAt != null && !call.discarding) {
+                followUpgrade(call, link)
+            } else {
+                finish(call, state.reason.toEndReason(call), askRating = state.needsRating)
             }
         }
 
