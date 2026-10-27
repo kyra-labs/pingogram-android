@@ -97,8 +97,9 @@ the release workflow so the owner can install and test on a phone.
 - [x] Live streams: watching, with picture-in-picture (ADR 0023)
 - [x] Conference calls: joining by a `t.me/call` link, with the emojis to compare (`docs/adr/0025-conference-calls.md`,
       NTgCalls patched for TDLib's encryption)
-- [ ] Conference calls: upgrading a 1:1 call, inviting, invitations in chats and Recent calls; the per-frame
-      encryption measured on a device (`docs/PERFORMANCE.md` §9)
+- [x] Conference calls: upgrading a 1:1 call, inviting from the call, invitations in chats and Recent calls (2026-10-27)
+- [ ] Conference calls: the per-frame encryption measured on a device (`tools/perfetto/conference-call.sh`,
+      `docs/PERFORMANCE.md` §9)
 
 ## M6 — Polish → `v1.0.0`
 
