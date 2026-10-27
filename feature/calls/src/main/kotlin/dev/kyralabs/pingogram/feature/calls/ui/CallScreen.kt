@@ -491,13 +491,18 @@ private fun CallTopBar(
         val offered =
             (state.video.canShareScreen && state.stage == CallStage.Connected && !state.isOnHold) ||
                 state.video.isSharingScreen
-        if (offered) {
-            ShareScreenButton(
-                sharing = state.video.isSharingScreen,
-                onToggle = { onEvent(CallEvent.ToggleScreenSharing) },
-                overlay = overlay,
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+        Row(
+            Modifier.align(Alignment.CenterEnd),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        ) {
+            if (state.canAddPeople) AddPeopleButton({ onEvent(CallEvent.OpenAddPeople) }, overlay = overlay)
+            if (offered) {
+                ShareScreenButton(
+                    sharing = state.video.isSharingScreen,
+                    onToggle = { onEvent(CallEvent.ToggleScreenSharing) },
+                    overlay = overlay,
+                )
+            }
         }
     }
 }
@@ -831,6 +836,10 @@ private fun endText(
 
         is CallEndReason.Failed -> {
             errorText(reason.error)
+        }
+
+        CallEndReason.UpgradedToGroupCall -> {
+            stringResource(R.string.call_end_upgraded)
         }
     }
 

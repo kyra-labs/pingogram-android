@@ -195,6 +195,10 @@ class GroupCallActivity : ComponentActivity() {
                 openAppSettings()
             }
 
+            CallEffect.OpenGroupCall -> {
+                Unit
+            }
+
             is CallEffect.Invited -> {
                 lifecycleScope.launch { snackbarHostState.showSnackbar(invitedText(effect)) }
             }
@@ -325,6 +329,11 @@ class GroupCallActivity : ComponentActivity() {
             context.startActivity(
                 intent(context, if (start) ACTION_START else ACTION_JOIN).putExtra(EXTRA_CHAT_ID, chatId),
             )
+        }
+
+        /** Shows the voice chat or conference call the user is in: a one-to-one call that became one. */
+        fun show(context: Context) {
+            context.startActivity(intent(context, ACTION_SHOW))
         }
 
         /** Joins the conference call of [link] and shows it. */

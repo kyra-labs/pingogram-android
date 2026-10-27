@@ -40,10 +40,14 @@ sealed interface CallState {
     /** Ending on this side; TDLib tells Telegram. */
     data object HangingUp : CallState
 
-    /** Ended, for [reason]. Telegram may ask the user to rate it ([needsRating]). */
+    /**
+     * Ended, for [reason]. Telegram may ask the user to rate it ([needsRating]). A call the other side turned into a
+     * conference call ([CallDiscardReason.UpgradedToGroupCall]) carries its link ([upgradeLink]), which joins it.
+     */
     data class Discarded(
         val reason: CallDiscardReason,
         val needsRating: Boolean,
+        val upgradeLink: String? = null,
     ) : CallState
 
     /** TDLib could not set the call up, e.g. the other person's privacy settings refuse it. */
@@ -72,6 +76,8 @@ class CallConnection(
     val allowP2p: Boolean,
     /** JSON the engine may read; may be empty. */
     val customParameters: String,
+    /** Both sides can turn the call into a conference call (`docs/adr/0025-conference-calls.md`). */
+    val isGroupCallSupported: Boolean = false,
 ) {
     private val key = encryptionKey.copyOf()
 
@@ -85,7 +91,8 @@ class CallConnection(
             key.contentEquals(other.key) &&
             emojis == other.emojis &&
             allowP2p == other.allowP2p &&
-            customParameters == other.customParameters
+            customParameters == other.customParameters &&
+            isGroupCallSupported == other.isGroupCallSupported
 
     override fun hashCode(): Int {
         var result = protocol.hashCode()

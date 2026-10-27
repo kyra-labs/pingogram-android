@@ -76,6 +76,12 @@ class CallScreenshotTest {
     fun shareOfferedLight() = capture(CallPreviewStates.shareOffered)
 
     @Test
+    fun shareOfferedRtl() = capture(CallPreviewStates.shareOffered, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    fun actionsOverVideoDark() = capture(CallPreviewStates.actionsOverVideo, ThemeMode.Dark)
+
+    @Test
     fun sharingScreenLight() = capture(CallPreviewStates.sharingScreen)
 
     @Test

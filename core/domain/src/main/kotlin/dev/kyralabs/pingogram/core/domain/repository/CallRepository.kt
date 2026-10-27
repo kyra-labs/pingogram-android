@@ -51,7 +51,8 @@ interface CallRepository {
     /**
      * Ends call [callId]: declines or cancels it while it rings, hangs up once connected. [isDisconnected] says the
      * connection was lost rather than closed by the user; [duration] is how long it was connected, [connectionId] the
-     * engine's id of the connection (0 if none).
+     * engine's id of the connection (0 if none). [inviteLink], when the user turned the call into a conference call,
+     * is that call's link: the other side joins it (`docs/adr/0025-conference-calls.md`).
      */
     suspend fun discardCall(
         callId: Int,
@@ -59,6 +60,7 @@ interface CallRepository {
         duration: Duration,
         isVideo: Boolean,
         connectionId: Long,
+        inviteLink: String = "",
     ): Outcome<Unit>
 
     /**

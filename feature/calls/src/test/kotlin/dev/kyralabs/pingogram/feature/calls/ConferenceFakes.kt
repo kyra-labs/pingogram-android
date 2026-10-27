@@ -41,7 +41,13 @@ class FakeConferenceCallRepository : ConferenceCallRepository {
 
     override fun members(id: Int): Flow<ImmutableList<Long>> = members
 
-    override suspend fun create(join: ConferenceJoinParameters): Outcome<ConferenceJoin> = joinResult
+    /** The conference calls started, with what they joined with. */
+    val creates = mutableListOf<ConferenceJoinParameters>()
+
+    override suspend fun create(join: ConferenceJoinParameters): Outcome<ConferenceJoin> {
+        creates += join
+        return joinResult
+    }
 
     override suspend fun join(
         target: ConferenceTarget,

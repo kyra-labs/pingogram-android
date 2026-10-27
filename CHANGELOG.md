@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Group calls by link: "Add people" at the top of the participants invites your contacts, each with a message in
   your chat with them that opens the call.
+- Calls: "Add people" turns a call into a group call with the people you pick, and a call the other person turns into
+  a group call moves there by itself.
 
 ## [0.6.0] - 2026-10-26
 

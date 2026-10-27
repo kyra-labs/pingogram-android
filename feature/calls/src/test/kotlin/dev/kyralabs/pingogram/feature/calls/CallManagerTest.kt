@@ -55,6 +55,7 @@ class CallManagerTest {
             { slot, userId -> "Ada".also { namesAsked += slot to userId } },
             { network },
             line,
+            { error("No conference calls in these tests") },
             backgroundScope,
         ).also {
             it.start()

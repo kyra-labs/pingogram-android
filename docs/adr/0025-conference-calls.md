@@ -86,5 +86,13 @@ the catalog's `ntgcalls = "<commit>-pingogram1"`) and their source.
   Recent calls.
 - The same patching serves audio levels (ADR 0023) and the engine's log (`sendCallLog`) later, if the owner wants them.
 - Shipped first: joining by a `t.me/call/…` link (`LinkTarget.GroupCall`, the voice chat screen asking "Join the
-  group call?" before it joins, the emojis under its header). Until the upgrade path is in, a one-to-one call the other
-  side upgrades ends as hung up, and invitations (`messageGroupCall`) show as unsupported messages.
+  group call?" before it joins, the emojis under its header). Then (2026-10-27) inviting from the call ("Add people",
+  `inviteGroupCallParticipant`) and the upgrade path, both ways:
+  - The user adds people to a connected call both sides support (`callStateReady.is_group_call_supported`): the call's
+    media end, `createGroupCall` starts the conference call on the same line (`CallLine.handOver`) with the microphone
+    as it was, `discardCall` sends its link (`invite_link`, from `groupCall.invite_link`), and the people picked get
+    invitations. As in Telegram's apps, the audio pauses for the moment the conference call takes to connect.
+  - The other side upgrades (`callDiscardReasonUpgradeToGroupCall(invite_link)`): Pingogram joins by that link without
+    asking, as the call goes on, keeping the microphone and the camera.
+
+  Until invitations in chats are in, `messageGroupCall` shows as an unsupported message.

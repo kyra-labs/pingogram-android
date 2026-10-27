@@ -120,8 +120,10 @@ internal class AllAccountsCallRepository
             duration: Duration,
             isVideo: Boolean,
             connectionId: Long,
+            inviteLink: String,
         ): Outcome<Unit> =
-            repository(callId)?.discardCall(CallIds.tdlibId(callId), isDisconnected, duration, isVideo, connectionId)
+            repository(callId)
+                ?.discardCall(CallIds.tdlibId(callId), isDisconnected, duration, isVideo, connectionId, inviteLink)
                 ?: gone()
 
         override suspend fun rateCall(

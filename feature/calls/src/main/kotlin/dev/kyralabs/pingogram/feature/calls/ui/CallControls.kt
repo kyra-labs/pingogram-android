@@ -74,6 +74,32 @@ internal fun MinimizeButton(
     }
 }
 
+/** "Add people" (`docs/adr/0025-conference-calls.md`): the add-person symbol, filled in the overlay's colors over video. */
+@Composable
+internal fun AddPeopleButton(
+    onClick: () -> Unit,
+    overlay: Boolean = false,
+) {
+    IconButton(
+        onClick = onClick,
+        shapes = IconButtonDefaults.shapes(),
+        colors =
+            if (overlay) {
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.pingogramColors.mediaOverlay,
+                    contentColor = MaterialTheme.pingogramColors.onMediaOverlay,
+                )
+            } else {
+                IconButtonDefaults.iconButtonColors()
+            },
+    ) {
+        Icon(
+            painterResource(UiR.drawable.ic_person_add),
+            contentDescription = stringResource(R.string.group_call_add_people),
+        )
+    }
+}
+
 /** Hang up: a wide medium button in `error`, with the press morph. */
 @Composable
 internal fun HangUpButton(

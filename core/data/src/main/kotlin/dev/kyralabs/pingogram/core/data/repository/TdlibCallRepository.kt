@@ -67,14 +67,14 @@ class TdlibCallRepository
             duration: Duration,
             isVideo: Boolean,
             connectionId: Long,
+            inviteLink: String,
         ): Outcome<Unit> =
             client
                 .request(
                     TdApi.DiscardCall(
                         callId,
                         isDisconnected,
-                        // invite_link: only when a call becomes a group call, which Pingogram does not do.
-                        "",
+                        inviteLink,
                         duration.inWholeSeconds.toInt(),
                         isVideo,
                         connectionId,

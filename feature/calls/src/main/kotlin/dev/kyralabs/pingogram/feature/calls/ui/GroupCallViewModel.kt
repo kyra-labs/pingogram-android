@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.ActiveGroupCall
 import dev.kyralabs.pingogram.feature.calls.CallClock
+import dev.kyralabs.pingogram.feature.calls.ConferenceInvites
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.GroupCallPhase
 import dev.kyralabs.pingogram.feature.calls.JoinResult
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -139,6 +141,13 @@ class GroupCallViewModel
         init {
             // After the first frame (docs/PERFORMANCE.md §4): joining loads the engine.
             viewModelScope.launch { takeAction() }
+            // What came of inviting people as a one-to-one call became this conference call, said once.
+            viewModelScope.launch {
+                manager.upgradeInvites.filterNotNull().collect { result ->
+                    manager.consumeUpgradeInvites()
+                    effectChannel.send(result.toEffect())
+                }
+            }
         }
 
         /** Where a live stream's video goes while the screen draws it, or null once it no longer does. */
@@ -239,17 +248,7 @@ class GroupCallViewModel
 
         private fun invite(userIds: List<Long>) {
             if (userIds.isEmpty()) return
-            viewModelScope.launch {
-                when (val result = manager.invite(userIds)) {
-                    is Outcome.Success -> {
-                        effectChannel.send(CallEffect.Invited(result.value.invited, result.value.refused.size))
-                    }
-
-                    is Outcome.Failure -> {
-                        effectChannel.send(CallEffect.InviteFailed(result.error))
-                    }
-                }
-            }
+            viewModelScope.launch { effectChannel.send(manager.invite(userIds).toEffect()) }
         }
 
         private fun toggleCamera() {
@@ -524,6 +523,13 @@ class GroupCallViewModel
     }
 
 private fun ActiveGroupCall.isOver() = phase is GroupCallPhase.Ended
+
+/** What came of inviting people, as the screen's snackbar says it. */
+private fun Outcome<ConferenceInvites>.toEffect(): CallEffect =
+    when (this) {
+        is Outcome.Success -> CallEffect.Invited(value.invited, value.refused.size)
+        is Outcome.Failure -> CallEffect.InviteFailed(error)
+    }
 
 /** A participant's row key, also their video tile's: "user:42" or "chat:-100". */
 private fun MessageSender.key(): String =
