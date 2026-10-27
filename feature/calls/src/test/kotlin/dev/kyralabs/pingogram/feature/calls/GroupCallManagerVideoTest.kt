@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** The user's camera in a voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupCallManagerVideoTest {
     private val repository = FakeGroupCallRepository()
     private val conferences = FakeConferenceCallRepository()

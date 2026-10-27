@@ -581,9 +581,7 @@ class CallManager
                     discard(call, isDisconnected = true)
                 }
 
-                CallMediaState.Closed -> {
-                    Unit
-                }
+                CallMediaState.Closed -> {}
             }
             publish()
         }

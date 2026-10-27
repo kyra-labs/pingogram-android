@@ -88,9 +88,7 @@ class SettingsListDetailScreenshotTest {
         composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).performClick()
         await(hasText(string(SettingsR.string.settings_appearance_summary)))
         when (page) {
-            Page.None -> {
-                Unit
-            }
+            Page.None -> {}
 
             Page.About -> {
                 row(SettingsR.string.settings_about).performClick()

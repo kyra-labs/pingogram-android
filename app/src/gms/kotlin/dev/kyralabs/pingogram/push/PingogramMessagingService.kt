@@ -27,6 +27,8 @@ class PingogramMessagingService : FirebaseMessagingService() {
         super.onCreate()
     }
 
+    // Deprecated with getToken in firebase-messaging 26 (FirebasePushTokenSource.token), and called while it is used.
+    @Deprecated("Firebase's own deprecation: onRegistered replaces it once the token source moves to register().")
     override fun onNewToken(token: String) {
         pushRepository.onNewToken(token)
     }

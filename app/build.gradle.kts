@@ -2,6 +2,8 @@ import com.android.build.api.variant.ResValue
 
 plugins {
     alias(libs.plugins.pingogram.android.application)
+    // Kotlin warnings fail the build here (docs/audit/v1-readiness.md).
+    alias(libs.plugins.pingogram.kotlin.warnings)
     alias(libs.plugins.pingogram.android.compose)
     alias(libs.plugins.pingogram.android.hilt)
     alias(libs.plugins.pingogram.android.roborazzi)

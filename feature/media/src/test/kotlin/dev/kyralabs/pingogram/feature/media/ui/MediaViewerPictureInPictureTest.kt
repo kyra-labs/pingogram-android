@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.fullFileId
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.message
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.videoContent
 import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 /** The viewer's video going into picture-in-picture and coming back (`docs/DESIGN_SYSTEM.md` §6, media viewer). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class MediaViewerPictureInPictureTest : MediaViewerViewModelHarness() {
     private val videoPath = "/files/video.mp4"
 

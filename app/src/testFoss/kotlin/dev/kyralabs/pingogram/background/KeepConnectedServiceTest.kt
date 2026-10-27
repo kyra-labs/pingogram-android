@@ -85,10 +85,12 @@ class KeepConnectedServiceTest {
         val controller = Robolectric.buildService(KeepConnectedService::class.java).create()
         controller.startCommand(0, 1)
 
-        controller
-            .withIntent(
-                Intent(context, KeepConnectedService::class.java).setAction(KeepConnectedService.ACTION_TURN_OFF),
-            ).startCommand(0, 2)
+        // The service's second command, as Android delivers it (ServiceController.withIntent is deprecated).
+        controller.get().onStartCommand(
+            Intent(context, KeepConnectedService::class.java).setAction(KeepConnectedService.ACTION_TURN_OFF),
+            0,
+            2,
+        )
 
         assertTrue(shadowOf(controller.get()).isStoppedBySelf)
         // The service saves on the application scope, so the write may still be in flight here. A DataStore (1.2.1)

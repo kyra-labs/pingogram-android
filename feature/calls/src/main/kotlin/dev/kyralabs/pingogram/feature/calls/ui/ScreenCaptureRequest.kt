@@ -23,7 +23,7 @@ internal fun rememberScreenCaptureRequest(
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data
             val granted = result.resultCode == Activity.RESULT_OK && data != null
-            if (granted && data != null) consent.grant(data)
+            if (granted) consent.grant(data)
             onResult(granted)
         }
     return {

@@ -421,9 +421,7 @@ private class PaneOpener(
         val shownChatId = ChatsPaneContent.of(current?.contentKey)?.chatId
         when {
             // The conversation shows already: at the message, if any, as its pane is keyed by it.
-            shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Detail -> {
-                Unit
-            }
+            shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Detail -> {}
 
             shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Extra -> {
                 show(pane = null)

@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** Sharing the screen in a voice chat, and the others' shared screens (`docs/adr/0026-screen-sharing.md`). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupCallManagerScreenTest {
     private val repository = FakeGroupCallRepository()
     private val conferences = FakeConferenceCallRepository()

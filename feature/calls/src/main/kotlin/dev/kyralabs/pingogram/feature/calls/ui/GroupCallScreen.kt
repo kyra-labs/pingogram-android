@@ -163,9 +163,7 @@ private fun BoxScope.GroupCallContent(
             DelayedLoadingIndicator(Modifier.align(Alignment.Center))
         }
 
-        GroupCallUiState.Closed -> {
-            Unit
-        }
+        GroupCallUiState.Closed -> {}
 
         is GroupCallUiState.NeedsMicrophone -> {
             MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
@@ -426,14 +424,7 @@ private fun ParticipantRow(
         }
     val stateText = stringResource(participant.state.label())
     ListItem(
-        headlineContent = {
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyLarge.userContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
+        modifier = modifier.clearAndSetSemantics { contentDescription = "$name, $stateText" },
         supportingContent = {
             Text(stateText, color = if (speaking) colors.primary else colors.onSurfaceVariant, maxLines = 1)
         },
@@ -463,8 +454,14 @@ private fun ParticipantRow(
             )
         },
         colors = ListItemDefaults.colors(containerColor = colors.surfaceContainer),
-        modifier = modifier.clearAndSetSemantics { contentDescription = "$name, $stateText" },
-    )
+    ) {
+        Text(
+            name,
+            style = MaterialTheme.typography.bodyLarge.userContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /** "Add people": the add-person symbol in a `primaryContainer` circle where the avatars sit; opens the picker. */

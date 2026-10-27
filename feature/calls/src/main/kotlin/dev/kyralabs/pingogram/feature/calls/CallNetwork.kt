@@ -31,7 +31,7 @@ internal class DataSavingNetworkRepository
     constructor(
         network: NetworkRepository,
         settings: CallSettingsRepository,
-        @param:ApplicationScope scope: CoroutineScope,
+        @ApplicationScope scope: CoroutineScope,
     ) : NetworkRepository {
         override val networkStatus: StateFlow<NetworkStatus> =
             combine(network.networkStatus, settings.dataSaving, ::withDataSaving)
