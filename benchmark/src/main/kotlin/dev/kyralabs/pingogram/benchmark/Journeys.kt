@@ -60,6 +60,35 @@ internal fun MacrobenchmarkScope.messageList(): UiObject2 =
     device.wait(Until.findObject(By.res(MESSAGE_LIST)), TIMEOUT_MS)
         ?: error("No conversation open after $TIMEOUT_MS ms.")
 
+/** Types [text] into the open conversation's composer, ready to send. */
+internal fun MacrobenchmarkScope.typeMessage(text: String) {
+    val field =
+        device.wait(Until.findObject(By.res(COMPOSER_FIELD)), TIMEOUT_MS)
+            ?: error("No composer after $TIMEOUT_MS ms.")
+    field.text = text
+    device.wait(Until.hasObject(By.res(SEND_BUTTON)), TIMEOUT_MS)
+}
+
+/** Taps send and waits for the bubble of [text] to show. */
+internal fun MacrobenchmarkScope.sendTyped(text: String): UiObject2 {
+    device.findObject(By.res(SEND_BUTTON))?.click() ?: error("No send button: type a message first.")
+    return device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
+        ?: error("The bubble of the message sent did not show within $TIMEOUT_MS ms.")
+}
+
+/**
+ * Deletes the message of [bubble] through its actions: a long press, "Delete", then the dialog's "Delete". The
+ * journeys leave nothing behind in Saved Messages.
+ */
+internal fun MacrobenchmarkScope.deleteMessage(bubble: UiObject2) {
+    bubble.longClick()
+    device.wait(Until.findObject(By.res(DELETE_ACTION)), TIMEOUT_MS)?.click()
+        ?: error("No \"Delete\" in the message's actions.")
+    device.wait(Until.findObject(By.res(DELETE_CONFIRM)), TIMEOUT_MS)?.click()
+        ?: error("No confirmation to delete the message.")
+    device.waitForIdle()
+}
+
 /** Flings the conversation [list] up to older messages, loading them on the way, and back down. */
 internal fun MacrobenchmarkScope.scrollConversation(list: UiObject2) {
     fling(list, Direction.UP)
@@ -79,10 +108,15 @@ private fun MacrobenchmarkScope.fling(
     }
 }
 
-// The tags in feature:chats (ChatListScreen.kt) and feature:chat (ChatScreen.kt).
+// The tags in feature:chats (ChatListScreen.kt) and feature:chat (ChatScreen.kt, ComposerField.kt, ComposerButtons.kt,
+// MessageActionsMenu.kt, DeleteMessagesAlert.kt).
 private const val CHAT_LIST = "chat_list"
 private const val SAVED_MESSAGES = "saved_messages"
 private const val MESSAGE_LIST = "message_list"
+private const val COMPOSER_FIELD = "composer_field"
+private const val SEND_BUTTON = "composer_send"
+private const val DELETE_ACTION = "message_action_Delete"
+private const val DELETE_CONFIRM = "delete_confirm"
 
 /** How long the journeys wait for a screen: TDLib may still be loading after a cold start. */
 private const val TIMEOUT_MS = 10_000L

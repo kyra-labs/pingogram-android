@@ -14,7 +14,7 @@ regresses by more than 10%.
 | Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms | `ScrollBenchmark` + JankStats |
 | Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, jank rate < 1% | same |
 | Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `OpenChatBenchmark`: `TraceSectionMetric("openChat")`, an async section from the tap in the chat list (`:app`) to the frame after the first messages (`feature:chat`) |
-| Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
+| Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | `SendMessageBenchmark`: `TraceSectionMetric("sendMessage")`, an async section from the composer's send (`feature:chat`'s `ChatComposer`) to the frame after the bubble on its way shows (`SendMessageTraceEffect`), sending to Saved Messages and deleting each message after |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
 | APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 123 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`) | CI on every pull request and release (§8) |
@@ -297,7 +297,7 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 ## 9. Measurement & tooling
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
-  `ConversationScrollBenchmark`, `OpenChatBenchmark`; generates Baseline Profiles.
+  `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`; generates Baseline Profiles.
   It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
   `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
   generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
@@ -322,6 +322,18 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
   -Pandroid.testInstrumentationRunnerArguments.notClass=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator`
   (one line each). Results: `benchmark/build/outputs/connected_android_test_additional_output/`.
+- `SendMessageBenchmark` sends 10 texts to Saved Messages ("Pingogram benchmark" and a number) per compilation
+  mode and deletes each once its bubble shows, through its actions, so Saved Messages is left as it was; the other
+  devices of the account see them come and go. To run it alone, in PowerShell from the repository (each `-P` quoted,
+  as PowerShell splits arguments at their dots otherwise):
+
+  ```powershell
+  .\gradlew.bat :benchmark:connectedBenchmarkReleaseAndroidTest "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true" "-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.SendMessageBenchmark"
+  py tools\benchmark\compare.py benchmark\build\outputs\connected_android_test_additional_output
+  ```
+
+  Send back the `*-benchmarkData.json` file under that folder and what `compare.py` printed. The budget is
+  `sendMessageSumMs.median` ≤ 50 ms (`benchmark/budgets.json`).
 - Baseline (2026-10-22, `benchmarkRelease`, Galaxy S24 Ultra on Android 17 at 120 Hz, clocks not locked; medians of
   10 starts, frame percentiles over 5 runs; "profile" is `BaselineProfileMode.Require` with the shipped profile, "none"
   is `CompilationMode.None`). The phone is far faster than §1's reference device, so meeting a budget here is not
