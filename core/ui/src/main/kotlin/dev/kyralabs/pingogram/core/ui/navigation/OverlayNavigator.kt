@@ -125,7 +125,8 @@ inline fun <reified T : Any> NavGraphBuilder.overlay(
 fun rememberOverlayNavigator(navController: NavHostController): OverlayNavigator =
     remember(navController) {
         val provider = navController.navigatorProvider
-        provider.navigators[OverlayNavigator.NAME] as? OverlayNavigator
+        // getNavigator throws while the provider has none of that name.
+        runCatching { provider.getNavigator<OverlayNavigator>(OverlayNavigator.NAME) }.getOrNull()
             ?: OverlayNavigator().also { provider.addNavigator(it) }
     }
 

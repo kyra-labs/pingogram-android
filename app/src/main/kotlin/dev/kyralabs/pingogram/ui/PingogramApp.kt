@@ -203,7 +203,8 @@ fun PingogramApp(
                             LocalTabReselection provides tabReselection,
                             LocalFeedbackLauncher provides openFeedback,
                             LocalRecentCallsLauncher provides openRecentCalls,
-                            // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on the page.
+                            // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on
+                            // the page.
                             LocalLockedChatsLauncher provides openLockedChats,
                             LocalChatLauncher provides openChat,
                         ) {
