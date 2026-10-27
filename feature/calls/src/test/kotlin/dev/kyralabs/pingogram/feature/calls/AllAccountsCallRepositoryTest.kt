@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountGraph
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.testing.FakeAccountGraphs
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,6 +21,7 @@ import java.lang.reflect.Proxy
 import kotlin.time.Duration
 
 /** Every account's calls as one repository (`docs/adr/0031-multiple-accounts.md`), each id carrying its account. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AllAccountsCallRepositoryTest {
     private val first = FakeCallRepository()
     private val second = FakeCallRepository()

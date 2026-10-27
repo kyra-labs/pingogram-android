@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** [GroupCallManager] with conference calls (`docs/adr/0025-conference-calls.md`). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupCallManagerConferenceTest {
     private val repository = FakeGroupCallRepository().apply { calls.value += CONFERENCE_CALL_ID to groupCall() }
     private val conferences = FakeConferenceCallRepository()

@@ -195,9 +195,7 @@ class GroupCallActivity : ComponentActivity() {
                 openAppSettings()
             }
 
-            CallEffect.OpenGroupCall -> {
-                Unit
-            }
+            CallEffect.OpenGroupCall -> {}
 
             is CallEffect.Invited -> {
                 lifecycleScope.launch { snackbarHostState.showSnackbar(invitedText(effect)) }

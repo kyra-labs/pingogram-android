@@ -555,9 +555,7 @@ class GroupCallManager
                     finish(call, GroupCallEndReason.Disconnected)
                 }
 
-                CallMediaState.Closed -> {
-                    Unit
-                }
+                CallMediaState.Closed -> {}
             }
             publish()
         }

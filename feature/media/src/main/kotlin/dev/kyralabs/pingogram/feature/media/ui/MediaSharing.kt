@@ -158,9 +158,7 @@ internal class MediaSharing(
             }
 
             // The viewer downloads the current item's file; a file TDLib has not reported yet comes with it.
-            is FileState.Downloading, null -> {
-                Unit
-            }
+            is FileState.Downloading, null -> {}
         }
     }
 

@@ -223,6 +223,7 @@ pingogram-android-roborazzi = { id = "pingogram.android.roborazzi" }
 pingogram-android-test = { id = "pingogram.android.test" }
 pingogram-detekt = { id = "pingogram.detekt" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
+pingogram-kotlin-warnings = { id = "pingogram.kotlin.warnings" }
 pingogram-ktlint = { id = "pingogram.ktlint" }
 pingogram-ntgcalls = { id = "pingogram.ntgcalls" }
 pingogram-tdlib = { id = "pingogram.tdlib" }

@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.core.content.pm.ShortcutManagerCompat
 import dev.kyralabs.pingogram.core.data.account.AccountRegistry
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -23,6 +24,7 @@ import org.robolectric.annotation.Config
  * Which account an intent opens in (`docs/adr/0031-multiple-accounts.md`): the shown one's intents are handed on,
  * another account's switch to it first and open the app again with the intent.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class AccountRestartTest {

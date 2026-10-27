@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.feature.calls.groupCall
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -619,7 +620,7 @@ internal class FakeUserRepository : UserRepository {
     private val userMap = MutableStateFlow<ImmutableMap<Long, User>>(persistentMapOf())
 
     fun add(user: User) {
-        userMap.value = persistentMapOf<Long, User>().putAll(userMap.value).put(user.id, user)
+        userMap.value = (userMap.value + (user.id to user)).toImmutableMap()
     }
 
     override val users: Flow<ImmutableMap<Long, User>> = userMap

@@ -23,8 +23,13 @@ class FirebasePushTokenSource
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : PushTokenSource {
+        // firebase-messaging 26 deprecates getToken and deleteToken for register and unregister, whose token comes
+        // through the service's onRegistered instead. Moving there changes how the token reaches TDLib and needs a
+        // `gms` phone to check (docs/audit/v1-readiness.md), so this stays on the calls Firebase still supports.
+        @Suppress("DEPRECATION")
         override suspend fun token(): String? = firebase("get the push token") { it.token.await() }
 
+        @Suppress("DEPRECATION") // See token().
         override suspend fun deleteToken() {
             firebase("delete the push token") { it.deleteToken().await() }
         }

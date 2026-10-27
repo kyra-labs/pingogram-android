@@ -169,9 +169,7 @@ class CallActivity : ComponentActivity() {
             }
 
             // The conference call's screen says what came of the invitations.
-            is CallEffect.Invited, is CallEffect.InviteFailed -> {
-                Unit
-            }
+            is CallEffect.Invited, is CallEffect.InviteFailed -> {}
         }
     }
 

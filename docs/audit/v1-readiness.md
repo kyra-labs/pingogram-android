@@ -108,7 +108,7 @@ What blocks 1.0, in order:
 | Foreground services declare their type | Pass | `dataSync` (transfers), `specialUse` (Keep connected, foss), `phoneCall` / `microphone` (calls) | — |
 | Per-app language, keyboard and mouse, state restoration | Needs device for keyboard and mouse | Saved state throughout; Enter-to-send and hover are not covered by tests | Owner / testers |
 | Accessibility (§6.3), haptics | **Fail** | See §6.3 | A |
-| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin deprecation warnings do not fail the build (`allWarningsAsErrors` is off). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
+| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin warnings fail the build in the modules that apply `pingogram.kotlin.warnings` (`allWarningsAsErrors`, main and test sources): `:app`, `core:common`, `core:tdlib`, `feature:calls`, `feature:feedback`, `feature:media` and `feature:scanner` (2026-10-27). The other modules still compile with warnings, counted below ("Kotlin warnings"). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
 | Performance budgets per screen | **Fail** | §6.1 | A |
 | Live Updates (`ProgressStyle`) for long transfers | Pass | `TransferNotificationBuilder` | — |
 
@@ -123,6 +123,25 @@ What blocks 1.0, in order:
 | 5 | Telegram API terms compliance reviewed by the owner and in the release notes | Needs owner (*prepared here*) | `docs/API_TERMS.md` is the checklist; each release's notes now link to it. The owner reviews it before 1.0 | Owner |
 
 ## Also found
+
+- **Kotlin warnings** (§7, "No deprecated APIs"), counted on 2026-10-27 with a fresh compile of every module's main
+  and unit test sources (`--rerun-tasks`), each warning once. A module applies `pingogram.kotlin.warnings` in its
+  build file once they are fixed:
+
+  | Module | Main | Test | Mostly |
+  |---|---|---|---|
+  | `core:data` | 28 | 108 | coroutines test APIs (`runCurrent`, `UnconfinedTestDispatcher`) without their opt-in; `kotlinx.collections.immutable`'s deprecated `put`, `remove`, `putAll` |
+  | `core:notifications` | 1 | 75 | coroutines test APIs without their opt-in; Robolectric's deprecated `isBroadcastIntent` |
+  | `core:ui` | 2 | 6 | coroutines test APIs without their opt-in; an unused expression; a redundant cast |
+  | `feature:chat` | 24 | 8 | `kotlinx.collections.immutable`'s deprecated `remove`, `put`, `add`; test names with characters Windows refuses; unused expressions |
+  | `feature:chats` | 3 | 0 | `ListItem`'s old overload, a deprecated `copy`, an unused expression |
+  | `feature:profile` | 4 | 1 | `rememberModalBottomSheetState`, `ListItem`'s old overload, a redundant cast and safe call |
+  | `feature:settings` | 16 | 0 | unused expressions (`Unit` in empty `when` branches), `rememberModalBottomSheetState`, `Slider` and `ListItem`'s old overloads |
+  | `core:datastore`, `core:domain`, `core:navigation`, `core:testing`, `feature:auth`, `feature:contacts`, `benchmark` | 0 | 0 | can apply the plugin as they are |
+
+  One warning stays suppressed in `:app`'s `gms` source set, with its reason: firebase-messaging 26 deprecates
+  `getToken` and `deleteToken` (and `onNewToken`) for `register`, whose token comes through the service's
+  `onRegistered`. Moving there changes how the token reaches TDLib, so it waits for a `gms` phone to check it. B.
 
 - **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): there is no scheduled job, only "Clear cache". A weekly
   `PeriodicWorkRequest` would start WorkManager at every app start, which §2 avoids on purpose ("WorkManager starts on
