@@ -60,6 +60,10 @@ class ContactsScreenScreenshotTest {
     @Test
     fun longListDark() = capture(ScreenshotVariant.Dark, ContactsPreviewData.long)
 
+    /** Synced contacts' icons and "Sync now" end before the fast-scroll index. */
+    @Test
+    fun longListSyncedDark() = capture(ScreenshotVariant.Dark, ContactsPreviewData.longSynced)
+
     @Test
     fun results() = capture(ScreenshotVariant.Light, ContactsPreviewData.results)
 

@@ -62,6 +62,32 @@ internal object ContactsPreviewData {
             ),
         )
 
+    /**
+     * [long] while synced with the phone's contacts: the sync row and the synced contacts' icons at the rows' end,
+     * which stay clear of the index.
+     */
+    val longSynced =
+        long.copy(
+            content =
+                (long.content as ContactsContent.Contacts).let { content ->
+                    content.copy(
+                        sections =
+                            content.sections
+                                .map { section ->
+                                    section.copy(
+                                        contacts = section.contacts.map { it.copy(fromPhone = true) }.toImmutableList(),
+                                    )
+                                }.toImmutableList(),
+                    )
+                },
+            sync =
+                ContactSyncUi.On(
+                    isSyncing = false,
+                    lastSynced = UiText.plural(R.plurals.contacts_sync_last_minutes, 11, 11),
+                    error = null,
+                ),
+        )
+
     val results =
         ContactsUiState(
             ContactsContent.Results(persistentListOf(contacts[0], contacts[1])),
