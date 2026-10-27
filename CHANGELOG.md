@@ -14,7 +14,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   your chat with them that opens the call.
 - Calls: "Add people" turns a call into a group call with the people you pick, and a call the other person turns into
   a group call moves there by itself.
-- Group call invitations show in the chat ("Group call", "Missed group call"); tap one to join while the call goes on.
+- Group call invitations show in the chat ("Group call", "Missed group call") and in Recent calls; tap one to join
+  while the call goes on.
 
 ## [0.6.0] - 2026-10-26
 

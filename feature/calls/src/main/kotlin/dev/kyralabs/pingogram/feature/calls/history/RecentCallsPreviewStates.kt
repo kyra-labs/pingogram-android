@@ -72,6 +72,11 @@ internal object RecentCallsPreviewStates {
             RecentCallsItem.Day("day-today", UiText.resource(R.string.recent_calls_today)),
             call(1, "Grace Hopper", CallOutcome.Missed, isOutgoing = false, isVideo = false, time = "9:41 AM"),
             call(2, "Alan Turing", CallOutcome.Answered, true, isVideo = true, time = "8:15 AM", duration = "12:04"),
+            call(7, "Grace Hopper", CallOutcome.Answered, isOutgoing = false, isVideo = false, time = "8:02 AM").copy(
+                kind = UiText.resource(UiR.string.preview_group_call_active),
+                isGroupCall = true,
+                isActive = true,
+            ),
             RecentCallsItem.Day("day-yesterday", UiText.resource(R.string.recent_calls_yesterday)),
             call(3, "Ada Lovelace", CallOutcome.Answered, false, isVideo = false, time = "6:30 PM", duration = "4:05"),
             call(4, "Katherine Johnson", CallOutcome.Cancelled, true, isVideo = false, time = "2:02 PM"),

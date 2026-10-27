@@ -18,11 +18,13 @@ import javax.inject.Inject
 /**
  * [CallHistoryRepository] on TDLib: `searchCallMessages` (every private chat's call messages, newest first, paged by
  * TDLib's own offset), `deleteMessages` without `revoke`, and the updates that change the history while it shows:
- * `updateNewMessage` with a `messageCall` and `updateDeleteMessages` (permanent ones only: TDLib also reports messages
- * it merely drops from its memory, `from_cache`). Nothing is cached, so it is no `TdlibUpdateCache`.
+ * `updateNewMessage` with a `messageCall` or a `messageGroupCall` and `updateDeleteMessages` (permanent ones only:
+ * TDLib also reports messages it merely drops from its memory, `from_cache`). Nothing is cached, so it is no
+ * `TdlibUpdateCache`.
  *
- * Group calls' messages (`messageGroupCall`, conference calls) are left out: Recent calls lists one-to-one calls,
- * which it can call back. Nothing about a call is logged.
+ * Conference calls' invitations (`messageGroupCall`, `docs/adr/0025-conference-calls.md`) are entries as calls are;
+ * TDLib's own updates of their content (the call ending) are not followed: the page is read again when it shows.
+ * Nothing about a call is logged.
  */
 @AccountScoped
 class TdlibCallHistoryRepository
@@ -62,9 +64,15 @@ private fun TdApi.UpdateDeleteMessages.toRemoved(): CallHistoryChange.Removed? =
         ?.let { CallHistoryChange.Removed(chatId, messageIds.toList().toImmutableList()) }
 
 /** The entry of a call's service message, or null for any other message. */
-internal fun TdApi.Message.toCallHistoryEntry(): CallHistoryEntry? {
-    val call = content as? TdApi.MessageCall ?: return null
-    return CallHistoryEntry(
+internal fun TdApi.Message.toCallHistoryEntry(): CallHistoryEntry? =
+    when (val content = content) {
+        is TdApi.MessageCall -> toCallEntry(content)
+        is TdApi.MessageGroupCall -> toGroupCallEntry(content)
+        else -> null
+    }
+
+private fun TdApi.Message.toCallEntry(call: TdApi.MessageCall): CallHistoryEntry =
+    CallHistoryEntry(
         chatId = chatId,
         messageId = id,
         userId = chatId,
@@ -74,7 +82,26 @@ internal fun TdApi.Message.toCallHistoryEntry(): CallHistoryEntry? {
         outcome = call.discardReason.toCallOutcome(isOutgoing, call.duration),
         duration = call.duration.coerceAtLeast(0),
     )
-}
+
+/** A conference call's invitation: answered once it went on with someone or still does, else missed or not answered. */
+private fun TdApi.Message.toGroupCallEntry(call: TdApi.MessageGroupCall) =
+    CallHistoryEntry(
+        chatId = chatId,
+        messageId = id,
+        userId = chatId,
+        date = date.toLong(),
+        isOutgoing = isOutgoing,
+        isVideo = call.isVideo,
+        outcome =
+            when {
+                call.isActive || (call.duration > 0 && !call.wasMissed) -> CallOutcome.Answered
+                isOutgoing -> CallOutcome.Cancelled
+                else -> CallOutcome.Missed
+            },
+        duration = call.duration.coerceAtLeast(0),
+        isGroupCall = true,
+        isActive = call.isActive,
+    )
 
 /**
  * How the call went for the user, as `core:ui`'s call previews word it: a missed outgoing call is one the user

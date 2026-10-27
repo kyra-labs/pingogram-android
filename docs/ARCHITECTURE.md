@@ -1366,11 +1366,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `CallScreen` shows `CallRatingSheet` over it (never in picture-in-picture, which declines it). The engine's log
   (`sendCallLog`) is not sent: NTgCalls writes none Pingogram could hand over.
 - **Recent calls**: `core:domain`'s `CallHistoryRepository` (`TdlibCallHistoryRepository`, `core:data`, no cache) pages
-  the call service messages of every private chat (`searchCallMessages`, by TDLib's offset, all or only missed),
+  the call service messages of every private chat (`searchCallMessages`, by TDLib's offset, all or only missed;
+  conference call invitations, `messageGroupCall`, among them, `CallHistoryEntry.isGroupCall`),
   deletes one for the user only (`deleteMessages` without `revoke`) and follows `updateNewMessage` with a `messageCall`
   and permanent `updateDeleteMessages` while collected. `feature:calls`' `RecentCallsRoute` (`RecentCallsViewModel`,
   `history/`, a destination of `:app`'s `NavHost`) lists them by day with the people from `UserRepository`, keeps the
-  filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call. Settings home
+  filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call; a conference
+  call's row joins it while it goes on (`GroupCallActivity.openInvitation`, which asks first) and otherwise says it
+  has ended. Settings home
   and the Contacts tab open it through `core:ui`'s `LocalRecentCallsLauncher`, which `PingogramApp` provides, as
   "Send feedback" is opened.
 
