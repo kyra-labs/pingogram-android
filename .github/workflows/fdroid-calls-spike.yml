@@ -2,7 +2,8 @@ name: F-Droid calls spike
 
 # The spike of docs/adr/0030-calls-in-the-fdroid-build.md: can the call engine and WebRTC be built from source, with the
 # NDK alone, as F-Droid's build server would? Run manually (Actions → F-Droid calls spike → Run workflow); it builds
-# nothing Pingogram ships and publishes nothing but its report (the job summary and a "spike-report" artifact).
+# nothing Pingogram ships and publishes nothing but its report (in the job log, the job summary and a "spike-report"
+# artifact).
 #
 # Job "telegram-x" builds Telegram X at the commit F-Droid builds (fdroiddata metadata/org.thunderdog.challegram.yml,
 # whose repository is Telegram X FOSS, AmanoTeam/Telegram-X-FOSS):
@@ -128,7 +129,7 @@ jobs:
 
       - name: Report
         if: always()
-        run: cat report/report.md >> "$GITHUB_STEP_SUMMARY"
+        run: tee -a "$GITHUB_STEP_SUMMARY" < report/report.md
 
       - uses: actions/upload-artifact@v7
         if: always()
@@ -190,7 +191,9 @@ jobs:
               if [ -e "webrtc/$path" ]; then echo "- $path: present"; else echo "- $path: missing"; fi
             done
           } >> report/report.md
-          cat report/report.md >> "$GITHUB_STEP_SUMMARY"
+          tee -a "$GITHUB_STEP_SUMMARY" < report/report.md
+          echo "All missing headers:"
+          cat report/missing.txt
 
       - uses: actions/upload-artifact@v7
         if: always()
