@@ -51,6 +51,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -122,6 +123,7 @@ internal fun ComposerField(
             state = text.state,
             modifier =
                 modifier
+                    .testTag(COMPOSER_FIELD_TEST_TAG)
                     .heightIn(min = MaterialTheme.sizes.composerField)
                     .onFocusChanged { state ->
                         if (state.isFocused != focus.isFocused) {
@@ -399,3 +401,6 @@ private const val MAX_LINES = 6
 
 /** The text field's lines: as many as the text has, up to [MAX_LINES], then it scrolls. */
 private val LINE_LIMITS = TextFieldLineLimits.MultiLine(maxHeightInLines = MAX_LINES)
+
+/** The composer's field, for `benchmark/`'s journeys (`MainActivity` shows test tags as resource ids). */
+internal const val COMPOSER_FIELD_TEST_TAG = "composer_field"
