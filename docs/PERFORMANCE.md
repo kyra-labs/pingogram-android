@@ -449,11 +449,28 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   renderer (`EglRenderer` threads named "Participant …"), so the trace shows what each costs; the four tell whether
   the cap of four holds on that phone.
 
-  A conference call (`docs/adr/0025-conference-calls.md`) waits for TDLib on WebRTC's threads for every frame it sends
-  (`callEncrypt`) and receives (`callDecrypt`), at most 100 ms each before the frame is dropped. Record one the same
-  way: open a `t.me/call/…` link from Telegram's app, join with three others who speak (one with the camera on), and
-  run step 3. The two sections' P90 and their count per second tell whether a frame's round trip keeps within an audio
-  frame's 20 ms on that phone.
+  **Conference calls** (`docs/adr/0025-conference-calls.md`) wait for TDLib on WebRTC's threads for every frame they send
+  (`callEncrypt`) and receive (`callDecrypt`), at most 100 ms each before the frame is dropped.
+  `tools/perfetto/conference-call.pbtxt` records those sections for 3 minutes, with every thread's CPU time (TDLib's
+  included), Pingogram's memory once a second and the battery's current. `conference-call.sh` (or `conference-call.ps1`
+  in PowerShell) runs it, and `conference-call.sql` summarizes the trace into `summary.txt`:
+  - each section's count per second;
+  - its P50, P90, P99 and longest trip;
+  - how many trips took 20 ms (an audio frame) or more, and how many reached 100 ms and were dropped.
+
+  On the owner's phone:
+  1. Install `fossBenchmarkRelease` and sign in, as for video calls (step 1 above).
+  2. In Telegram's app on another phone, start a group call and copy its link (`t.me/call/…`). Send it to the
+     account on this phone, have two more people join, and turn one camera on.
+  3. On this phone, tap the link, join, unmute, and speak now and then. Keep the call's screen in front with the
+     screen on, the phone unplugged.
+  4. From the repository, run `tools/perfetto/conference-call.sh`, or in PowerShell
+     `powershell -ExecutionPolicy Bypass -File tools\perfetto\conference-call.ps1`. Keep the call going until it
+     prints "Done" (3 minutes).
+  5. Send back `device.txt` and `summary.txt` from its folder. Without Perfetto's Python package, run the line the
+     script prints first; the trace itself (`conference-call.perfetto-trace`) stays on the computer.
+
+  The P90 against an audio frame's 20 ms and the dropped trips tell whether the round trip holds on that phone.
 
   §1 has no budget for calls yet: the first results go here and set one.
 - LeakCanary in debug builds; a leak fails the nightly.
