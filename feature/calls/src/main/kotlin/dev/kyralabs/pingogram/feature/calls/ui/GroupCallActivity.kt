@@ -322,7 +322,10 @@ class GroupCallActivity : ComponentActivity() {
         /** Joins the conference call of the `t.me/call` link [EXTRA_LINK] (`docs/adr/0025-conference-calls.md`). */
         const val ACTION_JOIN_CONFERENCE = "dev.kyralabs.pingogram.calls.JOIN_CONFERENCE"
 
-        /** Joins the conference call that invitation [EXTRA_INVITATION_MESSAGE_ID] in [EXTRA_INVITATION_CHAT_ID] is to. */
+        /**
+         * Joins the conference call that invitation [EXTRA_INVITATION_MESSAGE_ID] in chat [EXTRA_INVITATION_CHAT_ID]
+         * invites to.
+         */
         const val ACTION_JOIN_INVITATION = "dev.kyralabs.pingogram.calls.JOIN_INVITATION"
 
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
