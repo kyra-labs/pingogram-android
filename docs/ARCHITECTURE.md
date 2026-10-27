@@ -770,7 +770,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   side) and `Modifier.sharedMediaViewerBounds` (the viewer's) run that of a photo, video or GIF between the
   conversation (pushed or in the detail pane) and the media viewer, keyed by message id. Each bubble
   publishes its media's clip shape in `SharedMediaShapes` (`LocalSharedMediaShapes`, from a `Modifier.Node`
-  while it is laid out), so the viewer morphs from and back to exactly those corners.
+  while it is laid out), so the viewer morphs from and back to exactly those corners. The viewer is an overlay
+  destination (`core:ui`'s `OverlayNavigator`, a `FloatingWindow` like a dialog destination, registered by
+  `rememberOverlayNavigator` and drawn above the shell by `OverlayHost` in `PingogramApp`): the screen it opened from
+  stays composed and started below it, hidden from touch, focus and screen readers, and the bubbles follow which media
+  the viewer shows (`SharedMediaShapes.isInViewer`) instead of their destination's transition.
 - Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
   on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops

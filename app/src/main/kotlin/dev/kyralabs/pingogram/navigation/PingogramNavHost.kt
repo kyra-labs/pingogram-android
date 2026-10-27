@@ -63,9 +63,11 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * - **Pushed screens** ([isPushed]: the conversation, the archive, search, settings pages) come in and go back with
  *   Material's shared axis on X ([sharedAxisXEnter], [sharedAxisXExit]), the screen below sliding the same way.
  * - **Tabs** switch with Material's fade-through, and so do the two graphs.
- * - **Full-screen destinations** ([isFullScreen], the media viewer) fade in and out on the default effects spring
- *   over the screen below, which stays as it is meanwhile, so the viewer's scrim darkens it while a photo grows out of
- *   its bubble.
+ * - **Full-screen destinations** ([isFullScreen]: the stories viewer, the QR code scanner) fade in and out on the
+ *   default effects spring over the screen below, which stays as it is meanwhile.
+ * - **The media viewer** is an overlay destination (`core:ui`'s `OverlayNavigator`, drawn by the shell's
+ *   `OverlayHost`): the screen below stays composed under it, so a photo grows out of its bubble and shrinks back
+ *   into it while nothing below composes anew.
  *
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
  * ([predictiveBackPopExit]); the viewer follows the gesture itself.

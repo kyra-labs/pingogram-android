@@ -23,6 +23,9 @@ dependencies {
     // The list-detail layouts' shared pane parts (ListDetailPanes.kt).
     implementation(libs.androidx.compose.material3.adaptive.layout)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
+    // Overlay destinations, which Navigation shows above the screen below without leaving it
+    // (navigation/OverlayNavigator.kt: the media viewer). Already in the app and every feature.
+    api(libs.androidx.navigation.compose)
 
     // Animated (TGS) stickers, drawn into bitmaps by LottieDrawable (sticker/LottieStickerDecoder.kt,
     // docs/adr/0008-lottie-for-animated-stickers.md). Not its AppCompat dependency: only LottieAnimationView, a View,
