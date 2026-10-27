@@ -5,7 +5,9 @@ import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
+import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.shape.CornerBasedShape
@@ -15,8 +17,12 @@ import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -91,6 +97,26 @@ fun ProvideNavAnimatedVisibilityScope(
 class SharedMediaShapes {
     private val published = HashMap<Long, PublishedMediaShapeNode>()
 
+    // How many of the viewer's pages show each message's media and share it with its bubble; snapshot state, which
+    // each bubble reads through a derived state of its own message.
+    private val inViewer = mutableStateMapOf<Long, Int>()
+
+    /**
+     * Whether the media viewer shows the media of message [messageId] and shares it with its bubble
+     * ([sharedMediaViewerBounds]): the bubble's media is then the side the viewer's grew out of, and shrinks back
+     * into once the viewer leaves it ([sharedMediaBounds]).
+     */
+    fun isInViewer(messageId: Long): Boolean = (inViewer[messageId] ?: 0) > 0
+
+    internal fun enterViewer(messageId: Long) {
+        inViewer[messageId] = (inViewer[messageId] ?: 0) + 1
+    }
+
+    internal fun leaveViewer(messageId: Long) {
+        val count = (inViewer[messageId] ?: 0) - 1
+        if (count > 0) inViewer[messageId] = count else inViewer.remove(messageId)
+    }
+
     /** The corners the media of message [messageId] shows in its bubble; null while no bubble of it is laid out. */
     operator fun get(messageId: Long): CornerBasedShape? = published[messageId]?.shape
 
@@ -106,8 +132,9 @@ class SharedMediaShapes {
 
 /**
  * The conversation's side of the container transform ([containerTransform]) of a photo, video or GIF between the
- * conversation and the media viewer (`docs/DESIGN_SYSTEM.md` §5): while the `NavHost` moves between them, this content
- * and the viewer's content of the same message [messageId] share their bounds, which grow or shrink on the motion
+ * conversation and the media viewer (`docs/DESIGN_SYSTEM.md` §5): while the viewer, an overlay destination above the
+ * conversation (`OverlayNavigator`), comes and goes, this content and the viewer's content of the same message
+ * [messageId] share their bounds, which grow or shrink on the motion
  * scheme's default spatial spring, the two crossfading on its default effects spring. Both are measured to the moving
  * bounds, so a photo cropped in its bubble uncrops as it grows. While they move they are drawn above both screens,
  * each clipped to a shape that morphs between [shape], the media's clip in its bubble (the bubble's corners, square
@@ -127,9 +154,13 @@ fun Modifier.sharedMediaBounds(
     shape: CornerBasedShape,
     enabled: Boolean = true,
 ): Modifier {
-    val shapes = LocalSharedMediaShapes.current
-    val shared = containerTransformOf(SharedMediaKey(messageId), shape, FullBleedCounterpart, enabled)
-    return if (shared !== this && shapes != null) {
+    val shapes = LocalSharedMediaShapes.current ?: return this
+    // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the media
+    // goes with the viewer, not with the conversation's own destination.
+    val viewer = rememberViewerVisibility(shapes, messageId)
+    val shared =
+        containerTransformOf(SharedMediaKey(messageId), shape, FullBleedCounterpart, enabled, visibilityScope = viewer)
+    return if (shared !== this) {
         shared.then(PublishedMediaShapeElement(shapes, messageId, shape))
     } else {
         shared
@@ -149,8 +180,38 @@ fun Modifier.sharedMediaViewerBounds(
 ): Modifier {
     val shapes = LocalSharedMediaShapes.current
     val counterpart = remember(shapes, messageId) { viewerCounterpart(shapes, messageId) }
-    return containerTransformOf(SharedMediaKey(messageId), FullBleedShape, counterpart, enabled)
+    val shared = containerTransformOf(SharedMediaKey(messageId), FullBleedShape, counterpart, enabled)
+    // While shared and coming in or shown, the bubble's media is the side going out; leaving, it comes back.
+    val visibility = LocalNavAnimatedVisibilityScope.current
+    if (shared !== this && shapes != null && visibility?.transition?.targetState == EnterExitState.Visible) {
+        DisposableEffect(shapes, messageId) {
+            shapes.enterViewer(messageId)
+            onDispose { shapes.leaveViewer(messageId) }
+        }
+    }
+    return shared
 }
+
+/**
+ * The bubble's side of the media viewer's coming and going, for its media of message [messageId]: gone while the
+ * viewer shows that media ([SharedMediaShapes.isInViewer]), back as it leaves it. Only the bubbles whose media the
+ * viewer takes or gives back compose again.
+ */
+@Composable
+private fun rememberViewerVisibility(
+    shapes: SharedMediaShapes,
+    messageId: Long,
+): AnimatedVisibilityScope {
+    val inViewer by remember(shapes, messageId) { derivedStateOf { shapes.isInViewer(messageId) } }
+    val transition =
+        updateTransition(if (inViewer) EnterExitState.PostExit else EnterExitState.Visible, label = "sharedMedia")
+    return remember(transition) { ViewerVisibility(transition) }
+}
+
+/** An [AnimatedVisibilityScope] of [transition], which content stays composed through. */
+private class ViewerVisibility(
+    override val transition: Transition<EnterExitState>,
+) : AnimatedVisibilityScope
 
 /**
  * A container transform between two destinations of the `NavHost` (`docs/DESIGN_SYSTEM.md` §5): while it moves between
@@ -191,9 +252,9 @@ private fun Modifier.containerTransformOf(
     counterpart: () -> CornerBasedShape,
     enabled: Boolean,
     fixedLayout: Boolean = false,
+    visibilityScope: AnimatedVisibilityScope? = LocalNavAnimatedVisibilityScope.current,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
-    val visibilityScope = LocalNavAnimatedVisibilityScope.current
     val shares = enabled && !isReducedMotion()
     if (transitionScope == null || visibilityScope == null || !shares) return this
     val motionScheme = MaterialTheme.motionScheme

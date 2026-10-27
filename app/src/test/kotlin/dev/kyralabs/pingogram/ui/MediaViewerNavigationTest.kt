@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -160,6 +161,9 @@ class MediaViewerNavigationTest {
         )
         awaitNode(hasContentDescription("Photo, 1 of 1, Ada Lovelace", substring = true))
         assertNoNavigation()
+        // The viewer is an overlay: the conversation stays composed and started below it, out of screen readers' reach.
+        assertEquals(Lifecycle.State.STARTED, navController.getBackStackEntry<ChatRoute>().lifecycle.currentState)
+        composeRule.onAllNodes(photoBubble).assertCountEquals(0)
         // The viewer's one search for media; the conversation's pinned messages bar searches for the pins.
         assertEquals(
             1,

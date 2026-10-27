@@ -183,6 +183,51 @@ class SharedMediaTest {
     }
 
     @Test
+    fun `a bubble below the viewer's overlay gives its media to the viewer and takes it back`() {
+        var showViewer by mutableStateOf(false)
+        lateinit var shapes: SharedMediaShapes
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        shapes = LocalSharedMediaShapes.current!!
+                        // The conversation stays composed; the viewer comes and goes above it, as an overlay does.
+                        Box {
+                            Box(
+                                Modifier
+                                    .size(
+                                        48.dp,
+                                    ).sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                                    .testTag("bubble"),
+                            )
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE).testTag("viewer"))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        assertFalse(shapes.isInViewer(MESSAGE))
+
+        showViewer = true
+        composeRule.waitForIdle()
+
+        assertTrue(shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("viewer").assertIsDisplayed()
+
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertFalse(shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("viewer").assertDoesNotExist()
+        composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+    }
+
+    @Test
     fun `a bubble publishes its media's corners for the viewer while it is laid out`() {
         var shown by mutableStateOf(true)
         lateinit var shapes: SharedMediaShapes

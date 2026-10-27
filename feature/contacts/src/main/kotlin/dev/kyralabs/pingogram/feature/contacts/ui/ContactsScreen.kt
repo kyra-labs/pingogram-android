@@ -23,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -54,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.takeOrElse
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
@@ -249,7 +251,7 @@ private fun ContactsBody(
  * The actions, then [content]'s contacts in one `LazyColumn`, every entry keyed and typed, at most `contentMaxWidth`
  * wide, animating on the motion scheme's springs as contacts come and go; the letters' headers stick to the top while
  * their section scrolls. Rows run no effects (`docs/PERFORMANCE.md` §4). With [ContactsContent.Contacts.showsIndex],
- * the [FastScrollIndex] lies over the list's end edge.
+ * the [FastScrollIndex] lies along the list's end edge, and the rows end before it.
  */
 @Composable
 private fun ContactsList(
@@ -266,8 +268,15 @@ private fun ContactsList(
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val motionScheme = MaterialTheme.motionScheme
     val listPadding = remember(contentPadding) { contentPadding.withTop(0.dp) }
+    val showsIndex = content is ContactsContent.Contacts && content.showsIndex
+    // The rows end before the index, so their trailing icons and buttons never sit under its letters.
+    val indexWidth = LocalMinimumInteractiveComponentSize.current.takeOrElse { 0.dp }
     LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag(CONTACTS_LIST_TEST_TAG),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(end = if (showsIndex) indexWidth else 0.dp)
+                .testTag(CONTACTS_LIST_TEST_TAG),
         state = listState,
         contentPadding = listPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -299,7 +308,7 @@ private fun ContactsList(
             }
         }
     }
-    if (content is ContactsContent.Contacts && content.showsIndex) {
+    if (showsIndex) {
         val letters = remember(content.sections) { content.sections.map { it.letter }.toImmutableList() }
         val leading = ACTION_ROWS + if (showsSync) 1 else 0
         val headers = remember(content.sections, leading) { headerIndices(content.sections, leading) }
