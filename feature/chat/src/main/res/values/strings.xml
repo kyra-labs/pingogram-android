@@ -507,6 +507,7 @@
     <string name="chat_call">Call</string>
     <!-- What tapping a call's service message does, for screen readers. -->
     <string name="chat_call_back">Call back</string>
+    <string name="chat_join_group_call">Join</string>
 
     <!-- Bots' buttons under messages (docs/DESIGN_SYSTEM.md §6 "Bot buttons"). %1$s is the button's text. -->
     <string name="bot_button_link_action">%1$s, opens a link</string>
