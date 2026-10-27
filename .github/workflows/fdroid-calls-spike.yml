@@ -4,7 +4,8 @@ name: F-Droid calls spike
 # NDK alone, as F-Droid's build server would? Run manually (Actions → F-Droid calls spike → Run workflow); it builds
 # nothing Pingogram ships and publishes nothing but its report (the job summary and a "spike-report" artifact).
 #
-# Job "telegram-x" builds Telegram X at the commit F-Droid builds (fdroiddata metadata/org.thunderdog.challegram.yml):
+# Job "telegram-x" builds Telegram X at the commit F-Droid builds (fdroiddata metadata/org.thunderdog.challegram.yml,
+# whose repository is Telegram X FOSS, AmanoTeam/Telegram-X-FOSS):
 # its tgcalls and trimmed WebRTC tree (app/jni/tgvoip) with libvpx, FFmpeg and its other native code, by its own
 # Gradle build, as F-Droid's recipe does (`./scripts/setup.sh --skip-sdk-setup`, then the flavor's release build).
 # It records the clone's size and time, the build's time and disk, and the size of every native library, above all
@@ -30,7 +31,8 @@ permissions:
   contents: read
 
 env:
-  # Telegram X 0.28.11.1800, the commit F-Droid's recipe builds.
+  # Telegram X FOSS 0.28.11.1800, the repository and commit F-Droid's recipe builds.
+  TGX_REPO: "https://github.com/AmanoTeam/Telegram-X-FOSS"
   TGX_COMMIT: "807947f544c82301859465cd8453531b4590a75b"
   # NTgCalls 3.0.5, as .github/workflows/ntgcalls.yml.
   NTGCALLS_COMMIT: "e8ab467185017827625f664d024824947b5c5d5f"
@@ -65,7 +67,7 @@ jobs:
         run: |
           mkdir -p report
           start=$(date +%s)
-          git clone --quiet https://github.com/TGX-Android/Telegram-X tgx
+          git clone --quiet "$TGX_REPO" tgx
           cd tgx
           git checkout --quiet "$TGX_COMMIT"
           git lfs install --local
@@ -148,12 +150,18 @@ jobs:
 
       - name: Clone Telegram X's WebRTC tree at the commit Telegram X pins
         run: |
-          git clone --quiet --filter=blob:none --no-checkout https://github.com/TGX-Android/Telegram-X tgx
+          git clone --quiet --filter=blob:none --no-checkout "$TGX_REPO" tgx
           webrtc=$(git -C tgx ls-tree "$TGX_COMMIT" app/jni/tgvoip/third_party/webrtc | awk '{print $3}')
           tgcalls=$(git -C tgx ls-tree "$TGX_COMMIT" app/jni/tgvoip/third_party/tgcalls | awk '{print $3}')
           echo "WebRTC $webrtc, tgcalls $tgcalls" | tee commits.txt
           git init --quiet webrtc
-          git -C webrtc fetch --quiet --depth 1 https://github.com/TGX-Android/webrtc "$webrtc"
+          # The submodule's URL as the commit's .gitmodules names it.
+          git -C tgx show "$TGX_COMMIT:.gitmodules" > gitmodules
+          name=$(git config -f gitmodules --get-regexp '^submodule\..*\.path$' |
+            awk '$2 == "app/jni/tgvoip/third_party/webrtc" {print $1}' | sed 's/^submodule\.//; s/\.path$//')
+          url=$(git config -f gitmodules --get "submodule.$name.url")
+          echo "WebRTC from $url" | tee -a commits.txt
+          git -C webrtc fetch --quiet --depth 1 "$url" "$webrtc"
           git -C webrtc checkout --quiet FETCH_HEAD
 
       - name: Compare the WebRTC headers NTgCalls includes with the tree
