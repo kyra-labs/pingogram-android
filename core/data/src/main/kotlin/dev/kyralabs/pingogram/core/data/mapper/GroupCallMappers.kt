@@ -45,6 +45,7 @@ internal fun TdApi.GroupCall.toGroupCall(): GroupCall =
         duration = duration,
         canEnableVideo = canEnableVideo,
         isMyVideoEnabled = isMyVideoEnabled,
+        inviteLink = inviteLink.orEmpty(),
     )
 
 /** Null for a participant type added by a newer TDLib. */

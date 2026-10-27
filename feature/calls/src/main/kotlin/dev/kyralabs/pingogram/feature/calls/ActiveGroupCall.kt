@@ -28,6 +28,8 @@ data class ActiveGroupCall(
     val isHandRaised: Boolean = false,
     /** The user may end the call for everyone (an administrator who may manage voice chats). */
     val canEnd: Boolean = false,
+    /** A conference call the user is connected to: they may invite people into it ([GroupCallManager.invite]). */
+    val canInvite: Boolean = false,
     val audio: CallAudio = CallAudio(),
     /** When it first connected, on the elapsed-realtime clock in milliseconds; null before. */
     val connectedAtMillis: Long? = null,
@@ -99,6 +101,14 @@ sealed interface GroupCallEndReason {
         val error: DomainError,
     ) : GroupCallEndReason
 }
+
+/** What came of [GroupCallManager.invite]: how many were invited, and who could not be. */
+@Immutable
+data class ConferenceInvites(
+    val invited: Int,
+    /** Users whose privacy settings refuse it, who were removed from the call, or whose invitation failed. */
+    val refused: ImmutableList<Long> = persistentListOf(),
+)
 
 /** What came of asking to join or start a voice chat. */
 enum class JoinResult {

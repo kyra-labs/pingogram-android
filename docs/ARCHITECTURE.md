@@ -1345,7 +1345,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   TDLib answered, with chat 0, and Telecom names it "Group call". A `t.me/call/…` link (`LinkTarget.GroupCall`) opens
   the voice chat's screen through `core:ui`'s `VoiceChats.joinConference`, which asks before it joins
   (`GroupCallUiState.ConfirmConference`, the answer in the saved state) and shows the emojis to compare under the
-  header. Upgrading a one-to-one call, inviting and invitations come later.
+  header. Inviting (`GroupCallManager.invite`, `inviteGroupCallParticipant` per user, to a video call while the camera
+  is on): the voice chat's screen heads its participants with "Add people" in a conference call it is connected to,
+  which opens `InvitePeopleSheet` (`feature:calls` `ui/invite/`, `InvitePeopleViewModel`: the contacts of
+  `ContactRepository` not in the call, filtered on the device, the query and the picks in its saved state); the counts
+  come back as a `CallEffect` for a snackbar. Upgrading a one-to-one call and invitations in chats come later.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

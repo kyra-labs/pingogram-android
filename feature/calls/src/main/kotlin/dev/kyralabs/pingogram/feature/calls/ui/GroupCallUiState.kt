@@ -58,6 +58,8 @@ sealed interface GroupCallUiState {
         val isHandRaised: Boolean = false,
         /** The user may end it for everyone. */
         val canEnd: Boolean = false,
+        /** A conference call: "Add people" heads the participants (`docs/adr/0025-conference-calls.md`). */
+        val canInvite: Boolean = false,
         val route: AudioRoute? = null,
         val routes: ImmutableList<AudioRoute> = persistentListOf(),
         val video: GroupCallVideoUi = GroupCallVideoUi(),
@@ -65,10 +67,17 @@ sealed interface GroupCallUiState {
         /** The controls apply: joined and not over. */
         val hasControls: Boolean get() = stage !is GroupCallStage.Ended
 
+        /** The users among the participants, whom "Add people" leaves out. */
+        fun participantUserIds(): Set<Long> =
+            participants.mapNotNullTo(mutableSetOf()) { row -> row.id.takeIf { row.key.startsWith(USER_KEY) } }
+
         /** There is video to watch, which picture-in-picture keeps showing: a live stream, or others' videos. */
         fun watches(): Boolean = isStream || video.remote.isNotEmpty()
     }
 }
+
+/** The start of a user participant's [GroupCallParticipantUi.key]. */
+private const val USER_KEY = "user:"
 
 /** The user's camera in the voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
 @Immutable
@@ -202,6 +211,11 @@ sealed interface GroupCallEvent {
     /** Android's consent dialog closed: the user agreed ([granted]; its result reached the engine) or not. */
     data class ScreenSharingResult(
         val granted: Boolean,
+    ) : GroupCallEvent
+
+    /** "Add" in "Add people": invites [userIds] into the conference call. */
+    data class Invite(
+        val userIds: List<Long>,
     ) : GroupCallEvent
 
     /** Android answered the camera's permission request. */

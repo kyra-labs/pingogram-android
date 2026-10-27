@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Group calls by link: "Add people" at the top of the participants invites your contacts, each with a message in
+  your chat with them that opens the call.
+
 ## [0.6.0] - 2026-10-26
 
 ### Added

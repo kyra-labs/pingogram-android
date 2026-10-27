@@ -44,6 +44,8 @@ data class GroupCall(
     val canEnableVideo: Boolean = false,
     /** The user sends their camera, as Telegram knows it. */
     val isMyVideoEnabled: Boolean = false,
+    /** A conference call's link (`t.me/call/…`), which joins it; empty for a chat's voice chat. */
+    val inviteLink: String = "",
 )
 
 /** One of a [GroupCall]'s recent speakers. */

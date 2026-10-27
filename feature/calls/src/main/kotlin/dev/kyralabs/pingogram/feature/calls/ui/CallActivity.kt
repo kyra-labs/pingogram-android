@@ -103,11 +103,7 @@ class CallActivity : ComponentActivity() {
             val permissions =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
                     val granted = results[Manifest.permission.RECORD_AUDIO] == true
-                    val canAskAgain =
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            this,
-                            Manifest.permission.RECORD_AUDIO,
-                        )
+                    val canAskAgain = shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
                     viewModel.onEvent(CallEvent.MicrophoneResult(granted, canAskAgain))
                 }
             val camera =
@@ -116,14 +112,14 @@ class CallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(CallEvent.CameraResult(granted, canAskAgain))
                 }
-            val screenCapture =
-                rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
+            val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
                         CallEffect.RequestScreenCapture -> screenCapture()
                         CallEffect.OpenSettings -> openAppSettings()
+                        is CallEffect.Invited, is CallEffect.InviteFailed -> Unit
                     }
                 }
             }
