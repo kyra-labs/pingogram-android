@@ -204,7 +204,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Coming back from a pushed screen composes the tab's screen anew (Navigation keeps only its saved
   state), in the first frame of the back transition: keep that composition lean, and keep app chrome
   that only hides (the floating navigation bar) composed rather than composing it again with the
-  screen.
+  screen. A full-window screen that content grows out of and back into (the media viewer) is an overlay destination
+  instead (`core:ui`'s `OverlayNavigator`, drawn by the shell's `OverlayHost`): the screen below stays composed under
+  it, so the way back composes nothing. As a destination of its own, closing the viewer composed the whole
+  conversation in the first frames of the photo's way back, which then moved only every 40 ms or so (a screen
+  recording on the owner's phone, 2026-10-26).
 - A `Scaffold` composes its content lambda again whenever it measures it anew, e.g. in every frame of a
   collapsing top app bar: put the body in its own skippable composable, so those frames stop there.
 - Opening a screen: nothing composes a loading indicator for the first 150 ms (`DelayedLoadingIndicator`,
