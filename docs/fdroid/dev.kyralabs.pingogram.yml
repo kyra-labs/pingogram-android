@@ -47,7 +47,10 @@ Builds:
       - popd
       # TODO: the call engine from source (docs/adr/0030-calls-in-the-fdroid-build.md): NTgCalls' build downloads
       #   prebuilt WebRTC, which F-Droid does not accept. Calls stay, as in Telegram FOSS and Telegram X: WebRTC as a
-      #   source tree built with the NDK, after the ADR's spike.
+      #   source tree built with the NDK. The spike (2026-10-27) built Telegram X's tree as its recipe does: a 6.2 GB
+      #   checkout with submodules, 35 min and 2.8 GB of build per ABI on 4 cores, so this recipe will want
+      #   `submodules: true`, `timeout: 18000` as Telegram X's, and cmake, gperf, automake and libtool installed.
+      #   Next: NTgCalls compiled against that tree (6 WebRTC headers it includes are missing there).
     gradleprops:
       # The self-built TDLib instead of the release asset (docs/TDLIB.md), release APKs without the owner's key
       # (F-Droid signs them), and the version the tag names.

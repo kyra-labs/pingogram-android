@@ -134,7 +134,7 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
   - Left for F-Droid's main repository, which builds from source:
     - the Telegram API values in its public recipe (owner decision);
     - TDLib's AAR packaged in the recipe;
-    - the call engine and WebRTC built from source, as Telegram FOSS and Telegram X do (`docs/adr/0030-calls-in-the-fdroid-build.md`: a spike first; no build without calls);
+    - the call engine and WebRTC built from source, as Telegram FOSS and Telegram X do (`docs/adr/0030-calls-in-the-fdroid-build.md`: no build without calls; the spike of 2026-10-27 found it feasible, the engine to build on it is next);
     - a check on another machine;
     - the submission.
 - [x] Dogfood support: Send feedback and `docs/TESTING_GUIDE.md` (#151)

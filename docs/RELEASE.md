@@ -146,7 +146,8 @@ Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` 
   - **TDLib.** Its AAR has to be packaged in the recipe as `.github/workflows/tdlib.yml` does.
   - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Calls stay in
     F-Droid's build, as in Telegram FOSS's and Telegram X's: the call engine and WebRTC will be built from source
-    (`docs/adr/0030-calls-in-the-fdroid-build.md`, after its spike).
+    (`docs/adr/0030-calls-in-the-fdroid-build.md`). The spike (2026-10-27) showed it builds within F-Droid's limits;
+    which engine builds on that WebRTC is the next step.
 
 ## Reproducible builds
 
