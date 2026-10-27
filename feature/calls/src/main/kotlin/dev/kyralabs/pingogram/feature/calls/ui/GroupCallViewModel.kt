@@ -77,8 +77,11 @@ class GroupCallViewModel
         private val startChatId: Long? =
             savedStateHandle.get<Long>(GroupCallActivity.EXTRA_CHAT_ID)?.takeIf { it != 0L }
 
-        /** The `t.me/call` link of a conference call to join (`docs/adr/0025-conference-calls.md`). */
-        private val startLink: String? = savedStateHandle[GroupCallActivity.EXTRA_LINK]
+        /**
+         * The conference call to join (`docs/adr/0025-conference-calls.md`): a `t.me/call` link's, or an invitation's
+         * in a chat.
+         */
+        private val startConference: ConferenceTarget? = conferenceTarget(savedStateHandle)
 
         /** The permission step: whether Android would still ask; null while none shows. */
         private val permissionStep = MutableStateFlow<Boolean?>(null)
@@ -291,12 +294,20 @@ class GroupCallViewModel
         }
 
         private suspend fun takeAction() {
-            val joins = action in JOIN_ACTIONS && (startChatId != null || startLink != null)
+            val joins = action in JOIN_ACTIONS && (startChatId != null || startConference != null)
             if (savedStateHandle.get<Boolean>(KEY_DONE) == true || !joins) return
             when {
-                startLink != null && savedStateHandle.get<Boolean>(KEY_CONFIRMED) != true -> confirming.value = true
-                microphone.isGranted() -> join()
-                else -> permissionStep.value = savedStateHandle.get<Boolean>(KEY_REFUSED) != true
+                startConference != null && savedStateHandle.get<Boolean>(KEY_CONFIRMED) != true -> {
+                    confirming.value = true
+                }
+
+                microphone.isGranted() -> {
+                    join()
+                }
+
+                else -> {
+                    permissionStep.value = savedStateHandle.get<Boolean>(KEY_REFUSED) != true
+                }
             }
         }
 
@@ -313,12 +324,12 @@ class GroupCallViewModel
 
         private suspend fun join() {
             val chatId = startChatId
-            val link = startLink
+            val conference = startConference
             savedStateHandle[KEY_DONE] = true
             val result =
                 when {
-                    link != null -> {
-                        manager.joinConference(ConferenceTarget.Link(link))
+                    conference != null -> {
+                        manager.joinConference(conference)
                     }
 
                     chatId == null -> {
@@ -510,6 +521,7 @@ class GroupCallViewModel
                     GroupCallActivity.ACTION_JOIN,
                     GroupCallActivity.ACTION_START,
                     GroupCallActivity.ACTION_JOIN_CONFERENCE,
+                    GroupCallActivity.ACTION_JOIN_INVITATION,
                 )
 
             const val KEY_DONE = "group_call_action_done"
@@ -523,6 +535,18 @@ class GroupCallViewModel
     }
 
 private fun ActiveGroupCall.isOver() = phase is GroupCallPhase.Ended
+
+/** The conference call the screen was opened to join: by a link, or by an invitation's message; null otherwise. */
+private fun conferenceTarget(handle: SavedStateHandle): ConferenceTarget? {
+    val link = handle.get<String>(GroupCallActivity.EXTRA_LINK)
+    val chatId = handle.get<Long>(GroupCallActivity.EXTRA_INVITATION_CHAT_ID) ?: 0
+    val messageId = handle.get<Long>(GroupCallActivity.EXTRA_INVITATION_MESSAGE_ID) ?: 0
+    return when {
+        link != null -> ConferenceTarget.Link(link)
+        chatId != 0L && messageId != 0L -> ConferenceTarget.Invitation(chatId, messageId)
+        else -> null
+    }
+}
 
 /** What came of inviting people, as the screen's snackbar says it. */
 private fun Outcome<ConferenceInvites>.toEffect(): CallEffect =

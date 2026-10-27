@@ -85,6 +85,10 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
             ServiceAction.Call(isVideo, duration, discardReason.toCallDiscardReason())
         }
 
+        is TdApi.MessageGroupCall -> {
+            ServiceAction.GroupCall(isActive, wasMissed, isVideo, duration)
+        }
+
         is TdApi.MessageVideoChatScheduled -> {
             ServiceAction.VideoChatScheduled(startDate.toLong())
         }
@@ -170,7 +174,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageGiveawayCompleted::class.java,
         TdApi.MessageGiveawayCreated::class.java,
         TdApi.MessageGiveawayPrizeStars::class.java,
-        TdApi.MessageGroupCall::class.java,
         TdApi.MessageManagedBotCreated::class.java,
         TdApi.MessagePaidMessagePriceChanged::class.java,
         TdApi.MessagePaidMessagesRefunded::class.java,

@@ -1356,7 +1356,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   voice chat's screen shows (`upgradeInvites`). A call the other side upgrades (`CallState.Discarded.upgradeLink`) joins
   that link (`joinConference` with `from`). The call ends as `CallEndReason.UpgradedToGroupCall`, and `CallViewModel`
   hands over to `GroupCallActivity` (`CallEffect.OpenGroupCall`) once the conference call is under way. Invitations in
-  chats come later.
+  chats: `messageGroupCall` maps to `ServiceAction.GroupCall` (`core:ui`'s previews word it), and `feature:chat`'s
+  service pill of one that goes on (`ChatItem.Service.groupCallChatId`) opens it through `core:ui`'s
+  `VoiceChats.joinInvitation`, which asks before it joins (`ConferenceTarget.Invitation`).
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

@@ -307,6 +307,8 @@ class GroupCallActivity : ComponentActivity() {
         const val EXTRA_ACTION = "action"
         const val EXTRA_CHAT_ID = "chat_id"
         const val EXTRA_LINK = "link"
+        const val EXTRA_INVITATION_CHAT_ID = "invitation_chat_id"
+        const val EXTRA_INVITATION_MESSAGE_ID = "invitation_message_id"
 
         /** Shows the voice chat the user is in. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW_VOICE_CHAT"
@@ -319,6 +321,9 @@ class GroupCallActivity : ComponentActivity() {
 
         /** Joins the conference call of the `t.me/call` link [EXTRA_LINK] (`docs/adr/0025-conference-calls.md`). */
         const val ACTION_JOIN_CONFERENCE = "dev.kyralabs.pingogram.calls.JOIN_CONFERENCE"
+
+        /** Joins the conference call that invitation [EXTRA_INVITATION_MESSAGE_ID] in [EXTRA_INVITATION_CHAT_ID] is to. */
+        const val ACTION_JOIN_INVITATION = "dev.kyralabs.pingogram.calls.JOIN_INVITATION"
 
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
         fun open(
@@ -334,6 +339,19 @@ class GroupCallActivity : ComponentActivity() {
         /** Shows the voice chat or conference call the user is in: a one-to-one call that became one. */
         fun show(context: Context) {
             context.startActivity(intent(context, ACTION_SHOW))
+        }
+
+        /** Joins the conference call that the invitation [messageId] in chat [chatId] is to, and shows it. */
+        fun openInvitation(
+            context: Context,
+            chatId: Long,
+            messageId: Long,
+        ) {
+            context.startActivity(
+                intent(context, ACTION_JOIN_INVITATION)
+                    .putExtra(EXTRA_INVITATION_CHAT_ID, chatId)
+                    .putExtra(EXTRA_INVITATION_MESSAGE_ID, messageId),
+            )
         }
 
         /** Joins the conference call of [link] and shows it. */
