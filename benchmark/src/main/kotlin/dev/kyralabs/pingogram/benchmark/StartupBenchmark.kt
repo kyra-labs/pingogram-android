@@ -62,6 +62,10 @@ class StartupBenchmark {
             setupBlock = { pressHome() },
         ) {
             startActivityAndWait()
+            // Time to full display ends with the frame after reportFullyDrawn, which the trace must still hold: on a
+            // slow phone that frame was still drawing when startActivityAndWait returned and the trace stopped.
+            waitForChatList()
+            device.waitForIdle()
         }
     }
 }
