@@ -92,13 +92,26 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     was on during this trace and the benchmarks of §9. The scripts now write the running services into `device.txt`.
   - **The warm starts did not happen:** Android reported them as hot. "Don't keep activities" did not destroy the
     activity on this phone, so the scripts now start warm starts with `NEW_TASK | CLEAR_TASK`.
-- Still open:
-  - **The warm start** (v0.5.0: 171 ms against 135 ms, §9). A warm start runs no `Application.onCreate`: its time is
-    the activity's creation, the wait for the settings behind the splash screen (`main.awaitSettings`), the first
-    composition and the chat list's first content (`reportFullyDrawn`). Between the first baseline and v0.5.0 the
-    start gained the deep links' and shares' handling and `LinkViewModel`, the call and secure window providers, the
-    color theme's palette and the chat style in `PingogramTheme`, the third pane's navigator and the story rings above
-    the chat list. Which of them costs what is for the next trace's warm starts to say.
+- The warm start is back within 10% of the first baseline: 127 ms with the profile of v0.6.0 (#271), against 135 ms
+  then and 171 ms in v0.5.0 (§9), as the start fixes above came in.
+- A low-end phone (2026-10-28: Redmi Note 5A, Snapdragon 430 at 1.4 GHz, 2.7 GB, eMMC, 720 × 1280 at 60 Hz,
+  LineageOS on Android 17; `benchmarkRelease` of `main` at 7a902d20, the v0.6.0 profile): cold start 980 ms to the
+  first frame and 1,921 ms to full display (medians of 10), against 310 and 425 ms on the S24 Ultra. The budget of §1
+  is for a 2022 mid-range phone, far above this one. Where the median start's time goes (iteration 4, from the launch):
+  - **To the end of `Application.onCreate`**, about 590 ms: the process (190 ms), then opening the APK's compiled code
+    and its app image (240 ms, 150 ms of it waiting for the storage), resources, the App Startup initializers and
+    Hilt's injection (`app.inject`, 34 ms).
+  - **`BOOT_COMPLETED`**, 82 ms on the main thread before the activity starts: a benchmark cost (above).
+  - **The activity and the splash screen**, about 340 ms: creating and resuming the activity (140 ms, `main.onCreate`
+    31 ms) and the wait for the settings (`main.awaitSettings`, 155 ms; median 175 ms).
+  - **The first frame**, 400 ms: its composition 135 ms, then 229 ms waiting for the RenderThread, which compiles the
+    shaders of its first draw. Time to initial display: 1,415 ms.
+  - **The chat list's first content**, 265 ms on the main thread, 189 ms of it measuring the rows (their texts), then
+    180 ms on the RenderThread, for which the main thread waits in the next frame. Time to full display: 1,923 ms.
+  - Shader compiling takes about 300 ms of the RenderThread's time and `BOOT_COMPLETED` 82 ms of the main thread's,
+    both paid for once in a user's starts (above), so a user's cold start there is about 1.5 s. The 8 cores spend
+    about 2.5 s of CPU time in the app's background threads by full display, without trace sections to say on what
+    (TDLib's first updates, the caches, the fonts); the main thread waits about 100 ms for a core.
 - Measuring a start on a phone: `tools/perfetto/startup.sh` (`startup.ps1` in PowerShell) records one Perfetto trace
   (`startup.pbtxt`) of 5 cold and 5 warm starts of an installed, profileable build (`benchmarkRelease`), with what
   `am start -W` reports for each.
@@ -391,6 +404,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.
+- Startup benchmarks wait for the chat list and an idle UI after `startActivityAndWait()`, so the trace holds the
+  frame after `reportFullyDrawn`, which time to full display ends with. On a slow phone that frame was still drawing
+  when the trace stopped, and the iteration failed ("No Choreographer#doFrame ends after reportFullyDrawn").
+- Two costs of every Macrobenchmark cold start that users rarely pay: Macrobenchmark drops the app's shader cache
+  before each one, so the first frames compile their shaders again, and it force-stops the app, which Android 15+
+  then sends `BOOT_COMPLETED` as it leaves the stopped state (WorkManager's `RescheduleReceiver` takes it on the main
+  thread, before the activity starts). On a fast phone both take a few milliseconds; on a slow one, hundreds (below).
 - Judging smoothness by hand: a sideloaded APK runs JIT-compiled at first. The APK carries the
   libraries' baseline profiles (and the app's, once generated) for `profileinstaller`, but the
   platform compiles them only in its background dexopt, when the phone is idle and charging. Before
