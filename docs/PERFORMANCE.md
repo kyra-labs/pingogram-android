@@ -499,7 +499,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   The P90 against an audio frame's 20 ms and the dropped trips tell whether the round trip holds on that phone.
 
   §1 has no budget for calls yet: the first results go here and set one.
-- LeakCanary in debug builds; a leak fails the nightly.
+- LeakCanary in debug builds (owner approval 2026-10-27: about 1 MB, no network): `:app`'s `debugImplementation`, so
+  `release`, `benchmarkRelease` and `nonMinifiedRelease` never have it, which `check<Variant>NoDebugTools` (build-logic's
+  `DebugOnly`, run by `check` and before each of those variants builds) enforces. It watches destroyed activities,
+  fragments, view models and services, dumps the heap once some stay reachable after they should be gone (5 while the
+  app is visible, LeakCanary's default), and shows what holds them in its own "Leaks" launcher icon and notification. To read it on a phone: install `fossDebug`, use the app (open and close
+  chats, the media viewer, calls, Settings pages), then open "Leaks"; each leak's trace can be shared from there as text.
+  `adb logcat -s LeakCanary` prints the same. A leak would fail the nightly, which does not exist yet (below).
 - Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only (the plugin skips
   them on emulators until `benchmark/build.gradle.kts` sets
   `baselineProfile { skipBenchmarksOnEmulator = false }`); real-device

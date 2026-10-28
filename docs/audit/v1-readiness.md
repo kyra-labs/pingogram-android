@@ -148,7 +148,10 @@ What blocks 1.0, in order:
   the start (§2 changed with it). Left: seeing it run on a phone (`adb shell dumpsys jobscheduler | grep -A5
   storage_optimization`, or run it at once with `adb shell cmd jobscheduler run -f dev.kyralabs.pingogram <job id>`).
   Owner.
-- **No JankStats or LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): neither is a dependency. LeakCanary is
-  ~1 MB and debug-only, and it touches no network; adding it needs the owner's approval (`CLAUDE.md`, dependencies).
-  Owner, then A.
+- **LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): in since 2026-10-27 (owner approval), debug builds only,
+  with `check<Variant>NoDebugTools` keeping it out of `release`, `benchmarkRelease` and `nonMinifiedRelease`. It finds
+  leaks only on a device, and none has run yet: no leak is known, in B's modules (`feature:calls`, `feature:media`) or
+  others'. The first runs on the owner's phone (PERFORMANCE §9 says how) list them here, by module. Owner, then each
+  module's owner.
+- **No JankStats in debug builds** (`docs/PERFORMANCE.md` §9): not a dependency yet. A.
 - **The nightly workflow** (§9 "to add in M2") does not exist. It is only useful with a device in CI. Owner.

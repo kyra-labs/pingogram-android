@@ -1502,7 +1502,9 @@ folder.
   their runtime classpath. `pingogram.android.gms` applies the Google Services plugin only when the owner's
   git-ignored `app/src/gms/google-services.json` exists; without it, packaging a `gms` variant fails before anything
   runs (`docs/adr/0004-push-delivery.md`, `docs/OWNER_SETUP.md` §8b). Build types: `debug` (suffix `.debug`,
-  debuggable), `release` (R8 full mode, resource shrinking, Baseline Profiles).
+  debuggable, LeakCanary as `debugImplementation`), `release` (R8 full mode, resource shrinking, Baseline Profiles).
+  `check<Variant>NoDebugTools` (`pingogram.android.application`) fails any variant of another build type whose runtime
+  classpath has LeakCanary (`docs/PERFORMANCE.md` §9).
 
 ## Naming conventions
 

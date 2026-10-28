@@ -134,6 +134,10 @@ dependencies {
     implementation(projects.feature.scanner)
     implementation(projects.feature.settings)
 
+    // Leak detection in debug builds only (docs/PERFORMANCE.md §9); check<Variant>NoDebugTools fails any other build
+    // type that gets it.
+    debugImplementation(libs.leakcanary.android)
+
     // FCM push, gms only (docs/adr/0004-push-delivery.md); foss never sees Firebase or Play services.
     "gmsImplementation"(platform(libs.firebase.bom))
     "gmsImplementation"(libs.firebase.messaging)
