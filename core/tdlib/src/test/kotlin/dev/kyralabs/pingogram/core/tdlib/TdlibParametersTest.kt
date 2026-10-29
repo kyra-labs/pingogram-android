@@ -17,7 +17,7 @@ class TdlibParametersTest {
             isDebug = false,
         )
     private val key = ByteArray(32) { it.toByte() }
-    private val device = DeviceInfo(manufacturer = "Google", model = "Pixel 9", androidVersion = "16")
+    private val device = DeviceInfo(manufacturer = "Example", model = "Phone 9", androidVersion = "16")
 
     private fun parameters(servers: TdlibServers = TdlibServers.Production) =
         tdlibParameters(
@@ -58,7 +58,7 @@ class TdlibParametersTest {
     fun `device model and system version describe the device`() {
         val parameters = parameters()
 
-        assertEquals(listOf("Google Pixel 9", "Android 16"), listOf(parameters.deviceModel, parameters.systemVersion))
+        assertEquals(listOf("Example Phone 9", "Android 16"), listOf(parameters.deviceModel, parameters.systemVersion))
     }
 
     @Test

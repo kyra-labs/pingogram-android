@@ -104,8 +104,8 @@ private fun FolderInviteChatRow(
 }
 
 /**
- * The sheet's actions as in Google's flows: [primary] a default filled `Button` at the end (none where it is null),
- * [secondary] a `TextButton` at the start; they wrap below each other where both do not fit.
+ * The sheet's actions, as the app's flows place them: [primary] a default filled `Button` at the end (none where it is
+ * null), [secondary] a `TextButton` at the start; they wrap below each other where both do not fit.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

@@ -13,8 +13,8 @@ import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 
 /**
  * New chat and the flows it opens, creating a group or a channel. A contact's chat takes the New chat screen's place,
- * as in Google Messages: back returns to the chat list. So does a new group's or channel's, in place of the New chat
- * screen and the flow that created it.
+ * so back returns to the chat list rather than to a picker that has done its job. So does a new group's or channel's,
+ * in place of the New chat screen and the flow that created it.
  */
 internal fun NavGraphBuilder.newChatScreens(navController: NavHostController) {
     val openChatInPlaceOfNewChat = { chatId: Long ->

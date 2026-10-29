@@ -89,7 +89,8 @@ fun PingogramTheme(
 /**
  * [content] in the dark theme of the enclosing [PingogramTheme], with its colors, contrast and AMOLED settings,
  * whatever the theme mode: for immersive media, such as the media viewer, which shows photos and videos on black in
- * light theme too, as Google Photos does, so its chrome and components are legible on the `scrim` behind them.
+ * light theme too, so the media is what stands out, and its chrome and components are legible on the `scrim` behind
+ * them.
  */
 @Composable
 fun PingogramDarkTheme(content: @Composable () -> Unit) {

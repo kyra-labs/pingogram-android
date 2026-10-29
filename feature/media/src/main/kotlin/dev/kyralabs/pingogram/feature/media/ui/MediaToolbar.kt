@@ -43,8 +43,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The viewer's actions on the current item (`docs/DESIGN_SYSTEM.md` §6, media viewer; owner decision D20): an
- * expressive [HorizontalFloatingToolbar] in the standard colors, at the bottom center below the caption, as Google
- * Photos' viewer has it. Round icon buttons whose shape morphs while pressed, each named by its label for screen
+ * expressive [HorizontalFloatingToolbar] in the standard colors, at the bottom center below the caption, within thumb's
+ * reach and clear of the media. Round icon buttons whose shape morphs while pressed, each named by its label for screen
  * readers and in a [PlainTooltip] on a long press or hover:
  *
  * - **Forward** where TDLib allows it ([MediaActions.canForward]; never protected content): the forward sheet;

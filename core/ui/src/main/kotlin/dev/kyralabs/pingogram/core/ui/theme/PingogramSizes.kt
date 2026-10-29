@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
  *   §7: between Material's 40 dp list avatar and [avatarMedium], so photos stay recognizable in a dense list).
  * @property avatarMedium an `Avatar` on the account's card at the top of Settings.
  * @property avatarLarge an `Avatar` heading a screen on its own: the profile photo in Edit profile.
- * @property avatarProfile the `Avatar` heading a user's profile, under its large flexible top bar, as large as Google
- *   Contacts' contact photo.
+ * @property avatarProfile the `Avatar` heading a user's profile, under its large flexible top bar, the largest avatar
+ *   of the app, as the profile is about that person.
  * @property profilePhotoItem the side of a photo in the profile's carousel of profile photos (square, as Telegram
  *   keeps them).
  * @property sharedMediaCell the smallest cell of a photo or video in the grid of a profile's shared media: three
@@ -77,18 +77,18 @@ import androidx.compose.ui.unit.dp
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
  * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
  * @property fabSmall the height of a small extended floating action button and of the FAB it collapses to (Material 3
- *   Expressive's, 56 dp, as Gmail's Compose; material3 has no public token for it): the room a list leaves at its end,
+ *   Expressive's, 56 dp; material3 has no public token for it): the room a list leaves at its end,
  *   so its last row can scroll clear of one.
  * @property floatingNavigationBar the height of the floating navigation bar's pill and of the search button beside it,
- *   as Google Photos' (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
- * @property themeChip the diameter of a color theme's chip in Settings → Appearance → Theme, as Pixel's Wallpaper &
- *   style chips.
+ *   (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
+ * @property themeChip the diameter of a color theme's chip in Settings → Appearance → Theme, as large as a
+ *   FAB, so the three colors of each chip are told apart.
  * @property denseTopAppBar the height of the small top app bar over the dense lists of the Chats and Contacts tabs and
  *   the archive (`docs/DESIGN_SYSTEM.md` §7, Density): Material's compact top app bar, 8 dp lower than its default.
  * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
  * @property passcodeDot the diameter of a dot that stands for an entered digit of a passcode.
- * @property composerField the height of the conversation composer's text field at one line, a filled tonal pill like
- *   Google Messages' (`docs/DESIGN_SYSTEM.md` §6), as tall as the round send button beside it, and of the recording
+ * @property composerField the height of the conversation composer's text field at one line, a filled tonal pill
+ *   (`docs/DESIGN_SYSTEM.md` §6), as tall as the round send button beside it, and of the recording
  *   bar in its place.
  * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
  * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.

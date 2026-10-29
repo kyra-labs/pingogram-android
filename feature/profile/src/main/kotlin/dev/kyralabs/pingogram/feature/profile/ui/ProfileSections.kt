@@ -51,13 +51,12 @@ import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The profile's actions as pills under the header, as Google Contacts' expressive contact page has them
- * (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"): "Message" (Saved Messages on one's own profile) as a filled `Button`,
- * the primary action, then "Call" (where the user can be called, through [LocalCallStarter]; a menu of a voice and a
- * video call where the user can get a video call, [CallButtonMenu]), the mute toggle and
- * "Secret chat" as `FilledTonalButton`s, each its icon over its label,
- * sharing the row's width, all with `ButtonDefaults.shapes()`' press morph. The mute toggle gives a `ToggleOn` or
- * `ToggleOff` haptic. Pills that do not apply are left out; the row is empty for a deleted account.
+ * The profile's actions as pills under the header (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"): "Message" (Saved
+ * Messages on one's own profile) as a filled `Button`, the primary action, then "Call" (where the user can be called,
+ * through [LocalCallStarter]; a menu of a voice and a video call where the user can get a video call,
+ * [CallButtonMenu]), the mute toggle and "Secret chat" as `FilledTonalButton`s, each its icon over its label, sharing
+ * the row's width, all with `ButtonDefaults.shapes()`' press morph. The mute toggle gives a `ToggleOn` or `ToggleOff`
+ * haptic. Pills that do not apply are left out; the row is empty for a deleted account.
  */
 @Composable
 internal fun ProfileActionsRow(
@@ -166,7 +165,7 @@ internal fun ActionPill(
 
 /**
  * The information rows (`docs/DESIGN_SYSTEM.md` §6 "Profile info"), segmented list items without icons, each value over
- * its label in the list item's supporting text, as Google Contacts lists a contact's details:
+ * its label in the list item's supporting text, so the value reads first:
  * - **Bio** (or a bot's "About"): its text with links and mentions, selectable; tapping a link opens it, a mention the
  *   profile or chat it names ([ProfileEvent.OpenMention]); screen readers get "Copy" as a custom action.
  * - **Usernames**: `@name`; tapping copies it, the trailing button shares its `t.me` link.

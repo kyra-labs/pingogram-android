@@ -61,9 +61,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The color of a settings page, behind its groups and its top bar (`docs/DESIGN_SYSTEM.md` §2.2). Its rows sit on
  * `surface`, the segmented list item's container color: lighter than the page in light themes and darker in dark ones,
- * as in Google's own Material 3 Expressive menus. One step above the floating navigation bar's `surfaceContainer`, so
- * the bar stands apart from the page it floats over. With AMOLED black the page is true black (`surface`) and its rows
- * move to `surfaceContainer` ([settingsRowColors], owner decision D22).
+ * so each row stands out from the page in both themes. One step above the floating navigation bar's `surfaceContainer`,
+ * so the bar stands apart from the page it floats over. With AMOLED black the page is true black (`surface`) and its
+ * rows move to `surfaceContainer` ([settingsRowColors], owner decision D22).
  */
 @Composable
 @ReadOnlyComposable

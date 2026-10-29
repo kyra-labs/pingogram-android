@@ -119,7 +119,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   layout changes do (§5).
  * - **Keyboard** ([PaneKeyboard], `docs/DESIGN_SYSTEM.md` §9): Tab moves from the list pane to the conversation (its
  *   top bar, messages, composer) and back. A chat opened from the list with a hardware keyboard gives its composer the
- *   focus, as Google Messages does on tablets; Esc in the conversation, with nothing in it to close, gives the focus
+ *   focus, so typing can start at once; Esc in the conversation, with nothing in it to close, gives the focus
  *   back to the list, at the row it left, and the chat stays open.
  */
 @Suppress("LongMethod") // The scaffold's three panes, its drag handles and what opens in them.

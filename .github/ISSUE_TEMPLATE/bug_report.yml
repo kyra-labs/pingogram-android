@@ -16,7 +16,7 @@ body:
     id: device
     attributes:
       label: Device and Android version
-      placeholder: "Pixel 8a, Android 16"
+      placeholder: "Example Phone 8, Android 16"
     validations:
       required: true
   - type: textarea
