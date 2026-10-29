@@ -68,8 +68,9 @@ import kotlinx.coroutines.launch
  *   [size] and faded in on the motion scheme's default effects spring; shown at once when Coil's memory cache has it,
  *   e.g. when a list scrolls back.
  * - **Placeholder**: the initials of [name] (or [placeholderIcon], or a person when [name] has no initials) on a
- *   circle in one of the four avatar color pairs, chosen by [id], so a chat looks the same everywhere. Circles, as in
- *   Google Messages and Contacts: one silhouette per list, not one per chat. On a selected or open row
+ *   circle in one of the four avatar color pairs, chosen by [id], so a chat looks the same everywhere. Circles: a
+ *   person's picture reads best in a plain circle, and one silhouette per list reads calmer than one per chat. On a
+ *   selected or open row
  *   ([onSelection]) the placeholder takes `primary`, which stands out from the row's `secondaryContainer`.
  * - **Online**: a dot in `MaterialTheme.pingogramColors.online` at the bottom end, set off from the avatar by a ring of
  *   [onlineRingColor]. It grows in and shrinks away on the motion scheme's fast spatial spring.

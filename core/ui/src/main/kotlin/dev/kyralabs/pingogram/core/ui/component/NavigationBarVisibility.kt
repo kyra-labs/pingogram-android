@@ -9,9 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
- * Whether a screen asks the app's floating navigation bar (`docs/DESIGN_SYSTEM.md` §6.1) to step aside, as Google
- * Photos hides its bar while photos are selected: the screen shows its own floating toolbar in the bar's place. The
- * app provides one through [LocalNavigationBarVisibility] and hides the bar while [isHidden]; screens ask with
+ * Whether a screen asks the app's floating navigation bar (`docs/DESIGN_SYSTEM.md` §6.1) to step aside, so two floating
+ * bars never stack: the screen shows its own floating toolbar in the bar's place (the chat list's selection). The app
+ * provides one through [LocalNavigationBarVisibility] and hides the bar while [isHidden]; screens ask with
  * [HideNavigationBar].
  *
  * Requests are counted, so two screens composed at once (e.g. during a transition between them) do not show the bar

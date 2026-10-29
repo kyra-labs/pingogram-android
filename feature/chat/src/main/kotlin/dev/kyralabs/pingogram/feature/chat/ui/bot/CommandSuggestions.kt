@@ -53,7 +53,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.BotPreviewData
 
 /**
  * The commands suggested while one is typed (`docs/DESIGN_SYSTEM.md` §6 "Bot command suggestions"), above the composer
- * like Google Messages' suggestions: one group of segmented list items ([SegmentedListItem], `SegmentedGap` apart,
+ * next to the field they complete: one group of segmented list items ([SegmentedListItem], `SegmentedGap` apart,
  * `large` outer corners) on `surfaceContainer`, the pill's color, inset `spacing.small` from the sides as the pill is,
  * at most `sizes.inputPanelHeight` (about four rows) or a third of the window tall, scrolling beyond. Each row shows
  * the command with the typed part highlighted ([CommandText]), what it does on one line, in a group its bot's avatar,

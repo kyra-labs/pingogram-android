@@ -59,7 +59,7 @@ internal val LocalAuthFloodWait = compositionLocalOf { false }
  * The layout of a login step in the adaptive [AuthPaneLayout]. Its header: a [MaterialShapes] badge with an icon
  * ([badgeShape], [badgeIcon]; [AuthHeadlineBadge]), the title (`headlineMediumEmphasized`, `docs/DESIGN_SYSTEM.md`
  * §3.3) as a heading, an optional description and [explanation]. Then [content], the step's form, and its actions as
- * Google's sign-in places them ([AuthActionRow]): [primaryAction] at the bottom end, [secondaryAction] at the bottom
+ * one row at the bottom, within thumb's reach ([AuthActionRow]): [primaryAction] at the end, [secondaryAction] at the
  * start. In two panes the header is the start pane, the form with its actions the end one.
  *
  * @param isError whether the step shows an error, e.g. a wrong code: the badge turns into an error badge, and so it
@@ -174,7 +174,7 @@ internal fun AuthHeadlineBadge(
 private const val BADGE_ICON_FRACTION = 0.5f
 
 /**
- * A step's actions as Google's sign-in places them: [primary] at the end and [secondary] at the start of one row. When
+ * A step's actions, within thumb's reach: [primary] at the end and [secondary] at the start of one row. When
  * both do not fit side by side (narrow windows, large font scales), [primary] stays at the end and [secondary] moves
  * to the start of the line below.
  */

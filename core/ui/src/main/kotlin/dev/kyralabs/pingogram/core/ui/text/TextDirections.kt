@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextDirection
  *
  * Compose sets text without a direction in the layout's direction instead, which is right for Pingogram's own strings,
  * so they keep it. The alignment (`TextAlign.Start` by default) follows the paragraph's direction: in a row that fills
- * the width, English in a right-to-left layout starts at the left, as in Google's apps.
+ * the width, English in a right-to-left layout starts at the left, as Android's `TextView` sets it.
  */
 val TextStyle.userContent: TextStyle
     get() = if (textDirection == TextDirection.Content) this else copy(textDirection = TextDirection.Content)

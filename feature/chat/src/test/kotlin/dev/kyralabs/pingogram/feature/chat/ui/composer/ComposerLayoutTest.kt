@@ -40,7 +40,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The composer's size, as Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer): a 72 dp bar with a 56 dp pill at one
+ * The composer's size (`docs/DESIGN_SYSTEM.md` §6 Composer, §7 Density): a 72 dp bar with a 56 dp pill at one
  * line beside a 56 dp round button, buttons with 48 dp touch targets, the emoji button at the bottom of a growing
  * field, the gallery button while the field is empty, the send menu on a long press, a field that keeps most of the
  * width at 200% font, a width capped like the bubbles' on wide windows, and the field and buttons named for screen

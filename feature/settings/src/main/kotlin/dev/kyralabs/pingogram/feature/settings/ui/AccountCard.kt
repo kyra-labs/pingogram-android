@@ -41,7 +41,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 
 /**
- * The logged-in account at the top of Settings, as Google's Material 3 Expressive account menus show it: a card (a
+ * The logged-in account at the top of Settings: a card (a
  * [SegmentedListItem] on its own, with `extraLarge` corners that morph to the list item's pressed shape on the motion
  * scheme's fast spatial spring) with the account's photo (or placeholder) in a ring of `primary` and an edit badge, its
  * name (`titleLarge`), its phone number and username, a "Premium" label when the account subscribes to Telegram

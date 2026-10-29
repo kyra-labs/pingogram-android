@@ -78,8 +78,9 @@ import kotlin.math.max
  *   it clear of the round corners. A text bubble and a media bubble are one custom layout each
  *   ([rememberTextBubbleMeasurePolicy], [rememberMediaBubbleMeasurePolicy]), measured in one pass.
  * - **Time**: the time and the state show on the last bubble of a group and on a message alone
- *   ([ChatItem.Bubble.showsTime], decided by the ViewModel), as Google Messages shows them; tapping a bubble of the
- *   group where nothing inside takes the tap shows its own, and tapping again hides it ([ChatEvent.ToggleTime]).
+ *   ([ChatItem.Bubble.showsTime], decided by the ViewModel), so a run of messages is not crowded with times; tapping a
+ *   bubble of the group where nothing inside takes the tap shows its own, and tapping again hides it
+ *   ([ChatEvent.ToggleTime]).
  * - **Reactions**: round badges on the bubble's bottom corner on the far side ([ReactionBadges]), overlapping it by
  *   its bottom padding, so they never cover the time; below the content for frames without a bubble. Each has a 48 dp
  *   touch target that does not move the layout ([touchTarget]).

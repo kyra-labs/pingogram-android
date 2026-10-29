@@ -52,7 +52,7 @@ internal data class SelectedMark(
     val checkColor: Color,
 )
 
-/** The selected avatar's shape: a soft burst, the seal Google's verification badges use, here with a check. */
+/** The selected avatar's shape: a soft burst, the seal shape of a badge, here with a check. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 internal val SelectedAvatarPolygon: RoundedPolygon get() = MaterialShapes.SoftBurst
 

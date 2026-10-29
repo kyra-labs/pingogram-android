@@ -85,7 +85,7 @@ class ActiveSessionsViewModelTest {
         deviceType: TdApi.SessionDeviceType = TdApi.SessionDeviceTypeAndroid(),
         applicationName: String = "Pingogram",
         applicationVersion: String = "Pingogram 0.3.0",
-        deviceModel: String = "Google Pixel 8",
+        deviceModel: String = "Example Phone 8",
         location: String = "Berlin, Germany",
         lastActive: String = "2026-10-18T08:05:00Z",
     ) = TdApi.Session(
@@ -184,7 +184,7 @@ class ActiveSessionsViewModelTest {
                 SessionItem(
                     id = 1,
                     device = SessionDevice.Phone,
-                    title = UiText.Plain("Google Pixel 8"),
+                    title = UiText.Plain("Example Phone 8"),
                     app = parts(UiText.Plain("Pingogram 0.3.0"), UiText.Plain("Android 15")),
                     activity =
                         parts(
@@ -199,7 +199,7 @@ class ActiveSessionsViewModelTest {
                     SessionItem(
                         id = 3,
                         device = SessionDevice.Phone,
-                        title = UiText.Plain("Google Pixel 8"),
+                        title = UiText.Plain("Example Phone 8"),
                         app = parts(UiText.Plain("Telegram Desktop 5.6"), UiText.Plain("Android 15")),
                         activity = parts(UiText.Plain("Berlin, Germany"), UiText.Plain("Mon")),
                     ),

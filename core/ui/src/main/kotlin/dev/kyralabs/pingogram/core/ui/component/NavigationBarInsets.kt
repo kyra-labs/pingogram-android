@@ -40,7 +40,7 @@ fun floatingToolbarInsets(): WindowInsets = floatingInsets(FloatingToolbarDefaul
 
 /**
  * The bottom the floating navigation bar takes (`docs/DESIGN_SYSTEM.md` §6.1), as [floatingToolbarInsets] for its
- * `sizes.floatingNavigationBar`-tall pill, lower than Material's floating toolbar, as Google Photos' is.
+ * `sizes.floatingNavigationBar`-tall pill, lower than Material's floating toolbar.
  */
 @Composable
 fun floatingNavigationBarInsets(): WindowInsets = floatingInsets(MaterialTheme.sizes.floatingNavigationBar)

@@ -26,7 +26,7 @@ class AndroidDiagnosticsRepositoryTest {
             crashFile = crash,
             tdlibLog = log,
             app = AppInfo("0.5.0", 5_000_002, "gms", isDebug = false),
-            device = "Google Pixel 9, Android 16 (API 36), arm64-v8a",
+            device = "Example Phone 9, Android 16 (API 36), arm64-v8a",
             now = { 42L },
             io = dispatcher,
         )
@@ -37,7 +37,7 @@ class AndroidDiagnosticsRepositoryTest {
             val report = repository().report()
 
             assertEquals("Pingogram 0.5.0 (5000002), gms, release", report.app)
-            assertEquals("Google Pixel 9, Android 16 (API 36), arm64-v8a", report.device)
+            assertEquals("Example Phone 9, Android 16 (API 36), arm64-v8a", report.device)
             assertEquals(42L, report.generatedAtMillis)
             assertNull(report.crash)
             assertEquals(emptyList<String>(), report.log)

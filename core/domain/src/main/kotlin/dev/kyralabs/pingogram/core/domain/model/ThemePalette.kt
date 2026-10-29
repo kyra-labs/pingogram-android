@@ -20,6 +20,6 @@ enum class ThemePalette {
     Indigo,
     Brown,
 
-    /** Greys only, as Pixel's monochrome style. */
+    /** Greys only: material-color-utilities' monochrome scheme. */
     Monochrome,
 }

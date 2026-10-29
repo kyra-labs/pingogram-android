@@ -56,11 +56,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The parts of the Theme page (docs/DESIGN_SYSTEM.md §6, "Color themes"): the chips and the live preview.
 
 /**
- * A color theme's chip, as Pixel's Wallpaper & style: a circle of [size] whose top half is [scheme]'s `primary`, its
- * bottom left `secondary` and its bottom right `tertiary`, drawn in the draw phase. While [selected] it morphs into
- * `MaterialShapes.Cookie9Sided` on the motion scheme's default spatial spring (snapping with reduced motion), with a
- * check in the scheme's `primaryContainer` in its middle. Screen readers hear it as a radio button named [name]; a
- * pick ticks (`SegmentTick`). Without [onClick] it only shows, e.g. on the Appearance row.
+ * A color theme's chip: a circle of [size] whose top half is [scheme]'s `primary`, its bottom left `secondary` and its
+ * bottom right `tertiary`, drawn in the draw phase. While [selected] it morphs into `MaterialShapes.Cookie9Sided` on
+ * the motion scheme's default spatial spring (snapping with reduced motion), with a check in the scheme's
+ * `primaryContainer` in its middle. Screen readers hear it as a radio button named [name]; a pick ticks
+ * (`SegmentTick`). Without [onClick] it only shows, e.g. on the Appearance row.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

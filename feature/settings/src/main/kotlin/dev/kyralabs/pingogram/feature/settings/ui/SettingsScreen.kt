@@ -78,13 +78,12 @@ internal fun SettingsRoute(
 
 /**
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a medium flexible top bar ([SettingsTopBar]) that
- * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile)
- * with the device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
- * ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
- * have them: General (Appearance, Notifications, Data and storage, Language), Privacy and security, About, and
- * "Log out" on its own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar
- * and ends clear of it ([screenContentWindowInsets]). As the list of a list-detail layout, its page rows are
- * selectable, and the [selection]'s open page reads as selected.
+ * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile) with the
+ * device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
+ * ([SettingsGroup]) without headings, as their rows name them already: General (Appearance, Notifications, Data and
+ * storage, Language), Privacy and security, About, and "Log out" on its own, which asks for confirmation first (FR-A8).
+ * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
+ * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
  */
 @Composable
 internal fun SettingsScreen(

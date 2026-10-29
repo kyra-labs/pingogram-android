@@ -63,7 +63,7 @@
     <string name="settings_amoled">AMOLED black</string>
     <string name="settings_amoled_summary">Pure black backgrounds in dark theme</string>
     <string name="settings_section_colors">Colors</string>
-    <!-- Settings → Appearance → Theme (docs/adr/0016-color-themes.md): the color theme, as Pixel's Wallpaper & style. -->
+    <!-- Settings → Appearance → Theme (docs/adr/0016-color-themes.md): the color theme: wallpaper colors or a basic color. -->
     <!-- Settings → Appearance → Chat appearance (REQUIREMENTS.md FR-S1): how conversations look. The row on Appearance shows the
          text size, the corners and the wallpaper, e.g. "110% text · Very rounded · No wallpaper" -->
     <string name="settings_chat_appearance">Chat appearance</string>
@@ -484,7 +484,7 @@
         <item quantity="other">%1$d years</item>
     </plurals>
     <string name="settings_terminate_session_dialog_title">Terminate this session?</string>
-    <!-- %1$s is a device such as "Google Pixel 8". -->
+    <!-- %1$s is a device such as "Example Phone 8". -->
     <string name="settings_terminate_session_dialog_text">%1$s will be logged out of your Telegram account.</string>
     <string name="settings_terminate_session_dialog_confirm">Terminate</string>
     <string name="settings_terminate_all_dialog_title">Terminate all other sessions?</string>

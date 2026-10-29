@@ -79,7 +79,7 @@ class ActiveSessionsScreenTest {
     fun `this device cannot be terminated from its row`() {
         setScreen()
 
-        composeRule.onNodeWithText("Google Pixel 8").assertHasNoClickAction()
+        composeRule.onNodeWithText((sessions.current!!.title as UiText.Plain).text).assertHasNoClickAction()
     }
 
     @Test
