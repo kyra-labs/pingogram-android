@@ -9,7 +9,8 @@
   `build-logic` (`AndroidApplicationConventionPlugin`), reading the version from the Gradle
   property `-Pversion=` (set by CI from the tag) with a fallback `0.0.0-dev` locally.
 - Pre-releases: `v0.x.y` (anything before 1.0) and `-beta.N`/`-rc.N` suffixes are marked
-  as pre-release on GitHub.
+  as pre-release on GitHub. From 1.0.0 (2026-10-29) on, a version without a suffix is a full release, and the newest one
+  is GitHub's "Latest"; the TDLib and NTgCalls releases stay pre-releases, so they never take it.
 
 ## Signing
 

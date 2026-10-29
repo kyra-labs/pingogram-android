@@ -1,7 +1,7 @@
 # Roadmap
 
-Work the milestones in order. Each milestone ends with a tagged pre-release (`v0.N.0`) built by
-the release workflow so the owner can install and test on a phone.
+Work the milestones in order. Each milestone ended with a tagged pre-release (`v0.N.0`) built by
+the release workflow so the owner can install and test on a phone; from `v1.0.0` on, releases are full releases.
 
 ## M0 — Project foundation → `v0.0.1`
 
@@ -103,7 +103,13 @@ the release workflow so the owner can install and test on a phone.
 
 ## M6 — Polish → `v1.0.0`
 
-What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readiness.md`.
+**v1.0.0 was released on 2026-10-29 by the owner's decision, with these M6 items still open** (each unticked below,
+as it was): the accessibility audit on a device; the performance budget verified; localization in at least 5
+languages; the Google Play listing; the Galaxy Store and AppGallery listings; F-Droid's main repository; the 7-day
+dogfood; the owner's sign-off on Telegram's API terms. M5.1's two device measurements (the video frame path, the
+conference calls' encryption) are open too. They are finished in later releases.
+
+What is left, item by item and with owners, is in `docs/audit/v1-readiness.md`.
 
 - [x] Glance widget of recent chats (#144), app shortcuts
 - [x] Stories viewer (read-only, #169), in-chat search (#164), chat export (#166), tablet list-detail polish (#171:

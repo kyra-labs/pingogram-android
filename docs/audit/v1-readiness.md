@@ -20,6 +20,10 @@ Each item is one of:
 | §7 Platform checklist | 10 | 3 | 1 |
 | §9 Acceptance criteria | 0 | 2 | 3 (one is the owner's terms sign-off, prepared here) |
 
+**1.0.0 was released on 2026-10-29 by the owner's decision, with items 1 to 5 and 7 below still open.** The list is
+unchanged; only item 6, deleting the account in the app, was done before the release (Settings → Privacy and security
+→ Delete account). `docs/ROADMAP.md` M6 lists what is open.
+
 What blocks 1.0, in order:
 
 1. **Scrolling misses its budget** (§6.1): in the first baseline (`docs/PERFORMANCE.md` §9), the chat list's frame P90 is

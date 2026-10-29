@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml"><img src="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?include_prereleases&label=download" alt="Latest release"></a>
+  <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?label=download" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License: GPL v3"></a>
   <a href="https://hosted.weblate.org/engage/pingogram/"><img src="https://hosted.weblate.org/widget/pingogram/svg-badge.svg" alt="Translation status"></a>
 </p>
@@ -195,7 +195,7 @@ the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how t
 ## Download
 
 Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
-All releases before 1.0 are marked as pre-releases. Use `-universal.apk` unless you know your
+The 0.x releases before 1.0.0 are marked as pre-releases. Use `-universal.apk` unless you know your
 device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
 installs alongside other Telegram apps. The plain APKs have no Google services, so new messages
 arrive while Pingogram runs; turn on Settings → Notifications → "Keep connected" to get them when
@@ -206,8 +206,8 @@ data kept.
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="https://img.shields.io/badge/Get_it_on-Obtainium-2156C4?style=for-the-badge" alt="Get it on Obtainium"></a>
 
 [Obtainium](https://github.com/ImranR98/Obtainium) installs Pingogram from these releases and keeps it
-updated. Until 1.0, turn on "Include prereleases" when adding it, and set the APK filter to
-`arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for the build with Google's push service.
+updated. Set the APK filter to `arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for the build
+with Google's push service.
 
 ## Building
 
