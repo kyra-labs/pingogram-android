@@ -73,7 +73,7 @@ import dev.kyralabs.pingogram.feature.chat.R
 import kotlin.math.roundToInt
 
 /**
- * The text field: a filled tonal pill like Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer), a [BasicTextField]
+ * The text field: a filled tonal pill (`docs/DESIGN_SYSTEM.md` §6 Composer), a [BasicTextField]
  * with Material's text field decoration ([TextFieldDefaults.decorator], [TextFieldDefaults.tonalColors] on
  * [containerColor], by default `surfaceContainerHighest`, a step above a sheet) at `sizes.composerField` (56 dp) for
  * one line, `extraLarge` corners, which make one line a full pill; `bodyLarge`, its direction taken from what is typed

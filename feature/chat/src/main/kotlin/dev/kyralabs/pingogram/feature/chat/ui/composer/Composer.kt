@@ -94,7 +94,7 @@ import java.time.Instant
  * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, FR-C6, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where
  * the user can write, below the bar of the message it replies to or edits ([ComposerBarRow]), which grows in and out on
  * the motion scheme's springs; a short centred label in `onSurfaceVariant` where they cannot; nothing in a channel
- * they only read. It is a `surface` below the messages' sheet, of the sheet's color as in Google Messages, which
+ * they only read. It is a `surface` below the messages' sheet, of the sheet's color, so the two read as one page, which
  * reaches under the keyboard and the system bars, edge to edge, while its content stays above them; on wide windows
  * the composer and its bar are no wider than a bubble can be (`sizes.bubbleMaxWidth`), centred.
  *
@@ -259,7 +259,7 @@ private fun BarArea(
 }
 
 /**
- * The composer, as Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer): a 56 dp pill ([ComposerField], a
+ * The composer (`docs/DESIGN_SYSTEM.md` §6 Composer): a 56 dp pill ([ComposerField], a
  * multi-line text field that grows to six lines and then scrolls) 8 dp from the window's sides, beside a 56 dp round
  * button, the two bottom-aligned. In the pill, the attach "+" ([AttachButton]) at the start where the chat takes
  * attachments, and the emoji button ([PanelButton]) and, while the field is empty, the gallery ([GalleryButton]) at the

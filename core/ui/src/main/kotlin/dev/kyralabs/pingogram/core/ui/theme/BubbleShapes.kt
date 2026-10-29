@@ -5,8 +5,8 @@ import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Immutable
 
 /**
- * The shape of a message bubble (`docs/DESIGN_SYSTEM.md` §4), from the shape scale, as Google's Material 3 Expressive
- * messaging does it: `extraLarge` corners, which make a one-line bubble a full pill (corners are capped at half the
+ * The shape of a message bubble (`docs/DESIGN_SYSTEM.md` §4), from Material 3 Expressive's shape scale:
+ * `extraLarge` corners, which make a one-line bubble a full pill (corners are capped at half the
  * height), except where the bubble meets another message of its group on the sender's side (the end for outgoing
  * messages, the start for incoming ones, mirrored in right-to-left layouts). There the corners are `extraSmall`: at the
  * bottom of the first message of a group, at both ends of a middle one, at the top of the last one. The far side stays

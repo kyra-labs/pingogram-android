@@ -125,13 +125,13 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
     }
 
 /**
- * The navigation bar of compact windows in the floating style of Google's Material 3 Expressive apps (Google Photos,
- * 2026; `docs/DESIGN_SYSTEM.md` §6.1): a pill that floats over the content and holds the [TopLevelDestination]s as
- * tabs, with the search button detached at its end.
+ * The navigation bar of compact windows (`docs/DESIGN_SYSTEM.md` §6.1): a pill that floats over the content and holds
+ * the [TopLevelDestination]s as tabs, with the search button detached at its end. It takes less height than a
+ * navigation bar and keeps the tabs within thumb's reach.
  *
  * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
  * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
- * `sizes.floatingNavigationBar` (56 dp), as tall as the search button beside it, as Google Photos' is. The tabs are
+ * `sizes.floatingNavigationBar` (56 dp), as tall as the search button beside it. The tabs are
  * built from tokens: the selected tab shows its filled icon and label on a `secondaryContainer` pill, the others only
  * their label. Where the labels do not fit (narrow phones, large font scales), the other tabs show their outlined icon
  * instead, named for screen readers by the label.
@@ -173,7 +173,7 @@ internal fun PingogramNavigationBar(
                 shape = CircleShape,
                 modifier = Modifier.size(MaterialTheme.sizes.floatingNavigationBar),
             ) { transform ->
-                // A circle in the toolbar's own colors, as in Google's floating navigation bars.
+                // A circle in the toolbar's own colors, so the pill and the button read as one bar.
                 FloatingToolbarDefaults.StandardFloatingActionButton(
                     onClick = onSearch,
                     modifier = transform,

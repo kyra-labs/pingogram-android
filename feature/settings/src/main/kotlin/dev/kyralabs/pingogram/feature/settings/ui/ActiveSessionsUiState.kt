@@ -55,7 +55,7 @@ sealed interface SessionsState {
 /**
  * A session as its row shows it, its texts formatted by the view model.
  *
- * @property title the device model ("Google Pixel 8"), or "Unknown device".
+ * @property title the device model ("Example Phone 8"), or "Unknown device".
  * @property app the app and the system: "Pingogram 0.3.0 · Android 15".
  * @property activity where and when: "Berlin, Germany · 9:41 AM", "Online" for this device.
  * @property isPasswordPending the 2-step verification password was not entered yet.

@@ -78,8 +78,9 @@ import kotlin.math.roundToInt
 
 /**
  * The floating actions of a long-pressed message (`REQUIREMENTS.md` FR-C6, FR-C7; `docs/DESIGN_SYSTEM.md` §6 "Message
- * actions"), as Google Messages shows them: the [message] lifted where it was ([anchor]) over a [Scrim], with the
- * conversation behind it blurred ([blurBehindMenu], API 31+), its quick reactions above it and its actions below.
+ * actions"), so the message stays in view as they open: the [message] lifted where it was ([anchor]) over a [Scrim],
+ * with the conversation behind it blurred ([blurBehindMenu], API 31+), its quick reactions above it and its actions
+ * below.
  *
  * - **Reactions**: a pill of the quick reactions ([ReactionToggleButton]s, which morph when chosen), scrolling
  *   sideways where they do not fit, ending in the medium icon button that opens the reactions picker

@@ -35,8 +35,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The buttons of the composer: sending, with its menu of other ways to send, saving an edit, and those in the pill.
 
 /**
- * The send button, the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`, `primary`) as Google
- * Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer): a tap sends, a long press (with its haptic) opens the menu of other
+ * The send button, the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`, `primary`,
+ * `docs/DESIGN_SYSTEM.md` §6 Composer): a tap sends, a long press (with its haptic) opens the menu of other
  * ways to send below it (without sound; at a time, where [canSchedule]), which screen readers reach as the button's
  * custom actions. Its shape morphs while pressed. Not [enabled], it is disabled, e.g. while picked files are being
  * prepared.
@@ -143,8 +143,8 @@ private fun Modifier.longPress(
 }
 
 /**
- * The attach button at the start of the composer's pill: a "+" in a 48 dp touch target, as Google Messages' composer
- * has it, whose state layer morphs while pressed. It opens the attach menu ([onAttach]).
+ * The attach button at the start of the composer's pill: a "+" in a 48 dp touch target, whose state layer morphs
+ * while pressed. It opens the attach menu ([onAttach]).
  */
 @Composable
 internal fun AttachButton(onAttach: () -> Unit) {
@@ -160,7 +160,8 @@ internal fun AttachButton(onAttach: () -> Unit) {
 }
 
 /**
- * The gallery button at the end of the composer's pill while the field is empty, as Google Messages': it opens the
+ * The gallery button at the end of the composer's pill while the field is empty, the commonest attachment a tap away:
+ * it opens the
  * system photo picker ([onGallery]) without the attach menu.
  */
 @Composable

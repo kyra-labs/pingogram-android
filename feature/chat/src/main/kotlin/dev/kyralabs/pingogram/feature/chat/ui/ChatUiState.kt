@@ -249,8 +249,8 @@ sealed interface ChatItem {
      * @property avatar the sender's avatar beside the last bubble of a group; null elsewhere.
      * @property hasAvatarColumn the bubble leaves room for an avatar: incoming messages in group chats.
      * @property time when it was sent, formatted for the list; screen readers always hear it.
-     * @property showsTime the time and the state show: on the last bubble of a group and on a message alone, as Google
-     *   Messages shows them, and on a bubble whose time was tapped to show ([ChatEvent.ToggleTime]).
+     * @property showsTime the time and the state show: on the last bubble of a group and on a message alone, so a run
+     *   of messages is not crowded with times, and on a bubble whose time was tapped to show ([ChatEvent.ToggleTime]).
      * @property status where an outgoing message is; null for incoming ones. In channels and Saved Messages, where
      *   nobody else reads them, only while it is sent or when sending failed.
      * @property canResend sending failed and TDLib can send it again (an album: one of its items): its "Not sent" label

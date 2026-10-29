@@ -20,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   cache is kept under 4 GB. Pinned chats keep their files, and nothing is deleted while files or a chat export are on
   their way; they download again when opened.
 
+### Changed
+- The store listing describes Pingogram as a Telegram client for Android in Material 3 Expressive design.
+
 ### Fixed
 - Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture
   shrinks back into its message without the conversation being rebuilt first.
@@ -375,8 +378,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
   "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
-  more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
-  Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
+  more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), as round color
+  chips, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 - A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
@@ -511,10 +514,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   first, and to write into it; where the group lets anyone comment, you can without joining.
 
 ### Changed
-- A more compact look, closer to Google's own apps: the navigation bar at the bottom and the search button beside it
-  are as tall as Google Photos', the "New chat" button is as large as Gmail's Compose, and the top bars and folder tabs
-  of the chat list, the archive and Contacts are lower, so more chats fit on the screen.
-- The message bar is now like Google Messages': a rounded field with "+" at its start and the emoji and gallery
+- A more compact look: the navigation bar at the bottom, the search button beside it and the "New chat" button are
+  smaller, and the top bars and folder tabs of the chat list, the archive and Contacts are lower, so more chats fit on
+  the screen.
+- The message bar is now a rounded field with "+" at its start and the emoji and gallery
   buttons at its end, beside one round button that records voice messages or sends. Hold the send button to send
   without sound or to schedule the message.
 - Photos, videos and albums in a conversation are wider on phones, so their captions take fewer lines.
@@ -554,7 +557,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings pages have the large title of Settings itself, which shrinks into the top bar as you scroll, and line up
   with their content on wide windows; on tablets and unfolded phones their content keeps a wider margin from the edges.
 - Long-pressing a message now lifts it out of the conversation, which blurs behind it (on Android 12 and later), with
-  its quick reactions above it and its actions in a menu right below it, as in Google Messages; if the message is too
+  its quick reactions above it and its actions in a menu right below it; if the message is too
   close to an edge, everything slides into view. Tap outside or go back to close it. With TalkBack, and in windows too
   short for the menu (phones in landscape), the actions still open in the sheet from the bottom.
 - Settings look more like Android 16's: each row's icon sits in a small colored circle, one color per group; switches
@@ -564,7 +567,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   other way round. Blocked users have an "Unblock" button instead of an X, and their phone numbers are formatted, and
   names, usernames and devices from other languages read in their own direction. The switches of a new poll and of
   forwarding show the same check.
-- The message composer is slimmer and looks like Google Messages': the field is a filled, rounded pill with the emoji
+- The message composer is slimmer: the field is a filled, rounded pill with the emoji
   button inside, "+" in a tonal circle attaches, and sending is a small icon button with its menu (without sound, at
   a time) beside it, so the field keeps most of the width even with large text. The bar is lower, the voice recording
   bar matches the field, and on tablets the composer is no wider than a message can be. Text written in a
@@ -717,14 +720,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
   password?") at the bottom left. On tablets and on phones held sideways the title sits beside the form, so "Next"
   is always on screen without scrolling.
-- Logging in feels more like a Google app: the country is a field with a drop-down arrow like the number fields next
+- Logging in is tidier: the country is a field with a drop-down arrow like the number fields next
   to it, and the country list has a proper search bar and highlights the country you have. Codes show larger and
   centered, with digits evenly spaced, and codes sent by email can be filled in by your password manager or
   keyboard, like SMS codes. On Android 14 and later the phone gives a short confirming buzz when Telegram accepts a
   code or password, and a different one when it's wrong. The offline and "Too many attempts" banners have an icon,
   and the wait before trying again or getting a new code shows as a shrinking ring next to the time. Swiping back
   slides in the previous step as you swipe, so you can see where you'll land before letting go.
-- The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
+- The chat list is denser: a slimmer top bar that no longer collapses, smaller avatars,
   a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
   instead of six or seven.
 - Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
@@ -756,7 +759,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the name, so long names are no longer cut short.
 - On tablets and other wide windows, the chat list's title, connection status and folder tabs line up with the chats
   below them.
-- Messages are tidier, as in Google Messages: a run of messages from one person shows the time only under the last
+- Messages are tidier: a run of messages from one person shows the time only under the last
   one. Tap any message to see its time, and tap it again to hide it. TalkBack still reads every message's time.
 - Message text sits a little closer to the sides of its bubble, so more fits on a line.
 - Replies and link previews inside a message are rounded cards without the colored bar at their side.
@@ -855,12 +858,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Whether two-step verification is on, and whether a recovery email is set.
 
 ### Changed
-- Settings follow the Material 3 Expressive look of Google's own apps. Your account sits on a card at the top (photo,
+- Settings follow Material 3 Expressive. Your account sits on a card at the top (photo,
   name, phone number, username, and a Premium label for Telegram Premium subscribers); tap it to edit your profile.
   Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
 - The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
   instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
-- Text is set the way Google sets Google Sans Flex on Android: Material's weights (titles were one to three
+- Text is set the way Android sets Google Sans Flex: Material's weights (titles were one to three
   steps heavier), without the extra letter spacing meant for Roboto, and rounded letters for emphasized text
   only. Sizes are unchanged, but text reads lighter and takes less room.
 - Going back from a chat is smoother: the floating navigation bar stays ready while it is hidden instead of being
@@ -926,7 +929,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   from its top; with animations turned off, the lists swap at once.
 - "Archived chats" is bold while it holds unread chats, like any unread chat.
 - The chat list, the archive and conversations sit on a sheet with rounded top corners below their top bar, in the
-  style of Google's Material 3 Expressive apps; chats and messages scroll inside it. Selected chats turn into
+  style of Material 3 Expressive; chats and messages scroll inside it. Selected chats turn into
   rounded pills set in from the edges, and swiping a chat reveals its action on a rounded card.
 
 ### Fixed
@@ -962,7 +965,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   asks first and offers "Also delete for …" or "Delete for all members" where Telegram allows it; leaving a
   group or channel is worded as such. An "Archived chats" row at the top of All chats opens the archive, which
   works like the chat list. Screen readers get every action on each chat, so none needs a swipe.
-- A floating navigation bar on phones, in the style of Google's Material 3 Expressive apps: the tabs in a
+- A floating navigation bar on phones, in the style of Material 3 Expressive: the tabs in a
   pill that floats over the content (the selected tab shows its icon and label, the others their label, or
   their icon when the labels do not fit), with a round search button beside it. Tablets keep the
   navigation rail, now with the search button at its top. Search itself is not built yet.

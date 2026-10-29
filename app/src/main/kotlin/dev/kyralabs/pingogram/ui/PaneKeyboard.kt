@@ -23,8 +23,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalInputModeManager
 
 /**
- * The Chats tab's list-detail layout with a hardware keyboard (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"), as
- * Google Messages behaves on tablets:
+ * The Chats tab's list-detail layout with a hardware keyboard (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"):
  *
  * - The list pane is one focus group ([listPaneFocus]) that remembers the row that had the focus, so the focus comes
  *   back to it.

@@ -48,8 +48,8 @@ import dev.kyralabs.pingogram.feature.chats.ui.preview.NewChatPreviewStates
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The New chat screen (`REQUIREMENTS.md` FR-L7, `docs/DESIGN_SYSTEM.md` §6), pushed above the Chats tab, as Google
- * Messages' Start chat: a small [TopAppBar] with back ([onBack]) and "New chat" on `surfaceContainer`, and below it on
+ * The New chat screen (`REQUIREMENTS.md` FR-L7, `docs/DESIGN_SYSTEM.md` §6), pushed above the Chats tab: a small
+ * [TopAppBar] with back ([onBack]) and "New chat" on `surfaceContainer`, and below it on
  * a rounded `surface` sheet ([ContentSheet]) one list: New group, New channel and New contact ([NewChatAction]), then
  * the contacts under their header, each row opening its private chat ([NewChatEvent.OpenChat]). While the contacts
  * load the list shows the delayed loading indicator in their place; without any, a line that says so; after a failure,

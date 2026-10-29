@@ -10,7 +10,7 @@ import java.net.URLDecoder
 
 /** The report's text and the GitHub issue it fills. */
 class FeedbackReportTest {
-    private val report = FeedbackSamples.report
+    private val report = FeedbackSamples.report.copy(device = "Example Phone 9, Android 16 (API 36), arm64-v8a")
 
     @Test
     fun `holds the build, the device, the description, the crash and the log`() {
@@ -18,7 +18,7 @@ class FeedbackReportTest {
 
         assertTrue(text.startsWith("Pingogram feedback report\nMade: 2026-10-22T"))
         assertTrue(text.contains("App: Pingogram 0.5.0 (5000002), gms, release"))
-        assertTrue(text.contains("Device: Google Pixel 9, Android 16 (API 36), arm64-v8a"))
+        assertTrue(text.contains("Device: Example Phone 9, Android 16 (API 36), arm64-v8a"))
         assertTrue(text.contains("What happened:\nIt froze\n"))
         assertTrue(text.contains("Last crash: 2026-10-22T12:00:00Z on thread main\njava.lang.IllegalStateException"))
         assertTrue(text.endsWith(report.log.last()))
@@ -39,7 +39,7 @@ class FeedbackReportTest {
 
         assertEquals("bug_report.yml", fields["template"])
         assertEquals("0.5.0 (5000002), gms, release", fields["version"])
-        assertEquals("Google Pixel 9, Android 16 (API 36), arm64-v8a", fields["device"])
+        assertEquals("Example Phone 9, Android 16 (API 36), arm64-v8a", fields["device"])
         assertEquals("It froze", fields["steps"])
         assertTrue(fields.getValue("logs").startsWith("Last crash: "))
         assertTrue(fields.getValue("logs").endsWith(report.log.last()))

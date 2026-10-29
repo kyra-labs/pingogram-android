@@ -19,9 +19,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The full Material 3 Expressive type scale, 15 styles plus their 15 `*Emphasized` variants, set in Google Sans Flex
- * the way Google sets it on Android (`docs/DESIGN_SYSTEM.md` §3): the Material 3 token sizes, line heights and
- * weights, the tracking Google uses with this font, and per style the variable axes. The same in light and dark
- * themes (grade 0, as Google's own styles); with high [contrast] the text is a grade heavier ([HIGH_CONTRAST_GRADE]).
+ * as Android's SystemUI type scale sets it (`docs/DESIGN_SYSTEM.md` §3): the Material 3 token sizes, line heights and
+ * weights, that scale's tracking for this font, and per style the variable axes. The same in light and dark themes
+ * (grade 0, as that scale); with high [contrast] the text is a grade heavier ([HIGH_CONTRAST_GRADE]).
  * Built once per [fontWeightAdjustment] and grade and cached, so standard and medium contrast share one typography.
  *
  * @param fontWeightAdjustment the system's "Bold text" adjustment (`Configuration.fontWeightAdjustment`
@@ -93,7 +93,7 @@ private val CodeTracking = 0.1.em
 private val VerificationCodeStyle =
     TextStyle(textAlign = TextAlign.Center, letterSpacing = CodeTracking, fontFeatureSettings = TABULAR_FIGURES)
 
-// Google's tracking for Google Sans Flex (Android's SystemUI type scale): none, except a little in the smallest styles.
+// The tracking of Android's SystemUI type scale for Google Sans Flex: none, except a little in the smallest styles.
 // The Material 3 tokens' tracking (up to 0.5 sp) is Roboto's; Google Sans Flex spaces small sizes through its optical
 // size axis already, and both together set text far wider than Material intends.
 private val NoTracking = 0.sp
@@ -102,12 +102,13 @@ private val SmallTracking = 0.1.sp
 // Timestamps, badges and counters (§3.3) use labelSmall: tabular figures, so digits do not shift as they change.
 private const val TABULAR_FIGURES = "tnum"
 
-// Emphasized styles are one step heavier and rounded, as Google's own Google Sans Flex styles on Android.
+// Emphasized styles are one step heavier and rounded, as the emphasized variable font families of Android's font
+// customization.
 private const val EMPHASIS_WEIGHT = 100
 private const val EMPHASIS_ROUND = 100f
 
-// Grade 0 in both themes (§3.1), as Google's own styles: the bundled file's GRAD axis is 0..100, so a negative dark
-// grade would be clamped to 0 anyway.
+// Grade 0 in both themes (§3.1), as Android's SystemUI type scale: the bundled file's GRAD axis is 0..100, so a
+// negative dark grade would be clamped to 0 anyway.
 private const val GRADE = 0
 
 // High contrast only (§10): Material's optional +25, within the bundled file's 0..100.

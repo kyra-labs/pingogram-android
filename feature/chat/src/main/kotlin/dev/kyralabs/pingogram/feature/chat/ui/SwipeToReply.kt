@@ -38,11 +38,11 @@ import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * What every bubble's swipe to reply shares (`docs/DESIGN_SYSTEM.md` §5, §6 "Message actions"; Google Messages'
- * swipe to reply): how far a swipe goes to reply ([distance], `sizes.swipeReplyDistance`), the reply [icon] in a
- * circle of [containerColor] revealed behind the bubble, the haptics, and the motion scheme's springs: the bubble
- * springs back on [settleSpec] (default spatial), the icon pops on [popSpec] (fast spatial) as the swipe passes the
- * distance. Built once for the list.
+ * What every bubble's swipe to reply shares (`docs/DESIGN_SYSTEM.md` §5, §6 "Message actions", "Swipe to reply"): how
+ * far a swipe goes to reply ([distance], `sizes.swipeReplyDistance`), the reply [icon] in a circle of [containerColor]
+ * revealed behind the bubble, the haptics, and the motion scheme's springs: the bubble springs back on [settleSpec]
+ * (default spatial), the icon pops on [popSpec] (fast spatial) as the swipe passes the distance. Built once for the
+ * list.
  */
 @Suppress("LongParameterList") // One holder for what every bubble's swipe shares, so the bubbles take none of it.
 @Stable

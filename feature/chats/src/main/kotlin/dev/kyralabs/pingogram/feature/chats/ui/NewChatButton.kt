@@ -45,14 +45,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Chats tab's primary action (`REQUIREMENTS.md` FR-L7, `docs/DESIGN_SYSTEM.md` §6): one
- * [SmallExtendedFloatingActionButton] "New chat" in `primaryContainer`, 56 dp tall with its label in `labelLarge`, as
- * Gmail's Compose, which collapses to the 56 dp FAB while the list scrolls towards its end and expands again as it
- * scrolls back ([state]). It shows and hides ([visible]) with
- * Material's FAB animation, scaling from its bottom end (`animateFloatingActionButton`), and grows into the New chat
- * screen it opens ([onClick]): a container transform from its corners to the screen's square ones
- * ([NewChatTransformKey]), and back. Screen readers hear "New chat" whether or not the label shows. Hidden, it is only
- * scaled down and faded (Material's animation leaves it placed), so it then takes no taps or focus, and screen readers
- * do not find it ([HiddenButton]).
+ * [SmallExtendedFloatingActionButton] "New chat" in `primaryContainer`, 56 dp tall (the small extended FAB's height)
+ * with its label in `labelLarge`, which collapses to the 56 dp FAB while the list scrolls towards its end and expands
+ * again as it scrolls back ([state]). It shows and hides ([visible]) with Material's FAB animation, scaling from its
+ * bottom end (`animateFloatingActionButton`), and grows into the New chat screen it opens ([onClick]): a container
+ * transform from its corners to the screen's square ones ([NewChatTransformKey]), and back. Screen readers hear "New
+ * chat" whether or not the label shows. Hidden, it is only scaled down and faded (Material's animation leaves it
+ * placed), so it then takes no taps or focus, and screen readers do not find it ([HiddenButton]).
  *
  * The transform is armed only from a tap until the chat list is back and settled ([NewChatButtonState.transforming]):
  * shared bounds add their animations to the destination's transition, and would change how every other transition of

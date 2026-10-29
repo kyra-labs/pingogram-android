@@ -5,8 +5,10 @@ the store listing, the content rating, Play App Signing with the existing key, a
 answers are derived from the code as of 0.5.0; when a feature changes what the app reads or sends, update this file in
 the same PR (`docs/audit/v1-readiness.md` lists it as a release check).
 
-The `foss` build stays on GitHub (and later F-Droid). Both builds share the application id `dev.kyralabs.pingogram` and
-the signing key, so a phone moves between them without losing its data (`docs/RELEASE.md`).
+Samsung's Galaxy Store and Huawei's AppGallery reuse these answers (`docs/STORES.md`); keep both files in step. The
+`foss` build stays on GitHub (and later F-Droid and AppGallery). Both builds share the application id
+`dev.kyralabs.pingogram` and the signing key, so a phone moves between them without losing its data
+(`docs/RELEASE.md`).
 
 ## 1. App details
 
@@ -111,8 +113,8 @@ description (`REQUIREMENTS.md` §2). Play's metadata policy forbids implying an 
 - **Full description** (4000):
 
   ```
-  Pingogram is a client for your Telegram account that looks and feels like an app Google would make: Material 3
-  Expressive design, your wallpaper's colors, smooth motion, and layouts that fit phones, foldables and tablets.
+  Pingogram is a client for your Telegram account in Material 3 Expressive design: your wallpaper's colors,
+  smooth motion, and layouts that fit phones, foldables and tablets.
 
   Everything you expect from your chats
   • Chats, groups and channels with folders, archive, pinned chats and a search that finds chats, people, messages,

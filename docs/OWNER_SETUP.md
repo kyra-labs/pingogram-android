@@ -173,6 +173,13 @@ Play App Signing with the release key of §3 (so GitHub and Play builds update e
 bundle is (the workflow artifact `pingogram-X.Y.Z-play`). The automatic upload to the internal track stays off until
 you add the repository variable `PLAY_PUBLISH` = `true` and the secret `PLAY_SERVICE_ACCOUNT_JSON` (§7 there).
 
+## 8d. Samsung Galaxy Store and Huawei AppGallery (optional)
+
+`docs/STORES.md` is the checklist: the Samsung Seller Portal and AppGallery Connect accounts step by step (commercial
+seller status, identity verification), each store's form answers, the listing texts, the images
+(`tools/stores/images.sh`), and which release asset each store gets. AppGallery gets the `foss` build: Huawei push
+for a third-party app is not possible yet (`docs/adr/0033-hms-push-for-huawei-phones.md`).
+
 ## 9. Decisions only you can make (tell Claude Code when ready)
 
 - Brand seed color and app icon artwork (a designer or an image you provide).

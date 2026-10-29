@@ -37,6 +37,10 @@ What blocks 1.0, in order:
    and a nightly run are still open. Owner.
 6. **Account deletion in the app** (Google Play, `docs/PLAY_STORE.md` §8). Owner B; not a §6/§7 item, but Play
    requires it for the `gms` listing.
+7. **Pingogram's privacy policy inside the app** (Galaxy Store and AppGallery, `docs/STORES.md` §3). Both stores ask
+   for the policy to be reachable in the app. The Welcome screen links Telegram's policy, and Settings → About has no
+   row for `PRIVACY.md`. A "Privacy policy" row in About is the fix, needed before the first submission to either
+   store. Owner B; not a §6/§7 item.
 
 ## §6 Non-functional requirements
 
@@ -93,7 +97,7 @@ What blocks 1.0, in order:
 | Network loss, connection state, DC migration | Pass | Connection pill; `TdlibNetworkTypeReporter` | — |
 | Crash-free ≥ 99.5% before a public release | Needs device | Dogfood. "Send feedback" keeps the last crash on the device for testers to share; nothing is reported by itself | Owner |
 
-## §7 Google platform standards checklist
+## §7 Android platform standards checklist
 
 | Item | Status | Evidence / what is missing | Owner |
 |---|---|---|---|

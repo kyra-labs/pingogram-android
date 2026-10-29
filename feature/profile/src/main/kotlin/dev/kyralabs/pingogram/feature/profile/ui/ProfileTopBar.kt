@@ -51,7 +51,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The profile's header (`docs/DESIGN_SYSTEM.md` §3.3, §6 "Profile header"): Material's large flexible top app bar,
  * built from its parts like the settings pages' medium one ([TwoRowsTopAppBar], whose title slot says which row it
  * fills), so the name takes `displaySmallEmphasized` on its expanded row and `titleLargeEmphasized` collapsed. The
- * expanded row holds the avatar above the name, centered, as Google Contacts' contact page does, and the status
+ * expanded row holds the avatar above the name, centered, and the status
  * ("online" in `primary`, "last seen …", "bot") with the account's labels below it; the bar is that much taller than
  * the large flexible bar's own expanded height, and grows with the font scale. [scrollBehavior]
  * (`exitUntilCollapsedScrollBehavior`) collapses it as the page scrolls, to the name alone beside back.

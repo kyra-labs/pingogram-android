@@ -4,17 +4,19 @@ Version: 1.0 · Status: living document · Owner: project maintainer
 
 ## 1. Product summary
 
-Pingogram is a third-party Telegram client for Android that follows Google's current platform
-and design guidance as closely as possible: **Material 3 Expressive**, dynamic color, adaptive
+Pingogram is a third-party Telegram client for Android that follows Android's current platform
+guidance and **Material 3 Expressive** as closely as possible: dynamic color, adaptive
 layouts, predictive back, edge-to-edge, modern permissions and notification conventions. It uses
 Telegram's official client library, **TDLib**, so chats, media, groups, channels, bots and secret
 chats behave exactly like the official apps at the protocol level, while the UI is entirely ours.
 
-**One-line pitch:** "Telegram, the way a first-party Google app would feel."
+**One-line pitch:** "Telegram, in Material 3 Expressive." (Owner decision 2026-10-29: Pingogram is described by
+the design system it follows, Material 3 Expressive, and Android's platform guidance, never by another company's
+apps or design.)
 
 ### 1.1 Goals
 
-- G1. A native Android experience that looks and moves like a Google-made Material 3 Expressive app.
+- G1. A native Android experience that looks and moves as Material 3 Expressive specifies.
 - G2. Feature parity with the official app for everyday messaging by v1.0 (see §5).
 - G3. Fast, battery-friendly, small download (≤ 50 MB arm64-v8a APK, ≤ 123 MB universal, calls and voice chats
   included; `docs/PERFORMANCE.md` §1).
@@ -240,7 +242,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
     while the user records, the video goes only into the message the user sends (end-to-end encrypted in secret
     chats), and is not kept.
 
-### 6.3 Accessibility (Google standards)
+### 6.3 Accessibility (Android standards)
 
 - All interactive elements ≥ 48 dp, `contentDescription` on icon buttons, roles set on custom
   components, TalkBack-navigable message list with merged semantics per message.
@@ -263,7 +265,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Handle network loss, `updateConnectionState`, DC migration transparently.
 - Crash-free sessions ≥ 99.5% on internal testers before a public release.
 
-## 7. Google platform standards checklist
+## 7. Android platform standards checklist
 
 Every screen must satisfy this list before merge:
 

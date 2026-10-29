@@ -1,6 +1,6 @@
 // Generates core/ui/.../theme/Color.kt: the six color schemes (light/dark × standard/medium/high contrast) of every
-// color theme (the brand and the curated ones) from its seed, using Google's material-color-utilities (the Material
-// Theme Builder algorithm), plus the base colors that PingogramColors harmonizes at runtime; and the splash screen
+// color theme (the brand and the curated ones) from its seed, using material-color-utilities (the Material Theme
+// Builder algorithm), plus the base colors that PingogramColors harmonizes at runtime; and the splash screen
 // themes of each color theme in :app.
 //
 // Usage: npm ci && npm run generate
