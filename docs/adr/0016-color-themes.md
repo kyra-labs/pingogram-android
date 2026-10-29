@@ -1,4 +1,4 @@
-# 0016 — Color themes: generated Material 3 schemes, picked like Pixel's Wallpaper & style
+# 0016 — Color themes: generated Material 3 schemes, wallpaper colors beside basic colors
 
 Status: accepted (owner request, 2026-10-22; `REQUIREMENTS.md` FR-S2, `docs/DESIGN_SYSTEM.md` §2.1, §6)
 
@@ -26,11 +26,12 @@ Sources: Material 3 "Color roles" and "Dynamic color" (m3.material.io/styles/col
   - Blue, Teal, Green, Lime, Yellow, Orange, Red, Pink, Purple, Indigo and Brown: the Material Design 500 colors
     (`#2196F3`, `#009688`, `#4CAF50`, `#CDDC39`, `#FFEB3B`, `#FF9800`, `#F44336`, `#E91E63`, `#9C27B0`, `#3F51B5`,
     `#795548`) with **SchemeTonalSpot**, Material Theme Builder's default and Android's default style for wallpaper
-    colors, so a basic color sits beside the wallpaper's as Pixel shows them.
+    colors, so a basic color sits beside the wallpaper's in the same style.
   - Monochrome: **SchemeMonochrome** (greys; the error role stays red).
-- **No style choice.** Pixel offers styles (Tonal spot, Vibrant, Expressive, …) for wallpaper colors; Pingogram reads
-  the wallpaper's scheme from Android's color roles and cannot restyle it without a runtime color library. A style
-  choice for the basic colors alone would multiply the choices (13 × 4) for little, so each theme has one variant.
+- **No style choice.** Android's wallpaper settings can offer styles (Tonal spot, Vibrant, Expressive, …) for
+  wallpaper colors; Pingogram reads the wallpaper's scheme from Android's color roles and cannot restyle it without a
+  runtime color library. A style choice for the basic colors alone would multiply the choices (13 × 4) for little,
+  so each theme has one variant.
 - **Generation**: `tools/theme/generate.mjs` (Node, `@material/material-color-utilities` pinned in its lockfile)
   writes every theme's six schemes (light and dark × standard, medium and high contrast, levels 0 / 0.5 / 1) into
   `core:ui`'s `Color.kt` as compact ARGB tables, built into a `ColorScheme` only when first asked for and kept

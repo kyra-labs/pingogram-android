@@ -97,7 +97,7 @@ What blocks 1.0, in order:
 | Network loss, connection state, DC migration | Pass | Connection pill; `TdlibNetworkTypeReporter` | — |
 | Crash-free ≥ 99.5% before a public release | Needs device | Dogfood. "Send feedback" keeps the last crash on the device for testers to share; nothing is reported by itself | Owner |
 
-## §7 Google platform standards checklist
+## §7 Android platform standards checklist
 
 | Item | Status | Evidence / what is missing | Owner |
 |---|---|---|---|

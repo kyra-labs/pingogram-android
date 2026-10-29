@@ -113,8 +113,8 @@ description (`REQUIREMENTS.md` §2). Play's metadata policy forbids implying an 
 - **Full description** (4000):
 
   ```
-  Pingogram is a client for your Telegram account that looks and feels like an app Google would make: Material 3
-  Expressive design, your wallpaper's colors, smooth motion, and layouts that fit phones, foldables and tablets.
+  Pingogram is a client for your Telegram account in Material 3 Expressive design: your wallpaper's colors,
+  smooth motion, and layouts that fit phones, foldables and tablets.
 
   Everything you expect from your chats
   • Chats, groups and channels with folders, archive, pinned chats and a search that finds chats, people, messages,

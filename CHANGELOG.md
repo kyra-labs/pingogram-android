@@ -20,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   cache is kept under 4 GB. Pinned chats keep their files, and nothing is deleted while files or a chat export are on
   their way; they download again when opened.
 
+### Changed
+- The store listing describes Pingogram as a Telegram client for Android in Material 3 Expressive design.
+
 ### Fixed
 - Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture
   shrinks back into its message without the conversation being rebuilt first.
