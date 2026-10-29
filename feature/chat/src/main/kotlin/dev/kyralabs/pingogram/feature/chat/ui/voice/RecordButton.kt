@@ -82,8 +82,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The composer's microphone in the send button's place while the field is empty (`docs/DESIGN_SYSTEM.md` §6
- * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `tertiaryContainer` as
- * Google Messages' microphone, which morphs into a wide `primary` pill while it records, its icon giving way to a
+ * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `tertiaryContainer`,
+ * which morphs into a wide `primary` pill while it records, its icon giving way to a
  * [LinearWavyProgressIndicator] whose waves rise and fall with the voice ([RecordingMeter.level]); locked, the pill
  * sends. Its colors cross-fade on the motion scheme's effects spring. Switched to round video messages
  * ([RecordModeUiState.video], `docs/adr/0032-round-video-messages.md`), it shows a camera instead of the microphone and

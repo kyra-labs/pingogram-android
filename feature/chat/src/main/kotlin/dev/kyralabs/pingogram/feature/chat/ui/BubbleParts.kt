@@ -136,11 +136,11 @@ internal fun LinkPreviewBlock(
 }
 
 /**
- * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows them
- * on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's reactions picker
- * ([onMore]), where all of them show. With [onToggle], tapping a badge adds or takes back the user's reaction (not the
- * paid star reaction, which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen
- * readers reach them as the bubble's custom actions instead.
+ * The reactions of [bubble] as small round badges side by side on a bubble's corner, clear of its text and time: up to
+ * [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's reactions picker ([onMore]), where all of
+ * them show. With [onToggle], tapping a badge adds or takes back the user's reaction (not the paid star reaction, which
+ * is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen readers reach them as the
+ * bubble's custom actions instead.
  */
 @Composable
 internal fun ReactionBadges(
@@ -261,8 +261,8 @@ private fun BadgeFrame(
 }
 
 /**
- * A card inside a bubble, as Google's Material 3 Expressive messaging shows quotes and previews: [container] in the
- * medium shape, without a bar; [modifier] goes inside the clip, so a click's state layer keeps the shape.
+ * A card inside a bubble, for quotes and previews: [container] in the medium shape, without a bar, as Material 3
+ * Expressive's tonal cards; [modifier] goes inside the clip, so a click's state layer keeps the shape.
  */
 @Composable
 private fun BlockCard(

@@ -30,8 +30,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The parts the "Location" sheet's steps share ([ShareLocationSheet]).
 
 /**
- * A step's actions as in Google's flows: the primary one at the end, the [secondary] one as a text button at the
- * start (none where it is null). They wrap below each other where both do not fit (large font scales).
+ * A step's actions, as the app's flows place them: the primary one at the end, the [secondary] one as a text button at
+ * the start (none where it is null). They wrap below each other where both do not fit (large font scales).
  */
 @Composable
 internal fun StepActions(
