@@ -6,7 +6,7 @@
 </h1>
 
 <p align="center">
-  <strong>A Telegram client for Android that looks and feels like a Google app.</strong>
+  <strong>A Telegram client for Android in Material 3 Expressive design.</strong>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 Pingogram is an open-source, third-party Telegram client for Android, written from scratch in
 Kotlin and Jetpack Compose on top of [TDLib](https://github.com/tdlib/td), Telegram's official
 client library. You sign in with your existing Telegram account and keep all your chats; what
-changes is the interface, which follows Google's Material 3 Expressive design: Google Sans Flex
+changes is the interface, which follows Material 3 Expressive: Google Sans Flex
 type, expressive shapes and spring motion, dynamic color from your wallpaper, and layouts that
 adapt from phones to tablets and foldables. There are no analytics, no ads and no telemetry: the
 app talks only to Telegram's servers, through TDLib, and to links you open.
