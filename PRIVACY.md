@@ -1,7 +1,7 @@
 # Pingogram privacy policy
 
 Pingogram is an open-source client for Telegram accounts, made by Kyra Labs. This policy says what the app does with
-your data. It applies to every build: the ones on GitHub and on Google Play.
+your data. It applies to every build: the ones on GitHub, Google Play, Samsung Galaxy Store and Huawei AppGallery.
 
 ## The short version
 
