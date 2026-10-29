@@ -203,6 +203,12 @@ it is closed. The APKs ending in `-gms` get notifications through Google's push 
 on phones with Google Play services; both are the same app, and one replaces the other with your
 data kept.
 
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="https://img.shields.io/badge/Get_it_on-Obtainium-2156C4?style=for-the-badge" alt="Get it on Obtainium"></a>
+
+[Obtainium](https://github.com/ImranR98/Obtainium) installs Pingogram from these releases and keeps it
+updated. Until 1.0, turn on "Include prereleases" when adding it, and set the APK filter to
+`arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for the build with Google's push service.
+
 ## Building
 
 ```bash
