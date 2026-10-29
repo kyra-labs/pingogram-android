@@ -91,9 +91,11 @@ The components (name, slug, the module directory the paths start with):
 | Common | `core-ui` | `core/ui/src/main/res` |
 | Notifications | `notifications` | `core/notifications/src/main/res` |
 | Sign-in | `auth` | `feature/auth/src/main/res` |
+| Calls | `calls` | `feature/calls/src/main/res` |
 | Chat | `chat` | `feature/chat/src/main/res` |
 | Chats | `chats` | `feature/chats/src/main/res` |
 | Contacts | `contacts` | `feature/contacts/src/main/res` |
+| Feedback | `feedback` | `feature/feedback/src/main/res` |
 | Media | `media` | `feature/media/src/main/res` |
 | Profiles | `profile` | `feature/profile/src/main/res` |
 | QR codes | `scanner` | `feature/scanner/src/main/res` |
