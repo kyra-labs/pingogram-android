@@ -46,6 +46,7 @@ class TdErrorMappingTest {
                 Arguments.of(400, "PHONE_NUMBER_BANNED", DomainError.PhoneNumberBanned),
                 Arguments.of(400, "PHONE_NUMBER_FLOOD", DomainError.PhoneNumberFlood),
                 Arguments.of(400, "PHONE_NUMBER_OCCUPIED", DomainError.PhoneNumberOccupied),
+                Arguments.of(400, "BIRTHDAY_INVALID", DomainError.BirthdateInvalid),
                 Arguments.of(400, "PHONE_CODE_INVALID", DomainError.CodeInvalid),
                 Arguments.of(400, "PHONE_CODE_EMPTY", DomainError.CodeInvalid),
                 Arguments.of(400, "CODE_INVALID", DomainError.CodeInvalid),
@@ -146,6 +147,8 @@ class TdErrorMappingTest {
                 Arguments.of(400, "USERS_TOO_MUCH", DomainError.ChatFull),
                 Arguments.of(400, "AUTH_TOKEN_EXPIRED", DomainError.QrLoginExpired),
                 Arguments.of(400, "AUTH_TOKEN_ALREADY_ACCEPTED", DomainError.QrLoginExpired),
+                Arguments.of(400, "MESSAGE_POLL_CLOSED", DomainError.PollClosed),
+                Arguments.of(400, "Can't answer closed poll", DomainError.PollClosed),
             )
     }
 }

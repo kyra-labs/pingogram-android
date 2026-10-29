@@ -95,7 +95,13 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-A6 Must: QR login (`WaitOtherDeviceConfirmation`) as alternative, using Expressive shapes.
 - FR-A7 Must: Email verification states (`WaitEmailAddress`, `WaitEmailCode`) handled gracefully.
 - FR-A8 Must: Log out, and `AuthorizationStateClosed` / `LoggingOut` handled by resetting the graph.
-- FR-A9 Should: Test-DC toggle hidden behind a long-press on the version label (debug only).
+- FR-A9 Must: Telegram's test servers for its test accounts (https://core.telegram.org/api/auth#test-accounts), in every
+  build, so Google Play's review can sign in again and again (owner decision 2026-10-25, `docs/PLAY_STORE.md` §1): a
+  number +99966 X YYYY (X the data center, 1 to 3; its login code X five times) sent from the phone number step
+  restarts TDLib on the test servers, in their own directories, then sends the number; the number stays on screen
+  meanwhile. Logging out (and TDLib closing for any other reason) returns to the production servers. While signed in
+  that way, Settings' account card and Active sessions show a "Test server" label. Every other number signs in on the
+  production servers, and nothing else switches servers (`docs/TDLIB.md`, "Parameters").
 
 ### 5.2 Chat list [M2]
 
@@ -221,7 +227,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
   default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
   Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
   the background; turning it off deletes the imported numbers from Telegram.
-- The camera (`CAMERA`, no camera is required to install) has two uses:
+- The camera (`CAMERA`, no camera is required to install) has three uses:
   - The QR code scanner (FR-P5, `docs/adr/0012-camerax-and-zxing-qr-scanner.md`, approved by the owner 2026-10-21),
     asked when the scanner opens, after it says why: frames are decoded on the device by ZXing and dropped, nothing
     the camera sees is kept or sent, and only the text of a Telegram link reaches TDLib. Scanning from an image uses
@@ -229,6 +235,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
   - Video calls (FR-V2, `docs/adr/0019-video-and-group-calls-scope.md`, approved for 1:1 video), asked when the user
     turns the camera on in a call: the video goes to the other person only, end-to-end encrypted like the call's
     audio, while the camera is on, and is not kept.
+  - Round video messages (FR-C5, `docs/adr/0032-round-video-messages.md`, approved by the owner 2026-10-23), asked when
+    the user first switches the microphone button to video, after it says why: the camera and the microphone run only
+    while the user records, the video goes only into the message the user sends (end-to-end encrypted in secret
+    chats), and is not kept.
 
 ### 6.3 Accessibility (Google standards)
 

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PushDelivery
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettingsChange
+import dev.kyralabs.pingogram.core.domain.repository.ContactJoinedRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
@@ -45,6 +46,8 @@ import javax.inject.Inject
  * - Android's side is read by the screen ([NotificationSettingsEvent.AccessChecked]), as only an activity can. Turning
  *   notifications on shows the system's dialog while Android still would (as the chat list's request does, sharing its
  *   answers through [NotificationPromptRepository]), and the app's notification settings otherwise.
+ * - "Contact joined Telegram" follows the account's option ([ContactJoinedRepository]), shown at once when flipped
+ *   and flipped back with a snackbar when Telegram refuses it.
  * - Resetting asks first, then `resetAllNotificationSettings`, and loads the defaults again.
  *
  * Nothing to restore after process death: everything is read again.
@@ -56,7 +59,10 @@ class NotificationSettingsViewModel
         private val repository: NotificationSettingsRepository,
         private val keepConnectedRepository: KeepConnectedRepository,
         private val promptRepository: NotificationPromptRepository,
+        private val contactJoinedRepository: ContactJoinedRepository,
         pushDelivery: PushDelivery,
+        // The device's accounts (docs/adr/0031-multiple-accounts.md): the shown one's channels, and the switch.
+        private val accounts: NotificationAccounts,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -90,6 +96,14 @@ class NotificationSettingsViewModel
                     }
                 }
             }
+            viewModelScope.launch {
+                contactJoinedRepository.notifies.collect { on -> mutableUiState.update { it.copy(contactJoined = on) } }
+            }
+            viewModelScope.launch {
+                accounts.state.collect { (slot, all) ->
+                    mutableUiState.update { it.copy(accountSlot = slot, fromAllAccounts = all) }
+                }
+            }
             load()
         }
 
@@ -104,7 +118,9 @@ class NotificationSettingsViewModel
                 }
 
                 is NotificationSettingsEvent.OpenChannelSettings -> {
-                    effectChannel.trySend(NotificationSettingsEffect.OpenChannelSettings(event.scope))
+                    effectChannel.trySend(
+                        NotificationSettingsEffect.OpenChannelSettings(event.scope, uiState.value.accountSlot),
+                    )
                 }
 
                 is NotificationSettingsEvent.AccessChecked -> {
@@ -123,6 +139,20 @@ class NotificationSettingsViewModel
 
                 is NotificationSettingsEvent.SetKeepConnected -> {
                     setKeepConnected(event.enabled)
+                }
+
+                is NotificationSettingsEvent.SetContactJoined -> {
+                    setContactJoined(event.enabled)
+                }
+
+                is NotificationSettingsEvent.SetFromAllAccounts -> {
+                    if (uiState.value.fromAllAccounts != null) {
+                        viewModelScope.launch {
+                            accounts.setFromAllAccounts(event.enabled).onFailure {
+                                effectChannel.trySend(NotificationSettingsEffect.ShowError(it))
+                            }
+                        }
+                    }
                 }
 
                 NotificationSettingsEvent.Reset -> {
@@ -223,6 +253,18 @@ class NotificationSettingsViewModel
             viewModelScope.launch {
                 keepConnectedRepository.setKeepConnected(enabled).onFailure {
                     effectChannel.trySend(NotificationSettingsEffect.ShowError(it))
+                }
+            }
+        }
+
+        private fun setContactJoined(enabled: Boolean) {
+            val before = uiState.value.contactJoined ?: return
+            mutableUiState.update { it.copy(contactJoined = enabled) }
+            viewModelScope.launch {
+                contactJoinedRepository.setNotifies(enabled).onFailure { error ->
+                    // Taken back unless TDLib announced another value meanwhile.
+                    mutableUiState.update { if (it.contactJoined == enabled) it.copy(contactJoined = before) else it }
+                    effectChannel.trySend(NotificationSettingsEffect.ShowError(error))
                 }
             }
         }

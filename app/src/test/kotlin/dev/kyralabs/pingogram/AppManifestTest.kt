@@ -41,7 +41,8 @@ import org.xmlpull.v1.XmlPullParser
  * (approved for 1:1 video, docs/adr/0019-video-and-group-calls-scope.md), and no camera is required to install.
  * Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS (self-managed
  * Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE and
- * FOREGROUND_SERVICE_CAMERA, USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT
+ * FOREGROUND_SERVICE_CAMERA, FOREGROUND_SERVICE_MEDIA_PROJECTION (screen sharing, approved 2026-10-24,
+ * docs/adr/0026-screen-sharing.md), USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT
  * (Bluetooth headsets' names),
  * MODIFY_AUDIO_SETTINGS (the audio mode without Telecom) and WAKE_LOCK on every version (the proximity wake lock); the
  * call screen and the call service are private, Telecom optional.
@@ -91,6 +92,8 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL,
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
                 Manifest.permission.FOREGROUND_SERVICE_CAMERA,
+                // Screen sharing in calls (docs/adr/0026-screen-sharing.md).
+                Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION,
                 Manifest.permission.USE_FULL_SCREEN_INTENT,
                 Manifest.permission.BLUETOOTH_CONNECT,
                 Manifest.permission.MODIFY_AUDIO_SETTINGS,
@@ -130,6 +133,7 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL to "",
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE to "",
                 Manifest.permission.FOREGROUND_SERVICE_CAMERA to "",
+                Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION to "",
                 Manifest.permission.USE_FULL_SCREEN_INTENT to "",
                 Manifest.permission.BLUETOOTH_CONNECT to "",
                 Manifest.permission.MODIFY_AUDIO_SETTINGS to "",
@@ -360,7 +364,7 @@ class AppManifestTest {
                 it.androidAttribute("exported")
             },
         )
-        assertEquals("phoneCall|microphone|camera", service.androidAttribute("foregroundServiceType"))
+        assertEquals("phoneCall|microphone|camera|mediaProjection", service.androidAttribute("foregroundServiceType"))
         assertEquals("@style/Theme.Pingogram", activity.androidAttribute("theme"))
         assertEquals("false", telecom.androidAttribute("required"))
     }

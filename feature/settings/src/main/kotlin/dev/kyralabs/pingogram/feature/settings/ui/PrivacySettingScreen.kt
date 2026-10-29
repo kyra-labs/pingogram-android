@@ -18,6 +18,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -37,6 +38,7 @@ internal fun PrivacySettingRoute(
     setting: PrivacySetting,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenExceptions: (PrivacyExceptionSide) -> Unit = {},
     viewModel: PrivacySettingViewModel =
         hiltViewModel<PrivacySettingViewModel, PrivacySettingViewModel.Factory>(key = "privacy-$setting") {
             it.create(setting)
@@ -62,14 +64,15 @@ internal fun PrivacySettingRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onOpenExceptions = onOpenExceptions,
     )
 }
 
 /**
  * A privacy setting (`REQUIREMENTS.md` FR-S1): who can see or do it, as three [RadioItem]s (Everybody, My contacts,
- * Nobody) under the setting's question, then its exceptions for that choice, counted, as text: editing them comes
- * later, and changing the choice keeps them. The choice being saved shows selected with progress, and the choices wait
- * meanwhile. Without Telegram Premium, voice and video messages offer "Everybody" only, and say why.
+ * Nobody) under the setting's question, then its exceptions for that choice, counted, each row opening its page
+ * ([onOpenExceptions]); changing the choice keeps them. The choice being saved shows selected with progress, and the
+ * choices wait meanwhile. Without Telegram Premium, voice and video messages offer "Everybody" only, and say why.
  */
 @Composable
 internal fun PrivacySettingScreen(
@@ -78,6 +81,7 @@ internal fun PrivacySettingScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onOpenExceptions: (PrivacyExceptionSide) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(state.setting.titleRes()),
@@ -98,7 +102,10 @@ internal fun PrivacySettingScreen(
             is PrivacyRulesState.Loaded -> {
                 if (rules != null) {
                     ChoicesSection(state, rules.choice, onSelect = { onEvent(PrivacySettingEvent.Select(it)) })
-                    if (rules.hasExceptions) ExceptionsSection(rules)
+                    ExceptionsSection(rules, onOpenExceptions)
+                }
+                state.showsReadTime?.let { shows ->
+                    ReadTimeSection(shows, onShow = { onEvent(PrivacySettingEvent.ShowReadTime(it)) })
                 }
             }
         }
@@ -133,6 +140,28 @@ private fun ChoicesSection(
     }
 }
 
+/** On the last seen page: "Show my read time" as a switch row, and what it does as the footer. */
+@Composable
+private fun ReadTimeSection(
+    shows: Boolean,
+    onShow: (Boolean) -> Unit,
+) {
+    SettingsGroup(
+        title = stringResource(R.string.settings_section_privacy_read_time),
+        footer = stringResource(R.string.settings_privacy_read_time_note),
+    ) {
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_privacy_read_time),
+                summary = stringResource(R.string.settings_privacy_read_time_summary),
+                checked = shows,
+                shapes = shapes,
+                onCheckedChange = onShow,
+            )
+        }
+    }
+}
+
 /** Progress on the choice being saved, as "Clear cache" shows it. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -141,74 +170,54 @@ private fun SavingIndicator() {
     LoadingIndicator(Modifier.semantics { contentDescription = saving })
 }
 
-/** Who is always and never allowed despite the choice, counted, and that changing the choice keeps them. */
+/**
+ * Who is always allowed (unless the choice is "Everybody") and never allowed (unless it is "Nobody"), counted or
+ * "Add users or groups", each opening its page; the footer says that changing the choice keeps them.
+ */
 @Composable
-private fun ExceptionsSection(rules: PrivacyRules) {
+private fun ExceptionsSection(
+    rules: PrivacyRules,
+    onOpen: (PrivacyExceptionSide) -> Unit,
+) {
     SettingsGroup(
         title = stringResource(R.string.settings_section_privacy_exceptions),
         footer = stringResource(R.string.settings_privacy_exceptions_note),
     ) {
-        if (rules.hasAlwaysAllowed) {
-            item { shapes ->
+        if (rules.choice != PrivacyChoice.Everybody) {
+            item(key = PrivacyExceptionSide.Always) { shapes ->
                 SettingsRow(
                     title = stringResource(R.string.settings_privacy_always_allowed),
                     shapes = shapes,
-                    supportingContent = { Text(alwaysAllowedText(rules.exceptions)) },
+                    supportingContent = {
+                        Text(
+                            if (rules.exceptions.hasAllowed) {
+                                alwaysAllowedText(rules.exceptions)
+                            } else {
+                                stringResource(R.string.settings_privacy_exceptions_none)
+                            },
+                        )
+                    },
+                    onClick = { onOpen(PrivacyExceptionSide.Always) },
                 )
             }
         }
-        if (rules.hasNeverAllowed) {
-            item { shapes ->
+        if (rules.choice != PrivacyChoice.Nobody) {
+            item(key = PrivacyExceptionSide.Never) { shapes ->
                 SettingsRow(
                     title = stringResource(R.string.settings_privacy_never_allowed),
                     shapes = shapes,
-                    supportingContent = { Text(neverAllowedText(rules.exceptions)) },
+                    supportingContent = {
+                        Text(
+                            if (rules.exceptions.hasRestricted) {
+                                neverAllowedText(rules.exceptions)
+                            } else {
+                                stringResource(R.string.settings_privacy_exceptions_none)
+                            },
+                        )
+                    },
+                    onClick = { onOpen(PrivacyExceptionSide.Never) },
                 )
             }
         }
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenPreview() {
-    PingogramPreview { PrivacySettingScreen(state = SettingsPreviewData.privacySetting, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenSavingPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(
-            state = SettingsPreviewData.privacySetting.copy(savingChoice = PrivacyChoice.Nobody),
-            onEvent = {},
-            onBack = {},
-        )
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenPremiumRequiredPreview() {
-    PingogramPreview { PrivacySettingScreen(state = SettingsPreviewData.voiceMessages, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenLoadingPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(state = PrivacySettingUiState(PrivacySetting.Calls), onEvent = {}, onBack = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenErrorPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(
-            state = PrivacySettingUiState(PrivacySetting.Calls, PrivacyRulesState.Failed(DomainError.Network)),
-            onEvent = {},
-            onBack = {},
-        )
     }
 }

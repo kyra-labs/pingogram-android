@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -34,6 +35,12 @@ sealed interface PrivacySecurityUiState {
         val twoStepVerification: TwoStepVerificationSummary,
         val passcodeLock: Boolean = false,
         val accountTtlDays: Int = DEFAULT_ACCOUNT_TTL_DAYS,
+        /** Telegram's pattern of the login email, or null when the account has none. */
+        val loginEmailPattern: String? = null,
+        /** The self-destruct timer of new chats, in seconds (0: off). */
+        val defaultAutoDeleteSeconds: Int = 0,
+        /** Who may start a chat with the user; null where Telegram could not say. */
+        val newChatPrivacy: NewChatPrivacy? = null,
     ) : PrivacySecurityUiState
 }
 
@@ -70,11 +77,21 @@ sealed interface PrivacySecurityPage {
 
     data object ActiveSessions : PrivacySecurityPage
 
+    data object Websites : PrivacySecurityPage
+
     data object TwoStepVerification : PrivacySecurityPage
 
     data object PasscodeLock : PrivacySecurityPage
 
+    data object LockedChats : PrivacySecurityPage
+
     data object DeleteAccount : PrivacySecurityPage
+
+    data object LoginEmail : PrivacySecurityPage
+
+    data object AutoDelete : PrivacySecurityPage
+
+    data object NewChats : PrivacySecurityPage
 }
 
 /** Telegram's default period before it deletes an unused account: 6 months. */

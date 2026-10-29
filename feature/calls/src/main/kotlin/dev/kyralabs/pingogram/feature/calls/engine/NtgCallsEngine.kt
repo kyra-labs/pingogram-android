@@ -10,16 +10,19 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import io.github.pytgcalls.ConnectionMode
+import io.github.pytgcalls.ExternalEncryption
 import io.github.pytgcalls.NTgCalls
 import io.github.pytgcalls.media.AudioDescription
 import io.github.pytgcalls.media.MediaDescription
 import io.github.pytgcalls.media.MediaSource
 import io.github.pytgcalls.media.StreamDevice
 import io.github.pytgcalls.media.StreamMode
+import io.github.pytgcalls.media.StreamType
 import io.github.pytgcalls.media.VideoDescription
 import io.github.pytgcalls.models.Frame
 import io.github.pytgcalls.models.MediaSegmentPartStatus
 import io.github.pytgcalls.models.SsrcGroup
+import io.github.pytgcalls.models.SsrcMapping
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -29,11 +32,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.withContext
-import org.json.JSONException
-import org.json.JSONObject
 import org.webrtc.ContextUtils
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -69,6 +71,12 @@ class NtgCallsEngine
         /** Voice chats by their NTgCalls id ([groupKey]), apart from [sessions]: TDLib's two kinds of ids may meet. */
         private val groupSessions = ConcurrentHashMap<Long, NtgGroupCallSession>()
 
+        /** The encryption of each conference call, by its NTgCalls id ([conferenceKey]). */
+        private val encryptions = ConcurrentHashMap<Long, ConferenceEncryption>()
+
+        /** Counts the conference calls made, for their NTgCalls ids: TDLib names the call only once it is joined. */
+        private val conferences = AtomicInteger()
+
         private var instance: NTgCalls? = null
 
         /** NTgCalls, created on [engineThread] with its callbacks the first time a call needs it. */
@@ -83,18 +91,49 @@ class NtgCallsEngine
                         groupSessions[id]?.onConnection(info.state.toMediaState())
                     }
                     engine.onRemoteSourceChange { id, source ->
-                        if (source.device == StreamDevice.CAMERA) {
-                            sessions[id]?.onRemoteVideo(source.state.toRemoteVideo())
+                        when (source.device) {
+                            StreamDevice.CAMERA -> sessions[id]?.onRemoteVideo(source.state.toRemoteVideo())
+                            StreamDevice.SCREEN -> sessions[id]?.onRemoteScreen(source.state.toRemoteVideo())
+                            else -> Unit
                         }
                     }
                     engine.onFrames { id, mode, device, frames ->
-                        if (device == StreamDevice.CAMERA) {
+                        if (device == StreamDevice.CAMERA || device == StreamDevice.SCREEN) {
                             CallTrace.section(CallTrace.FRAMES) {
-                                sessions[id]?.onFrames(mode, frames)
-                                groupSessions[id]?.onFrames(mode, frames)
+                                sessions[id]?.onFrames(mode, device, frames)
+                                groupSessions[id]?.onFrames(mode, device, frames)
                             }
                         }
                     }
+                    engine.onStreamEnd { id, type, device ->
+                        if (type == StreamType.VIDEO && device == StreamDevice.SCREEN) {
+                            sessions[id]?.onScreenEnded()
+                            groupSessions[id]?.onScreenEnded()
+                        }
+                    }
+                    engine.onRequestParticipants { id, request -> groupSessions[id]?.onUnknownSources(request.ssrcs) }
+                    // Conference calls' frames, on WebRTC's threads, which wait for TDLib's answer.
+                    ExternalEncryption.setHandler(
+                        object : ExternalEncryption.Handler {
+                            override fun encrypt(
+                                chatId: Long,
+                                channel: Int,
+                                data: ByteArray,
+                                unencryptedPrefix: Int,
+                            ): ByteArray? =
+                                CallTrace.section(CallTrace.ENCRYPT) {
+                                    encryptions[chatId]?.encrypt(channel.toChannel(), data, unencryptedPrefix)
+                                }
+
+                            override fun decrypt(
+                                chatId: Long,
+                                channel: Int,
+                                userId: Long,
+                                data: ByteArray,
+                            ): ByteArray? =
+                                CallTrace.section(CallTrace.DECRYPT) { encryptions[chatId]?.decrypt(userId, data) }
+                        },
+                    )
                     engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }
                     engine.onRequestBroadcastPart { id, part -> groupSessions[id]?.request(part.toStreamRequest()) }
                     instance = engine
@@ -113,16 +152,6 @@ class NtgCallsEngine
                     .orEmpty()
                     .mapNotNull { it.metadata?.toCamera() }
                     .sortedByDescending { it.isFront }
-            }
-
-        /** NTgCalls' camera metadata: `{"id": "1", "is_front": true}`. */
-        private fun String.toCamera(): CallCamera? =
-            try {
-                val json = JSONObject(this)
-                CallCamera(id = json.getString("id"), isFront = json.optBoolean("is_front"), metadata = this)
-            } catch (e: JSONException) {
-                Log.w(TAG, "Unreadable camera: ${e.javaClass.simpleName}")
-                null
             }
 
         override suspend fun connect(
@@ -158,11 +187,26 @@ class NtgCallsEngine
         override suspend fun createGroupCall(
             groupCallId: Int,
             muted: Boolean,
+        ): GroupCallSession = openGroupCall(groupKey(groupCallId), muted) { calls().createCall(it) }
+
+        override suspend fun createConference(
+            muted: Boolean,
+            encryption: ConferenceEncryption,
+        ): GroupCallSession {
+            val id = conferenceKey(conferences.incrementAndGet())
+            encryptions[id] = encryption
+            return openGroupCall(id, muted) { calls().initExternalConference(it) }
+        }
+
+        /** A group call's session as NTgCalls' [create] makes its connection [id] and its join payload. */
+        private suspend fun openGroupCall(
+            id: Long,
+            muted: Boolean,
+            create: (Long) -> String,
         ): GroupCallSession =
             withContext(engineThread) {
-                val id = groupKey(groupCallId)
                 val engine = calls()
-                val payload = engine.createCall(id)
+                val payload = create(id)
                 val session = NtgGroupCallSession(id, payload)
                 groupSessions[id] = session
                 try {
@@ -188,8 +232,16 @@ class NtgCallsEngine
                 ?.metadata
                 .orEmpty()
 
-        private fun CallCamera.toVideoSource(quality: VideoQuality) =
-            VideoDescription(MediaSource.DEVICE, quality.width, quality.height, quality.fps, metadata, true)
+        /** The device's screen through NTgCalls' own capturer (`"screen"`), at most [SCREEN_FPS] frames a second. */
+        private fun screenSource(quality: VideoQuality) =
+            VideoDescription(
+                MediaSource.DEVICE,
+                quality.width,
+                quality.height,
+                minOf(quality.fps, SCREEN_FPS),
+                SCREEN_SOURCE,
+                true,
+            )
 
         // CallSession's members, and what NTgCalls' callbacks hand each session.
         @Suppress("TooManyFunctions")
@@ -206,6 +258,19 @@ class NtgCallsEngine
 
             private val mutableRemoteVideo = MutableStateFlow(RemoteVideo.Off)
             override val remoteVideo: StateFlow<RemoteVideo> = mutableRemoteVideo.asStateFlow()
+
+            private val mutableRemoteIsScreen = MutableStateFlow(false)
+            override val remoteIsScreen: StateFlow<Boolean> = mutableRemoteIsScreen.asStateFlow()
+
+            private val screenEnds = Channel<Unit>(Channel.CONFLATED)
+            override val screenEnded: Flow<Unit> = screenEnds.receiveAsFlow()
+
+            // The other side's camera and screen as their engine reports them; [remoteVideo] shows the screen first.
+            @Volatile private var remoteCamera = RemoteVideo.Off
+
+            @Volatile private var remoteScreen = RemoteVideo.Off
+
+            @Volatile private var screen = false
 
             @Volatile private var localSink: VideoFrameSink? = null
 
@@ -227,28 +292,74 @@ class NtgCallsEngine
             }
 
             fun onRemoteVideo(video: RemoteVideo) {
-                mutableRemoteVideo.value = video
+                remoteCamera = video
+                publishRemote()
             }
 
+            fun onRemoteScreen(video: RemoteVideo) {
+                remoteScreen = video
+                publishRemote()
+            }
+
+            private fun publishRemote() {
+                val isScreen = remoteScreen != RemoteVideo.Off
+                mutableRemoteIsScreen.value = isScreen
+                mutableRemoteVideo.value = if (isScreen) remoteScreen else remoteCamera
+            }
+
+            fun onScreenEnded() {
+                if (screen) screenEnds.trySend(Unit)
+            }
+
+            /**
+             * The camera's own frames go to the self-view; the other side's to [remoteSink], their screen's while they
+             * share and their camera's otherwise. The user's own screen has no preview: it would show itself.
+             */
             fun onFrames(
                 mode: StreamMode,
+                device: StreamDevice,
                 frames: List<Frame>,
             ) {
-                val sink = (if (mode == StreamMode.CAPTURE) localSink else remoteSink) ?: return
+                val sink =
+                    when {
+                        mode == StreamMode.CAPTURE -> localSink.takeIf { device == StreamDevice.CAMERA }
+                        (device == StreamDevice.SCREEN) == (remoteScreen != RemoteVideo.Off) -> remoteSink
+                        else -> null
+                    } ?: return
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
                     sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
                 }
             }
 
-            /** The microphone, and the camera while one sends. */
-            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
+            /** The microphone, the camera while one sends, and the screen while it is shared. */
+            fun capture() =
+                MediaDescription(
+                    microphoneSource,
+                    null,
+                    camera?.toVideoSource(quality),
+                    if (screen) screenSource(quality) else null,
+                )
 
             /**
-             * The speaker, and the other side's video while a sink takes it: NTgCalls negotiates receiving video again
-             * with each change, so a call nobody watches (a voice call, the screen away) receives no frames.
+             * The speaker, and the other side's camera and screen while a sink takes them: NTgCalls negotiates
+             * receiving video again with each change, so a call nobody watches (a voice call, the screen away)
+             * receives no frames.
              */
-            fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { remoteSink != null }, null)
+            fun playback(): MediaDescription {
+                val video = REMOTE_VIDEO.takeIf { remoteSink != null }
+                return MediaDescription(null, speakerSource, video, video)
+            }
+
+            override suspend fun setScreen(
+                on: Boolean,
+                quality: VideoQuality,
+            ) {
+                if (screen == on && (!on || this.quality == quality)) return
+                screen = on
+                if (camera == null) this.quality = quality
+                engineCall("share the screen") { calls().setStreamSources(id, StreamMode.CAPTURE, capture()) }
+            }
 
             override suspend fun setCamera(
                 camera: CallCamera?,
@@ -304,6 +415,9 @@ class NtgCallsEngine
                 }
                 mutableState.value = CallMediaState.Closed
                 mutableRemoteVideo.value = RemoteVideo.Off
+                mutableRemoteIsScreen.value = false
+                screen = false
+                screenEnds.close()
                 localSink = null
                 remoteSink = null
                 sessions.remove(id)
@@ -335,6 +449,19 @@ class NtgCallsEngine
             private val mutableState = MutableStateFlow(CallMediaState.Connecting)
             override val state: StateFlow<CallMediaState> = mutableState.asStateFlow()
 
+            // NTgCalls asks again every few seconds while a source stays unknown; never blocks its threads.
+            private val unknown = Channel<List<Int>>(Channel.CONFLATED)
+            override val unknownSources: Flow<List<Int>> = unknown.receiveAsFlow()
+
+            fun onUnknownSources(ssrcs: List<Int>) {
+                unknown.trySend(ssrcs)
+            }
+
+            override suspend fun mapSources(sources: Map<Int, Long>) =
+                engineCall("map the audio sources") {
+                    calls().updateAudioSsrcMappings(id, sources.map { (ssrc, userId) -> SsrcMapping(userId, ssrc) })
+                }
+
             private val mutableMode = MutableStateFlow<GroupCallMode?>(null)
             override val mode: StateFlow<GroupCallMode?> = mutableMode.asStateFlow()
 
@@ -364,8 +491,57 @@ class NtgCallsEngine
 
             @Volatile private var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
 
-            /** The microphone, and the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`). */
-            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
+            /** The presentation is connected and sends the screen, at [screenQuality]. */
+            @Volatile private var presenting = false
+            private var screenQuality = VideoQuality.High
+
+            private val screenEnds = Channel<Unit>(Channel.CONFLATED)
+            override val screenEnded: Flow<Unit> = screenEnds.receiveAsFlow()
+
+            /**
+             * The microphone, the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`), and the screen
+             * while the presentation is connected (`docs/adr/0026-screen-sharing.md`), which NTgCalls sends on it.
+             */
+            fun capture() =
+                MediaDescription(
+                    microphoneSource,
+                    null,
+                    camera?.toVideoSource(quality),
+                    if (presenting) screenSource(screenQuality) else null,
+                )
+
+            fun onScreenEnded() {
+                if (presenting) screenEnds.trySend(Unit)
+            }
+
+            override suspend fun startPresentation(): Presentation? =
+                withContext(engineThread) {
+                    if (mutableState.value == CallMediaState.Closed) return@withContext null
+                    try {
+                        calls().initPresentation(id).let { Presentation(it, it.audioSource()) }
+                    } catch (e: RuntimeException) {
+                        Log.w(TAG, "Could not open the presentation: ${e.javaClass.simpleName}")
+                        null
+                    }
+                }
+
+            override suspend fun connectPresentation(
+                params: String,
+                quality: VideoQuality,
+            ) = engineCall("share the screen") {
+                calls().connect(id, params, true)
+                presenting = true
+                screenQuality = quality
+                calls().setStreamSources(id, StreamMode.CAPTURE, capture())
+            }
+
+            override suspend fun stopPresentation() =
+                engineCall("stop sharing the screen") {
+                    val was = presenting
+                    presenting = false
+                    if (was) calls().setStreamSources(id, StreamMode.CAPTURE, capture())
+                    calls().stopPresentation(id)
+                }
 
             /** The speaker, and a stream's video while a sink takes it. */
             fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { videoSink != null }, null)
@@ -378,18 +554,30 @@ class NtgCallsEngine
                 requests.trySend(request)
             }
 
+            /**
+             * The camera's own frames to the self-view (the shared screen has no preview); the others' cameras and
+             * screens to their tiles' sinks by SSRC; a stream's to [videoSink].
+             */
             fun onFrames(
                 mode: StreamMode,
+                device: StreamDevice,
                 frames: List<Frame>,
             ) {
                 if (mode == StreamMode.PLAYBACK && endpoints.isNotEmpty()) {
                     onIncomingFrames(frames)
                     return
                 }
-                val sink = (if (mode == StreamMode.CAPTURE) selfSink else videoSink) ?: return
+                val sink =
+                    if (mode ==
+                        StreamMode.CAPTURE
+                    ) {
+                        selfSink.takeIf { device == StreamDevice.CAMERA }
+                    } else {
+                        videoSink
+                    }
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
-                    sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
+                    sink?.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
                 }
             }
 
@@ -507,11 +695,15 @@ class NtgCallsEngine
                     }
                 }
                 mutableState.value = CallMediaState.Closed
+                presenting = false
+                screenEnds.close()
                 videoSink = null
                 selfSink = null
                 incomingSinks = emptyMap()
                 endpoints = emptyMap()
                 groupSessions.remove(id)
+                encryptions.remove(id)
+                unknown.close()
                 requests.close()
             }
 
@@ -537,6 +729,9 @@ class NtgCallsEngine
 
             /** The other side's video, as it comes: width, height and frame rate 0 are NTgCalls' "as sent". */
             val REMOTE_VIDEO = VideoDescription(MediaSource.EXTERNAL, 0, 0, 0, "", true)
+
+            /** NTgCalls' metadata of the screen's capture device. */
+            const val SCREEN_SOURCE = "{\"id\":\"screen\"}"
 
             const val UNSIGNED_INT_MASK = 0xFFFF_FFFFL
         }

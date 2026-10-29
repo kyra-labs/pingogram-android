@@ -44,6 +44,8 @@ data class GroupCall(
     val canEnableVideo: Boolean = false,
     /** The user sends their camera, as Telegram knows it. */
     val isMyVideoEnabled: Boolean = false,
+    /** A conference call's link (`t.me/call/…`), which joins it; empty for a chat's voice chat. */
+    val inviteLink: String = "",
 )
 
 /** One of a [GroupCall]'s recent speakers. */
@@ -75,6 +77,8 @@ data class GroupCallParticipant(
     val order: String,
     /** The participant's camera, while they send it (`docs/adr/0024-video-in-voice-chats.md`); null otherwise. */
     val video: GroupCallParticipantVideo? = null,
+    /** The participant's shared screen, while they share it (`docs/adr/0026-screen-sharing.md`); null otherwise. */
+    val screen: GroupCallParticipantVideo? = null,
 ) {
     /** Whether the participant is silent for the user: muted by an administrator, by themselves, or locally. */
     val isMuted: Boolean get() = isMutedForAllUsers || isMutedForCurrentUser

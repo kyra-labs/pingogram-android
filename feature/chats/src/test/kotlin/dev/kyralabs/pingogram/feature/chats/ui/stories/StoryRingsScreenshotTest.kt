@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListScreen
 import dev.kyralabs.pingogram.feature.chats.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.chats.ui.EXPANDED
+import dev.kyralabs.pingogram.feature.chats.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.chats.ui.goldenPath
@@ -44,6 +45,11 @@ class StoryRingsScreenshotTest {
     @Test
     @Config(qualifiers = EXPANDED)
     fun expanded() = capture("expanded", ScreenshotVariant.Light)
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() = capture("fontScale200", ScreenshotVariant.Light)
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(

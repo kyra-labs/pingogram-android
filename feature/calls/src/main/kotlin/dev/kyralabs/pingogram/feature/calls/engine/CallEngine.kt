@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.ConferenceChannel
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
@@ -43,6 +44,34 @@ interface CallEngine {
         groupCallId: Int,
         muted: Boolean,
     ): GroupCallSession
+
+    /**
+     * Opens the microphone and the speaker for a conference call (`docs/adr/0025-conference-calls.md`) and makes its
+     * join payload, which TDLib's `createGroupCall` and `joinGroupCall` take. TDLib keeps the call's blockchain: every
+     * frame the engine sends or receives goes through [encryption]. A voice chat's session otherwise, closed the same
+     * way.
+     */
+    suspend fun createConference(
+        muted: Boolean,
+        encryption: ConferenceEncryption,
+    ): GroupCallSession
+}
+
+/**
+ * The encryption of a conference call's frames, done by TDLib (`encryptGroupCallData`, `decryptGroupCallData`). Called
+ * on the engine's threads for every frame, which wait for the answer; null drops the frame.
+ */
+interface ConferenceEncryption {
+    fun encrypt(
+        channel: ConferenceChannel,
+        data: ByteArray,
+        unencryptedPrefix: Int,
+    ): ByteArray?
+
+    fun decrypt(
+        userId: Long,
+        data: ByteArray,
+    ): ByteArray?
 }
 
 /** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
@@ -110,9 +139,46 @@ interface GroupCallSession {
     /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
     fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
 
+    /**
+     * Opens the presentation, the shared screen's own connection (`docs/adr/0026-screen-sharing.md`), and returns its
+     * join payload for TDLib's `startGroupCallScreenSharing`; null where the engine could not. The user's consent must
+     * have reached the engine ([ScreenCaptureConsent]).
+     */
+    suspend fun startPresentation(): Presentation?
+
+    /**
+     * Connects the presentation with TDLib's [params] (JSON) and starts sending the screen at most at [quality]; the
+     * call service must run as `mediaProjection` by then.
+     */
+    suspend fun connectPresentation(
+        params: String,
+        quality: VideoQuality,
+    )
+
+    /** Stops sending the screen and closes the presentation. Idempotent. */
+    suspend fun stopPresentation()
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
+    /**
+     * The audio sources (SSRCs) a conference call receives without knowing whose they are, which [mapSources] answers:
+     * decrypting a frame needs its sender. Never for a voice chat.
+     */
+    val unknownSources: Flow<List<Int>>
+
+    /** Tells a conference call whose its audio sources are: user ids by SSRC. */
+    suspend fun mapSources(sources: Map<Int, Long>)
+
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
 }
+
+/** A voice chat's presentation, before it connects: its join payload (JSON) and the audio source (SSRC) in it. */
+data class Presentation(
+    val payload: String,
+    val audioSourceId: Int,
+)
 
 /** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
 data class IncomingVideo(
@@ -189,8 +255,27 @@ interface CallSession {
         quality: VideoQuality = VideoQuality.High,
     )
 
-    /** Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. */
+    /**
+     * Sends the device's screen at most at [quality] (at [SCREEN_FPS] frames a second at most), or stops sending it
+     * (`docs/adr/0026-screen-sharing.md`). The user's consent must have reached the engine ([ScreenCaptureConsent]) and
+     * the call service must run as `mediaProjection` first: the capture starts at once.
+     */
+    suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality = VideoQuality.High,
+    )
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
+    /**
+     * Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. Their
+     * shared screen counts, in place of their camera while they share ([remoteIsScreen]).
+     */
     val remoteVideo: StateFlow<RemoteVideo>
+
+    /** The other side's video is their shared screen, not their camera. */
+    val remoteIsScreen: StateFlow<Boolean>
 
     /**
      * Where the frames go: [local] gets the camera's own (the self-view), [remote] the other side's, on the engine's
@@ -276,6 +361,15 @@ enum class RemoteVideo {
 
     /** On but held back: the other side's app is in the background, or the connection is too weak for video. */
     Paused,
+}
+
+/** The most frames a second a shared screen sends: a screen changes less than a face, and costs less so. */
+const val SCREEN_FPS = 15
+
+/** Hands Android's consent to capture the screen to the engine, which starts the capture with it. */
+fun interface ScreenCaptureConsent {
+    /** [result] is the consent dialog's result data, an `Intent`; typed loosely so the manager stays JVM-testable. */
+    fun grant(result: Any)
 }
 
 /** Takes video frames of a call, on the engine's threads. */

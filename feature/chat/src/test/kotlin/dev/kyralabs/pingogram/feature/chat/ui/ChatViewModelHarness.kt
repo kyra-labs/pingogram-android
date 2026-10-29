@@ -11,8 +11,10 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
@@ -25,9 +27,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -45,8 +49,8 @@ import kotlin.reflect.cast
 
 /**
  * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories, of
- * the player and of the voice recorder (whose clock is the test's), a fake wall clock at [NOW] in UTC, fixed English
- * time patterns and a log that keeps what it is told.
+ * the player and of the voice and video recorders (whose clock is the test's), a fake wall clock at [NOW] in UTC,
+ * fixed English time patterns and a log that keeps what it is told.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatViewModelHarness {
@@ -55,6 +59,8 @@ abstract class ChatViewModelHarness {
     protected val messageActions = FakeMessageActionRepository()
     protected val attachments = FakeAttachmentRepository()
     protected val voiceNotes = FakeVoiceNoteRepository()
+    protected val videoNotes = FakeVideoNoteRepository()
+    protected val composerSettings = FakeComposerSettingsRepository()
     protected val sendAs = FakeSendAsRepository()
     protected val secretChats = FakeSecretChatRepository()
     protected val sponsored = FakeSponsoredMessageRepository()
@@ -68,12 +74,14 @@ abstract class ChatViewModelHarness {
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
+    internal val camera = FakeVideoNoteRecorder()
     protected val autoDownloads = FakeAutoDownloadPolicy()
     protected val joins = FakeChatJoinRepository()
     protected val pinnedMessages = FakePinnedMessageRepository()
     protected val hiddenPins = FakeHiddenPinsRepository()
     protected val forumTopics = FakeForumTopicRepository()
     protected val threads = FakeMessageThreadRepository()
+    protected val savedTopics = FakeSavedMessagesTopicRepository()
     protected val shareInbox = ShareInbox()
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
@@ -90,6 +98,8 @@ abstract class ChatViewModelHarness {
     internal val chatSearch = FakeChatSearchRepository()
     internal val groupMembers = FakeGroupInfoRepository()
     protected val customEmoji = FakeCustomEmojiRepository()
+    protected val polls = FakePollRepository()
+    protected val scheduledMessages = FakeScheduledMessageRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -116,6 +126,7 @@ abstract class ChatViewModelHarness {
         handle: SavedStateHandle = savedState,
         messageId: Long? = null,
         topic: MessageTopic? = null,
+        originalQuality: Boolean = false,
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
@@ -139,11 +150,12 @@ abstract class ChatViewModelHarness {
                 audioPlayer = player,
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
+                videoNotes = VideoNoteRecording(camera, videoNotes, composerSettings),
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
                 chatJoinRepository = joins,
-                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
+                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads, savedTopics),
                 shareInbox = shareInbox,
                 botButtonRepository = botButtons,
                 botInfoRepository = bots,
@@ -153,10 +165,13 @@ abstract class ChatViewModelHarness {
                     TranslationRepositories(translations, languageDetector, appLanguage, hiddenTranslateBars),
                 searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
                 customEmojiRepository = customEmoji,
+                pollRepository = polls,
+                scheduledMessageRepository = scheduledMessages,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },
                 topic = topic,
+                sendsPhotosInOriginalQuality = flowOf(originalQuality),
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

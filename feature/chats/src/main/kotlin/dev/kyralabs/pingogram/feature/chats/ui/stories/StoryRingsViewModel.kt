@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -68,6 +69,9 @@ sealed interface StoryRingsEvent {
  *   they are no more than a shortcut, and the row comes back with the next start.
  * - Opening a ring is the screen's: it goes straight to the viewer, which marks what it shows viewed.
  *
+ * - **Hidden**: while Appearance → "Show stories" is off ([ChatListSettingsRepository]), there are no rings and nothing
+ *   loads; turned on again, the rings load as at the first collection.
+ *
  * Nothing to restore after process death: everything is read again.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -78,11 +82,12 @@ class StoryRingsViewModel
         private val storyRepository: StoryRepository,
         chatRepository: ChatRepository,
         userRepository: UserRepository,
+        chatListSettings: ChatListSettingsRepository,
     ) : ViewModel() {
         private var loadingMore: Job? = null
         private var allLoaded = false
 
-        val uiState: StateFlow<StoryRingsUiState> =
+        private val rings =
             storyRepository
                 .activeStories(StoryList.Main)
                 .flatMapLatest { active ->
@@ -101,6 +106,12 @@ class StoryRingsViewModel
                     )
                 }.distinctUntilChanged()
                 .onStart { viewModelScope.launch { storyRepository.loadActiveStories(StoryList.Main) } }
+
+        val uiState: StateFlow<StoryRingsUiState> =
+            chatListSettings.settings
+                .map { it.showStories }
+                .distinctUntilChanged()
+                .flatMapLatest { shown -> if (shown) rings else flowOf(StoryRingsUiState()) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoryRingsUiState())
 
         fun onEvent(event: StoryRingsEvent) {

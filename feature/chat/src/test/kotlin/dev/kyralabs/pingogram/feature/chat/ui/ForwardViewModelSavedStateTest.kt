@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardResults
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -42,6 +43,7 @@ class ForwardViewModelSavedStateTest {
             dispatcher = Dispatchers.Main,
             applicationScope = scope,
             results = ForwardResults(),
+            targetPreferences = TargetPreferences(),
         )
         shadowOf(Looper.getMainLooper()).idle()
 

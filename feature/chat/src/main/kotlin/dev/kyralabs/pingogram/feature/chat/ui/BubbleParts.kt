@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,9 +48,10 @@ import dev.kyralabs.pingogram.feature.chat.R
 // secondaryContainer).
 
 /**
- * The replied message: a tonal card, the name in the sender's color over one line of its text. With [onOpen] it is a
- * button that shows the replied message, with its state layer clipped to the card. Inside a bubble, screen readers
- * reach it as the bubble's custom action instead ([replyAction]).
+ * The replied message: a tonal card, the name in the sender's color over one line of its text, which a quote reply
+ * starts with a quote mark (Material Symbols `format_quote` at `sizes.inlineIconSmall`, in the card's content color).
+ * With [onOpen] it is a button that shows the replied message, with its state layer clipped to the card. Inside a
+ * bubble, screen readers reach it as the bubble's custom action instead ([replyAction]).
  */
 @Composable
 internal fun ReplyQuoteBlock(
@@ -70,13 +74,26 @@ internal fun ReplyQuoteBlock(
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
-        Text(
-            text = reply.text.resolve(),
-            color = colors.blockContent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium.userContent,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (reply.isQuote) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_format_quote),
+                    contentDescription = null,
+                    modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+                    tint = colors.blockContent,
+                )
+            }
+            Text(
+                text = reply.text.resolve(),
+                color = colors.blockContent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium.userContent,
+            )
+        }
     }
 }
 
@@ -155,7 +172,8 @@ internal fun ReactionBadges(
 
 /**
  * A reaction's emoji, with its count when more than one person added it, on a round `surfaceContainerHighest` badge,
- * or `secondaryContainer` when the user chose it too: [chosenFraction] blends them, read in the draw phase. A button
+ * or `secondaryContainer` with a `primary` ring when the user chose it too, so the user's own reaction shows by more
+ * than a color (`REQUIREMENTS.md` §6.3): [chosenFraction] blends them, read in the draw phase. A button
  * if [onClick] is not null. A custom emoji shows its picture, and until it does a tonal dot: the content color as a
  * tint of the badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark.
  */
@@ -168,7 +186,8 @@ private fun ReactionBadge(
     val scheme = MaterialTheme.colorScheme
     val container = { lerp(scheme.surfaceContainerHighest, scheme.secondaryContainer, chosenFraction()) }
     val content = { lerp(scheme.onSurfaceVariant, scheme.onSecondaryContainer, chosenFraction()) }
-    BadgeFrame(container, onClick) {
+    val ring = { lerp(scheme.surface, scheme.primary, chosenFraction()) }
+    BadgeFrame(container, onClick, ring) {
         ReactionGlyph(
             reaction.label,
             MaterialTheme.typography.titleMedium,
@@ -204,16 +223,19 @@ private fun MoreReactionsBadge(
 
 /**
  * A reaction badge's frame: a circle at least [reactionBadge][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
- * wide, a pill when its content is wider, in [container], with a ring in the conversation's `surface` that sets it off
- * from the bubble it overlaps. A button if [onClick] is not null: its touch target is 48 dp tall without the badge
- * taking more room ([touchTarget]), its state layer clipped to the circle.
+ * wide, a pill when its content is wider, in [container], with a ring ([ring], the conversation's `surface` by default)
+ * that sets it off from the bubble it overlaps, drawn in the draw phase. A button if [onClick] is not null: its touch
+ * target is 48 dp tall without the badge taking more room ([touchTarget]), its state layer clipped to the circle.
  */
 @Composable
 private fun BadgeFrame(
     container: ColorProducer,
     onClick: (() -> Unit)?,
+    ring: ColorProducer? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val surface = MaterialTheme.colorScheme.surface
+    val ringColor = ring ?: ColorProducer { surface }
     val sizes = MaterialTheme.sizes
     val interactions = remember { MutableInteractionSource() }
     val target =
@@ -225,8 +247,9 @@ private fun BadgeFrame(
         modifier =
             target
                 .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
-                .background(MaterialTheme.colorScheme.surface, CircleShape)
-                .padding(sizes.reactionBadgeRing)
+                .drawBehind {
+                    drawRoundRect(ringColor(), cornerRadius = CornerRadius(size.minDimension / 2))
+                }.padding(sizes.reactionBadgeRing)
                 .clip(CircleShape)
                 .then(stateLayer)
                 .drawBehind { drawRect(container()) }

@@ -70,6 +70,11 @@ data class Chat(
      * the user's, and the user has Telegram Premium. Single messages translate for everyone.
      */
     val isTranslatable: Boolean = false,
+    /**
+     * The chat holds messages the user scheduled (td_api.tl `chat.has_scheduled_messages`,
+     * `updateChatHasScheduledMessages`), which `ScheduledMessageRepository` lists.
+     */
+    val hasScheduledMessages: Boolean = false,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }
@@ -118,13 +123,13 @@ data class ChatPermissions(
 
 /**
  * An unsent message the user left in a chat, saved by Telegram on every device; [date] is when it was saved.
- * [replyToMessageId] is the message of the same chat it replies to; null if it replies to nothing. A draft may be only
- * a reply, with an empty text.
+ * [replyTo] is the message it replies to (of the same chat, or of another one), with the part it quotes; null if it
+ * replies to nothing. A draft may be only a reply, with an empty text.
  */
 data class ChatDraft(
     val content: DraftContent,
     val date: Long,
-    val replyToMessageId: Long? = null,
+    val replyTo: ReplyTarget? = null,
 )
 
 /** What a [ChatDraft] holds. */

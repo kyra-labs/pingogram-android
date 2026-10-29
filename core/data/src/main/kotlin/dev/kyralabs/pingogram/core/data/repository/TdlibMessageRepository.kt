@@ -5,6 +5,8 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
@@ -13,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -31,7 +34,6 @@ import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [MessageRepository] on TDLib's chat history. Each history someone observes, or loaded recently (a chat's, or one of
@@ -54,12 +56,13 @@ import javax.inject.Singleton
  * [sendText] and [setDraft] only send requests: the message being sent reaches the window through TDLib's updates, as
  * every other new message does, and the draft reaches the chat through `updateChatDraftMessage`.
  */
-@Singleton
+@AccountScoped
 class TdlibMessageRepository
     @Inject
     constructor(
         private val client: TdlibClient,
         @ApplicationScope private val scope: CoroutineScope,
+        private val linkPreviews: SecretChatLinkPreviews,
     ) : MessageRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, HistoryCache(), HistoryCache::reduce)
@@ -163,41 +166,41 @@ class TdlibMessageRepository
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
         /**
-         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview and
-         * [options]' notification, scheduling and topic, replying to [replyToMessageId] of the chat itself without a
-         * quote. TDLib puts the message into the chat as being sent (`updateNewMessage`) before it answers, so the
-         * window shows it at once (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or
-         * `updateMessageSendFailed` replace it. The answer itself is not applied: the update has it.
+         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview (none in a
+         * secret chat unless allowed, [SecretChatLinkPreviews]) and [options]' notification, scheduling and topic,
+         * replying as [replyTo] says (a message of the chat or of another one, with its quote). TDLib puts the message
+         * into the chat as being sent (`updateNewMessage`) before it answers, so the window shows it at once
+         * (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or `updateMessageSendFailed`
+         * replace it. The answer itself is not applied: the update has it.
          */
         override suspend fun sendText(
             chatId: Long,
             text: FormattedText,
             options: SendOptions,
-            replyToMessageId: Long?,
+            replyTo: ReplyTarget?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(text.toTdFormattedText(), null, true)
-            val replyTo = replyToMessageId?.let(::replyToMessage)
+            val content = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
+            val tdReplyTo = replyTo?.toInputMessageReplyTo()
             return client
-                .request(TdApi.SendMessage(chatId, options.tdTopic(), replyTo, options.toTdOptions(), null, content))
+                .request(TdApi.SendMessage(chatId, options.tdTopic(), tdReplyTo, options.toTdOptions(), null, content))
                 .map {}
         }
 
         /**
-         * `setChatDraftMessage` of the chat itself (no topic) with a text draft replying to [replyToMessageId], or none
-         * for an empty [text] without a reply. TDLib dates the draft itself, and reports it in
-         * `updateChatDraftMessage`.
+         * `setChatDraftMessage` of the chat itself (no topic) with a text draft replying as [replyTo] says, or none for
+         * an empty [text] without a reply. TDLib dates the draft itself, and reports it in `updateChatDraftMessage`.
          */
         override suspend fun setDraft(
             chatId: Long,
             text: FormattedText,
-            replyToMessageId: Long?,
+            replyTo: ReplyTarget?,
         ): Outcome<Unit> {
             val draft =
-                if (text.text.isEmpty() && replyToMessageId == null) {
+                if (text.text.isEmpty() && replyTo == null) {
                     null
                 } else {
                     TdApi.DraftMessage(
-                        replyToMessageId?.let(::replyToMessage),
+                        replyTo?.toInputMessageReplyTo(),
                         0,
                         TdApi.DraftMessageContentText(text.toTdFormattedText(), null),
                         0,
@@ -214,8 +217,13 @@ class TdlibMessageRepository
  */
 internal fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
 
-/** The forum topic or message thread the message goes into (td_api.tl `sendMessage.topic_id`); null for the chat. */
-internal fun SendOptions.tdTopic(): TdApi.MessageTopic? = topic?.toTdMessageTopic()
+/**
+ * The forum topic or message thread the message goes into (td_api.tl `sendMessage.topic_id`); null for the chat. A
+ * Saved Messages topic is not passed: what the user sends to Saved Messages goes into their notes, as in Telegram's
+ * apps, whichever topic shows.
+ */
+internal fun SendOptions.tdTopic(): TdApi.MessageTopic? =
+    topic?.takeUnless { it is MessageTopic.SavedMessages }?.toTdMessageTopic()
 
 /**
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until

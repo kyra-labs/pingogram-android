@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
@@ -100,6 +101,30 @@ class EditProfileScreenScreenshotTest {
 
     @Test
     fun errorDark() = capture("errorDark", ThemeMode.Dark, EditProfileUiState.Error(DomainError.FloodWait(300)))
+
+    @Test
+    fun birthdateDialogLight() =
+        composeRule.captureScreen(javaClass, "birthdateDialogLight", ThemeMode.Light) {
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+        }
+
+    @Test
+    fun birthdateDialogDark() =
+        composeRule.captureScreen(javaClass, "birthdateDialogDark", ThemeMode.Dark) {
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+        }
+
+    @Test
+    fun birthdateDialogWithoutYear() =
+        composeRule.captureScreen(javaClass, "birthdateDialogWithoutYear", ThemeMode.Light) {
+            BirthdateDialog(birthdate = Birthdate(29, 2, null), onDismiss = {}, onPick = {})
+        }
+
+    @Test
+    fun birthdateDialogRtl() =
+        composeRule.captureScreen(javaClass, "birthdateDialogRtl", ScreenshotVariant.Rtl) {
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+        }
 
     private val available = SettingsPreviewData.editedProfile(UsernameStatus.Checked(UsernameCheck.Available))
     private val taken = SettingsPreviewData.editedProfile(UsernameStatus.Checked(UsernameCheck.Taken))

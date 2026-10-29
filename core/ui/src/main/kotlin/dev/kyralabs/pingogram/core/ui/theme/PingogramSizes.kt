@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
  *   reactions, at 100% font scale.
  * @property swipeReplyDistance how far a bubble is swiped toward the end to reply to it: released past it, the reply
  *   starts.
+ * @property nextChatPullDistance how far a read channel is pulled up past its newest post to open the next unread
+ *   channel: released past it, that channel opens.
  * @property messageMenuBlur the blur radius of the conversation behind a message lifted for its actions (API 31+).
  * @property messageMenuMinWindowHeight the shortest window that lifts a long-pressed message with its menu beside it;
  *   shorter ones (phones in landscape) show its actions in a bottom sheet. Material's lower bound of medium heights.
@@ -102,6 +104,12 @@ import androidx.compose.ui.unit.dp
  *   whatever the colors of its edge pixels.
  * @property pinnedIndicator the width of the pinned messages bar's segments, one per pinned message, that show which
  *   one the bar shows.
+ * @property pollBar the thickness of the bar under a poll's answer that shows its share of the votes, as Material's
+ *   linear progress indicator.
+ * @property sliderInactiveTrackInset how far from the thumb's centre a Material 3 Expressive slider's inactive track
+ *   starts: half its 4 dp handle and the 6 dp gap beside it, where the media viewer's seek bar draws what is buffered.
+ * @property chartHeight the plot of a statistics chart, without its labels.
+ * @property chartLine the width of a statistics chart's lines.
  */
 @Immutable
 data class PingogramSizes(
@@ -129,6 +137,7 @@ data class PingogramSizes(
     val reactionBadgeRing: Dp = 2.dp,
     val reactionTile: Dp = 64.dp,
     val swipeReplyDistance: Dp = 64.dp,
+    val nextChatPullDistance: Dp = 96.dp,
     val messageMenuBlur: Dp = 16.dp,
     val messageMenuMinWindowHeight: Dp = 480.dp,
     val mediaMaxWidth: Dp = 320.dp,
@@ -163,6 +172,10 @@ data class PingogramSizes(
     val leadingIconContainer: Dp = 40.dp,
     val keyImageOutline: Dp = 2.dp,
     val pinnedIndicator: Dp = 3.dp,
+    val pollBar: Dp = 4.dp,
+    val sliderInactiveTrackInset: Dp = 8.dp,
+    val chartHeight: Dp = 192.dp,
+    val chartLine: Dp = 2.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

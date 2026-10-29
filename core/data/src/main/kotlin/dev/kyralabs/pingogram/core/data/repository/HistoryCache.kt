@@ -3,11 +3,13 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.data.mapper.toInteractionInfo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toPoll
 import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
@@ -26,17 +28,24 @@ private const val MAX_WINDOWS = 3
  * topics or message threads), for the histories being observed, which are never evicted, and for the most recently
  * used others, up to [MAX_WINDOWS] windows in all; [clock] counts the uses. Updates of chats without a window are
  * ignored: their history is loaded when someone looks at it again. An update of a chat applies to each of its windows;
- * a new message joins only those of the topic it is in ([HistoryKey.holds]).
+ * a new message joins only those of the topic it is in ([HistoryKey.holds]). `updatePoll` names no chat: the poll it
+ * carries replaces the poll of every message that shows it, in every window, as a poll can be in several messages
+ * (forwarded, in other chats).
  */
 internal data class HistoryCache(
     val windows: PersistentMap<HistoryKey, HistoryWindow> = persistentMapOf(),
     val clock: Long = 0,
 ) {
     fun reduce(update: TdApi.Update): HistoryCache {
-        val chatId = update.historyChatId()
-        val change = chatId?.let { update.toHistoryChange() } ?: return this
-        return windows.keys
-            .filter { it.chatId == chatId }
+        val (keys, change) =
+            if (update is TdApi.UpdatePoll) {
+                windows.keys to HistoryChange.ReplacePoll(update.poll.toPoll())
+            } else {
+                val chatId = update.historyChatId()
+                val change = chatId?.let { update.toHistoryChange() } ?: return this
+                windows.keys.filter { it.chatId == chatId } to change
+            }
+        return keys
             .fold(this) { cache, key ->
                 val within = change.within(key)
                 if (within == null) cache else cache.changing(key) { window -> window.applying(within) }
@@ -134,13 +143,14 @@ internal data class HistoryKey(
     /**
      * Whether [message], of this chat, belongs to this history: every message to the chat's own; to a topic's, those in
      * it (in the General topic also those without a topic); to a thread's, its replies, the message that starts it
-     * excluded (its head, which the conversation shows itself).
+     * excluded (its head, which the conversation shows itself); to a Saved Messages topic's, those in it.
      */
     fun holds(message: Message): Boolean =
         when (topic) {
             null -> true
             is MessageTopic.Forum -> message.topic == topic || (topic.isGeneral && message.topic == null)
             is MessageTopic.Thread -> message.topic == topic && message.id > topic.threadId
+            is MessageTopic.SavedMessages -> message.topic == topic
         }
 }
 
@@ -199,6 +209,7 @@ internal data class HistoryWindow(
             is HistoryChange.Edit -> editing(change.messageId, change.edit)
             is HistoryChange.Remove -> removing(change.messageIds)
             is HistoryChange.Unload -> unloading(change.messageIds)
+            is HistoryChange.ReplacePoll -> replacingPoll(change.poll)
         }.applyingToReplied(change)
 
     /**
@@ -223,6 +234,10 @@ internal data class HistoryWindow(
 
                 is HistoryChange.Unload -> {
                     replied.removingAll(change.messageIds)
+                }
+
+                is HistoryChange.ReplacePoll -> {
+                    replied.replacingPoll(change.poll)
                 }
             }
         return if (changed == replied) this else copy(replied = changed)
@@ -256,6 +271,11 @@ internal data class HistoryWindow(
         if (index < 0) return this
         val edited = edit(messages[index])
         return if (edited == messages[index]) this else copy(messages = messages.replacingAt(index, edited))
+    }
+
+    private fun replacingPoll(poll: Poll): HistoryWindow {
+        val replaced = messages.replacingPoll(poll)
+        return if (replaced === messages) this else copy(messages = replaced)
     }
 
     private fun removing(messageIds: Set<Long>): HistoryWindow =
@@ -357,6 +377,11 @@ internal sealed interface HistoryChange {
     /** TDLib unloaded [messageIds] from its memory; see [HistoryWindow]'s `unloading`. */
     class Unload(
         val messageIds: Set<Long>,
+    ) : HistoryChange
+
+    /** [poll] changed (`updatePoll`): the messages that show it take it, whatever chat they are in. */
+    class ReplacePoll(
+        val poll: Poll,
     ) : HistoryChange
 }
 

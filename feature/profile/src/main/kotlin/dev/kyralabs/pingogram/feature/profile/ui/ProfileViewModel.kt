@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -48,6 +49,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -108,6 +110,7 @@ class ProfileViewModel internal constructor(
     messageActionRepository: MessageActionRepository,
     sharedMediaRepository: SharedMediaRepository,
     private val searchRepository: SearchRepository,
+    private val idVisibility: IdVisibilityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -124,6 +127,7 @@ class ProfileViewModel internal constructor(
         messageActionRepository: MessageActionRepository,
         sharedMediaRepository: SharedMediaRepository,
         searchRepository: SearchRepository,
+        idVisibility: IdVisibilityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -138,6 +142,7 @@ class ProfileViewModel internal constructor(
         messageActionRepository,
         sharedMediaRepository,
         searchRepository,
+        idVisibility,
         clock,
         timePatterns,
         dispatcher,
@@ -223,8 +228,10 @@ class ProfileViewModel internal constructor(
     val uiState: StateFlow<ProfileUiState> =
         combine(user, fullInfo, chat, userRepository.myUserId, clock.minutes) { user, info, chat, myId, now ->
             Sources(user, info, chat, myId, now)
-        }.combine(overlay) { sources, overlay -> sources.toUiState(overlay) }
+        }.flatMapLatest { it.withPersonalChannel() }
+            .combine(overlay) { sources, overlay -> sources.toUiState(overlay) }
             .combine(photos) { state, photos -> state.withPhotos(photos) }
+            .combine(idVisibility.shown) { state, shown -> state.withId(shown) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ProfileUiState.Loading)
 
@@ -274,10 +281,18 @@ class ProfileViewModel internal constructor(
                 copy("@${event.username}", CopiedText.Username)
             }
 
+            is ProfileEvent.OpenPersonalChannel -> {
+                effectChannel.trySend(ProfileEffect.OpenChat(event.chatId))
+            }
+
             is ProfileEvent.ShareUsername -> {
                 effectChannel.trySend(
                     ProfileEffect.Share("https://t.me/${event.username}"),
                 )
+            }
+
+            ProfileEvent.CopyId -> {
+                copy(userId.toString(), CopiedText.Id)
             }
 
             ProfileEvent.CopyPhone -> {
@@ -510,6 +525,7 @@ class ProfileViewModel internal constructor(
                     usernames = user.usernames,
                     phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" },
                     birthday = info?.birthdate?.let(::birthday),
+                    personalChannel = personalChannel?.let { PersonalChannel(it.id, it.title) },
                 ),
             actions = actions(user, overlay),
             dialog = overlay.dialog,
@@ -632,7 +648,18 @@ class ProfileViewModel internal constructor(
         val chat: Chat?,
         val myUserId: Long?,
         val now: Instant,
+        val personalChannel: Chat? = null,
     )
+
+    /** [this] with the channel the user shows on their profile, asked for once where TDLib has not announced it. */
+    private fun Sources.withPersonalChannel(): Flow<Sources> {
+        val id = info?.personalChatId ?: 0L
+        if (id == 0L) return flowOf(this)
+        return flow {
+            if (chatRepository.chat(id).first() == null) chatRepository.getChat(id)
+            emitAll(chatRepository.chat(id).map { Sources(user, info, chat, myUserId, now, it) })
+        }
+    }
 
     /** The user as far as found. */
     private sealed interface UserLookup {
@@ -666,6 +693,10 @@ class ProfileViewModel internal constructor(
         val isLoading: Boolean = false,
         val failed: Boolean = false,
     )
+
+    /** The user's ID in the information rows while [shown] ("Show IDs"). */
+    private fun ProfileUiState.withId(shown: Boolean): ProfileUiState =
+        if (shown && this is ProfileUiState.Content) copy(info = info.copy(id = userId)) else this
 
     private fun ProfileUiState.withPhotos(load: PhotosLoad): ProfileUiState =
         if (this is ProfileUiState.Content) {

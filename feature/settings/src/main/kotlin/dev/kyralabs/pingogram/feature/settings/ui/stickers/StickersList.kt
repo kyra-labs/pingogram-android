@@ -40,35 +40,36 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.zIndex
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
+import dev.kyralabs.pingogram.core.ui.component.ListReorderState
+import dev.kyralabs.pingogram.core.ui.component.dragAfterLongPress
+import dev.kyralabs.pingogram.core.ui.component.dragHandle
+import dev.kyralabs.pingogram.core.ui.component.rememberListReorderState
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.sticker.StickerCover
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.ListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
-import dev.kyralabs.pingogram.feature.settings.ui.dragAfterLongPress
-import dev.kyralabs.pingogram.feature.settings.ui.dragHandle
-import dev.kyralabs.pingogram.feature.settings.ui.rememberListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.settingsListRow
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The list of Settings → Stickers: Trending stickers and Archived stickers, then the user's sets in their order
-// (dragged into another one by a handle or a long press), each opening its menu.
+// The list of Settings → Stickers (or its Emoji page): Trending and Archived, Emoji on the stickers' page, then the
+// user's sets in their order (dragged into another one by a handle or a long press), each opening its menu.
 
-/** The page's rows; [onOpenList] opens Trending stickers (false) or Archived stickers (true). */
+/** The page's rows: its [pages], then the sets. */
 @Suppress("LongParameterList") // The page's state, its events, its pages, the menu's actions and the list's state.
 @Composable
 internal fun StickersList(
     state: StickersUiState.Content,
     onEvent: (StickersEvent) -> Unit,
-    onOpenList: (archived: Boolean) -> Unit,
+    pages: StickerPages,
     actions: StickerSetActions,
     listState: LazyListState,
     contentPadding: PaddingValues,
@@ -94,10 +95,10 @@ internal fun StickersList(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
-        lists(state, style, onOpenList)
+        lists(state, style, pages)
         item(key = HEADER, contentType = HEADER) {
             SettingsSectionHeader(
-                stringResource(R.string.settings_stickers_section_yours),
+                stringResource(pages.texts.sectionYours),
                 // A group's distance from the one above it, less the gap every item keeps.
                 Modifier
                     .settingsListRow(this, style)
@@ -106,25 +107,26 @@ internal fun StickersList(
         }
         if (reorder.order.isEmpty()) {
             item(key = NONE, contentType = FOOTER) {
-                SettingsFooter(stringResource(R.string.settings_stickers_none), Modifier.settingsListRow(this, style))
+                SettingsFooter(stringResource(pages.texts.none), Modifier.settingsListRow(this, style))
             }
         } else {
-            sets(reorder, byId, style, onEvent, actions)
+            sets(reorder, byId, style, onEvent, actions, pages.texts)
         }
     }
 }
 
-/** Trending stickers and Archived stickers, with their counts where they are known. */
+/** Trending and Archived, with their counts where they are known, and Emoji on the stickers' page. */
 private fun LazyListScope.lists(
     state: StickersUiState.Content,
     style: SettingsListRowStyle,
-    onOpenList: (archived: Boolean) -> Unit,
+    pages: StickerPages,
 ) {
+    val rows = listOfNotNull(TRENDING, ARCHIVED, EMOJI.takeIf { pages.onOpenEmoji != null }).size
     item(key = TRENDING, contentType = PAGE) {
         val count = state.newTrendingCount
         Box(Modifier.settingsListRow(this, style)) {
             PageItem(
-                title = stringResource(R.string.settings_stickers_trending),
+                title = stringResource(pages.texts.trending),
                 summary =
                     if (count != null && count > 0) {
                         pluralStringResource(R.plurals.settings_stickers_trending_new, count, formatCount(count))
@@ -132,8 +134,8 @@ private fun LazyListScope.lists(
                         stringResource(R.string.settings_stickers_trending_summary)
                     },
                 icon = R.drawable.ic_trending_up,
-                shapes = ListItemDefaults.segmentedShapes(0, 2),
-                onClick = { onOpenList(false) },
+                shapes = ListItemDefaults.segmentedShapes(0, rows),
+                onClick = { pages.onOpenList(false) },
             )
         }
     }
@@ -141,7 +143,7 @@ private fun LazyListScope.lists(
         val count = state.archivedCount
         Box(Modifier.settingsListRow(this, style)) {
             PageItem(
-                title = stringResource(R.string.settings_stickers_archived),
+                title = stringResource(pages.texts.archived),
                 summary =
                     if (count != null && count > 0) {
                         pluralStringResource(R.plurals.settings_stickers_set_count, count, formatCount(count))
@@ -149,20 +151,34 @@ private fun LazyListScope.lists(
                         stringResource(R.string.settings_stickers_archived_summary)
                     },
                 icon = UiR.drawable.ic_archive,
-                shapes = ListItemDefaults.segmentedShapes(1, 2),
-                onClick = { onOpenList(true) },
+                shapes = ListItemDefaults.segmentedShapes(1, rows),
+                onClick = { pages.onOpenList(true) },
+            )
+        }
+    }
+    val onOpenEmoji = pages.onOpenEmoji ?: return
+    item(key = EMOJI, contentType = PAGE) {
+        Box(Modifier.settingsListRow(this, style)) {
+            PageItem(
+                title = stringResource(R.string.settings_emoji),
+                summary = stringResource(R.string.settings_emoji_summary),
+                icon = UiR.drawable.ic_mood,
+                shapes = ListItemDefaults.segmentedShapes(2, rows),
+                onClick = onOpenEmoji,
             )
         }
     }
 }
 
 /** The user's sets under their heading, in the order the finger leaves them while one is dragged. */
+@Suppress("LongParameterList") // The order, the sets, their style, events and menu, and the kind's words.
 private fun LazyListScope.sets(
     reorder: ListReorderState<Long>,
     byId: Map<Long, StickerSetItem>,
     style: SettingsListRowStyle,
     onEvent: (StickersEvent) -> Unit,
     actions: StickerSetActions,
+    texts: StickerKindTexts,
 ) {
     val order = reorder.order
     itemsIndexed(order, key = { _, id -> stickerSetRowKey(id) }, contentType = { _, _ -> ROW }) { index, id ->
@@ -186,7 +202,7 @@ private fun LazyListScope.sets(
         )
     }
     item(key = FOOTER, contentType = FOOTER) {
-        SettingsFooter(stringResource(R.string.settings_stickers_footer), Modifier.settingsListRow(this, style))
+        SettingsFooter(stringResource(texts.footer), Modifier.settingsListRow(this, style))
     }
 }
 
@@ -212,7 +228,7 @@ private fun InstalledSetRow(
     var menuOpen by remember { mutableStateOf(false) }
     val labels =
         RowLabels(
-            show = stringResource(R.string.settings_stickers_show),
+            show = stringResource(stickerKindTexts(set.kind).show),
             moveUp = stringResource(R.string.settings_stickers_move_up),
             moveDown = stringResource(R.string.settings_stickers_move_down),
             share = stringResource(R.string.settings_stickers_share),
@@ -229,11 +245,11 @@ private fun InstalledSetRow(
                     customActions = rowActions(labels, set, canMoveUp, canMoveDown, onMove, actions)
                 },
             leadingContent = { StickerCover(set.cover, MaterialTheme.sizes.leadingIconContainer) },
-            supportingContent = { Text(stickerCount(set.count)) },
+            supportingContent = { Text(stickerCount(set.count, set.kind)) },
             trailingContent = {
                 // Screen readers move the set with the row's custom actions instead.
                 Box(modifier = handleModifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_drag_indicator), contentDescription = null)
+                    Icon(painterResource(UiR.drawable.ic_drag_indicator), contentDescription = null)
                 }
             },
             colors = settingsRowColors(),
@@ -255,7 +271,7 @@ private fun SetMenu(
     DropdownMenuPopup(expanded = open, onDismissRequest = onDismiss) {
         val everyday =
             listOf(
-                R.string.settings_stickers_show to actions.onOpen,
+                stickerKindTexts(set.kind).show to actions.onOpen,
                 R.string.settings_stickers_share to actions.onShare,
                 R.string.settings_stickers_archive to actions.onArchive,
             )
@@ -321,10 +337,12 @@ private fun rowActions(
     }
 }
 
-/** "24 stickers", in the screen's language. */
+/** "24 stickers" (or "24 emoji" for a set of [kind]), in the screen's language. */
 @Composable
-internal fun stickerCount(count: Int): String =
-    pluralStringResource(R.plurals.settings_stickers_sticker_count, count, formatCount(count))
+internal fun stickerCount(
+    count: Int,
+    kind: StickerSetKind = StickerSetKind.Stickers,
+): String = pluralStringResource(stickerKindTexts(kind).count, count, formatCount(count))
 
 @Composable
 private fun formatCount(count: Int): String =
@@ -335,6 +353,7 @@ private fun stickerSetRowKey(id: Long): String = "set-$id"
 
 private const val TRENDING = "trending"
 private const val ARCHIVED = "archived"
+private const val EMOJI = "emoji"
 private const val PAGE = "page"
 private const val HEADER = "header"
 private const val NONE = "none"

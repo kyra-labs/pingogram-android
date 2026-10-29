@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatVideoChat
 import dev.kyralabs.pingogram.core.data.mapper.toGroupCall
 import dev.kyralabs.pingogram.core.data.mapper.toGroupCallParticipant
@@ -31,7 +32,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [GroupCallRepository] on TDLib's voice chats. TDLib announces a chat's voice chat with the chat (`updateNewChat`,
@@ -40,7 +40,7 @@ import javax.inject.Singleton
  * this cache keeps the chats' voice chats (a handful), the calls TDLib told about and the participants of the call the
  * user is in.
  */
-@Singleton
+@AccountScoped
 @Suppress("TooManyFunctions") // One function per td_api.tl request of GroupCallRepository.
 class TdlibGroupCallRepository
     @Inject
@@ -133,6 +133,16 @@ class TdlibGroupCallRepository
             id: Int,
             enabled: Boolean,
         ): Outcome<Unit> = client.request(TdApi.ToggleGroupCallIsMyVideoEnabled(id, enabled)).map {}
+
+        override suspend fun startScreenSharing(
+            id: Int,
+            audioSourceId: Int,
+            payload: String,
+        ): Outcome<String> =
+            client.request(TdApi.StartGroupCallScreenSharing(id, audioSourceId, payload)).map { it.text }
+
+        override suspend fun endScreenSharing(id: Int): Outcome<Unit> =
+            client.request(TdApi.EndGroupCallScreenSharing(id)).map {}
 
         override suspend fun setHandRaised(
             id: Int,

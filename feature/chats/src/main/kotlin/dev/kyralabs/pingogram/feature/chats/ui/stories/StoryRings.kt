@@ -38,10 +38,12 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.ui.isLargeFontScale
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -98,8 +100,8 @@ internal fun StoryRingsRow(
 /**
  * One chat's stories: its avatar (`sizes.avatarRow`, a circle like every avatar) in a ring of `sizes.avatarRing`,
  * `primary` while a story is unseen and `outlineVariant` once all are seen, drawn in the draw phase a ring's width
- * away from the avatar; under it the chat's name (or "Your story") in `labelSmall` on one line, as user content. One
- * button for screen readers: "Ada, 3 stories, not seen".
+ * away from the avatar; under it the chat's name (or "Your story") in `labelSmall` on one line (two from 150% font), as
+ * user content. One button for screen readers: "Ada, 3 stories, not seen".
  */
 @Composable
 internal fun StoryRingItem(
@@ -126,7 +128,7 @@ internal fun StoryRingItem(
                         resources.getString(
                             if (ring.hasUnread) R.string.stories_a11y_unseen else R.string.stories_a11y_seen,
                         )
-                    contentDescription = listOf(name, count, seen).joinToString(", ")
+                    contentDescription = spokenList(resources, listOf(name, count, seen))
                 }.padding(vertical = spacing.extraSmall),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
@@ -146,7 +148,8 @@ internal fun StoryRingItem(
             style = MaterialTheme.typography.labelSmall.userContent,
             color = colors.onSurface,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            // A second line at large font scales, where one line of the ring's width cuts most names.
+            maxLines = if (isLargeFontScale()) 2 else 1,
             overflow = TextOverflow.Ellipsis,
         )
     }

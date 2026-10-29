@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
@@ -40,6 +41,9 @@ abstract class ChatListViewModelHarness {
     protected val secretChats = FakeSecretChatRepository()
     protected val actions = FakeChatActionRepository()
     protected val connection = FakeConnectionRepository()
+    protected val chatLock = FakeChatLockRepository()
+    protected val archiveRow = FakeArchiveRowRepository()
+    protected val archiveSettings = FakeArchiveSettingsRepository()
     protected val clock = FakeWallClock(NOW)
     protected val timePatterns = FakeTimePatterns()
     protected val savedState = SavedStateHandle()
@@ -77,6 +81,9 @@ abstract class ChatListViewModelHarness {
         secretChatRepository = secretChats,
         chatActionRepository = actions,
         connectionRepository = connection,
+        chatLock = chatLock,
+        archiveRowRepository = archiveRow,
+        archiveSettingsRepository = archiveSettings,
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = StandardTestDispatcher(testScheduler),

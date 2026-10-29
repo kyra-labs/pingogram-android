@@ -79,6 +79,7 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "PHONE_NUMBER_FLOOD" to DomainError.PhoneNumberFlood,
         // account.sendChangePhoneCode for a number another account has.
         "PHONE_NUMBER_OCCUPIED" to DomainError.PhoneNumberOccupied,
+        "BIRTHDAY_INVALID" to DomainError.BirthdateInvalid,
         "PHONE_CODE_INVALID" to DomainError.CodeInvalid,
         "PHONE_CODE_EMPTY" to DomainError.CodeInvalid,
         "CODE_INVALID" to DomainError.CodeInvalid,
@@ -154,9 +155,17 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "AUTH_TOKEN_INVALID" to DomainError.QrLoginExpired,
         "AUTH_TOKEN_INVALIDX" to DomainError.QrLoginExpired,
         "AUTH_TOKEN_ALREADY_ACCEPTED" to DomainError.QrLoginExpired,
+        // Forum topics: channels.editForumTopic, channels.deleteTopicHistory for a topic someone else deleted.
+        "TOPIC_DELETED" to DomainError.NotFound,
+        "TOPIC_ID_INVALID" to DomainError.NotFound,
         // Calls: phone.requestCall, phone.acceptCall.
         "USER_PRIVACY_RESTRICTED" to DomainError.CallPrivacyRestricted,
         "PARTICIPANT_VERSION_OUTDATED" to DomainError.CallPeerOutdated,
+        // Who saw a message: messages.getMessageReadParticipants.
+        "MSG_TOO_OLD" to DomainError.MessageViewersUnavailable,
+        "CHAT_TOO_BIG" to DomainError.MessageViewersUnavailable,
+        // Polls: messages.sendVote in a poll that was closed meanwhile.
+        "MESSAGE_POLL_CLOSED" to DomainError.PollClosed,
     )
 
 /**
@@ -186,6 +195,8 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Title must be non-empty" to DomainError.TitleInvalid,
         // checkChatInviteLink and joinChatByInviteLink with a link that is no invite link (LinkManager).
         "Wrong invite link" to DomainError.InviteLinkInvalid,
+        // setPollAnswer in a poll TDLib knows is closed (PollManager::set_poll_answer).
+        "Can't answer closed poll" to DomainError.PollClosed,
     )
 
 /**

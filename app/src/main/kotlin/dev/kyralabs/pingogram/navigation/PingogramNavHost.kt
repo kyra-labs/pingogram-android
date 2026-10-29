@@ -42,14 +42,13 @@ import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
-import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
-import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
-import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.feedbackScreen
+import dev.kyralabs.pingogram.feature.media.navigation.ReturnFromPictureInPictureEffect
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
 import dev.kyralabs.pingogram.feature.media.navigation.storyViewerScreen
@@ -64,9 +63,11 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * - **Pushed screens** ([isPushed]: the conversation, the archive, search, settings pages) come in and go back with
  *   Material's shared axis on X ([sharedAxisXEnter], [sharedAxisXExit]), the screen below sliding the same way.
  * - **Tabs** switch with Material's fade-through, and so do the two graphs.
- * - **Full-screen destinations** ([isFullScreen], the media viewer) fade in and out on the default effects spring
- *   over the screen below, which stays as it is meanwhile, so the viewer's scrim darkens it while a photo grows out of
- *   its bubble.
+ * - **Full-screen destinations** ([isFullScreen]: the stories viewer, the QR code scanner) fade in and out on the
+ *   default effects spring over the screen below, which stays as it is meanwhile.
+ * - **The media viewer** is an overlay destination (`core:ui`'s `OverlayNavigator`, drawn by the shell's
+ *   `OverlayHost`): the screen below stays composed under it, so a photo grows out of its bubble and shrinks back
+ *   into it while nothing below composes anew.
  *
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
  * ([predictiveBackPopExit]); the viewer follows the gesture itself.
@@ -101,6 +102,8 @@ internal fun PingogramNavHost(
     modifier: Modifier = Modifier,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
+    lockedChatsToOpen: Boolean = false,
+    onLockedChatsOpened: () -> Unit = {},
     onOpenLinkTarget: (LinkTarget) -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -133,6 +136,8 @@ internal fun PingogramNavHost(
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
+    OpenLockedChatsEffect(navController, uiState, lockedChatsToOpen, onLockedChatsOpened)
+    ReturnFromPictureInPictureEffect(navController)
 }
 
 /**
@@ -233,8 +238,10 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenChatInfo = navController::navigateToChatInfo,
                     onEditContact = navController::navigateToEditContact,
                     onOpenStory = navController::navigateToStoryViewer,
+                    onEditFolder = navController::navigateToFolderEditor,
                     chatToShow = request.toChatToShow(),
                     onChatShown = { entry.savedStateHandle.chatShown() },
+                    onOpenScheduledMessages = navController::navigateToScheduledMessages,
                 )
             }
         }
@@ -254,22 +261,11 @@ private fun NavGraphBuilder.mainGraph(
                 navController.navigateToChat(chatId, messageId, besideList = besideList.value)
             },
         )
-        archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+        archive(navController, openChat)
         newChatScreens(navController)
-        // The chat messages were forwarded to goes above the conversation they came from, so back returns there; so do
-        // a forum's topics and a message's thread of replies.
-        chatScreen(
-            onBack = { navController.popBackStack() },
-            onOpenMedia = openMedia,
-            onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
-            onOpenThread = { route -> navController.navigate(route) },
-            onOpenProfile = navController::navigateToProfile,
-            onOpenChatInfo = navController::navigateToChatInfo,
-        )
+        chatScreens(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
-        // "Export chat", from a profile or an info page (docs/adr/0021-chat-export.md).
-        chatExportScreen(onBack = { navController.popBackStack() })
         chatInvite(navController)
         chatFolderInvite(navController)
         mediaViewer(navController)

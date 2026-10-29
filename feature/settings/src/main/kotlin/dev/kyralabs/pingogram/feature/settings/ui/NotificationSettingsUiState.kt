@@ -17,6 +17,10 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property blockedChannels the kinds of chats whose notification channel the user turned off in Android's settings.
  * @property isKeepConnectedOffered the build offers "Keep connected" (`foss`, `PushDelivery.TdlibConnection`).
  * @property keepConnected "Keep connected" is on.
+ * @property contactJoined whether Telegram tells the user when a contact joins; null until TDLib has said.
+ * @property accountSlot the shown account's slot, whose notification channels the page opens
+ *   (`docs/adr/0031-multiple-accounts.md`).
+ * @property fromAllAccounts "Notifications from all accounts"; null (and not shown) with one account on the device.
  * @property isResetDialogOpen the confirmation of "Reset all notification settings" is open.
  * @property isResetting resetting was confirmed and TDLib has not answered yet.
  */
@@ -27,6 +31,9 @@ data class NotificationSettingsUiState(
     val blockedChannels: ImmutableSet<NotificationScope> = persistentSetOf(),
     val isKeepConnectedOffered: Boolean = false,
     val keepConnected: Boolean = false,
+    val contactJoined: Boolean? = null,
+    val accountSlot: Int = 0,
+    val fromAllAccounts: Boolean? = null,
     val isResetDialogOpen: Boolean = false,
     val isResetting: Boolean = false,
 )
@@ -83,6 +90,15 @@ sealed interface NotificationSettingsEvent {
         val enabled: Boolean,
     ) : NotificationSettingsEvent
 
+    data class SetContactJoined(
+        val enabled: Boolean,
+    ) : NotificationSettingsEvent
+
+    /** "Notifications from all accounts" was flipped. */
+    data class SetFromAllAccounts(
+        val enabled: Boolean,
+    ) : NotificationSettingsEvent
+
     /** "Reset all notification settings" was tapped: ask for confirmation. */
     data object Reset : NotificationSettingsEvent
 
@@ -104,9 +120,10 @@ sealed interface NotificationSettingsEffect {
     /** Open the app's notification settings in Android's settings. */
     data object OpenAppNotificationSettings : NotificationSettingsEffect
 
-    /** Open the notification channel of [scope]'s messages in Android's settings. */
+    /** Open the notification channel of [scope]'s messages, the account in [slot]'s, in Android's settings. */
     data class OpenChannelSettings(
         val scope: NotificationScope,
+        val slot: Int = 0,
     ) : NotificationSettingsEffect
 
     /** Every notification setting was reset, said in a snackbar. */
@@ -116,6 +133,9 @@ sealed interface NotificationSettingsEffect {
 /** The pages the Notifications page opens, each pushed above it. */
 @Immutable
 sealed interface NotificationSettingsPage {
+    /** Whom the account hears of reactions and poll votes from. */
+    data object Reactions : NotificationSettingsPage
+
     /** The chats of [scope] with settings of their own. */
     data class Exceptions(
         val scope: NotificationScope,

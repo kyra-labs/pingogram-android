@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
+import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -50,13 +51,16 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.CustomEmojiField
@@ -74,14 +78,15 @@ import kotlin.math.roundToInt
  * [containerColor], by default `surfaceContainerHighest`, a step above a sheet) at `sizes.composerField` (56 dp) for
  * one line, `extraLarge` corners, which make one line a full pill; `bodyLarge`, its direction taken from what is typed
  * ([userContent]), [placeholder] ("Message") while empty, [leadingIcons] at its start and [trailingIcons] at its end
- * (the conversation's attach, emoji and gallery buttons), each a 48 dp touch target 4 dp inside the pill. Enter on a
- * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
- * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
- * address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command suggestions'
- * arrows, Enter and Tab). [hint] shows after the text in the placeholder's color, an inline bot's placeholder after
- * "@gif " ([InlineHint]). Tab and Shift+Tab move the focus on ([tabKey]). Custom emoji in the text (a draft's, an
- * edited message's) show their pictures over their fallback emoji, as in bubbles. The attach preview's caption and the
- * forward sheet's comment are one too.
+ * (the conversation's attach, emoji and gallery buttons), each a 48 dp touch target 4 dp inside the pill. Which Enter
+ * sends ([onSend]) follows [LocalSendKeys]: a hardware keyboard's (Shift+Enter and Ctrl+Enter then start a new line;
+ * else Ctrl+Enter sends and Enter starts one), and the on-screen keyboard's, whose action key then reads "Send" (else
+ * it starts a new line). The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link"
+ * asks for an address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command
+ * suggestions' arrows, Enter and Tab). [hint] shows after the text in the placeholder's color, an inline bot's
+ * placeholder after "@gif " ([InlineHint]). Tab and Shift+Tab move the focus on ([tabKey]). Custom emoji in the text (a
+ * draft's, an edited message's) show their pictures over their fallback emoji, as in bubbles. The attach preview's
+ * caption and the forward sheet's comment are one too.
  */
 @Composable
 internal fun ComposerField(
@@ -99,17 +104,14 @@ internal fun ComposerField(
 ) {
     val labels = rememberFormattingLabels()
     val focusManager = LocalFocusManager.current
+    val sendKeys = LocalSendKeys.current
     val textLayout = remember { TextLayoutHolder() }
     val scrollState = rememberScrollState()
     val customEmoji = rememberFieldCustomEmoji(text, scrollState)
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
     // onFocusChanged also reports the first state, unfocused: only changes are news.
     val focus = remember { FocusReport() }
-    val colors =
-        TextFieldDefaults.tonalColors().copy(
-            focusedContainerColor = containerColor,
-            unfocusedContainerColor = containerColor,
-        )
+    val colors = pillColors(containerColor)
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val outputTransformation = rememberFormattingTransformation(text)
@@ -121,6 +123,7 @@ internal fun ComposerField(
             state = text.state,
             modifier =
                 modifier
+                    .testTag(COMPOSER_FIELD_TEST_TAG)
                     .heightIn(min = MaterialTheme.sizes.composerField)
                     .onFocusChanged { state ->
                         if (state.isFocused != focus.isFocused) {
@@ -128,13 +131,15 @@ internal fun ComposerField(
                             onFocusChanged(state.isFocused)
                         }
                     }.onPreviewKeyEvent { event ->
-                        onKeyEvent(event) || fieldKey(event, text, onSend, onLink) || tabKey(event, focusManager)
+                        onKeyEvent(event) || fieldKey(event, text, onSend, onLink, sendKeys) ||
+                            tabKey(event, focusManager)
                     }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                     .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
             outputTransformation = outputTransformation,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            keyboardOptions = sendKeys.keyboardOptions(),
+            onKeyboardAction = sendKeys.keyboardAction(onSend),
             lineLimits = LINE_LIMITS,
             interactionSource = interactionSource,
             cursorBrush = SolidColor(colors.cursorColor),
@@ -310,6 +315,14 @@ private fun InlineHint(hint: InlineHintText) {
     )
 }
 
+/** Material's tonal text field colors on [containerColor], focused or not. */
+@Composable
+private fun pillColors(containerColor: Color) =
+    TextFieldDefaults.tonalColors().copy(
+        focusedContainerColor = containerColor,
+        unfocusedContainerColor = containerColor,
+    )
+
 /** The buttons at the start and the end of the pill. */
 private class PillIcons(
     val leading: (@Composable RowScope.() -> Unit)?,
@@ -322,29 +335,49 @@ private class FocusReport(
 )
 
 /**
- * Enter pressed on a hardware keyboard without a modifier. The on-screen keyboard sends its Enter as a key event too,
- * flagged as its own, and that one keeps starting a new line.
+ * Enter pressed on a hardware keyboard, without Alt or Meta. The on-screen keyboard sends its Enter as a key event too,
+ * flagged as its own, which its action ([LocalSendKeys]) handles instead.
  */
-private fun KeyEvent.isSendKey(): Boolean =
+private fun KeyEvent.isHardwareEnter(): Boolean =
     type == KeyEventType.KeyDown &&
         (key == Key.Enter || key == Key.NumPadEnter) &&
-        !isShiftPressed &&
-        !isCtrlPressed &&
         !isAltPressed &&
         !isMetaPressed &&
         nativeKeyEvent.flags and FLAG_SOFT_KEYBOARD == 0
 
-/** What the field does with [event] itself: Enter sends ([onSend]), Ctrl shortcuts format [text]; true if handled. */
+/**
+ * What the field does with [event] itself; true if handled. Enter sends ([onSend]) where [SendKeys.hardwareKeyboard],
+ * and Ctrl+Enter starts a new line, which the field would not; else Ctrl+Enter sends. Enter and Shift+Enter left to the
+ * field start a new line. Ctrl shortcuts format [text].
+ */
 private fun fieldKey(
     event: KeyEvent,
     text: ComposerText,
     onSend: () -> Unit,
     onLink: (TextRange) -> Unit,
+    sendKeys: SendKeys,
 ): Boolean {
-    if (!event.isSendKey()) return formattingShortcut(event, text, onLink)
-    onSend()
-    return true
+    if (!event.isHardwareEnter()) return formattingShortcut(event, text, onLink)
+    val enterSends = sendKeys.hardwareKeyboard
+    val ctrl = event.isCtrlPressed && !event.isShiftPressed
+    val plain = !event.isCtrlPressed && !event.isShiftPressed
+    return when {
+        if (enterSends) plain else ctrl -> true.also { onSend() }
+        enterSends && ctrl -> true.also { text.insert("\n") }
+        else -> false
+    }
 }
+
+/** The on-screen keyboard's options: sentences, and a "Send" action key where [SendKeys.onScreenKeyboard]. */
+private fun SendKeys.keyboardOptions() =
+    KeyboardOptions(
+        capitalization = KeyboardCapitalization.Sentences,
+        imeAction = if (onScreenKeyboard) ImeAction.Send else ImeAction.Default,
+    )
+
+/** What the on-screen keyboard's action key does: sends where [SendKeys.onScreenKeyboard], else the field's default. */
+private fun SendKeys.keyboardAction(onSend: () -> Unit): KeyboardActionHandler? =
+    if (onScreenKeyboard) KeyboardActionHandler { onSend() } else null
 
 /**
  * Tab and Shift+Tab move the focus on to the next or previous control, as they do from Android's text fields, rather
@@ -368,3 +401,6 @@ private const val MAX_LINES = 6
 
 /** The text field's lines: as many as the text has, up to [MAX_LINES], then it scrolls. */
 private val LINE_LIMITS = TextFieldLineLimits.MultiLine(maxHeightInLines = MAX_LINES)
+
+/** The composer's field, for `benchmark/`'s journeys (`MainActivity` shows test tags as resource ids). */
+internal const val COMPOSER_FIELD_TEST_TAG = "composer_field"

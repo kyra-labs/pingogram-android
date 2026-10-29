@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
@@ -50,6 +51,7 @@ class PrivacySecurityViewModelTest {
         answerSessions(count = 4)
         answerPassword(passwordState())
         client.on(TdApi.GetAccountTtl::class, TdResult.Success(TdApi.AccountTtl(365)))
+        client.on(TdApi.GetDefaultMessageAutoDeleteTime::class, TdResult.Success(TdApi.MessageAutoDeleteTime(0)))
     }
 
     @AfterEach
@@ -92,13 +94,14 @@ class PrivacySecurityViewModelTest {
         hasRecoveryEmail: Boolean = true,
         pendingEmail: String? = null,
         pendingResetDate: Int = 0,
+        loginEmail: String = "",
     ) = TdApi.PasswordState(
         hasPassword,
         "",
         hasRecoveryEmail,
         false,
         pendingEmail?.let { TdApi.EmailAddressAuthenticationCodeInfo(it, 6) },
-        "",
+        loginEmail,
         pendingResetDate,
     )
 
@@ -114,6 +117,36 @@ class PrivacySecurityViewModelTest {
     fun `shows how long the account may stay unused`() =
         runTest {
             assertEquals(365, viewModel().content.accountTtlDays)
+        }
+
+    @Test
+    fun `shows the login email where there is one and the timer of new chats`() =
+        runTest {
+            assertEquals(null, viewModel().content.loginEmailPattern)
+
+            answerPassword(passwordState(loginEmail = "a****@e******.org"))
+            client.on(
+                TdApi.GetDefaultMessageAutoDeleteTime::class,
+                TdResult.Success(TdApi.MessageAutoDeleteTime(604_800)),
+            )
+            val content = viewModel().content
+
+            assertEquals("a****@e******.org", content.loginEmailPattern)
+            assertEquals(604_800, content.defaultAutoDeleteSeconds)
+        }
+
+    @Test
+    fun `shows who may start a chat, and leaves it out where Telegram cannot say`() =
+        runTest {
+            assertEquals(null, viewModel().content.newChatPrivacy)
+
+            client.on(TdApi.GetNewChatPrivacySettings::class, TdResult.Success(TdApi.NewChatPrivacySettings(false, 0)))
+            client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueBoolean(true)))
+
+            assertEquals(
+                NewChatPrivacy(allowsNonContacts = false, canRestrict = true),
+                viewModel().content.newChatPrivacy,
+            )
         }
 
     @Test
@@ -158,6 +191,8 @@ class PrivacySecurityViewModelTest {
                     PrivacySetting.LastSeen to
                         PrivacyRules(PrivacyChoice.Everybody, PrivacyExceptions(restrictedUserCount = 2)),
                     PrivacySetting.ProfilePhoto to everybody,
+                    PrivacySetting.Bio to everybody,
+                    PrivacySetting.Birthdate to everybody,
                     PrivacySetting.ForwardedMessages to everybody,
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
                     PrivacySetting.ChatInvites to everybody,

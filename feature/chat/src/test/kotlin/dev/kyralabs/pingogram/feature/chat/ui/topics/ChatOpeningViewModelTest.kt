@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.topics
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.FORUM_CHAT
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.channelChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
@@ -12,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.supergroup
 import dev.kyralabs.pingogram.feature.chat.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeGroupRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeMessageRepository
+import dev.kyralabs.pingogram.feature.chat.ui.FakeUserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -32,6 +34,7 @@ class ChatOpeningViewModelTest {
     private val chats = FakeChatRepository()
     private val groups = FakeGroupRepository()
     private val messages = FakeMessageRepository()
+    private val users = FakeUserRepository().apply { myUserId.value = ME }
 
     @BeforeEach
     fun setUp() {
@@ -47,7 +50,7 @@ class ChatOpeningViewModelTest {
         chatId: Long,
         messageId: Long? = null,
     ): ChatOpening {
-        val viewModel = ChatOpeningViewModel(chatId, messageId, chats, groups, messages)
+        val viewModel = ChatOpeningViewModel(chatId, messageId, chats, groups, messages, users)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.opening.collect {} }
         runCurrent()
         return viewModel.opening.value
@@ -65,6 +68,14 @@ class ChatOpeningViewModelTest {
 
             assertEquals(ChatOpening.Conversation, opening(chat().id))
             assertEquals(ChatOpening.Conversation, opening(channelChat.id))
+        }
+
+    @Test
+    fun `Saved Messages opens with its tabs`() =
+        runTest {
+            chats.setChats(chat(id = ME))
+
+            assertEquals(ChatOpening.SavedMessages, opening(ME))
         }
 
     @Test

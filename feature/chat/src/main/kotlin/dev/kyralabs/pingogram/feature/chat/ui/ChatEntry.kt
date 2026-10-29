@@ -7,6 +7,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
+import dev.kyralabs.pingogram.feature.chat.ui.saved.SavedMessagesConversation
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpening
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpeningViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
@@ -18,8 +20,13 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
  * ([messageId]) is in. A message's thread (its comments or replies) opens through [onOpenThread] too. Until that is
  * known, a frame or two, it draws the conversation's own first frame (its top bar and empty sheet), so the screen does
  * not change as it decides. Profiles (a private chat's title, a sender, a mention) open through [onOpenProfile],
- * a group's or channel's info page (its title) through [onOpenChatInfo]. With [focusComposer], the conversation's
- * composer takes the focus once it shows.
+ * a group's or channel's info page (its title) through [onOpenChatInfo], the chat's scheduled messages (its bar)
+ * through [onOpenScheduledMessages]. With [focusComposer], the conversation's composer takes the focus once it shows.
+ * The next unread channel, which a read channel offers, opens through [onOpenNextChat] in this chat's place, or
+ * through [onOpenChat] without it.
+ *
+ * A locked chat (`docs/adr/0029-locked-chats.md`) shows the passcode entry in its place until it is opened, through
+ * `core:ui`'s `LocalLockedChatGate`, which `:app` provides.
  */
 @Suppress("LongParameterList") // The chat and where in it, and what it opens elsewhere.
 @Composable
@@ -35,22 +42,64 @@ internal fun ChatRoute(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
+    onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
 ) {
-    val conversation: @Composable (MessageTopic?) -> Unit = { shown ->
+    LocalLockedChatGate.current(chatId) {
+        OpenedChat(
+            chatId = chatId,
+            onBack = onBack,
+            onOpenMedia = onOpenMedia,
+            modifier = modifier,
+            onOpenChat = onOpenChat,
+            messageId = messageId,
+            topic = topic,
+            onOpenThread = onOpenThread,
+            onOpenProfile = onOpenProfile,
+            onOpenChatInfo = onOpenChatInfo,
+            focusComposer = focusComposer,
+            onOpenScheduledMessages = onOpenScheduledMessages,
+            onOpenNextChat = onOpenNextChat,
+        )
+    }
+}
+
+/** [ChatRoute] once the chat may show. */
+@Suppress("LongParameterList") // As ChatRoute's.
+@Composable
+private fun OpenedChat(
+    chatId: Long,
+    onBack: (() -> Unit)?,
+    onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenChat: (chatId: Long) -> Unit = {},
+    messageId: Long? = null,
+    topic: MessageTopic? = null,
+    onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
+    onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    focusComposer: Boolean = false,
+    onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+) {
+    val conversationAt: @Composable (MessageTopic?, Long?) -> Unit = { shown, at ->
         ConversationRoute(
             chatId,
             onBack,
             onOpenMedia,
             modifier,
             onOpenChat,
-            messageId,
+            at,
             shown,
             onOpenThread,
             onOpenProfile,
             onOpenChatInfo,
             focusComposer = focusComposer,
+            onOpenScheduledMessages = onOpenScheduledMessages,
+            onOpenNextChat = onOpenNextChat,
         )
     }
+    val conversation: @Composable (MessageTopic?) -> Unit = { shown -> conversationAt(shown, messageId) }
     if (topic != null) {
         conversation(topic)
         return
@@ -67,6 +116,10 @@ internal fun ChatRoute(
 
         ChatOpening.Conversation -> {
             conversation(null)
+        }
+
+        ChatOpening.SavedMessages -> {
+            SavedMessagesConversation(messageId, conversationAt)
         }
 
         ChatOpening.Topics -> {

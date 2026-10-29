@@ -95,6 +95,11 @@ the release workflow so the owner can install and test on a phone.
 - [x] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin (`docs/adr/0023-group-voice-chats-and-live-streams.md`;
       who is speaking from Telegram's recent speakers until the owner decides on audio levels)
 - [x] Live streams: watching, with picture-in-picture (ADR 0023)
+- [x] Conference calls: joining by a `t.me/call` link, with the emojis to compare (`docs/adr/0025-conference-calls.md`,
+      NTgCalls patched for TDLib's encryption)
+- [x] Conference calls: upgrading a 1:1 call, inviting from the call, invitations in chats and Recent calls (2026-10-27)
+- [ ] Conference calls: the per-frame encryption measured on a device (`tools/perfetto/conference-call.sh`,
+      `docs/PERFORMANCE.md` §9)
 
 ## M6 — Polish → `v1.0.0`
 
@@ -104,20 +109,22 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 - [x] Stories viewer (read-only, #169), in-chat search (#164), chat export (#166), tablet list-detail polish (#171:
       keyboard and mouse in the chat list, the conversation and the viewers); also message translation (#165), custom
       emoji (#172) and the conversation taking the Chat appearance settings (#170)
-- [ ] Accessibility audit on every screen: done outside the chat screens (#154, `docs/audit/accessibility.md`); the
-      chat screens' findings A1–A15 and checks, 200% goldens in every module, then TalkBack and Accessibility Scanner
-      on a device
+- [ ] Accessibility audit on every screen (`docs/audit/accessibility.md`): done in code. That covers the screens outside
+      the chats (#154), the chat screens' findings A1–A15, checks in every feature module and 200% goldens in every
+      feature module. Left: TalkBack and Accessibility Scanner on a device
 - [ ] Performance budget verified (`REQUIREMENTS.md` §6.1); the APK size budget is checked by every pull request
       (`ci.yml`) and every release (`release.yml`). Scrolling misses its budget in the first baseline (`docs/PERFORMANCE.md` §9): the chat list's
       frame P90 10.4 ms against 8 ms, the conversation's late frames over 1%; #150 lowered the cost on the JVM, and
-      the owner's phone measures it again. No `OpenChatBenchmark` or `openChat` trace yet (open a chat ≤ 150 ms)
-- [ ] Benchmark thresholds in CI (a device in CI, or the owner's phone before each release)
+      the owner's phone measures it again. Open a chat ≤ 150 ms: `OpenChatBenchmark` and the `openChat` trace
+      section are in, not yet run on the phone
+- [x] Benchmark thresholds: on the owner's phone before each release (`tools/benchmark/compare.py`, `docs/RELEASE.md`
+      step 2); a device in CI is still open
 - [ ] Localization: at least 5 languages. The pipeline is in (Hosted Weblate, #152, `docs/TRANSLATING.md`); no
       language is translated yet
 - [x] Google Play readiness for `gms` (`docs/PLAY_STORE.md`, #153)
 - [ ] Google Play listing (the owner, `docs/PLAY_STORE.md` §8). Deleting the account from the app, which Play requires,
-      is in (Settings → Privacy and security → Delete account); its web page (`docs/website/delete-account.md`) waits
-      for the owner to publish it on the Pingogram website
+      is in (Settings → Privacy and security → Delete account), and so is its web page
+      (`docs/website/delete-account.md`, published at `https://pingogram.kyralabs.dev/delete-account/`)
 - [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes.
   - Done:
     - the fastlane listing: texts, icon, feature graphic, screenshots;
@@ -127,7 +134,7 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
   - Left for F-Droid's main repository, which builds from source:
     - the Telegram API values in its public recipe (owner decision);
     - TDLib's AAR packaged in the recipe;
-    - NTgCalls without prebuilt WebRTC, or an F-Droid build without calls;
+    - the call engine and WebRTC built from source, as Telegram FOSS and Telegram X do (`docs/adr/0030-calls-in-the-fdroid-build.md`: no build without calls; the spike of 2026-10-27 found it feasible, the engine to build on it is next);
     - a check on another machine;
     - the submission.
 - [x] Dogfood support: Send feedback and `docs/TESTING_GUIDE.md` (#151)

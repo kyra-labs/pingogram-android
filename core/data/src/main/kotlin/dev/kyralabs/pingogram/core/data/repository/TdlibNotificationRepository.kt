@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatNotification
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroup
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroupType
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [NotificationRepository] on TDLib's notification engine (`docs/TDLIB.md`, Notifications). TDLib leaves the engine
@@ -38,13 +38,14 @@ import javax.inject.Singleton
  * their way. Logging out drops everything, at `LoggingOut` already: the account's notifications must not outlive it.
  * The open chats come from [OpenChats], which `TdlibChatRepository` keeps.
  */
-@Singleton
+@AccountScoped
 class TdlibNotificationRepository
     @Inject
     constructor(
         private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
         openChats: OpenChats,
+        private val linkPreviews: SecretChatLinkPreviews,
     ) : NotificationRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, NotificationCache(), NotificationCache::reduce)
@@ -66,13 +67,17 @@ class TdlibNotificationRepository
         override val hasPendingNotifications: Flow<Boolean> =
             store.state.map { it.hasPendingNotifications }.distinctUntilChanged()
 
-        /** `sendMessage` with a plain text: TDLib finds links, mentions and hashtags itself. The draft stays. */
+        /**
+         * `sendMessage` with a plain text: TDLib finds links, mentions and hashtags itself, with no link preview in a
+         * secret chat unless allowed ([SecretChatLinkPreviews]). The draft stays.
+         */
         override suspend fun reply(
             chatId: Long,
             text: String,
             replyToMessageId: Long?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), null, false)
+            val content =
+                TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), linkPreviews.optionsFor(chatId), false)
             return client
                 .request(TdApi.SendMessage(chatId, null, replyToMessageId?.let(::replyToMessage), null, null, content))
                 .map {}

@@ -17,7 +17,9 @@ import kotlinx.coroutines.launch
  *   neighbour again;
  * - downloads it asked for of items more than [KEEP_DISTANCE] pages away are cancelled (what was downloaded stays,
  *   and the download continues from there), and so are the unfinished ones when the viewer closes ([cancelAll]);
- * - a file is asked for once per priority, once its state is known, and not at all once it is on the device.
+ * - a file is asked for once per priority, once its state is known, and not at all once it is on the device;
+ * - a video that streams as it plays ([focus]'s `streamed`) is left to its stream, which downloads from where it plays
+ *   (`docs/adr/0028-streaming-media.md`): two downloads of one file would move each other's offset.
  *
  * A refused download of the shown item goes to [onError]; a neighbour's would only repeat it. Main thread only.
  */
@@ -31,13 +33,17 @@ internal class MediaDownloads(
 
     /**
      * Downloads around the item at [currentIndex] of [fileIds] (each item's full file, in pager order), whose known
-     * states are [states], and cancels what is out of reach.
+     * states are [states], and cancels what is out of reach; the shown item's file [streamed] (if not null) is its
+     * stream's to download.
      */
     fun focus(
         fileIds: List<Int>,
         currentIndex: Int,
         states: Map<Int, FileState>,
+        streamed: Int? = null,
     ) {
+        // Neither asked for again nor cancelled: the stream downloads it now.
+        if (streamed != null) requested.remove(streamed)
         val wanted =
             buildMap {
                 fileIds.getOrNull(currentIndex)?.let { put(it, DownloadPriority.Visible) }
@@ -45,7 +51,7 @@ internal class MediaDownloads(
                 fileIds.getOrNull(currentIndex + 1)?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
             }
         for ((fileId, priority) in wanted) {
-            if (requested[fileId] == priority || !states[fileId].needsDownload) continue
+            if (fileId == streamed || requested[fileId] == priority || !states[fileId].needsDownload) continue
             requested[fileId] = priority
             scope.launch {
                 files.download(fileId, priority).onFailure { if (priority == DownloadPriority.Visible) onError(it) }

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
+import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -62,11 +64,16 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and its self-destruct timer after the
  * search button, with the timer on a badge, through [onSecretChatEvent] ([SecretChatActions]); its encryption key opens
  * from the timer's sheet, as two actions are all Material allows (without search, the key's button follows). It sits on
- * the screen's `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in
- * the detail pane beside the chat list, which has nothing to go back to.
+ * the screen's `surfaceContainer`, above the sheet the messages scroll in. A forum's topic list and a topic's
+ * conversation add their topic action ([topicAction]: "New topic", "Manage topic") after search. Without [onBack]
+ * there is no back button: in the detail pane beside the chat list, which has nothing to go back to.
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
+ *
+ * While TDLib is not connected ([connection]), "Waiting for network", "Connecting…" or "Updating…" takes the status's
+ * place (and that of what someone is doing, which cannot arrive meanwhile), as Telegram's apps do, in
+ * `onSurfaceVariant`; screen readers hear it change.
  *
  * In selection mode ([selectedCount] not null, §6 "Selection mode") the same bar shows "3 selected" in `titleLarge`
  * with a close button that leaves it ([onClearSelection]) in place of back, the titles cross-fading on the motion
@@ -83,6 +90,8 @@ internal fun ChatTopBar(
     onSecretChatEvent: (SecretChatEvent) -> Unit = {},
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
+    topicAction: (@Composable () -> Unit)? = null,
+    connection: ConnectionStatus = ConnectionStatus.Ready,
 ) {
     val colors = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
@@ -98,7 +107,7 @@ internal fun ChatTopBar(
             ) { count ->
                 when {
                     count != null -> SelectionTitle(count)
-                    header != null -> ChatTitle(header, onOpenProfile, onOpenChatInfo)
+                    header != null -> ChatTitle(header, connection, onOpenProfile, onOpenChatInfo)
                 }
             }
         },
@@ -124,7 +133,9 @@ internal fun ChatTopBar(
                 }
             }
         },
-        actions = { if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent) },
+        actions = {
+            if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent, topicAction)
+        },
         expandedHeight = titleHeight(),
         colors =
             TopAppBarDefaults.topAppBarColors(
@@ -166,16 +177,19 @@ private fun SelectionTitle(count: Int) {
 /**
  * The avatar beside the name and the subtitle; one heading for screen readers, a button that opens the profile where
  * there is one ([onOpenProfile]), or the info page of a group or channel ([onOpenChatInfo]). While someone is doing
- * something in the chat, the heading is a polite live region, so screen readers announce it ("Grace is typing…") when
- * it starts or changes; the status is not, as "last seen" changes every minute.
+ * something in the chat, or while [connection] is not ready, whose state then replaces the subtitle, the heading is a
+ * polite live region, so screen readers announce it ("Grace is typing…", "Connecting…") when it starts or changes; the
+ * status is not, as "last seen" changes every minute.
  */
 @Composable
 private fun ChatTitle(
     header: ChatHeader,
+    connection: ConnectionStatus,
     onOpenProfile: ((userId: Long) -> Unit)?,
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
 ) {
     val title = header.title.resolve()
+    val connecting = connection.labelRes()
     val isAction = header.subtitle is ChatSubtitle.Action
     val userId = header.profileUserId
     val openLabel = stringResource(R.string.chat_open_profile)
@@ -200,7 +214,7 @@ private fun ChatTitle(
                     },
                 ).semantics(mergeDescendants = true) {
                     heading()
-                    if (isAction) liveRegion = LiveRegionMode.Polite
+                    if (isAction || connecting != null) liveRegion = LiveRegionMode.Polite
                 },
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
@@ -228,7 +242,7 @@ private fun ChatTitle(
                     style = MaterialTheme.typography.titleMediumEmphasized.userContent,
                 )
             }
-            header.subtitle?.let { ChatSubtitleLine(it) }
+            ChatSubtitleOrConnection(header.subtitle, connecting)
         }
     }
 }
@@ -245,6 +259,19 @@ private fun SecretChatLock() {
         modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
         tint = MaterialTheme.colorScheme.primary,
     )
+}
+
+/** What TDLib is doing ([connecting], while not connected) in `onSurfaceVariant`, else the chat's [subtitle]. */
+@Composable
+private fun ChatSubtitleOrConnection(
+    subtitle: ChatSubtitle?,
+    @StringRes connecting: Int?,
+) {
+    if (connecting != null) {
+        SubtitleText(stringResource(connecting), MaterialTheme.colorScheme.onSurfaceVariant)
+    } else {
+        subtitle?.let { ChatSubtitleLine(it) }
+    }
 }
 
 /** The status in `onSurfaceVariant`, or what someone is doing in `primary` after the [TypingDots]. */
@@ -284,6 +311,16 @@ private fun SubtitleText(
         style = style,
     )
 }
+
+/** What the subtitle says while not connected, as the chat list's pill does; null once connected. */
+private fun ConnectionStatus.labelRes(): Int? =
+    when (this) {
+        ConnectionStatus.WaitingForNetwork -> R.string.chat_waiting_for_network
+        ConnectionStatus.ConnectingToProxy -> R.string.chat_connecting_to_proxy
+        ConnectionStatus.Connecting -> R.string.chat_connecting
+        ConnectionStatus.Updating -> R.string.chat_updating
+        ConnectionStatus.Ready -> null
+    }
 
 /** The key of the title's avatar transform: into [profileUserId]'s profile, else the info page [openInfo] opens. */
 private fun avatarTransformKey(

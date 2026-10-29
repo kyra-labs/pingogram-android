@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.attachment
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,7 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -38,7 +38,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Updates are queued as they come and handled one at a time, in TDLib's order, on [io], where all file work runs.
  */
-@Singleton
+@AccountScoped
 class UploadCleaner internal constructor(
     client: TdlibClient,
     private val files: UploadFiles,
@@ -232,8 +232,8 @@ private fun TdApi.UpdateMessageSendSucceeded.localPaths() = message.content.loca
 private fun TdApi.UpdateMessageSendFailed.localPaths() = message.content.localPaths()
 
 /**
- * The local paths of the files of a photo, video, GIF or document message (with their thumbnails): those of a message
- * being sent are the files it uploads. Empty for other content.
+ * The local paths of the files of a photo, video, GIF, document, voice or video message (with their thumbnails): those
+ * of a message being sent are the files it uploads. Empty for other content.
  */
 internal fun TdApi.MessageContent.localPaths(): List<String> {
     val files =
@@ -242,6 +242,8 @@ internal fun TdApi.MessageContent.localPaths(): List<String> {
             is TdApi.MessageVideo -> listOfNotNull(video.video, video.thumbnail?.file)
             is TdApi.MessageDocument -> listOfNotNull(document.document, document.thumbnail?.file)
             is TdApi.MessageAnimation -> listOfNotNull(animation.animation, animation.thumbnail?.file)
+            is TdApi.MessageVoiceNote -> listOf(voiceNote.voice)
+            is TdApi.MessageVideoNote -> listOfNotNull(videoNote.video, videoNote.thumbnail?.file)
             else -> emptyList()
         }
     return files.mapNotNull { file -> file.local?.path?.takeIf { it.isNotEmpty() } }

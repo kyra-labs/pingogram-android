@@ -36,11 +36,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.VideoNoteEvent
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
 import java.util.Locale
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -54,7 +59,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   it slides up.
  * - **Locked**: Delete (in `error`) at the start, the live waveform of the last seconds in `primary`, its newest bar
  *   at the end, and Pause or Resume at the end; paused, the dot and the waveform turn `onSurfaceVariant` and stand
- *   still.
+ *   still. A round video message ([VoiceRecordingUiState.video]) adds "Flip camera" before Pause where the device has
+ *   two cameras ([VideoNoteEvent.FlipCamera]); once it ended as the screen stopped, "Recording stopped" takes the
+ *   waveform's place and nothing but Delete and the send button remain.
  *
  * Both crossfade on the motion scheme's effects springs. The level and the waveform are read in the draw phase, the
  * length once a second.
@@ -65,6 +72,7 @@ internal fun RecordingBar(
     drag: RecordDrag,
     onEvent: (VoiceEvent) -> Unit,
     modifier: Modifier = Modifier,
+    onVideoEvent: (VideoNoteEvent) -> Unit = {},
 ) {
     Surface(
         modifier = modifier.heightIn(min = MaterialTheme.sizes.composerField),
@@ -94,7 +102,7 @@ internal fun RecordingBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (locked) {
-                    LockedContent(recording, onEvent)
+                    LockedContent(recording, onEvent, onVideoEvent)
                 } else {
                     HeldContent(recording, drag)
                 }
@@ -153,11 +161,15 @@ private fun RowScope.HeldContent(
     )
 }
 
-/** While locked: Delete, the dot, the length, the live waveform, and Pause or Resume. */
+/**
+ * While locked: Delete, the dot, the length, the live waveform, "Flip camera" for a video message, and Pause or Resume;
+ * a video message the screen's stop ended says so instead, without the buttons that record.
+ */
 @Composable
 private fun RowScope.LockedContent(
     recording: VoiceRecordingUiState,
     onEvent: (VoiceEvent) -> Unit,
+    onVideoEvent: (VideoNoteEvent) -> Unit,
 ) {
     IconButton(onClick = { onEvent(VoiceEvent.Cancel) }, shapes = IconButtonDefaults.shapes()) {
         Icon(
@@ -168,7 +180,27 @@ private fun RowScope.LockedContent(
     }
     RecordingDot(recording)
     RecordingLength(recording.meter)
+    val video = recording.video
+    if (video?.isStopped == true) {
+        Text(
+            text = stringResource(R.string.video_note_stopped),
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        return
+    }
     LiveWaveform(recording, Modifier.weight(1f))
+    if (video?.canFlip == true) {
+        IconButton(onClick = { onVideoEvent(VideoNoteEvent.FlipCamera) }, shapes = IconButtonDefaults.shapes()) {
+            Icon(
+                painter = painterResource(R.drawable.ic_cameraswitch),
+                contentDescription = stringResource(R.string.video_note_flip),
+            )
+        }
+    }
     IconButton(
         onClick = { onEvent(if (recording.isPaused) VoiceEvent.Resume else VoiceEvent.Pause) },
         shapes = IconButtonDefaults.shapes(),
@@ -181,14 +213,22 @@ private fun RowScope.LockedContent(
     }
 }
 
-/** The dot that says it records: `error`, swelling with the voice; `onSurfaceVariant` and still while paused. */
+/**
+ * The dot that says it records: `error`, swelling with the voice; `onSurfaceVariant` and still while paused. Screen
+ * readers hear what it shows, "Recording" or "Paused", as a polite live region, so pausing and resuming are announced:
+ * on screen the Pause button turning into Resume says it too, not only the colors.
+ */
 @Composable
 private fun RecordingDot(recording: VoiceRecordingUiState) {
     val meter = recording.meter
     val paused = recording.isPaused
+    val state = stringResource(if (paused) R.string.voice_state_paused else R.string.voice_state_recording)
     Box(
         Modifier
-            .size(MaterialTheme.sizes.recordingDot)
+            .semantics {
+                contentDescription = state
+                liveRegion = LiveRegionMode.Polite
+            }.size(MaterialTheme.sizes.recordingDot)
             .graphicsLayer {
                 val scale = if (paused) 1f else DOT_REST + meter.level * DOT_GROWTH
                 scaleX = scale

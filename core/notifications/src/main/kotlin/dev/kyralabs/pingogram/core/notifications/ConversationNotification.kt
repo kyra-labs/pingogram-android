@@ -40,6 +40,7 @@ import kotlin.time.Duration.Companion.seconds
  * - [canReply] where the user may write; a reply quotes [replyToMessageId] (in groups, to make clear what it answers).
  *   Reply and mark as read act on [messageIds]; dismissing tells TDLib up to [maxNotificationId].
  * - [chatIcon] and [chatPerson] (private chats) describe the chat's conversation shortcut.
+ * - [slot] is the account's (`docs/adr/0031-multiple-accounts.md`), whose channels, bundle and intents it uses.
  *
  * `toString()` leaves names and texts out. `LongParameterList` is suppressed: it holds what one notification shows.
  */
@@ -59,8 +60,10 @@ internal class ConversationNotification(
     val maxNotificationId: Int,
     val chatIcon: IconCompat,
     val chatPerson: Person?,
+    val slot: Int = 0,
 ) {
-    override fun toString() = "ConversationNotification(groupId=$groupId, channel=$channel, ${messages.size} messages)"
+    override fun toString() =
+        "ConversationNotification(slot=$slot, groupId=$groupId, channel=$channel, ${messages.size} messages)"
 }
 
 /** One message of a [ConversationNotification], sent at [timeMillis] by [sender] (null: the current user). */
@@ -74,157 +77,157 @@ internal class NotificationMessage(
  * Builds the [ConversationNotification] of a TDLib notification group from what the repositories know: the chat, its
  * group or channel, the senders and their avatars ([AvatarIcons]). Texts are the chat list's previews
  * ([messagePreviewText]: "Photo", "Voice message", what a service message reports), shown only where TDLib allows a
- * preview (`showPreview`, the chat's notification setting); otherwise "New message".
+ * preview (`showPreview`, the chat's notification setting); otherwise "New message". One per account, from its own
+ * repositories, the account's [slot] in what it builds.
  */
-@Singleton
-internal class ConversationNotificationFactory
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
-        private val chatRepository: ChatRepository,
-        private val userRepository: UserRepository,
-        private val groupRepository: GroupRepository,
-        private val avatars: AvatarIcons,
-    ) {
-        private val resources get() = context.resources
+internal class ConversationNotificationFactory(
+    private val context: Context,
+    private val chatRepository: ChatRepository,
+    private val userRepository: UserRepository,
+    private val groupRepository: GroupRepository,
+    private val avatars: AvatarIcons,
+    private val slot: Int = 0,
+) {
+    private val resources get() = context.resources
 
-        /** The notification of [group]. */
-        suspend fun create(group: NotificationGroup): ConversationNotification {
-            val chat = chatRepository.getChat(group.chatId).getOrNull()
-            val users = userRepository.users.first()
-            val senders = Senders(chat, users, userRepository.myUserId.value)
-            val title = chat?.title?.takeIf { it.isNotBlank() } ?: context.getString(R.string.notification_unknown_chat)
-            val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
-            val partner = chat?.partnerId?.let(users::get)
-            val messages = group.notifications.map { notification -> message(notification, chat, senders) }
-            val isGroupConversation = chat?.isGroup == true
-            return ConversationNotification(
-                groupId = group.id,
-                chatId = group.chatId,
-                channel = PingogramChannel.of(group.type, chat?.type),
-                title = title,
-                isGroupConversation = isGroupConversation,
-                isCall = group.type == NotificationGroupType.Calls,
-                messages = messages,
-                totalCount = maxOf(group.totalCount, messages.size),
-                canReply = group.type != NotificationGroupType.Calls && chat != null && canWrite(chat, partner),
-                replyToMessageId = group.messageIds.lastOrNull()?.takeIf { isGroupConversation },
-                messageIds = group.messageIds,
-                maxNotificationId = group.notifications.maxOf { it.id },
-                chatIcon = chatIcon,
-                chatPerson = partner?.let { person(it.id, it.fullName().resolve(resources), chatIcon, it.isBot) },
-            )
-        }
+    /** The notification of [group]. */
+    suspend fun create(group: NotificationGroup): ConversationNotification {
+        val chat = chatRepository.getChat(group.chatId).getOrNull()
+        val users = userRepository.users.first()
+        val senders = Senders(chat, users, userRepository.myUserId.value)
+        val title = chat?.title?.takeIf { it.isNotBlank() } ?: context.getString(R.string.notification_unknown_chat)
+        val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
+        val partner = chat?.partnerId?.let(users::get)
+        val messages = group.notifications.map { notification -> message(notification, chat, senders) }
+        val isGroupConversation = chat?.isGroup == true
+        return ConversationNotification(
+            groupId = group.id,
+            chatId = group.chatId,
+            channel = PingogramChannel.of(group.type, chat?.type),
+            title = title,
+            isGroupConversation = isGroupConversation,
+            isCall = group.type == NotificationGroupType.Calls,
+            messages = messages,
+            totalCount = maxOf(group.totalCount, messages.size),
+            canReply = group.type != NotificationGroupType.Calls && chat != null && canWrite(chat, partner),
+            replyToMessageId = group.messageIds.lastOrNull()?.takeIf { isGroupConversation },
+            messageIds = group.messageIds,
+            maxNotificationId = group.notifications.maxOf { it.id },
+            chatIcon = chatIcon,
+            chatPerson = partner?.let { person(it.id, it.fullName().resolve(resources), chatIcon, it.isBot) },
+            slot = slot,
+        )
+    }
 
-        private suspend fun message(
-            notification: ChatNotification,
-            chat: Chat?,
-            senders: Senders,
-        ): NotificationMessage {
-            val content = notification.content
-            val (sender, text) =
-                when (content) {
-                    is NotificationContent.NewMessage -> {
-                        val message = content.message
-                        val sender = if (message.isOutgoing) null else person(message.sender, senders)
-                        val text =
-                            if (content.showPreview) {
-                                messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
-                            } else {
-                                context.getString(R.string.notification_new_message)
-                            }
-                        sender to text
-                    }
-
-                    is NotificationContent.NewPushMessage -> {
-                        val sender =
-                            if (content.isOutgoing) {
-                                null
-                            } else {
-                                content.sender?.let { person(it, senders) }
-                                    ?: Person.Builder().setName(content.senderName).build()
-                            }
-                        sender to (content.text ?: context.getString(R.string.notification_new_message))
-                    }
-
-                    NotificationContent.NewSecretChat -> {
-                        partnerPerson(chat, senders) to context.getString(R.string.notification_new_secret_chat)
-                    }
-
-                    is NotificationContent.NewCall -> {
-                        partnerPerson(chat, senders) to context.getString(R.string.notification_incoming_call)
-                    }
-                }
-            return NotificationMessage(text, notification.date.seconds.inWholeMilliseconds, sender)
-        }
-
-        /** The user of a private or secret chat; for a group or an unknown chat, nobody in particular. */
-        private suspend fun partnerPerson(
-            chat: Chat?,
-            senders: Senders,
-        ): Person? = chat?.partnerId?.let { person(MessageSender.User(it), senders) }
-
-        /** A user, or a chat that sends as itself (a channel, a group's anonymous admins), with its avatar. */
-        private suspend fun person(
-            sender: MessageSender,
-            senders: Senders,
-        ): Person =
-            when (sender) {
-                is MessageSender.User -> {
-                    val user = senders.users[sender.userId]
-                    val name = user?.fullName()?.resolve(resources) ?: context.getString(R.string.notification_someone)
-                    val icon = avatars.icon(user?.profilePhoto, sender.userId, name)
-                    person(USER_KEY + sender.userId, name, icon, isBot = user?.isBot == true)
+    private suspend fun message(
+        notification: ChatNotification,
+        chat: Chat?,
+        senders: Senders,
+    ): NotificationMessage {
+        val content = notification.content
+        val (sender, text) =
+            when (content) {
+                is NotificationContent.NewMessage -> {
+                    val message = content.message
+                    val sender = if (message.isOutgoing) null else person(message.sender, senders)
+                    val text =
+                        if (content.showPreview) {
+                            messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
+                        } else {
+                            context.getString(R.string.notification_new_message)
+                        }
+                    sender to text
                 }
 
-                is MessageSender.Chat -> {
-                    val chat =
-                        senders.chat?.takeIf { it.id == sender.chatId }
-                            ?: chatRepository.getChat(sender.chatId).getOrNull()
-                    val name = chat?.title ?: context.getString(R.string.notification_someone)
-                    val icon = avatars.icon(chat?.photo, sender.chatId, name)
-                    person(CHAT_KEY + sender.chatId, name, icon, isBot = false)
+                is NotificationContent.NewPushMessage -> {
+                    val sender =
+                        if (content.isOutgoing) {
+                            null
+                        } else {
+                            content.sender?.let { person(it, senders) }
+                                ?: Person.Builder().setName(content.senderName).build()
+                        }
+                    sender to (content.text ?: context.getString(R.string.notification_new_message))
+                }
+
+                NotificationContent.NewSecretChat -> {
+                    partnerPerson(chat, senders) to context.getString(R.string.notification_new_secret_chat)
+                }
+
+                is NotificationContent.NewCall -> {
+                    partnerPerson(chat, senders) to context.getString(R.string.notification_incoming_call)
                 }
             }
-
-        private fun person(
-            key: String,
-            name: String,
-            icon: IconCompat,
-            isBot: Boolean,
-        ): Person =
-            Person
-                .Builder()
-                .setKey(key)
-                .setName(name)
-                .setIcon(icon)
-                .setBot(isBot)
-                .build()
-
-        private fun person(
-            userId: Long,
-            name: String,
-            icon: IconCompat,
-            isBot: Boolean,
-        ): Person = person(USER_KEY + userId, name, icon, isBot)
-
-        /** Whether the user may send a text to [chat], as its composer would allow ([writeAccess]). */
-        private suspend fun canWrite(
-            chat: Chat,
-            partner: User?,
-        ): Boolean {
-            val type = chat.type
-            val basicGroup = (type as? ChatType.BasicGroup)?.let { groupRepository.basicGroup(it.basicGroupId).first() }
-            val supergroup = (type as? ChatType.Supergroup)?.let { groupRepository.supergroup(it.supergroupId).first() }
-            return chat.writeAccess(partner, basicGroup, supergroup) == WriteAccess.Allowed
-        }
-
-        private companion object {
-            // Keys of Person, so Android tells senders apart even with equal names.
-            const val USER_KEY = "user:"
-            const val CHAT_KEY = "chat:"
-        }
+        return NotificationMessage(text, notification.date.seconds.inWholeMilliseconds, sender)
     }
+
+    /** The user of a private or secret chat; for a group or an unknown chat, nobody in particular. */
+    private suspend fun partnerPerson(
+        chat: Chat?,
+        senders: Senders,
+    ): Person? = chat?.partnerId?.let { person(MessageSender.User(it), senders) }
+
+    /** A user, or a chat that sends as itself (a channel, a group's anonymous admins), with its avatar. */
+    private suspend fun person(
+        sender: MessageSender,
+        senders: Senders,
+    ): Person =
+        when (sender) {
+            is MessageSender.User -> {
+                val user = senders.users[sender.userId]
+                val name = user?.fullName()?.resolve(resources) ?: context.getString(R.string.notification_someone)
+                val icon = avatars.icon(user?.profilePhoto, sender.userId, name)
+                person(USER_KEY + sender.userId, name, icon, isBot = user?.isBot == true)
+            }
+
+            is MessageSender.Chat -> {
+                val chat =
+                    senders.chat?.takeIf { it.id == sender.chatId }
+                        ?: chatRepository.getChat(sender.chatId).getOrNull()
+                val name = chat?.title ?: context.getString(R.string.notification_someone)
+                val icon = avatars.icon(chat?.photo, sender.chatId, name)
+                person(CHAT_KEY + sender.chatId, name, icon, isBot = false)
+            }
+        }
+
+    private fun person(
+        key: String,
+        name: String,
+        icon: IconCompat,
+        isBot: Boolean,
+    ): Person =
+        Person
+            .Builder()
+            .setKey(key)
+            .setName(name)
+            .setIcon(icon)
+            .setBot(isBot)
+            .build()
+
+    private fun person(
+        userId: Long,
+        name: String,
+        icon: IconCompat,
+        isBot: Boolean,
+    ): Person = person(USER_KEY + userId, name, icon, isBot)
+
+    /** Whether the user may send a text to [chat], as its composer would allow ([writeAccess]). */
+    private suspend fun canWrite(
+        chat: Chat,
+        partner: User?,
+    ): Boolean {
+        val type = chat.type
+        val basicGroup = (type as? ChatType.BasicGroup)?.let { groupRepository.basicGroup(it.basicGroupId).first() }
+        val supergroup = (type as? ChatType.Supergroup)?.let { groupRepository.supergroup(it.supergroupId).first() }
+        return chat.writeAccess(partner, basicGroup, supergroup) == WriteAccess.Allowed
+    }
+
+    private companion object {
+        // Keys of Person, so Android tells senders apart even with equal names.
+        const val USER_KEY = "user:"
+        const val CHAT_KEY = "chat:"
+    }
+}
 
 /** Who is who in the messages of one chat: the chat, the users TDLib knows, the current user. */
 private class Senders(

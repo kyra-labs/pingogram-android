@@ -47,6 +47,14 @@ class NewChatScreenScreenshotTest(
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
     private fun captureAudit(variant: ScreenshotVariant) {
         assumeTrue(stateName == "content")
@@ -54,7 +62,10 @@ class NewChatScreenScreenshotTest(
     }
 
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(variant: ScreenshotVariant) {
+    private fun capture(
+        variant: ScreenshotVariant,
+        name: String = variant.goldenName,
+    ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
@@ -65,7 +76,7 @@ class NewChatScreenScreenshotTest(
         // The contacts' loading indicator shows once loading takes a moment; the golden shows it then.
         composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
         composeRule.waitForIdle()
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.${variant.goldenName}"))
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$name"))
     }
 
     companion object {

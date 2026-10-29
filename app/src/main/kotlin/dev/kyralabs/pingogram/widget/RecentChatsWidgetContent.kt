@@ -116,7 +116,8 @@ private fun ChatRow(chat: WidgetChat) {
     val colors = GlanceTheme.colors
     val unread = chat.unreadCount > 0
     val description = rowDescription(context, chat)
-    val open = NotificationIntents.openChat(context, chat.id)?.let { actionStartActivity(it) } ?: openApp(context)
+    val open =
+        NotificationIntents.openChat(context, chat.id, chat.slot)?.let { actionStartActivity(it) } ?: openApp(context)
     Row(
         modifier =
             GlanceModifier

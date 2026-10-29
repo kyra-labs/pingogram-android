@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.data.mapper.toTdPayload
 import dev.kyralabs.pingogram.core.domain.model.CallbackAnswer
@@ -15,7 +16,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [BotButtonRepository] on `getCallbackQueryAnswer`, `getLoginUrlInfo`, `getLoginUrl`, `shareUsersWithBot` and
@@ -25,7 +25,7 @@ import javax.inject.Singleton
  * (`BOT_RESPONSE_TIMEOUT`), which is [CallbackAnswer.NoAnswer], as is no answer within [REQUEST_TIMEOUT], so the
  * button's progress just ends.
  */
-@Singleton
+@AccountScoped
 class TdlibBotButtonRepository
     @Inject
     constructor(

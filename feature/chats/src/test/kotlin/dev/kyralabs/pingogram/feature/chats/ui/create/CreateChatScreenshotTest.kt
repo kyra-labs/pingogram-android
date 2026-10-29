@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.feature.chats.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chats.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.chats.ui.EXPANDED
+import dev.kyralabs.pingogram.feature.chats.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.chats.ui.goldenPath
@@ -58,6 +59,14 @@ class CreateChatScreenshotTest(
     @Config(qualifiers = EXPANDED)
     fun expanded() = captureAudit(ScreenshotVariant.Medium, name = "expanded")
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "membersPicking" || stateName == "groupFilled" || stateName == "channelPrivate")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
     /** The audit's other looks for one representative state of each step only. */
     private fun captureAudit(
         variant: ScreenshotVariant,
@@ -96,7 +105,7 @@ class CreateChatScreenshotTest(
         private fun type(state: NewChannelTypeUiState): @Composable () -> Unit =
             { NewChannelTypeScreen(state, onEvent = {}, onCopyLink = {}, onShareLink = {}) }
 
-        private val SCREENS: Map<String, @Composable () -> Unit> =
+        internal val SCREENS: Map<String, @Composable () -> Unit> =
             with(CreateChatPreviewData) {
                 mapOf(
                     "membersPicking" to members(picking),

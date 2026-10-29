@@ -45,6 +45,7 @@ internal fun TdApi.GroupCall.toGroupCall(): GroupCall =
         duration = duration,
         canEnableVideo = canEnableVideo,
         isMyVideoEnabled = isMyVideoEnabled,
+        inviteLink = inviteLink.orEmpty(),
     )
 
 /** Null for a participant type added by a newer TDLib. */
@@ -64,6 +65,7 @@ internal fun TdApi.GroupCallParticipant.toGroupCallParticipant(): GroupCallParti
         canBeUnmutedForAllUsers = canBeUnmutedForAllUsers,
         order = order.orEmpty(),
         video = videoInfo?.toParticipantVideo(),
+        screen = screenSharingVideoInfo?.toParticipantVideo(),
     )
 }
 

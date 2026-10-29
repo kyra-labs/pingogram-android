@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.MessageThread
 import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
@@ -9,7 +10,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [MessageThreadRepository] on TDLib's `getMessageThread`, without a cache: the conversation of a thread asks once as
@@ -17,7 +17,7 @@ import javax.inject.Singleton
  * group of a channel post), its id, the messages that start it (newest first, which the domain turns around) and the
  * read state of its replies.
  */
-@Singleton
+@AccountScoped
 class TdlibMessageThreadRepository
     @Inject
     constructor(

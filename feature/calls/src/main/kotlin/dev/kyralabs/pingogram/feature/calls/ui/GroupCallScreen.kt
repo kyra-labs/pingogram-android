@@ -4,10 +4,14 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -25,10 +30,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +48,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,6 +113,8 @@ fun GroupCallScreen(
     selfVideo: CallVideo = PlaceholderVideo,
     participantVideo: ParticipantVideo = PlaceholderParticipantVideo,
     pictureInPicture: Boolean = false,
+    onAddPeople: () -> Unit = {},
+    snackbarHostState: SnackbarHostState? = null,
 ) {
     // A Surface, so text and icons take the window's content color.
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxSize()) {
@@ -116,10 +127,17 @@ fun GroupCallScreen(
                 onOpenSettings,
                 GroupCallVideos(video, selfVideo, participantVideo),
                 pictureInPicture,
+                GroupCallExtras(onAddPeople, snackbarHostState),
             )
         }
     }
 }
+
+/** "Add people" in a conference call, and where its results show. */
+private class GroupCallExtras(
+    val onAddPeople: () -> Unit,
+    val snackbarHostState: SnackbarHostState?,
+)
 
 /** What draws a voice chat's videos: a live stream's, the user's own camera (the self-view) and the others'. */
 private class GroupCallVideos(
@@ -138,18 +156,21 @@ private fun BoxScope.GroupCallContent(
     onOpenSettings: () -> Unit,
     videos: GroupCallVideos,
     pictureInPicture: Boolean,
+    extras: GroupCallExtras,
 ) {
     when (state) {
         GroupCallUiState.Loading -> {
             DelayedLoadingIndicator(Modifier.align(Alignment.Center))
         }
 
-        GroupCallUiState.Closed -> {
-            Unit
-        }
+        GroupCallUiState.Closed -> {}
 
         is GroupCallUiState.NeedsMicrophone -> {
             MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
+        }
+
+        GroupCallUiState.ConfirmConference -> {
+            ConferenceStep(onEvent)
         }
 
         is GroupCallUiState.Unavailable -> {
@@ -168,9 +189,9 @@ private fun BoxScope.GroupCallContent(
                 videos.stream(Modifier.fillMaxSize())
             } else if (pictureInPicture && first != null) {
                 // The pinned video, or the first: the one the grid shows first.
-                videos.participants(first.endpointId, Modifier.fillMaxSize())
+                videos.participants(first.endpointId, first.isScreen, Modifier.fillMaxSize())
             } else {
-                InGroupCall(state, onEvent, onMinimize, videos)
+                InGroupCall(state, onEvent, onMinimize, videos, extras)
             }
         }
     }
@@ -182,10 +203,26 @@ private fun InGroupCall(
     onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
     videos: GroupCallVideos,
+    extras: GroupCallExtras,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxSize()) {
-        Header(state, onMinimize)
+        Header(state, onEvent, onMinimize)
+        AnimatedVisibility(
+            visible = state.video.isSharingScreen,
+            enter =
+                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            exit =
+                shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            ScreenSharingPill(
+                onStop = { onEvent(GroupCallEvent.ToggleScreenSharing) },
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+            )
+        }
         val camera = state.video.camera
         if (camera != null && !state.isStream && state.video.remote.isEmpty()) {
             // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md); with the others'
@@ -213,49 +250,89 @@ private fun InGroupCall(
                         .clip(MaterialTheme.shapes.large),
                 )
             } else {
-                Participants(state, videos, onEvent)
+                Participants(state, videos, onEvent, extras.onAddPeople)
             }
+            extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
         }
         if (state.hasControls) Controls(state, onEvent)
     }
 }
 
-/** "Back to the app", the chat's title and where the voice chat is, inside the safe area. */
+/**
+ * "Back to the app", the chat's title and where the voice chat is, inside the safe area; "Share screen" at the end
+ * where the user may share (`docs/adr/0026-screen-sharing.md`).
+ */
 @Composable
 private fun Header(
     state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 ).padding(horizontal = spacing.small, vertical = spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MinimizeButton(onMinimize)
-        Column(Modifier.weight(1f).padding(horizontal = spacing.small)) {
-            Text(
-                text = state.chat.title.ifBlank { stringResource(R.string.voice_chat) },
-                style = MaterialTheme.typography.titleLarge.userContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                text = statusText(state),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            HeaderRow(state, onEvent, onMinimize)
+        }
+        // A conference call's emojis, once Telegram verified its state (docs/adr/0025-conference-calls.md).
+        AnimatedVisibility(
+            visible = state.emojis.isNotEmpty(),
+            enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
+        ) {
+            KeyEmojis(state.emojis, stringResource(R.string.group_call_key_explanation))
         }
     }
 }
+
+/** Back to the app, the title over the status, and screen sharing. */
+@Composable
+private fun RowScope.HeaderRow(
+    state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
+    onMinimize: () -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    MinimizeButton(onMinimize)
+    Column(Modifier.weight(1f).padding(horizontal = spacing.small)) {
+        Text(
+            text = state.chat.displayTitle(),
+            style = MaterialTheme.typography.titleLarge.userContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = statusText(state),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+    if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
+        ShareScreenButton(
+            sharing = state.video.isSharingScreen,
+            onToggle = { onEvent(GroupCallEvent.ToggleScreenSharing) },
+        )
+    }
+}
+
+/** The chat's title; "Group call" for a conference call (chat 0), "Voice chat" while the chat is not known. */
+@Composable
+private fun GroupCallChat.displayTitle(): String =
+    when {
+        chatId == 0L -> stringResource(R.string.group_call)
+        else -> title.ifBlank { stringResource(R.string.voice_chat) }
+    }
 
 /** "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05". */
 @Composable
@@ -291,6 +368,7 @@ private fun Participants(
     state: GroupCallUiState.InCall,
     videos: GroupCallVideos,
     onEvent: (GroupCallEvent) -> Unit,
+    onAddPeople: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     LazyColumn(
@@ -314,6 +392,11 @@ private fun Participants(
                 )
             }
         }
+        if (state.canInvite) {
+            item(key = "add", contentType = "add") {
+                AddPeopleRow(onAddPeople, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
+            }
+        }
         items(state.participants, key = { it.key }, contentType = { "participant" }) { participant ->
             ParticipantRow(participant, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
         }
@@ -321,8 +404,9 @@ private fun Participants(
 }
 
 /**
- * A participant: their avatar, ringed in `primary` while they speak (the ring fades in the draw phase), their name and
- * what they are doing, and a symbol of it at the end. Screen readers hear one item.
+ * A participant: their avatar, ringed in `primary` while they speak (the ring fades in the draw phase, at once while
+ * power saving holds the call screens still, [LocalStillCallAnimations]), their name and what they are doing, and a
+ * symbol of it at the end. Screen readers hear one item.
  */
 @Composable
 private fun ParticipantRow(
@@ -331,7 +415,8 @@ private fun ParticipantRow(
 ) {
     val colors = MaterialTheme.colorScheme
     val speaking = participant.state == ParticipantState.Speaking
-    val ring by animateFloatAsState(if (speaking) 1f else 0f, MaterialTheme.motionScheme.fastEffectsSpec())
+    val ringSpec = if (LocalStillCallAnimations.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val ring by animateFloatAsState(if (speaking) 1f else 0f, ringSpec)
     val ringWidth = MaterialTheme.sizes.avatarRing
     val name =
         participant.name.ifBlank { stringResource(R.string.call_someone) }.let {
@@ -339,14 +424,7 @@ private fun ParticipantRow(
         }
     val stateText = stringResource(participant.state.label())
     ListItem(
-        headlineContent = {
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyLarge.userContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
+        modifier = modifier.clearAndSetSemantics { contentDescription = "$name, $stateText" },
         supportingContent = {
             Text(stateText, color = if (speaking) colors.primary else colors.onSurfaceVariant, maxLines = 1)
         },
@@ -376,8 +454,44 @@ private fun ParticipantRow(
             )
         },
         colors = ListItemDefaults.colors(containerColor = colors.surfaceContainer),
-        modifier = modifier.clearAndSetSemantics { contentDescription = "$name, $stateText" },
-    )
+    ) {
+        Text(
+            name,
+            style = MaterialTheme.typography.bodyLarge.userContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** "Add people": the add-person symbol in a `primaryContainer` circle where the avatars sit; opens the picker. */
+@Composable
+private fun AddPeopleRow(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    ListItem(
+        onClick = onClick,
+        leadingContent = {
+            Box(
+                Modifier
+                    .size(MaterialTheme.sizes.avatarSmall)
+                    .background(colors.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(UiR.drawable.ic_person_add),
+                    contentDescription = null,
+                    tint = colors.onPrimaryContainer,
+                )
+            }
+        },
+        colors = ListItemDefaults.colors(containerColor = colors.surfaceContainer),
+        modifier = modifier,
+    ) {
+        Text(stringResource(R.string.group_call_add_people), style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 private fun ParticipantState.label(): Int =
@@ -553,7 +667,52 @@ private fun EndDialog(
     )
 }
 
-/** Why the microphone is needed before joining, then Android's request (or the settings once it no longer asks). */
+/** A conference call's link: what joining means, "Not now" and "Join" (`docs/adr/0025-conference-calls.md`). */
+@Composable
+private fun ConferenceStep(onEvent: (GroupCallEvent) -> Unit) {
+    val spacing = MaterialTheme.spacing
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(spacing.large),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.group_call_confirm_title),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Spacer(Modifier.height(spacing.medium))
+        Text(
+            text = stringResource(R.string.group_call_confirm_text),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+        )
+        Spacer(Modifier.height(spacing.extraLarge))
+        Row(
+            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            TextButton(onClick = { onEvent(GroupCallEvent.DeclineConference) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.call_not_now))
+            }
+            Button(onClick = { onEvent(GroupCallEvent.JoinConference) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.group_call_join), style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        }
+    }
+}
+
+/**
+ * Before joining without the microphone: why it is needed, "Not now" and "Continue" (Android's request) or "Open
+ * settings".
+ */
 @Composable
 private fun MicrophoneStep(
     state: GroupCallUiState.NeedsMicrophone,
@@ -572,7 +731,7 @@ private fun MicrophoneStep(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = state.chat.title.ifBlank { stringResource(R.string.voice_chat) },
+            text = state.chat.displayTitle(),
             style = MaterialTheme.typography.headlineSmall.userContent,
             textAlign = TextAlign.Center,
             maxLines = 2,

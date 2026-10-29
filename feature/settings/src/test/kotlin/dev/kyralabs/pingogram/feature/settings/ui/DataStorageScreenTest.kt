@@ -15,6 +15,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
@@ -52,6 +53,8 @@ class DataStorageScreenTest {
                     state = state,
                     onEvent = { events += it },
                     onOpenAutoDownload = { opened += it },
+                    onOpenProxies = {},
+                    onOpenNetworkUsage = {},
                     onBack = { backs++ },
                 )
             }
@@ -109,9 +112,22 @@ class DataStorageScreenTest {
     fun `clear cache asks for confirmation`() {
         setScreen(SettingsPreviewData.storage)
 
-        composeRule.onNodeWithText(string(R.string.settings_clear_cache)).assertHasClickAction().performClick()
+        composeRule
+            .onNodeWithText(string(R.string.settings_clear_cache))
+            .performScrollTo()
+            .assertHasClickAction()
+            .performClick()
 
         assertEquals(listOf(DataStorageEvent.ClearCache), events)
+    }
+
+    @Test
+    fun `the original quality switch turns it on`() {
+        setScreen(SettingsPreviewData.storage)
+
+        composeRule.onNodeWithText(string(R.string.settings_photos_original)).performScrollTo().performClick()
+
+        assertEquals(listOf(DataStorageEvent.SetPhotosInOriginalQuality(true)), events)
     }
 
     @Test

@@ -32,6 +32,7 @@ sealed interface ChatInfoUiState {
      * @property description the description with its links, mentions and hashtags; null without one.
      * @property link the public link or, for administrators of a private group, its primary invite link; null without.
      * @property members the first members and how many there are; null where the user may not list them.
+     * @property id the chat's ID, only while Privacy and security's "Show IDs" is on.
      */
     data class Content(
         val header: ProfileHeader,
@@ -42,6 +43,7 @@ sealed interface ChatInfoUiState {
         val members: MembersPreview? = null,
         val administration: ChatAdministration? = null,
         val dialog: ChatInfoDialog? = null,
+        val id: Long? = null,
     ) : ChatInfoUiState
 }
 
@@ -104,11 +106,17 @@ data class ChatAdministration(
     val bannedCount: Int? = null,
     val restrictedCount: Int? = null,
     val canViewBoosts: Boolean = false,
+    val canEditSettings: Boolean = false,
+    val isChannel: Boolean = false,
+    val joinRequestCount: Int? = null,
+    val canViewRecentActions: Boolean = false,
+    val canViewStatistics: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
-                bannedCount == null && restrictedCount == null && !canViewBoosts
+                bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
+                joinRequestCount == null && !canViewRecentActions && !canViewStatistics
 }
 
 /**
@@ -209,6 +217,9 @@ sealed interface ChatInfoEvent {
 
     data object CopyLink : ChatInfoEvent
 
+    /** Copy the chat's ID. */
+    data object CopyId : ChatInfoEvent
+
     data object ShareLink : ChatInfoEvent
 
     data object ShowQrCode : ChatInfoEvent
@@ -240,8 +251,20 @@ sealed interface ChatInfoEvent {
 /** The pages the info page opens: those for administrators, and the export for anyone. */
 enum class ChatInfoPage {
     EditInfo,
+
+    /** Reactions, saving content, signatures, topics, the discussion group, upgrading. */
+    Settings,
     Permissions,
     InviteLinks,
+
+    /** The people waiting for an administrator to let them join. */
+    JoinRequests,
+
+    /** What administrators and members did in the last 48 hours, for supergroups and channels. */
+    RecentActions,
+
+    /** The numbers and charts Telegram gives administrators of larger supergroups and channels. */
+    Statistics,
 
     /** The boosts of a channel or supergroup, read only (`REQUIREMENTS.md` FR-P5). */
     Boosts,
@@ -299,4 +322,5 @@ sealed interface ChatInfoEffect {
 enum class CopiedChatText {
     Link,
     Description,
+    Id,
 }

@@ -18,6 +18,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
@@ -55,6 +57,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   chats, and bots that show nothing.
  * @property translateBar the translate bar over the messages (`REQUIREMENTS.md` FR-C3), below the pinned messages
  *   bar; null while there is none.
+ * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
+ *   null while the chat has none.
  */
 @Immutable
 data class ChatUiState(
@@ -77,6 +81,7 @@ data class ChatUiState(
     val pinnedBar: PinnedBar? = null,
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
+    val scheduledBar: ScheduledBar? = null,
 )
 
 /**
@@ -278,6 +283,12 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
+     *   null for every other bubble, and while none is checked.
+     * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
+     *   scheduled messages, [time] then being its send time; null for messages of the history.
+     * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
+     *   forwards it, where the chat lets messages be forwarded ([showsShareButton]).
      */
     data class Bubble(
         val id: Long,
@@ -310,6 +321,9 @@ sealed interface ChatItem {
         val keyboard: BotKeyboard? = null,
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
+        val pollChoices: ImmutableSet<Int>? = null,
+        val schedule: BubbleSchedule? = null,
+        val hasShareButton: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -328,6 +342,11 @@ sealed interface ChatItem {
         val callUserId: Long? = null,
         /** The call was a video call: calling back calls with the camera on. */
         val callIsVideo: Boolean = false,
+        /**
+         * An invitation to a conference call that goes on (`docs/adr/0025-conference-calls.md`), in this chat:
+         * tapping it opens the call, which asks before it joins.
+         */
+        val groupCallChatId: Long? = null,
     ) : ChatItem {
         override val key: Any get() = id
 
@@ -419,7 +438,8 @@ enum class OutgoingStatus {
 
 /**
  * The quote of the replied message at the top of a bubble: [sender]'s name, colored by [senderId], over one line of
- * [text]. Without a sender while the replied message loads, when it was deleted, or for a story.
+ * [text] (the quoted part where the reply quotes one, [isQuote], marked as a quote). Without a sender while the replied
+ * message loads, when it was deleted, or for a story.
  *
  * @property messageId the replied message of this chat, which tapping the quote shows ([ChatEvent.OpenReply]); null
  *   for a story or a message of another chat, which it does not open.
@@ -430,8 +450,9 @@ data class ReplyQuote(
     val senderId: Long?,
     val text: UiText,
     val messageId: Long? = null,
+    val isQuote: Boolean = false,
 ) {
-    override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, …)"
+    override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, isQuote=$isQuote, …)"
 }
 
 /**

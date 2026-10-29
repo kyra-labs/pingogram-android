@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -11,12 +13,15 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AdministratorRights
 import dev.kyralabs.pingogram.core.domain.model.GroupInfo
+import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.GroupMember
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -58,6 +63,8 @@ sealed interface MemberRightsUiState {
      * @property switches the rights or permissions, those the user may not change disabled.
      * @property canRevoke the member's rights can be taken away (or their restrictions lifted).
      * @property isSaving a change was asked for, and TDLib has not answered yet.
+     * @property canTransfer the user owns the supergroup or channel and may make this member its owner.
+     * @property isCheckingTransfer Telegram is asked whether the ownership may be transferred now.
      */
     data class Content(
         val name: UiText,
@@ -69,8 +76,22 @@ sealed interface MemberRightsUiState {
         val switches: ImmutableList<RightSwitch>,
         val canRevoke: Boolean,
         val isSaving: Boolean = false,
+        val canTransfer: Boolean = false,
+        val isCheckingTransfer: Boolean = false,
     ) : MemberRightsUiState
 }
+
+/**
+ * The question before transferring the ownership to [name]: [isTransferring] while Telegram answers, [error] why the
+ * last try failed (a wrong password).
+ */
+@Immutable
+data class TransferDialog(
+    val name: UiText,
+    val isChannel: Boolean,
+    val isTransferring: Boolean = false,
+    val error: DomainError? = null,
+)
 
 sealed interface MemberRightsEvent {
     data object Retry : MemberRightsEvent
@@ -84,6 +105,13 @@ sealed interface MemberRightsEvent {
 
     /** Take the administrator's rights away, or lift the member's restrictions. */
     data object Revoke : MemberRightsEvent
+
+    /** "Transfer ownership": Telegram is asked whether it may be done now, then the password is asked for. */
+    data object Transfer : MemberRightsEvent
+
+    data object ConfirmTransfer : MemberRightsEvent
+
+    data object DismissTransfer : MemberRightsEvent
 }
 
 sealed interface MemberRightsEffect {
@@ -93,6 +121,14 @@ sealed interface MemberRightsEffect {
     data class ShowError(
         val error: DomainError,
     ) : MemberRightsEffect
+
+    /** The ownership cannot be transferred now, because of [check]. */
+    data class TransferUnavailable(
+        val check: OwnershipTransferCheck,
+    ) : MemberRightsEffect
+
+    /** The member owns the chat now: the page closes, as after [Saved]. */
+    data object Transferred : MemberRightsEffect
 }
 
 /**
@@ -106,6 +142,9 @@ sealed interface MemberRightsEffect {
  * - **Restrictions**: a restricted member's permissions, else the group's defaults; nothing the group's defaults do
  *   not allow can be switched on. Saving restricts for ever (`untilDate` 0).
  * - **Revoking** takes the rights away, or lifts the restrictions (`MemberRole.Member`).
+ * - **Transferring the ownership** (the owner of a supergroup or channel, for a person): `canTransferOwnership` first,
+ *   whose refusals are snackbars, then the 2-step verification password in [transferDialog], kept in memory only
+ *   ([transferPassword]), then `transferChatOwnership`.
  * - The switches the user changed are kept in the [SavedStateHandle], so they survive process death.
  */
 @Suppress("LongParameterList", "TooManyFunctions") // The route's arguments, saved state, three repositories.
@@ -141,6 +180,12 @@ class MemberRightsViewModel internal constructor(
     private val effectChannel = Channel<MemberRightsEffect>(Channel.BUFFERED)
     val effects: Flow<MemberRightsEffect> = effectChannel.receiveAsFlow()
 
+    private val mutableTransferDialog = MutableStateFlow<TransferDialog?>(null)
+    val transferDialog: StateFlow<TransferDialog?> = mutableTransferDialog.asStateFlow()
+
+    /** The password typed into [transferDialog]: never in the saved state. */
+    val transferPassword = TextFieldState()
+
     /** What was loaded, from which the switches are built. */
     private var loaded: Loaded? = null
 
@@ -154,6 +199,9 @@ class MemberRightsViewModel internal constructor(
             is MemberRightsEvent.Toggle -> toggle(event.key, event.on)
             MemberRightsEvent.Save -> save()
             MemberRightsEvent.Revoke -> send(MemberRole.Member)
+            MemberRightsEvent.Transfer -> checkTransfer()
+            MemberRightsEvent.ConfirmTransfer -> transfer()
+            MemberRightsEvent.DismissTransfer -> dismissTransfer()
         }
     }
 
@@ -219,6 +267,57 @@ class MemberRightsViewModel internal constructor(
         }
     }
 
+    private fun checkTransfer() {
+        val current = mutableUiState.value as? MemberRightsUiState.Content ?: return
+        if (!current.canTransfer || current.isCheckingTransfer || mutableTransferDialog.value != null) return
+        mutableUiState.value = current.copy(isCheckingTransfer = true)
+        viewModelScope.launch {
+            val check = administrationRepository.ownershipTransferCheck()
+            mutableUiState.update { (it as? MemberRightsUiState.Content)?.copy(isCheckingTransfer = false) ?: it }
+            when (check) {
+                is Outcome.Failure -> {
+                    showError(check.error)
+                }
+
+                is Outcome.Success -> {
+                    if (check.value == OwnershipTransferCheck.Allowed) {
+                        transferPassword.clearText()
+                        val isChannel = loaded?.group?.kind == GroupKind.Channel
+                        mutableTransferDialog.value = TransferDialog(current.name, isChannel)
+                    } else {
+                        effectChannel.trySend(MemberRightsEffect.TransferUnavailable(check.value))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun transfer() {
+        val dialog = mutableTransferDialog.value ?: return
+        val password = transferPassword.text.toString()
+        if (dialog.isTransferring || password.isEmpty()) return
+        mutableTransferDialog.value = dialog.copy(isTransferring = true, error = null)
+        viewModelScope.launch {
+            when (val done = administrationRepository.transferOwnership(chatId, userId, password)) {
+                is Outcome.Success -> {
+                    mutableTransferDialog.value = null
+                    transferPassword.clearText()
+                    effectChannel.trySend(MemberRightsEffect.Transferred)
+                }
+
+                is Outcome.Failure -> {
+                    mutableTransferDialog.value = dialog.copy(isTransferring = false, error = done.error)
+                }
+            }
+        }
+    }
+
+    private fun dismissTransfer() {
+        if (mutableTransferDialog.value?.isTransferring == true) return
+        mutableTransferDialog.value = null
+        transferPassword.clearText()
+    }
+
     private fun showError(error: DomainError) {
         if (error != DomainError.Silent) effectChannel.trySend(MemberRightsEffect.ShowError(error))
     }
@@ -238,6 +337,10 @@ class MemberRightsViewModel internal constructor(
             switches = if (restrict) permissionSwitches(loaded) else rightSwitches(loaded),
             canRevoke = if (restrict) role is MemberRole.Restricted else role is MemberRole.Administrator,
             isSaving = isSaving,
+            canTransfer =
+                !restrict && !isDeleted && user?.type == UserType.Regular &&
+                    loaded.group.myRole is MemberRole.Owner && loaded.group.kind != GroupKind.BasicGroup,
+            isCheckingTransfer = (mutableUiState.value as? MemberRightsUiState.Content)?.isCheckingTransfer == true,
         )
     }
 

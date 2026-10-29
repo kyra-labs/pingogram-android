@@ -98,10 +98,17 @@ class GeneratedOpenSourceLicensesRepositoryTest {
 
     @Test
     fun `lists a Kotlin Multiplatform library once, by the module the app declares`() {
-        val ids = libraries.map { it.id }.toSet()
+        val names = libraries.associate { it.id to it.name }
 
-        assertTrue("androidx.compose.ui:ui" in ids)
-        assertEquals(emptyList<String>(), ids.filter { it.endsWith("-android") && it.removeSuffix("-android") in ids })
+        assertTrue("androidx.compose.ui:ui" in names)
+        // A multiplatform library's Android module has its name; LeakCanary's (debug builds) "-android" modules are
+        // libraries of their own beside their JVM ones (shark and shark-android), with names of their own.
+        assertEquals(
+            emptyList<String>(),
+            names.keys.filter { id ->
+                id.endsWith("-android") && names[id.removeSuffix("-android")]?.let { it == names[id] } == true
+            },
+        )
     }
 
     @Test

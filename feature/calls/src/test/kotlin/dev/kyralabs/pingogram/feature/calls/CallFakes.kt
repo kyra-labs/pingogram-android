@@ -14,9 +14,11 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
+import dev.kyralabs.pingogram.feature.calls.engine.ConferenceEncryption
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
 import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
+import dev.kyralabs.pingogram.feature.calls.engine.Presentation
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
 import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
@@ -30,6 +32,7 @@ import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -66,6 +69,7 @@ class FakeCallRepository : CallRepository {
     /** `is_video` of each createCall and discardCall, in order. */
     val startedVideo = mutableListOf<Boolean>()
     val discardedVideo = mutableListOf<Boolean>()
+    val discardedLinks = mutableListOf<String>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
     val rated = mutableListOf<Rating>()
 
@@ -117,8 +121,10 @@ class FakeCallRepository : CallRepository {
         duration: Duration,
         isVideo: Boolean,
         connectionId: Long,
+        inviteLink: String,
     ): Outcome<Unit> {
         discarded += Discard(callId, isDisconnected, duration)
+        discardedLinks += inviteLink
         discardedVideo += isVideo
         return discardResult
     }
@@ -145,7 +151,7 @@ class FakeCallRepository : CallRepository {
     }
 }
 
-private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = persistentMapOf<Int, Call>().putAll(this)
+private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = toImmutableMap()
 
 class FakeCallEngine : CallEngine {
     var failsToLoad = false
@@ -177,6 +183,18 @@ class FakeCallEngine : CallEngine {
         if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
         return FakeGroupCallSession(groupCallId, muted).also { groupSessions += it }
     }
+
+    /** The conference calls' encryptions, in the order their sessions were made. */
+    val encryptions = mutableListOf<ConferenceEncryption>()
+
+    override suspend fun createConference(
+        muted: Boolean,
+        encryption: ConferenceEncryption,
+    ): GroupCallSession {
+        if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        encryptions += encryption
+        return FakeGroupCallSession(0, muted).also { groupSessions += it }
+    }
 }
 
 class FakeGroupCallSession(
@@ -192,6 +210,41 @@ class FakeGroupCallSession(
 
     var params: String? = null
     var onHold = false
+
+    /** What the engine does not know the senders of, and the senders the manager told it. */
+    val unknown = Channel<List<Int>>(Channel.UNLIMITED)
+    override val unknownSources: Flow<List<Int>> = unknown.receiveAsFlow()
+    val mappedSources = mutableListOf<Map<Int, Long>>()
+
+    override suspend fun mapSources(sources: Map<Int, Long>) {
+        mappedSources += sources
+    }
+
+    /** The presentation: whether it opens, its parameters once connected (null: none), and "closed" once stopped. */
+    var opensPresentation = true
+    var presentationParams: String? = null
+    val presentationEvents = mutableListOf<String>()
+    val endScreen = Channel<Unit>(Channel.UNLIMITED)
+    override val screenEnded: Flow<Unit> = endScreen.receiveAsFlow()
+
+    override suspend fun startPresentation(): Presentation? {
+        presentationEvents += "open"
+        return Presentation("{\"ssrc\":$PRESENTATION_SOURCE}", PRESENTATION_SOURCE).takeIf { opensPresentation }
+    }
+
+    override suspend fun connectPresentation(
+        params: String,
+        quality: VideoQuality,
+    ) {
+        presentationEvents += "connect"
+        presentationParams = params
+    }
+
+    override suspend fun stopPresentation() {
+        presentationEvents += "stop"
+        presentationParams = null
+    }
+
     var closed = false
     var videoSink: VideoFrameSink? = null
     val times = mutableListOf<Long>()
@@ -263,6 +316,7 @@ class FakeGroupCallSession(
 
     companion object {
         const val AUDIO_SOURCE = 1234
+        const val PRESENTATION_SOURCE = 5678
     }
 }
 
@@ -288,6 +342,21 @@ class FakeCallSession(
     var localSink: VideoFrameSink? = null
     var remoteSink: VideoFrameSink? = null
     override val remoteVideo = MutableStateFlow(RemoteVideo.Off)
+    override val remoteIsScreen = MutableStateFlow(false)
+
+    /** Every screen state the session was told, in order. */
+    val screens = mutableListOf<Boolean>()
+
+    /** The capture ending by itself: the test sends it. */
+    val endScreen = Channel<Unit>(Channel.UNLIMITED)
+    override val screenEnded: Flow<Unit> = endScreen.receiveAsFlow()
+
+    override suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality,
+    ) {
+        screens += on
+    }
 
     override suspend fun setCamera(
         camera: CallCamera?,
@@ -375,6 +444,14 @@ class FakeCallForeground : CallForeground {
 
     override fun start(withMicrophone: Boolean) {
         events += if (withMicrophone) "start+mic" else "start"
+    }
+
+    /** Whether Android lets the service run as `mediaProjection`. */
+    var allowsScreenCapture = true
+
+    override suspend fun setScreenCapture(on: Boolean): Boolean {
+        events += if (on) "screen" else "no screen"
+        return allowsScreenCapture || !on
     }
 
     override fun stop() {

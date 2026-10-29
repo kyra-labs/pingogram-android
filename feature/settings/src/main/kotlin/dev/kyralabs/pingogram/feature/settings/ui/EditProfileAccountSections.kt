@@ -16,9 +16,11 @@ import androidx.core.os.ConfigurationCompat
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.feature.settings.R
 
-// The parts of Edit profile about the account rather than the profile: its phone number (FR-S1, Account).
+// The parts of Edit profile that open pages of their own: the personal channel, and the account's phone number
+// (FR-S1, Account).
 
 /**
  * The account's [phoneNumber] (formatted, left to right) in a row of its own, ending in a "Change" [TextButton] that
@@ -32,7 +34,7 @@ internal fun PhoneNumberSection(
 ) {
     if (phoneNumber.isEmpty()) return
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0]
-    val formatted = formatPhoneNumber(phoneNumber, locale?.country.orEmpty())
+    val formatted = phoneNumberToShow(formatPhoneNumber(phoneNumber, locale?.country.orEmpty()))
     FieldGroup(title = stringResource(R.string.settings_section_profile_phone)) {
         val label = stringResource(R.string.settings_edit_profile_change_number_label, formatted.bidiIsolated())
         SegmentedListItem(
@@ -49,6 +51,25 @@ internal fun PhoneNumberSection(
             },
         ) {
             Text(formatted, style = MaterialTheme.typography.bodyLarge.numericContent)
+        }
+    }
+}
+
+/** "Personal channel", a row of its own that opens which channel the profile shows ([onOpen]). */
+@Composable
+internal fun PersonalChannelSection(
+    enabled: Boolean,
+    onOpen: () -> Unit,
+) {
+    SettingsGroup {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_personal_channel),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_personal_channel_summary)) },
+                onClick = onOpen,
+                enabled = enabled,
+            )
         }
     }
 }

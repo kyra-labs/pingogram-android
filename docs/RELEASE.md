@@ -86,18 +86,31 @@ posted, so forks build as before.
 
 1. `main` is green; `CHANGELOG.md` has an `## [Unreleased]` section with everything since the
    last tag.
-2. Open a PR `chore(release): vX.Y.Z` that:
+2. On the owner's phone, signed in as `docs/PERFORMANCE.md` §9 describes, run the benchmarks on `main` and check them
+   against the budgets and the last baseline:
+
+   ```bash
+   ./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true \
+     -Pandroid.testInstrumentationRunnerArguments.notClass=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator
+   python3 tools/benchmark/compare.py benchmark/build/outputs/connected_android_test_additional_output/
+   ```
+
+   A budget miss or a time more than 10% above the baseline stops the release until it is fixed, or until the owner
+   accepts it in the release PR (a budget change is an ADR, `docs/PERFORMANCE.md` §9). After the release, record the
+   run as the new baseline: `compare.py … --write-baseline benchmark/baselines/<device>.json --commit vX.Y.Z`, committed
+   with the next change.
+3. Open a PR `chore(release): vX.Y.Z` that:
    - moves `Unreleased` items under `## [X.Y.Z] - YYYY-MM-DD`,
    - updates the comparison links at the bottom of `CHANGELOG.md`.
-3. Merge, then tag the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
-4. `release.yml` builds, signs, checksums, checks the APK sizes against `docs/PERFORMANCE.md` §1 (arm64-v8a ≤ 50 MB,
+4. Merge, then tag the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
+5. `release.yml` builds, signs, checksums, checks the APK sizes against `docs/PERFORMANCE.md` §1 (arm64-v8a ≤ 50 MB,
    universal ≤ 123 MB; over budget fails the release before anything is published), extracts the changelog section
    (followed by a link to `docs/API_TERMS.md`) and publishes the GitHub Release. Pre-release if version < 1.0.0 or has
    a suffix.
-5. Install the universal APK on at least two devices (one Android 8–10, one 14+), run the
+6. Install the universal APK on at least two devices (one Android 8–10, one 14+), run the
    smoke list in `docs/TESTING.md`, and if anything is wrong delete the release (keep the tag
    history clean by releasing a patch instead of re-tagging).
-6. Announce (README "Download" badge updates automatically via shields.io "latest release").
+7. Announce (README "Download" badge updates automatically via shields.io "latest release").
 
 ## Hotfix
 
@@ -131,8 +144,10 @@ Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` 
   Still open, in the recipe as TODOs:
   - **Telegram API values.** They would sit in clear text in the public recipe (owner decision).
   - **TDLib.** Its AAR has to be packaged in the recipe as `.github/workflows/tdlib.yml` does.
-  - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Either WebRTC is
-    built from source too, or F-Droid's build leaves calls out.
+  - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Calls stay in
+    F-Droid's build, as in Telegram FOSS's and Telegram X's: the call engine and WebRTC will be built from source
+    (`docs/adr/0030-calls-in-the-fdroid-build.md`). The spike (2026-10-27) showed it builds within F-Droid's limits;
+    which engine builds on that WebRTC is the next step.
 
 ## Reproducible builds
 

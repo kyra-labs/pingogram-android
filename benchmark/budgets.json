@@ -1,0 +1,23 @@
+{
+  "_comment": "The budgets of docs/PERFORMANCE.md §1 that the benchmarks measure, checked by tools/benchmark/compare.py. Change both together. Keys are <benchmark class>.<test> with * for any test of the class; values in ms unless named otherwise.",
+  "StartupBenchmark.coldStartup*": {
+    "timeToFullDisplayMs.median": 1200
+  },
+  "StartupBenchmark.warmStartup*": {
+    "timeToFullDisplayMs.median": 400
+  },
+  "ChatListScrollBenchmark.*": {
+    "frameDurationCpuMs.P90": 8,
+    "frameDurationCpuMs.over32msFrames": 0
+  },
+  "ConversationScrollBenchmark.*": {
+    "frameDurationCpuMs.P90": 10,
+    "frameOverrunMs.latePercent": 1
+  },
+  "OpenChatBenchmark.*": {
+    "openChatSumMs.median": 150
+  },
+  "SendMessageBenchmark.*": {
+    "sendMessageSumMs.median": 50
+  }
+}

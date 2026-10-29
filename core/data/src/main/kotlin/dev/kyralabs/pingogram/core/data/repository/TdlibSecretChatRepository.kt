@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSecretChat
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SecretChatRepository] on TDLib's secret chats. TDLib announces each with `updateSecretChat` before its chat reaches
@@ -30,7 +30,7 @@ import javax.inject.Singleton
  * `setChatMessageAutoDeleteTime`, which takes any number of seconds in a secret chat (other chats only whole days).
  * Deleting a secret chat closes it first (`ChatDeletion`).
  */
-@Singleton
+@AccountScoped
 class TdlibSecretChatRepository
     @Inject
     constructor(

@@ -3,15 +3,17 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.Accounts
+import dev.kyralabs.pingogram.core.data.di.combinedAuthStep
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.AutoLock
 import dev.kyralabs.pingogram.core.domain.model.PasscodeSettings
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
-import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeCheck
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +29,9 @@ import kotlin.time.TimeSource
 
 /**
  * [AppLockRepository] as a small state machine over the passcode settings ([PasscodeRepository]) and the login steps
- * ([AuthRepository]), which it follows in the [scope] of the app from its creation on. Times are measured on
+ * of the device's accounts together ([combinedAuthStep]: signed in while one is), which it follows in the [scope] of
+ * the app from its creation on. The lock is the app's, not an account's (`docs/adr/0031-multiple-accounts.md`), so
+ * switching accounts neither locks nor unlocks it. Times are measured on
  * [timeSource], since boot with deep sleep included in the app, so a phone that slept through the auto-lock delay
  * locks when it wakes up.
  *
@@ -44,16 +48,24 @@ import kotlin.time.TimeSource
 @Singleton
 class DefaultAppLockRepository internal constructor(
     private val passcodeRepository: PasscodeRepository,
-    private val authRepository: AuthRepository,
+    private val authSteps: Flow<AuthStep>,
+    /** Logs every account out, which forgetting the passcode does: what it protected goes. */
+    private val logOut: suspend () -> Outcome<Unit>,
     scope: CoroutineScope,
     private val timeSource: TimeSource,
 ) : AppLockRepository {
     @Inject
     constructor(
         passcodeRepository: PasscodeRepository,
-        authRepository: AuthRepository,
+        accounts: Accounts,
         @ApplicationScope scope: CoroutineScope,
-    ) : this(passcodeRepository, authRepository, scope, ElapsedRealtimeTimeSource)
+    ) : this(
+        passcodeRepository = passcodeRepository,
+        authSteps = accounts.combinedAuthSteps(),
+        logOut = accounts::logOutAll,
+        scope = scope,
+        timeSource = ElapsedRealtimeTimeSource,
+    )
 
     // Changed only in transition(), under its lock, so the state always follows the latest machine.
     private var machine = Machine()
@@ -63,7 +75,7 @@ class DefaultAppLockRepository internal constructor(
 
     init {
         scope.launch { passcodeRepository.settings.collect(::onSettings) }
-        scope.launch { authRepository.authStep.collect(::onAuthStep) }
+        scope.launch { authSteps.collect(::onAuthStep) }
     }
 
     private fun onSettings(settings: PasscodeSettings) {
@@ -162,7 +174,7 @@ class DefaultAppLockRepository internal constructor(
     }
 
     override suspend fun forgetPasscode(): Outcome<Unit> =
-        authRepository.logOut().onSuccess {
+        logOut().onSuccess {
             passcodeRepository.removePasscode()
             transition { it.copy(locked = false, lastFailure = null) }
         }

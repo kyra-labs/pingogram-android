@@ -25,6 +25,15 @@ data class MessageProperties(
      */
     val canBeSaved: Boolean,
     /**
+     * It can be replied to from another chat ("Reply in another chat", td_api.tl
+     * `inputMessageReplyToExternalMessage`): false for protected content and secret chats, among others.
+     */
+    val canBeRepliedInAnotherChat: Boolean = false,
+    /** Its link can be made (`MessageActionRepository.messageLink`): messages of supergroups and channels. */
+    val canGetLink: Boolean = false,
+    /** Its photo, video, GIF, song or file can be replaced while it is edited (td_api.tl `editMessageMedia`). */
+    val canEditMedia: Boolean = false,
+    /**
      * It can be forwarded to another chat (`REQUIREMENTS.md` FR-C6): false for protected content, service messages and
      * a message still being sent, among others.
      */
@@ -35,6 +44,11 @@ data class MessageProperties(
     val canBeCopiedToSecretChat: Boolean = false,
     /** It can be reported to Telegram's moderators (td_api.tl `messageProperties.can_report_chat`, `reportChat`). */
     val canBeReported: Boolean = false,
+    /**
+     * The members who saw it can be listed ("Seen by", `MessageInteractionRepository.viewers`): TDLib allows it for a
+     * group's recent messages, while Telegram keeps who saw them, and in groups up to a size.
+     */
+    val canGetViewers: Boolean = false,
 )
 
 /**

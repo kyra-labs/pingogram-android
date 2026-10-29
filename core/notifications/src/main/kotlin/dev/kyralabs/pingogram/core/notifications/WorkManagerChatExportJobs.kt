@@ -39,6 +39,7 @@ class WorkManagerChatExportJobs
                 OneTimeWorkRequestBuilder<ChatExportWorker>()
                     .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                     .setInputData(ChatExportInput(chatId, chatTitle, options).toData())
+                    .addTag(TAG)
                     .build()
             workManager.enqueueUniqueWork(workName(chatId), ExistingWorkPolicy.KEEP, request)
         }
@@ -54,6 +55,9 @@ class WorkManagerChatExportJobs
                 .distinctUntilChanged()
 
         internal companion object {
+            /** Every export's tag, by which the storage clean-up waits for them ([StorageOptimizationWorker]). */
+            const val TAG = "chat_export"
+
             fun workName(chatId: Long) = "chat_export_$chatId"
         }
     }

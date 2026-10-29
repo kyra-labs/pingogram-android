@@ -10,17 +10,21 @@ import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
-import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
-import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
+import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
+import dev.kyralabs.pingogram.core.notifications.StorageOptimization
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
+import dev.kyralabs.pingogram.startup.StartupTrace
+import dev.kyralabs.pingogram.startup.asyncTraceSection
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,44 +37,44 @@ class PingogramApplication :
     lateinit var tdlibClient: TdlibClient
 
     /**
-     * Never read: injecting creates every caching repository, which subscribes to TDLib's updates as it is created.
-     * TDLib introduces each user and chat only once, and its updates are not replayed, so this must happen before
-     * [tdlibClient] starts. Hilt injects both fields in `super.onCreate()`.
+     * The accounts' graphs (`docs/adr/0031-multiple-accounts.md`). Making an account's caches subscribes each to
+     * TDLib's updates; TDLib introduces each user and chat only once, and its updates are not replayed, so this happens
+     * before [tdlibClient] starts. Hilt injects both fields in `super.onCreate()`.
      */
     @Inject
-    lateinit var updateCaches: Set<@JvmSuppressWildcards TdlibUpdateCache>
+    lateinit var accounts: Accounts
 
     /** Shows TDLib's notifications in every process, the ones a notification action starts too. */
     @Inject
-    lateinit var notificationRenderer: NotificationRenderer
+    lateinit var notificationRenderer: dagger.Lazy<NotificationRenderer>
 
     /** Offers the most recent chats in the system's share sheet (Direct Share targets, FR-N2). */
     @Inject
-    lateinit var shareTargetShortcuts: ShareTargetShortcuts
+    lateinit var shareTargetShortcuts: dagger.Lazy<ShareTargetShortcuts>
 
     /** Keeps the home screen widget of recent chats current while one is placed. */
     @Inject
-    lateinit var recentChatsWidgetUpdater: RecentChatsWidgetUpdater
+    lateinit var recentChatsWidgetUpdater: dagger.Lazy<RecentChatsWidgetUpdater>
+
+    /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
+    @Inject
+    lateinit var storageOptimization: dagger.Lazy<StorageOptimization>
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
-    lateinit var backgroundConnection: BackgroundConnection
+    lateinit var backgroundConnection: dagger.Lazy<BackgroundConnection>
 
     /** Keeps the app running while the files the user sends and downloads are on their way (FR-N4). */
     @Inject
-    lateinit var transfersController: TransfersController
+    lateinit var transfersController: dagger.Lazy<TransfersController>
 
     /** Rings for incoming calls and runs the user's call, in every process (FR-V1). */
     @Inject
-    lateinit var calls: Calls
-
-    /** Tells TDLib about every new network the device uses, so it reconnects at once (docs/PERFORMANCE.md §3). */
-    @Inject
-    lateinit var networkTypeReporter: TdlibNetworkTypeReporter
+    lateinit var calls: dagger.Lazy<Calls>
 
     /** Creates the workers with Hilt (notification actions, transfers); WorkManager asks for it when first used. */
     @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    lateinit var workerFactory: dagger.Lazy<HiltWorkerFactory>
 
     /** Coil's image loader (`ImageLoaderModule`), created when Coil first asks for it in [newImageLoader]. */
     @Inject
@@ -78,7 +82,14 @@ class PingogramApplication :
 
     /** Its history of chats nobody looks at goes when Android asks for memory back ([onTrimMemory]). */
     @Inject
-    lateinit var messageRepository: MessageRepository
+    lateinit var messageRepository: dagger.Lazy<MessageRepository>
+
+    /**
+     * The Appearance settings, read as the app starts: they and the passcode lock's, in the same file, are what the
+     * splash screen waits for, and the first activity finds them in memory (docs/PERFORMANCE.md §2).
+     */
+    @Inject
+    lateinit var appearanceRepository: dagger.Lazy<AppearanceRepository>
 
     /** Where work that must not hold up the first frame runs: the `Default` dispatcher. */
     @Inject
@@ -89,27 +100,54 @@ class PingogramApplication :
         // Keeps the last crash on the device for "Send feedback", which the user shares themselves; first, so a crash
         // while the app starts is kept too.
         CrashRecorder(this).install()
-        super.onCreate()
+        // Injects the fields: TDLib's client and the caching repositories, which subscribe to its updates now; the rest
+        // is lazy, made by startInBackground.
+        StartupTrace.section(StartupTrace.INJECT) {
+            super.onCreate()
+            accounts.start()
+        }
+        // Reads the settings file while the activity is created: the splash screen waits for it (main.awaitSettings).
+        applicationScope.launch {
+            asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
+        }
         // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
         applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }
-        // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
-        notificationRenderer.start()
-        // Publishes the most recent chats as conversation shortcuts the share sheet lists, while logged in.
-        shareTargetShortcuts.start()
-        // Redraws the home screen widget when the chats change, only while a widget is placed.
-        recentChatsWidgetUpdater.start()
-        // foss: starts or stops the "Keep connected" service as its setting and the login change; gms: registers the
-        // push token with Telegram at every login and deletes it at logout.
-        backgroundConnection.start()
-        // Starts the transfers' foreground service while the user's uploads and downloads run; WorkManager only then.
-        transfersController.start()
-        // Sends TDLib the network type once it has its parameters, and again at every new network.
-        networkTypeReporter.start()
-        // Follows TDLib's calls, which it announces only once: an incoming call rings from the first update on.
-        calls.start()
+        startInBackground()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
-        tdlibClient.start()
+        StartupTrace.section(StartupTrace.TDLIB_START) { tdlibClient.start() }
+    }
+
+    /**
+     * Makes and starts what follows TDLib's state in every process, on the `Default` dispatcher, off the main thread
+     * and out of the way of the activity (docs/PERFORMANCE.md §2). Each follows a repository that keeps TDLib's state
+     * (a `TdlibUpdateCache`), so starting a little after TDLib loses nothing: an incoming call still rings, a
+     * restored notification still shows.
+     */
+    private fun startInBackground() {
+        applicationScope.launch {
+            StartupTrace.section(StartupTrace.STARTERS) {
+                // Creates the notification channels and follows TDLib's notifications.
+                notificationRenderer.get().start()
+                // Follows TDLib's calls: an incoming call rings from the first update on.
+                calls.get().start()
+                // Sends TDLib the network type once it has its parameters, and again at every new network.
+                accounts.firstAccount.component
+                    .networkTypeReporter()
+                    .start()
+                // foss: starts or stops the "Keep connected" service as its setting and the login change; gms:
+                // registers the push token with Telegram at every login and deletes it at logout.
+                backgroundConnection.get().start()
+                // Starts the transfers' foreground service while the user's uploads and downloads run.
+                transfersController.get().start()
+                // Publishes the most recent chats as conversation shortcuts the share sheet lists, while logged in.
+                shareTargetShortcuts.get().start()
+                // Redraws the home screen widget when the chats change, only while a widget is placed.
+                recentChatsWidgetUpdater.get().start()
+                // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
+                storageOptimization.get().start()
+            }
+        }
     }
 
     /**
@@ -119,7 +157,7 @@ class PingogramApplication :
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= TRIM_MEMORY_UI_HIDDEN) messageRepository.trimMemory()
+        if (level >= TRIM_MEMORY_UI_HIDDEN) messageRepository.get().trimMemory()
     }
 
     /**
@@ -127,7 +165,7 @@ class PingogramApplication :
      * initializer, so the process starts without it (docs/PERFORMANCE.md §2).
      */
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+        get() = Configuration.Builder().setWorkerFactory(workerFactory.get()).build()
 
     /** Called by Coil, once, when the first image is shown. */
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()

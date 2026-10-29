@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.pingogram.android.feature)
+    // Kotlin warnings fail the build here (docs/audit/v1-readiness.md).
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 dependencies {
@@ -15,6 +17,7 @@ dependencies {
     // Decodes QR codes from the camera's frames and from picked images, on the device; nothing leaves it.
     implementation(libs.zxing.core)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

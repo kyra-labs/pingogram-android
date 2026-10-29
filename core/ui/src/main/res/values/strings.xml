@@ -15,6 +15,7 @@
     <string name="error_phone_number_banned">This phone number is banned from Telegram.</string>
     <string name="error_phone_number_flood">Too many login attempts for this number. Try again later.</string>
     <string name="error_phone_number_occupied">Another Telegram account already uses this number.</string>
+    <string name="error_birthdate_invalid">Telegram doesn\'t accept this date as a birthday.</string>
     <string name="error_code_invalid">Wrong code. Check it and try again.</string>
     <string name="error_code_expired">This code has expired. Request a new one.</string>
     <string name="error_password_invalid">Wrong password.</string>
@@ -55,6 +56,9 @@
     <string name="call_video">Video call</string>
     <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
     <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
+    <!-- Who saw a message ("Seen by"): Telegram keeps it for a while only, and not in large groups. -->
+    <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
+    <string name="error_poll_closed">This poll is closed.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">
@@ -178,6 +182,10 @@
     <string name="preview_call_declined">Declined call</string>
     <string name="preview_video_call_outgoing">Outgoing video call</string>
     <string name="preview_video_call_incoming">Incoming video call</string>
+    <string name="preview_group_call_active">Group call</string>
+    <string name="preview_group_video_call_active">Group video call</string>
+    <string name="preview_group_call_missed">Missed group call</string>
+    <string name="preview_group_call_ended">Group call ended</string>
     <string name="preview_video_call_missed">Missed video call</string>
     <string name="preview_video_call_cancelled">Cancelled video call</string>
     <string name="preview_video_call_declined">Declined video call</string>

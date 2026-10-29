@@ -56,10 +56,11 @@ class KeystoreDatabaseKeyProvider internal constructor(
     constructor(
         @ApplicationContext context: Context,
         config: TdlibConfig,
+        slot: AccountSlot,
     ) : this(
-        wrappingKeys = AndroidKeystoreWrappingKeyStore(),
+        wrappingKeys = AndroidKeystoreWrappingKeyStore(slot),
         // Lazy: Context.getNoBackupFilesDir() touches the disk, and this class is created on the main thread.
-        keyFile = { context.noBackupFilesDir.resolve(KEY_FILE) },
+        keyFile = { context.noBackupFilesDir.resolve(keyFileName(slot)) },
         random = SecureRandom(),
         log = AndroidTdlibLog(config.isDebug),
     )
@@ -143,6 +144,10 @@ class KeystoreDatabaseKeyProvider internal constructor(
 
     internal companion object {
         const val KEY_FILE = "tdlib_database_key"
+
+        /** [KEY_FILE] for the first account, as before multiple accounts; "tdlib_database_key_1" for the second. */
+        fun keyFileName(slot: AccountSlot) = KEY_FILE + slot.suffix("_")
+
         const val KEY_SIZE_BYTES = 32
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private const val TAG_SIZE_BITS = 128
@@ -183,18 +188,22 @@ internal interface WrappingKeyStore {
 }
 
 /**
- * AES-256-GCM key in the Android Keystore. Usable without user authentication or an unlocked screen, so TDLib can
- * start in the background.
+ * AES-256-GCM key in the Android Keystore, one per account. Usable without user authentication or an unlocked screen,
+ * so TDLib can start in the background.
  */
-internal class AndroidKeystoreWrappingKeyStore : WrappingKeyStore {
+internal class AndroidKeystoreWrappingKeyStore(
+    slot: AccountSlot,
+) : WrappingKeyStore {
+    private val alias = aliasOf(slot)
+
     private val keyStore by lazy { KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) } }
 
-    override fun get(): SecretKey? = keyStore.getKey(ALIAS, null) as SecretKey?
+    override fun get(): SecretKey? = keyStore.getKey(alias, null) as SecretKey?
 
     override fun create(): SecretKey {
         val spec =
             KeyGenParameterSpec
-                .Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(KEY_SIZE_BITS)
@@ -206,14 +215,17 @@ internal class AndroidKeystoreWrappingKeyStore : WrappingKeyStore {
     }
 
     override fun delete() {
-        keyStore.deleteEntry(ALIAS)
+        keyStore.deleteEntry(alias)
     }
 
     override fun isPermanentlyInvalid(e: InvalidKeyException) = e is KeyPermanentlyInvalidatedException
 
-    private companion object {
-        const val ANDROID_KEYSTORE = "AndroidKeyStore"
-        const val ALIAS = "pingogram.tdlib.database_key"
-        const val KEY_SIZE_BITS = 256
+    internal companion object {
+        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val ALIAS = "pingogram.tdlib.database_key"
+        private const val KEY_SIZE_BITS = 256
+
+        /** [ALIAS] for the first account, as before multiple accounts; "….database_key.1" for the second. */
+        fun aliasOf(slot: AccountSlot) = ALIAS + slot.suffix(".")
     }
 }

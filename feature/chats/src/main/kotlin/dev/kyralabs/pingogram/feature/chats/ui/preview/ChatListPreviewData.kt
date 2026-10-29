@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -221,6 +222,12 @@ internal object ChatListPreviewData {
         )
 
     val contentWithArchive = contentWithFolders.copy(archive = archive)
+
+    /** The archive row as one line ([ArchiveRowStyle.Compact]). */
+    val contentWithCompactArchive = contentWithFolders.copy(archive = archive.copy(isCompact = true))
+
+    /** The archive row hidden: the top bar's button opens the archive. */
+    val contentWithHiddenArchive = contentWithFolders.copy(hiddenArchive = archive)
 
     /**
      * Three chats selected: Ada (pinned), the club (unread) and Katherine. Not all are pinned, muted or read, so the

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -77,6 +79,7 @@ class SearchViewModel internal constructor(
     private val searchRepository: SearchRepository,
     userRepository: UserRepository,
     groupRepository: GroupRepository,
+    chatLock: ChatLockRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -88,6 +91,7 @@ class SearchViewModel internal constructor(
         searchRepository: SearchRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
+        chatLock: ChatLockRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -96,6 +100,7 @@ class SearchViewModel internal constructor(
         searchRepository,
         userRepository,
         groupRepository,
+        chatLock,
         clock,
         timePatterns,
         dispatcher,
@@ -132,6 +137,8 @@ class SearchViewModel internal constructor(
             if (query.isEmpty() && !filter.searchesWithoutQuery) null else query to filter
         }.distinctUntilChanged()
             .flatMapLatest { search -> if (search == null) suggestions() else results(search.first, search.second) }
+            // Locked chats not opened with the passcode are found nowhere (docs/adr/0029-locked-chats.md).
+            .combine(chatLock.hiddenChatIds.filterNotNull()) { state, hidden -> state.withoutChats(hidden) }
 
     private val people =
         combine(

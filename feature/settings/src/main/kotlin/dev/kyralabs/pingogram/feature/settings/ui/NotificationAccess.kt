@@ -31,16 +31,22 @@ internal fun Context.openSystemSettings(intent: Intent) {
 
 /** Reads what Android allows Pingogram's notifications and reports it to [onChecked]. */
 @Composable
-internal fun rememberAccessCheck(onChecked: (NotificationSettingsEvent) -> Unit): () -> Unit {
+internal fun rememberAccessCheck(
+    /** The shown account's slot, whose channels count (`docs/adr/0031-multiple-accounts.md`). */
+    slot: () -> Int = { 0 },
+    onChecked: (NotificationSettingsEvent) -> Unit,
+): () -> Unit {
     val activity = LocalActivity.current
     val context = LocalContext.current
     val currentOnChecked by rememberUpdatedState(onChecked)
-    return remember(activity, context) { { currentOnChecked(accessOf(context, activity)) } }
+    val currentSlot by rememberUpdatedState(slot)
+    return remember(activity, context) { { currentOnChecked(accessOf(context, activity, currentSlot())) } }
 }
 
 private fun accessOf(
     context: Context,
     activity: Activity?,
+    slot: Int,
 ): NotificationSettingsEvent.AccessChecked {
     val manager = NotificationManagerCompat.from(context)
     // Before Android 13 notifications need no permission.
@@ -61,7 +67,7 @@ private fun accessOf(
         blockedChannels =
             NotificationScope.entries
                 .filter { scope ->
-                    manager.getNotificationChannelCompat(PingogramChannel.of(scope).id)?.importance ==
+                    manager.getNotificationChannelCompat(PingogramChannel.of(scope).idFor(slot))?.importance ==
                         NotificationManagerCompat.IMPORTANCE_NONE
                 }.toSet(),
     )

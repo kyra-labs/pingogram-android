@@ -54,8 +54,19 @@ class CustomEmojiScreenshotTest(
         capture(ScreenshotVariant.Rtl)
     }
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "shown")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(variant: ScreenshotVariant) {
+    private fun capture(
+        variant: ScreenshotVariant,
+        name: String = variant.goldenName,
+    ) {
         val renderer = testCustomEmojiRenderer(if (stateName == "loading") emptyMap() else CustomEmojiFakes.all)
         val composer = ComposerText(EDITED)
         composeRule.setContent {
@@ -66,7 +77,7 @@ class CustomEmojiScreenshotTest(
             }
         }
         composeRule.waitForIdle()
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.${variant.goldenName}"))
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$name"))
     }
 
     companion object {

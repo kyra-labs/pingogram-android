@@ -3,27 +3,29 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatMemberStatus
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.SlowModeDelays
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [GroupAdministrationRepository] on TDLib: `setChatTitle`, `setChatDescription`, `setChatPhoto` (a static photo
  * from a local file, its progress from the file's `updateFile`s, or null to remove it), `setChatPermissions`,
- * `setChatSlowModeDelay`, `setChatMemberStatus` and `deleteChatHistory`, each sent once as asked. TDLib checks the
+ * `setChatSlowModeDelay`, `setChatMemberStatus`, `deleteChatHistory`, `canTransferOwnership` and
+ * `transferChatOwnership`, each sent once as asked. TDLib checks the
  * rights itself and Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow
  * mode delay Telegram does not accept are refused before anything is sent.
  */
-@Singleton
+@AccountScoped
 class TdlibGroupAdministrationRepository
     @Inject
     constructor(
@@ -77,4 +79,35 @@ class TdlibGroupAdministrationRepository
         /** `deleteChatHistory` without removing the chat from the lists and without revoking for others. */
         override suspend fun clearHistory(chatId: Long): Outcome<Unit> =
             client.request(TdApi.DeleteChatHistory(chatId, false, false)).map {}
+
+        override suspend fun ownershipTransferCheck(): Outcome<OwnershipTransferCheck> =
+            client.request(TdApi.CanTransferOwnership()).map { result ->
+                when (result) {
+                    is TdApi.CanTransferOwnershipResultPasswordNeeded -> {
+                        OwnershipTransferCheck.PasswordNeeded
+                    }
+
+                    is TdApi.CanTransferOwnershipResultPasswordTooFresh -> {
+                        OwnershipTransferCheck.PasswordTooNew(result.retryAfter)
+                    }
+
+                    is TdApi.CanTransferOwnershipResultSessionTooFresh -> {
+                        OwnershipTransferCheck.SessionTooNew(result.retryAfter)
+                    }
+
+                    else -> {
+                        OwnershipTransferCheck.Allowed
+                    }
+                }
+            }
+
+        /** `transferChatOwnership` checks the 2-step verification password, so it waits as authentication does. */
+        override suspend fun transferOwnership(
+            chatId: Long,
+            userId: Long,
+            password: String,
+        ): Outcome<Unit> {
+            if (password.isEmpty()) return Outcome.Failure(DomainError.PasswordInvalid)
+            return client.request(TdApi.TransferChatOwnership(chatId, userId, password), AUTH_REQUEST_TIMEOUT).map {}
+        }
     }

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchCursor
@@ -16,7 +17,6 @@ import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import java.time.Instant
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatSearchRepository] on TDLib, without a cache: each search is asked for when the user types or pages.
@@ -30,7 +30,7 @@ import javax.inject.Singleton
  *   end is shown, which is then the day's. `getChatMessageCalendar` would count the messages of each day, but only of
  *   one kind (photos, videos…): td_api.tl does not accept it for every message, so it cannot say which days have any.
  */
-@Singleton
+@AccountScoped
 class TdlibChatSearchRepository
     @Inject
     constructor(

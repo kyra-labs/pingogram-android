@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -13,7 +15,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onSubscription
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [StickerRepository] on TDLib's sticker lists: `getInstalledStickerSets`, `getRecentStickers` (sent, not attached to
@@ -22,7 +23,7 @@ import javax.inject.Singleton
  * TDLib keeps all of them in its database and answers from it, so reading again costs little. No cache of its own:
  * the panel reads the lists only while it shows.
  */
-@Singleton
+@AccountScoped
 class TdlibStickerRepository
     @Inject
     constructor(
@@ -65,7 +66,12 @@ internal fun TdApi.StickerSetInfo.toStickerSetSummary() =
         isArchived = isArchived,
         isOfficial = isOfficial,
         isViewed = isViewed,
+        kind = stickerType.toStickerSetKind(),
     )
+
+/** What a set of td_api.tl's [TdApi.StickerType] holds: custom emoji, or stickers (masks among them). */
+internal fun TdApi.StickerType?.toStickerSetKind(): StickerSetKind =
+    if (this is TdApi.StickerTypeCustomEmoji) StickerSetKind.Emoji else StickerSetKind.Stickers
 
 /**
  * [read] once subscribed to [TdlibClient.updates], so no change in between is missed, then again on every update that

@@ -5,9 +5,11 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationChannelGroupCompat
 import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.DeviceAccountLimits
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import javax.inject.Inject
@@ -30,24 +32,32 @@ enum class PingogramChannel(
     val showBadge: Boolean = true,
     /** Rings with the default ringtone, as a phone call does, rather than the notification sound. */
     val ringtone: Boolean = false,
+    /**
+     * Messages: each account has a channel of its own ([idFor]), so a user can set one account's apart
+     * (`docs/adr/0031-multiple-accounts.md`); the rest are the app's.
+     */
+    val perAccount: Boolean = false,
 ) {
     PrivateChats(
         "private_chats",
         R.string.notification_channel_private_chats,
         R.string.notification_channel_private_chats_description,
         NotificationManagerCompat.IMPORTANCE_HIGH,
+        perAccount = true,
     ),
     Groups(
         "groups",
         R.string.notification_channel_groups,
         R.string.notification_channel_groups_description,
         NotificationManagerCompat.IMPORTANCE_HIGH,
+        perAccount = true,
     ),
     Channels(
         "channels",
         R.string.notification_channel_channels,
         R.string.notification_channel_channels_description,
         NotificationManagerCompat.IMPORTANCE_DEFAULT,
+        perAccount = true,
     ),
 
     /**
@@ -75,6 +85,7 @@ enum class PingogramChannel(
         R.string.notification_channel_other,
         R.string.notification_channel_other_description,
         NotificationManagerCompat.IMPORTANCE_DEFAULT,
+        perAccount = true,
     ),
 
     /** The files the user sends and downloads, while they are on their way (`TransfersWorker`, FR-N4). */
@@ -86,6 +97,12 @@ enum class PingogramChannel(
         showBadge = false,
     ),
     ;
+
+    /**
+     * This channel's id for the account in [slot]: the first account's is [id], as before there were several; another
+     * account's carries its slot. Only for [perAccount] channels; the others have [id] alone.
+     */
+    fun idFor(slot: Int): String = if (slot == 0 || !perAccount) id else "${id}_$slot"
 
     companion object {
         /**
@@ -122,6 +139,12 @@ enum class PingogramChannel(
  * milestone will add their per-chat channels here). Creating an existing channel changes only its name and
  * description, never what the user set, so [ensureCreated] runs at every start: a few binder calls, no disk access of
  * ours.
+ *
+ * Every account on the device has its message channels (`docs/adr/0031-multiple-accounts.md`); while more than one is
+ * signed in, each account's are in a channel group of their own named after it, as Telegram's are, so the system
+ * settings show them apart. A channel keeps its group once it has one (Android sets a group only on a channel without
+ * one), so the first account's stay in theirs after the others left. An account that left the device takes its group
+ * and channels with it.
  */
 @Singleton
 class NotificationChannels
@@ -129,34 +152,73 @@ class NotificationChannels
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
-        fun ensureCreated() {
-            val channels =
-                PingogramChannel.entries.map { channel ->
-                    NotificationChannelCompat
-                        .Builder(channel.id, channel.importance)
-                        .setName(context.getString(channel.title))
-                        .setDescription(context.getString(channel.description))
-                        .setShowBadge(channel.showBadge)
-                        .apply {
-                            if (channel.ringtone) {
-                                setSound(
-                                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
-                                    RINGTONE_ATTRIBUTES,
-                                )
-                                setVibrationEnabled(true)
-                            } else if (channel == PingogramChannel.OngoingCalls) {
-                                setSound(null, null)
-                            }
-                        }.build()
-                }
+        /** The app's channels and the first account's, as with one account. */
+        fun ensureCreated() = ensureCreated(slots = listOf(0), names = emptyMap())
+
+        /**
+         * The channels of the accounts in [slots], in channel groups named [names] (by slot) while it holds more than
+         * one account; deletes those of the slots that are gone.
+         */
+        fun ensureCreated(
+            slots: List<Int>,
+            names: Map<Int, String>,
+        ) {
             val manager = NotificationManagerCompat.from(context)
+            val grouped = names.size > 1
+            if (grouped) {
+                manager.createNotificationChannelGroupsCompat(
+                    names.map { (slot, name) ->
+                        NotificationChannelGroupCompat.Builder(groupId(slot)).setName(name).build()
+                    },
+                )
+            }
+            val channels =
+                PingogramChannel.entries.flatMap { channel ->
+                    if (channel.perAccount) {
+                        (slots + 0).distinct().map { slot ->
+                            channel(channel, channel.idFor(slot), groupId(slot).takeIf { grouped && slot in names })
+                        }
+                    } else {
+                        listOf(channel(channel, channel.id, group = null))
+                    }
+                }
             manager.createNotificationChannelsCompat(channels)
             OBSOLETE_CHANNELS.forEach(manager::deleteNotificationChannel)
+            for (gone in 1 until DeviceAccountLimits.MAX_ACCOUNTS_WITH_PREMIUM) {
+                if (gone in slots) continue
+                PingogramChannel.entries.filter { it.perAccount }.forEach {
+                    manager.deleteNotificationChannel(it.idFor(gone))
+                }
+                manager.deleteNotificationChannelGroup(groupId(gone))
+            }
         }
+
+        private fun channel(
+            channel: PingogramChannel,
+            id: String,
+            group: String?,
+        ): NotificationChannelCompat =
+            NotificationChannelCompat
+                .Builder(id, channel.importance)
+                .setName(context.getString(channel.title))
+                .setDescription(context.getString(channel.description))
+                .setShowBadge(channel.showBadge)
+                .apply {
+                    group?.let(::setGroup)
+                    if (channel.ringtone) {
+                        setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE), RINGTONE_ATTRIBUTES)
+                        setVibrationEnabled(true)
+                    } else if (channel == PingogramChannel.OngoingCalls) {
+                        setSound(null, null)
+                    }
+                }.build()
 
         private companion object {
             /** Earlier versions' channels: "calls" rang with the notification sound ([PingogramChannel.Calls]). */
             val OBSOLETE_CHANNELS = listOf("calls")
+
+            /** The channel group of the account in [slot]. */
+            fun groupId(slot: Int) = "account_$slot"
 
             val RINGTONE_ATTRIBUTES: AudioAttributes =
                 AudioAttributes

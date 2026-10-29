@@ -37,11 +37,14 @@ import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** A participant's video, which [GroupCallActivity] draws with WebRTC's renderer and previews as a placeholder. */
-typealias ParticipantVideo = @Composable (endpointId: String, modifier: Modifier) -> Unit
+/**
+ * A participant's video, which [GroupCallActivity] draws with WebRTC's renderer and previews as a placeholder; with
+ * [fit] (a shared screen) whole in its bounds rather than cropped to them.
+ */
+typealias ParticipantVideo = @Composable (endpointId: String, fit: Boolean, modifier: Modifier) -> Unit
 
 /** A tonal placeholder for participants' videos in previews and screenshot tests, which cannot draw with OpenGL. */
-internal val PlaceholderParticipantVideo: ParticipantVideo = { _, modifier ->
+internal val PlaceholderParticipantVideo: ParticipantVideo = { _, _, modifier ->
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest))
 }
 
@@ -74,7 +77,7 @@ internal fun VideoGrid(
         }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing.small)) {
         tiles.take(wide).forEach { tile ->
-            key(tile?.key) {
+            key(tile?.tileKey) {
                 Tile(tile, state, videos, self, onEvent, WIDE_ASPECT, Modifier.fillMaxWidth())
             }
         }
@@ -82,7 +85,7 @@ internal fun VideoGrid(
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
                 row.forEach { tile ->
                     // Keyed, so a tile keeps its renderer as pinning moves it.
-                    key(tile?.key) { Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f)) }
+                    key(tile?.tileKey) { Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f)) }
                 }
                 // A lone tile in the last row keeps its column's width.
                 repeat(COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
@@ -128,7 +131,8 @@ private fun VideoTile(
     val shape = MaterialTheme.shapes.large
     val colors = MaterialTheme.pingogramColors
     val name = video.name.ifBlank { stringResource(R.string.call_someone) }
-    val description = stringResource(R.string.call_remote_video, name)
+    val description =
+        stringResource(if (video.isScreen) R.string.call_remote_screen else R.string.call_remote_video, name)
     val pinned = stringResource(R.string.group_call_video_pinned)
     val action = stringResource(if (video.isPinned) R.string.group_call_unpin else R.string.group_call_pin)
     Box(
@@ -164,18 +168,27 @@ private fun VideoTile(
                             .padding(horizontal = MaterialTheme.spacing.small),
                 )
             } else {
-                draw(video.endpointId, Modifier.fillMaxSize())
+                draw(video.endpointId, video.isScreen, Modifier.fillMaxSize())
             }
-            NamePill(name, video.isPinned, Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.small))
+            NamePill(
+                name,
+                video.isPinned,
+                video.isScreen,
+                Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.small),
+            )
         }
     }
 }
 
-/** The participant's name on a `mediaOverlay` pill, after the push-pin symbol while pinned. */
+/**
+ * The participant's name on a `mediaOverlay` pill, after the push-pin symbol while pinned and the screen-share symbol
+ * on their shared screen.
+ */
 @Composable
 private fun NamePill(
     name: String,
     isPinned: Boolean,
+    isScreen: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.pingogramColors
@@ -187,9 +200,11 @@ private fun NamePill(
                 .padding(horizontal = MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (isPinned) {
+        val icons =
+            listOfNotNull(UiR.drawable.ic_push_pin.takeIf { isPinned }, R.drawable.ic_screen_share.takeIf { isScreen })
+        for (icon in icons) {
             Icon(
-                painterResource(UiR.drawable.ic_push_pin),
+                painterResource(icon),
                 contentDescription = null,
                 tint = colors.onMediaOverlay,
                 modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),

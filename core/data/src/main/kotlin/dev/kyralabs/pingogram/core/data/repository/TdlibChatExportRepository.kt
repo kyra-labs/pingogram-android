@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.ExportChat
 import dev.kyralabs.pingogram.core.domain.model.ExportChatKind
@@ -16,7 +17,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * TDLib may return fewer messages than asked for, also before the end of the history; only an empty page ends it.
  * Messages at or newer than `from_message_id` are left out, so a page never repeats the previous one's oldest message.
  */
-@Singleton
+@AccountScoped
 class TdlibChatExportRepository
     @Inject
     constructor(

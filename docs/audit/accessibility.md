@@ -25,6 +25,7 @@ Calls (`feature:calls`, session C) were not audited here.
 | `SettingsAccessibilityChecksTest` | `feature:settings` | 13 settings pages with content |
 | `ProfileAccessibilityChecksTest` | `feature:profile` | Profile, group info, members, member rights, permissions, editing, invite links |
 | `ContactsAccessibilityChecksTest` | `feature:contacts` | The Contacts tab, Add contact ("not on Telegram" too), Edit contact |
+| `ChatsAccessibilityChecksTest` | `feature:chats` | Every state the module's goldens show, at 100% and 200% font: the chat list (with the archive row, selection, the connection pill, the story rings, the notification request), the archive, global search, New chat, New group and New channel's steps, Archive settings |
 | `AuthAccessibilityChecksTest` | `feature:auth` | Welcome, phone number (with its error), country picker, code, password, registration, QR login, email code |
 | `AppShellAccessibilityTest` | `:app` | The floating navigation bar and the chat list's chrome, at 100% and 200% font scale |
 
@@ -37,7 +38,7 @@ Existing tests already covered:
 - roles: switches, radio groups, tabs;
 - live regions: countdowns, connection;
 - custom actions on rows;
-- 200% font goldens of most screens;
+- 200% font goldens in every feature module;
 - right-to-left goldens;
 - reduced motion.
 
@@ -60,6 +61,8 @@ Existing tests already covered:
 | F13 | `ChatPermissionsScreen` (slow mode) | `onValueChangeFinished` read the step of the last composition, so TalkBack's adjust action could save the previous delay | Accessible adjust actions | It reads the slider's state |
 | F14 | `LanguageScreen` | Each language's own name ("العربية") took the layout's direction and the UI language's voice | Text direction (§9) | Marked with its locale (`SpanStyle.localeList`) in `userContent` |
 | F15 | Settings and info page titles, contact form and Contacts titles, the phone number of an invitation row | `maxLines = 1` without an ellipsis cut text at 200% font | No truncation | `TextOverflow.Ellipsis` |
+| F16 | `ContactSyncItems` (the phone's contacts to invite) | At 200% font the number ended in an ellipsis, its last digits lost | 200% font without loss | Two lines at most: it wraps between its groups |
+| F17 | `NewChatButton` | Hidden in selection mode, the button was only scaled down to 20% and faded (Material's `animateFloatingActionButton`): screen readers found a 16 dp "New chat", the keyboard could focus it, and a tap in that corner opened New chat | Hidden content leaves the semantics tree; 48 dp targets | While hidden it takes no taps or focus and leaves the semantics tree; found by `ChatsAccessibilityChecksTest` |
 
 Already good, from the same reading:
 
@@ -88,25 +91,25 @@ The chat screens already do well on several points:
 - no hard-coded English in spoken strings;
 - animations follow reduced motion.
 
-A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say what was done.
+A1, A3 and A4 are done (the keyboard and mouse pull request), and A5–A15 (the chat screens' accessibility pull request): their rows say what was done. A2 is done too (the send-keys setting).
 
 | # | Where | Finding | Rule | Suggested fix |
 |---|---|---|---|---|
 | A1 | `feature/chat/…/ui/MessageBubble.kt` (`bubbleGestures`, `LongPress.kt`) | A message's actions open by touch or TalkBack only: no keyboard focus, no key, no right-click | §9 keyboard & mouse | **Done.** The row is focusable where the keyboard moves the focus (`bubbleKeys`), with the theme's focus ring in the bubble's shape. Enter, Shift+F10, the Menu key and a right click open the floating menu, which takes the focus and closes on Esc, giving the focus back. Tests: `MessageKeysTest` |
-| A2 | `feature/chat/…/ui/composer/ComposerField.kt` (`isSendKey`) | Enter sends and Ctrl+Enter is refused. There is no "Ctrl+Enter to send" setting, which §9 asks for | §9 keyboard | A send-key preference. In Ctrl+Enter mode, Enter inserts a line break (owner decision: where the setting lives, §5) |
+| A2 | `feature/chat/…/ui/composer/ComposerField.kt` (`fieldKey`) | Fixed (2026-10-24): which Enter sends is a setting for a hardware keyboard (Ctrl+Enter sends where Enter does not) and for the on-screen keyboard (`SendKeys`) | §9 keyboard | Done; where the rows live is the owner's to confirm (§5) |
 | A3 | `feature/media/…/ui/MediaViewerScreen.kt`, `MediaPage.kt` | No keys: arrows do not turn pages, +/− do not zoom, Esc does not close | §9 keyboard & mouse | **Done.** Left/Right (mirrored in RTL), +/= and −, 0 to fit, Ctrl and the wheel, Space for a video, Esc (`MediaViewerKeys.kt`). The stories viewer has Left/Right, Space and Esc (`StoryViewerKeys.kt`). Tests: `MediaViewerKeysTest`, `StoryViewerKeysTest` |
 | A4 | `MessageBubble.kt` (sender name), `BubbleFrames.kt` (sender avatar) | `clickable(indication = null)`: no focus or hover state, no role or click label | §9 focus, hover | **Done.** `openProfileTarget`: a button with Material's pressed, hover and focus states clipped to the name or the circle, `Role.Button` and "Open profile" as its click label, on the same 48 dp target. Tests: `MessageKeysTest` |
-| A5 | `feature/chat/…/ui/BubbleDescription.kt` | The bubble's description and its reactions are joined with `", "` | `docs/TRANSLATING.md` | `spokenList` (`core:ui`) |
-| A6 | `feature/chats/…/ui/ChatListItemDescription.kt`, `ArchiveRow.kt`, `SearchRows.kt` | The same for chat rows, the archive row and search results (and `" "` between sender and text) | `docs/TRANSLATING.md` | `spokenList`; a string resource for sender and text |
-| A7 | `JumpToBottomButton.kt`, `bot/CommandRows.kt`, `topics/TopicRow.kt`, `location/ShareLocationSheet.kt` (`". "`) | The same | `docs/TRANSLATING.md` | `spokenList`, or a string resource for the location's sentence |
-| A8 | `feature/chats/…/ui/create/CreateChatParts.kt` | The names of people not added are joined with `", "` on screen | `docs/TRANSLATING.md` | `ListFormatter`, as `ArchiveRow` does |
-| A9 | `BubbleParts.kt` (reaction badges), `ReactionPicker.kt` (`MessageReactionChip`) | The user's own reaction differs only by its container color | §6.3 not by color alone | A check, an outline or the toggle buttons' shape morph |
-| A10 | `voice/RecordingBar.kt` | Recording and paused differ only by color and motion, and screen readers hear no state | §6.3 | A "Paused" label, or a polite live region "Recording" / "Paused" |
-| A11 | `ChatListTopBar.kt` (`ConnectionPill`); the conversation and the media viewer | Screen readers hear "Connecting…" but not that the connection is back. The conversation and the viewer show no connection state | §9 live region for the connection | Announce "Connected" once when it is ready again; the pill or the subtitle in the conversation's top bar |
-| A12 | `feature/media/…/ui/MediaChrome.kt` (caption) | An expandable caption without a role or an expanded / collapsed state | §9 roles on custom toggles | `Role.Button` and `expand` / `collapse` semantics |
-| A13 | `feature/chats/…/ui/SearchPeople.kt` (`Person`) | A fixed-width column with one line of name: names are cut at 200% font | §6.3 font scale | Scale the width with the font, or two lines |
-| A14 | `FolderTabs.kt`, `panel/EmojiPanel.kt`, `PanelSections.kt` | Toggle buttons with `Role.Tab` may announce "checked" on a tab | §9 | Check with TalkBack; `selected` semantics for tabs. The panel's tabs are done (2026-10-23): each toggle button sits in a node with `clearAndSetSemantics { role = Tab; selected; onClick }` (`panelTab`, `PanelTabSemanticsTest`) |
-| A15 | `attach/MediaPreviewItem.kt` | The remove button is `extraSmallContainerSize()`. Its touch target needs checking on a device | §6.3 48 dp | `minimumInteractiveComponentSize()` if needed |
+| A5 | `feature/chat/…/ui/BubbleDescription.kt` | The bubble's description and its reactions are joined with `", "` | `docs/TRANSLATING.md` | **Done.** `spokenList` (`core:ui`): the language's list separator, blank parts left out, for the description and its reactions. Tests: `ChatScreenTest` |
+| A6 | `feature/chats/…/ui/ChatListItemDescription.kt`, `ArchiveRow.kt`, `SearchRows.kt` | The same for chat rows, the archive row and search results (and `" "` between sender and text) | `docs/TRANSLATING.md` | **Done.** `spokenList` for chat rows, the archive row and search results; sender and text through `chat_list_a11y_sender_text`. Tests: `ChatListScreenTest`, `SearchScreenTest` |
+| A7 | `JumpToBottomButton.kt`, `bot/CommandRows.kt`, `topics/TopicRow.kt`, `location/ShareLocationSheet.kt` (`". "`) | The same | `docs/TRANSLATING.md` | **Done.** `spokenList` for the jump button, command rows and topic rows; the location's two sentences through `location_found_description`. Tests: `ShareLocationSheetTest` |
+| A8 | `feature/chats/…/ui/create/CreateChatParts.kt` | The names of people not added are joined with `", "` on screen | `docs/TRANSLATING.md` | **Done.** `ListFormatter` in the screen's language ("Ada, Grace, and Alan"), each name isolated |
+| A9 | `BubbleParts.kt` (reaction badges), `ReactionPicker.kt` (`MessageReactionChip`) | The user's own reaction differs only by its container color | §6.3 not by color alone | **Done** (owner, 2026-10-23). A badge's ring turns from `surface` to `primary` as it turns chosen, blended in the draw phase, at the same width; the picker's chips get a `primary` outline along the carousel's mask (`maskBorder`). Goldens: the reactions' states in `ChatScreenScreenshotTest`, `MessageActionsScreenshotTest` |
+| A10 | `voice/RecordingBar.kt` | Recording and paused differ only by color and motion, and screen readers hear no state | §6.3 | **Done.** The dot is a polite live region, "Recording" or "Paused"; on screen Pause turning into Resume says it without color. Tests: `VoiceRecordingTest` |
+| A11 | `ChatListTopBar.kt` (`ConnectionPill`); the conversation and the media viewer | Screen readers hear "Connecting…" but not that the connection is back. The conversation and the viewer show no connection state | §9 live region for the connection | **Done** (owner, 2026-10-23). The chat list: a polite live region behind its top bar holds "Connected" for 3 s once the connection is back after the pill showed a state, nothing at a start that finds it connected (`ConnectedAnnouncement`, `ConnectedAnnouncementTest`). The conversation: "Waiting for network…", "Connecting…" or "Updating…" in place of the status, the title a polite live region meanwhile (`ChatConnectionViewModel`, `ChatTopBarConnectionTest`, goldens `connectingLight` / `connectingDark`). The media viewer stays as it is |
+| A12 | `feature/media/…/ui/MediaChrome.kt` (caption) | An expandable caption without a role or an expanded / collapsed state | §9 roles on custom toggles | **Done.** `Role.Button` and the `expand` / `collapse` action of its state. Tests: `ExpandableCaptionTest` |
+| A13 | `feature/chats/…/ui/SearchPeople.kt` (`Person`) | A fixed-width column with one line of name: names are cut at 200% font | §6.3 font scale | **Done.** Two lines of name from 150% font (`isLargeFontScale`). Tests: `TopPeopleTest` |
+| A14 | `FolderTabs.kt`, `panel/EmojiPanel.kt`, `PanelSections.kt` | Toggle buttons with `Role.Tab` may announce "checked" on a tab | §9 | **Done** for the folder tabs: each toggle button sits in a node with `clearAndSetSemantics { role = Tab; selected; onClick }`, the layout unchanged (`FolderTabsTest`). The emoji panel's tabs belong to the panel's owner and are done too (2026-10-23): `panelTab`, `PanelTabSemanticsTest` |
+| A15 | `attach/MediaPreviewItem.kt` | The remove button is `extraSmallContainerSize()`. Its touch target needs checking on a device | §6.3 48 dp | **Done**, no change needed: the icon button widens its 32 dp container's touch target to 48 dp itself (`minimumInteractiveComponentSize` inside `FilledIconButton`), and `assertAccessible` counts that. Tests: `AttachPreviewAccessibilityTest` |
 
 `assertAccessible()` (`core:testing`) is ready for the chat screens' tests as well.
 
@@ -130,7 +133,8 @@ A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say wha
 
 ## 5. Decisions for the owner
 
-- **Ctrl+Enter to send (A2):** `docs/DESIGN_SYSTEM.md` §9 asks for it as a setting. The setting is in (2026-10-23):
-  Appearance → Chats → "Send with Ctrl+Enter", a switch row under the Chat appearance row (`ComposerSettingsRepository`,
-  `DataStoreComposerSettingsRepository`); the composer's key handling (`ComposerField.isSendKey`, session A) reads it
-  next. Where the row lives is still the owner's to confirm.
+- **Ctrl+Enter to send (A2):** done (2026-10-24). Appearance → Chats → "Send with Enter on a keyboard" (on by default:
+  Enter sends, Shift+Enter and Ctrl+Enter start a new line; off: Ctrl+Enter sends, Enter starts a new line) and "Send
+  with Enter on the screen keyboard" (off by default: on, the keyboard's action key reads "Send"), which the composer's
+  key handling follows (`ComposerField`, `LocalSendKeys`). "Send with Ctrl+Enter", saved before, carries over. Where
+  the rows live is still the owner's to confirm.

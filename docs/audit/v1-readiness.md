@@ -32,7 +32,9 @@ What blocks 1.0, in order:
    sign-in and the app shell (`docs/audit/accessibility.md`); the chat screens still need them and the fixes A2 and
    A5–A15 listed there (A1, A3 and A4, keyboard and mouse, are done in #171), and contacts, profile, media, scanner and core:ui still need 200% font goldens. Owner A (chat
    screens), B (the rest).
-5. **Benchmark thresholds in CI** (§9.3) and a nightly run. Owner: owner plus R; needs a device in CI (Firebase Test Lab) or the owner's phone.
+5. **Benchmark thresholds** (§9.3): `tools/benchmark/compare.py` checks a run against the budgets and the last
+   baseline, and `docs/RELEASE.md` runs it on the owner's phone before each release. A device in CI (Firebase Test Lab)
+   and a nightly run are still open. Owner.
 6. **Account deletion in the app** (Google Play, `docs/PLAY_STORE.md` §8). Owner B; not a §6/§7 item, but Play
    requires it for the `gms` listing.
 
@@ -44,10 +46,10 @@ What blocks 1.0, in order:
 |---|---|---|---|
 | Cold start ≤ 1.2 s, warm ≤ 400 ms | Needs device (passes on the owner's phone) | `StartupBenchmark`: 487 ms cold, 135 ms warm with the profile (Galaxy S24 Ultra). Not yet measured on §1's mid-range reference device | Owner |
 | Scroll at native rate, P90 ≤ 8–10 ms, jank < 1% | **Fail** | Chat list P90 10.4 ms (budget 8 ms); conversation late frames > 1% in the device baseline (`docs/PERFORMANCE.md` §9). #150 prefetches rows while the lists scroll (JVM scroll cost 2–21% lower); the device numbers are not measured again yet | A, owner (device run) |
-| Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms | **Fail** (not measured) | No `OpenChatBenchmark`, and no `openChat` trace section measured (§9 lists both) | A |
+| Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms | Needs device | `OpenChatBenchmark` measures the `openChat` trace section, from the tap in the chat list to the first messages drawn, opening Saved Messages with its history cached. `SendMessageBenchmark` (2026-10-27) measures the `sendMessage` section, from the send tap to the bubble on its way drawn, sending to Saved Messages and deleting each message after; its budget is in `benchmark/budgets.json` for `compare.py`. Neither has run on the phone yet (`docs/PERFORMANCE.md` §9 has the command) | Owner (device run) |
 | Memory ≤ 120 MB idle, ≤ 250 MB in a media chat | Needs device | `TdlibMessageRepository` keeps 3 chats (LRU). `onTrimMemory` now clears it (*fixed here*: the trim was never called) | R |
 | APK ≤ 50 MB arm64, universal ≤ 125 MB | Pass (*fixed here*) | The release workflow now fails when an APK is over budget. It had no size gate before | R |
-| Battery ≤ 1.5% / 8 h, data ≤ 2 MB / 24 h, no polling | Needs device | No polling, alarms or periodic work in the code (checked: no `AlarmManager`, no `PeriodicWorkRequest`). Battery Historian and data runs are manual | Owner |
+| Battery ≤ 1.5% / 8 h, data ≤ 2 MB / 24 h, no polling | Needs device | No polling or alarms in the code (checked: no `AlarmManager`); the one periodic work is the weekly storage clean-up, only while charging and idle (`StorageOptimizationWorker`, 2026-10-27). Battery Historian and data runs are manual | Owner |
 | Compose: immutable state, keyed lists, no off-screen recompositions, draw/layout-phase animations | Pass | Compose compiler stability config; `ChatListRecompositionTest`, `ChatRecompositionTest` | — |
 | TDLib calls: suspendable, cancellable, batched | Pass | `TdlibClient.send` is cancellable; `viewMessages` batched in `ChatViewModel` | — |
 
@@ -69,7 +71,7 @@ What blocks 1.0, in order:
 |---|---|---|---|
 | 48 dp targets, content descriptions, roles, merged message semantics | Pass | Compose tests across features; `minimumInteractiveComponentSize` | — |
 | Contrast ≥ 4.5:1 / 3:1 in all contrast levels | Pass | `ThemePalettesTest` | — |
-| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, settings and app. Contacts, profile, media, scanner and core:ui have none; #154 fixed what it cut at 200% in profile and contacts (F2, F8, F15) | A, B |
+| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, media, scanner, settings and app. Contacts, profile and core:ui have none; #154 fixed what it cut at 200% in profile and contacts (F2, F8, F15) | A, B |
 | `AccessibilityChecks` in Compose UI tests (`docs/TESTING.md`) | **Fail** (partly) | Google's framework does not run under Robolectric; #154 added our own `assertAccessible()` (names, 48 dp targets) to settings, profile, contacts, sign-in and the app shell. The chat screens have none yet (`docs/audit/accessibility.md` §3) | A |
 | Reduced motion | Pass | `isReducedMotion()`, shape morphs snap | — |
 | TalkBack and Accessibility Scanner pass on every screen | Needs device | `docs/DESIGN_SYSTEM.md` §9 asks for a manual run before "done" | Owner / testers |
@@ -106,7 +108,7 @@ What blocks 1.0, in order:
 | Foreground services declare their type | Pass | `dataSync` (transfers), `specialUse` (Keep connected, foss), `phoneCall` / `microphone` (calls) | — |
 | Per-app language, keyboard and mouse, state restoration | Needs device for keyboard and mouse | Saved state throughout; Enter-to-send and hover are not covered by tests | Owner / testers |
 | Accessibility (§6.3), haptics | **Fail** | See §6.3 | A |
-| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin deprecation warnings do not fail the build (`allWarningsAsErrors` is off). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
+| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin warnings fail the build in the modules that apply `pingogram.kotlin.warnings` (`allWarningsAsErrors`, main and test sources): `:app`, `core:common`, `core:tdlib`, `feature:calls`, `feature:feedback`, `feature:media` and `feature:scanner` (2026-10-27). The other modules still compile with warnings, counted below ("Kotlin warnings"). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
 | Performance budgets per screen | **Fail** | §6.1 | A |
 | Live Updates (`ProgressStyle`) for long transfers | Pass | `TransferNotificationBuilder` | — |
 
@@ -116,17 +118,40 @@ What blocks 1.0, in order:
 |---|---|---|---|---|
 | 1 | Install the universal APK, log in, use chats, groups, channels, media, stickers, voice, reactions, notifications and settings without the official app | Needs device | Every feature is in; the dogfood shows it | Owner |
 | 2 | All §7 boxes ticked on every screen | **Fail** | §7's three fails | A, B |
-| 3 | CI green on `main`; `./gradlew check` and Macrobenchmark thresholds pass | **Fail** | `check` runs in CI; Macrobenchmark runs only on the owner's phone, without thresholds | Owner (a device in CI), R (thresholds once it exists) |
+| 3 | CI green on `main`; `./gradlew check` and Macrobenchmark thresholds pass | **Fail** | `check` runs in CI; Macrobenchmark runs on the owner's phone, checked by `tools/benchmark/compare.py` before each release (`docs/RELEASE.md`); no device in CI | Owner (a device in CI) |
 | 4 | No crashes in a 7-day dogfood with ≥ 10 testers | Needs device | `docs/TESTING_GUIDE.md`, "Send feedback" | Owner |
 | 5 | Telegram API terms compliance reviewed by the owner and in the release notes | Needs owner (*prepared here*) | `docs/API_TERMS.md` is the checklist; each release's notes now link to it. The owner reviews it before 1.0 | Owner |
 
 ## Also found
 
-- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): there is no scheduled job, only "Clear cache". A weekly
-  `PeriodicWorkRequest` would start WorkManager at every app start, which §2 avoids on purpose ("WorkManager starts on
-  demand"). The owner should pick one: a weekly job (and change §2), or optimizing when the user opens Data and
-  storage, or after a week at app start without WorkManager. Owner, then B (Data and storage).
-- **No JankStats or LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): neither is a dependency. LeakCanary is
-  ~1 MB and debug-only, and it touches no network; adding it needs the owner's approval (`CLAUDE.md`, dependencies).
-  Owner, then A.
+- **Kotlin warnings** (§7, "No deprecated APIs"), counted on 2026-10-27 with a fresh compile of every module's main
+  and unit test sources (`--rerun-tasks`), each warning once. A module applies `pingogram.kotlin.warnings` in its
+  build file once they are fixed:
+
+  | Module | Main | Test | Mostly |
+  |---|---|---|---|
+  | `core:data` | 28 | 108 | coroutines test APIs (`runCurrent`, `UnconfinedTestDispatcher`) without their opt-in; `kotlinx.collections.immutable`'s deprecated `put`, `remove`, `putAll` |
+  | `core:notifications` | 1 | 75 | coroutines test APIs without their opt-in; Robolectric's deprecated `isBroadcastIntent` |
+  | `core:ui` | 2 | 6 | coroutines test APIs without their opt-in; an unused expression; a redundant cast |
+  | `feature:chat` | 24 | 8 | `kotlinx.collections.immutable`'s deprecated `remove`, `put`, `add`; test names with characters Windows refuses; unused expressions |
+  | `feature:chats` | 3 | 0 | `ListItem`'s old overload, a deprecated `copy`, an unused expression |
+  | `feature:profile` | 4 | 1 | `rememberModalBottomSheetState`, `ListItem`'s old overload, a redundant cast and safe call |
+  | `feature:settings` | 16 | 0 | unused expressions (`Unit` in empty `when` branches), `rememberModalBottomSheetState`, `Slider` and `ListItem`'s old overloads |
+  | `core:datastore`, `core:domain`, `core:navigation`, `core:testing`, `feature:auth`, `feature:contacts`, `benchmark` | 0 | 0 | can apply the plugin as they are |
+
+  One warning stays suppressed in `:app`'s `gms` source set, with its reason: firebase-messaging 26 deprecates
+  `getToken` and `deleteToken` (and `onNewToken`) for `register`, whose token comes through the service's
+  `onRegistered`. Moving there changes how the token reaches TDLib, so it waits for a `gms` phone to check it. B.
+
+- **Weekly `optimizeStorage`** (`docs/PERFORMANCE.md` §3): the owner decided on a weekly job (2026-10-27), and it is
+  in: unique periodic work per account, while charging and idle, waiting for transfers and exports, scheduled 5 s after
+  the start (§2 changed with it). Left: seeing it run on a phone (`adb shell dumpsys jobscheduler | grep -A5
+  storage_optimization`, or run it at once with `adb shell cmd jobscheduler run -f dev.kyralabs.pingogram <job id>`).
+  Owner.
+- **LeakCanary in debug builds** (`docs/PERFORMANCE.md` §9): in since 2026-10-27 (owner approval), debug builds only,
+  with `check<Variant>NoDebugTools` keeping it out of `release`, `benchmarkRelease` and `nonMinifiedRelease`. It finds
+  leaks only on a device, and none has run yet: no leak is known, in B's modules (`feature:calls`, `feature:media`) or
+  others'. The first runs on the owner's phone (PERFORMANCE §9 says how) list them here, by module. Owner, then each
+  module's owner.
+- **No JankStats in debug builds** (`docs/PERFORMANCE.md` §9): not a dependency yet. A.
 - **The nightly workflow** (§9 "to add in M2") does not exist. It is only useful with a device in CI. Owner.

@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -32,7 +33,8 @@ import kotlinx.coroutines.launch
  * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
  * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
  * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat. The
- * route reads only whether there are rings, so the rings changing recomposes the row alone.
+ * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
+ * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given.
  */
 @Composable
 internal fun ChatListRoute(
@@ -42,6 +44,7 @@ internal fun ChatListRoute(
     modifier: Modifier = Modifier,
     onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
@@ -71,18 +74,20 @@ internal fun ChatListRoute(
         openChatId = openChatId,
         header = { NotificationPromptHost() },
         stories = stories.takeIf { hasStories },
+        onEditFolder = onEditFolder,
     )
 }
 
 /**
- * The archived chats (`REQUIREMENTS.md` FR-L9), pushed above the Chats tab; [onBack] returns to it, and tapping a row
- * calls [onOpenChat].
+ * The archived chats (`REQUIREMENTS.md` FR-L9), pushed above the Chats tab; [onBack] returns to it, tapping a row
+ * calls [onOpenChat], and the top bar's settings button [onOpenSettings].
  */
 @Composable
 internal fun ArchivedChatsRoute(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSettings: () -> Unit = {},
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Archive) },
 ) {
@@ -90,17 +95,25 @@ internal fun ArchivedChatsRoute(
     ChatListDestination(
         state = state,
         viewModel = viewModel,
-        navigation = ChatListNavigation(onOpenArchive = {}, onOpenChat, onOpenNewChat = {}, onBack = onBack),
+        navigation =
+            ChatListNavigation(
+                onOpenArchive = {},
+                onOpenChat = onOpenChat,
+                onOpenNewChat = {},
+                onBack = onBack,
+                onOpenArchiveSettings = onOpenSettings,
+            ),
         modifier = modifier,
     )
 }
 
-/** Where a chat list leads: the archive, a chat, the New chat screen, and back. */
+/** Where a chat list leads: the archive, a chat, the New chat screen, back, and the archive's settings. */
 private class ChatListNavigation(
     val onOpenArchive: () -> Unit,
     val onOpenChat: (chatId: Long) -> Unit,
     val onOpenNewChat: () -> Unit,
     val onBack: () -> Unit,
+    val onOpenArchiveSettings: () -> Unit = {},
 )
 
 @Composable
@@ -112,25 +125,31 @@ private fun ChatListDestination(
     openChatId: Long? = null,
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    swipesViewModel: ChatSwipesViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val swipes by swipesViewModel.swipes.collectAsStateWithLifecycle()
     ChatListEffects(viewModel.effects, snackbarHostState, navigation, onEvent = viewModel::onEvent)
-    ChatListScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        onBack = navigation.onBack,
-        openChatId = openChatId,
-        header = header,
-        stories = stories,
-    )
+    CompositionLocalProvider(LocalChatSwipes provides swipes) {
+        ChatListScreen(
+            state = state,
+            onEvent = viewModel::onEvent,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            onBack = navigation.onBack,
+            openChatId = openChatId,
+            header = header,
+            stories = stories,
+            onEditFolder = onEditFolder,
+        )
+    }
 }
 
 /**
  * Handles [effects]: snackbars, the newest replacing the one shown (archiving chat after chat keeps one "Undo", for
- * the last), and opening the archive, a chat or the New chat screen ([navigation]). A snackbar with "Undo" stays long,
- * so there is time to reach it.
+ * the last), and opening the archive, its settings, a chat or the New chat screen ([navigation]). A snackbar with
+ * "Undo" stays long, so there is time to reach it.
  */
 @Composable
 private fun ChatListEffects(
@@ -156,6 +175,16 @@ private fun ChatListEffects(
 
                 is ChatListEffect.ShowError -> {
                     message = errorMessage(resources, effect.error, showErrorDetails)
+                }
+
+                is ChatListEffect.ArchiveRowHidden -> {
+                    message = resources.getString(R.string.chat_list_archive_row_hidden)
+                    undo = ChatListEvent.SetArchiveRowStyle(effect.previous)
+                }
+
+                ChatListEffect.OpenArchiveSettings -> {
+                    message = ""
+                    currentNavigation.onOpenArchiveSettings()
                 }
 
                 ChatListEffect.OpenArchive -> {

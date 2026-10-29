@@ -70,13 +70,16 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.verificationCode
 import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
+import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepActions
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepText
 import dev.kyralabs.pingogram.feature.settings.ui.qr.StepBadge
-import dev.kyralabs.pingogram.feature.settings.ui.twostep.FloodWaitNote
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberEvent as Event
@@ -222,7 +225,7 @@ private fun ColumnScope.NumberStep(
     )
     StepActions(
         state = state,
-        primary = stringResource(R.string.settings_change_number_next),
+        primary = stringResource(R.string.settings_account_flow_next),
         onPrimary = submit,
         enabled = number.callingCode.isNotEmpty() && number.number.isNotEmpty(),
     )
@@ -274,7 +277,7 @@ private fun ColumnScope.CodeStep(
     ResendCode(code, enabled = state.canSubmit) { onEvent(Event.ResendCode) }
     StepActions(
         state = state,
-        primary = stringResource(R.string.settings_change_number_next),
+        primary = stringResource(R.string.settings_account_flow_next),
         onPrimary = submit,
         enabled = code.code.isNotBlank(),
         secondary = stringResource(R.string.settings_change_number_wrong_number),
@@ -359,59 +362,12 @@ private fun ColumnScope.DoneStep(
             )
         }
     }
-    StepActions(state, primary = stringResource(R.string.settings_change_number_done), onPrimary = onDone)
+    StepActions(state, primary = stringResource(R.string.settings_account_flow_done), onPrimary = onDone)
 }
 
-/** What a step says: `bodyMedium` in `onSurfaceVariant`, inset like the settings notes. */
-@Composable
-private fun StepText(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium,
-    )
-}
-
-/**
- * The end of a step: the `FLOOD_WAIT` countdown and the progress of a request, then [secondary], if any, as a
- * [TextButton] at the start and [primary] as a default [Button] at the end, both with the press morph.
- */
-@Suppress("LongParameterList") // The step's state, its two actions and whether the main one can be used.
-@Composable
-private fun StepActions(
-    state: ChangePhoneNumberUiState,
-    primary: String,
-    onPrimary: () -> Unit,
-    enabled: Boolean = true,
-    secondary: String? = null,
-    onSecondary: () -> Unit = {},
-) {
-    state.floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = state.floodWaitTotalSeconds) }
-    if (state.isWorking) {
-        val busy = stringResource(R.string.settings_change_number_busy)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = busy })
-    }
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (secondary != null) Arrangement.SpaceBetween else Arrangement.End,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (secondary != null) {
-            TextButton(onClick = onSecondary, enabled = !state.isWorking, shapes = ButtonDefaults.shapes()) {
-                Text(secondary, style = MaterialTheme.typography.labelLarge)
-            }
-        }
-        Button(onClick = onPrimary, enabled = enabled && state.canSubmit, shapes = ButtonDefaults.shapes()) {
-            Text(primary, style = MaterialTheme.typography.labelLargeEmphasized)
-        }
-    }
-}
-
-/** A number as Telegram has it (digits), formatted for its calling code ("+44 7911 123456"). */
+/** A number as Telegram has it (digits), formatted for its calling code ("+44 7911 123456"), hidden on request. */
 @Composable
 private fun displayNumber(number: String): String {
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0]
-    return formatPhoneNumber(number, locale?.country.orEmpty())
+    return phoneNumberToShow(formatPhoneNumber(number, locale?.country.orEmpty()))
 }

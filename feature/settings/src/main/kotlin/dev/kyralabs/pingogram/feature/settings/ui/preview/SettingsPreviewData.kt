@@ -2,11 +2,16 @@ package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
+import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
+import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
@@ -34,6 +39,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryItem
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesUiState
+import dev.kyralabs.pingogram.feature.settings.ui.OtherAccountUiModel
+import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
@@ -55,6 +62,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationUiS
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableSet
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** Sample states of the settings screens, for previews and screenshot tests. */
@@ -69,6 +77,9 @@ internal object SettingsPreviewData {
             username = "ada",
         )
 
+    /** Signed in with a test account on Telegram's test servers (`REQUIREMENTS.md` FR-A9). */
+    val testServerAccount = account.copy(phoneNumber = "+999 66 2 1234", isOnTestServers = true)
+
     /**
      * The account with a photo and Telegram Premium; the photo shows where Coil has a preview image (screenshot tests),
      * else its placeholder.
@@ -81,6 +92,30 @@ internal object SettingsPreviewData {
 
     val content = SettingsUiState(account = account)
 
+    /** The device's other accounts (`docs/adr/0031-multiple-accounts.md`): one with unread chats, one without. */
+    val otherAccounts =
+        persistentListOf(
+            OtherAccountUiModel(
+                slot = 1,
+                userId = 43,
+                name = "Grace Hopper",
+                photo = null,
+                phoneNumber = "+1 202 555 0143",
+                unreadChats = 3,
+            ),
+            OtherAccountUiModel(
+                slot = 2,
+                userId = 44,
+                name = "Alan Turing",
+                photo = null,
+                phoneNumber = "+44 7700 900461",
+                unreadChats = 0,
+            ),
+        )
+
+    /** Settings home on a device with three accounts, at the limit, so without "Add account". */
+    val withOtherAccounts = content.copy(otherAccounts = otherAccounts)
+
     val storage =
         DataStorageUiState(
             autoDownload = AutoDownloadSettings(),
@@ -88,10 +123,15 @@ internal object SettingsPreviewData {
                 StorageUsageState.Content(
                     StorageUsage(filesSize = 1_534_000_000, fileCount = 3_456, databaseSize = 85_200_000),
                 ),
+            photosInOriginalQuality = false,
         )
 
     val storageError =
         DataStorageUiState(autoDownload = AutoDownloadSettings(), usage = StorageUsageState.Error(DomainError.Network))
+
+    /** Data and storage with roaming downloading photos, which "Reset automatic download" would undo. */
+    val storageChanged =
+        storage.copy(autoDownload = AutoDownloadSettings(roaming = AutoDownloadRules(photos = true)))
 
     /** Wi-Fi with the defaults: photos, videos up to 10 MB, files up to 3 MB, voice and video messages. */
     val autoDownloadWiFi =
@@ -103,6 +143,23 @@ internal object SettingsPreviewData {
             network = AutoDownloadNetwork.Mobile,
             rules = AutoDownloadSettings.DefaultMobileRules,
             isDataSaverOn = true,
+        )
+
+    // Power saving
+
+    /** The defaults: with Battery Saver, which is off, every part turned off while on. */
+    val powerSaving =
+        PowerSavingUiState(
+            mode = PowerSavingMode.WithBatterySaver,
+            parts = PowerSavingPart.entries.toImmutableSet(),
+        )
+
+    /** Always on, autoplay left on. */
+    val powerSavingOn =
+        PowerSavingUiState(
+            mode = PowerSavingMode.Always,
+            parts = persistentSetOf(PowerSavingPart.AnimatedStickers, PowerSavingPart.CallAnimations),
+            isBatterySaverOn = true,
         )
 
     // Privacy and security
@@ -120,6 +177,8 @@ internal object SettingsPreviewData {
                     PrivacySetting.PhoneNumber to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.LastSeen to contactsWithExceptions,
                     PrivacySetting.ProfilePhoto to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.Bio to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.Birthdate to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.ForwardedMessages to PrivacyRules(PrivacyChoice.Everybody),
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
                     PrivacySetting.ChatInvites to PrivacyRules(PrivacyChoice.Contacts),
@@ -129,6 +188,9 @@ internal object SettingsPreviewData {
             sessionCount = 4,
             twoStepVerification =
                 TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
+            loginEmailPattern = "a****@e******.org",
+            defaultAutoDeleteSeconds = 604_800,
+            newChatPrivacy = NewChatPrivacy(allowsNonContacts = true),
         )
 
     val twoStepOn = TwoStepVerificationUiState.Content(hasPassword = true, hasRecoveryEmail = true)
@@ -160,6 +222,7 @@ internal object SettingsPreviewData {
         PrivacySettingUiState(
             setting = PrivacySetting.LastSeen,
             rules = PrivacyRulesState.Loaded(contactsWithExceptions),
+            showsReadTime = true,
         )
 
     /** Voice and video messages for a user without Telegram Premium. */
@@ -270,13 +333,20 @@ internal object SettingsPreviewData {
     // Edit profile
 
     private val savedProfile =
-        ProfileFields(firstName = "Ada", lastName = "Lovelace", username = "ada", bio = "Poetical scientist.")
+        ProfileFields(
+            firstName = "Ada",
+            lastName = "Lovelace",
+            username = "ada",
+            bio = "Poetical scientist.",
+            birthdate = Birthdate(day = 10, month = 12, year = 1990),
+        )
 
     /** The profile as TDLib has it, nothing changed yet; the avatar shows its placeholder, as in [account]. */
     val editProfile =
         EditProfileUiState.Content(
             account = ProfileAccount(account.userId, account.name, photo = null, phoneNumber = "447911123456"),
             saved = savedProfile,
+            birthdatePrivacy = PrivacyRules(PrivacyChoice.Contacts),
         )
 
     /**
@@ -389,7 +459,11 @@ internal object SettingsPreviewData {
                     ),
                 ),
             isKeepConnectedOffered = true,
+            contactJoined = true,
         )
+
+    /** Two accounts on the device, the second shown, and "Notifications from all accounts" on. */
+    val notificationsWithAccounts = notifications.copy(accountSlot = 1, fromAllAccounts = true)
 
     /** Android shows no notification of Pingogram, and the channels' channel is off. */
     val notificationsBlocked =

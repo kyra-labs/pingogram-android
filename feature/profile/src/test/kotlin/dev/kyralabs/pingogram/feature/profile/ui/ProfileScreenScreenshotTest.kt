@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,16 +63,54 @@ class ProfileScreenScreenshotTest {
     @Test
     fun photosScrolled() = capture(ScreenshotVariant.Light, scrolledTo = MEDIA_OF_CONTENT)
 
+    /** "Hide phone numbers" on: the number shows its calling code only. */
+    @Test
+    fun phoneNumberHidden() = capture(ScreenshotVariant.Light, numbersHidden = true)
+
     @Test
     fun error() = capture(ScreenshotVariant.Light, ProfileUiState.Error(DomainError.NotFound))
+
+    /** "Show IDs" on: the user's ID closes the Info group. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownHighContrast() = capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun idShownMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
 
     private fun capture(
         variant: ScreenshotVariant,
         state: ProfileUiState = ProfilePreviewData.content,
         media: SharedMediaUiState = ProfilePreviewData.media,
         scrolledTo: Int = 0,
+        numbersHidden: Boolean = false,
     ) = captureRoboImage {
-        ScreenshotTheme(variant) { Screen(state, media, scrolledTo) }
+        ScreenshotTheme(variant) {
+            CompositionLocalProvider(
+                LocalPhoneNumbersHidden provides numbersHidden,
+            ) { Screen(state, media, scrolledTo) }
+        }
     }
 
     @Composable
@@ -92,6 +132,9 @@ class ProfileScreenScreenshotTest {
     }
 
     private companion object {
+        /** A phone as tall as the profile down to its "More" group. */
+        const val TALL = "w411dp-h1600dp-xxhdpi"
+
         /** The "Shared media" heading of a profile without photos: after the actions, the info and More. */
         const val MEDIA = 3
 

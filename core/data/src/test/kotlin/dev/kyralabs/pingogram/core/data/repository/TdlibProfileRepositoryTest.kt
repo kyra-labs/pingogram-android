@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLink
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
@@ -47,6 +48,20 @@ class TdlibProfileRepositoryTest {
 
             assertEquals(Outcome.Success(EditableProfile("Ada", "Lovelace", "ada", "Analyst")), profile)
             assertEquals(42L, client.sentOf<TdApi.GetUserFullInfo>().single().userId)
+        }
+
+    @Test
+    fun `the profile carries the channel shown on it`() =
+        runTest {
+            answerMe(TdApiFixtures.user(id = 42, firstName = "Ada"))
+            client.on(
+                TdApi.GetUserFullInfo::class,
+                TdResult.Success(ProfileFixtures.userFullInfo(bio = null).also { it.personalChatId = CHANNEL }),
+            )
+
+            val profile = (repository().editableProfile() as Outcome.Success).value
+
+            assertEquals(CHANNEL, profile.personalChatId)
         }
 
     @Test
@@ -133,6 +148,34 @@ class TdlibProfileRepositoryTest {
             assertEquals("Ada" to "", name.firstName to name.lastName)
             assertEquals("", client.sentOf<TdApi.SetUsername>().single().username)
             assertEquals("Analyst", client.sentOf<TdApi.SetBio>().single().bio)
+        }
+
+    @Test
+    fun `the birthday comes with the profile, its year left out where TDLib has 0`() =
+        runTest {
+            answerMe(TdApiFixtures.user(id = 42, firstName = "Ada"))
+            client.on(
+                TdApi.GetUserFullInfo::class,
+                TdResult.Success(ProfileFixtures.userFullInfo(birthdate = TdApi.Birthdate(10, 12, 0))),
+            )
+
+            val profile = (repository().editableProfile() as Outcome.Success).value
+
+            assertEquals(Birthdate(day = 10, month = 12, year = null), profile.birthdate)
+        }
+
+    @Test
+    fun `sets and removes the birthday`() =
+        runTest {
+            client.on(TdApi.SetBirthdate::class, ok)
+            val repository = repository()
+
+            assertEquals(Outcome.Success(Unit), repository.setBirthdate(Birthdate(10, 12, 1815)))
+            assertEquals(Outcome.Success(Unit), repository.setBirthdate(null))
+
+            val (set, removed) = client.sentOf<TdApi.SetBirthdate>()
+            assertEquals(Triple(10, 12, 1815), Triple(set.birthdate.day, set.birthdate.month, set.birthdate.year))
+            assertEquals(null, removed.birthdate)
         }
 
     @Test
@@ -231,6 +274,8 @@ class TdlibProfileRepositoryTest {
         }
 
     companion object {
+        const val CHANNEL = -1_001_234L
+
         @JvmStatic
         fun checkResults(): List<Arguments> =
             listOf(

@@ -71,7 +71,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
  * back as it was instead of deselecting its tab on the way out and selecting it again on the way in. [searchOpen] and
- * [search] are the search button's ([PingogramNavigationBar]).
+ * [search] are the search button's, [accountMenu] the Settings tab's ([PingogramNavigationBar]).
  */
 @Composable
 internal fun FloatingNavigationBar(
@@ -82,6 +82,7 @@ internal fun FloatingNavigationBar(
     modifier: Modifier = Modifier,
     searchOpen: Boolean = false,
     search: GlobalSearchState? = null,
+    accountMenu: AccountMenuActions? = null,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     // 1 while shown, 0 while hidden: how far the bar is in its place, and its alpha.
@@ -104,6 +105,7 @@ internal fun FloatingNavigationBar(
         onSearch = onSearch,
         searchOpen = searchOpen,
         search = search,
+        accountMenu = accountMenu,
         modifier =
             modifier
                 .placedWhile { visible || placed.value }
@@ -135,7 +137,8 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * instead, named for screen readers by the label.
  *
  * The search button ([onSearch]) grows into search and back ([SearchButtonSlot], through [search]'s container
- * transform), and is away while search is [searchOpen].
+ * transform), and is away while search is [searchOpen]. With an [accountMenu], a long press on the Settings tab opens
+ * it ([AccountMenuAnchor]).
  */
 @Composable
 internal fun PingogramNavigationBar(
@@ -145,6 +148,7 @@ internal fun PingogramNavigationBar(
     modifier: Modifier = Modifier,
     searchOpen: Boolean = false,
     search: GlobalSearchState? = null,
+    accountMenu: AccountMenuActions? = null,
 ) {
     BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
         val showLabels = labelsFit(maxWidth)
@@ -160,23 +164,7 @@ internal fun PingogramNavigationBar(
                 contentColor = colors.toolbarContentColor,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
-                Row(
-                    Modifier
-                        .height(MaterialTheme.sizes.floatingNavigationBar)
-                        .padding(horizontal = spacing.small)
-                        .selectableGroup(),
-                ) {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val isSelected = destination == selected
-                        NavigationTab(
-                            destination = destination,
-                            selected = isSelected,
-                            showLabel = showLabels || isSelected,
-                            onClick = { onSelect(destination) },
-                            modifier = Modifier.fillMaxHeight(),
-                        )
-                    }
-                }
+                NavigationTabs(selected, onSelect, showLabels, accountMenu)
             }
             // As tall as the pill: the floating toolbar's button fills what it is given.
             SearchButtonSlot(
@@ -198,6 +186,40 @@ internal fun PingogramNavigationBar(
                         contentDescription = stringResource(R.string.nav_search),
                     )
                 }
+            }
+        }
+    }
+}
+
+/** The bar's tabs in its pill, the Settings tab with the [accountMenu] where there is one. */
+@Composable
+private fun NavigationTabs(
+    selected: TopLevelDestination?,
+    onSelect: (TopLevelDestination) -> Unit,
+    showLabels: Boolean,
+    accountMenu: AccountMenuActions?,
+) {
+    Row(
+        Modifier
+            .height(MaterialTheme.sizes.floatingNavigationBar)
+            .padding(horizontal = MaterialTheme.spacing.small)
+            .selectableGroup(),
+    ) {
+        TopLevelDestination.entries.forEach { destination ->
+            val isSelected = destination == selected
+            AccountMenuAnchor(
+                menu = accountMenu?.state?.takeIf { destination == TopLevelDestination.Settings },
+                onSwitch = { accountMenu?.onSwitch?.invoke(it) },
+                onAdd = { accountMenu?.onAdd?.invoke() },
+                modifier = Modifier.fillMaxHeight(),
+            ) { trigger ->
+                NavigationTab(
+                    destination = destination,
+                    selected = isSelected,
+                    showLabel = showLabels || isSelected,
+                    onClick = { onSelect(destination) },
+                    modifier = Modifier.fillMaxHeight().then(trigger),
+                )
             }
         }
     }

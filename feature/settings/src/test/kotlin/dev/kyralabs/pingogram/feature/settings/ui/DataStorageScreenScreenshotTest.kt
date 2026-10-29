@@ -1,8 +1,11 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.CallDataSaving
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -49,13 +52,93 @@ class DataStorageScreenScreenshotTest {
     fun clearingLight() =
         capture("clearingLight", ThemeMode.Light, SettingsPreviewData.storage.copy(isClearingCache = true))
 
+    /** The whole page with "Use less data for calls" below the network rows: a window tall enough for all of it. */
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun callsLight() = capture("callsLight", ThemeMode.Light, SettingsPreviewData.storage, CallDataSaving.OnMobileData)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun callsDark() = capture("callsDark", ThemeMode.Dark, SettingsPreviewData.storage, CallDataSaving.Never)
+
+    /** The whole page with "Reset automatic download", "Prefer IPv6" on and "Delete cloud drafts". */
+    @Test
+    @Config(qualifiers = TALL)
+    fun optionsLight() = composeRule.captureScreen(javaClass, "optionsLight", ThemeMode.Light) { Options() }
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun optionsDark() = composeRule.captureScreen(javaClass, "optionsDark", ThemeMode.Dark) { Options() }
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun optionsAmoled() = captureOptions(ScreenshotVariant.Amoled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun optionsHighContrast() = captureOptions(ScreenshotVariant.HighContrast)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun optionsRtl() = captureOptions(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h2000dp-xxhdpi")
+    fun optionsMedium() = captureOptions(ScreenshotVariant.Medium)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3600dp-xxhdpi", fontScale = FONT_SCALE_200)
+    fun optionsFontScale200() =
+        composeRule.captureScreen(javaClass, "optionsFontScale200", ThemeMode.Light) { Options() }
+
+    @Test
+    fun deleteDraftsDialogLight() =
+        composeRule.captureScreen(javaClass, "deleteDraftsDialogLight", ThemeMode.Light) {
+            Options(DataOptionsUiState(prefersIpv6 = false, isDeleteDraftsDialogOpen = true))
+        }
+
+    private fun captureOptions(variant: ScreenshotVariant) =
+        composeRule.captureScreen(
+            javaClass,
+            "options" + variant.goldenName.replaceFirstChar { it.uppercase() },
+            variant,
+        ) {
+            Options()
+        }
+
     private val withDialog = SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true)
 
     private fun capture(
         name: String,
         themeMode: ThemeMode,
         state: DataStorageUiState,
+        callDataSaving: CallDataSaving? = null,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        DataStorageScreen(state = state, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+        DataStorageScreen(
+            state = state,
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onOpenProxies = {},
+            onOpenNetworkUsage = {},
+            onBack = {},
+            callDataSaving = callDataSaving,
+        )
     }
+}
+
+private const val TALL = "w411dp-h2000dp-xxhdpi"
+
+/** The page with automatic download changed from its defaults, so it can be reset, and the options of [options]. */
+@Composable
+private fun Options(options: DataOptionsUiState = DataOptionsUiState(prefersIpv6 = true)) {
+    DataStorageScreen(
+        state = SettingsPreviewData.storageChanged,
+        onEvent = {},
+        onOpenAutoDownload = {},
+        onOpenProxies = {},
+        onOpenNetworkUsage = {},
+        onBack = {},
+        callDataSaving = CallDataSaving.Never,
+        options = options,
+    )
 }

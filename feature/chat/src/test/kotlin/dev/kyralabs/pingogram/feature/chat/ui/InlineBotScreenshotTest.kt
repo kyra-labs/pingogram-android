@@ -60,6 +60,14 @@ class InlineBotScreenshotTest(
         capture(ScreenshotVariant.Light, "expanded")
     }
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "rows")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         variant: ScreenshotVariant,

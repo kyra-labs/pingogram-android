@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,12 +28,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
@@ -49,11 +54,18 @@ import kotlinx.collections.immutable.ImmutableList
  * user's folders, each with the number of its unread unmuted chats. Up to [MAX_CONNECTED_TABS] tabs are a connected
  * [ButtonGroup] of [ToggleButton]s that scrolls sideways when it does not fit; more are a [PrimaryScrollableTabRow].
  *
+ * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
+ * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
+ * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
+ *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
- * @param enabled false disables every tab, e.g. in selection mode.
+ * @param enabled false disables every tab and its menu, e.g. in selection mode.
  * @param margin the window margin before the first tab and after the last (`docs/DESIGN_SYSTEM.md` §7).
+ * @param onMarkAllAsRead called with the folder's id, or null for "All chats".
+ * @param onEditFolder called with the folder's id, or null for "All chats"; null leaves "Edit folder" out.
  */
+@Suppress("LongParameterList") // The tabs and their selection, their menu's two actions, and the layout's margin.
 @Composable
 internal fun FolderTabs(
     tabs: ImmutableList<FolderTab>,
@@ -62,11 +74,31 @@ internal fun FolderTabs(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     margin: Dp = MaterialTheme.spacing.windowMarginCompact,
+    onMarkAllAsRead: (Int?) -> Unit = {},
+    onEditFolder: ((Int?) -> Unit)? = null,
 ) {
-    if (tabs.size > MAX_CONNECTED_TABS) {
-        FolderTabRow(tabs, selectedFolderId, onSelect, enabled, margin, modifier)
-    } else {
-        FolderButtonGroup(tabs, selectedFolderId, onSelect, enabled, margin, modifier)
+    val menu = remember { FolderTabMenuState() }
+    val canEditFolders = onEditFolder != null
+    val onAction: (FolderTab, FolderTabAction) -> Unit = { tab, action ->
+        when (action) {
+            FolderTabAction.EditFolder -> onEditFolder?.invoke(tab.folderId)
+            FolderTabAction.MarkAllAsRead -> onMarkAllAsRead(tab.folderId)
+        }
+    }
+    val haptics = LocalHapticFeedback.current
+    val resources = LocalResources.current
+    // One instance while nothing it holds changes, so the tabs skip when the top bar composes again.
+    val tabMenu =
+        remember(menu, canEditFolders, enabled, haptics, resources, onAction) {
+            TabMenu(menu, canEditFolders, enabled, haptics, resources, onAction)
+        }
+    Box(modifier.fillMaxWidth().folderTabMenuContainer(menu)) {
+        if (tabs.size > MAX_CONNECTED_TABS) {
+            FolderTabRow(tabs, selectedFolderId, onSelect, margin, tabMenu)
+        } else {
+            FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
+        }
+        if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
     }
 }
 
@@ -90,10 +122,10 @@ private fun FolderButtonGroup(
     tabs: ImmutableList<FolderTab>,
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
-    enabled: Boolean,
     margin: Dp,
-    modifier: Modifier = Modifier,
+    tabMenu: TabMenu,
 ) {
+    val enabled = tabMenu.enabled
     // The bar is surfaceContainer, the default unchecked container: the next step of the ladder keeps the tabs apart.
     val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
     val labels = tabs.map { it.label() }
@@ -104,7 +136,7 @@ private fun FolderButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
         modifier =
-            modifier
+            Modifier
                 .fillMaxWidth()
                 .fadingEdges(scroll.state)
                 .horizontalScroll(scroll.state)
@@ -132,7 +164,8 @@ private fun FolderButtonGroup(
                         modifier =
                             Modifier
                                 .animateWidth(interactionSource)
-                                .onPlaced { scroll.buttonBounds[index] = it.boundsInParent() },
+                                .onPlaced { scroll.buttonBounds[index] = it.boundsInParent() }
+                                .tabMenu(tabMenu, tab, index),
                     )
                 },
                 menuContent = { menu ->
@@ -150,7 +183,7 @@ private fun FolderButtonGroup(
     }
 }
 
-/** One tab of [FolderButtonGroup]: its label, and its unread count in a badge. */
+/** One tab of [FolderButtonGroup]: its [FolderToggleButton], one tab for screen readers. */
 @Suppress("LongParameterList") // The tab, its texts and state, and the group's shapes, colors and interactions.
 @Composable
 private fun FolderButton(
@@ -165,15 +198,45 @@ private fun FolderButton(
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
 ) {
+    // Tabs rather than check boxes, one always selected (Material's single-select button group sample): screen readers
+    // hear a selected tab, without the toggle button's checked state, which TalkBack would read as "Tab, checked".
+    Box(
+        modifier =
+            modifier.clearAndSetSemantics {
+                role = Role.Tab
+                contentDescription = description
+                this.selected = selected
+                if (enabled) {
+                    onClick {
+                        onSelect(tab.folderId)
+                        true
+                    }
+                } else {
+                    disabled()
+                }
+            },
+        propagateMinConstraints = true,
+    ) {
+        FolderToggleButton(tab, label, selected, onSelect, enabled, shapes, colors, interactionSource)
+    }
+}
+
+/** The button of a [FolderButton]: its label, and its unread count in a badge. */
+@Suppress("LongParameterList") // The tab, its label and state, and the group's shapes, colors and interactions.
+@Composable
+private fun FolderToggleButton(
+    tab: FolderTab,
+    label: String,
+    selected: Boolean,
+    onSelect: (Int?) -> Unit,
+    enabled: Boolean,
+    shapes: ToggleButtonShapes,
+    colors: ToggleButtonColors,
+    interactionSource: MutableInteractionSource,
+) {
     ToggleButton(
         checked = selected,
         onCheckedChange = { onSelect(tab.folderId) },
-        // Tabs rather than check boxes: one is always selected (Material's single-select button group sample).
-        modifier =
-            modifier.semantics {
-                role = Role.Tab
-                contentDescription = description
-            },
         enabled = enabled,
         shapes = shapes,
         colors = colors,
@@ -216,14 +279,13 @@ private fun FolderTabRow(
     tabs: ImmutableList<FolderTab>,
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
-    enabled: Boolean,
     margin: Dp,
-    modifier: Modifier = Modifier,
+    tabMenu: TabMenu,
 ) {
+    val enabled = tabMenu.enabled
     val selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }.coerceAtLeast(0)
     PrimaryScrollableTabRow(
         selectedTabIndex = selectedIndex,
-        modifier = modifier,
         containerColor = Color.Transparent,
         edgePadding = margin,
     ) {
@@ -232,7 +294,7 @@ private fun FolderTabRow(
             Tab(
                 selected = index == selectedIndex,
                 onClick = { onSelect(tab.folderId) },
-                modifier = Modifier.semantics { contentDescription = description },
+                modifier = Modifier.tabMenu(tabMenu, tab, index).semantics { contentDescription = description },
                 enabled = enabled,
             ) {
                 Row(

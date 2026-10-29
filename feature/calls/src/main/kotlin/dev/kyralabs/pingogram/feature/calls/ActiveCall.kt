@@ -32,6 +32,8 @@ data class ActiveCall(
      */
     val videoOffered: Boolean = false,
     val video: CallVideo = CallVideo(),
+    /** Connected, and both sides can turn it into a conference call: "Add people" shows. */
+    val canUpgrade: Boolean = false,
 )
 
 /**
@@ -53,6 +55,10 @@ data class CallVideo(
     /** The device has a front and a back camera. */
     val canSwitchCamera: Boolean = false,
     val remote: RemoteVideo = RemoteVideo.Off,
+    /** The user shares the screen in place of the camera (`docs/adr/0026-screen-sharing.md`). */
+    val isSharingScreen: Boolean = false,
+    /** The other side's [remote] video is their shared screen: shown whole, not cropped like a face. */
+    val remoteIsScreen: Boolean = false,
 )
 
 enum class CameraFacing {
@@ -102,6 +108,12 @@ sealed interface CallEndReason {
 
     /** The connection was lost and could not be found again. */
     data object Disconnected : CallEndReason
+
+    /**
+     * Became a conference call (`docs/adr/0025-conference-calls.md`): the user added people, or the other person did;
+     * the voice chat's screen takes over.
+     */
+    data object UpgradedToGroupCall : CallEndReason
 
     /** Could not be made, e.g. the other person's privacy settings refuse calls ([error] says why). */
     data class Failed(

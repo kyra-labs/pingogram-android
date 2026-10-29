@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.tdlibPriority
 import dev.kyralabs.pingogram.core.data.mapper.toFileState
 import dev.kyralabs.pingogram.core.data.mapper.toFileUpload
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] and [observeUpload] add a file
@@ -32,7 +32,7 @@ import javax.inject.Singleton
  * other files is ignored. Observing a file again asks TDLib, which answers from memory. Downloads the user asked for
  * ([DownloadPriority.Requested]) go through [TdlibTransferRepository], which follows them as transfers.
  */
-@Singleton
+@AccountScoped
 class TdlibFileRepository
     @Inject
     constructor(

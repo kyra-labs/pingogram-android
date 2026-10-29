@@ -56,7 +56,7 @@ fun AppLockRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
-    val prompt = rememberBiometricPrompt { viewModel.onEvent(LockEvent.BiometricSucceeded) }
+    val prompt = rememberBiometricPrompt(state.screenLock) { viewModel.onEvent(LockEvent.BiometricSucceeded) }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -130,7 +130,8 @@ internal fun LockScreen(
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding),
             secondaryAction = { ForgotButton(state.isLoggingOut, onClick = { onEvent(LockEvent.ForgotPasscode) }) },
-            extraAction = if (state.biometricUnlock) ({ BiometricButton(onBiometricUnlock) }) else null,
+            extraAction =
+                if (state.biometricUnlock) ({ BiometricButton(onBiometricUnlock, state.screenLock) }) else null,
         )
     }
     if (state.showForgetDialog) {
@@ -164,11 +165,16 @@ private fun ForgotButton(
 
 /** Shows the system's biometric prompt again: the fingerprint on a tonal icon button with the Expressive shapes. */
 @Composable
-private fun BiometricButton(onClick: () -> Unit) {
+internal fun BiometricButton(
+    onClick: () -> Unit,
+    screenLock: ScreenLock = ScreenLock.Off,
+) {
     FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+        // The phone's screen lock alone (no strong biometrics) shows the PIN symbol and names it.
+        val only = screenLock == ScreenLock.Only
         Icon(
-            painter = painterResource(R.drawable.ic_fingerprint),
-            contentDescription = stringResource(R.string.lock_biometric),
+            painter = painterResource(if (only) R.drawable.ic_pin else R.drawable.ic_fingerprint),
+            contentDescription = stringResource(if (only) R.string.lock_screen_lock else R.string.lock_biometric),
         )
     }
 }

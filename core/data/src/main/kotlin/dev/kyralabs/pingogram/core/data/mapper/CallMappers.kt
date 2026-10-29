@@ -25,13 +25,34 @@ internal fun TdApi.Call.toCall(): Call =
 /** Null (td_api.tl requires a value, but the field is a Java reference) and states a newer TDLib adds: discarded. */
 internal fun TdApi.CallState?.toCallState(): CallState =
     when (this) {
-        is TdApi.CallStatePending -> CallState.Pending(isCreated, isReceived)
-        is TdApi.CallStateExchangingKeys -> CallState.ExchangingKeys
-        is TdApi.CallStateReady -> CallState.Ready(toConnection())
-        is TdApi.CallStateHangingUp -> CallState.HangingUp
-        is TdApi.CallStateDiscarded -> CallState.Discarded(reason.toCallDiscardReason(), needRating)
-        is TdApi.CallStateError -> CallState.Failed(TdError(error.code, error.message).toDomainError())
-        else -> CallState.Discarded(CallDiscardReason.Unknown, needsRating = false)
+        is TdApi.CallStatePending -> {
+            CallState.Pending(isCreated, isReceived)
+        }
+
+        is TdApi.CallStateExchangingKeys -> {
+            CallState.ExchangingKeys
+        }
+
+        is TdApi.CallStateReady -> {
+            CallState.Ready(toConnection())
+        }
+
+        is TdApi.CallStateHangingUp -> {
+            CallState.HangingUp
+        }
+
+        is TdApi.CallStateDiscarded -> {
+            val link = (reason as? TdApi.CallDiscardReasonUpgradeToGroupCall)?.inviteLink?.takeIf { it.isNotEmpty() }
+            CallState.Discarded(reason.toCallDiscardReason(), needRating, upgradeLink = link)
+        }
+
+        is TdApi.CallStateError -> {
+            CallState.Failed(TdError(error.code, error.message).toDomainError())
+        }
+
+        else -> {
+            CallState.Discarded(CallDiscardReason.Unknown, needsRating = false)
+        }
     }
 
 private fun TdApi.CallStateReady.toConnection() =
@@ -42,6 +63,7 @@ private fun TdApi.CallStateReady.toConnection() =
         emojis = emojis.orEmpty().toImmutableList(),
         allowP2p = allowP2p,
         customParameters = customParameters.orEmpty(),
+        isGroupCallSupported = isGroupCallSupported,
     )
 
 internal fun TdApi.CallProtocol.toCallProtocol(): CallProtocol =

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
+import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -79,12 +81,17 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchTopBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.rememberSearchBack
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBarSlot
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.RoundVideoPreview
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
@@ -146,6 +153,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   bot's results show above the composer ([inlineResults], the view model's, kept apart from [state]); sending one
  *   scrolls to the newest message. A bot's keyboard ([botReply], the view model's too) shows in the system keyboard's
  *   place, with a toggle in the composer's pill, and gives way to the inline results.
+ * - **Scheduled messages** (`REQUIREMENTS.md` FR-C5): where the chat holds messages the user scheduled, "3 scheduled
+ *   messages" sits below those bars ([ScheduledBarSlot]), and a tap opens their list through [onOpenScheduledMessages];
+ *   without it (a screen without the list) the bar is left out.
  * - **Search in the chat** (`REQUIREMENTS.md` §5.9, [search], the view model's, kept apart from [state]): the top
  *   bar's search button opens it; the search field ([searchQuery]) takes the top bar's place and the search's bar the
  *   composer's ([SearchTopBarSlot], [SearchBottomBarSlot]), with the result shown in the list as a tapped quote's
@@ -157,10 +167,14 @@ import kotlinx.collections.immutable.ImmutableSet
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
+ * - **Connection** (audit A11): while TDLib is not connected ([connection], the app's, not the view model's), the top
+ *   bar says "Connecting…" and the like in place of the chat's status, and screen readers hear it change.
+ *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows. [onOpenProfile],
  * where the app has profiles, is what the title of a private chat opens, [onOpenChatInfo] what that of a group or
  * channel opens; tapped mentions, senders' avatars and names
- * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]).
+ * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]). A forum topic's conversation adds
+ * [topicAction] ("Manage topic") to the top bar, after search.
  */
 @Composable
 internal fun ChatScreen(
@@ -186,6 +200,12 @@ internal fun ChatScreen(
     search: ChatSearchUiState? = null,
     searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
+    topicAction: (@Composable () -> Unit)? = null,
+    connection: ConnectionStatus = ConnectionStatus.Ready,
+    onOpenScheduledMessages: (() -> Unit)? = null,
+    nextChannel: NextChannel? = null,
+    recordMode: RecordModeUiState = RecordModeUiState(),
+    videoNotePreview: SurfaceRequest? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -212,11 +232,16 @@ internal fun ChatScreen(
             onOpenChatInfo = onOpenChatInfo,
             search = search,
             searchQuery = searchQuery,
+            topicAction = topicAction,
+            connection = connection,
+            // A read channel's next unread one, outside selection mode and search.
+            nextChannel = nextChannel.takeIf { selection == null && search == null },
             bottomBar = {
                 ChatScreenBottomBar(
                     state = state,
                     search = search,
                     recording = recording,
+                    recordMode = recordMode,
                     composerText = composerText,
                     composerFocus = composerFocus,
                     selectionBack = { selectionBack.value },
@@ -229,19 +254,16 @@ internal fun ChatScreen(
                     botReply = botReply,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
-            jumpButton = {
-                JumpToBottomButton(
-                    visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
-                    unreadCount = state.unreadCount,
-                    motionScheme = MaterialTheme.motionScheme,
-                    onClick = scrollToNewest,
-                )
-            },
+            onOpenScheduledMessages = onOpenScheduledMessages,
+            jumpButton = { JumpButtonSlot(content, showJump, state.unreadCount, scrollToNewest) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
+            // Over the messages, above the composer, while a video message records.
+            overlay = { RoundVideoPreview(recording, videoNotePreview) },
         )
         if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
     }
     ChatSheets(state, onEvent, reportComment, actionsInSheet = lifted == null)
+    recordMode.rationale?.let { VideoNotePermissionSheet(it, onEvent) }
     AttachSheets(state, attach, attachMenuOpen, onCloseMenu = { attachMenuOpen = false }, onEvent, scrollToSent)
 }
 
@@ -249,7 +271,7 @@ internal fun ChatScreen(
  * The screen's [Scaffold]: the top bar (with the selection's count), the [bottomBar], the [jumpButton] and the
  * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu.
  */
-@Suppress("LongParameterList") // The state, back, its list and snackbars, what the bubbles share, search, the slots.
+@Suppress("LongParameterList") // The state, back, list, snackbars, what the bubbles share, search, connection, slots.
 @Composable
 private fun ChatScaffold(
     state: ChatUiState,
@@ -262,30 +284,41 @@ private fun ChatScaffold(
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
     search: ChatSearchUiState?,
     searchQuery: TextFieldState,
+    topicAction: (@Composable () -> Unit)?,
+    connection: ConnectionStatus,
+    nextChannel: NextChannel?,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenScheduledMessages: (() -> Unit)? = null,
+    overlay: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
     Scaffold(
         modifier = modifier,
         topBar = {
-            SearchTopBarSlot(
-                searching = search != null && selection == null,
-                query = searchQuery,
-                height = titleHeight(),
-                onClose = { onEvent(ChatSearchEvent.Close) },
-            ) {
-                ChatTopBar(
-                    header = state.header,
-                    onBack = onBack,
-                    selectedCount = selection?.messageIds?.size,
-                    onClearSelection = { onEvent(SelectionEvent.Clear) },
-                    onOpenProfile = onOpenProfile,
-                    onSecretChatEvent = onEvent,
-                    onOpenChatInfo = onOpenChatInfo,
-                    onSearch = { onEvent(ChatSearchEvent.Open) },
-                )
+            Column {
+                SearchTopBarSlot(
+                    searching = search != null && selection == null,
+                    query = searchQuery,
+                    height = titleHeight(),
+                    onClose = { onEvent(ChatSearchEvent.Close) },
+                ) {
+                    ChatTopBar(
+                        header = state.header,
+                        onBack = onBack,
+                        selectedCount = selection?.messageIds?.size,
+                        onClearSelection = { onEvent(SelectionEvent.Clear) },
+                        onOpenProfile = onOpenProfile,
+                        onSecretChatEvent = onEvent,
+                        onOpenChatInfo = onOpenChatInfo,
+                        onSearch = { onEvent(ChatSearchEvent.Open) },
+                        topicAction = topicAction,
+                        connection = connection,
+                    )
+                }
+                // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
+                LocalConversationTabs.current?.invoke()
             }
         },
         bottomBar = bottomBar,
@@ -301,7 +334,11 @@ private fun ChatScaffold(
                 state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
-                Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
+                ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
+                Box(Modifier.weight(1f)) {
+                    ChatBody(state, onEvent, listState, bubbleResources, contentPadding, nextChannel)
+                    overlay()
+                }
             }
         }
     }
@@ -321,6 +358,7 @@ private fun ChatScreenBottomBar(
     state: ChatUiState,
     search: ChatSearchUiState?,
     recording: VoiceRecordingUiState?,
+    recordMode: RecordModeUiState,
     composerText: ComposerText,
     composerFocus: ComposerFocusState,
     selectionBack: () -> Float,
@@ -355,10 +393,13 @@ private fun ChatScreenBottomBar(
                 focus = composerFocus,
                 onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+                onReplaceMedia = { onEvent(ReplyEvent.ReplaceMedia) },
                 onAttach = { onAttach(null) },
                 onGallery = { onAttach(AttachOption.Gallery) },
                 recording = recording,
                 onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
+                recordMode = recordMode,
+                onVideoNoteEvent = onEvent,
                 onSendAs = { onEvent(SendAsEvent.Open) },
                 panel = emojiPanel,
                 onPanelEvent = onEmojiPanelEvent,
@@ -378,7 +419,11 @@ private fun ChatScreenBottomBar(
     }
 }
 
-/** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
+/**
+ * What the sheet shows for [state]'s content: progress, an empty or error state, or the messages; below the newest of
+ * a read channel's, once the list reaches it, the pull toward the [nextChannel] ([NextChannelIndicator]).
+ */
+@Suppress("LongParameterList") // The state, its list and what the bubbles share, the sheet's padding, the next channel.
 @Composable
 private fun BoxScope.ChatBody(
     state: ChatUiState,
@@ -386,6 +431,7 @@ private fun BoxScope.ChatBody(
     listState: LazyListState,
     bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
+    nextChannel: NextChannel?,
 ) {
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
     when (val content = state.content) {
@@ -416,7 +462,25 @@ private fun BoxScope.ChatBody(
         }
 
         is ChatContent.Content -> {
-            MessageList(state, content, listState, bubbleResources, contentPadding, onEvent)
+            val pull = rememberNextChannelPull(nextChannel.takeIf { content.reachedEnd }, onEvent)
+            MessageList(
+                state,
+                content,
+                listState,
+                bubbleResources,
+                contentPadding,
+                onEvent,
+                if (pull != null) Modifier.pullAway(pull) else Modifier,
+            )
+            if (pull != null) {
+                NextChannelIndicator(
+                    pull = pull,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = contentPadding.calculateBottomPadding() + MaterialTheme.spacing.small),
+                )
+            }
             FloatingDatePill(
                 items = content.items,
                 listState = listState,
@@ -439,6 +503,7 @@ private fun MessageList(
     bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
@@ -457,7 +522,7 @@ private fun MessageList(
         )
     LazyColumn(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .anchorPlacement(jumpState, listState, listPadding, margin = spacing.extraExtraLarge)
                 .hideUntilAnchored(content.anchor, content.items, jumpState)
@@ -571,7 +636,7 @@ private fun ChatItemRow(
 }
 
 /** An entry of the list: [top] above it, animating as the list changes on the [motionScheme]'s springs. */
-private fun Modifier.entry(
+internal fun Modifier.entry(
     scope: LazyItemScope,
     motionScheme: MotionScheme,
     top: Dp,
@@ -587,13 +652,13 @@ private fun Modifier.entry(
     }
 
 /** The space above an entry: less between the bubbles of a group, which then read as one stack. */
-private fun ChatItem.topSpacing(
+internal fun ChatItem.topSpacing(
     between: Dp,
     withinGroup: Dp,
 ): Dp = if (this is ChatItem.Bubble && position.joinsPrevious) withinGroup else between
 
 /** The content type of an entry, so the list reuses its compositions among entries of one kind. */
-private val ChatItem.contentType: Any
+internal val ChatItem.contentType: Any
     get() =
         when (this) {
             is ChatItem.Bubble -> BubbleContentType.of(this)

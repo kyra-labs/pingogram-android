@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toActiveSession
 import dev.kyralabs.pingogram.core.data.mapper.toActiveSessions
 import dev.kyralabs.pingogram.core.domain.model.ActiveSession
@@ -10,7 +11,6 @@ import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SessionRepository] on TDLib's `getActiveSessions`, `terminateSession`, `terminateAllOtherSessions`, `confirmSession`
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  * (td/telegram/AccountManager.cpp), and keeps terminations it has not sent yet in its database, sending them once it
  * can.
  */
-@Singleton
+@AccountScoped
 class TdlibSessionRepository
     @Inject
     constructor(

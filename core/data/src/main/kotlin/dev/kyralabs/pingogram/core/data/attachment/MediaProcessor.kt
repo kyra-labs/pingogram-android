@@ -28,6 +28,16 @@ internal interface MediaProcessor {
         source: File,
         plan: PhotoPlan,
         target: File,
+        quality: Int = JPEG_QUALITY,
+    ): Boolean
+
+    /**
+     * Copies the JPEG in [source] to [target] without its metadata ([JpegMetadata]), its image data byte for byte, then
+     * writes its EXIF orientation back alone, so it stays upright. False when it is no JPEG or cannot be written.
+     */
+    fun copyJpegWithoutMetadata(
+        source: File,
+        target: File,
     ): Boolean
 
     /** The size, rotation and length of the video in [file]; null when Android cannot read it as a video. */
@@ -50,7 +60,10 @@ internal data class ImageInfo(
     val width: Int,
     val height: Int,
     val orientation: Orientation,
-)
+) {
+    /** How many times longer than wide it is, its longer side over its shorter one. */
+    val aspect: Float get() = maxOf(width, height).toFloat() / minOf(width, height).coerceAtLeast(1)
+}
 
 /**
  * A video as stored: [width] × [height] pixels, played turned clockwise by [rotation] degrees, [durationMillis] long.
@@ -83,6 +96,7 @@ internal class AndroidMediaProcessor : MediaProcessor {
         source: File,
         plan: PhotoPlan,
         target: File,
+        quality: Int,
     ): Boolean {
         val options = BitmapFactory.Options().apply { inSampleSize = plan.sampleSize }
         val decoded = BitmapFactory.decodeFile(source.path, options) ?: return false
@@ -90,9 +104,32 @@ internal class AndroidMediaProcessor : MediaProcessor {
         if (transformed !== decoded) decoded.recycle()
         val photo = transformed.opaque()
         return try {
-            photo.writeJpeg(target)
+            photo.writeJpeg(target, quality)
         } finally {
             photo.recycle()
+        }
+    }
+
+    @Suppress("ExifInterface") // Lint's warning is about the platform class before Android 7; minSdk is 26.
+    override fun copyJpegWithoutMetadata(
+        source: File,
+        target: File,
+    ): Boolean {
+        val header = ByteArray(JPEG_HEADER).also { bytes -> source.inputStream().use { it.read(bytes) } }
+        if (!JpegMetadata.isJpeg(header)) return false
+        val orientation = exifOrientation(source)
+        return try {
+            source.inputStream().use { input -> target.outputStream().use { JpegMetadata.strip(input, it) } }
+            if (orientation != android.media.ExifInterface.ORIENTATION_NORMAL) {
+                android.media.ExifInterface(target.path).apply {
+                    setAttribute(android.media.ExifInterface.TAG_ORIENTATION, orientation.toString())
+                    saveAttributes()
+                }
+            }
+            true
+        } catch (_: IOException) {
+            target.delete()
+            false
         }
     }
 
@@ -183,6 +220,9 @@ internal class AndroidMediaProcessor : MediaProcessor {
     private companion object {
         const val HAS_VIDEO = "yes"
 
+        /** How many bytes start a JPEG ([JpegMetadata.isJpeg]). */
+        const val JPEG_HEADER = 3
+
         /** The largest side of a frame decoded for a thumbnail: twice the thumbnail's, for a sharp downscale. */
         const val FRAME_SIDE = MAX_THUMBNAIL_SIDE * 2
     }
@@ -218,10 +258,13 @@ private fun Bitmap.opaque(): Bitmap {
     return opaque
 }
 
-/** Writes this bitmap to [target] as a JPEG of [JPEG_QUALITY]; false when that fails. */
-private fun Bitmap.writeJpeg(target: File): Boolean =
+/** Writes this bitmap to [target] as a JPEG of [quality]; false when that fails. */
+private fun Bitmap.writeJpeg(
+    target: File,
+    quality: Int = JPEG_QUALITY,
+): Boolean =
     try {
-        target.outputStream().use { compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
+        target.outputStream().use { compress(Bitmap.CompressFormat.JPEG, quality, it) }
     } catch (_: IOException) {
         false
     }

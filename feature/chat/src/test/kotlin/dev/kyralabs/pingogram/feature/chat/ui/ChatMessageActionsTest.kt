@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.Reaction
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
@@ -517,7 +518,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
         @Test
         fun `a draft's reply comes back when the chat opens`() =
             runViewModelTest {
-                val draft = ChatDraft(DraftContent.Text(text("Sure")), date = 0, replyToMessageId = 2)
+                val draft = ChatDraft(DraftContent.Text(text("Sure")), date = 0, replyTo = ReplyTarget(2))
 
                 val viewModel = privateChat(draft = draft)
 
@@ -530,7 +531,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             runViewModelTest {
                 val older = message(7, sender = MessageSender.User(ADA))
                 messages.onMessage = { _, _ -> Outcome.Success(older) }
-                val draft = ChatDraft(DraftContent.Text(FormattedText.Empty), date = 0, replyToMessageId = 7)
+                val draft = ChatDraft(DraftContent.Text(FormattedText.Empty), date = 0, replyTo = ReplyTarget(7))
 
                 val viewModel = privateChat(draft = draft)
 
@@ -1175,7 +1176,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             runViewModelTest {
                 val viewModel = privateChat()
 
-                assertEquals(MessageShortcuts(canReply = true, canCopy = true), viewModel.state.shortcuts)
+                assertEquals(
+                    MessageShortcuts(canReply = true, canCopy = true, canReplyElsewhere = true, canForward = true),
+                    viewModel.state.shortcuts,
+                )
             }
 
         @Test
@@ -1184,7 +1188,16 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 groups.supergroupMap.value = mapOf(ChatFixtures.SUPERGROUP_ID to supergroup(9))
                 val viewModel = showing(channelChat, history(message(1, CHANNEL_CHAT)))
 
-                assertEquals(MessageShortcuts(canReply = false, canCopy = true), viewModel.state.shortcuts)
+                assertEquals(
+                    MessageShortcuts(
+                        canReply = false,
+                        canCopy = true,
+                        canReplyElsewhere = true,
+                        canCopyLink = true,
+                        canForward = true,
+                    ),
+                    viewModel.state.shortcuts,
+                )
             }
 
         @Test

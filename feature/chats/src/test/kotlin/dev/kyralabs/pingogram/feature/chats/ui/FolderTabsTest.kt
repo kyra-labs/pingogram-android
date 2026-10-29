@@ -8,6 +8,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -94,6 +95,24 @@ class FolderTabsTest {
         tab("All chats").performClick()
 
         assertEquals(listOf(1, null), selected)
+    }
+
+    @Test
+    fun `screen readers hear selected tabs, not checked toggle buttons`() {
+        setTabs(
+            persistentListOf(FolderTab.AllChats(0), FolderTab.Folder(id = 1, title = "Work", unreadCount = 0)),
+            selectedFolderId = 1,
+        )
+
+        tab("Work")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ToggleableState))
+        tab("All chats").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+
+        selectedFolderId = null
+        composeRule.waitForIdle()
+        tab("All chats").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        tab("Work").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
     }
 
     private var selectedFolderId by mutableStateOf<Int?>(null)

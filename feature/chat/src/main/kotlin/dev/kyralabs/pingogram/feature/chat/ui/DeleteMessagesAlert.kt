@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,6 +68,8 @@ internal fun DeleteMessagesAlert(
             TextButton(
                 onClick = { onConfirm(forEveryone) },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                // For `benchmark/`'s journeys, which delete what they sent.
+                modifier = Modifier.testTag("delete_confirm"),
             ) {
                 Text(
                     stringResource(R.string.message_delete_confirm),

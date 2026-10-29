@@ -34,9 +34,10 @@ class CallManagerRatingTest {
             FakeCallForeground(),
             FakeCallTones(),
             clock,
-            { "Ada" },
+            { _, _ -> "Ada" },
             { FakeNetworkRepository() },
             CallLine(),
+            { error("No conference calls in these tests") },
             backgroundScope,
         ).also {
             it.start()

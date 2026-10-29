@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -15,13 +16,16 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** The others' videos in a voice chat: which are received, pinning, and where their frames go (ADR 0024). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupCallManagerParticipantVideoTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
 
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             FakeCallSystem(),
             FakeCallForeground(),

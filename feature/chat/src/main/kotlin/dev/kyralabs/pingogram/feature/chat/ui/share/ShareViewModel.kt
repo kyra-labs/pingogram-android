@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -19,15 +20,19 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.ShareRoute
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -68,6 +73,7 @@ class ShareViewModel internal constructor(
     dispatcher: CoroutineDispatcher,
     private val applicationScope: CoroutineScope,
     private val results: ShareResults,
+    targetPreferences: TargetPreferences = TargetPreferences(),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -81,6 +87,7 @@ class ShareViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         results: ShareResults,
+        targetPreferences: TargetPreferences,
     ) : this(
         savedStateHandle.toRoute<ShareRoute>(),
         inbox,
@@ -92,6 +99,7 @@ class ShareViewModel internal constructor(
         dispatcher,
         applicationScope,
         results,
+        targetPreferences,
     )
 
     /** What is shared; null when the share was gone. */
@@ -107,7 +115,7 @@ class ShareViewModel internal constructor(
 
     private val selected = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
 
-    private val chatTargets = ChatTargets(chats, search, users, groups, viewModelScope)
+    private val chatTargets = ChatTargets(chats, search, users, groups, viewModelScope, preferences = targetPreferences)
 
     /** The sheet; null when there is nothing to share. */
     val sheet: StateFlow<ShareSheet?> =

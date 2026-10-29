@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 
 /**
@@ -24,7 +25,7 @@ interface VoiceNoteRepository {
     fun discardVoiceNote(path: String)
 
     /**
-     * Sends [voiceNote] to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not null. Succeeds
+     * Sends [voiceNote] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. Succeeds
      * once TDLib accepted the message, which it then shows as being sent while it uploads; its file is then TDLib's to
      * upload and deleted once uploaded. A refused voice note's file is deleted.
      */
@@ -32,6 +33,6 @@ interface VoiceNoteRepository {
         chatId: Long,
         voiceNote: RecordedVoiceNote,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 }

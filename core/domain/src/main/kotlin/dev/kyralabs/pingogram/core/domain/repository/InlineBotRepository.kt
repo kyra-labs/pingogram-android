@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.InlineBot
 import dev.kyralabs.pingogram.core.domain.model.InlineQueryResults
 import dev.kyralabs.pingogram.core.domain.model.Location
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 
 /**
@@ -36,14 +37,14 @@ interface InlineBotRepository {
 
     /**
      * Sends result [resultId] of query [queryId] into chat [chatId] (td_api.tl `sendInlineQueryResultMessage`), with
-     * [options]' notification, scheduling and topic, replying to message [replyToMessageId] of the chat if not null;
-     * the message says which bot it came from. TDLib puts it into the chat as being sent before it answers.
+     * [options]' notification, scheduling and topic, replying as [replyTo] says if not null; the message says which
+     * bot it came from. TDLib puts it into the chat as being sent before it answers.
      */
     suspend fun send(
         chatId: Long,
         queryId: Long,
         resultId: String,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 }

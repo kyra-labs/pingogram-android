@@ -28,6 +28,8 @@ data class GroupInfo(
     val details: GroupDetails?,
     /** Why the full info could not be read; null if it was, or is still on its way. */
     val detailsError: DomainError? = null,
+    /** How many people asked to join and wait for an administrator (the chat's `pending_join_requests`). */
+    val pendingJoinRequests: Int = 0,
 ) {
     /** The rights the current user has here: every right as the owner, none as anyone but an administrator. */
     val myRights: AdministratorRights get() = myRole.rights
@@ -60,6 +62,8 @@ enum class GroupKind {
  * @property members a basic group's members, which its full info holds all of; empty for supergroups and channels,
  *   whose members are paged (`GroupInfoRepository.members`).
  * @property primaryInviteLink the primary invite link, for administrators who may invite; null otherwise.
+ * @property canGetStatistics Telegram gives the user the chat's statistics (`ChatStatisticsRepository`): its
+ *   administrators, where the supergroup or channel is large enough.
  */
 data class GroupDetails(
     val description: FormattedText,
@@ -72,6 +76,7 @@ data class GroupDetails(
     val slowModeDelay: Int,
     val members: ImmutableList<GroupMember>,
     val primaryInviteLink: InviteLink?,
+    val canGetStatistics: Boolean = false,
 ) {
     override fun toString() =
         "GroupDetails(memberCount=$memberCount, administratorCount=$administratorCount, members=${members.size}, …)"

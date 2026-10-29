@@ -37,12 +37,16 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
+import dev.kyralabs.pingogram.feature.calls.ui.invite.InvitePeopleSheet
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -62,7 +66,18 @@ import javax.inject.Inject
 class CallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
 
+    @Inject lateinit var powerSaving: PowerSavingPolicy
+
+    @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
+
     private val viewModel: CallViewModel by viewModels()
+
+    /** Whether power saving keeps the call screen's animations still. */
+    private val stillAnimations by lazy {
+        powerSaving.inEffect
+            .map { it.stillCalls }
+            .stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), false)
+    }
 
     private var inPictureInPicture by mutableStateOf(false)
 
@@ -89,11 +104,7 @@ class CallActivity : ComponentActivity() {
             val permissions =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
                     val granted = results[Manifest.permission.RECORD_AUDIO] == true
-                    val canAskAgain =
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            this,
-                            Manifest.permission.RECORD_AUDIO,
-                        )
+                    val canAskAgain = shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
                     viewModel.onEvent(CallEvent.MicrophoneResult(granted, canAskAgain))
                 }
             val camera =
@@ -102,13 +113,9 @@ class CallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(CallEvent.CameraResult(granted, canAskAgain))
                 }
+            val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
-                viewModel.effects.collect { effect ->
-                    when (effect) {
-                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-                        CallEffect.OpenSettings -> openAppSettings()
-                    }
-                }
+                viewModel.effects.collect { onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture) }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
             // A call that ends in picture-in-picture is not rated: its window has no room for the question.
@@ -119,7 +126,7 @@ class CallActivity : ComponentActivity() {
             val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
             LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings) {
+                CallTheme(appearanceSettings, stillAnimations = stillAnimations.collectAsStateWithLifecycle().value) {
                     CallScreen(
                         state = state,
                         onEvent = viewModel::onEvent,
@@ -130,9 +137,52 @@ class CallActivity : ComponentActivity() {
                         video = video,
                         pictureInPicture = inPictureInPicture,
                     )
+                    AddPeopleSheet(state)
                 }
             }
         }
+    }
+
+    /** Does what an effect of the view model asks. */
+    private fun onEffect(
+        effect: CallEffect,
+        requestCamera: () -> Unit,
+        screenCapture: () -> Unit,
+    ) {
+        when (effect) {
+            CallEffect.RequestCamera -> {
+                requestCamera()
+            }
+
+            CallEffect.RequestScreenCapture -> {
+                screenCapture()
+            }
+
+            CallEffect.OpenSettings -> {
+                openAppSettings()
+            }
+
+            CallEffect.OpenGroupCall -> {
+                // The call became a conference call (docs/adr/0025-conference-calls.md): its screen takes over.
+                GroupCallActivity.show(this)
+                finish()
+            }
+
+            // The conference call's screen says what came of the invitations.
+            is CallEffect.Invited, is CallEffect.InviteFailed -> {}
+        }
+    }
+
+    /** "Add people" over the connected call: the other person is in it already. */
+    @Composable
+    private fun AddPeopleSheet(state: CallUiState) {
+        val inCall = state as? CallUiState.InCall
+        if (inCall?.isAddingPeople != true || inPictureInPicture) return
+        InvitePeopleSheet(
+            excluded = setOf(inCall.person.userId),
+            onInvite = { viewModel.onEvent(CallEvent.AddPeople(it)) },
+            onDismiss = { viewModel.onEvent(CallEvent.CloseAddPeople) },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -149,6 +199,7 @@ class CallActivity : ComponentActivity() {
             mirror = mirror,
             onSink = { sink -> viewModel.setVideoSink(slot, sink) },
             modifier = modifier,
+            fit = slot == CallVideoSlot.RemoteScreen,
         )
     }
 
@@ -165,6 +216,8 @@ class CallActivity : ComponentActivity() {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
+
+    private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(CallEvent.ScreenSharingResult(granted))
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
@@ -254,8 +307,10 @@ class CallActivity : ComponentActivity() {
      * user's), once the screen is unlocked: the chats never show over the lock screen.
      */
     private fun declineAndMessage(userId: Long) {
+        // The caller's chat in the account the call came to (`docs/adr/0031-multiple-accounts.md`).
+        val slot = viewModel.callSlot
         viewModel.onEvent(CallEvent.HangUp)
-        val chat = NotificationIntents.openChat(this, chatId = userId) ?: return
+        val chat = NotificationIntents.openChat(this, chatId = userId, slot = slot) ?: return
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard.isKeyguardLocked) {
             keyguard.requestDismissKeyguard(

@@ -86,8 +86,11 @@
          Frames are read for QR codes on the device by ZXing while the scanner shows, and dropped; nothing the camera
          sees is kept or sent, only the text of a Telegram link reaches TDLib. And video calls (FR-V2, approved for 1:1
          video, docs/adr/0019-video-and-group-calls-scope.md): asked when the user turns the camera on in a call; the
-         video goes to the other person only, end-to-end encrypted, and is not kept. Devices without a camera still install
-         Pingogram and scan from an image (the photo picker, no permission). The CAMERA permission implies a required
+         video goes to the other person only, end-to-end encrypted, and is not kept. And round video messages (FR-C5,
+         approved by the owner 2026-10-23, docs/adr/0032-round-video-messages.md): asked when the user first switches
+         the microphone button to video, after it says why; the camera runs only while the user records, and the video
+         goes only into the message sent. Devices without a camera still install Pingogram and scan from an image (the
+         photo picker, no permission); their record button stays a microphone. The CAMERA permission implies a required
          back camera with autofocus, so those are declared optional too. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
@@ -106,7 +109,9 @@
          Bluetooth headsets, cars and watches know its calls, and a phone call puts one on hold. The call's foreground
          service runs as phoneCall while a call rings or goes on, as microphone too once the user talks, and as camera
          while the user's camera sends video (FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE,
-         FOREGROUND_SERVICE_CAMERA). USE_FULL_SCREEN_INTENT shows an incoming call
+         FOREGROUND_SERVICE_CAMERA), and as mediaProjection while the user shares the screen, after Android's consent
+         dialog (FOREGROUND_SERVICE_MEDIA_PROJECTION, approved by the owner on 2026-10-24,
+         docs/adr/0026-screen-sharing.md). USE_FULL_SCREEN_INTENT shows an incoming call
          over the lock screen; Android 14+ lets the user take it back, and the call then rings as a heads-up
          notification. BLUETOOTH_CONNECT (Android 12+, asked with the microphone) names Bluetooth headsets the call can
          move to. MODIFY_AUDIO_SETTINGS sets the call's audio mode and route where the device has no Telecom. Telecom's
@@ -115,6 +120,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

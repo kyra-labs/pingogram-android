@@ -34,12 +34,18 @@ assertj = "3.27.7"
 # CameraX for the in-app QR code scanner only (feature:scanner, REQUIREMENTS.md FR-P5; approved by the owner 2026-10-21;
 # docs/adr/0012-camerax-and-zxing-qr-scanner.md): camera-core, its Camera2 implementation, the lifecycle binding and
 # camera-compose's CameraXViewfinder. First-party Jetpack, no network code and no Google Play services, so foss stays
-# Google-free; frames are decoded on the device by ZXing and never leave it.
+# Google-free; frames are decoded on the device by ZXing and never leave it. The same artifacts, and camera-video's
+# VideoCapture and Recorder, record round video messages in feature:chat (approved by the owner 2026-10-23;
+# docs/adr/0032-round-video-messages.md): first-party, no network code; the video goes only into the message sent.
 camerax = "1.6.2"
 # Coil 3 image loading, without any coil-network-* artifact: images come only from TDLib's local files
 # (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
 coil = "3.6.3"
 composeBom = "2026.09.00"
+# LeakCanary in debug builds only (docs/PERFORMANCE.md §9; approved by the owner 2026-10-27: about 1 MB, no network):
+# it watches destroyed activities, fragments, view models and services, dumps the heap and shows the leaks it finds on
+# the device. :app's debugImplementation; check<Variant>NoDebugTools keeps it out of every other build type.
+leakcanary = "2.14"
 # Lottie renders animated (TGS) stickers into bitmaps off the main thread, behind core:ui's StickerAnimationDecoder
 # (docs/adr/0008-lottie-for-animated-stickers.md). Pure Java, no native code; core:ui excludes its AppCompat dependency,
 # which only its View (LottieAnimationView) needs.
@@ -81,10 +87,10 @@ material3 = "1.5.0-beta01"
 media3 = "1.11.1"
 # pytgcalls/ntgcalls commit (NTgCalls 3.0.5), the call engine (docs/adr/0015-call-media-engine.md); keep in sync with
 # .github/workflows/ntgcalls.yml → NTGCALLS_COMMIT
-ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f"
+ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f-pingogram1"
 # SHA-256 of ntgcalls-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release, verified by
 # build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
-ntgcallsAarSha256 = "18d37addf4c714e4ab1a033f1d7d19c76e982b764450585a2f96c8382d379b4f"
+ntgcallsAarSha256 = "9dd9b2fce089bcff8382930a88c377ba224e4ea09dc107063058b55a45193f2c"
 robolectric = "4.17"
 roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
@@ -136,6 +142,7 @@ camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.
 camerax-compose = { group = "androidx.camera", name = "camera-compose", version.ref = "camerax" }
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+camerax-video = { group = "androidx.camera", name = "camera-video", version.ref = "camerax" }
 # AsyncImage and the singleton ImageLoader; brings coil-core (okio, coroutines). No network artifact (see coil above).
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
@@ -158,8 +165,12 @@ kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 lottie = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+# DataSource, for playing TDLib files while they download (core:ui's TdlibDataSource, docs/adr/0028-streaming-media.md):
+# media3-exoplayer depends on it already, so it adds nothing to the app.
+media3-datasource = { group = "androidx.media3", name = "media3-datasource", version.ref = "media3" }
 # PlayerSurface for the media viewer's videos: Compose only, on media3-common, no View widgets.
 media3-ui-compose = { group = "androidx.media3", name = "media3-ui-compose", version.ref = "media3" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
@@ -217,6 +228,7 @@ pingogram-android-roborazzi = { id = "pingogram.android.roborazzi" }
 pingogram-android-test = { id = "pingogram.android.test" }
 pingogram-detekt = { id = "pingogram.detekt" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
+pingogram-kotlin-warnings = { id = "pingogram.kotlin.warnings" }
 pingogram-ktlint = { id = "pingogram.ktlint" }
 pingogram-ntgcalls = { id = "pingogram.ntgcalls" }
 pingogram-tdlib = { id = "pingogram.tdlib" }

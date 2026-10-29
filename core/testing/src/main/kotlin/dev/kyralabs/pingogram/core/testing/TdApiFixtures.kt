@@ -396,61 +396,6 @@ object TdApiFixtures {
 
     fun messageSticker(sticker: TdApi.Sticker = sticker()) = TdApi.MessageSticker(sticker, false)
 
-    fun pollOption(
-        text: String,
-        voterCount: Int = 0,
-        votePercentage: Int = 0,
-        isChosen: Boolean = false,
-    ) = TdApi.PollOption(
-        "",
-        formattedText(text),
-        null,
-        voterCount,
-        votePercentage,
-        emptyArray(),
-        isChosen,
-        false,
-        null,
-        0,
-    )
-
-    /** An open anonymous poll; pass a `TdApi.PollTypeQuiz` as [type] for a quiz. */
-    fun poll(
-        question: String = "Lunch?",
-        options: Array<TdApi.PollOption> = arrayOf(pollOption("Pizza"), pollOption("Salad")),
-        type: TdApi.PollType = TdApi.PollTypeRegular(),
-        totalVoterCount: Int = 0,
-        canSeeResults: Boolean = false,
-        isAnonymous: Boolean = true,
-        allowsMultipleAnswers: Boolean = false,
-        isClosed: Boolean = false,
-        optionOrder: IntArray = intArrayOf(),
-    ) = TdApi.Poll(
-        1,
-        formattedText(question),
-        options,
-        totalVoterCount,
-        emptyArray(),
-        false,
-        canSeeResults,
-        isAnonymous,
-        allowsMultipleAnswers,
-        false,
-        false,
-        emptyArray(),
-        optionOrder,
-        type,
-        0,
-        0,
-        isClosed,
-        null,
-    )
-
-    fun messagePoll(
-        poll: TdApi.Poll = poll(),
-        description: TdApi.FormattedText = formattedText(""),
-    ) = TdApi.MessagePoll(poll, description, null, false)
-
     /** The service message for users added to a group; a user who joins by themselves adds only their own id. */
     fun messageChatAddMembers(vararg memberUserIds: Long) = TdApi.MessageChatAddMembers(memberUserIds)
 

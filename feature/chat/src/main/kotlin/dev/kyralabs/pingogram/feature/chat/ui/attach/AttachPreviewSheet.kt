@@ -13,19 +13,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +54,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -64,6 +74,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ReplyEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerField
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LinkDialog
@@ -86,7 +97,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **Photos and videos** ([AttachmentKind.Media]): a row of square thumbnails, decoded by Coil at their size, in
  *   `medium` corners; a video with its length and a play badge; an item being prepared as a [LoadingIndicator] on a
- *   tonal square. Each has a remove button on a `mediaOverlay` circle.
+ *   tonal square. Each has a remove button on a `mediaOverlay` circle. Where they came from the gallery, a switch row
+ *   below them, "Send without compression" ([AttachPreview.original]), sends them as files at their size.
  * - **Files** ([AttachmentKind.Document]): one row each, its kind's icon, its name (shortened in the middle, so the
  *   extension stays) and size, and a remove button; the list scrolls where the window is short.
  * - **Caption** ([caption], the view model's): the composer's text field, formatting included; Enter on a hardware
@@ -96,6 +108,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Sending confirms with a haptic, hides the sheet on its spring, then [onSend] gets the options. Removing the last
  * item, dragging the sheet down, the scrim and the back gesture (Material's predictive back) dismiss it
  * ([ChatEvent.DismissAttachments]), which drops what was picked.
+ *
+ * A replacement ([AttachPreview.isReplacement], the media of the message being edited, `REQUIREMENTS.md` FR-C6) shows
+ * its one item without a caption field: the edit's text in the composer is its caption, which a note under the title
+ * says. Below it, a `TextButton` "Choose another" at the start opens the picker again ([ReplyEvent.ReplaceMedia]) and
+ * a default `Button` "Replace" at the end, once it is ready, replaces the media ([ReplyEvent.SaveReplacement]), with
+ * the same haptic and hiding.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,15 +130,19 @@ internal fun AttachPreviewSheet(
     val haptics = LocalHapticFeedback.current
     val currentOnSend by rememberUpdatedState(onSend)
     val currentPreview by rememberUpdatedState(preview)
-    val send: (SendOptions) -> Unit =
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    // Sending and replacing both confirm, hide the sheet, then act once it is gone.
+    val hideThen: (() -> Unit) -> Unit =
         remember(sheetState, scope, haptics) {
-            { options ->
+            { action ->
                 if (currentPreview.isReady) {
                     haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnSend(options) }
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { action() }
                 }
             }
         }
+    val send: (SendOptions) -> Unit = remember(hideThen) { { options -> hideThen { currentOnSend(options) } } }
+    val replace: () -> Unit = remember(hideThen) { { hideThen { currentOnEvent(ReplyEvent.SaveReplacement) } } }
     var scheduling by rememberSaveable { mutableStateOf(false) }
     var linking by remember { mutableStateOf<TextRange?>(null) }
     ModalBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissAttachments) }, sheetState = sheetState) {
@@ -128,9 +150,12 @@ internal fun AttachPreviewSheet(
             preview = preview,
             caption = caption,
             onRemove = { onEvent(ChatEvent.RemoveAttachment(it)) },
+            onOriginalChange = { onEvent(ChatEvent.SetOriginalQuality(it)) },
             onSend = send,
             onSchedule = { scheduling = true },
             onLink = { linking = it },
+            onReplace = replace,
+            onChooseAnother = { onEvent(ReplyEvent.ReplaceMedia) },
         )
     }
     linking?.let { selection ->
@@ -155,7 +180,10 @@ internal fun AttachPreviewSheet(
     }
 }
 
-/** What the sheet shows: the title, the items and the caption row. */
+/**
+ * What the sheet shows: the title, the items and the caption row; for a replacement, the title and its note, the item
+ * and the replace row.
+ */
 @Suppress("LongParameterList") // The preview, its caption, and what the sheet does with them.
 @Composable
 internal fun ColumnScope.AttachPreviewContent(
@@ -165,13 +193,21 @@ internal fun ColumnScope.AttachPreviewContent(
     onSend: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
     onLink: (TextRange) -> Unit,
+    onOriginalChange: (Boolean) -> Unit = {},
+    onReplace: () -> Unit = {},
+    onChooseAnother: () -> Unit = {},
 ) {
     val spacing = MaterialTheme.spacing
-    Text(
-        text = previewTitle(preview),
-        modifier = Modifier.padding(horizontal = spacing.large).padding(bottom = spacing.medium),
-        style = MaterialTheme.typography.titleLargeEmphasized,
-    )
+    Column(Modifier.padding(horizontal = spacing.large).padding(bottom = spacing.medium)) {
+        Text(text = previewTitle(preview), style = MaterialTheme.typography.titleLargeEmphasized)
+        if (preview.isReplacement) {
+            Text(
+                text = stringResource(R.string.attach_replace_note),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
     val count = preview.items.size
     when (preview.kind) {
         AttachmentKind.Media -> {
@@ -195,9 +231,10 @@ internal fun ColumnScope.AttachPreviewContent(
                     )
                 }
             }
+            if (preview.offersOriginal) OriginalQualityRow(preview.original, onOriginalChange)
         }
 
-        AttachmentKind.Document -> {
+        AttachmentKind.Document, AttachmentKind.Original -> {
             // Bounded by the sheet, so the caption row stays in view while many files scroll.
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 preview.items.forEachIndexed { index, item ->
@@ -206,7 +243,71 @@ internal fun ColumnScope.AttachPreviewContent(
             }
         }
     }
-    CaptionRow(preview, caption, onSend, onSchedule, onLink)
+    if (preview.isReplacement) {
+        ReplaceRow(preview, onReplace, onChooseAnother)
+    } else {
+        CaptionRow(preview, caption, onSend, onSchedule, onLink)
+    }
+}
+
+/** "Choose another" at the start and "Replace" at the end, which waits until the item of [preview] is ready. */
+@Composable
+private fun ReplaceRow(
+    preview: AttachPreview,
+    onReplace: () -> Unit,
+    onChooseAnother: () -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.large, vertical = spacing.small),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onChooseAnother, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.attach_replace_choose))
+        }
+        Button(onClick = onReplace, enabled = preview.isReady, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.attach_replace_confirm), style = MaterialTheme.typography.labelLargeEmphasized)
+        }
+    }
+}
+
+/**
+ * "Send without compression": a switch row (`Role.Switch`, a check in the thumb) whose summary says the photos and
+ * videos then go as files at their size, without their location or camera details.
+ */
+@Composable
+private fun OriginalQualityRow(
+    original: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.attach_original)) },
+        supportingContent = { Text(stringResource(R.string.attach_original_summary)) },
+        trailingContent = {
+            Switch(
+                checked = original,
+                onCheckedChange = null,
+                thumbContent =
+                    if (original) {
+                        { Icon(painterResource(UiR.drawable.ic_check), null, Modifier.size(SwitchDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier =
+            Modifier
+                .padding(top = MaterialTheme.spacing.small)
+                .toggleable(value = original, role = Role.Switch) { checked ->
+                    haptics.performHapticFeedback(
+                        if (checked) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                    )
+                    onChange(checked)
+                },
+    )
 }
 
 /** The caption field and the send split button, which waits until every item of [preview] is ready. */
@@ -242,14 +343,25 @@ private fun CaptionRow(
     }
 }
 
-/** "3 photos", "2 videos", "4 items" (photos and videos, or not all ready yet), "2 files". */
+/**
+ * "3 photos", "2 videos", "4 items" (photos and videos, or not all ready yet), "2 files"; for a replacement "Replace
+ * with this" or "Replace with this file".
+ */
 @Composable
 private fun previewTitle(preview: AttachPreview): String {
     val count = preview.items.size
     val attachments = preview.attachments
     val allReady = preview.isReady
     return when {
-        preview.kind == AttachmentKind.Document -> {
+        preview.isReplacement && preview.kind != AttachmentKind.Media -> {
+            stringResource(R.string.attach_replace_title_file)
+        }
+
+        preview.isReplacement -> {
+            stringResource(R.string.attach_replace_title_media)
+        }
+
+        preview.kind != AttachmentKind.Media -> {
             pluralStringResource(R.plurals.attach_preview_files, count, count)
         }
 
@@ -339,6 +451,16 @@ private fun AttachPreviewMediaPreview() {
     PingogramPreview {
         Column(Modifier.padding(vertical = MaterialTheme.spacing.large)) {
             AttachPreviewContent(AttachPreviewData.media, remember { ComposerText() }, {}, {}, {}, {})
+        }
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun AttachPreviewReplacementPreview() {
+    PingogramPreview {
+        Column(Modifier.padding(vertical = MaterialTheme.spacing.large)) {
+            AttachPreviewContent(AttachPreviewData.replacement, remember { ComposerText() }, {}, {}, {}, {})
         }
     }
 }

@@ -6,6 +6,8 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.NewChatKind
+import dev.kyralabs.pingogram.core.domain.model.Proxy
+import dev.kyralabs.pingogram.core.domain.model.ProxyType
 import dev.kyralabs.pingogram.core.domain.model.SettingsPage
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -39,6 +41,17 @@ class TdlibLinkRepositoryTest {
             repository.resolve("tg://chats/search")
 
             assertEquals("tg://chats/search", client.sentOf<TdApi.GetInternalLinkType>().single().link)
+        }
+
+    @Test
+    fun `a group call's link joins it, as the link TDLib names`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeGroupCall("https://t.me/call/abc"))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.GroupCall("https://t.me/call/abc")),
+                repository.resolve("tg://call?slug=abc"),
+            )
         }
 
     @Test
@@ -501,16 +514,21 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.MyQrCode,
                 ),
                 Arguments.of(TdApi.InternalLinkTypeStickerSet("garden", false), LinkTarget.StickerSet("garden")),
+                Arguments.of(TdApi.InternalLinkTypeStickerSet("hearts", true), LinkTarget.StickerSet("hearts")),
+                Arguments.of(
+                    TdApi.InternalLinkTypeProxy(TdApi.Proxy("proxy.example", 443, TdApi.ProxyTypeMtproto("dd00"))),
+                    LinkTarget.ProxyServer(Proxy("proxy.example", 443, ProxyType.Mtproto("dd00"))),
+                ),
             )
 
         @JvmStatic
         fun unsupported(): List<TdApi.InternalLinkType> =
             listOf(
+                // A proxy of a protocol Pingogram does not know.
                 TdApi.InternalLinkTypeProxy(),
                 TdApi.InternalLinkTypeLanguagePack(),
                 TdApi.InternalLinkTypeTheme(),
                 TdApi.InternalLinkTypeBackground(),
-                TdApi.InternalLinkTypeStickerSet("hearts", true),
                 TdApi.InternalLinkTypeWebApp(),
                 TdApi.InternalLinkTypeInvoice(),
                 TdApi.InternalLinkTypePassportDataRequest(),

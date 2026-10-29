@@ -8,9 +8,14 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,10 +31,15 @@ import javax.inject.Inject
 sealed interface AppearanceUiState {
     data object Loading : AppearanceUiState
 
-    /** The [settings], and whether Ctrl+Enter sends messages from a hardware keyboard ([sendWithCtrlEnter]). */
+    /**
+     * The [settings], which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear
+     * ([raiseToListen]) and whether the chat list shows story rings ([chatList]).
+     */
     data class Content(
         val settings: AppearanceSettings,
-        val sendWithCtrlEnter: Boolean = false,
+        val sendKeys: SendKeys = SendKeys(),
+        val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
+        val chatList: ChatListSettings = ChatListSettings(),
     ) : AppearanceUiState
 }
 
@@ -47,9 +57,24 @@ sealed interface AppearanceEvent {
         val contrast: Contrast,
     ) : AppearanceEvent
 
-    /** "Send with Ctrl+Enter" turned on or off. */
-    data class SetSendWithCtrlEnter(
+    /** "Enter sends" turned on or off for a hardware or the on-screen keyboard. */
+    data class SetSendKeys(
+        val keys: SendKeys,
+    ) : AppearanceEvent
+
+    /** "Raise to listen" turned on or off. */
+    data class SetRaiseToListen(
         val enabled: Boolean,
+    ) : AppearanceEvent
+
+    /** "Pause when lowered" turned on or off. */
+    data class SetPauseWhenLowered(
+        val enabled: Boolean,
+    ) : AppearanceEvent
+
+    /** "Show stories" turned on or off. */
+    data class SetShowStories(
+        val show: Boolean,
     ) : AppearanceEvent
 }
 
@@ -64,8 +89,9 @@ sealed interface AppearanceEffect {
 /**
  * The Appearance page (`REQUIREMENTS.md` FR-S2): the saved settings, and saving each change. The page shows what is
  * saved, which the app's theme follows too, so a change shows on the page and in the theme at once, and a change that
- * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chats" group
- * also holds the composer's send key ([ComposerSettingsRepository]).
+ * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chat list"
+ * group holds whether story rings show ([ChatListSettingsRepository]), and its "Chats" group the composer's send key
+ * ([ComposerSettingsRepository]) and raise to listen ([PlaybackSettingsRepository]).
  */
 @HiltViewModel
 class AppearanceViewModel
@@ -73,12 +99,16 @@ class AppearanceViewModel
     constructor(
         private val appearanceRepository: AppearanceRepository,
         private val composerSettingsRepository: ComposerSettingsRepository,
+        private val playbackSettingsRepository: PlaybackSettingsRepository,
+        private val chatListSettingsRepository: ChatListSettingsRepository,
     ) : ViewModel() {
         val uiState: StateFlow<AppearanceUiState> =
-            combine<AppearanceSettings, Boolean, AppearanceUiState>(
+            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, ChatListSettings, AppearanceUiState>(
                 appearanceRepository.appearance,
-                composerSettingsRepository.sendWithCtrlEnter,
-            ) { settings, ctrlEnter -> AppearanceUiState.Content(settings, ctrlEnter) }
+                composerSettingsRepository.sendKeys,
+                playbackSettingsRepository.raiseToListen,
+                chatListSettingsRepository.settings,
+            ) { settings, keys, raise, chatList -> AppearanceUiState.Content(settings, keys, raise, chatList) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
 
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
@@ -100,8 +130,20 @@ class AppearanceViewModel
                             appearanceRepository.setContrast(event.contrast)
                         }
 
-                        is AppearanceEvent.SetSendWithCtrlEnter -> {
-                            composerSettingsRepository.setSendWithCtrlEnter(event.enabled)
+                        is AppearanceEvent.SetSendKeys -> {
+                            composerSettingsRepository.setSendKeys(event.keys)
+                        }
+
+                        is AppearanceEvent.SetRaiseToListen -> {
+                            playbackSettingsRepository.setRaiseToListen(event.enabled)
+                        }
+
+                        is AppearanceEvent.SetPauseWhenLowered -> {
+                            playbackSettingsRepository.setPauseWhenLowered(event.enabled)
+                        }
+
+                        is AppearanceEvent.SetShowStories -> {
+                            chatListSettingsRepository.setShowStories(event.show)
                         }
                     }
                 saved.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }

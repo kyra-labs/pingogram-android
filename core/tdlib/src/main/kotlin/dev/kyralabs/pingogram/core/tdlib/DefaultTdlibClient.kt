@@ -17,10 +17,13 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -39,7 +42,9 @@ import kotlin.coroutines.resume
  * would deadlock.
  *
  * On `AuthorizationStateWaitTdlibParameters` it sends the parameters from [TdlibParametersProvider]; on
- * `AuthorizationStateClosed` it creates a new TDLib instance, which starts over with `WaitTdlibParameters`.
+ * `AuthorizationStateClosed` it creates a new TDLib instance, which starts over with `WaitTdlibParameters`: on the
+ * servers [useServers] asked for, or else on [TdlibServers.Production], so a logout always leaves the test servers;
+ * unless the account it belongs to is gone ([TdlibClientFactory]).
  */
 @Singleton
 class DefaultTdlibClient internal constructor(
@@ -49,6 +54,12 @@ class DefaultTdlibClient internal constructor(
     private val log: TdlibLog,
     private val scope: CoroutineScope,
     updateBufferCapacity: Int = UPDATE_BUFFER_CAPACITY,
+    /**
+     * Whether a new TDLib instance starts after `AuthorizationStateClosed`: always for the first account, whose slot
+     * stays; for another account only while it is kept (`docs/adr/0031-multiple-accounts.md`), so a slot logged out
+     * of stays closed and its storage can be deleted.
+     */
+    private val restartsAfterClose: () -> Boolean = { true },
 ) : TdlibClient {
     @Inject
     constructor(
@@ -59,7 +70,9 @@ class DefaultTdlibClient internal constructor(
     ) : this(
         native = JniTdlib,
         parametersProvider = parametersProvider,
-        logSettings = { TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir, config.useTestDc)) },
+        // TDLib's log stream is the process's, one for every account and both servers: it stays in the first account's
+        // production directory.
+        logSettings = { TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir, useTestDc = false)) },
         log = AndroidTdlibLog(config.isDebug),
         scope = clientScope(dispatcher, AndroidTdlibLog(config.isDebug)),
     )
@@ -75,6 +88,18 @@ class DefaultTdlibClient internal constructor(
     private val mutableConnectionState = MutableStateFlow(ConnectionState.Connecting)
     override val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
 
+    private val mutableServers = MutableStateFlow(TdlibServers.Production)
+    override val servers: StateFlow<TdlibServers> = mutableServers.asStateFlow()
+
+    /** The servers [useServers] asked for, which the next `Closed` gives way to; null for a close of any other kind. */
+    private val requestedServers = AtomicReference<TdlibServers?>(null)
+
+    /** One switch at a time: a second waits for the first, then finds the servers it asks for already in use. */
+    private val switching = Mutex()
+
+    /** The servers of the last session, read once at [start] ([TdlibParametersProvider.lastServers]). */
+    private val lastServers = AtomicReference<Deferred<TdlibServers>?>(null)
+
     private val started = AtomicBoolean(false)
 
     /** The current TDLib instance: null until [start] created it, replaced after `AuthorizationStateClosed`. */
@@ -89,7 +114,9 @@ class DefaultTdlibClient internal constructor(
 
     override fun start() {
         if (!started.compareAndSet(false, true)) return
-        preparedParameters.set(scope.async { parametersProvider.parameters() })
+        val servers = scope.async { parametersProvider.lastServers().also { mutableServers.value = it } }
+        lastServers.set(servers)
+        preparedParameters.set(scope.async { parametersProvider.parameters(servers.await()) })
         scope.launch { pumpUpdates() }
         scope.launch {
             configureLogging()
@@ -102,6 +129,20 @@ class DefaultTdlibClient internal constructor(
         return session.filterNotNull().first().send(function)
     }
 
+    override suspend fun useServers(servers: TdlibServers) {
+        start()
+        switching.withLock {
+            lastServers.get()?.await()
+            if (mutableServers.value == servers) return
+            log.debug { "Restarting TDLib on the ${servers.name.lowercase()} servers" }
+            requestedServers.set(servers)
+            // TDLib answers Close at once, then reports Closing and Closed; Closed starts the instance on [servers].
+            session.filterNotNull().first().send(TdApi.Close())
+            combine(mutableServers, mutableAuthState) { current, state -> current == servers && state.isStarted }
+                .first { it }
+        }
+    }
+
     private suspend fun <T : TdApi.Object> Session.send(function: TdApi.Function<T>): TdResult<T> =
         suspendCancellableCoroutine { continuation ->
             // After cancellation resume() does nothing, which drops the late answer.
@@ -111,12 +152,12 @@ class DefaultTdlibClient internal constructor(
     private fun configureLogging() {
         // Before the first client exists, so TDLib never logs above this level (REQUIREMENTS.md §6.2).
         val settings = logSettings()
-        native.execute(TdApi.SetLogVerbosityLevel(settings.verbosity)).warnOnFailure("SetLogVerbosityLevel")
+        native.execute(TdApi.SetLogVerbosityLevel(settings.verbosity)).warnOnFailure(log, "SetLogVerbosityLevel")
         settings.file?.let { file ->
             file.parentFile?.mkdirs()
             native
                 .execute(TdApi.SetLogStream(TdApi.LogStreamFile(file.path, settings.maxFileSize, false)))
-                .warnOnFailure("SetLogStream")
+                .warnOnFailure(log, "SetLogStream")
         }
     }
 
@@ -160,28 +201,37 @@ class DefaultTdlibClient internal constructor(
             scope.launch { sendParameters() }
         } else if (authState == AuthState.Closed) {
             mutableConnectionState.value = ConnectionState.Connecting
-            session.value = newSession()
+            mutableServers.value = requestedServers.getAndSet(null) ?: TdlibServers.Production
+            session.value = if (restartsAfterClose()) newSession() else null
         }
     }
 
     private suspend fun sendParameters() {
         val session = session.value ?: return
-        val parameters = preparedParameters.getAndSet(null)?.await() ?: parametersProvider.parameters()
+        val parameters =
+            preparedParameters.getAndSet(null)?.await() ?: parametersProvider.parameters(mutableServers.value)
+        // Read after the first session's parameters, which take the servers of the last session.
+        val servers = mutableServers.value
         val result = session.send(parameters)
         if (result !is TdResult.Failure) return
         val error = result.error
         if (error.code == WRONG_DATABASE_KEY && session.databaseDiscarded.compareAndSet(false, true)) {
             log.warn("TDLib rejected the database key; deleting the local database and starting over")
-            parametersProvider.discardDatabase()
+            parametersProvider.discardDatabase(servers)
             sendParameters()
         } else {
             log.warn("SetTdlibParameters failed: ${error.code} ${error.message}")
         }
     }
 
-    private fun <T> TdResult<T>.warnOnFailure(what: String) {
-        if (this is TdResult.Failure) log.warn("$what failed: ${error.code} ${error.message}")
-    }
+    /** Past starting up and not closing: TDLib takes requests of the authorization flow again. */
+    private val AuthState.isStarted: Boolean
+        get() =
+            this != AuthState.Initializing &&
+                this != AuthState.WaitTdlibParameters &&
+                this != AuthState.LoggingOut &&
+                this != AuthState.Closing &&
+                this != AuthState.Closed
 
     private class Session(
         val client: NativeClient,
@@ -197,7 +247,7 @@ class DefaultTdlibClient internal constructor(
         /** `SetTdlibParameters` answers 401 when the database key cannot open the database (td_api.tl). */
         private const val WRONG_DATABASE_KEY = 401
 
-        private fun clientScope(
+        fun clientScope(
             dispatcher: CoroutineDispatcher,
             log: TdlibLog,
         ) = CoroutineScope(
@@ -239,3 +289,10 @@ internal data class TdlibLogSettings(
 @Suppress("UNCHECKED_CAST") // Guaranteed by TDLib as above; the cast is erased, so it cannot fail here anyway.
 private fun <T : TdApi.Object> TdApi.Object.toTdResult(): TdResult<T> =
     if (this is TdApi.Error) TdResult.Failure(TdError(code, message)) else TdResult.Success(this as T)
+
+private fun <T> TdResult<T>.warnOnFailure(
+    log: TdlibLog,
+    what: String,
+) {
+    if (this is TdResult.Failure) log.warn("$what failed: ${error.code} ${error.message}")
+}

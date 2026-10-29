@@ -111,6 +111,10 @@ gradlePlugin {
             id = libs.plugins.pingogram.jvm.library.pluginId
             implementationClass = "JvmLibraryConventionPlugin"
         }
+        register("kotlinWarnings") {
+            id = libs.plugins.pingogram.kotlin.warnings.pluginId
+            implementationClass = "KotlinWarningsConventionPlugin"
+        }
         register("ktlint") {
             id = libs.plugins.pingogram.ktlint.pluginId
             implementationClass = "KtlintConventionPlugin"

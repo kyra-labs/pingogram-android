@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -26,6 +27,7 @@ class TdlibStickerSetRepositoryTest {
         installed: Boolean = false,
         archived: Boolean = false,
         viewed: Boolean = true,
+        type: TdApi.StickerType = TdApi.StickerTypeRegular(),
     ) = TdApi.StickerSetInfo().apply {
         this.id = id
         this.title = title
@@ -35,8 +37,43 @@ class TdlibStickerSetRepositoryTest {
         isInstalled = installed
         isArchived = archived
         isViewed = viewed
-        stickerType = TdApi.StickerTypeRegular()
+        stickerType = type
     }
+
+    @Test
+    fun `custom emoji sets are their own lists, read again only when the custom emoji sets change`() =
+        runTest {
+            var installed = listOf(setInfo(5, installed = true, type = TdApi.StickerTypeCustomEmoji()))
+            client.on(TdApi.GetInstalledStickerSets::class) {
+                TdResult.Success(TdApi.StickerSets(installed.size, installed.toTypedArray()))
+            }
+
+            repository.installedSets(StickerSetKind.Emoji).test {
+                val first = (awaitItem() as Outcome.Success).value.single()
+                assertEquals(5L, first.id)
+                assertEquals(StickerSetKind.Emoji, first.kind)
+                val request = client.sentOf<TdApi.GetInstalledStickerSets>().single()
+                assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, request.stickerType)
+
+                installed = emptyList()
+                client.emit(TdApi.UpdateInstalledStickerSets(TdApi.StickerTypeRegular(), longArrayOf()))
+                client.emit(TdApi.UpdateInstalledStickerSets(TdApi.StickerTypeCustomEmoji(), longArrayOf()))
+                assertEquals(emptyList<Any>(), (awaitItem() as Outcome.Success).value)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `reordering custom emoji sets sends their type`() =
+        runTest {
+            client.on(TdApi.ReorderInstalledStickerSets::class, TdResult.Success(TdApi.Ok()))
+
+            repository.reorder(listOf(3L, 1L), StickerSetKind.Emoji)
+
+            val request = client.sentOf<TdApi.ReorderInstalledStickerSets>().single()
+            assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, request.stickerType)
+            assertEquals(listOf(3L, 1L), request.stickerSetIds.toList())
+        }
 
     @Test
     fun `archived sets are Telegram's first 100 regular ones, read again when the installed sets change`() =

@@ -179,7 +179,7 @@ internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
  * container. A row being swiped draws its container itself ([ChatListItem]), at once.
  */
 @Composable
-private fun listItemColors(selected: Boolean): ListItemColors {
+internal fun listItemColors(selected: Boolean): ListItemColors {
     val colors = ListItemDefaults.colors()
     if (!selected) return colors.copy(containerColor = colors.containerColor.copy(alpha = 0f))
     return colors.copy(
@@ -193,7 +193,7 @@ private fun listItemColors(selected: Boolean): ListItemColors {
 
 /** The list item's shapes, with its selected shape (`large`) in place of its resting one while [rounded]. */
 @Composable
-private fun listItemShapes(rounded: Boolean): ListItemShapes {
+internal fun listItemShapes(rounded: Boolean): ListItemShapes {
     val shapes = ListItemDefaults.shapes()
     return if (rounded) shapes.copy(shape = shapes.selectedShape) else shapes
 }

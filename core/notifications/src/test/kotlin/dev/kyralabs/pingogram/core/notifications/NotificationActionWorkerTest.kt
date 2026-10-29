@@ -28,14 +28,23 @@ class NotificationActionWorkerTest {
             client.on(TdApi.RemoveNotificationGroup::class, TdResult.Success(TdApi.Ok()))
         }
 
-    private suspend fun NotificationsHarness.run(action: NotificationAction): ListenableWorker.Result {
+    private suspend fun NotificationsHarness.run(
+        action: NotificationAction,
+        accounts: suspend (Int) -> AccountNotificationActions? = { AccountNotificationActions(auth, notifications) },
+    ): ListenableWorker.Result {
         val factory =
             object : WorkerFactory() {
                 override fun createWorker(
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: WorkerParameters,
-                ) = NotificationActionWorker(appContext, workerParameters, auth, notifications, renderer, builder)
+                ) = NotificationActionWorker(
+                    appContext,
+                    workerParameters,
+                    accounts,
+                    renderer,
+                    builder,
+                )
             }
         return TestListenableWorkerBuilder<NotificationActionWorker>(context, action.toData())
             .setWorkerFactory(factory)
@@ -56,10 +65,10 @@ class NotificationActionWorkerTest {
             assertEquals(ListenableWorker.Result.success(), result)
             assertEquals(
                 listOf("SendMessage", "ViewMessages"),
-                harness.client.sent.map { it.javaClass.simpleName }.filter {
-                    it !=
-                        "SetOption"
-                },
+                // GetChat: whether the chat is secret decides its link previews.
+                harness.client.sent
+                    .map { it.javaClass.simpleName }
+                    .filter { it != "SetOption" && it != "GetChat" },
             )
             assertEquals(
                 listOf(10L, 11L),
@@ -120,5 +129,32 @@ class NotificationActionWorkerTest {
 
             assertEquals(ListenableWorker.Result.failure(), result)
             assertTrue(harness.client.sentOf<TdApi.ViewMessages>().isEmpty())
+        }
+
+    @Test
+    fun `an action goes to the account of its notification`() =
+        runTest {
+            val harness = harness()
+            val asked = mutableListOf<Int>()
+
+            val result =
+                harness.run(NotificationAction.MarkAsRead(7, 100, listOf(10), slot = 2)) { slot ->
+                    asked += slot
+                    AccountNotificationActions(harness.auth, harness.notifications)
+                }
+
+            assertEquals(ListenableWorker.Result.success(), result)
+            assertEquals(listOf(2), asked)
+        }
+
+    @Test
+    fun `an action of an account that left the device does nothing`() =
+        runTest {
+            val harness = harness()
+
+            val result = harness.run(NotificationAction.MarkAsRead(7, 100, listOf(10), slot = 1)) { null }
+
+            assertEquals(ListenableWorker.Result.failure(), result)
+            assertTrue(harness.client.sent.none { it is TdApi.ViewMessages })
         }
 }

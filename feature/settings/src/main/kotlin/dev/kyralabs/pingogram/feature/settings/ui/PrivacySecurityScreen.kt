@@ -27,9 +27,11 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountGroup
+import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Privacy and security page: hoists [PrivacySecurityViewModel] and, for "Sync contacts",
@@ -44,11 +46,29 @@ internal fun PrivacySecurityRoute(
     modifier: Modifier = Modifier,
     viewModel: PrivacySecurityViewModel = hiltViewModel(),
     contactSyncViewModel: ContactSyncSettingViewModel = hiltViewModel(),
+    secretChatPreviewsViewModel: SecretChatPreviewsViewModel = hiltViewModel(),
+    phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
+    frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
+    idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
+    directShareViewModel: DirectShareViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
     val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
+    val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
+    val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
+    val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
+    val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
+    val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    SwitchErrors(
+        snackbarHostState,
+        secretChatPreviewsViewModel.errors,
+        phoneNumberVisibilityViewModel.errors,
+        frequentContactsViewModel.errors,
+        idVisibilityViewModel.errors,
+        directShareViewModel.errors,
+    )
     LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
         contactSyncViewModel.onStarted()
@@ -68,7 +88,17 @@ internal fun PrivacySecurityRoute(
         modifier = modifier,
         contactSync = contactSync,
         onContactSyncChange = contactSyncViewModel::onCheckedChange,
+        secretChatPreviews = secretChatPreviews,
+        onSecretChatPreviewsChange = secretChatPreviewsViewModel::onCheckedChange,
+        phoneNumbersHidden = phoneNumbersHidden,
+        onPhoneNumbersHiddenChange = phoneNumberVisibilityViewModel::onCheckedChange,
         snackbarHostState = snackbarHostState,
+        suggestsFrequent = suggestsFrequent,
+        onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
+        idsShown = idsShown,
+        onIdsShownChange = idVisibilityViewModel::onCheckedChange,
+        directShare = directShare,
+        onDirectShareChange = directShareViewModel::onCheckedChange,
     )
 }
 
@@ -76,10 +106,17 @@ internal fun PrivacySecurityRoute(
  * Privacy and security (`REQUIREMENTS.md` FR-S1):
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
- *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
+ *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), and "Suggest frequent contacts"
+ *   ([suggestsFrequent]);
+ * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
+ *   them;
+ * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
+ *   code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles and info
+ *   pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
- * - Account: "Delete account", with how long the account may stay unused, opening its page.
+ * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
+ *   may stay unused, each opening its page.
  */
 @Suppress("LongParameterList") // The page's state and events, and contacts sync's.
 @Composable
@@ -91,7 +128,17 @@ internal fun PrivacySecurityScreen(
     modifier: Modifier = Modifier,
     contactSync: ContactSyncStatus = ContactSyncStatus.Off,
     onContactSyncChange: (Boolean) -> Unit = {},
+    secretChatPreviews: Boolean? = null,
+    onSecretChatPreviewsChange: (Boolean) -> Unit = {},
+    phoneNumbersHidden: Boolean? = null,
+    onPhoneNumbersHiddenChange: (Boolean) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    suggestsFrequent: Boolean? = null,
+    onSuggestsFrequentChange: (Boolean) -> Unit = {},
+    idsShown: Boolean? = null,
+    onIdsShownChange: (Boolean) -> Unit = {},
+    directShare: Boolean? = null,
+    onDirectShareChange: (Boolean) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
@@ -110,11 +157,22 @@ internal fun PrivacySecurityScreen(
 
             is PrivacySecurityUiState.Content -> {
                 PrivacySection(state, onOpen)
-                ContactsSection(contactSync, onContactSyncChange)
+                ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
+                SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
+                OnScreenSection(
+                    hidden = phoneNumbersHidden,
+                    onCheckedChange = onPhoneNumbersHiddenChange,
+                    idsShown = idsShown,
+                    onIdsShownChange = onIdsShownChange,
+                    directShare = directShare,
+                    onDirectShareChange = onDirectShareChange,
+                )
                 SecuritySection(state, onOpen)
-                DeleteAccountGroup(
+                AccountGroup(
+                    loginEmailPattern = state.loginEmailPattern,
+                    autoDeleteSeconds = state.defaultAutoDeleteSeconds,
                     accountTtlDays = state.accountTtlDays,
-                    onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
+                    onOpen = onOpen,
                 )
             }
         }
@@ -140,8 +198,31 @@ private fun PrivacySection(
                 }
             }
         }
+        state.newChatPrivacy?.let { privacy ->
+            item(key = NEW_CHATS) { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_privacy_new_chats),
+                    shapes = shapes,
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (privacy.allowsNonContacts) {
+                                    R.string.settings_privacy_everybody
+                                } else {
+                                    R.string.settings_privacy_new_chats_contacts
+                                },
+                            ),
+                        )
+                    },
+                    onClick = { onOpen(PrivacySecurityPage.NewChats) },
+                )
+            }
+        }
     }
 }
+
+/** The key of the "Messages" row among the privacy settings' rows. */
+private const val NEW_CHATS = "newChats"
 
 /** A privacy setting and its main choice. */
 @Composable
@@ -167,22 +248,7 @@ private fun SecuritySection(
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     SettingsGroup(title = stringResource(R.string.settings_section_security)) {
         item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_blocked_users),
-                summary =
-                    if (state.blockedCount == 0) {
-                        stringResource(R.string.settings_blocked_users_none)
-                    } else {
-                        pluralStringResource(
-                            R.plurals.settings_blocked_users_count,
-                            state.blockedCount,
-                            numbers.format(state.blockedCount),
-                        )
-                    },
-                icon = R.drawable.ic_block,
-                shapes = shapes,
-                onClick = { onOpen(PrivacySecurityPage.BlockedUsers) },
-            )
+            BlockedUsersItem(state.blockedCount, numbers, shapes) { onOpen(PrivacySecurityPage.BlockedUsers) }
         }
         item { shapes ->
             PageItem(
@@ -196,6 +262,15 @@ private fun SecuritySection(
                 icon = R.drawable.ic_devices,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.ActiveSessions) },
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_websites),
+                summary = stringResource(R.string.settings_websites_summary),
+                icon = R.drawable.ic_public,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
         }
         item { shapes ->
@@ -219,6 +294,7 @@ private fun SecuritySection(
                 onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
             )
         }
+        lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
     }
 }
 

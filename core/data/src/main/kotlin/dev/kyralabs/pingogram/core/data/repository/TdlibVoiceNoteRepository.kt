@@ -6,8 +6,11 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -18,14 +21,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [VoiceNoteRepository] on TDLib and the app's upload cache ([UploadFiles]): each recording in a directory of its own
  * in `uploads/`, as `voice.<extension>`, on [io]; deleted with its directory once TDLib uploaded it (`UploadCleaner`),
  * when it is discarded, or when TDLib refuses it.
  */
-@Singleton
+@AccountScoped
 class TdlibVoiceNoteRepository
     @Inject
     constructor(
@@ -54,10 +56,10 @@ class TdlibVoiceNoteRepository
             chatId: Long,
             voiceNote: RecordedVoiceNote,
             options: SendOptions,
-            replyToMessageId: Long?,
+            replyTo: ReplyTarget?,
         ): Outcome<Unit> {
             val content = voiceNote.toInputMessageVoiceNote()
-            val result = client.sendMessage(chatId, content, options, replyToMessageId?.let(::replyToMessage))
+            val result = client.sendMessage(chatId, content, options, replyTo?.toInputMessageReplyTo())
             if (result is Outcome.Failure) discardVoiceNote(voiceNote.path)
             return result
         }

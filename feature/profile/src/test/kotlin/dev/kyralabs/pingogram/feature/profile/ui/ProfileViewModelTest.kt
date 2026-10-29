@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeIdVisibilityRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
@@ -128,6 +129,8 @@ class ProfileViewModelTest {
         )
     }
 
+    private val idVisibility = FakeIdVisibilityRepository()
+
     private val clock =
         object : WallClock {
             override val minutes = MutableStateFlow(NOW)
@@ -171,6 +174,7 @@ class ProfileViewModelTest {
                 messageActionRepository = TdlibMessageActionRepository(client),
                 sharedMediaRepository = TdlibSharedMediaRepository(client),
                 searchRepository = TdlibSearchRepository(client, chats),
+                idVisibility = idVisibility,
                 clock = clock,
                 timePatterns = patterns,
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -202,6 +206,58 @@ class ProfileViewModelTest {
     private val ProfileViewModel.content get() = uiState.value as ProfileUiState.Content
 
     // The profile
+
+    @Test
+    fun `shows the channel the user shows on their profile, which opens its chat`() =
+        runTest {
+            answerProfile(info = TdResult.Success(fullInfo().also { it.personalChatId = CHANNEL }))
+            val channel =
+                TdApiFixtures.chat(
+                    id = CHANNEL,
+                    type = TdApi.ChatTypeSupergroup(5, true),
+                    title = "Ada's notes",
+                )
+            client.on(TdApi.GetChat::class) { request ->
+                client.emit(TdApiFixtures.updateNewChat(channel))
+                TdResult.Success(channel.takeIf { request.chatId == CHANNEL } ?: channel)
+            }
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            assertEquals(PersonalChannel(CHANNEL, "Ada's notes"), viewModel.content.info.personalChannel)
+
+            viewModel.onEvent(ProfileEvent.OpenPersonalChannel(CHANNEL))
+            runCurrent()
+            assertEquals(listOf(ProfileEffect.OpenChat(CHANNEL)), effects)
+        }
+
+    @Test
+    fun `the ID shows while Show IDs is on, and is copied`() =
+        runTest {
+            answerProfile()
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertNull(viewModel.content.info.id)
+
+            idVisibility.shown.value = true
+            runCurrent()
+            assertEquals(ADA, viewModel.content.info.id)
+
+            send(viewModel, ProfileEvent.CopyId)
+            assertEquals(listOf(ProfileEffect.CopyText(ADA.toString(), CopiedText.Id)), effects)
+
+            idVisibility.shown.value = false
+            runCurrent()
+            assertNull(viewModel.content.info.id)
+        }
+
+    @Test
+    fun `no personal channel, no row`() =
+        runTest {
+            answerProfile()
+
+            assertNull(viewModel().content.info.personalChannel)
+        }
 
     @Test
     fun `loads before the user is found, then shows the header, the info and the actions`() =
@@ -661,6 +717,7 @@ class ProfileViewModelTest {
         }
 
     private companion object {
+        const val CHANNEL = -1_005L
         const val ADA = 42L
         const val ME = 1L
         const val BOT = 7L

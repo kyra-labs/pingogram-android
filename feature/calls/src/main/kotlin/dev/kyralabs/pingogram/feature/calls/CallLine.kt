@@ -28,6 +28,20 @@ class CallLine
             if (holder === owner) holder = null
         }
 
+        /**
+         * Passes the line from [from] to [to] without giving it up in between: a one-to-one call that becomes a
+         * conference call (`docs/adr/0025-conference-calls.md`). False if [from] does not hold it.
+         */
+        @Synchronized
+        fun handOver(
+            from: Any,
+            to: Any,
+        ): Boolean {
+            if (holder !== from) return false
+            holder = to
+            return true
+        }
+
         @get:Synchronized
         val isBusy: Boolean get() = holder != null
     }

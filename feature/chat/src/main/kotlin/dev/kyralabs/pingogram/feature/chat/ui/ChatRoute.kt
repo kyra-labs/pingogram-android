@@ -37,14 +37,22 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
+import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
+import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
@@ -76,14 +84,18 @@ import java.util.Locale
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), a secret chat's timer and
  * key ([SecretChatBottomSheet]), the bots' commands (`BotCommandsBottomSheet`), and the members whose messages the
- * search in the chat finds (`SearchSenderSheet`). Custom emoji draw through a [CustomEmojiRenderer]
+ * search in the chat finds (`SearchSenderSheet`). Who saw a group message and who reacted to it has its own view model
+ * ([MessageInteractionsViewModel], keyed by the chat), whose rows open a profile through [onOpenProfile] or a
+ * channel's info through [onOpenChatInfo] ([onOpenChat] without it). Custom emoji draw through a [CustomEmojiRenderer]
  * ([LocalCustomEmoji]) that follows the view model's. While a secret chat is open, the
- * window is secure ([SecureWindow]): no screenshots.
+ * window is secure ([SecureWindow]): no screenshots. A forum topic's conversation adds "Manage topic" to the top bar
+ * ([rememberTopicActions], a view model of its own); a deleted topic leaves through [onBack].
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
- * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
- * navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's text field
- * takes the focus once it shows.
+ * title opens nothing. The bar of the chat's scheduled messages opens their list through [onOpenScheduledMessages]
+ * (without it there is no bar). A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which
+ * the app navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
+ * text field takes the focus once it shows.
  */
 @Suppress(
     "LongParameterList", // The chat and where in it, what it opens elsewhere, and its view models.
@@ -104,6 +116,8 @@ internal fun ConversationRoute(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
+    onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -113,9 +127,17 @@ internal fun ConversationRoute(
         hiltViewModel<EmojiPanelViewModel, EmojiPanelViewModel.Factory>(key = "emoji-panel-$chatId") {
             it.create(chatId)
         },
+    connectionViewModel: ChatConnectionViewModel = hiltViewModel(),
+    interactionsViewModel: MessageInteractionsViewModel = hiltViewModel(key = "interactions-$chatId-$topic"),
+    sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
+    doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
+    val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
+    OpenChatTraceEffect(chatId, shown = state.content !is ChatContent.Loading)
+    SendMessageTraceEffect(state.content)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
     val composerFocus = rememberComposerFocusState(requestAtStart = focusComposer)
@@ -123,6 +145,7 @@ internal fun ConversationRoute(
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
+    val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
     val attach =
         rememberAttachInputs(
@@ -140,16 +163,28 @@ internal fun ConversationRoute(
         onOpenChat = { currentOnOpenChat(it) },
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
+        onOpenNextChat = { currentOnOpenNextChat(it) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onShareLocation = { attach.onPick(AttachOption.Location) },
+        onOpenInteractions = interactionsViewModel::open,
         onLaunchCamera = { path ->
             launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
         },
+        onPickReplacement = launchers::replace,
     )
+    // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
+    val topicActions =
+        (topic as? MessageTopic.Forum)?.let { forum ->
+            rememberTopicActions(chatId, forum.topicId, snackbarHostState, onDeleted = { onBack?.invoke() })
+        }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
-    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+    CompositionLocalProvider(
+        LocalCustomEmoji provides customEmoji,
+        LocalSendKeys provides sendKeys,
+        LocalDoubleTapReaction provides doubleTap,
+    ) {
         ChatScreen(
             state = state,
             onEvent = viewModel::onEvent,
@@ -171,8 +206,16 @@ internal fun ConversationRoute(
             search = viewModel.searchState.collectAsStateWithLifecycle().value,
             searchQuery = viewModel.searchQuery,
             botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+            topicAction = topicActions?.button,
+            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
         )
         ChatSheets(viewModel)
+        topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
+        MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
     }
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
     SecureWindow(secure = state.header?.secret != null)
@@ -185,10 +228,10 @@ internal fun ConversationRoute(
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
- * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat] and a message's thread to
- * [onOpenThread]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet through
- * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
+ * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
+ * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], or a
+ * snackbar says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet
+ * through [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
  * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
  * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
@@ -196,9 +239,12 @@ internal fun ConversationRoute(
  * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
  * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
  * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
- * once it is refused, and say to hold the button or that recording failed.
+ * once it is refused, and say to hold the button or that recording failed. A message's link goes to the clipboard
+ * through [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited
+ * message's opens through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group
+ * message and who reacted to it opens through [onOpenInteractions].
  * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
- * (`docs/DESIGN_SYSTEM.md` §5).
+ * (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm` (right) or `Reject` (wrong).
  */
 @Suppress(
     // One branch per effect, all in one place: the compiler sees none is missed.
@@ -213,6 +259,7 @@ internal fun ChatEffects(
     onOpenChat: (chatId: Long) -> Unit = {},
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
+    onOpenNextChat: (chatId: Long) -> Unit = onOpenChat,
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -221,6 +268,8 @@ internal fun ChatEffects(
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
     onEvent: (ChatEvent) -> Unit = {},
     onShareLocation: () -> Unit = {},
+    onPickReplacement: (ReplaceMedia) -> Boolean = { false },
+    onOpenInteractions: (MessageInteractionsRequest) -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -244,7 +293,7 @@ internal fun ChatEffects(
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
                     is ChatEffect.SponsoredNotice,
-                    is VoiceEffect,
+                    is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
                     }
@@ -266,6 +315,11 @@ internal fun ChatEffects(
                         openNamed(effect, onOpenProfile, onOpenChat, onOpenThread)
                     }
 
+                    is ChatEffect.OpenNextChannel -> {
+                        onOpenNextChat(effect.chatId)
+                        ""
+                    }
+
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera,
                     is BotKeyboardEffect,
                     -> {
@@ -282,6 +336,19 @@ internal fun ChatEffects(
 
                     ChatEffect.SendFailed -> {
                         haptics.rejectSend()
+                    }
+
+                    is ReplyEffect -> {
+                        context.replyNotice(effect, resources, copyText, onPickReplacement)
+                    }
+
+                    is ChatEffect.OpenInteractions -> {
+                        onOpenInteractions(effect.request)
+                        ""
+                    }
+
+                    is PollEffect.QuizAnswered -> {
+                        haptics.quizAnswered(effect.correct)
                     }
                 }
             if (message.isNotEmpty()) {
@@ -373,6 +440,8 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
+        VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed
+        VideoNoteEffect.FlipFailed -> R.string.video_note_flip_failed
         else -> R.string.chat_message_unavailable
     }
 

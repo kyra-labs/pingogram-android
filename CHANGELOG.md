@@ -10,6 +10,183 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Group calls by link: "Add people" at the top of the participants invites your contacts, each with a message in
+  your chat with them that opens the call.
+- Calls: "Add people" turns a call into a group call with the people you pick, and a call the other person turns into
+  a group call moves there by itself.
+- Group call invitations show in the chat ("Group call", "Missed group call") and in Recent calls; tap one to join
+  while the call goes on.
+- Storage: once a week, while the phone charges and is idle, downloaded media not opened for 30 days is deleted, and the
+  cache is kept under 4 GB. Pinned chats keep their files, and nothing is deleted while files or a chat export are on
+  their way; they download again when opened.
+
+### Fixed
+- Closing a photo or video no longer stutters: the conversation stays on screen under the media viewer, so the picture
+  shrinks back into its message without the conversation being rebuilt first.
+- Search: the search field and the filters keep their background, so results no longer show through them as they
+  scroll.
+- Contacts: the contacts no longer reach under the A–Z index, so their icons and "Sync now" stay clear of its letters.
+
+## [0.6.0] - 2026-10-26
+
+### Added
+- Several accounts: sign in to up to 3 Telegram accounts (a fourth while one has Telegram Premium) and switch between
+  them from Settings or with a long press on the Settings tab, as in Telegram's apps. Every account stays connected:
+  its notifications show with the account's name once there are two, open in that account, and come in their own
+  notification channels; its calls ring; its pushes arrive (Google Play build). Settings → Notifications →
+  "Notifications from all accounts" lets only the account you use notify. Each home screen widget keeps the account
+  it was placed in.
+- Privacy and security: "Chats in the share sheet" (on by default) can take your recent chats, with their names and
+  photos, out of Android's share sheet. Pingogram stays there, and you choose the chat in its own list.
+- Notifications → Private chats: "New stories" chooses which stories notify you (Telegram's automatic choice of the 5
+  people you write to most, all, or none), and "Name who posted" whether the notification says whose story it is.
+- Privacy and security: "Show IDs" (off by default) shows the ID of a person on their profile, and of a group or
+  channel on its info page; tap it to copy it.
+- Privacy and security: "Suggest frequent contacts" lets you turn off the people search suggests from those you write
+  to most, which clears them.
+- Data and storage: "Reset automatic download" puts every network's defaults back, "Prefer IPv6" connects over IPv6
+  where your network and Telegram offer it, and "Delete cloud drafts" deletes the unsent messages saved in all your
+  chats, on all your devices (secret chats' drafts stay).
+- Custom emoji sets in Settings → Stickers → Emoji: your emoji sets in their order, which you can drag, archive, remove
+  and share, with trending and archived emoji sets to add. Custom emoji set links (t.me/addemoji/…) open the set, ready
+  to add. Pingogram shows custom emoji in messages; it doesn't offer any to send yet.
+- Chats shown first: Settings → Appearance → Chats → "Chats shown first" picks up to 5 chats that the forward and share
+  sheets list right after Saved Messages, in your order. They stay on this device.
+- Unlock with screen lock: Settings → Privacy and security → Passcode lock can let your phone's own PIN, pattern or
+  password open Pingogram and your locked chats (Android 11 and later). It's off by default, since anyone who knows the
+  phone's PIN could then open your chats.
+- Saved Messages tabs: with messages saved from more than one chat, Saved Messages shows tabs below its top bar: All,
+  My Notes, and one per chat you saved from. A tab shows only what was saved from there. New messages go to My Notes, so
+  the other tabs show where they go in place of the message field.
+- Locked chats: keep chats behind your passcode (Settings → Privacy and security → Locked chats, with the passcode
+  lock on). Locked chats leave the chat list, its folders and the archive, and a "Locked chats" row at the end of the
+  list opens them after your passcode or fingerprint. Until you open them, search and the share and forward sheets don't
+  show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
+  conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
+  away for a minute. The locks stay on this device; your other devices show the chats as usual.
+- Telegram's test accounts sign in on Telegram's test servers, in every build, so app reviewers can sign in again and
+  again: a number +99966 X YYYY (X from 1 to 3) on the phone number step restarts the connection on the test servers
+  and asks for the code X five times. The number stays on screen meanwhile. Settings' account card and Active sessions
+  show "Test server" while signed in that way, and logging out returns to Telegram's real servers. Every other number
+  signs in as before.
+- Forum topics: members with the right create topics ("New topic" in the topic list's top bar: a name and one of six
+  colors), and rename, close and reopen, pin and unpin, and delete them from a topic's long press or its
+  conversation's "Manage topic" button; deleting asks first. Pinned topics reorder by dragging their handles.
+  Administrators hide or show the General topic. Members who may create topics rename, close and reopen their own.
+- Round video messages: tap the microphone beside the message field to switch it to a camera, then hold it to record a
+  round video message, up to a minute, with the same gestures as a voice message: slide left to cancel, slide up to
+  keep recording hands-free, let go to send. A round preview above the field shows what the camera sees and how much
+  of the minute is used. Hands-free, you can flip between the front and back cameras, pause, delete or send. Tap the
+  camera to switch back to voice messages; Pingogram remembers which one you use. The first time, Pingogram says why
+  it needs the camera and the microphone before Android asks. The camera runs only while you record, and the video goes
+  only into the message you send. Screen readers switch with an action on the button and record hands-free at once.
+- Settings → Data and storage → "Use less data for calls": never, on mobile data or always, the video you send in
+  calls goes at most at 360p.
+- In the media viewer, a tap near the left or right side shows the previous or next photo or video. In stories, a
+  volume key turns a muted video's sound back on.
+- Archive settings: the archive's top bar opens them. Archive and mute new chats from people who aren't in your
+  contacts (where Telegram offers it), and keep unmuted chats, or those of your folders, in the archive when a new
+  message arrives. They belong to your Telegram account. The archived chats row can show the chats' names, be one line,
+  or be hidden: long-press it, or swipe it away (with Undo); while hidden, the top bar's archive button opens it.
+- Mark all as read: long-press a folder tab, or "All chats", to mark all its chats as read. The same menu edits the
+  folder.
+- Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
+  (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
+  sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and
+  when. Tap someone to open their profile. Nothing is asked of Telegram before you open the sheet.
+- Scheduled messages: a chat with messages you scheduled shows "3 scheduled messages" at the top, with when the next
+  one goes out. Tap it to see them as they will look, under the day each goes out ("Today", "Tomorrow"), with its time,
+  "When online" for those that wait for the other person, and how often a repeating one repeats. Tap or hold one to
+  send it now, pick another time, edit it, copy its text or delete it. Messages go into the chat by themselves when
+  their time comes.
+- Next unread channel: at the bottom of a channel you have read, pull up to open the next channel with unread posts
+  from your chat list. Letting go opens it in place of the one you read; screen readers have an action for it.
+- Share button: channel posts, and posts forwarded from a channel, have a round forward button beside them, which opens
+  the forward sheet for the post. Chats that protect their content and secret chats show none.
+- Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
+  seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
+  the viewer where it left off. Secret chats' videos stay in the viewer.
+- Send photos without compression: the attach preview's "Send without compression" sends photos and videos from the
+  gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
+  are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
+  long panoramas, which Telegram refuses as photos, now go as files too.
+- Swipe actions: Appearance → Chat list → Swipe actions picks what swiping a chat right and left does: mark as read or
+  unread, archive, pin, mute, delete (which asks first), or nothing. Swiping still marks as read and archives at first.
+  Or turn on "Swipe to change folders": the whole chat list then follows your finger sideways, and letting go past a
+  third of the screen shows the folder tab on the left (swiping right) or on the right (swiping left), its chats
+  sliding in. Chats themselves don't swipe meanwhile; their actions stay in the selection toolbar.
+- Hide stories: Appearance → Chat list → "Show stories" turns the story rings above the chat list off. While they are
+  off, Pingogram loads no stories for the list.
+- Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
+  Pingogram (your account, profiles, contacts, shared contacts) with its country code only, "+44 •••• ••••••", for
+  sharing your screen or streaming. Copying and calling still use the whole number. Off by default.
+- Link previews in secret chats: off by default, and a switch in Privacy and security turns them on. Telegram's
+  servers make link previews, so they would see the links sent in a secret chat.
+- Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other
+  people's profiles show theirs under Info, and a tap opens it.
+- Contact joined Telegram: a switch in Settings → Notifications turns off the message Telegram sends when one of your
+  contacts joins. It belongs to your Telegram account, so your other apps follow it.
+- Websites: Privacy and security → Websites lists the sites you logged in to with Telegram, with the bot, browser and
+  where and when each was last used, and logs one or all of them out (each asks first).
+- Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →
+  Double-tap to react picks the quick reaction (it belongs to your Telegram account, so your other apps use it too) and
+  whether double taps react on others' messages, your own, or neither. A single tap still acts at once.
+- Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
+  whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
+  reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
+- Quote replies: select part of a message's text in its lifted bubble (a second long press) and tap "Quote" beside
+  Copy; the reply quotes just that part. The reply bar and the reply's bubble show the quote with a quote mark, and
+  quotes others send show the same way.
+- Reply in another chat: a message's actions offer "Reply in another chat", which lists your chats; the one you pick
+  opens with the reply ready ("Reply to Ada in Team chat") for you to write it. Nothing is sent until you send it.
+- Copy link: in groups and channels with links, a message's actions copy its link (an album's link for an album);
+  in a topic or thread, "Copy link to this thread". Links to private chats copy too and open for members only.
+- Replace a message's photo, video or file while editing it: "Replace" in the edit bar opens the Photo Picker or the
+  file picker, the new media shows in a preview, and "Replace" there swaps it in, keeping the caption you are editing.
+- Send with Enter: Appearance → Chats chooses which Enter sends a message. On a hardware keyboard Enter sends by
+  default, and Shift+Enter or Ctrl+Enter starts a new line; turned off, Ctrl+Enter sends instead. On the on-screen
+  keyboard Enter starts a new line by default; turned on, its Enter key becomes Send. This replaces "Send with
+  Ctrl+Enter", whose choice carries over.
+- Statistics: where Telegram offers them (administrators of larger supergroups and channels), the info page's
+  Administration opens the chat's statistics: members, messages, views and reactions against the period before, and
+  Telegram's charts (growth, joins and leaves, languages, activity by hour, views and interactions), drawn as lines,
+  bars or shares, and in groups the members who wrote the most.
+- Recent actions: administrators of supergroups and channels see what administrators and members did in the last 48
+  hours (messages edited, deleted or pinned, people joining, leaving, promoted or restricted, changes to the info,
+  settings and invite links, voice chats), from the info page's Administration, filtered by kind with chips.
+- Transfer ownership: the owner of a supergroup or channel makes an administrator or member the owner from their
+  rights page. Pingogram first asks Telegram whether it may be done now (it needs a 2-step verification password that
+  is not new, on a device logged in for a while), then asks for that password in a question that says what changes.
+- Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
+  "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
+  or all at once ("Dismiss all" asks first).
+- Power saving: Settings → Power saving turns off what plays by itself while Android's Battery Saver is on (or always,
+  or never). Animated stickers and emoji show their first frame, videos and GIFs in the media viewer wait for you to
+  tap play, and the call screens' animations stand still; each can be left on.
+- Media viewer: videos start playing while they download, as soon as there is enough to show, and the seek bar shows
+  how much has arrived. Seeking ahead downloads from there instead of everything before it, and leaving the video stops
+  its download. Videos sent in a way that cannot stream still play once downloaded.
+- Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
+  restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
+  group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a
+  question). The info page's "Group settings" / "Channel settings" opens it.
+- Chats: raise to listen. While a voice message plays, holding the phone to your ear plays it through the earpiece with
+  the screen off; lowering it plays on through the speaker, or pauses if you turn on "Pause when lowered". Never with
+  headphones, Bluetooth or during a call. Settings → Appearance → Chats, on by default.
+- Group calls by link: a `t.me/call/…` link opens Telegram's new end-to-end encrypted group calls. Pingogram asks
+  "Join the group call?" first, then joins with your microphone off, and shows the call's four emojis under its title,
+  which everyone in it sees the same while the call is secure. The rest works as in voice chats.
+- Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
+  screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
+  "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
+  shares theirs, it fills the window without being cut off. Voice chats too: "Share screen" in the voice chat's
+  header shares your screen beside your camera, and others' shared screens show first among the videos.
+- Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
+  turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
+  opens a sheet that shows the proxy and connects through it only when you tap "Connect".
+- Network usage: Settings → Data and storage → Network usage shows how much data Pingogram sent and received on mobile
+  data, Wi-Fi and roaming since a date, in total and for messages, photos, videos, voice messages, music, files and
+  calls, as counted on this device. "Reset statistics" starts counting again.
 - Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
   those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
   or first video in picture-in-picture.
@@ -56,15 +233,57 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   replies; Wear OS watches show them with Reply and Mark as read, as before (`docs/ANDROID_AUTO.md`).
 - Send with Ctrl+Enter: Settings → Appearance → Chats can make Ctrl+Enter send a message from a hardware keyboard, Enter
   then starting a new line.
+- Voting in polls: tap an answer to vote, or check several and tap Vote where the poll allows more than one. Once you
+  voted, or the poll is closed, each answer shows its share of the votes as a bar with its percentage, your answer
+  marked; in a quiz the right answer is marked green and a wrong one red, with the quiz's explanation below. A public
+  poll's "View votes" shows who chose each answer, and tapping someone opens their profile. Long-press a poll to take
+  your vote back (where the poll lets you) or, for your own polls, to stop it for everyone. A poll you can't vote in
+  says why, for example when only members may vote.
 - GIFs in the sticker panel: a third tab shows your saved GIFs and searches GIFs as you type, through the bot
   Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
 - Change number: Edit profile shows your phone number with "Change", which moves your account to a new number with
   the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
+- Birthday: Edit profile adds, changes or removes your birthday, with or without its year, and shows who can see it;
+  "Birthday" joins the privacy settings in Privacy and security.
+- Privacy exceptions: every privacy setting's "Always allowed" and "Never allowed" open a page of their own, where you
+  add people and groups from your chats or remove them.
+- Privacy: "Messages" sets who can start a chat with you (everybody, or your contacts and Telegram Premium
+  subscribers, where Telegram lets you choose it); "Last seen and online" can hide your read time; "Bio" joins the
+  privacy settings.
+- Login email: Privacy and security → Account shows the email Telegram can send your login codes to, and changes it
+  with a code sent to the new address.
+- Auto-delete messages: Privacy and security → Account sets a timer for the chats you start from then on (off, a day,
+  a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
+- Voice messages pause the music another app plays only while they play, and it plays on after them. A call pauses
+  a voice message or video that plays.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
+- Pingogram starts with less work on the way to the chat list: notifications and share sheet chats that Android still
+  shows from the last time are not posted again, the parts that follow notifications, calls, transfers and the widget
+  start in the background, the `gms` build starts Firebase only when it needs it, and the screen is no longer drawn
+  twice at the start for "Hide phone numbers".
+
+### Fixed
+- Contacts: at the largest font sizes, a phone number in the list of contacts to invite wraps to a second line instead
+  of losing its last digits.
+- Chats: while you select chats, the hidden "New chat" button no longer reacts to a tap in its corner, and screen
+  readers no longer find it.
+- Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a
+  conversation's title now says "Waiting for network…", "Connecting…" or "Updating…" in place of the status while
+  Pingogram is not connected.
+- Screen readers hear whether a voice recording is recording or paused, the folder tabs as selected tabs rather than
+  checked buttons, and the media viewer's caption as a button that expands and collapses.
+- Your own reactions show by more than their color: their badge on a message has a ring in your theme's accent color,
+  and so do their tiles in the reactions sheet.
+- Screen readers join the parts of a chat row, a message, a search result and other descriptions with the language's
+  own punctuation, and the people a new group could not add are listed the way the language lists names.
+- At large font sizes, names under search's top people and the story rings take two lines instead of being cut, and
+  nothing else is cut off: a file's download progress, the pinned messages bar's "4 of 5", the auto-delete choices
+  of a new group and the names of the people picked for it. A secret chat's self-destruct timer badge no longer hides
+  the timer.
 
 ## [0.5.0] - 2026-10-23
 
@@ -833,7 +1052,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0

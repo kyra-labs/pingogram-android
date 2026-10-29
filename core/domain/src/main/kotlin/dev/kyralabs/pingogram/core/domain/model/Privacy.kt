@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.core.domain.model
 
 /**
  * A privacy setting of the account (`REQUIREMENTS.md` FR-S1, Privacy and security): who can see or do something. The
- * ones Pingogram shows, in its order. TDLib has more (bio, birthdate, finding by phone number, peer-to-peer calls,
+ * ones Pingogram shows, in its order. TDLib has more (finding by phone number, peer-to-peer calls,
  * gifts, paid messages); Pingogram leaves them as they are.
  */
 enum class PrivacySetting {
@@ -14,6 +14,12 @@ enum class PrivacySetting {
 
     /** Who can see the profile photos. */
     ProfilePhoto,
+
+    /** Who can see the bio. */
+    Bio,
+
+    /** Who can see the birthday, where the user set one (Edit profile). */
+    Birthdate,
 
     /** Whether messages forwarded from the user link to their account. */
     ForwardedMessages,
@@ -83,3 +89,69 @@ data class PrivacyRulesChange(
     val setting: PrivacySetting,
     val rules: PrivacyRules,
 )
+
+/**
+ * Who may start a chat with the user (td_api.tl `newChatPrivacySettings`), the "Messages" privacy setting.
+ *
+ * @property allowsNonContacts people who are not contacts may write first; Telegram Premium subscribers may whatever
+ *   it is.
+ * @property paidMessageStars Telegram Stars non-contacts pay per message, as another app set it; 0 for none. Pingogram
+ *   offers no paid messages and keeps what is set while non-contacts may write.
+ * @property canRestrict Telegram lets this account keep non-contacts out (td_api.tl option
+ *   `can_set_new_chat_privacy_settings`, which Telegram gives Telegram Premium subscribers).
+ */
+data class NewChatPrivacy(
+    val allowsNonContacts: Boolean,
+    val paidMessageStars: Long = 0,
+    val canRestrict: Boolean = false,
+)
+
+/** Which exceptions of a [PrivacySetting]: those always allowed, or those never allowed, whatever its main choice. */
+enum class PrivacyExceptionSide { Always, Never }
+
+/**
+ * The users and groups (their members) a [PrivacySetting] treats apart from its main choice, by id, as TDLib lists
+ * them (td_api.tl `userPrivacySettingRuleAllowUsers` and the others). Chat ids are those of basic groups and
+ * supergroups.
+ */
+data class PrivacyExceptionLists(
+    val alwaysUserIds: List<Long> = emptyList(),
+    val alwaysChatIds: List<Long> = emptyList(),
+    val neverUserIds: List<Long> = emptyList(),
+    val neverChatIds: List<Long> = emptyList(),
+) {
+    fun userIds(side: PrivacyExceptionSide): List<Long> =
+        if (side == PrivacyExceptionSide.Always) alwaysUserIds else neverUserIds
+
+    fun chatIds(side: PrivacyExceptionSide): List<Long> =
+        if (side == PrivacyExceptionSide.Always) alwaysChatIds else neverChatIds
+
+    /**
+     * These lists with [side] holding [userIds] and [chatIds]; they leave the other side, since one user or group
+     * cannot be both always and never allowed.
+     */
+    fun with(
+        side: PrivacyExceptionSide,
+        userIds: List<Long>,
+        chatIds: List<Long>,
+    ): PrivacyExceptionLists =
+        when (side) {
+            PrivacyExceptionSide.Always -> {
+                PrivacyExceptionLists(
+                    alwaysUserIds = userIds,
+                    alwaysChatIds = chatIds,
+                    neverUserIds = neverUserIds - userIds.toSet(),
+                    neverChatIds = neverChatIds - chatIds.toSet(),
+                )
+            }
+
+            PrivacyExceptionSide.Never -> {
+                PrivacyExceptionLists(
+                    alwaysUserIds = alwaysUserIds - userIds.toSet(),
+                    alwaysChatIds = alwaysChatIds - chatIds.toSet(),
+                    neverUserIds = userIds,
+                    neverChatIds = chatIds,
+                )
+            }
+        }
+}

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toCall
 import dev.kyralabs.pingogram.core.data.mapper.toTdApi
 import dev.kyralabs.pingogram.core.domain.model.Call
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration
 
 /**
@@ -31,7 +31,7 @@ import kotlin.time.Duration
  * The engine's data from the other side ([signalingData]) is not cached: it is read from TDLib's updates as they come,
  * by `:feature:calls`' `CallManager`, which collects them from app start.
  */
-@Singleton
+@AccountScoped
 class TdlibCallRepository
     @Inject
     constructor(
@@ -67,14 +67,14 @@ class TdlibCallRepository
             duration: Duration,
             isVideo: Boolean,
             connectionId: Long,
+            inviteLink: String,
         ): Outcome<Unit> =
             client
                 .request(
                     TdApi.DiscardCall(
                         callId,
                         isDisconnected,
-                        // invite_link: only when a call becomes a group call, which Pingogram does not do.
-                        "",
+                        inviteLink,
                         duration.inWholeSeconds.toInt(),
                         isVideo,
                         connectionId,

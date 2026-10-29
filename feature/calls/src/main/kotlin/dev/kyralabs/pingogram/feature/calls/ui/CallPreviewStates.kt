@@ -53,6 +53,25 @@ internal object CallPreviewStates {
                 ),
         )
 
+    /**
+     * Connected: "Add people" (`docs/adr/0025-conference-calls.md`) and "Share screen"
+     * (`docs/adr/0026-screen-sharing.md`) at the top end.
+     */
+    val shareOffered = connected.copy(video = connected.video.copy(canShareScreen = true), canAddPeople = true)
+
+    /** The same actions over a video call, in the overlay's colors. */
+    val actionsOverVideo = video.copy(video = video.video.copy(canShareScreen = true), canAddPeople = true)
+
+    /** The user shares the screen in a voice call: "You're sharing your screen" with "Stop" under the header. */
+    val sharingScreen = shareOffered.copy(video = shareOffered.video.copy(isSharingScreen = true))
+
+    /** The user shares the screen while the other person's camera shows. */
+    val sharingScreenVideo =
+        video.copy(video = video.video.copy(camera = null, canShareScreen = true, isSharingScreen = true))
+
+    /** The other person shares their screen: it fills the window, fitted. */
+    val remoteScreen = video.copy(video = video.video.copy(camera = null, canShareScreen = true, remoteIsScreen = true))
+
     /** Only the user's camera on: it fills the screen. */
     val videoSelfOnly = video.copy(video = video.video.copy(remote = RemoteVideo.Off))
 
@@ -99,6 +118,19 @@ private fun CallConnectedPreview() = Preview(CallPreviewStates.connected)
 @PingogramVariantPreviews
 @Composable
 private fun CallVideoPreview() = Preview(CallPreviewStates.video)
+
+@PingogramPreviews
+@PingogramVariantPreviews
+@Composable
+private fun CallSharingScreenPreview() = Preview(CallPreviewStates.sharingScreen)
+
+@PingogramPreviews
+@Composable
+private fun CallSharingScreenVideoPreview() = Preview(CallPreviewStates.sharingScreenVideo)
+
+@PingogramPreviews
+@Composable
+private fun CallRemoteScreenPreview() = Preview(CallPreviewStates.remoteScreen)
 
 @PingogramPreviews
 @Composable

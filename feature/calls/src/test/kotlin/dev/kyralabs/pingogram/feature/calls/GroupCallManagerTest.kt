@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -34,8 +35,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** The voice chat's state machine: joining, the microphone, hands, leaving, the call ending, and live streams. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupCallManagerTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
     private val system = FakeCallSystem()
     private val foreground = FakeCallForeground()
@@ -45,6 +48,7 @@ class GroupCallManagerTest {
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             system,
             foreground,
@@ -112,6 +116,7 @@ class GroupCallManagerTest {
             val other =
                 GroupCallManager(
                     repository,
+                    conferences,
                     engine,
                     system,
                     foreground,

@@ -12,6 +12,12 @@ interface CallForeground {
      */
     fun start(withMicrophone: Boolean)
 
+    /**
+     * Runs the service as `mediaProjection` too, or no longer (`docs/adr/0026-screen-sharing.md`), and returns once it
+     * does: Android lets a screen's capture start only then. False where Android refused, or it took too long.
+     */
+    suspend fun setScreenCapture(on: Boolean): Boolean
+
     fun stop()
 }
 
@@ -31,12 +37,18 @@ fun interface CallClock {
     fun elapsedRealtimeMillis(): Long
 }
 
-/** The name of a user as the system's UI, a car or a watch shows it. */
+/**
+ * The name of a user as the system's UI, a car or a watch shows it; the user of the account in [slot]
+ * (`docs/adr/0031-multiple-accounts.md`), null for the shown account.
+ */
 fun interface CallerNames {
-    suspend fun name(userId: Long): String
+    suspend fun name(
+        slot: Int?,
+        userId: Long,
+    ): String
 }
 
-/** The title of a voice chat's chat, as the system's UI, a car or a watch shows it. */
+/** The title of a voice chat's chat, as the system's UI, a car or a watch shows it; chat 0 is a conference call's. */
 fun interface ChatTitles {
     suspend fun title(chatId: Long): String
 }

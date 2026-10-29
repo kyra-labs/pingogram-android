@@ -45,6 +45,9 @@ data class SystemCallRequest(
             displayName: String,
             chatId: Long,
         ) = SystemCallRequest(displayName, "pingogram:chat/$chatId", isOutgoing = true)
+
+        /** A conference call the user joins (`docs/adr/0025-conference-calls.md`): no chat, as a voice chat. */
+        fun conference(displayName: String) = SystemCallRequest(displayName, "pingogram:conference", true)
     }
 }
 

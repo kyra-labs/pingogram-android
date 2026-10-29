@@ -12,19 +12,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
@@ -37,7 +46,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -46,9 +57,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.Constraints
@@ -61,8 +74,10 @@ import androidx.core.content.ContextCompat
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.VideoNoteEvent
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerActionShapes
+import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -70,25 +85,39 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `tertiaryContainer` as
  * Google Messages' microphone, which morphs into a wide `primary` pill while it records, its icon giving way to a
  * [LinearWavyProgressIndicator] whose waves rise and fall with the voice ([RecordingMeter.level]); locked, the pill
- * sends. Its colors cross-fade on the motion scheme's effects spring.
+ * sends. Its colors cross-fade on the motion scheme's effects spring. Switched to round video messages
+ * ([RecordModeUiState.video], `docs/adr/0032-round-video-messages.md`), it shows a camera instead of the microphone and
+ * records video with the same gestures.
  *
- * - **Hold to record**: pressing it starts recording ([VoiceEvent.Start]) with a long-press haptic, if the microphone
- *   permission is granted; else it asks for it ([VoiceEvent.PermissionNeeded]). The pill follows the finger toward
- *   the start ([drag]); past `recordingCancelDistance` the recording is cancelled ([VoiceEvent.Cancel]), past
- *   `recordingLockDistance` up it locks ([VoiceEvent.Lock]), both with the threshold haptic; releasing sends
- *   ([VoiceEvent.Send]) with a confirming haptic, or a rejecting one when it is too short to send. The gesture takes
- *   every touch of the press, so the button's own click never fires for it.
+ * - **Tap to switch**: where the device has a camera ([RecordModeUiState.canSwitch]), a tap switches the button between
+ *   voice and video ([VideoNoteEvent.SwitchMode], a segment tick), as Telegram's apps do, and its tooltip says what it
+ *   records now; switching to video without the camera's or the microphone's permission opens their rationale first
+ *   ([VideoNoteEvent.PermissionNeeded]). A press becomes a hold after [HOLD_TO_RECORD_MILLIS]; without a camera, a
+ *   press records at once.
+ * - **Hold to record**: holding it starts recording ([VoiceEvent.Start]) with a long-press haptic, if the permissions
+ *   are granted (the microphone, and the camera for video); else it asks for them ([VoiceEvent.PermissionNeeded],
+ *   [VideoNoteEvent.PermissionNeeded]). The pill follows the finger toward the start ([drag]); past
+ *   `recordingCancelDistance` the recording is cancelled ([VoiceEvent.Cancel]), past `recordingLockDistance` up it
+ *   locks ([VoiceEvent.Lock]), both with the threshold haptic; releasing sends ([VoiceEvent.Send]) with a confirming
+ *   haptic, or a rejecting one when it is too short to send. The gesture takes every touch of the press, so the
+ *   button's own click never fires for it.
  * - **Without touch** (a screen reader, a keyboard), activating it records locked at once: holding is a touch gesture.
+ *   Screen readers hear "Record voice message" or "Record video message", and switch through a custom action.
  * - **Locked**: the pill is the send button.
  */
+@OptIn(ExperimentalMaterial3Api::class) // TooltipBox
 @Composable
 internal fun RecordButton(
     recording: VoiceRecordingUiState?,
     drag: RecordDrag,
     onEvent: (VoiceEvent) -> Unit,
     modifier: Modifier = Modifier,
+    mode: RecordModeUiState = RecordModeUiState(),
+    onVideoEvent: (VideoNoteEvent) -> Unit = {},
 ) {
-    val actions = rememberRecordActions(recording, onEvent)
+    val tooltip = rememberTooltipState()
+    val scope = rememberCoroutineScope()
+    val actions = rememberRecordActions(recording, mode, onEvent, onVideoEvent) { scope.launch { tooltip.show() } }
     val uniform = IconButtonDefaults.mediumContainerSize()
     val wide = IconButtonDefaults.mediumContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)
     val width =
@@ -98,19 +127,66 @@ internal fun RecordButton(
             label = "recordButtonWidth",
         )
     val shapes = composerActionShapes()
+    val video = recording?.let { it.video != null } ?: mode.video
+    val input = recordInputOf(video, canSwitch = mode.canSwitch && recording == null)
+    val idle = if (video) ButtonFace.Camera else ButtonFace.Mic
+    val face = recording?.let { if (it.isLocked) ButtonFace.Send else ButtonFace.Level } ?: idle
+    val colors = recordButtonColors(mic = face == ButtonFace.Mic || face == ButtonFace.Camera)
+    // Shown after a switch only: touch would show it on the long press that records.
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { Text(input.label) } },
+        state = tooltip,
+        modifier = modifier,
+        enableUserInput = false,
+    ) {
+        FilledIconButton(
+            onClick = actions::sendLocked,
+            modifier =
+                Modifier
+                    .minimumInteractiveComponentSize()
+                    .animatedWidth(width, uniform.height)
+                    .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send),
+            // A pill while it records, the press morph only while it is the microphone or camera, or sends.
+            shapes = if (face == ButtonFace.Level) IconButtonShapes(shapes.shape, shapes.shape) else shapes,
+            colors = colors,
+        ) {
+            Crossfade(
+                targetState = face,
+                animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                label = "recordButtonFace",
+            ) { RecordButtonFace(it, recording?.meter, video) }
+        }
+    }
+}
+
+/** What the record button's input needs, for a button that records [video] and, where [canSwitch], switches. */
+@Composable
+private fun recordInputOf(
+    video: Boolean,
+    canSwitch: Boolean,
+): RecordInput {
     val sizes = MaterialTheme.sizes
-    val input =
-        RecordInput(
-            layoutDirection = LocalLayoutDirection.current,
-            cancelDistance = sizes.recordingCancelDistance,
-            lockDistance = sizes.recordingLockDistance,
-            label = stringResource(R.string.voice_record),
-            actionLabel = stringResource(R.string.voice_record_action),
-        )
-    val face = recording?.let { if (it.isLocked) ButtonFace.Send else ButtonFace.Level } ?: ButtonFace.Mic
+    return RecordInput(
+        layoutDirection = LocalLayoutDirection.current,
+        cancelDistance = sizes.recordingCancelDistance,
+        lockDistance = sizes.recordingLockDistance,
+        label = stringResource(if (video) R.string.video_note_record else R.string.voice_record),
+        actionLabel = stringResource(R.string.voice_record_action),
+        switchLabel =
+            stringResource(if (video) R.string.video_note_switch_to_voice else R.string.video_note_switch_to_video)
+                .takeIf { canSwitch },
+    )
+}
+
+/**
+ * The record button's colors: `tertiaryContainer` while it is the microphone or the camera ([mic]), `primary` while it
+ * records, cross-fading on the motion scheme's effects spring.
+ */
+@Composable
+private fun recordButtonColors(mic: Boolean): IconButtonColors {
     val colorScheme = MaterialTheme.colorScheme
     val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
-    val mic = face == ButtonFace.Mic
     val container by animateColorAsState(
         targetValue = if (mic) colorScheme.tertiaryContainer else colorScheme.primary,
         animationSpec = effects,
@@ -121,42 +197,37 @@ internal fun RecordButton(
         animationSpec = effects,
         label = "recordButtonContent",
     )
-    FilledIconButton(
-        onClick = actions::sendLocked,
-        modifier =
-            modifier
-                .minimumInteractiveComponentSize()
-                .animatedWidth(width, uniform.height)
-                .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send),
-        // A pill while it records, the press morph only while it is the microphone or sends.
-        shapes = if (face == ButtonFace.Level) IconButtonShapes(shapes.shape, shapes.shape) else shapes,
-        colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = content),
-    ) {
-        Crossfade(
-            targetState = face,
-            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-            label = "recordButtonFace",
-        ) { RecordButtonFace(it, recording?.meter) }
-    }
+    return IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = content)
 }
 
-/** What the record button shows: the microphone, the voice's level while held, or send while locked. */
+/** What the record button shows: the microphone or the camera, the voice's level while held, or send while locked. */
 private enum class ButtonFace {
     Mic,
+    Camera,
     Level,
     Send,
 }
 
-/** The microphone icon, the wavy level of the voice in [meter], or the send icon. */
+/** The microphone or camera icon, the wavy level of the voice in [meter], or the send icon of a [video] message. */
 @Composable
 private fun RecordButtonFace(
     face: ButtonFace,
     meter: RecordingMeter?,
+    video: Boolean,
 ) {
     when (face) {
-        ButtonFace.Mic -> {
+        ButtonFace.Mic, ButtonFace.Camera -> {
             Icon(
-                painter = painterResource(UiR.drawable.ic_mic_filled),
+                painter =
+                    painterResource(
+                        if (face ==
+                            ButtonFace.Camera
+                        ) {
+                            R.drawable.ic_videocam_filled
+                        } else {
+                            UiR.drawable.ic_mic_filled
+                        },
+                    ),
                 contentDescription = null,
                 modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
             )
@@ -182,7 +253,7 @@ private fun RecordButtonFace(
         ButtonFace.Send -> {
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
-                contentDescription = stringResource(R.string.voice_send),
+                contentDescription = stringResource(if (video) R.string.video_note_send else R.string.voice_send),
                 modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
             )
         }
@@ -190,31 +261,52 @@ private fun RecordButtonFace(
 }
 
 /**
- * What the record button does, with the latest recording and callback: start (checking the permission), and the hold
- * gesture's press, threshold and release, each with its haptic.
+ * What the record button does, with the latest recording, mode and callbacks: start (checking the permissions), switch
+ * between voice and video, and the hold gesture's press, threshold and release, each with its haptic.
  */
+@Suppress("LongParameterList") // What it reads from the composition, the recording, the mode and its callbacks.
 private class RecordActions(
     private val context: Context,
     private val haptics: HapticFeedback,
     private val focusManager: FocusManager,
     private val recording: State<VoiceRecordingUiState?>,
+    private val mode: State<RecordModeUiState>,
     private val onEvent: State<(VoiceEvent) -> Unit>,
+    private val onVideoEvent: State<(VideoNoteEvent) -> Unit>,
+    private val onSwitched: () -> Unit,
 ) {
     val isRecording: Boolean get() = recording.value != null
     val isLocked: Boolean get() = recording.value?.isLocked == true
 
-    /** Starts recording, [locked] or held, if the permission is granted (true); else asks for it (false). */
+    /** Whether a tap switches between voice and video: the device has a camera, and nothing records. */
+    val canSwitch: Boolean get() = mode.value.canSwitch && !isRecording
+
+    /** Starts recording, [locked] or held, if the permissions are granted (true); else asks for them (false). */
     fun start(locked: Boolean): Boolean {
-        val granted =
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
+        val video = mode.value.video
+        val granted = if (video) context.hasVideoPermissions() else context.has(Manifest.permission.RECORD_AUDIO)
         if (granted) {
             focusManager.clearFocus()
             onEvent.value(VoiceEvent.Start(locked))
+        } else if (video) {
+            onVideoEvent.value(VideoNoteEvent.PermissionNeeded(switching = false))
         } else {
             onEvent.value(VoiceEvent.PermissionNeeded)
         }
         return granted
+    }
+
+    /** A tap: switches between voice and video, asking for video's permissions first where they are missing. */
+    fun switch() {
+        if (!canSwitch) return
+        val toVideo = !mode.value.video
+        if (toVideo && !context.hasVideoPermissions()) {
+            onVideoEvent.value(VideoNoteEvent.PermissionNeeded(switching = true))
+            return
+        }
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        onVideoEvent.value(VideoNoteEvent.SwitchMode)
+        onSwitched()
     }
 
     fun press(): Boolean =
@@ -228,8 +320,11 @@ private class RecordActions(
     }
 
     fun release() {
-        val longEnough = (recording.value?.meter?.elapsedMillis ?: 0L) >= ChatRecorder.MIN_DURATION_MILLIS
-        haptics.performHapticFeedback(if (longEnough) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+        // A video message that reached its limit was sent already: nothing to confirm.
+        recording.value?.let { current ->
+            val longEnough = current.meter.elapsedMillis >= ChatRecorder.MIN_DURATION_MILLIS
+            haptics.performHapticFeedback(if (longEnough) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+        }
         onEvent.value(VoiceEvent.Send)
     }
 
@@ -244,25 +339,41 @@ private class RecordActions(
 @Composable
 private fun rememberRecordActions(
     recording: VoiceRecordingUiState?,
+    mode: RecordModeUiState,
     onEvent: (VoiceEvent) -> Unit,
+    onVideoEvent: (VideoNoteEvent) -> Unit,
+    onSwitched: () -> Unit,
 ): RecordActions {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
     val currentRecording = rememberUpdatedState(recording)
+    val currentMode = rememberUpdatedState(mode)
     val currentOnEvent = rememberUpdatedState(onEvent)
+    val currentOnVideoEvent = rememberUpdatedState(onVideoEvent)
+    val currentOnSwitched = rememberUpdatedState(onSwitched)
     return remember(context, haptics, focusManager) {
-        RecordActions(context, haptics, focusManager, currentRecording, currentOnEvent)
+        RecordActions(
+            context = context,
+            haptics = haptics,
+            focusManager = focusManager,
+            recording = currentRecording,
+            mode = currentMode,
+            onEvent = currentOnEvent,
+            onVideoEvent = currentOnVideoEvent,
+            onSwitched = { currentOnSwitched.value() },
+        )
     }
 }
 
-/** What the record button's input needs from the composition. */
+/** What the record button's input needs from the composition; [switchLabel] is the switch's action, null for none. */
 private class RecordInput(
     val layoutDirection: LayoutDirection,
     val cancelDistance: Dp,
     val lockDistance: Dp,
     val label: String,
     val actionLabel: String,
+    val switchLabel: String?,
 )
 
 /**
@@ -294,14 +405,24 @@ private fun Modifier.recordInput(
                 if (!actions.isRecording) actions.start(locked = true)
                 true
             }
+            input.switchLabel?.let { switchLabel ->
+                customActions =
+                    listOf(
+                        CustomAccessibilityAction(switchLabel) {
+                            actions.switch()
+                            true
+                        },
+                    )
+            }
         }
 }
 
 /**
  * The hold gesture: a press that [RecordActions.press] accepts records until it is released (send), slides
  * `cancelDistance` toward the start (cancel) or `lockDistance` up (lock); after a cancel or a lock the rest of the
- * press does nothing. It takes every change of the press in the initial pass, before the button's click sees it.
- * While locked, presses go to the button.
+ * press does nothing. Where a tap switches between voice and video ([RecordActions.canSwitch]), a press released
+ * within [HOLD_TO_RECORD_MILLIS] is that tap, and only a longer one records. It takes every change of the press in
+ * the initial pass, before the button's click sees it. While locked, presses go to the button.
  */
 private fun Modifier.recordGesture(
     input: RecordInput,
@@ -315,6 +436,10 @@ private fun Modifier.recordGesture(
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             if (actions.isLocked) return@awaitEachGesture
             down.consume()
+            if (actions.canSwitch && releasedWithin(down.id, HOLD_TO_RECORD_MILLIS)) {
+                actions.switch()
+                return@awaitEachGesture
+            }
             var active = actions.press()
             do {
                 val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }

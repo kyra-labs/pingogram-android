@@ -13,10 +13,13 @@ import kotlinx.collections.immutable.persistentListOf
  */
 @Immutable
 data class ActiveGroupCall(
+    /** The voice chat's chat; 0 for a conference call (`docs/adr/0025-conference-calls.md`). */
     val chatId: Long,
-    /** TDLib's id of the group call. */
+    /** TDLib's id of the group call; a conference call's is 0 until it is joined. */
     val groupCallId: Int,
     val phase: GroupCallPhase,
+    /** A conference call: end-to-end encrypted, outside any chat, reached by a link or an invitation. */
+    val isConference: Boolean = false,
     /** A live stream (or a call too large to speak in): received only, nothing sent. */
     val isStream: Boolean = false,
     val isMuted: Boolean = true,
@@ -25,6 +28,8 @@ data class ActiveGroupCall(
     val isHandRaised: Boolean = false,
     /** The user may end the call for everyone (an administrator who may manage voice chats). */
     val canEnd: Boolean = false,
+    /** A conference call the user is connected to: they may invite people into it ([GroupCallManager.invite]). */
+    val canInvite: Boolean = false,
     val audio: CallAudio = CallAudio(),
     /** When it first connected, on the elapsed-realtime clock in milliseconds; null before. */
     val connectedAtMillis: Long? = null,
@@ -44,14 +49,22 @@ data class GroupCallVideo(
     val remote: ImmutableList<RemoteParticipantVideo> = persistentListOf(),
     /** The participant the user pinned on this device, or null. */
     val pinned: MessageSender? = null,
+    /** The voice chat lets the user share their screen now: connected, and not a stream. */
+    val canShareScreen: Boolean = false,
+    /** The user shares their screen (`docs/adr/0026-screen-sharing.md`). */
+    val isSharingScreen: Boolean = false,
 )
 
-/** Another participant's video the voice chat receives: whose, its endpoint for the frames' sink, held back or not. */
+/**
+ * Another participant's video the voice chat receives: whose, its endpoint for the frames' sink, held back or not, and
+ * whether it is their shared screen rather than their camera.
+ */
 @Immutable
 data class RemoteParticipantVideo(
     val participant: MessageSender,
     val endpointId: String,
     val isPaused: Boolean,
+    val isScreen: Boolean = false,
 )
 
 /** Where an [ActiveGroupCall] is. */
@@ -88,6 +101,14 @@ sealed interface GroupCallEndReason {
         val error: DomainError,
     ) : GroupCallEndReason
 }
+
+/** What came of [GroupCallManager.invite]: how many were invited, and who could not be. */
+@Immutable
+data class ConferenceInvites(
+    val invited: Int,
+    /** Users whose privacy settings refuse it, who were removed from the call, or whose invitation failed. */
+    val refused: ImmutableList<Long> = persistentListOf(),
+)
 
 /** What came of asking to join or start a voice chat. */
 enum class JoinResult {

@@ -158,7 +158,7 @@ internal class ChatsPaneNavigator(
                         saved.chunked(2).map { (pane, key) ->
                             ThreePaneScaffoldDestinationItem(
                                 ThreePaneScaffoldRole.valueOf(pane as String),
-                                key as String?,
+                                key,
                             )
                         }
                     ChatsPaneNavigator(history, directive)

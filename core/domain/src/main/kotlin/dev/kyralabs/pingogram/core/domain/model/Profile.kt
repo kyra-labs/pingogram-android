@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.core.domain.model
 
 /**
  * What the logged-in user edits of their own profile (`REQUIREMENTS.md` FR-S1, Account), as TDLib has it: names,
- * username and bio. The photo is the user's `profilePhoto` (`UserRepository`).
+ * username, bio and birthday. The photo is the user's `profilePhoto` (`UserRepository`).
  *
  * `toString()` leaves everything out, so a profile can be logged.
  *
@@ -10,12 +10,15 @@ package dev.kyralabs.pingogram.core.domain.model
  * @property username the username the user can change, without `@`; empty without one. Collectible usernames
  *   (bought on Fragment) are not it.
  * @property bio the bio as plain text; empty without one.
+ * @property birthdate the birthday the user set, null without one.
  */
 data class EditableProfile(
     val firstName: String,
     val lastName: String,
     val username: String,
     val bio: String,
+    val birthdate: Birthdate? = null,
+    val personalChatId: Long = 0,
 ) {
     override fun toString() = "EditableProfile(…)"
 }

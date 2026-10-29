@@ -51,9 +51,9 @@ private fun warningItemColors(): ListItemColors {
 
 /**
  * The defaults of [scope]'s chats under its name: notifications on or off, message previews, mentions (groups) and
- * pinned messages (groups and channels) as switches, then "Sound and vibration", which opens the scope's notification
- * channel in Android's settings (noting when the user turned it off there, [channelBlocked]), and "Exceptions"
- * ([onOpenExceptions]). Each switch sends [settings] with its change.
+ * pinned messages (groups and channels) as switches, new stories (private chats, [storyItems]), then "Sound and
+ * vibration", which opens the scope's notification channel in Android's settings (noting when the user turned it off
+ * there, [channelBlocked]), and "Exceptions" ([onOpenExceptions]). Each switch sends [settings] with its change.
  */
 @Composable
 internal fun ScopeGroup(
@@ -68,6 +68,7 @@ internal fun ScopeGroup(
     }
     SettingsGroup(title = stringResource(scope.titleRes())) {
         scopeSwitches(scope, settings, change)
+        if (scope == NotificationScope.PrivateChats) storyItems(settings, change)
         item(key = SOUND) { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_notifications_sound),
@@ -236,3 +237,36 @@ private const val MENTIONS = "mentions"
 private const val PINNED = "pinned"
 private const val SOUND = "sound"
 private const val EXCEPTIONS = "exceptions"
+
+/**
+ * "Reactions", the row that opens whom the account hears of reactions and poll votes from, and "Contact joined
+ * Telegram" as a switch row once TDLib has said whether it is on ([contactJoined]).
+ */
+@Composable
+internal fun ReactionsGroup(
+    contactJoined: Boolean?,
+    onOpenReactions: () -> Unit,
+    onContactJoinedChange: (Boolean) -> Unit,
+) {
+    SettingsGroup {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_reactions),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_reactions_summary)) },
+                onClick = onOpenReactions,
+            )
+        }
+        if (contactJoined != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_contact_joined),
+                    summary = stringResource(R.string.settings_contact_joined_summary),
+                    checked = contactJoined,
+                    shapes = shapes,
+                    onCheckedChange = onContactJoinedChange,
+                )
+            }
+        }
+    }
+}

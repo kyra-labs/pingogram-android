@@ -5,12 +5,19 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
+import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UserStatus
+import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.tdlib.TdlibServers
+import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -54,12 +61,14 @@ class SettingsViewModelTest {
     private fun TestScope.viewModel(
         handle: SavedStateHandle = savedState,
         users: TdlibUserRepository = TdlibUserRepository(client, backgroundScope),
+        deviceAccounts: FakeDeviceAccountsRepository = FakeDeviceAccountsRepository(isAvailable = false),
     ): SettingsViewModel =
         SettingsViewModel(
             handle,
             TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
             users,
             TdlibCountryRepository(client),
+            deviceAccounts,
         ).also { runCurrent() }
 
     private suspend fun TestScope.announceMe(user: TdApi.User) {
@@ -289,6 +298,23 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `the card says Test server only while signed in on Telegram's test servers`() =
+        runTest {
+            answerPhoneNumberInfo(callingCode = "", formattedNumber = "")
+            val viewModel = viewModel()
+            announceMe(TdApiFixtures.user(id = 7, phoneNumber = "9996621234"))
+            assertEquals(false, viewModel.state.account?.isOnTestServers)
+
+            client.servers.value = TdlibServers.Test
+            runCurrent()
+            assertEquals(true, viewModel.state.account?.isOnTestServers)
+
+            client.servers.value = TdlibServers.Production
+            runCurrent()
+            assertEquals(false, viewModel.state.account?.isOnTestServers)
+        }
+
+    @Test
     fun `keeps the phone number's digits when TDLib cannot format it`() =
         runTest {
             answerPhoneNumberInfo(callingCode = "", formattedNumber = "")
@@ -385,6 +411,121 @@ class SettingsViewModelTest {
 
             assertEquals(SettingsUiState(), restored.state)
         }
+
+    @Test
+    fun `shows no other accounts or Add account while the app offers one account`() =
+        runTest {
+            val accounts = FakeDeviceAccountsRepository(isAvailable = false, accounts = persistentListOf(ada, grace))
+
+            val viewModel = viewModel(deviceAccounts = accounts)
+
+            assertTrue(viewModel.state.otherAccounts.isEmpty())
+            assertFalse(viewModel.state.canAddAccount)
+        }
+
+    @Test
+    fun `lists the other signed-in accounts, not the one shown, with Add account`() =
+        runTest {
+            val accounts = FakeDeviceAccountsRepository(accounts = persistentListOf(ada, grace))
+
+            val viewModel = viewModel(deviceAccounts = accounts)
+
+            assertEquals(
+                listOf(
+                    OtherAccountUiModel(
+                        slot = 1,
+                        userId = 2,
+                        name = "Grace Hopper",
+                        photo = null,
+                        phoneNumber = "+12025550143",
+                        unreadChats = 3,
+                    ),
+                ),
+                viewModel.state.otherAccounts,
+            )
+            assertTrue(viewModel.state.canAddAccount)
+        }
+
+    @Test
+    fun `formats the other accounts' numbers through TDLib once each`() =
+        runTest {
+            var requests = 0
+            client.on(TdApi.GetPhoneNumberInfo::class) {
+                requests++
+                TdResult.Success(TdApi.PhoneNumberInfo(null, "1", "202 555 0143", false))
+            }
+            val accounts = FakeDeviceAccountsRepository(accounts = persistentListOf(ada, grace))
+            val viewModel = viewModel(deviceAccounts = accounts)
+
+            accounts.accountList.value = persistentListOf(ada, grace.copy(unreadChats = 4))
+            runCurrent()
+
+            assertEquals(
+                "+1 202 555 0143",
+                viewModel.state.otherAccounts
+                    .single()
+                    .phoneNumber,
+            )
+            assertEquals(
+                4,
+                viewModel.state.otherAccounts
+                    .single()
+                    .unreadChats,
+            )
+            assertEquals(1, requests)
+        }
+
+    @Test
+    fun `leaves out an account whose user TDLib has not announced, and Add account at the limit`() =
+        runTest {
+            val accounts = FakeDeviceAccountsRepository(accounts = persistentListOf(ada, grace.copy(user = null)))
+            accounts.canAdd.value = false
+
+            val viewModel = viewModel(deviceAccounts = accounts)
+
+            assertTrue(viewModel.state.otherAccounts.isEmpty())
+            assertFalse(viewModel.state.canAddAccount)
+        }
+
+    @Test
+    fun `switching and adding go to the device's accounts`() =
+        runTest {
+            val accounts = FakeDeviceAccountsRepository(accounts = persistentListOf(ada, grace))
+            val viewModel = viewModel(deviceAccounts = accounts)
+
+            send(viewModel, SettingsEvent.SwitchAccount(1), SettingsEvent.AddAccount)
+
+            assertEquals(listOf(1), accounts.switchedTo)
+            assertEquals(1, accounts.adds)
+        }
+
+    private val ada =
+        DeviceAccount(slot = 0, user = domainUser(1, "Ada", "447911123456"), unreadChats = 0, isActive = true)
+    private val grace =
+        DeviceAccount(slot = 1, user = domainUser(2, "Grace Hopper", "12025550143"), unreadChats = 3, isActive = false)
+
+    private fun domainUser(
+        id: Long,
+        name: String,
+        phoneNumber: String,
+    ) = User(
+        id = id,
+        firstName = name,
+        lastName = "",
+        usernames = persistentListOf(),
+        phoneNumber = phoneNumber,
+        status = UserStatus.Empty,
+        profilePhoto = null,
+        isVerified = false,
+        isScam = false,
+        isFake = false,
+        isPremium = false,
+        isContact = false,
+        isMutualContact = false,
+        isSupport = false,
+        type = UserType.Regular,
+        haveAccess = true,
+    )
 
     private companion object {
         /** `AUTH_REQUEST_TIMEOUT` of `core:data`: logging out is an authentication request. */

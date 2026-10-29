@@ -12,7 +12,16 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.EditChatInfoScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.DiscussionPickerContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -63,10 +72,66 @@ class ProfileAccessibilityChecksTest {
         }
 
     @Test
+    fun profileWithId() =
+        check {
+            ProfileScreen(
+                state = ProfilePreviewData.withId,
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+                onEditContact = {},
+            )
+        }
+
+    @Test
+    fun chatInfoWithId() =
+        check {
+            ChatInfoScreen(
+                state = ChatInfoPreviewData.group.copy(id = -1001234567890),
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+            )
+        }
+
+    @Test
     fun members() = check { ChatMembersScreen(ChatInfoPreviewData.membersPage, {}, {}) }
 
     @Test
     fun memberRights() = check { MemberRightsScreen(ChatInfoPreviewData.adminRights, {}, {}) }
+
+    @Test
+    fun recentActions() = check { RecentActionsScreen(RecentActionsPreviewData.content, {}, {}) }
+
+    @Test
+    fun statistics() = check { StatisticsScreen(StatisticsPreviewData.supergroup, {}, {}) }
+
+    @Test
+    fun transferOwnership() =
+        check {
+            MemberRightsScreen(
+                ChatInfoPreviewData.ownerRights,
+                onEvent = {},
+                onBack = {},
+                transfer = ChatInfoPreviewData.transferWrongPassword,
+            )
+        }
+
+    @Test
+    fun chatSettings() = check { ChatSettingsScreen(ChatSettingsPreviewData.channel, {}, {}) }
+
+    @Test
+    fun basicGroupSettings() = check { ChatSettingsScreen(ChatSettingsPreviewData.basicGroup, {}, {}) }
+
+    @Test
+    fun joinRequests() = check { JoinRequestsScreen(JoinRequestsPreviewData.content, {}, {}) }
+
+    @Test
+    fun discussionPicker() = check { DiscussionPickerContent(ChatSettingsPreviewData.pickerGroups, {}) }
 
     @Test
     fun permissions() = check { ChatPermissionsScreen(ChatInfoPreviewData.permissions, {}, {}) }

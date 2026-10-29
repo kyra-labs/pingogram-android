@@ -62,6 +62,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.PhoneNumberBanned -> R.string.error_phone_number_banned
         DomainError.PhoneNumberFlood -> R.string.error_phone_number_flood
         DomainError.PhoneNumberOccupied -> R.string.error_phone_number_occupied
+        DomainError.BirthdateInvalid -> R.string.error_birthdate_invalid
         DomainError.CodeInvalid -> R.string.error_code_invalid
         DomainError.CodeExpired -> R.string.error_code_expired
         DomainError.PasswordInvalid -> R.string.error_password_invalid
@@ -96,5 +97,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.QrLoginExpired -> R.string.error_qr_login_expired
         DomainError.CallPrivacyRestricted -> R.string.error_call_privacy_restricted
         DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
+        DomainError.MessageViewersUnavailable -> R.string.error_message_viewers_unavailable
+        DomainError.PollClosed -> R.string.error_poll_closed
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

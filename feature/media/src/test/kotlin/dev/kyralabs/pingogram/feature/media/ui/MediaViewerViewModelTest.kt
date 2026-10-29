@@ -558,6 +558,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                         isPlaying = false,
                         showsFrame = false,
                         progress = viewModel.content.playback!!.progress,
+                        buffered = viewModel.content.playback!!.buffered,
                     ),
                     viewModel.content.playback,
                 )
@@ -581,6 +582,24 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 runCurrent()
 
                 assertEquals(listOf("play:$videoPath:Video"), player.calls)
+            }
+
+        @Test
+        fun `a video that supports streaming plays as it downloads, which the viewer leaves to the stream`() =
+            runViewModelTest {
+                media.serve(listOf(message(1, videoContent(1, supportsStreaming = true))))
+                files.setFile(fullFileId(1), FileState.NotDownloaded(12_000_000, canBeDownloaded = true))
+                val viewModel = viewModel(messageId = 1)
+                send(viewModel, MediaViewerEvent.Started)
+
+                assertEquals(listOf("play:stream:${fullFileId(1)}:Video"), player.calls)
+                assertTrue(files.calls.none { it.startsWith("download:${fullFileId(1)}:") })
+
+                // The stream downloading it does not start the video again.
+                files.setFile(fullFileId(1), FileState.Downloading(1_000_000, 12_000_000, isActive = true))
+                files.setFile(fullFileId(1), FileState.Downloaded(videoPath, 12_000_000))
+                runCurrent()
+                assertEquals(listOf("play:stream:${fullFileId(1)}:Video"), player.calls)
             }
 
         @Test

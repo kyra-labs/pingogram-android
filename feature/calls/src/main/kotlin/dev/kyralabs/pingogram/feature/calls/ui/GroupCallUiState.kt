@@ -17,6 +17,9 @@ sealed interface GroupCallUiState {
     /** No voice chat: the screen closes. */
     data object Closed : GroupCallUiState
 
+    /** A conference call's link opened the screen: it asks before it joins (`docs/adr/0025-conference-calls.md`). */
+    data object ConfirmConference : GroupCallUiState
+
     /**
      * Before joining: the microphone permission is missing, which a voice chat needs to speak. The screen says why,
      * then asks Android ([canAsk]) or, after a final refusal, offers the app's settings.
@@ -38,6 +41,9 @@ sealed interface GroupCallUiState {
     data class InCall(
         val chat: GroupCallChat,
         val stage: GroupCallStage,
+        /** A conference call (`docs/adr/0025-conference-calls.md`): no chat, and [emojis] to compare. */
+        val isConference: Boolean = false,
+        val emojis: ImmutableList<String> = persistentListOf(),
         /** "01:23" once connected. */
         val duration: String? = null,
         /** How many are in it; null while TDLib has not said. */
@@ -52,6 +58,8 @@ sealed interface GroupCallUiState {
         val isHandRaised: Boolean = false,
         /** The user may end it for everyone. */
         val canEnd: Boolean = false,
+        /** A conference call: "Add people" heads the participants (`docs/adr/0025-conference-calls.md`). */
+        val canInvite: Boolean = false,
         val route: AudioRoute? = null,
         val routes: ImmutableList<AudioRoute> = persistentListOf(),
         val video: GroupCallVideoUi = GroupCallVideoUi(),
@@ -59,10 +67,17 @@ sealed interface GroupCallUiState {
         /** The controls apply: joined and not over. */
         val hasControls: Boolean get() = stage !is GroupCallStage.Ended
 
+        /** The users among the participants, whom "Add people" leaves out. */
+        fun participantUserIds(): Set<Long> =
+            participants.mapNotNullTo(mutableSetOf()) { row -> row.id.takeIf { row.key.startsWith(USER_KEY) } }
+
         /** There is video to watch, which picture-in-picture keeps showing: a live stream, or others' videos. */
         fun watches(): Boolean = isStream || video.remote.isNotEmpty()
     }
 }
+
+/** The start of a user participant's [GroupCallParticipantUi.key]. */
+private const val USER_KEY = "user:"
 
 /** The user's camera in the voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
 @Immutable
@@ -74,12 +89,19 @@ data class GroupCallVideoUi(
     val canSwitchCamera: Boolean = false,
     /** The others' videos the screen shows, the pinned one first: at most four (the manager's choice). */
     val remote: ImmutableList<ParticipantVideoUi> = persistentListOf(),
+    /** "Share screen" shows: connected, not a stream (`docs/adr/0026-screen-sharing.md`). */
+    val canShareScreen: Boolean = false,
+    /** The user shares their screen: the "You're sharing your screen" pill shows. */
+    val isSharingScreen: Boolean = false,
 )
 
-/** A participant's video tile: whose it is, where its frames come from, and whether the user pinned it. */
+/**
+ * A participant's video tile: whose it is, where its frames come from, whether the user pinned it, and whether it is
+ * their shared screen ([isScreen]: shown whole, not cropped).
+ */
 @Immutable
 data class ParticipantVideoUi(
-    /** The participant's row key: "user:42" or "chat:-100". */
+    /** The participant's row key: "user:42" or "chat:-100"; pinning goes by it. */
     val key: String,
     /** The video's endpoint, which the tile's renderer receives the frames of. */
     val endpointId: String,
@@ -88,7 +110,11 @@ data class ParticipantVideoUi(
     val isPaused: Boolean,
     val isPinned: Boolean,
     val isSpeaking: Boolean,
-)
+    val isScreen: Boolean = false,
+) {
+    /** Unique among the tiles: a participant may show their camera and their screen. */
+    val tileKey: String get() = if (isScreen) "$key:screen" else key
+}
 
 /** The voice chat's chat: its title and photo. */
 @Immutable
@@ -162,6 +188,12 @@ sealed interface GroupCallEvent {
     /** "Not now" before the permission request: nothing is joined. */
     data object DismissMicrophone : GroupCallEvent
 
+    /** "Join" on a conference call's link. */
+    data object JoinConference : GroupCallEvent
+
+    /** "Not now" on a conference call's link: nothing is joined, and the screen closes. */
+    data object DeclineConference : GroupCallEvent
+
     /** Turns the camera on (asking for the permission first where needed) or off. */
     data object ToggleCamera : GroupCallEvent
 
@@ -171,6 +203,19 @@ sealed interface GroupCallEvent {
     /** Pins the video of the participant with this [key] on this device, or unpins it if it is pinned. */
     data class TogglePin(
         val key: String,
+    ) : GroupCallEvent
+
+    /** Shares the screen (Android's consent dialog first) or stops sharing it. */
+    data object ToggleScreenSharing : GroupCallEvent
+
+    /** Android's consent dialog closed: the user agreed ([granted]; its result reached the engine) or not. */
+    data class ScreenSharingResult(
+        val granted: Boolean,
+    ) : GroupCallEvent
+
+    /** "Add" in "Add people": invites [userIds] into the conference call. */
+    data class Invite(
+        val userIds: List<Long>,
     ) : GroupCallEvent
 
     /** Android answered the camera's permission request. */

@@ -4,6 +4,10 @@
     <string name="call_someone">Someone</string>
     <!-- A voice chat's name while its chat's title is not known yet (Android's call list, a car, a watch). -->
     <string name="voice_chat">Voice chat</string>
+    <string name="group_call">Group call</string>
+    <string name="group_call_confirm_title">Join the group call?</string>
+    <string name="group_call_confirm_text">Anyone with its link can join. It is end-to-end encrypted, and you join with your microphone off.</string>
+    <string name="group_call_join">Join</string>
 
     <!-- The call's stage under the name (call screen, ongoing notification). -->
     <string name="call_status_requesting">Calling…</string>
@@ -30,6 +34,7 @@
     <string name="call_key_description">Encryption key: %1$s</string>
     <string name="call_key_explain">Explain the emojis</string>
     <!-- %1$s: the other person's name. -->
+    <string name="group_call_key_explanation">If everyone in the call sees the same emojis, it is end-to-end encrypted.</string>
     <string name="call_key_explanation">If %1$s sees the same emojis, your call is end-to-end encrypted.</string>
 
     <string name="call_minimize">Back to the app</string>
@@ -47,6 +52,11 @@
     <!-- For screen readers: the user's own picture, and the other person's video. %1$s: their name. -->
     <string name="call_self_view">Your camera</string>
     <string name="call_remote_video">Video of %1$s</string>
+    <string name="call_remote_screen">Screen shared by %1$s</string>
+    <string name="call_share_screen">Share screen</string>
+    <string name="call_stop_sharing">Stop sharing</string>
+    <string name="call_sharing_screen">You\'re sharing your screen</string>
+    <string name="call_sharing_stop">Stop</string>
     <!-- Over the other person's video while it does not come: their app is in the background, or the connection is weak. -->
     <string name="call_video_paused">Video paused</string>
     <string name="group_call_pin">Pin video</string>
@@ -114,6 +124,8 @@
     <!-- What a tap on a row does, for screen readers. -->
     <string name="recent_calls_call_back">Call back</string>
     <string name="recent_calls_video_call_back">Video call back</string>
+    <string name="recent_calls_join">Join the group call</string>
+    <string name="recent_calls_group_call_ended">This group call has ended</string>
     <string name="recent_calls_row_menu">More options</string>
     <string name="recent_calls_delete">Delete from call history</string>
     <string name="recent_calls_deleted">Call deleted from your history</string>
@@ -138,4 +150,26 @@
     <string name="call_rating_note">Your rating goes to Telegram, which uses it to improve calls.</string>
     <string name="call_rating_not_now">Not now</string>
     <string name="call_rating_send">Send</string>
+    <string name="group_call_add_people">Add people</string>
+    <string name="call_end_upgraded">Moving to a group call…</string>
+    <string name="call_invite_title">Add people</string>
+    <string name="call_invite_text">Each gets an invitation to the call in their chat with you.</string>
+    <string name="call_invite_search">Search contacts</string>
+    <string name="call_invite_clear">Clear search</string>
+    <string name="call_invite_no_matches">No contacts found</string>
+    <string name="call_invite_no_contacts">No contacts to invite</string>
+    <string name="call_invite_cancel">Cancel</string>
+    <string name="call_invite_add">Add</string>
+    <plurals name="call_invite_add_count">
+        <item quantity="one">Add %d</item>
+        <item quantity="other">Add %d</item>
+    </plurals>
+    <plurals name="call_invite_sent">
+        <item quantity="one">Invitation sent</item>
+        <item quantity="other">%d invitations sent</item>
+    </plurals>
+    <plurals name="call_invite_refused">
+        <item quantity="one">%d person couldn\'t be invited.</item>
+        <item quantity="other">%d people couldn\'t be invited.</item>
+    </plurals>
 </resources>

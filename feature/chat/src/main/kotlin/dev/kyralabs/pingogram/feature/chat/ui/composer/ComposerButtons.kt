@@ -23,6 +23,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -66,6 +67,7 @@ internal fun SendButton(
             modifier =
                 Modifier
                     .size(IconButtonDefaults.mediumContainerSize())
+                    .testTag(SEND_BUTTON_TEST_TAG)
                     .longPress(enabled, openMenu)
                     .semantics {
                         customActions =
@@ -226,3 +228,6 @@ internal fun SendOptionsMenu(
         }
     }
 }
+
+/** The send button, for `benchmark/`'s journeys. */
+internal const val SEND_BUTTON_TEST_TAG = "composer_send"

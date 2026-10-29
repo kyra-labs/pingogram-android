@@ -2,14 +2,17 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
 import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
@@ -18,6 +21,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -76,6 +80,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 messageActionRepository = messageActions,
                 sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
+                composerSettings = FakeComposerSettingsRepository(),
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,
@@ -88,40 +93,56 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 audioPlayer = player,
                 voiceRecorder = FakeVoiceRecorder(),
                 voiceNoteRepository = FakeVoiceNoteRepository(),
+                videoNotes =
+                    VideoNoteRecording(
+                        FakeVideoNoteRecorder(),
+                        FakeVideoNoteRepository(),
+                        FakeComposerSettingsRepository(),
+                    ),
                 sendAsRepository = FakeSendAsRepository(),
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,
                 chatJoinRepository = FakeChatJoinRepository(),
-                threadRepositories =
-                    ThreadRepositories(
-                        FakePinnedMessageRepository(),
-                        FakeHiddenPinsRepository(),
-                        FakeForumTopicRepository(),
-                        FakeMessageThreadRepository(),
-                    ),
+                threadRepositories = threadRepositories(),
                 shareInbox = ShareInbox(),
                 botButtonRepository = FakeBotButtonRepository(),
                 botInfoRepository = FakeBotInfoRepository(),
                 botStartInbox = BotStartInbox(),
-                inlineBotRepositories =
-                    InlineBotRepositories(
-                        FakeInlineBotRepository(),
-                        FakeDeviceLocationRepository(),
-                        InlineLocationConsent(),
-                        BotStartInbox(),
-                    ),
-                translationRepositories =
-                    TranslationRepositories(
-                        FakeTranslationRepository(),
-                        FakeDeviceLanguageDetector(),
-                        FakeAppLanguageRepository(),
-                        FakeHiddenTranslateBarsRepository(),
-                    ),
+                inlineBotRepositories = inlineBotRepositories(),
+                translationRepositories = translationRepositories(),
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
                 customEmojiRepository = FakeCustomEmojiRepository(),
+                pollRepository = FakePollRepository(),
+                scheduledMessageRepository = FakeScheduledMessageRepository(),
+                targetPreferences = TargetPreferences(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
     }
+
+    private fun threadRepositories() =
+        ThreadRepositories(
+            FakePinnedMessageRepository(),
+            FakeHiddenPinsRepository(),
+            FakeForumTopicRepository(),
+            FakeMessageThreadRepository(),
+            FakeSavedMessagesTopicRepository(),
+        )
+
+    private fun inlineBotRepositories() =
+        InlineBotRepositories(
+            FakeInlineBotRepository(),
+            FakeDeviceLocationRepository(),
+            InlineLocationConsent(),
+            BotStartInbox(),
+        )
+
+    private fun translationRepositories() =
+        TranslationRepositories(
+            FakeTranslationRepository(),
+            FakeDeviceLanguageDetector(),
+            FakeAppLanguageRepository(),
+            FakeHiddenTranslateBarsRepository(),
+        )
 }

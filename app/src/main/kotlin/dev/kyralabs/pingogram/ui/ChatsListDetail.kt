@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.rememberExtraPaneWidth
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.trace.OpenChatTrace
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
@@ -95,7 +96,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   opened in it are popped), then the conversation, back to the list alone or to [NoChatSelected] beside it.
  *   Selection mode in the list handles back first, and never changes the chat shown.
  * - **Media**: a photo, video or GIF tapped in the conversation opens through [onOpenMedia], which pushes the media
- *   viewer full screen above the whole layout, whichever pane it was tapped in.
+ *   viewer full screen above the whole layout, whichever pane it was tapped in. So do the chat's scheduled messages,
+ *   from the conversation's bar ([onOpenScheduledMessages]).
  * - **Containers**: with two panes or more, each is its own rounded container on the window's `surfaceContainer`
  *   ([paneContainer], `core:ui`). A drag handle between the list and the conversation resizes the list
  *   ([PaneDragHandle]) between Material's fixed widths and an even split; with three panes, another between the
@@ -105,6 +107,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   above the whole layout as the archive is.
  * - **Stories**: a story ring above the chats opens [onOpenStory], the stories viewer full screen above the whole
  *   layout, as the media viewer is.
+ * - **Folders**: a folder tab's "Edit folder" opens [onEditFolder] with its folder (null for "All chats"), pushed
+ *   above the whole layout as the archive is.
  * - **Search** ([search], `docs/DESIGN_SYSTEM.md` §6 "Global search"): docked, it takes the list pane's place
  *   ([SearchPane]), growing out of the search button ([SearchOrList]). With two panes a chat it found shows in the
  *   detail pane as a tapped one does, and a message opens its conversation there at the message; with one pane (a
@@ -132,8 +136,10 @@ internal fun ChatsListDetail(
     onOpenChatInfo: (chatId: Long) -> Unit = {},
     onEditContact: (userId: Long) -> Unit = {},
     onOpenStory: (chatId: Long) -> Unit = {},
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
+    onOpenScheduledMessages: (chatId: Long) -> Unit = {},
 ) {
     val navigator = rememberChatsPaneNavigator(chatsPaneScaffoldDirective(currentWindowAdaptiveInfoV2()))
     FollowScaffoldDirective(navigator)
@@ -190,6 +196,7 @@ internal fun ChatsListDetail(
                                 onOpenNewChat = onOpenNewChat,
                                 onOpenStory = onOpenStory,
                                 openChatId = shownChatId,
+                                onEditFolder = onEditFolder,
                             )
                         }
                     }
@@ -213,6 +220,7 @@ internal fun ChatsListDetail(
                             onBack = backUnless(listVisible && shownChatId != null, opener::closeChat),
                             modifier = Modifier.escapeToList(keyboard, enabled = listVisible),
                             focusComposer = keyboard.focusesComposerOf(chatId),
+                            onOpenScheduledMessages = onOpenScheduledMessages,
                         )
                     } else {
                         NoChatSelected()
@@ -402,6 +410,7 @@ private class PaneOpener(
         chatId: Long,
         messageId: Long?,
     ) {
+        OpenChatTrace.begin(chatId)
         if (!twoPanes.value) {
             message.value = null
             callbacks.value.onOpenChat(chatId, messageId)
@@ -412,9 +421,7 @@ private class PaneOpener(
         val shownChatId = ChatsPaneContent.of(current?.contentKey)?.chatId
         when {
             // The conversation shows already: at the message, if any, as its pane is keyed by it.
-            shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Detail -> {
-                Unit
-            }
+            shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Detail -> {}
 
             shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Extra -> {
                 show(pane = null)

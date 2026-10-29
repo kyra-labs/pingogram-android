@@ -2,16 +2,22 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactJoinedRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
 import dev.kyralabs.pingogram.core.domain.model.NotificationPrompt
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PushDelivery
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeAccountNotificationsRepository
+import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeepConnectedRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +37,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -73,12 +80,17 @@ class NotificationSettingsViewModelTest {
     ) = TdApi.ScopeNotificationSettings(muteFor, 0, showPreview, true, false, 0, true, false, false)
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
+    private val deviceAccounts = FakeDeviceAccountsRepository(isAvailable = false)
+    private val accountNotifications = FakeAccountNotificationsRepository()
+
     private fun TestScope.viewModel(pushDelivery: PushDelivery = PushDelivery.TdlibConnection) =
         NotificationSettingsViewModel(
             TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
             keepConnected,
             prompt,
+            TdlibContactJoinedRepository(client),
             pushDelivery,
+            NotificationAccounts(deviceAccounts, accountNotifications),
         ).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: NotificationSettingsViewModel): List<NotificationSettingsEffect> {
@@ -186,6 +198,21 @@ class NotificationSettingsViewModelTest {
         }
 
     @Test
+    fun `story notifications turned off show at once and are saved, the poster's name kept`() =
+        runTest {
+            val viewModel = viewModel()
+            val none = settings().copy(stories = StoryNotifications.None)
+
+            send(viewModel, NotificationSettingsEvent.ChangeScope(NotificationScope.PrivateChats, none))
+
+            assertEquals(none, viewModel.settings[NotificationScope.PrivateChats])
+            val sent = client.sentOf<TdApi.SetScopeNotificationSettings>().single().notificationSettings
+            assertFalse(sent.useDefaultMuteStories)
+            assertTrue(sent.muteStories)
+            assertTrue(sent.showStoryPoster)
+        }
+
+    @Test
     fun `a change that cannot be saved flips back and says why`() =
         runTest {
             client.on(TdApi.SetScopeNotificationSettings::class, TdResult.Failure(TdError(500, "Request timeout")))
@@ -265,6 +292,68 @@ class NotificationSettingsViewModelTest {
             assertEquals(listOf(NotificationSettingsEffect.OpenChannelSettings(NotificationScope.GroupChats)), effects)
         }
 
+    // Accounts (docs/adr/0031-multiple-accounts.md)
+
+    @Test
+    fun `with one account there is no switch for all accounts`() =
+        runTest {
+            assertNull(viewModel().state.fromAllAccounts)
+        }
+
+    @Test
+    fun `with several accounts the switch shows, saves, and channels are the shown account's`() =
+        runTest {
+            deviceAccounts.accountList.value =
+                persistentListOf(account(0, isActive = false), account(1, isActive = true))
+            val viewModel = viewModelWithAccounts()
+            val effects = effectsOf(viewModel)
+
+            assertEquals(true, viewModel.state.fromAllAccounts)
+            assertEquals(1, viewModel.state.accountSlot)
+
+            send(viewModel, NotificationSettingsEvent.SetFromAllAccounts(false))
+            assertEquals(false, accountNotifications.fromAllAccounts.value)
+            assertEquals(false, viewModel.state.fromAllAccounts)
+
+            send(viewModel, NotificationSettingsEvent.OpenChannelSettings(NotificationScope.GroupChats))
+            assertEquals(
+                listOf(NotificationSettingsEffect.OpenChannelSettings(NotificationScope.GroupChats, slot = 1)),
+                effects,
+            )
+        }
+
+    @Test
+    fun `a switch for all accounts that cannot be saved says why`() =
+        runTest {
+            deviceAccounts.accountList.value =
+                persistentListOf(account(0, isActive = true), account(1, isActive = false))
+            accountNotifications.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModelWithAccounts()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, NotificationSettingsEvent.SetFromAllAccounts(false))
+
+            assertEquals(listOf(NotificationSettingsEffect.ShowError(DomainError.Unknown(0, "Disk full"))), effects)
+        }
+
+    private fun TestScope.viewModelWithAccounts() =
+        NotificationSettingsViewModel(
+            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
+            keepConnected,
+            prompt,
+            TdlibContactJoinedRepository(client),
+            PushDelivery.TdlibConnection,
+            NotificationAccounts(
+                FakeDeviceAccountsRepository(accounts = deviceAccounts.accountList.value),
+                accountNotifications,
+            ),
+        ).also { runCurrent() }
+
+    private fun account(
+        slot: Int,
+        isActive: Boolean,
+    ) = DeviceAccount(slot = slot, user = null, unreadChats = 0, isActive = isActive)
+
     // Keep connected
 
     @Test
@@ -303,6 +392,39 @@ class NotificationSettingsViewModelTest {
 
             assertFalse(viewModel.state.isKeepConnectedOffered)
             assertFalse(keepConnected.keepConnected.value)
+        }
+
+    // Contact joined Telegram
+
+    @Test
+    fun `contact joined shows the account's option and sets it`() =
+        runTest {
+            client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueBoolean(true)))
+            client.on(TdApi.SetOption::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            assertEquals(false, viewModel.state.contactJoined)
+
+            send(viewModel, NotificationSettingsEvent.SetContactJoined(true))
+
+            assertEquals(true, viewModel.state.contactJoined)
+            val sent = client.sentOf<TdApi.SetOption>().single()
+            assertEquals("disable_contact_registered_notifications", sent.name)
+            assertFalse((sent.value as TdApi.OptionValueBoolean).value)
+        }
+
+    @Test
+    fun `contact joined that Telegram refuses flips back and says why`() =
+        runTest {
+            client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueEmpty()))
+            client.on(TdApi.SetOption::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 5")))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertEquals(true, viewModel.state.contactJoined)
+
+            send(viewModel, NotificationSettingsEvent.SetContactJoined(false))
+
+            assertEquals(true, viewModel.state.contactJoined)
+            assertTrue((effects.single() as NotificationSettingsEffect.ShowError).error is DomainError.FloodWait)
         }
 
     // Reset

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettingsChange
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -135,6 +136,8 @@ class TdlibNotificationSettingsRepositoryTest {
                             showPreview = true,
                             pinnedMessages = false,
                             mentions = true,
+                            stories = StoryNotifications.None,
+                            showStoryPoster = false,
                         ),
                     ),
                 ),
@@ -143,14 +146,21 @@ class TdlibNotificationSettingsRepositoryTest {
         }
 
     @Test
-    fun `changing the defaults keeps the sounds and the stories' settings`() =
+    fun `changing the defaults keeps the sounds`() =
         runTest {
             answerScope()
             answerOk()
 
             repository.setScopeSettings(
                 NotificationScope.GroupChats,
-                ScopeNotificationSettings(isMuted = true, showPreview = false, pinnedMessages = true, mentions = false),
+                ScopeNotificationSettings(
+                    isMuted = true,
+                    showPreview = false,
+                    pinnedMessages = true,
+                    mentions = false,
+                    stories = StoryNotifications.None,
+                    showStoryPoster = false,
+                ),
             )
 
             val sent = client.sentOf<TdApi.SetScopeNotificationSettings>().single()
@@ -170,6 +180,26 @@ class TdlibNotificationSettingsRepositoryTest {
                     settings.disablePinnedMessageNotifications,
                     settings.disableMentionNotifications,
                 ),
+            )
+        }
+
+    @Test
+    fun `automatic story notifications leave TDLib's own mute, all and none set it`() =
+        runTest {
+            answerScope()
+            answerOk()
+            val settings =
+                ScopeNotificationSettings(isMuted = false, showPreview = true, pinnedMessages = true, mentions = true)
+
+            StoryNotifications.entries.forEach { stories ->
+                repository.setScopeSettings(NotificationScope.PrivateChats, settings.copy(stories = stories))
+            }
+
+            assertEquals(
+                listOf(true to true, false to false, false to true),
+                client.sentOf<TdApi.SetScopeNotificationSettings>().map {
+                    it.notificationSettings.useDefaultMuteStories to it.notificationSettings.muteStories
+                },
             )
         }
 

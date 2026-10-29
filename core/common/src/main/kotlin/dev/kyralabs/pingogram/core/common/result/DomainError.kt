@@ -54,6 +54,9 @@ sealed interface DomainError {
     /** Another account has the number (`PHONE_NUMBER_OCCUPIED`), when changing the account's number to it. */
     data object PhoneNumberOccupied : DomainError
 
+    /** Telegram does not take the date as a birthday (`BIRTHDAY_INVALID`): in the future, or too long ago. */
+    data object BirthdateInvalid : DomainError
+
     /** A login, email or password recovery code is wrong or empty. */
     data object CodeInvalid : DomainError
 
@@ -199,4 +202,17 @@ sealed interface DomainError {
 
     /** The other person's app is too old for calls with this one (`PARTICIPANT_VERSION_OUTDATED`). */
     data object CallPeerOutdated : DomainError
+
+    // Who saw a message ("Seen by").
+
+    /**
+     * Telegram no longer says who saw the message: it keeps that for a while only (`MSG_TOO_OLD`), and not in groups
+     * beyond a size (`CHAT_TOO_BIG`).
+     */
+    data object MessageViewersUnavailable : DomainError
+
+    // Polls (REQUIREMENTS.md FR-C4).
+
+    /** The poll was closed meanwhile: no one may vote in it or change a vote (`MESSAGE_POLL_CLOSED`). */
+    data object PollClosed : DomainError
 }

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ReplyMarkupFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -44,7 +45,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     /** A repository with the first page of [CHAT] loaded, a chat whose messages have [ids]. */
     private suspend fun TestScope.repositoryWith(vararg ids: Long) =
@@ -372,6 +378,36 @@ class TdlibMessageRepositoryTest {
             val scheduled = message(id = 2).apply { schedulingState = TdApi.MessageSchedulingStateSendAtDate(1, 0) }
 
             client.emit(updateNewMessage(scheduled))
+
+            assertEquals(listOf(1L), repository.ids())
+        }
+
+    @Test
+    fun `a scheduled message sent by Telegram at its time joins the history as a new message`() =
+        runTest {
+            val repository = repositoryWith(1)
+            val schedule = TdApi.MessageSchedulingStateSendAtDate(1, 0)
+            client.emit(
+                updateNewMessage(message(id = SCHEDULED, isOutgoing = true).apply { schedulingState = schedule }),
+            )
+
+            // TDLib deletes the scheduled message and announces the sent one, with an id of the history's.
+            client.emit(updateDeleteMessages(CHAT, SCHEDULED))
+            client.emit(updateNewMessage(message(id = 2, isOutgoing = true)))
+
+            assertEquals(listOf(2L, 1L), repository.ids())
+        }
+
+    @Test
+    fun `a message scheduled from this device stays out of the history once Telegram has it`() =
+        runTest {
+            val repository = repositoryWith(1)
+            val schedule = TdApi.MessageSchedulingStateSendAtDate(1, 0)
+            val pending = message(id = 1_001, isOutgoing = true, sendingState = pendingState())
+            client.emit(updateNewMessage(pending.apply { schedulingState = schedule }))
+
+            val sent = message(id = SCHEDULED, isOutgoing = true).apply { schedulingState = schedule }
+            client.emit(updateMessageSendSucceeded(sent, oldMessageId = 1_001))
 
             assertEquals(listOf(1L), repository.ids())
         }
@@ -793,6 +829,9 @@ class TdlibMessageRepositoryTest {
     private companion object {
         const val CHAT = 100L
         const val OTHER_CHAT = 200L
+
+        /** A scheduled message's id, which is none of the history's. */
+        const val SCHEDULED = 1L shl 40
 
         /** The domain message [serveHistory] answers with for [id] in [CHAT]. */
         fun loaded(id: Long) = message(id = id, chatId = CHAT).toMessage()

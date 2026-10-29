@@ -25,6 +25,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * or pop-up; `Notification.suppressAlertingDueToGrouping`), and the summary never alerts itself. This keeps the
  * channel's sound for the notifications that do alert, unlike a separate silent channel, which users would have to
  * set up twice, and unlike `setOnlyAlertOnce`, which would silence every later message of the chat too.
+ *
+ * **Accounts** (`docs/adr/0031-multiple-accounts.md`). Each account's notifications are a bundle of their own in its
+ * own channels ([PingogramChannel.idFor]); while several accounts are signed in, each of its notifications names the
+ * account by its first name ([accountName]) in its header, as Telegram's do (the subtext: "Pingogram • Ada • now").
  */
 @Singleton
 internal class ConversationNotificationBuilder
@@ -45,6 +49,7 @@ internal class ConversationNotificationBuilder
             conversation: ConversationNotification,
             alert: Boolean,
             shortcutId: String?,
+            accountName: String? = null,
         ): Notification {
             val style =
                 NotificationCompat
@@ -58,9 +63,10 @@ internal class ConversationNotificationBuilder
             }
             val count = conversation.totalCount
             return NotificationCompat
-                .Builder(context, conversation.channel.id)
+                .Builder(context, conversation.channel.idFor(conversation.slot))
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+                .setSubText(accountName)
                 .setStyle(style)
                 .setCategory(
                     if (conversation.isCall) NotificationCompat.CATEGORY_CALL else NotificationCompat.CATEGORY_MESSAGE,
@@ -68,13 +74,14 @@ internal class ConversationNotificationBuilder
                 .setShowWhen(true)
                 .setNumber(count)
                 .setAutoCancel(true)
-                .setContentIntent(NotificationIntents.openChatPendingIntent(context, conversation.chatId))
-                .setDeleteIntent(NotificationAction.dismissIntent(context, conversation))
-                .setGroup(GROUP_KEY)
+                .setContentIntent(
+                    NotificationIntents.openChatPendingIntent(context, conversation.chatId, conversation.slot),
+                ).setDeleteIntent(NotificationAction.dismissIntent(context, conversation))
+                .setGroup(groupKey(conversation.slot))
                 .setGroupAlertBehavior(
                     if (alert) NotificationCompat.GROUP_ALERT_ALL else NotificationCompat.GROUP_ALERT_SUMMARY,
                 ).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                .setPublicVersion(publicVersion(conversation.channel, count))
+                .setPublicVersion(publicVersion(conversation.channel.idFor(conversation.slot), count, accountName))
                 .apply {
                     if (shortcutId != null) {
                         setShortcutId(shortcutId)
@@ -86,18 +93,50 @@ internal class ConversationNotificationBuilder
         }
 
         /**
+         * The one notification of every locked chat (`docs/adr/0029-locked-chats.md`): "New message", without the
+         * chat's name, sender, picture or text, in the Private chats channel whatever the chat (a channel would tell
+         * its kind), with no conversation shortcut and no actions. Its tap opens the locked chats behind the passcode.
+         * It alerts as a conversation's notification does, only if [alert].
+         */
+        fun locked(
+            alert: Boolean,
+            slot: Int = 0,
+            accountName: String? = null,
+        ): Notification =
+            NotificationCompat
+                .Builder(context, PingogramChannel.PrivateChats.idFor(slot))
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+                .setSubText(accountName)
+                .setContentText(context.getString(R.string.notification_new_message))
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setShowWhen(true)
+                .setAutoCancel(true)
+                .setContentIntent(NotificationIntents.openLockedChatsPendingIntent(context, slot))
+                .setGroup(groupKey(slot))
+                .setGroupAlertBehavior(
+                    if (alert) NotificationCompat.GROUP_ALERT_ALL else NotificationCompat.GROUP_ALERT_SUMMARY,
+                ).setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .build()
+
+        /**
          * The summary of the bundle, which Android shows in place of the conversations on surfaces without room for
          * them (a watch, a collapsed group); it opens the app. It never alerts.
          */
-        fun summary(totalCount: Int): Notification =
+        fun summary(
+            totalCount: Int,
+            slot: Int = 0,
+            accountName: String? = null,
+        ): Notification =
             NotificationCompat
-                .Builder(context, PingogramChannel.Other.id)
+                .Builder(context, PingogramChannel.Other.idFor(slot))
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+                .setSubText(accountName)
                 .setContentText(newMessages(totalCount))
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setContentIntent(NotificationIntents.openAppPendingIntent(context))
-                .setGroup(GROUP_KEY)
+                .setGroup(groupKey(slot))
                 .setGroupSummary(true)
                 .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
                 .setAutoCancel(true)
@@ -120,13 +159,15 @@ internal class ConversationNotificationBuilder
 
         /** The lock screen's version when the user hides sensitive content there: how many messages, from whom not. */
         private fun publicVersion(
-            channel: PingogramChannel,
+            channelId: String,
             count: Int,
+            accountName: String?,
         ): Notification =
             NotificationCompat
-                .Builder(context, channel.id)
+                .Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+                .setSubText(accountName)
                 .setContentText(newMessages(count))
                 .build()
 
@@ -162,8 +203,10 @@ internal class ConversationNotificationBuilder
                 .build()
 
         private companion object {
-            /** The one bundle of every chat's notification. */
+            /** The one bundle of every chat's notification, one per account. */
             const val GROUP_KEY = "dev.kyralabs.pingogram.MESSAGES"
+
+            fun groupKey(slot: Int) = if (slot == 0) GROUP_KEY else "$GROUP_KEY.$slot"
 
             const val ME_KEY = "me"
         }

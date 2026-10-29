@@ -13,7 +13,8 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import java.time.Instant
 
 /** A search in one chat: what was asked, and the answers the test gives. */
@@ -74,7 +75,10 @@ internal class FakeGroupInfoRepository : GroupInfoRepository {
 
     var answer: suspend (String) -> Outcome<GroupMembersPage> = { Outcome.Success(page()) }
 
-    override fun groupInfo(chatId: Long): Flow<Outcome<GroupInfo>> = emptyFlow()
+    /** What [groupInfo] reports; nothing until a test sets it. */
+    val info = MutableStateFlow<Outcome<GroupInfo>?>(null)
+
+    override fun groupInfo(chatId: Long): Flow<Outcome<GroupInfo>> = info.filterNotNull()
 
     override suspend fun members(
         chatId: Long,

@@ -269,6 +269,13 @@ class StoryViewerViewModel internal constructor(
                 videoPlayer.setMuted(muted.value)
             }
 
+            StoryViewerEvent.Unmute -> {
+                if (muted.value) {
+                    muted.value = false
+                    videoPlayer.setMuted(false)
+                }
+            }
+
             is StoryViewerEvent.ReplyFocused -> {
                 setPaused(Pause.Typing, event.focused)
             }

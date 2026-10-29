@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 
@@ -61,68 +62,83 @@ interface AttachmentRepository {
     suspend fun readContact(uri: String): Outcome<Contact>
 
     /**
-     * Sends [attachments] to chat [chatId] as [options] say, as a reply to message [replyToMessageId] of the chat if
-     * it is not null: photos and videos grouped into albums, documents into albums of documents, at most ten
-     * messages each, in their order. [caption] goes with the first photo or video, or with the last document. Succeeds
-     * once TDLib accepted every message, which it then shows as being sent while it uploads. The copies of attachments
-     * that were not sent are deleted; on success none are left to the caller.
+     * Sends [attachments] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null: photos and
+     * videos grouped into albums, documents into albums of documents, at most ten messages each, in their order.
+     * [caption] goes with the first photo or video, or with the last document. Succeeds once TDLib accepted every
+     * message, which it then shows as being sent while it uploads. The copies of attachments that were not sent are
+     * deleted; on success none are left to the caller.
      */
     suspend fun send(
         chatId: Long,
         attachments: List<Attachment>,
         caption: FormattedText,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 
-    /** Sends [contact] to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not null. */
+    /** Sends [contact] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. */
     suspend fun sendContact(
         chatId: Long,
         contact: Contact,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 
     /**
-     * Sends [location], the device's, to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not
+     * Sends [location], the device's, to chat [chatId] as [options] say, replying as [replyTo] says if it is not
      * null: a point, not a live location, with its accuracy as far as Telegram takes it (up to 1.5 km).
      */
     suspend fun sendLocation(
         chatId: Long,
         location: DeviceLocation,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 
     /**
-     * Sends [sticker], picked in the composer's sticker panel, to chat [chatId] as [options] say, replying to
-     * [replyToMessageId] if it is not null. Telegram then puts it first among the recent stickers.
+     * Sends [sticker], picked in the composer's sticker panel, to chat [chatId] as [options] say, replying as
+     * [replyTo] says if it is not null. Telegram then puts it first among the recent stickers.
      */
     suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 
     /**
      * Sends GIF [animation], one TDLib knows already (a saved GIF, a GIF search's result), to chat [chatId] as
-     * [options] say, replying to [replyToMessageId] if it is not null. Telegram then puts it first among the saved
-     * GIFs.
+     * [options] say, replying as [replyTo] says if it is not null. Telegram then puts it first among the saved GIFs.
      */
     suspend fun sendAnimation(
         chatId: Long,
         animation: Animation,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
     ): Outcome<Unit>
 
-    /** Sends [poll] to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not null. */
+    /** Sends [poll] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. */
     suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,
         options: SendOptions = SendOptions(),
-        replyToMessageId: Long? = null,
+        replyTo: ReplyTarget? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Replaces the media of message [messageId] of chat [chatId] with [attachment], prepared as for sending
+     * ([prepare]), with [caption] (an empty one removes it), above the media if [showCaptionAboveMedia] (td_api.tl
+     * `editMessageMedia`). Succeeds once Telegram has the new media, after its upload: the message's content then
+     * changes through TDLib's update. The attachment's copy is deleted once TDLib answered, whatever the answer; none
+     * is left to the caller. Each message must be one TDLib lets edit its media (`MessageProperties.canEditMedia`); in
+     * an album a photo or video replaces a photo or video, a file a file.
+     */
+    suspend fun editMedia(
+        chatId: Long,
+        messageId: Long,
+        attachment: Attachment,
+        caption: FormattedText,
+        showCaptionAboveMedia: Boolean = false,
     ): Outcome<Unit>
 
     /**

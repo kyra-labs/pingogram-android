@@ -13,6 +13,12 @@ import org.robolectric.Shadows.shadowOf
 /** A compact phone in portrait (`docs/TESTING.md`). */
 const val COMPACT = "w411dp-h891dp-xxhdpi"
 
+/** A tall compact phone, for the 200% font goldens, whose text needs about twice the height. */
+const val COMPACT_TALL = "w411dp-h1800dp-xxhdpi"
+
+/** Twice the default font scale, the most Android offers (`REQUIREMENTS.md` §6.3). */
+const val FONT_SCALE_200 = 2f
+
 /** A medium window (600–839 dp), e.g. a small tablet or a foldable in portrait, with one pane and the rail. */
 const val MEDIUM = "w700dp-h891dp-xxhdpi"
 

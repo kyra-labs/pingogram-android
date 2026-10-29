@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.VideoNoteEvent
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
@@ -83,6 +84,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.persistentListOf
@@ -98,13 +100,16 @@ import java.time.Instant
  *
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
- * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
+ * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]; its "Replace", while editing a
+ * message whose media can be replaced, goes to [onReplaceMedia]. The attach button, where the
  * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach], and the gallery
  * button at the field's end, while it is empty, the system photo picker through [onGallery]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
- * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
- * picker through [onSendAs]. The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel],
- * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
+ * [onVoiceEvent]), or round video messages once a tap switched it ([recordMode],
+ * `docs/adr/0032-round-video-messages.md`; switching and flipping the camera go to [onVideoNoteEvent]). Where the
+ * user can choose who they send as, that sender's avatar comes first and opens the send-as picker through [onSendAs].
+ * The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel], showing [panel]) in the
+ * keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
  * stickers are sent through [onSendSticker], its GIFs through [onSendAnimation], and what it loads goes to
  * [onPanelEvent]. In a public group or channel the user is not in, a filled "Join" button takes the composer's place
  * ([JoinButton], [onJoin]).
@@ -129,10 +134,13 @@ internal fun ChatBottomBar(
     focus: ComposerFocusState = rememberComposerFocusState(),
     onShowBarMessage: (messageId: Long) -> Unit = {},
     onCloseBar: () -> Unit = {},
+    onReplaceMedia: () -> Unit = {},
     onAttach: () -> Unit = {},
     onGallery: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
+    recordMode: RecordModeUiState = RecordModeUiState(),
+    onVideoNoteEvent: (VideoNoteEvent) -> Unit = {},
     onSendAs: () -> Unit = {},
     panel: EmojiPanelUiState = EmojiPanelUiState(),
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
@@ -178,7 +186,7 @@ internal fun ChatBottomBar(
                     ) {
                         CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
                         InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
-                        BarArea(composer.bar, onShowBarMessage, onCloseBar)
+                        BarArea(composer.bar, onShowBarMessage, onCloseBar, onReplaceMedia)
                         Composer(
                             composer,
                             text,
@@ -186,7 +194,7 @@ internal fun ChatBottomBar(
                             onFocusChanged,
                             focus,
                             AttachInput(onAttach, onGallery),
-                            VoiceInput(recording, onVoiceEvent, drag),
+                            VoiceInput(recording, onVoiceEvent, drag, recordMode, onVideoNoteEvent),
                             panelState,
                             now,
                             onSendAs,
@@ -236,6 +244,7 @@ private fun BarArea(
     bar: ComposerBar?,
     onShow: (messageId: Long) -> Unit,
     onClose: () -> Unit,
+    onReplace: () -> Unit,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(bar) }
@@ -245,7 +254,7 @@ private fun BarArea(
         enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
         exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
     ) {
-        shown?.let { ComposerBarRow(it, onShow, onClose) }
+        shown?.let { ComposerBarRow(it, onShow, onClose, onReplace = onReplace) }
     }
 }
 
@@ -306,7 +315,7 @@ private fun Composer(
     ) {
         val recording = voice.recording
         if (recording != null) {
-            RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
+            RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f), voice.onVideoEvent)
         } else {
             composer.sendAs?.let { SendAsButton(it, onSendAs) }
             ComposerPill(
@@ -363,7 +372,9 @@ private fun RowScope.ComposerAction(
         Appearing(visible = recording == null && (canSend || edit.canBeEmpty)) {
             SaveEditButton(onSave = { send(SendOptions()) })
         }
-        Appearing(visible = recording != null) { RecordButton(recording, voice.drag, voice.onEvent) }
+        Appearing(visible = recording != null) {
+            RecordButton(recording, voice.drag, voice.onEvent, mode = voice.mode, onVideoEvent = voice.onVideoEvent)
+        }
     } else {
         Appearing(visible = canSend && recording == null) {
             SendButton(
@@ -373,7 +384,9 @@ private fun RowScope.ComposerAction(
                 onSchedule = onSchedule,
             )
         }
-        Appearing(visible = !canSend || recording != null) { RecordButton(recording, voice.drag, voice.onEvent) }
+        Appearing(visible = !canSend || recording != null) {
+            RecordButton(recording, voice.drag, voice.onEvent, mode = voice.mode, onVideoEvent = voice.onVideoEvent)
+        }
     }
 }
 
@@ -466,13 +479,16 @@ private data class AttachInput(
 )
 
 /**
- * The voice recording in progress ([recording], null while none), where what the user does with it goes, and where the
- * finger holding the microphone is ([drag]), which the button and the recording bar share.
+ * The voice or video recording in progress ([recording], null while none), where what the user does with it goes, and
+ * where the finger holding the record button is ([drag]), which the button and the recording bar share; what the
+ * button records ([mode]), and where switching it and flipping the camera go ([onVideoEvent]).
  */
 private data class VoiceInput(
     val recording: VoiceRecordingUiState?,
     val onEvent: (VoiceEvent) -> Unit,
     val drag: RecordDrag,
+    val mode: RecordModeUiState,
+    val onVideoEvent: (VideoNoteEvent) -> Unit,
 )
 
 /**

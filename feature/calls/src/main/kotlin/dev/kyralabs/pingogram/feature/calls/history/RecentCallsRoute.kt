@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -13,6 +14,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.ui.GroupCallActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -28,6 +30,7 @@ internal fun RecentCallsRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val calls = LocalCallStarter.current
     val resources = LocalResources.current
+    val context = LocalContext.current
     val showDetails = isDebuggable()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
@@ -35,6 +38,18 @@ internal fun RecentCallsRoute(
             when (effect) {
                 is RecentCallsEffect.Call -> {
                     if (effect.isVideo) calls?.videoCall(effect.userId) else calls?.call(effect.userId)
+                }
+
+                is RecentCallsEffect.JoinGroupCall -> {
+                    GroupCallActivity.openInvitation(context, effect.chatId, effect.messageId)
+                }
+
+                RecentCallsEffect.GroupCallEnded -> {
+                    launch {
+                        snackbarHostState.showSnackbar(
+                            resources.getString(R.string.recent_calls_group_call_ended),
+                        )
+                    }
                 }
 
                 RecentCallsEffect.Deleted -> {

@@ -8,9 +8,11 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.awaitLoggedIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,56 +28,82 @@ import kotlin.time.Duration.Companion.seconds
  * TDLib accepts these offline and carries them out once connected, also after a restart, so nothing is retried here.
  * When a reply or a read fails (logged out meanwhile, a chat the user may no longer write to), the notification is
  * posted again as it was, so it stops showing the reply in progress ([NotificationRenderer.refresh]).
+ *
+ * The action goes to the account whose notification it came from (`docs/adr/0031-multiple-accounts.md`), whichever
+ * account the screens show; nothing is done for an account that left the device.
  */
 @HiltWorker
 class NotificationActionWorker
-    @AssistedInject
     internal constructor(
-        @Assisted context: Context,
-        @Assisted parameters: WorkerParameters,
-        private val authRepository: AuthRepository,
-        private val notificationRepository: NotificationRepository,
+        context: Context,
+        parameters: WorkerParameters,
+        private val accounts: suspend (slot: Int) -> AccountNotificationActions?,
         private val renderer: NotificationRenderer,
         private val builder: ConversationNotificationBuilder,
     ) : CoroutineWorker(context, parameters) {
+        @AssistedInject
+        internal constructor(
+            @Assisted context: Context,
+            @Assisted parameters: WorkerParameters,
+            graphs: AccountGraphs,
+            renderer: NotificationRenderer,
+            builder: ConversationNotificationBuilder,
+        ) : this(
+            context = context,
+            parameters = parameters,
+            accounts = { slot ->
+                graphs.accounts
+                    .first()
+                    .firstOrNull { it.slot == slot }
+                    ?.repositories
+                    ?.let { AccountNotificationActions(it.authRepository(), it.notificationRepository()) }
+            },
+            renderer = renderer,
+            builder = builder,
+        )
+
         override suspend fun doWork(): Result {
             val action = NotificationAction.fromData(inputData) ?: return Result.failure()
-            val loggedIn = withTimeoutOrNull(LOGIN_TIMEOUT) { authRepository.awaitLoggedIn() } == true
-            val done = loggedIn && perform(action) is Outcome.Success
-            if (!done && action !is NotificationAction.Dismiss) renderer.refresh(action.groupId)
+            val account = accounts(action.slot)
+            val done =
+                account != null &&
+                    withTimeoutOrNull(LOGIN_TIMEOUT) { account.auth.awaitLoggedIn() } == true &&
+                    account.notifications.perform(action) is Outcome.Success
+            if (!done && account != null && action !is NotificationAction.Dismiss) {
+                renderer.refresh(action.slot, action.groupId)
+            }
             return if (done) Result.success() else Result.failure()
         }
 
-        private suspend fun perform(action: NotificationAction): Outcome<Unit> =
+        private suspend fun NotificationRepository.perform(action: NotificationAction): Outcome<Unit> =
             when (action) {
                 is NotificationAction.Reply -> {
                     when (
                         val sent =
-                            notificationRepository.reply(
+                            reply(
                                 action.chatId,
                                 action.text,
                                 action.replyToMessageId,
                             )
                     ) {
-                        is Outcome.Success -> markAsRead(action.chatId, action.messageIds)
+                        is Outcome.Success -> read(action.chatId, action.messageIds)
                         is Outcome.Failure -> sent
                     }
                 }
 
                 is NotificationAction.MarkAsRead -> {
-                    markAsRead(action.chatId, action.messageIds)
+                    read(action.chatId, action.messageIds)
                 }
 
                 is NotificationAction.Dismiss -> {
-                    notificationRepository.dismiss(action.groupId, action.maxNotificationId)
+                    dismiss(action.groupId, action.maxNotificationId)
                 }
             }
 
-        private suspend fun markAsRead(
+        private suspend fun NotificationRepository.read(
             chatId: Long,
             messageIds: List<Long>,
-        ): Outcome<Unit> =
-            if (messageIds.isEmpty()) Outcome.Success(Unit) else notificationRepository.markAsRead(chatId, messageIds)
+        ): Outcome<Unit> = if (messageIds.isEmpty()) Outcome.Success(Unit) else markAsRead(chatId, messageIds)
 
         /** Shown only before Android 12, where expedited work runs as a foreground service. */
         override suspend fun getForegroundInfo(): ForegroundInfo = ForegroundInfo(FOREGROUND_ID, builder.progress())
@@ -88,3 +116,9 @@ class NotificationActionWorker
             const val FOREGROUND_ID = 1
         }
     }
+
+/** What a notification's action needs of its account: its login, to wait for TDLib, and its notifications. */
+internal class AccountNotificationActions(
+    val auth: AuthRepository,
+    val notifications: NotificationRepository,
+)

@@ -61,14 +61,23 @@ data class ChatFolderEditRoute(
     val folderId: Int? = null,
 )
 
-/** The user's sticker sets (`REQUIREMENTS.md` FR-C5): their order, archiving and removing them. */
+/**
+ * The user's sticker sets (`REQUIREMENTS.md` FR-C5), or their custom emoji sets ([emoji]): their order, archiving and
+ * removing them.
+ */
 @Serializable
-data object StickersRoute
+data class StickersRoute(
+    val emoji: Boolean = false,
+)
 
-/** The archived sticker sets ([archived]) or the trending ones, pushed above [StickersRoute]. */
+/**
+ * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
+ * [StickersRoute].
+ */
 @Serializable
 data class StickerSetListRoute(
     val archived: Boolean,
+    val emoji: Boolean = false,
 )
 
 /**
@@ -126,6 +135,13 @@ data object LanguageRoute
 data object DataStorageRoute
 
 /**
+ * Power saving (Settings → Power saving): when it is on, following Battery Saver or always, and what it turns off,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object PowerSavingRoute
+
+/**
  * What downloads by itself on one kind of network, pushed above [DataStorageRoute]. [network] is the name of an
  * `AutoDownloadNetwork` of `:core:domain`, which this module does not depend on.
  */
@@ -133,6 +149,38 @@ data object DataStorageRoute
 data class AutoDownloadRoute(
     val network: String,
 )
+
+/** How much data Pingogram sent and received on each network, pushed above [DataStorageRoute]. */
+@Serializable
+data object NetworkUsageRoute
+
+/** The proxies Pingogram connects through (`docs/adr/0027-proxies.md`), pushed above [DataStorageRoute]. */
+@Serializable
+data object ProxiesRoute
+
+/** Adding a proxy, or editing proxy [proxyId] (TDLib's id), pushed above [ProxiesRoute]. */
+@Serializable
+data class EditProxyRoute(
+    val proxyId: Int? = null,
+)
+
+/**
+ * The sheet a proxy link (`tg://proxy`, `t.me/socks`) opens, which asks before connecting through the proxy: a dialog
+ * destination of the settings pages. [kind] is the name of a `ProxyKind` of `:core:domain`; the fields another kind
+ * does not use are empty. `toString()` leaves out the address and the credentials.
+ */
+@Serializable
+data class ProxyLinkRoute(
+    val server: String,
+    val port: Int,
+    val kind: String,
+    val username: String = "",
+    val password: String = "",
+    val secret: String = "",
+    val httpOnly: Boolean = false,
+) {
+    override fun toString() = "ProxyLinkRoute(kind=$kind, …)"
+}
 
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code, license and the open-source licenses,
@@ -181,6 +229,21 @@ data object BlockedUsersRoute
 @Serializable
 data object ActiveSessionsRoute
 
+/** The websites logged in with the account, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object ConnectedWebsitesRoute
+
+/**
+ * The chats kept behind the passcode (`docs/adr/0029-locked-chats.md`), pushed above [PrivacySecurityRoute], above the
+ * chat list from its "Locked chats" row, or from a locked chat's notification.
+ */
+@Serializable
+data object LockedChatsRoute
+
+/** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
+@Serializable
+data object PersonalChannelRoute
+
 /** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object PasscodeLockRoute
@@ -195,6 +258,33 @@ data object SetPasscodeRoute
  */
 @Serializable
 data object DeleteAccountRoute
+
+/**
+ * The login email (`REQUIREMENTS.md` FR-S1): Telegram's pattern of it and changing it with a code sent to the new
+ * address, pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object LoginEmailRoute
+
+/**
+ * The self-destruct timer of the chats the user starts (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object AutoDeleteRoute
+
+/** Who may start a chat with the user (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object NewChatPrivacyRoute
+
+/**
+ * The users and groups a privacy [setting] (its `PrivacySetting` name) always allows ([always]) or never allows,
+ * pushed above its [PrivacySettingRoute].
+ */
+@Serializable
+data class PrivacyExceptionsRoute(
+    val setting: String,
+    val always: Boolean,
+)
 
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
@@ -225,6 +315,22 @@ data class NotificationExceptionsRoute(
     val scope: String,
 )
 
+/** Whom the account hears of reactions and poll votes from, pushed above [NotificationSettingsRoute]. */
+@Serializable
+data object ReactionNotificationsRoute
+
+/** The quick reaction and where a double tap adds it, pushed above [AppearanceRoute]. */
+@Serializable
+data object QuickReactionRoute
+
+/** The chats the forward and share sheets show first, pushed above [AppearanceRoute]. */
+@Serializable
+data object ChatsShownFirstRoute
+
+/** What swiping a chat row does toward each side, pushed above [AppearanceRoute]. */
+@Serializable
+data object SwipeActionsRoute
+
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.
@@ -235,6 +341,14 @@ data object SearchRoute
 /** The archived chats (`REQUIREMENTS.md` FR-L9), `:feature:chats`, pushed above the Chats tab from its archive row. */
 @Serializable
 data object ArchiveRoute
+
+/**
+ * The archive's settings (`REQUIREMENTS.md` FR-L9): which chats Telegram archives and keeps archived, and how the
+ * "Archived chats" row shows in the chat list, `:feature:chats`, pushed above the archive from its top bar, and
+ * reachable from any screen that navigates to it (e.g. a settings page).
+ */
+@Serializable
+data object ArchiveSettingsRoute
 
 /**
  * Starting a chat (`REQUIREMENTS.md` FR-L7): new group, new channel and new contact, then the contacts,
@@ -350,6 +464,16 @@ data class ChatExportRoute(
 )
 
 /**
+ * The scheduled messages of chat [chatId] (`REQUIREMENTS.md` FR-C5), `:feature:chat`: pushed above the conversation
+ * whose "3 scheduled messages" bar opens it, with the shared axis on X, as bubbles under their send days, each to send
+ * now, reschedule, edit, copy or delete.
+ */
+@Serializable
+data class ScheduledMessagesRoute(
+    val chatId: Long,
+)
+
+/**
  * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
  * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
  * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a
@@ -400,6 +524,33 @@ data class EditChatInfoRoute(
 /** What members of group [chatId] may do by default, and its slow mode, pushed above its info page. */
 @Serializable
 data class ChatPermissionsRoute(
+    val chatId: Long,
+)
+
+/**
+ * The settings of group or channel [chatId] (reactions, saving content, signatures, topics, the discussion group,
+ * upgrading), pushed above its info page.
+ */
+@Serializable
+data class ChatSettingsRoute(
+    val chatId: Long,
+)
+
+/** The requests to join group or channel [chatId], pushed above its info page. */
+@Serializable
+data class JoinRequestsRoute(
+    val chatId: Long,
+)
+
+/** The recent actions of supergroup or channel [chatId], for its administrators, pushed above its info page. */
+@Serializable
+data class RecentActionsRoute(
+    val chatId: Long,
+)
+
+/** The statistics of supergroup or channel [chatId], for its administrators, pushed above its info page. */
+@Serializable
+data class ChatStatisticsRoute(
     val chatId: Long,
 )
 

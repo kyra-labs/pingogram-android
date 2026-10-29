@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * "Decline" and "Hang up" of the call's notification, and "Leave" of a voice chat's (and of a live stream's
- * picture-in-picture window), which need no screen. Answering opens the call screen instead
+ * "Decline", "Hang up" and "Stop sharing" of the call's notification, and "Leave" of a voice chat's (and of a live
+ * stream's picture-in-picture window), which need no screen. Answering opens the call screen instead
  * (`CallActivity`): Android lets the app use the microphone in the background only once it was on screen.
  */
 @AndroidEntryPoint
@@ -32,11 +32,15 @@ class CallActionReceiver : BroadcastReceiver() {
         intent: Intent,
     ) {
         val action = intent.action
-        if (action != ACTION_DECLINE && action != ACTION_HANG_UP && action != ACTION_LEAVE) return
+        if (action !in ACTIONS) return
         val pending = goAsync()
         scope.launch {
             try {
-                if (action == ACTION_LEAVE) groupCallManager.leave() else callManager.hangUp()
+                when (action) {
+                    ACTION_LEAVE -> groupCallManager.leave()
+                    ACTION_STOP_SHARING -> callManager.stopScreenSharing()
+                    else -> callManager.hangUp()
+                }
             } finally {
                 pending.finish()
             }
@@ -47,6 +51,8 @@ class CallActionReceiver : BroadcastReceiver() {
         const val ACTION_DECLINE = "dev.kyralabs.pingogram.calls.DECLINE"
         const val ACTION_HANG_UP = "dev.kyralabs.pingogram.calls.HANG_UP"
         const val ACTION_LEAVE = "dev.kyralabs.pingogram.calls.LEAVE"
+        const val ACTION_STOP_SHARING = "dev.kyralabs.pingogram.calls.STOP_SHARING"
+        private val ACTIONS = setOf(ACTION_DECLINE, ACTION_HANG_UP, ACTION_LEAVE, ACTION_STOP_SHARING)
 
         fun pendingIntent(
             context: Context,

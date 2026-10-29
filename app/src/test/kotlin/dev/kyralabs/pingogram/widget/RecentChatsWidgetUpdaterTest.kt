@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.notifications.AvatarIcons
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -21,6 +22,8 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -38,19 +41,27 @@ import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The home screen widget's content ([RecentChatsWidgetUpdater]): the real repositories on a [FakeTdlibClient], the
- * placed widgets faked. It follows the chats only while a widget is placed, and keeps them off the home screen when
- * signed out or locked.
+ * The home screen widget's content ([RecentChatsWidgetUpdater]): the real repositories on a [FakeTdlibClient] per
+ * account, the placed widgets faked. It follows the chats only while a widget is placed, each widget's account apart,
+ * and keeps them off the home screen when signed out or locked.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class RecentChatsWidgetUpdaterTest {
+    /** The placed widgets, each the slot of the account it keeps. */
     private class FakeWidgets(
-        var present: Boolean,
+        vararg slots: Int,
     ) : RecentChatsWidgets {
+        val placed = slots.toMutableList()
         var updates = 0
 
-        override suspend fun hasWidgets() = present
+        override suspend fun slots() = placed.toSet()
+
+        override suspend fun move(
+            from: Int,
+            to: Int,
+        ) = placed.replaceAll { if (it == from) to else it }
 
         override suspend fun updateAll() {
             updates++
@@ -58,23 +69,25 @@ class RecentChatsWidgetUpdaterTest {
     }
 
     private val client = FakeTdlibClient()
+    private val other = FakeTdlibClient()
+    private val accounts = MutableStateFlow<Map<Int, WidgetAccount>>(emptyMap())
+    private val activeSlot = MutableStateFlow(0)
 
-    private fun TestScope.updater(
-        widgets: FakeWidgets,
+    private fun TestScope.account(
+        client: FakeTdlibClient,
         authState: AuthState = AuthState.Ready,
-        passcode: String? = null,
-    ): RecentChatsWidgetUpdater {
+        lockedChats: Set<Long> = emptySet(),
+    ): WidgetAccount {
         val context = RuntimeEnvironment.getApplication()
         val dispatcher = StandardTestDispatcher(testScheduler)
         client.authState.value = authState
         client.on(TdApi.LoadChats::class, TdResult.Success(TdApi.Ok()))
         val files = TdlibFileRepository(client, TdlibTransferRepository(client, backgroundScope), backgroundScope)
-        return RecentChatsWidgetUpdater(
-            context = context,
-            authRepository = TdlibAuthRepository(client, dispatcher),
-            passcodeRepository = FakePasscodeRepository(passcode = passcode),
-            chatRepository = TdlibChatRepository(client, backgroundScope, dispatcher, OpenChats()),
-            userRepository = TdlibUserRepository(client, backgroundScope),
+        return WidgetAccount(
+            auth = TdlibAuthRepository(client, dispatcher),
+            chats = TdlibChatRepository(client, backgroundScope, dispatcher, OpenChats()),
+            users = TdlibUserRepository(client, backgroundScope),
+            chatLock = FakeChatLockRepository(locked = lockedChats),
             avatars =
                 AvatarIcons(
                     context,
@@ -82,7 +95,22 @@ class RecentChatsWidgetUpdaterTest {
                     FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
                     dispatcher,
                 ),
+        )
+    }
+
+    private fun TestScope.updater(
+        widgets: FakeWidgets,
+        authState: AuthState = AuthState.Ready,
+        passcode: String? = null,
+        lockedChats: Set<Long> = emptySet(),
+    ): RecentChatsWidgetUpdater {
+        accounts.value += 0 to account(client, authState, lockedChats)
+        return RecentChatsWidgetUpdater(
+            context = RuntimeEnvironment.getApplication(),
+            passcodeRepository = FakePasscodeRepository(passcode = passcode),
             widgets = widgets,
+            accounts = accounts,
+            activeSlot = activeSlot,
             scope = backgroundScope,
         ).also {
             it.start()
@@ -90,7 +118,7 @@ class RecentChatsWidgetUpdaterTest {
         }
     }
 
-    private suspend fun chats() {
+    private suspend fun chats(client: FakeTdlibClient = this.client) {
         client.emit(TdApi.UpdateOption("my_id", TdApi.OptionValueInteger(ME)))
         client.emit(updateUser(user(id = ME, firstName = "Me")))
         client.emit(updateUser(user(id = ALICE, firstName = "Alice")))
@@ -147,7 +175,7 @@ class RecentChatsWidgetUpdaterTest {
     @Test
     fun `the first redraw of a process waits for the start to settle, the content is there at once`() =
         runTest {
-            val widgets = FakeWidgets(present = true)
+            val widgets = FakeWidgets(0)
             val updater = updater(widgets)
             chats()
             advanceTimeBy(RecentChatsWidgetUpdater.UPDATE_DELAY + 1.seconds)
@@ -156,20 +184,20 @@ class RecentChatsWidgetUpdaterTest {
 
             settle()
 
-            assertTrue(updater.content.value is RecentChatsContent.Chats)
+            assertTrue(updater.currentContent(0) is RecentChatsContent.Chats)
             assertEquals(0 to 1, updatesBefore to widgets.updates)
         }
 
     @Test
     fun `shows the most recent chats with their avatars once a widget is placed`() =
         runTest {
-            val widgets = FakeWidgets(present = true)
+            val widgets = FakeWidgets(0)
             val updater = updater(widgets)
             chats()
             runCurrent()
             settle()
 
-            val content = updater.content.value as RecentChatsContent.Chats
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
             assertEquals(listOf("Alice", "Climbing", "Saved Messages", "Alice"), content.chats.map { it.title })
             // The sender's name is isolated: its direction never spills into the message (docs/DESIGN_SYSTEM.md §9).
             assertEquals(listOf("Hi", "\u2068Alice\u2069: Hi", "", "Secret chat"), content.chats.map { it.preview })
@@ -181,7 +209,7 @@ class RecentChatsWidgetUpdaterTest {
     @Test
     fun `loads the first chats itself when TDLib has fewer`() =
         runTest {
-            updater(FakeWidgets(present = true))
+            updater(FakeWidgets(0))
             settle()
 
             val load = client.sentOf<TdApi.LoadChats>().single()
@@ -191,13 +219,13 @@ class RecentChatsWidgetUpdaterTest {
     @Test
     fun `without a widget it follows nothing and draws nothing`() =
         runTest {
-            val widgets = FakeWidgets(present = false)
+            val widgets = FakeWidgets()
             val updater = updater(widgets)
             chats()
             runCurrent()
             settle()
 
-            assertEquals(RecentChatsContent.Loading, updater.content.value)
+            assertEquals(RecentChatsContent.Loading, updater.currentContent(0))
             assertEquals(0, widgets.updates)
             assertTrue(client.sentOf<TdApi.LoadChats>().isEmpty())
         }
@@ -205,45 +233,102 @@ class RecentChatsWidgetUpdaterTest {
     @Test
     fun `a widget placed later gets the chats, and goes back to nothing when the last one is removed`() =
         runTest {
-            val widgets = FakeWidgets(present = false)
+            val widgets = FakeWidgets()
             val updater = updater(widgets)
             chats()
             runCurrent()
 
-            updater.onWidgetsChanged(present = true)
+            updater.onWidgetShown(0)
             runCurrent()
             settle()
-            assertTrue(updater.content.value is RecentChatsContent.Chats)
+            assertTrue(updater.currentContent(0) is RecentChatsContent.Chats)
 
             updater.onWidgetsChanged(present = false)
             runCurrent()
-            assertEquals(RecentChatsContent.Loading, updater.content.value)
+            assertEquals(RecentChatsContent.Loading, updater.currentContent(0))
         }
 
     @Test
     fun `signed out, it invites to sign in`() =
         runTest {
-            val updater = updater(FakeWidgets(present = true), authState = AuthState.WaitPhoneNumber)
+            val updater = updater(FakeWidgets(0), authState = AuthState.WaitPhoneNumber)
             settle()
 
-            assertEquals(RecentChatsContent.SignedOut, updater.content.value)
+            assertEquals(RecentChatsContent.SignedOut, updater.currentContent(0))
         }
 
     @Test
     fun `with a passcode, no chat reaches the home screen`() =
         runTest {
-            val updater = updater(FakeWidgets(present = true), passcode = "1234")
+            val updater = updater(FakeWidgets(0), passcode = "1234")
             chats()
             runCurrent()
             settle()
 
-            assertEquals(RecentChatsContent.Locked, updater.content.value)
+            assertEquals(RecentChatsContent.Locked, updater.currentContent(0))
             assertTrue(client.sentOf<TdApi.LoadChats>().isEmpty())
+        }
+
+    @Test
+    fun `a locked chat never reaches the home screen, the next chats taking its place`() =
+        runTest {
+            val updater = updater(FakeWidgets(0), lockedChats = setOf(GROUP))
+            chats()
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(listOf("Alice", "Saved Messages", "Alice"), content.chats.map { it.title })
+            assertTrue(content.chats.none { GROUP == it.id || "Climbing" in it.title })
+        }
+
+    @Test
+    fun `each widget shows the chats of the account it keeps`() =
+        runTest {
+            val widgets = FakeWidgets(0, 1)
+            accounts.value = mapOf(1 to account(other))
+            val updater = updater(widgets)
+            chats()
+            other.emit(TdApi.UpdateOption("my_id", TdApi.OptionValueInteger(BOB)))
+            other.emit(updateUser(user(id = BOB, firstName = "Bob")))
+            other.emit(
+                updateNewChat(
+                    chat(id = BOB, type = TdApi.ChatTypePrivate(BOB), positions = arrayOf(chatPosition(order = 1))),
+                ),
+            )
+            runCurrent()
+            settle()
+
+            val first = updater.currentContent(0) as RecentChatsContent.Chats
+            val second = updater.currentContent(1) as RecentChatsContent.Chats
+            assertEquals(listOf("Alice", "Climbing", "Saved Messages", "Alice"), first.chats.map { it.title })
+            assertEquals(listOf("Saved Messages"), second.chats.map { it.title })
+            assertEquals(setOf(0), first.chats.map { it.slot }.toSet())
+            assertEquals(setOf(1), second.chats.map { it.slot }.toSet())
+        }
+
+    @Test
+    fun `a widget whose account left the device keeps the shown account from then on`() =
+        runTest {
+            val widgets = FakeWidgets(1)
+            accounts.value = mapOf(1 to account(other))
+            val updater = updater(widgets)
+            assertEquals(listOf(1), widgets.placed)
+
+            accounts.value = accounts.value - 1
+            runCurrent()
+            chats()
+            runCurrent()
+            settle()
+
+            assertEquals(listOf(0), widgets.placed)
+            assertTrue(updater.currentContent(0) is RecentChatsContent.Chats)
         }
 
     private companion object {
         const val ME = 1L
         const val ALICE = 2L
+        const val BOB = 3L
         const val GROUP = -10L
         const val SAVED = ME
         const val SECRET = -20L

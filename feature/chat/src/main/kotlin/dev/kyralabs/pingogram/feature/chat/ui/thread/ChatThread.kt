@@ -9,12 +9,15 @@ import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageThread
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.SavedMessagesTopic
+import dev.kyralabs.pingogram.core.domain.model.SavedTopicKind
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
@@ -38,20 +41,22 @@ import kotlinx.coroutines.launch
 
 /**
  * Where in chat [chatId] the conversation shows messages, for `ChatViewModel` (`REQUIREMENTS.md` FR-C9): the whole
- * chat ([topic] null), one of its forum topics, or a message thread (a channel post's comments, which live in the
- * channel's discussion group, or the replies to a group's message). A topic's or thread's conversation is the chat's,
- * scoped to it:
+ * chat ([topic] null), one of its forum topics, a message thread (a channel post's comments, which live in the
+ * channel's discussion group, or the replies to a group's message), or a tab of Saved Messages (one of its topics). A
+ * topic's or thread's conversation is the chat's, scoped to it:
  *
- * - **Repositories** ([messages], [attachments], [voiceNotes], [chats]): its own history and pages, every message sent
- *   into it, its messages viewed there (`TopicMessageRepository` and the others). A thread's history starts with the
- *   messages that start it (its head: the channel post, or the message replied to), without their link to the thread.
+ * - **Repositories** ([messages], [attachments], [voiceNotes], [videoNotes], [chats]): its own history and pages,
+ *   every message sent into it, its messages viewed there (`TopicMessageRepository` and the others). A thread's
+ *   history starts with the messages that start it (its head: the channel post, or the message replied to), without
+ *   their link to the thread.
  * - **The chat** ([inThread]) reads as the topic or thread: its unread count, read state and last message, so the jump
  *   button's badge, the read checks and opening at the first unread message follow it; it has no draft, as topics and
  *   threads keep drafts of their own, which the composer does not sync yet ([drafts]: none).
  * - **Header** ([header]): the topic's name over the forum's, or the chat's name over "12 comments" (what someone
  *   is doing still shows).
  * - **Composer** ([composer]): a closed topic takes messages from its administrators only; a discussion group that does
- *   not ask to join takes comments from anyone.
+ *   not ask to join takes comments from anyone; in Saved Messages only the user's notes take new messages, as what the
+ *   user sends there goes into them (`SendOptions.topic` of Saved Messages is not passed to TDLib).
  *
  * [state] follows the topic (`ForumTopicRepository.topic`) while the conversation collects it, in [scope]:
  * [ThreadState.Missing] when it cannot be found. A thread is asked for once (`MessageThreadRepository.thread`), again
@@ -80,6 +85,12 @@ internal class ChatThread(
 
             is MessageTopic.Thread -> {
                 attempts.map { replies(topic.threadId) }
+            }
+
+            is MessageTopic.SavedMessages -> {
+                repositories.savedTopics.topics
+                    .map { topics -> ThreadState.SavedTopic(topics.firstOrNull { it.id == topic.topicId }) }
+                    .distinctUntilChanged()
             }
         }.shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
@@ -131,6 +142,9 @@ internal class ChatThread(
     fun voiceNotes(voiceNotes: VoiceNoteRepository): VoiceNoteRepository =
         topic?.let { TopicVoiceNoteRepository(voiceNotes, it) } ?: voiceNotes
 
+    fun videoNotes(videoNotes: VideoNoteRepository): VideoNoteRepository =
+        topic?.let { TopicVideoNoteRepository(videoNotes, it) } ?: videoNotes
+
     fun inlineBots(inlineBots: InlineBotRepository): InlineBotRepository =
         topic?.let { TopicInlineBotRepository(inlineBots, it) } ?: inlineBots
 
@@ -165,6 +179,11 @@ internal sealed interface ThreadState {
     data class Failed(
         val error: DomainError,
     ) : ThreadState
+
+    /** A tab of Saved Messages: [topic], null until TDLib announced it (or once it was emptied). */
+    data class SavedTopic(
+        val topic: SavedMessagesTopic?,
+    ) : ThreadState
 }
 
 /** The message without its link to its thread, as the thread's head shows it. */
@@ -198,6 +217,11 @@ internal fun ThreadState.inThread(chat: Chat): Chat =
             )
         }
 
+        // Saved Messages has nothing unread: the user sent or saved every message.
+        is ThreadState.SavedTopic -> {
+            chat.copy(lastMessage = topic?.lastMessage, draft = null)
+        }
+
         ThreadState.WholeChat, ThreadState.Missing, is ThreadState.Failed -> {
             chat
         }
@@ -225,7 +249,8 @@ internal fun ThreadState.header(
             header.copy(subtitle = action ?: ChatSubtitle.Status(thread.countText()))
         }
 
-        ThreadState.WholeChat, ThreadState.Missing, is ThreadState.Failed -> {
+        // The tabs above say which topic shows: the top bar stays Saved Messages'.
+        ThreadState.WholeChat, ThreadState.Missing, is ThreadState.Failed, is ThreadState.SavedTopic -> {
             header
         }
     }
@@ -252,9 +277,14 @@ internal fun ThreadState.composer(
     val isAdmin = status is ChatMemberStatus.Creator || status is ChatMemberStatus.Administrator
     val closed = this is ThreadState.Topic && topic.isClosed && !isAdmin
     val opensToAll = this is ThreadState.Replies && supergroup.takesCommentsFromAnyone()
+    val savedFromElsewhere = this is ThreadState.SavedTopic && topic != null && topic.kind != SavedTopicKind.MyNotes
     return when {
         closed && composer is ComposerUiState.Available -> {
             ComposerUiState.Unavailable(UiText.resource(R.string.composer_topic_closed))
+        }
+
+        savedFromElsewhere && composer is ComposerUiState.Available -> {
+            ComposerUiState.Unavailable(UiText.resource(R.string.composer_saved_topic))
         }
 
         opensToAll && composer is ComposerUiState.Unavailable -> {

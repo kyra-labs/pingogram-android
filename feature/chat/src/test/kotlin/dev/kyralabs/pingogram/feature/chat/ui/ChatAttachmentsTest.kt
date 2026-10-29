@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -71,7 +72,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         replyTo: Long? = null,
         handle: SavedStateHandle = savedState,
     ): ChatViewModel {
-        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, it) }
+        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, ReplyTarget(it)) }
         chats.setChats(chat(draft = draft))
         messages.setHistory(ADA, history(message(1)))
         return viewModel(handle = handle)
@@ -172,6 +173,51 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                     attachments.prepared,
                 )
                 assertEquals(AttachmentKind.Media, viewModel.preview?.kind)
+            }
+
+        @Test
+        fun `the gallery's photos may go without compression, prepared again as files when sent`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+                send(viewModel, ChatEvent.AttachMedia(listOf("content://a", "content://b")))
+                assertEquals(true, viewModel.preview?.offersOriginal)
+                assertEquals(false, viewModel.preview?.original)
+
+                send(viewModel, ChatEvent.SetOriginalQuality(true))
+                assertEquals(true, viewModel.preview?.original)
+                attachments.onPrepare = { uri, kind ->
+                    if (kind == AttachmentKind.Original && uri.endsWith("b")) {
+                        Outcome.Failure(DomainError.FileUnavailable)
+                    } else {
+                        Outcome.Success(photo(uri.removePrefix("content://") + kind.name))
+                    }
+                }
+                send(viewModel, ChatEvent.SendAttachments())
+
+                assertEquals(
+                    listOf("content://a" to AttachmentKind.Original, "content://b" to AttachmentKind.Original),
+                    attachments.prepared.drop(2),
+                )
+                // b could not be prepared again: its compressed copy goes.
+                assertEquals(
+                    listOf(photo("aOriginal"), photo("content://b")),
+                    attachments.sent.single().attachments,
+                )
+                assertEquals(listOf(photo("content://a")), attachments.discarded)
+            }
+
+        @Test
+        fun `without compression is on at first where Data and storage says so, and files never offer it`() =
+            runViewModelTest {
+                chats.setChats(chat())
+                messages.setHistory(ADA, history(message(1)))
+                val viewModel = viewModel(originalQuality = true)
+
+                send(viewModel, ChatEvent.AttachMedia(listOf("content://a")))
+                assertEquals(true, viewModel.preview?.original)
+
+                send(viewModel, ChatEvent.DismissAttachments, ChatEvent.AttachFiles(listOf("content://report")))
+                assertEquals(false, viewModel.preview?.offersOriginal)
             }
 
         @Test

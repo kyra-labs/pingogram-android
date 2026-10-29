@@ -58,6 +58,8 @@ enum class AutoLock(
  * @property type whether the passcode is a PIN or a password, so the lock screen shows the keypad or the keyboard.
  * @property autoLock how long the app may stay out of sight before it locks.
  * @property biometricUnlock whether a fingerprint or the face, where the device has strong biometrics, unlocks too.
+ * @property deviceCredentialUnlock whether the phone's own screen lock (its PIN, pattern or password) unlocks too, on
+ *   Android 11 and later; off by default, as anyone who knows it gets past the passcode.
  * @property hideContent whether the app's content stays hidden in the list of recent apps.
  * @property failedAttempts wrong passcodes entered since the last right one, which make the next attempts wait.
  */
@@ -66,6 +68,7 @@ data class PasscodeSettings(
     val type: PasscodeType = PasscodeType.Pin,
     val autoLock: AutoLock = AutoLock.OneMinute,
     val biometricUnlock: Boolean = true,
+    val deviceCredentialUnlock: Boolean = false,
     val hideContent: Boolean = true,
     val failedAttempts: Int = 0,
 )

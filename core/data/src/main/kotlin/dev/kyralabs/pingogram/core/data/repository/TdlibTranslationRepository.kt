@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.primaryLanguageOf
@@ -10,7 +11,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import java.util.Locale
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [TranslationRepository] on TDLib's `translateMessageText`, which has Telegram translate a message it knows by its id,
@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * keeps the formatting for Telegram Premium subscribers only; whatever it refuses is the caller's error to show, never
  * worked around.
  */
-@Singleton
+@AccountScoped
 class TdlibTranslationRepository
     @Inject
     constructor(

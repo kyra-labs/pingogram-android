@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toBasicGroup
 import dev.kyralabs.pingogram.core.data.mapper.toSupergroup
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [GroupRepository] on TDLib's basic groups and supergroups. TDLib announces each with `updateBasicGroup` or
@@ -26,7 +26,7 @@ import javax.inject.Singleton
  * A group that changed only in fields Pingogram does not keep (boost level, stories, …) keeps its map, so the
  * whole-map flows emit only real changes.
  */
-@Singleton
+@AccountScoped
 class TdlibGroupRepository
     @Inject
     constructor(

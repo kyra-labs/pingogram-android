@@ -428,6 +428,13 @@ class StoryViewerViewModelTest {
             assertTrue(viewModel.content.isMuted)
             assertTrue("muted:true" in player.calls)
 
+            // A volume key: the sound comes back, once.
+            viewModel.onEvent(StoryViewerEvent.Unmute)
+            viewModel.onEvent(StoryViewerEvent.Unmute)
+            runCurrent()
+            assertFalse(viewModel.content.isMuted)
+            assertEquals(1, player.calls.count { it == "muted:false" })
+
             player.end()
             runCurrent()
             assertEquals(ADA to 12, viewModel.shownStory)

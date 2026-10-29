@@ -79,6 +79,7 @@ internal class ChatForwarding(
     dispatcher: CoroutineDispatcher,
     private val sendScope: CoroutineScope = scope,
     private val onClosed: () -> Unit = {},
+    targetPreferences: TargetPreferences = TargetPreferences(),
     private val onEffect: (ChatEffect) -> Unit,
 ) {
     /** The comment sent before the messages, formatting included; emptied whenever the sheet opens. */
@@ -86,7 +87,7 @@ internal class ChatForwarding(
 
     private val request = MutableStateFlow<ForwardRequest?>(null)
     private val choice = MutableStateFlow(Choice())
-    private val chatTargets = ChatTargets(chats, search, users, groups, scope)
+    private val chatTargets = ChatTargets(chats, search, users, groups, scope, preferences = targetPreferences)
 
     /** The sheet being prepared, which another [open] replaces. */
     private var opening: Job? = null

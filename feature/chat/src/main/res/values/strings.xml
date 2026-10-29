@@ -6,6 +6,11 @@
     <string name="chat_open_profile">Open profile</string>
     <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
     <string name="chat_open_info">Open info</string>
+    <!-- In place of the chat's status while not connected, as the chat list's pill says it. -->
+    <string name="chat_waiting_for_network">Waiting for network…</string>
+    <string name="chat_connecting_to_proxy">Connecting to proxy…</string>
+    <string name="chat_connecting">Connecting…</string>
+    <string name="chat_updating">Updating…</string>
     <string name="chat_subtitle_bot">bot</string>
     <plurals name="chat_subtitle_members">
         <item quantity="one">%,d member</item>
@@ -22,6 +27,8 @@
     <!-- Messages (ChatScreen, MessageBubble) -->
     <string name="chat_date_today">Today</string>
     <string name="chat_date_yesterday">Yesterday</string>
+    <!-- Above the scheduled messages that go out tomorrow. -->
+    <string name="chat_date_tomorrow">Tomorrow</string>
     <!-- Above the first message that was unread when the chat was opened. -->
     <string name="chat_unread_divider">Unread messages</string>
     <!-- Before the time of a message that was edited. -->
@@ -52,6 +59,12 @@
     <string name="chat_older_error">Older messages couldn\'t be loaded</string>
     <!-- Below the newest loaded message when newer ones could not be loaded. -->
     <string name="chat_newer_error">Newer messages couldn\'t be loaded</string>
+    <!-- Under the next unread channel's name while a read channel is pulled up past its newest post. -->
+    <string name="chat_next_channel_pull">Pull up to open</string>
+    <!-- The same, once letting go opens the channel. -->
+    <string name="chat_next_channel_release">Release to open</string>
+    <!-- Screen readers' action on a read channel's messages: the next unread channel's name. -->
+    <string name="chat_next_channel_action">Open the next unread channel, %1$s</string>
     <string name="chat_jump_to_bottom">Scroll to newest messages</string>
     <!-- The unread count in the badge of the button that scrolls to the newest messages. -->
     <string name="chat_unread_badge">%1$d</string>
@@ -231,6 +244,9 @@
     <!-- The buttons of a recording that goes on hands-free. -->
     <string name="voice_send">Send voice message</string>
     <string name="voice_delete">Delete recording</string>
+    <!-- For screen readers, announced as it changes: what the recording bar's dot shows while a voice message records. -->
+    <string name="voice_state_recording">Recording</string>
+    <string name="voice_state_paused">Paused</string>
     <string name="voice_pause">Pause recording</string>
     <string name="voice_resume">Resume recording</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
@@ -276,6 +292,8 @@
         <item quantity="other">%d files</item>
     </plurals>
     <!-- The hint in the empty caption field of the preview. -->
+    <string name="attach_original">Send without compression</string>
+    <string name="attach_original_summary">As files, at their full size and quality. Location and camera details are removed.</string>
     <string name="attach_caption">Add a caption</string>
     <!-- Screen readers: an item of the preview. %1$d is its place, %2$d how many there are. -->
     <string name="attach_item_photo">Photo %1$d of %2$d</string>
@@ -303,6 +321,8 @@
     <string name="location_refining">Improving accuracy…</string>
     <!-- %1$s is a distance with its unit, "12 m" or "1.5 km". -->
     <string name="location_accuracy">Accurate to %1$s</string>
+    <!-- For screen readers, the location found: %1$s its coordinates in words, %2$s its accuracy (location_accuracy). -->
+    <string name="location_found_description">%1$s. %2$s</string>
     <!-- The user allowed only an approximate location (Android 12 and later), which is what is sent. -->
     <string name="location_approximate">Approximate location</string>
     <string name="location_use_precise">Use precise location</string>
@@ -487,6 +507,7 @@
     <string name="chat_call">Call</string>
     <!-- What tapping a call's service message does, for screen readers. -->
     <string name="chat_call_back">Call back</string>
+    <string name="chat_join_group_call">Join</string>
 
     <!-- Bots' buttons under messages (docs/DESIGN_SYSTEM.md §6 "Bot buttons"). %1$s is the button's text. -->
     <string name="bot_button_link_action">%1$s, opens a link</string>
@@ -582,4 +603,68 @@
     <string name="bot_share">Share</string>
     <string name="poll_quiz_required">The bot asks for a quiz</string>
     <string name="poll_regular_required">The bot asks for a poll without a correct answer</string>
+
+    <!-- Scheduled messages (ScheduledMessagesBar, ScheduledMessagesScreen) -->
+    <!-- The bar over the conversation: how many messages the user scheduled in the chat. -->
+    <plurals name="scheduled_bar_count">
+        <item quantity="one">%d scheduled message</item>
+        <item quantity="other">%d scheduled messages</item>
+    </plurals>
+    <!-- Under the bar's count: when the first scheduled message goes out; %1$s is the day and time ("Today, 9:41 AM"). -->
+    <string name="scheduled_bar_next">Next: %1$s</string>
+    <!-- What tapping the bar does, spoken by screen readers ("double-tap to show scheduled messages"). -->
+    <string name="scheduled_bar_open_label">show scheduled messages</string>
+    <string name="scheduled_title">Scheduled messages</string>
+    <string name="scheduled_back">Back</string>
+    <string name="scheduled_empty_title">No scheduled messages</string>
+    <string name="scheduled_empty_body">Messages you schedule in this chat show here until they are sent. To schedule one, hold the send button.</string>
+    <string name="scheduled_error_title">Couldn\'t load scheduled messages</string>
+    <string name="scheduled_retry">Try again</string>
+    <!-- The date separator above the messages sent once the other user comes online: %1$s is their name. -->
+    <string name="scheduled_when_user_online">When %1$s is online</string>
+    <!-- The same without the other user's name. -->
+    <string name="scheduled_when_online">When online</string>
+    <!-- In a scheduled message's meta, in place of its time: it goes out once the other user comes online. -->
+    <string name="scheduled_meta_when_online">When online</string>
+    <!-- When a scheduled message goes out, at the top of its actions and for screen readers: %1$s is the date and time ("Oct 30, 9:41 AM"). -->
+    <string name="scheduled_sends_at">Sends %1$s</string>
+    <!-- The same for a message that goes out once the other user comes online: %1$s is their name. -->
+    <string name="scheduled_sends_when_user_online">Sends when %1$s is online</string>
+    <string name="scheduled_sends_when_online">Sends when the other person is online</string>
+    <!-- A day and a time: %1$s is the day ("Today", "Friday, October 30"), %2$s the time ("9:41 AM"). -->
+    <string name="scheduled_day_time">%1$s, %2$s</string>
+    <!-- How often a scheduled message repeats, in its meta and its actions. -->
+    <string name="scheduled_repeat_daily">Daily</string>
+    <string name="scheduled_repeat_weekly">Weekly</string>
+    <string name="scheduled_repeat_two_weeks">Every 2 weeks</string>
+    <string name="scheduled_repeat_monthly">Monthly</string>
+    <string name="scheduled_repeat_three_months">Every 3 months</string>
+    <string name="scheduled_repeat_six_months">Every 6 months</string>
+    <string name="scheduled_repeat_yearly">Yearly</string>
+    <plurals name="scheduled_repeat_days">
+        <item quantity="one">Every %d day</item>
+        <item quantity="other">Every %d days</item>
+    </plurals>
+    <plurals name="scheduled_repeat_minutes">
+        <item quantity="one">Every %d minute</item>
+        <item quantity="other">Every %d minutes</item>
+    </plurals>
+    <!-- Screen readers: how often a scheduled message repeats, in its description: %1$s is how often ("Daily"). -->
+    <string name="scheduled_bubble_repeats">repeats: %1$s</string>
+    <string name="scheduled_action_send_now">Send now</string>
+    <string name="scheduled_action_reschedule">Reschedule</string>
+    <string name="scheduled_action_edit">Edit</string>
+    <string name="scheduled_action_copy">Copy text</string>
+    <string name="scheduled_action_delete">Delete</string>
+    <string name="scheduled_delete_title">Delete scheduled message?</string>
+    <string name="scheduled_delete_body">It won\'t be sent.</string>
+    <string name="scheduled_delete_confirm">Delete</string>
+    <string name="scheduled_delete_cancel">Cancel</string>
+    <!-- Snackbar after "Send now". -->
+    <string name="scheduled_sent">Message sent</string>
+    <string name="scheduled_deleted">Scheduled message deleted</string>
+    <!-- Snackbar after rescheduling: %1$s is the new date and time ("Oct 30, 9:41 AM"). -->
+    <string name="scheduled_rescheduled">Message rescheduled for %1$s</string>
+    <!-- Snackbar for an action on a message that was sent or deleted meanwhile. -->
+    <string name="scheduled_message_gone">This message was sent or deleted</string>
 </resources>

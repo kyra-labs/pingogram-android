@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.share
 
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -21,6 +22,10 @@ import javax.inject.Singleton
  * - For a chat ([deliver]): from a Direct Share target, or the one chat picked in the sheet. The chat's conversation
  *   takes it into its composer once it is on screen ([claim]), so a conversation behind another screen leaves it to
  *   the one shown; a later share to the same chat replaces one not taken yet.
+ * - A reply in another chat ([deliverReply], `REQUIREMENTS.md` FR-C6): a message of one conversation, picked to be
+ *   replied to from another chat, which that chat's conversation takes into its composer once on screen
+ *   ([claimReply]), as a share; a later reply to the same chat replaces one not taken yet. Kept here rather than in an
+ *   inbox of its own, as it goes the same way, from one screen to a chat's conversation, in memory only.
  */
 @Singleton
 class ShareInbox
@@ -28,6 +33,7 @@ class ShareInbox
     constructor() {
         private val offers = MutableStateFlow<PersistentMap<Long, SharedContent>>(persistentMapOf())
         private val deliveries = MutableStateFlow<PersistentMap<Long, SharedContent>>(persistentMapOf())
+        private val replies = MutableStateFlow<PersistentMap<Long, ReplyTarget>>(persistentMapOf())
         private var nextId = 1L
 
         /** Keeps [content] for the share sheet and returns its id, for `ShareRoute`. */
@@ -65,6 +71,30 @@ class ShareInbox
             deliveries.update { deliveries ->
                 claimed = deliveries[chatId] === content
                 if (claimed) deliveries.remove(chatId) else deliveries
+            }
+            return claimed
+        }
+
+        /** Hands [reply], a message of another chat, to the conversation of chat [chatId], to reply to it there. */
+        fun deliverReply(
+            chatId: Long,
+            reply: ReplyTarget,
+        ) {
+            replies.update { it.putting(chatId, reply) }
+        }
+
+        /** The reply that waits for chat [chatId]'s conversation, as it comes; null while none does. */
+        internal fun repliesTo(chatId: Long): Flow<ReplyTarget?> = replies.map { it[chatId] }.distinctUntilChanged()
+
+        /** Takes [reply], delivered to chat [chatId], if it still waits: true for the one conversation it goes to. */
+        internal fun claimReply(
+            chatId: Long,
+            reply: ReplyTarget,
+        ): Boolean {
+            var claimed = false
+            replies.update { waiting ->
+                claimed = waiting[chatId] === reply
+                if (claimed) waiting.removing(chatId) else waiting
             }
             return claimed
         }

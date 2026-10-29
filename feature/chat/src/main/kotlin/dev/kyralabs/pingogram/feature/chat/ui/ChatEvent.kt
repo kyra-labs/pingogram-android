@@ -192,6 +192,11 @@ sealed interface ChatEvent {
         val animation: Animation,
     ) : ChatEvent
 
+    /** The attach preview's "Send without compression": its photos and videos go as files, or compressed. */
+    data class SetOriginalQuality(
+        val original: Boolean,
+    ) : ChatEvent
+
     /** The remove button of item [key] of the preview. */
     data class RemoveAttachment(
         val key: Long,
@@ -235,6 +240,15 @@ sealed interface ChatEvent {
      */
     data class ShowAllReactions(
         val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * "Seen by" ([reactions] false) or "Reactions" in a group message [messageId]'s actions: open the sheet of who saw
+     * it and who reacted to it, at that list, if TDLib still allows it.
+     */
+    data class ShowInteractions(
+        val messageId: Long,
+        val reactions: Boolean,
     ) : ChatEvent
 
     /** The button at the end of the actions sheet's quick reactions: the sheet shows the reactions picker. */
@@ -296,6 +310,14 @@ sealed interface ChatEvent {
      */
     data class Forward(
         val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * A pull past the newest post of a read channel, or a screen reader's action, asks to open channel [chatId], the
+     * next unread one ([ChatViewModel.nextChannel]), in this one's place.
+     */
+    data class OpenNextChannel(
+        val chatId: Long,
     ) : ChatEvent
 
     /** Send the failed message [messageId] again (an album's failed items). */

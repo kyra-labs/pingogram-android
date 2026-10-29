@@ -6,6 +6,7 @@ import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
@@ -21,19 +22,29 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
+import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
+import dev.kyralabs.pingogram.feature.calls.ui.invite.InvitePeopleSheet
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -45,8 +56,13 @@ import javax.inject.Inject
  * chat goes on, which its notification brings back. A live stream goes on in picture-in-picture instead, with "Leave".
  */
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Android's callbacks and the window's: picture-in-picture, settings, screen capture.
 class GroupCallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject lateinit var powerSaving: PowerSavingPolicy
+
+    @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: GroupCallViewModel by viewModels()
 
@@ -72,12 +88,13 @@ class GroupCallActivity : ComponentActivity() {
         CallVideoView(name = slot.name, mirror = mirror, onSink = viewModel::setSelfVideoSink, modifier = modifier)
     }
 
-    private val participantVideo: ParticipantVideo = { endpointId, modifier ->
+    private val participantVideo: ParticipantVideo = { endpointId, fit, modifier ->
         CallVideoView(
             name = "Participant $endpointId",
             mirror = false,
             onSink = { viewModel.setParticipantVideoSink(endpointId, it) },
             modifier = modifier,
+            fit = fit,
         )
     }
 
@@ -87,8 +104,13 @@ class GroupCallActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, backToPictureInPicture)
         val appearance =
             appearanceRepository.appearance.stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), null)
+        val stillAnimations =
+            powerSaving.inEffect
+                .map { it.stillCalls }
+                .stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), false)
         setContent {
             val settings by appearance.collectAsStateWithLifecycle()
+            val still by stillAnimations.collectAsStateWithLifecycle()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val permissions =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
@@ -103,19 +125,19 @@ class GroupCallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
                 }
+            val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
+            val snackbarHostState = remember { SnackbarHostState() }
+            var inviting by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {
-                viewModel.effects.collect { effect ->
-                    when (effect) {
-                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-                        CallEffect.OpenSettings -> openAppSettings()
-                    }
+                viewModel.effects.collect {
+                    onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture, snackbarHostState)
                 }
             }
             LaunchedEffect(state) { if (state == GroupCallUiState.Closed) finish() }
             val watching = (state as? GroupCallUiState.InCall)?.let { it.watches() && it.hasControls } == true
             LaunchedEffect(watching) { updatePictureInPicture(watching) }
             settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings) {
+                CallTheme(appearanceSettings, stillAnimations = still) {
                     GroupCallScreen(
                         state = state,
                         onEvent = viewModel::onEvent,
@@ -126,11 +148,90 @@ class GroupCallActivity : ComponentActivity() {
                         selfVideo = selfVideo,
                         participantVideo = participantVideo,
                         pictureInPicture = inPictureInPicture,
+                        onAddPeople = { inviting = true },
+                        snackbarHostState = snackbarHostState,
+                    )
+                    if (inviting) InviteSheet(state, onClose = { inviting = false })
+                }
+            }
+        }
+    }
+
+    /** "Add people" over a conference call it may invite into; [onClose] once it closed, inviting or not. */
+    @Composable
+    private fun InviteSheet(
+        state: GroupCallUiState,
+        onClose: () -> Unit,
+    ) {
+        val inCall = state as? GroupCallUiState.InCall
+        if (inCall?.canInvite != true || inPictureInPicture) return
+        InvitePeopleSheet(
+            excluded = inCall.participantUserIds(),
+            onInvite = {
+                onClose()
+                viewModel.onEvent(GroupCallEvent.Invite(it))
+            },
+            onDismiss = onClose,
+        )
+    }
+
+    /** Does what an effect of the view model asks; a result's snackbar shows while the next effects come. */
+    private fun onEffect(
+        effect: CallEffect,
+        requestCamera: () -> Unit,
+        screenCapture: () -> Unit,
+        snackbarHostState: SnackbarHostState,
+    ) {
+        when (effect) {
+            CallEffect.RequestCamera -> {
+                requestCamera()
+            }
+
+            CallEffect.RequestScreenCapture -> {
+                screenCapture()
+            }
+
+            CallEffect.OpenSettings -> {
+                openAppSettings()
+            }
+
+            CallEffect.OpenGroupCall -> {}
+
+            is CallEffect.Invited -> {
+                lifecycleScope.launch { snackbarHostState.showSnackbar(invitedText(effect)) }
+            }
+
+            is CallEffect.InviteFailed -> {
+                lifecycleScope.launch {
+                    snackbarHostState.showSnackbar(
+                        inviteFailedText(effect),
                     )
                 }
             }
         }
     }
+
+    private fun invitedText(effect: CallEffect.Invited): String =
+        listOfNotNull(
+            effect.invited.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.call_invite_sent, it, it) },
+            effect.refused.takeIf { it > 0 }?.let {
+                resources.getQuantityString(
+                    R.plurals.call_invite_refused,
+                    it,
+                    it,
+                )
+            },
+        ).joinToString(" ")
+
+    private fun inviteFailedText(effect: CallEffect.InviteFailed): String =
+        errorMessage(
+            resources,
+            effect.error,
+            showDetails =
+                applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        )
+
+    private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted))
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
@@ -203,6 +304,9 @@ class GroupCallActivity : ComponentActivity() {
 
         const val EXTRA_ACTION = "action"
         const val EXTRA_CHAT_ID = "chat_id"
+        const val EXTRA_LINK = "link"
+        const val EXTRA_INVITATION_CHAT_ID = "invitation_chat_id"
+        const val EXTRA_INVITATION_MESSAGE_ID = "invitation_message_id"
 
         /** Shows the voice chat the user is in. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW_VOICE_CHAT"
@@ -213,6 +317,15 @@ class GroupCallActivity : ComponentActivity() {
         /** Starts a voice chat in [EXTRA_CHAT_ID] and joins it. */
         const val ACTION_START = "dev.kyralabs.pingogram.calls.START_VOICE_CHAT"
 
+        /** Joins the conference call of the `t.me/call` link [EXTRA_LINK] (`docs/adr/0025-conference-calls.md`). */
+        const val ACTION_JOIN_CONFERENCE = "dev.kyralabs.pingogram.calls.JOIN_CONFERENCE"
+
+        /**
+         * Joins the conference call that invitation [EXTRA_INVITATION_MESSAGE_ID] in chat [EXTRA_INVITATION_CHAT_ID]
+         * invites to.
+         */
+        const val ACTION_JOIN_INVITATION = "dev.kyralabs.pingogram.calls.JOIN_INVITATION"
+
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
         fun open(
             context: Context,
@@ -222,6 +335,32 @@ class GroupCallActivity : ComponentActivity() {
             context.startActivity(
                 intent(context, if (start) ACTION_START else ACTION_JOIN).putExtra(EXTRA_CHAT_ID, chatId),
             )
+        }
+
+        /** Shows the voice chat or conference call the user is in: a one-to-one call that became one. */
+        fun show(context: Context) {
+            context.startActivity(intent(context, ACTION_SHOW))
+        }
+
+        /** Joins the conference call that the invitation [messageId] in chat [chatId] is to, and shows it. */
+        fun openInvitation(
+            context: Context,
+            chatId: Long,
+            messageId: Long,
+        ) {
+            context.startActivity(
+                intent(context, ACTION_JOIN_INVITATION)
+                    .putExtra(EXTRA_INVITATION_CHAT_ID, chatId)
+                    .putExtra(EXTRA_INVITATION_MESSAGE_ID, messageId),
+            )
+        }
+
+        /** Joins the conference call of [link] and shows it. */
+        fun openConference(
+            context: Context,
+            link: String,
+        ) {
+            context.startActivity(intent(context, ACTION_JOIN_CONFERENCE).putExtra(EXTRA_LINK, link))
         }
 
         internal fun pendingIntent(

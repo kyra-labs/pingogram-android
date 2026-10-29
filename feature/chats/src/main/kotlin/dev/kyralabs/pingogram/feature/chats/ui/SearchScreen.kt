@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -135,7 +136,8 @@ internal fun SearchScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            Column {
+            // Opaque: the results scroll under the top bar, which the Scaffold places above them.
+            Column(Modifier.background(colors.containerColor)) {
                 SearchHeader(
                     textFieldState = textFieldState,
                     filter = state.filter,

@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.os.Build
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -60,8 +62,11 @@ import kotlin.math.abs
  * A chat in the list with its swipe actions (`REQUIREMENTS.md` FR-L4, FR-L8; `docs/DESIGN_SYSTEM.md` §5–6, §9): a
  * [SwipeToDismissBox] around the [ChatListItem].
  *
- * - **Swipes**: start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]); end to
- *   start archives it, or unarchives it in the archive ([endSwipeAction]). Both mirror in right-to-left layouts. The
+ * - **Swipes**: what Appearance → Chat list → Swipe actions picked ([LocalChatSwipes], [rowActionFor]), by default
+ *   start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]), and end to start
+ *   archives it, or unarchives it in the archive ([endSwipeAction]); a side set to nothing, or whose action the chat
+ *   does not have (muting Saved Messages), does not swipe; while swiping changes the folder
+ *   ([ChatSwipes.changesFolder]), no row swipes, as the whole list moves. Both mirror in right-to-left layouts. The
  *   row never stays dismissed: past the threshold the action runs, with a `Confirm` haptic on Android 14 and later,
  *   and the row springs back. An archived chat then leaves the list through TDLib's update and `animateItem`; in a
  *   folder that keeps archived chats it stays, its swipe turned to unarchive. One swipe runs one action
@@ -86,8 +91,9 @@ internal fun ChatRow(
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val start = item.startSwipeAction
-    val end = item.endSwipeAction
+    val swipes = LocalChatSwipes.current
+    val start = item.rowActionFor(swipes.start)
+    val end = item.rowActionFor(swipes.end)
     val threshold = SwipeToDismissBoxDefaults.positionalThreshold
     // Not rememberSwipeToDismissBoxState, which saves the state: a row that left the list while springing back (an
     // archived chat) would come back with Undo swiped away, and run its swipe again at once.
@@ -100,10 +106,12 @@ internal fun ChatRow(
     SwipeToDismissBox(
         state = state,
         backgroundContent = {
-            SwipeBackground(state, start, end, iconScale, SwipeFeedback(threshold, iconSpec))
+            SwipeBackground(state, start?.reveal, end?.reveal, iconScale, SwipeFeedback(threshold, iconSpec))
         },
         modifier = modifier,
-        gesturesEnabled = !selectionMode,
+        enableDismissFromStartToEnd = start != null,
+        enableDismissFromEndToStart = end != null,
+        gesturesEnabled = !selectionMode && !swipes.changesFolder && (start != null || end != null),
         onDismiss = rememberOnSwiped(state, item.id, start, end, onEvent),
     ) {
         ChatListItem(
@@ -148,8 +156,8 @@ internal fun ChatRow(
 private fun rememberOnSwiped(
     state: SwipeToDismissBoxState,
     chatId: Long,
-    start: ChatRowAction,
-    end: ChatRowAction,
+    start: ChatRowAction?,
+    end: ChatRowAction?,
     onEvent: (ChatListEvent) -> Unit,
 ): (SwipeToDismissBoxValue) -> Unit {
     val scope = rememberCoroutineScope()
@@ -180,23 +188,54 @@ private fun rememberOnSwiped(
 }
 
 /**
- * What a swipe reveals: the container of the action of the side the row moves away from, inset like the row's and
- * with `large` corners, with its icon and label at that side. Decorative: screen readers get the actions on the row.
- * The icons and labels are composed only while the row is away from its place: at rest nothing shows them, and every
- * row of a list would compose and lay out two of each, when a folder's rows replace another's or the list comes back
- * from another screen. So is the threshold's [feedback] ([swipeThresholdFeedback]), whose watch would otherwise start
- * with every row the list brings into view.
+ * What a swipe toward one side reveals: [icon] and [label] on the container of [tone]. Equal reveals are equal, so a
+ * row that composes again with the same actions skips its background.
+ */
+@Immutable
+internal data class SwipeReveal(
+    @param:DrawableRes val icon: Int,
+    @param:StringRes val label: Int,
+    val tone: SwipeTone,
+)
+
+/**
+ * The tonal pair behind a swipe: `secondaryContainer` (read, unread, pin, mute, hide), `tertiaryContainer` (archive,
+ * unarchive) or `errorContainer` (delete).
+ */
+internal enum class SwipeTone { Secondary, Tertiary, Error }
+
+/** What swiping this action reveals: its icon and short label, archiving and deleting on their own tones. */
+private val ChatRowAction.reveal: SwipeReveal
+    get() =
+        SwipeReveal(
+            icon = icon,
+            label = swipeLabel,
+            tone =
+                when (this) {
+                    ChatRowAction.Archive, ChatRowAction.Unarchive -> SwipeTone.Tertiary
+                    ChatRowAction.Delete -> SwipeTone.Error
+                    else -> SwipeTone.Secondary
+                },
+        )
+
+/**
+ * What a swipe reveals: the container of the side the row moves away from ([start] or [end]), inset like the row's
+ * and with `large` corners, with its icon and label at that side. Decorative: screen readers get the actions on the
+ * row. The icons and labels are composed only while the row is away from its place: at rest nothing shows them, and
+ * every row of a list would compose and lay out two of each, when a folder's rows replace another's or the list comes
+ * back from another screen. So is the threshold's [feedback] ([swipeThresholdFeedback]), whose watch would otherwise
+ * start with every row the list brings into view.
  */
 @Composable
-private fun SwipeBackground(
+internal fun SwipeBackground(
     state: SwipeToDismissBoxState,
-    start: ChatRowAction,
-    end: ChatRowAction,
+    start: SwipeReveal?,
+    end: SwipeReveal?,
     iconScale: Animatable<Float, AnimationVector1D>,
     feedback: SwipeFeedback,
 ) {
-    val startColors = start.swipeColors()
-    val endColors = end.swipeColors()
+    val startColors = start?.tone.swipeColors()
+    val endColors = end?.tone.swipeColors()
     val swiping by remember(state) { derivedStateOf { state.dismissDirection != SwipeToDismissBoxValue.Settled } }
     val shape = MaterialTheme.shapes.large
     Box(
@@ -222,25 +261,31 @@ private fun SwipeBackground(
             },
     ) {
         if (swiping) {
-            SwipeActionLabel(
-                action = start,
-                color = startColors.content,
-                iconScale = iconScale,
-                modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
-            )
-            SwipeActionLabel(
-                action = end,
-                color = endColors.content,
-                iconScale = iconScale,
-                modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
-            )
+            start?.let {
+                SwipeActionLabel(
+                    reveal = it,
+                    color = startColors.content,
+                    iconScale = iconScale,
+                    modifier =
+                        Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
+                )
+            }
+            end?.let {
+                SwipeActionLabel(
+                    reveal = it,
+                    color = endColors.content,
+                    iconScale = iconScale,
+                    modifier =
+                        Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun SwipeActionLabel(
-    action: ChatRowAction,
+    reveal: SwipeReveal,
     color: Color,
     iconScale: Animatable<Float, AnimationVector1D>,
     modifier: Modifier = Modifier,
@@ -251,7 +296,7 @@ private fun SwipeActionLabel(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            painter = painterResource(action.icon),
+            painter = painterResource(reveal.icon),
             contentDescription = null,
             modifier =
                 Modifier.graphicsLayer {
@@ -261,7 +306,7 @@ private fun SwipeActionLabel(
             tint = color,
         )
         Text(
-            text = stringResource(action.swipeLabel),
+            text = stringResource(reveal.label),
             color = color,
             maxLines = 1,
             style = MaterialTheme.typography.labelLarge,
@@ -277,28 +322,27 @@ private fun Modifier.revealedBy(
 
 /** How a swipe's threshold is fed back: where it lies ([positionalThreshold]) and the spring its icon grows on. */
 @Immutable
-private data class SwipeFeedback(
+internal data class SwipeFeedback(
     val positionalThreshold: (Float) -> Float,
     val iconSpec: FiniteAnimationSpec<Float>,
 )
 
-/** The colors behind a swipe: `secondaryContainer` for read and unread, `tertiaryContainer` for archive. */
+/**
+ * The colors behind a swipe: `tertiaryContainer` for archive and unarchive, `errorContainer` for delete,
+ * `secondaryContainer` for the others (none behind a side that does not swipe).
+ */
 private class SwipeColors(
     val container: Color,
     val content: Color,
 )
 
 @Composable
-private fun ChatRowAction.swipeColors(): SwipeColors {
+private fun SwipeTone?.swipeColors(): SwipeColors {
     val colors = MaterialTheme.colorScheme
     return when (this) {
-        ChatRowAction.Archive, ChatRowAction.Unarchive -> {
-            SwipeColors(colors.tertiaryContainer, colors.onTertiaryContainer)
-        }
-
-        else -> {
-            SwipeColors(colors.secondaryContainer, colors.onSecondaryContainer)
-        }
+        SwipeTone.Tertiary -> SwipeColors(colors.tertiaryContainer, colors.onTertiaryContainer)
+        SwipeTone.Error -> SwipeColors(colors.errorContainer, colors.onErrorContainer)
+        SwipeTone.Secondary, null -> SwipeColors(colors.secondaryContainer, colors.onSecondaryContainer)
     }
 }
 
@@ -402,4 +446,4 @@ private class SwipeThresholdFeedbackNode(
 }
 
 /** The size of a swipe's icon before the threshold, against its full size past it. */
-private const val SWIPE_ICON_RESTING_SCALE = 0.6f
+internal const val SWIPE_ICON_RESTING_SCALE = 0.6f

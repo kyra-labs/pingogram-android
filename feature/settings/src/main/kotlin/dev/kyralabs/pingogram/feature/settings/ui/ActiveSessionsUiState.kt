@@ -15,6 +15,8 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property dialog the termination being confirmed; null when none is.
  * @property busySessionIds the sessions being terminated or confirmed.
  * @property isTerminatingAll terminating all other sessions was confirmed and runs.
+ * @property isOnTestServers this session signed in on Telegram's test servers (`REQUIREMENTS.md` FR-A9): this device's
+ *   row says so.
  */
 @Immutable
 data class ActiveSessionsUiState(
@@ -22,6 +24,7 @@ data class ActiveSessionsUiState(
     val dialog: TerminateDialog? = null,
     val busySessionIds: ImmutableSet<Long> = persistentSetOf(),
     val isTerminatingAll: Boolean = false,
+    val isOnTestServers: Boolean = false,
 )
 
 /** The sessions while they load. */

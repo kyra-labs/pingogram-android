@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -172,6 +173,8 @@ internal fun ActionPill(
  * - **Phone**: formatted for its country, left to right; tapping opens the dialer, a long press or the trailing button
  *   copies it.
  * - **Birthday**, formatted by the view model.
+ * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
+ * - **ID**, while Privacy and security's "Show IDs" is on: the user's ID, left to right; tapping copies it.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
  */
@@ -199,7 +202,28 @@ internal fun ProfileInfoGroup(
                 }
             }
     }
+    info.personalChannel?.let { channel ->
+        rows += ProfileRow("personalChannel") { shapes -> PersonalChannelRow(channel, shapes, onEvent) }
+    }
+    info.id?.let { id -> rows += ProfileRow("id") { shapes -> IdRow(id, shapes) { onEvent(ProfileEvent.CopyId) } } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
+}
+
+/** The personal channel: its title (user content) over "Channel"; a tap opens its chat. */
+@Composable
+private fun PersonalChannelRow(
+    channel: PersonalChannel,
+    shapes: ListItemShapes,
+    onEvent: (ProfileEvent) -> Unit,
+) {
+    SegmentedListItem(
+        onClick = { onEvent(ProfileEvent.OpenPersonalChannel(channel.chatId)) },
+        shapes = shapes,
+        colors = profileRowColors(),
+        supportingContent = { Text(stringResource(R.string.profile_personal_channel)) },
+    ) {
+        Text(channel.title, style = MaterialTheme.typography.bodyLarge.userContent)
+    }
 }
 
 @Composable
@@ -278,7 +302,7 @@ private fun PhoneRow(
     onEvent: (ProfileEvent) -> Unit,
 ) {
     val country = LocalConfiguration.current.locales[0].country
-    val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
+    val formatted = phoneNumberToShow(remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) })
     val call = stringResource(R.string.profile_call)
     SegmentedListItem(
         onClick = { onEvent(ProfileEvent.CallPhone) },

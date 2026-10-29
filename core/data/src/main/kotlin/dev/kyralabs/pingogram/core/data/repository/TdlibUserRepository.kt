@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toUser
 import dev.kyralabs.pingogram.core.data.mapper.toUserStatus
 import dev.kyralabs.pingogram.core.domain.model.User
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [UserRepository] on TDLib's users. TDLib announces each user with `updateUser` before any of its ids reaches the
@@ -30,7 +30,7 @@ import javax.inject.Singleton
  *
  * A user that changed only in fields Pingogram does not keep keeps its map, so [users] emits only real changes.
  */
-@Singleton
+@AccountScoped
 class TdlibUserRepository
     @Inject
     constructor(

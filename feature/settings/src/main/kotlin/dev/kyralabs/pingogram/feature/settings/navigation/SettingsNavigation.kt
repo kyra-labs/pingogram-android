@@ -13,7 +13,6 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
-import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
@@ -22,41 +21,49 @@ import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
+import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
+import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
+import dev.kyralabs.pingogram.core.navigation.PowerSavingRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
+import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
+import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
+import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
+import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
+import dev.kyralabs.pingogram.core.navigation.SwipeActionsRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
 import dev.kyralabs.pingogram.core.ui.component.SheetDialogProperties
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetSheetRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerSetKind
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationResult
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveSessionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadRoute as AutoDownloadScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
@@ -65,15 +72,17 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountRoute as DeleteAccountScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingRoute as PowerSavingScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsRoute as ReactionNotificationsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
@@ -103,7 +112,10 @@ fun NavGraphBuilder.settingsScreen(
     }
 }
 
-/** Appearance and the pages it opens with [onOpen]: the Theme page and Chat appearance. */
+/**
+ * Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance, Double-tap to react and Swipe
+ * actions.
+ */
 private fun NavGraphBuilder.appearancePages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
@@ -112,11 +124,17 @@ private fun NavGraphBuilder.appearancePages(
         AppearanceScreenRoute(
             onOpenColorTheme = { onOpen(ColorThemeRoute) },
             onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
+            onOpenQuickReaction = { onOpen(QuickReactionRoute) },
+            onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
+            onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
             onBack = onBack,
         )
     }
     settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
     settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
+    settingsPage<QuickReactionRoute> { QuickReactionScreenRoute(onBack = onBack) }
+    settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
+    settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
 }
 
 /** Chat folders and the folder editor above it. */
@@ -130,23 +148,28 @@ private fun NavGraphBuilder.folderPages(
     settingsPage<ChatFolderEditRoute> { ChatFolderEditScreenRoute(onBack = onBack) }
 }
 
-/** Stickers and the Trending and Archived stickers pages above it. */
+/** Stickers, its Emoji page, and the Trending and Archived pages above each. */
 private fun NavGraphBuilder.stickerPages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
 ) {
-    settingsPage<StickersRoute> {
+    settingsPage<StickersRoute> { entry ->
+        val emoji = entry.toRoute<StickersRoute>().emoji
         StickersScreenRoute(
-            onOpenList = { onOpen(StickerSetListRoute(archived = it)) },
+            onOpenList = { onOpen(StickerSetListRoute(archived = it, emoji = emoji)) },
             onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
             onBack = onBack,
+            kind = stickerSetKind(emoji),
+            onOpenEmoji = { onOpen(StickersRoute(emoji = true)) },
         )
     }
     settingsPage<StickerSetListRoute> { entry ->
+        val route = entry.toRoute<StickerSetListRoute>()
         StickerSetListScreenRoute(
-            archived = entry.toRoute<StickerSetListRoute>().archived,
+            archived = route.archived,
             onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
             onBack = onBack,
+            kind = stickerSetKind(route.emoji),
         )
     }
     // A dialog destination, so the page below stays visible under the sheet's scrim; links open it too.
@@ -158,12 +181,13 @@ private fun NavGraphBuilder.stickerPages(
 
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
- * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
- * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
- * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute]
- * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the
- * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
- * above Notifications, [AutoDownloadRoute] above Data and storage,
+ * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [PowerSavingRoute], [LanguageRoute],
+ * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
+ * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute], [ChatAppearanceRoute], [QuickReactionRoute] and
+ * [SwipeActionsRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet
+ * of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
+ * above Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage,
+ * [EditProxyRoute] above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination),
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
@@ -191,6 +215,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
+    settingsPage<ReactionNotificationsRoute> { ReactionNotificationsScreenRoute(onBack = onBack) }
     settingsPage<NotificationExceptionsRoute> { entry ->
         val scope =
             NotificationScope.entries.firstOrNull {
@@ -205,7 +230,12 @@ fun NavGraphBuilder.settingsPages(
         }
     }
     settingsPage<DataStorageRoute> {
-        DataStorageScreenRoute(onOpenAutoDownload = { onOpen(AutoDownloadRoute(it.name)) }, onBack = onBack)
+        DataStorageScreenRoute(
+            onOpenAutoDownload = { onOpen(AutoDownloadRoute(it.name)) },
+            onOpenProxies = { onOpen(ProxiesRoute) },
+            onOpenNetworkUsage = { onOpen(NetworkUsageRoute) },
+            onBack = onBack,
+        )
     }
     settingsPage<AutoDownloadRoute> { entry ->
         val network = AutoDownloadNetwork.entries.firstOrNull { it.name == entry.toRoute<AutoDownloadRoute>().network }
@@ -216,6 +246,8 @@ fun NavGraphBuilder.settingsPages(
             LaunchedEffect(Unit) { onBack() }
         }
     }
+    networkPages(onOpen, onBack)
+    settingsPage<PowerSavingRoute> { PowerSavingScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
@@ -224,25 +256,12 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<OpenSourceLibraryRoute> { entry ->
         OpenSourceLibraryScreenRoute(libraryId = entry.toRoute<OpenSourceLibraryRoute>().libraryId, onBack = onBack)
     }
-    settingsPage<PrivacySecurityRoute> {
-        PrivacySecurityScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
-    }
-    settingsPage<PrivacySettingRoute> { entry ->
-        val setting = PrivacySetting.entries.firstOrNull { it.name == entry.toRoute<PrivacySettingRoute>().setting }
-        if (setting != null) {
-            PrivacySettingScreenRoute(setting = setting, onBack = onBack)
-        } else {
-            // A setting this version does not know, e.g. from a back stack restored after an update.
-            LaunchedEffect(Unit) { onBack() }
-        }
-    }
-    settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
+    privacyPages(onOpen, onBack)
     devicePages(onOpen, onBack, onScanQrCode)
     settingsPage<PasscodeLockRoute> {
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
     }
     settingsPage<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
-    settingsPage<DeleteAccountRoute> { DeleteAccountScreenRoute(onBack = onBack) }
     twoStepVerificationPages(onOpen, onBack, onTwoStepVerificationDone)
 }
 
@@ -340,27 +359,18 @@ internal val SettingsPage.route: Any
             SettingsPage.EditProfile -> EditProfileRoute
             SettingsPage.Appearance -> AppearanceRoute
             SettingsPage.ChatFolders -> ChatFoldersRoute
-            SettingsPage.Stickers -> StickersRoute
+            SettingsPage.Stickers -> StickersRoute()
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
+            SettingsPage.PowerSaving -> PowerSavingRoute
             SettingsPage.Language -> LanguageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
-        }
-
-private val PrivacySecurityPage.route: Any
-    get() =
-        when (this) {
-            is PrivacySecurityPage.Setting -> PrivacySettingRoute(setting.name)
-            PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
-            PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
-            PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
-            PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
-            PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute
         }
 
 private val NotificationSettingsPage.route: Any
     get() =
         when (this) {
             is NotificationSettingsPage.Exceptions -> NotificationExceptionsRoute(scope.name)
+            NotificationSettingsPage.Reactions -> ReactionNotificationsRoute
         }

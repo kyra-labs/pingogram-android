@@ -26,7 +26,7 @@ data class IncomingShare(
  * The share [intent] carries (`ACTION_SEND`, `ACTION_SEND_MULTIPLE`, the manifest's share filters): its text
  * (`EXTRA_TEXT`) and its files (`EXTRA_STREAM`, or the clip data's URIs), sent as photos and videos when the sharing
  * app's type says they all are ([SharedContent.kindOf]), and the chat of the Direct Share target it went to
- * (`EXTRA_SHORTCUT_ID`, [NotificationIntents.chatIdOfShortcut]). Null for other intents, for a share with nothing in
+ * (`EXTRA_SHORTCUT_ID`, [NotificationIntents.chatOfShortcut]). Null for other intents, for a share with nothing in
  * it, and for one the system hands over again as the app is reopened from the recent apps
  * ([Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY]).
  *
@@ -61,7 +61,8 @@ internal fun shareOf(
             files = files.toImmutableList(),
             kind = SharedContent.kindOf(share.type),
         )
-    val chatId = NotificationIntents.chatIdOfShortcut(share.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID))
+    val chatId =
+        NotificationIntents.chatOfShortcut(share.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID))?.chatId
     return IncomingShare(content, chatId).takeUnless { content.isEmpty }
 }
 

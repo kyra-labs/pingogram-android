@@ -14,6 +14,15 @@
     <string name="settings_account_username">\@%1$s</string>
     <!-- On the account's card when the account subscribes to Telegram Premium: a status, not an offer. -->
     <string name="settings_account_premium">Premium</string>
+    <!-- Below the account card: another account's row says what a tap does for screen readers. -->
+    <string name="settings_switch_account">Switch to %1$s</string>
+    <string name="settings_add_account">Add account</string>
+    <plurals name="settings_account_unread_chats">
+        <item quantity="one">%1$d unread chat</item>
+        <item quantity="other">%1$d unread chats</item>
+    </plurals>
+    <!-- A label on the account's card and in Active sessions: the account is signed in on Telegram's test servers (Telegram's test accounts, used by app reviewers), not the real ones. -->
+    <string name="settings_account_test_server">Test server</string>
     <!-- What tapping the account's card does, spoken by screen readers ("double-tap to edit profile"). -->
     <string name="settings_edit_profile_button">Edit profile</string>
     <!-- Snackbar on Settings after the profile was saved. -->
@@ -149,6 +158,9 @@
     <string name="settings_auto_download_list_files">Files up to %1$s</string>
     <string name="settings_auto_download_list_voice">Voice and video messages</string>
     <string name="settings_auto_download_data_saver_footer">Data Saver is on: on mobile data, media downloads only when you tap it</string>
+    <string name="settings_auto_download_reset">Reset automatic download</string>
+    <string name="settings_auto_download_reset_summary">Back to what downloads by itself at first, on every network</string>
+    <string name="settings_auto_download_reset_done">Automatic download reset</string>
     <!-- The automatic download page of one kind of network. -->
     <string name="settings_auto_download_section">Download automatically</string>
     <string name="settings_auto_download_photos">Photos</string>
@@ -169,6 +181,37 @@
     <string name="settings_auto_download_footer">Stickers, profile photos and previews always download. Everything else downloads when you tap it.</string>
     <string name="settings_auto_download_data_saver">Data Saver is on</string>
     <string name="settings_auto_download_data_saver_summary">Media downloads only when you tap it, until you turn Data Saver off or let Pingogram use data freely in Android\'s settings</string>
+
+    <!-- Data and storage → Sending -->
+    <string name="settings_section_sending">Sending</string>
+    <string name="settings_section_calls">Calls</string>
+    <string name="settings_call_data_saving">Use less data for calls</string>
+    <string name="settings_call_data_saving_summary">The video you send in calls goes at most at 360p. Voice stays as it is.</string>
+    <string name="settings_call_data_saving_never">Never</string>
+    <string name="settings_call_data_saving_mobile">Mobile data</string>
+    <string name="settings_call_data_saving_always">Always</string>
+    <string name="settings_photos_original">Send photos in original quality</string>
+    <string name="settings_photos_original_summary">Photos and videos from the gallery go as files, at their full size and quality, without their location or camera details. You can change it when you send them.</string>
+
+    <!-- Power saving -->
+    <string name="settings_power_saving">Power saving</string>
+    <string name="settings_power_saving_summary">Animations and videos that play by themselves</string>
+    <string name="settings_power_saving_section_mode">Turn on</string>
+    <string name="settings_power_saving_off">Off</string>
+    <string name="settings_power_saving_with_battery_saver">With Battery Saver</string>
+    <string name="settings_power_saving_battery_saver_on">Battery Saver is on now</string>
+    <string name="settings_power_saving_battery_saver_off">Battery Saver is off now</string>
+    <string name="settings_power_saving_always">Always</string>
+    <string name="settings_power_saving_mode_footer">Power saving stops what plays by itself, so the battery lasts longer.</string>
+    <string name="settings_power_saving_section_parts">While on</string>
+    <string name="settings_power_saving_stickers">Stop animated stickers and emoji</string>
+    <string name="settings_power_saving_stickers_summary">They show still, as their first frame</string>
+    <string name="settings_power_saving_autoplay">Stop autoplay</string>
+    <string name="settings_power_saving_autoplay_summary">Videos and GIFs wait for you to tap play</string>
+    <string name="settings_power_saving_calls">Stop call screen animations</string>
+    <string name="settings_power_saving_calls_summary">The avatar of a ringing call and the speaking rings stand still</string>
+    <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
+
     <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>
@@ -190,6 +233,14 @@
     <string name="settings_clear_cache_dialog_title">Clear cache?</string>
     <string name="settings_clear_cache_dialog_text">Downloaded photos, videos, voice messages, music and files will be removed from this device. They stay in your chats and download again when you open them. Secret chats aren\'t affected.</string>
     <string name="settings_clear_cache_dialog_confirm">Clear cache</string>
+    <!-- Data and storage → Cache: the drafts the account keeps on Telegram (td_api.tl clearAllDraftMessages). -->
+    <string name="settings_delete_drafts">Delete cloud drafts</string>
+    <string name="settings_delete_drafts_summary">Unsent messages saved in your chats, on all your devices</string>
+    <string name="settings_delete_drafts_running">Deleting cloud drafts</string>
+    <string name="settings_delete_drafts_dialog_title">Delete all cloud drafts?</string>
+    <string name="settings_delete_drafts_dialog_text">The messages you started and didn\'t send will be deleted from all your chats, on all your devices. Drafts of secret chats stay on this device.</string>
+    <string name="settings_delete_drafts_dialog_confirm">Delete</string>
+    <string name="settings_delete_drafts_done">Cloud drafts deleted</string>
     <!-- Snackbar after clearing the cache. %1$s is a size such as "1.5 GB". -->
     <string name="settings_clear_cache_done">Cleared %1$s</string>
     <string name="settings_clear_cache_nothing">There was nothing to clear</string>
@@ -204,10 +255,15 @@
     <string name="settings_contact_sync">Sync contacts</string>
     <string name="settings_contact_sync_off">Send your phone\'s contacts to Telegram to find who uses it. Off</string>
     <string name="settings_contact_sync_on">On. Your phone\'s names and numbers go to Telegram when you open Contacts and when you sync</string>
+    <!-- Privacy and security → Contacts: TDLib's option disable_top_chats. -->
+    <string name="settings_frequent_contacts">Suggest frequent contacts</string>
+    <string name="settings_frequent_contacts_summary">Search shows the people you write to most. Turning this off clears them.</string>
     <string name="settings_contact_sync_paused">Paused: Pingogram can no longer read your contacts. Allow it on the Contacts tab or in Android\'s settings</string>
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>
+    <string name="settings_privacy_bio">Bio</string>
+    <string name="settings_privacy_birthdate">Birthday</string>
     <string name="settings_privacy_forwarded_messages">Forwarded messages</string>
     <string name="settings_privacy_calls">Calls</string>
     <string name="settings_privacy_chat_invites">Invitations to groups and channels</string>
@@ -321,6 +377,32 @@
     <string name="settings_privacy_phone_number_question">Who can see my phone number</string>
     <string name="settings_privacy_last_seen_question">Who can see when I was last online</string>
     <string name="settings_privacy_profile_photo_question">Who can see my profile photos</string>
+    <string name="settings_privacy_bio_question">Who can see my bio</string>
+    <string name="settings_privacy_birthdate_question">Who can see my birthday</string>
+    <string name="settings_section_privacy_read_time">Read time</string>
+    <string name="settings_privacy_exceptions_loading">Loading exceptions</string>
+    <string name="settings_privacy_exceptions_add">Add users or groups</string>
+    <string name="settings_privacy_exceptions_search">Search chats</string>
+    <string name="settings_privacy_exceptions_group">Group</string>
+    <string name="settings_privacy_exceptions_remove">Remove</string>
+    <!-- For screen readers: the "Remove" button of an exception's row; %1$s is the user's or group's name. -->
+    <string name="settings_privacy_exceptions_remove_label">Remove %1$s</string>
+    <string name="settings_privacy_exceptions_always_note">These people, and the members of these groups, are always allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_never_note">These people, and the members of these groups, are never allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_none">Add users or groups</string>
+    <string name="settings_privacy_new_chats">Messages</string>
+    <string name="settings_privacy_new_chats_loading">Loading who can message you</string>
+    <string name="settings_privacy_new_chats_question">Who can message me</string>
+    <string name="settings_privacy_new_chats_contacts">My contacts and Telegram Premium users</string>
+    <string name="settings_privacy_new_chats_premium">Telegram lets only Telegram Premium subscribers choose this</string>
+    <string name="settings_privacy_new_chats_note">People who are not your contacts can start a chat with you only if you let them. Telegram Premium subscribers can always write first. Chats you have keep going either way.</string>
+    <plurals name="settings_privacy_new_chats_paid">
+        <item quantity="one">Non-contacts pay %1$s Telegram Star for each message, as set in another app.</item>
+        <item quantity="other">Non-contacts pay %1$s Telegram Stars for each message, as set in another app.</item>
+    </plurals>
+    <string name="settings_privacy_read_time">Show my read time</string>
+    <string name="settings_privacy_read_time_summary">When you read messages in private chats</string>
+    <string name="settings_privacy_read_time_note">People who can see when you were last online always see your read time. If you hide it, you don\'t see other people\'s read time either, unless you have Telegram Premium.</string>
     <string name="settings_privacy_forwarded_messages_question">Whose forwards of my messages link to my account</string>
     <string name="settings_privacy_calls_question">Who can call me</string>
     <string name="settings_privacy_chat_invites_question">Who can add me to groups and channels</string>
@@ -538,6 +620,15 @@
     <string name="settings_notifications_notify_channels">New posts in channels</string>
     <string name="settings_notifications_preview">Message previews</string>
     <string name="settings_notifications_preview_summary">Show the text of messages in notifications</string>
+    <string name="settings_notifications_stories">New stories</string>
+    <string name="settings_notifications_stories_automatic">Automatic</string>
+    <string name="settings_notifications_stories_all">All</string>
+    <string name="settings_notifications_stories_none">None</string>
+    <string name="settings_notifications_stories_automatic_summary">Stories of the 5 people you write to most notify you</string>
+    <string name="settings_notifications_stories_all_summary">Every new story notifies you</string>
+    <string name="settings_notifications_stories_none_summary">New stories don\'t notify you</string>
+    <string name="settings_notifications_story_poster">Name who posted</string>
+    <string name="settings_notifications_story_poster_summary">Story notifications say whose story it is</string>
     <string name="settings_notifications_mentions">Mentions and replies</string>
     <string name="settings_notifications_mentions_summary">Notify about messages to you, even in muted groups</string>
     <string name="settings_notifications_pinned">Pinned messages</string>
@@ -549,6 +640,9 @@
     <string name="settings_notifications_exceptions">Exceptions</string>
     <string name="settings_notifications_exceptions_summary">Chats with settings of their own</string>
     <string name="settings_notifications_section_background">Background</string>
+    <string name="settings_notifications_section_accounts">Accounts</string>
+    <string name="settings_notifications_all_accounts">Notifications from all accounts</string>
+    <string name="settings_notifications_all_accounts_summary">Turn off to get notifications only from the account you are using. Calls to every account still ring.</string>
     <!-- A foreground service that keeps the connection open (foss builds only); the summary states its cost. -->
     <string name="settings_keep_connected">Keep connected</string>
     <string name="settings_keep_connected_summary">Stay connected in the background, so new messages arrive at once. Uses more battery and shows a notification while on.</string>
@@ -617,6 +711,9 @@
     <string name="settings_passcode_section_unlock">Unlock and privacy</string>
     <string name="settings_passcode_biometric">Unlock with fingerprint or face</string>
     <string name="settings_passcode_biometric_summary">Use the biometrics set up on this device instead of the passcode</string>
+    <!-- Unlocking Pingogram with the phone's own PIN, pattern or password (Android 11 and later). -->
+    <string name="settings_passcode_screen_lock">Unlock with screen lock</string>
+    <string name="settings_passcode_screen_lock_summary">Your phone\'s PIN, pattern or password opens Pingogram too. Anyone who knows it can open your chats.</string>
     <string name="settings_passcode_hide_content">Hide content in recent apps</string>
     <string name="settings_passcode_hide_content_summary">Recent apps show Pingogram without your chats</string>
     <string name="settings_passcode_hide_content_summary_secure">Recent apps show Pingogram without your chats. This also blocks screenshots in Pingogram.</string>
@@ -654,8 +751,28 @@
     <string name="lock_hint_pin">Enter your PIN</string>
     <string name="lock_hint_password">Enter your password</string>
     <string name="lock_unlock">Unlock</string>
+    <!-- Locked chats (docs/adr/0029-locked-chats.md): chats kept behind the app's passcode. -->
+    <string name="locked_chats_title">Locked chats</string>
+    <string name="locked_chat_title">This chat is locked</string>
+    <string name="locked_chats_hint_pin">Enter your PIN to open your locked chats</string>
+    <string name="locked_chats_hint_password">Enter your password to open your locked chats</string>
+    <string name="locked_chats_cancel">Cancel</string>
+    <string name="locked_chats_loading">Loading locked chats</string>
+    <string name="locked_chats_needs_passcode">Locked chats open with the app\'s passcode. Turn the passcode lock on first.</string>
+    <string name="locked_chats_footer">Locked chats are hidden from the chat list, folders, search, sharing and the widget on this device, and their notifications say only “New message”. Your other devices show them as usual.</string>
+    <string name="locked_chats_add">Lock a chat</string>
+    <string name="locked_chats_unlock">Unlock</string>
+    <!-- Screen readers: the "Unlock" button of a locked chat. %1$s: the chat's name. -->
+    <string name="locked_chats_unlock_label">Unlock %1$s</string>
+    <plurals name="locked_chats_unread">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+    <string name="settings_locked_chats_summary">Keep chats behind your passcode</string>
     <string name="lock_forgot">Forgot passcode?</string>
     <string name="lock_biometric">Unlock with fingerprint or face</string>
+    <!-- The lock screen's button where only the phone's own PIN, pattern or password unlocks (no biometrics). -->
+    <string name="lock_screen_lock">Unlock with your screen lock</string>
     <string name="lock_biometric_prompt_title">Unlock Pingogram</string>
     <string name="lock_biometric_prompt_cancel">Use passcode</string>
     <string name="lock_forgot_dialog_title">Log out to remove the passcode?</string>
@@ -691,19 +808,60 @@
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
 
+    <!-- The login email (FR-S1), a page above Privacy and security. %1$s: Telegram's pattern of an address. -->
+    <string name="settings_login_email">Login email</string>
+    <string name="settings_login_email_loading">Loading the login email</string>
+    <string name="settings_login_email_current">Your login email is %1$s.</string>
+    <string name="settings_login_email_none">This account has no login email. Telegram asks for one when you log in, if it wants one, and you can change it here after that.</string>
+    <string name="settings_login_email_intro">Telegram can send your login codes to this address instead of by SMS. To change it, Telegram sends a code to the new address.</string>
+    <string name="settings_login_email_change">Change email</string>
+    <string name="settings_login_email_new">Enter the new address. Telegram sends a code to it.</string>
+    <string name="settings_login_email_label">Email address</string>
+    <string name="settings_login_email_code_sent">We sent a code to %1$s.</string>
+    <string name="settings_login_email_resend">Send the code again</string>
+    <string name="settings_login_email_resent">A new code is on its way</string>
+    <string name="settings_login_email_done_title">Login email changed</string>
+    <string name="settings_login_email_done_text">Telegram sends login codes to %1$s from now on.</string>
+    <!-- The self-destruct timer of new chats (FR-S1), a page above Privacy and security. -->
+    <string name="settings_auto_delete">Auto-delete messages</string>
+    <string name="settings_auto_delete_loading">Loading the auto-delete timer</string>
+    <string name="settings_auto_delete_section">Delete messages in new chats after</string>
+    <string name="settings_auto_delete_footer">Chats you start from now on get this timer: their messages are deleted for everyone once it runs out. Chats you have already keep theirs, which you can change in each chat.</string>
+    <string name="settings_auto_delete_off">Off</string>
+    <string name="settings_auto_delete_day">1 day</string>
+    <string name="settings_auto_delete_week">1 week</string>
+    <string name="settings_auto_delete_month">1 month</string>
+    <plurals name="settings_auto_delete_days">
+        <item quantity="one">%s day</item>
+        <item quantity="other">%s days</item>
+    </plurals>
+    <!-- The progress of a request in the account's flows (Change number, Login email), for screen readers. -->
+    <string name="settings_account_flow_busy">Waiting for Telegram</string>
     <!-- Changing the account's phone number (FR-S1), a page above Edit profile. %1$s: a phone number. -->
     <string name="settings_change_number_title">Change number</string>
     <string name="settings_change_number_current">Your number is %1$s.</string>
     <string name="settings_change_number_intro">Your account, chats, contacts and media stay as they are and move to the new number. Telegram sends a code to the new number to check that it\'s yours. Who can see your number stays as your privacy settings say.</string>
     <string name="settings_change_number_start">Change number</string>
     <string name="settings_change_number_new">Enter your new number. Telegram sends it a code.</string>
-    <string name="settings_change_number_next">Next</string>
+    <string name="settings_account_flow_next">Next</string>
     <string name="settings_change_number_wrong_number">Wrong number?</string>
-    <string name="settings_change_number_busy">Waiting for Telegram</string>
     <string name="settings_change_number_done_title">Number changed</string>
     <string name="settings_change_number_done_text">Your number is now %1$s.</string>
-    <string name="settings_change_number_done">Done</string>
+    <string name="settings_account_flow_done">Done</string>
     <!-- Edit profile's phone number group: its header, and the button that opens Change number. -->
+    <string name="settings_section_profile_birthday">Birthday</string>
+    <string name="settings_edit_profile_birthday_none">No birthday</string>
+    <string name="settings_edit_profile_birthday_add">Add</string>
+    <string name="settings_edit_profile_birthday_change">Change</string>
+    <!-- For screen readers: the "Add" button of the birthday row. -->
+    <string name="settings_edit_profile_birthday_add_label">Add birthday</string>
+    <!-- For screen readers: the "Change" button of the birthday row; %1$s is the birthday, "December 10". -->
+    <string name="settings_edit_profile_birthday_change_label">Change birthday %1$s</string>
+    <string name="settings_edit_profile_birthday_privacy">Who can see it</string>
+    <string name="settings_edit_profile_birthday_show_year">Show the year</string>
+    <string name="settings_edit_profile_birthday_remove">Remove</string>
+    <string name="settings_edit_profile_birthday_cancel">Cancel</string>
+    <string name="settings_edit_profile_birthday_done">Done</string>
     <string name="settings_section_profile_phone">Phone number</string>
     <string name="settings_edit_profile_change_number">Change</string>
     <!-- The same button for screen readers: %1$s the phone number. -->
@@ -906,6 +1064,27 @@
     <string name="settings_stickers_archived_empty_title">No archived sets</string>
     <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
     <string name="settings_stickers_show">Show stickers</string>
+    <!-- Settings → Stickers → Emoji: the user's custom emoji sets, managed as the sticker sets are. -->
+    <string name="settings_emoji">Emoji</string>
+    <string name="settings_emoji_summary">Your custom emoji sets, trending and archived sets</string>
+    <string name="settings_emoji_loading">Loading emoji sets</string>
+    <string name="settings_emoji_trending">Trending emoji</string>
+    <string name="settings_emoji_archived">Archived emoji</string>
+    <plurals name="settings_emoji_count">
+        <item quantity="one">%1$s emoji</item>
+        <item quantity="other">%1$s emoji</item>
+    </plurals>
+    <string name="settings_emoji_section_yours">Your emoji sets</string>
+    <string name="settings_emoji_none">You have no emoji sets. Add some from Trending emoji.</string>
+    <string name="settings_emoji_footer">Your emoji sets keep this order on all your devices. Drag a set to move it. Pingogram shows custom emoji in messages but offers none to send yet.</string>
+    <string name="settings_emoji_show">Show emoji</string>
+    <string name="settings_emoji_remove_text">The set leaves your emoji sets on all your devices. You can add it again from its link.</string>
+    <!-- %1$s: the set's title. -->
+    <string name="settings_emoji_added_done">“%1$s” added to your emoji</string>
+    <string name="settings_emoji_trending_footer">Emoji sets many people on Telegram add now. Added sets join your emoji sets.</string>
+    <string name="settings_emoji_archived_footer">Archived emoji sets stay in your account without showing with your emoji sets. Add one to bring it back.</string>
+    <string name="settings_emoji_trending_empty_body">Telegram has no trending emoji sets for you right now.</string>
+    <string name="settings_emoji_archived_empty_body">Emoji sets you archive wait here until you add them again.</string>
 
     <!-- The sheet of a sticker set (a t.me/addstickers link, or a set in Settings → Stickers). -->
     <string name="sticker_set_add">Add stickers</string>
@@ -915,10 +1094,231 @@
     <string name="sticker_set_try_again">Try again</string>
     <string name="sticker_set_adding">Adding the stickers</string>
     <string name="sticker_set_removing">Removing the stickers</string>
+    <string name="emoji_set_add">Add emoji</string>
+    <string name="emoji_set_adding">Adding the emoji</string>
+    <string name="emoji_set_removing">Removing the emoji</string>
     <string name="sticker_set_not_found_title">Sticker set not found</string>
     <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
     <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
     <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
-    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
-    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware">Send with Enter on a keyboard</string>
+    <string name="settings_enter_sends_hardware_on">Shift+Enter or Ctrl+Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware_off">Ctrl+Enter sends, Enter starts a new line</string>
+    <string name="settings_enter_sends_on_screen">Send with Enter on the screen keyboard</string>
+    <string name="settings_enter_sends_on_screen_summary">The on-screen keyboard’s Enter key becomes Send</string>
+
+    <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
+    <string name="settings_section_network">Network</string>
+    <string name="settings_proxy">Proxy</string>
+    <string name="settings_proxy_summary_off">Off · Connect directly</string>
+    <!-- %1$s is the proxy in use: its name, or its address such as "proxy.example.org:1080". -->
+    <string name="settings_proxy_summary_on">Connected through %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_proxy_loading">Loading proxies</string>
+    <string name="settings_proxy_use">Use proxy</string>
+    <string name="settings_proxy_use_summary">Connect to Telegram through a proxy server</string>
+    <string name="settings_proxy_add">Add proxy</string>
+    <string name="settings_proxy_section">Your proxies</string>
+    <string name="settings_proxy_footer">Pingogram connects to Telegram through the proxy you pick. The proxy’s owner can see that you use Telegram, and from which address, but not your messages.</string>
+    <!-- A proxy's address and port, e.g. "proxy.example.org:1080". -->
+    <string name="settings_proxy_address" translatable="false">%1$s:%2$s</string>
+    <string name="settings_proxy_kind_socks5">SOCKS5</string>
+    <string name="settings_proxy_kind_http">HTTP</string>
+    <string name="settings_proxy_kind_mtproto">MTProto</string>
+    <string name="settings_proxy_checking">Checking…</string>
+    <!-- %1$s is how long Telegram took to answer, e.g. "120 ms". -->
+    <string name="settings_proxy_available">Available · %1$s</string>
+    <!-- A duration in milliseconds, e.g. "120 ms". -->
+    <string name="settings_proxy_ping_ms">%1$s ms</string>
+    <string name="settings_proxy_unavailable">Unavailable</string>
+    <!-- A proxy's details: its protocol, then its address or its state, e.g. "SOCKS5 · Available · 120 ms". -->
+    <string name="settings_proxy_details">%1$s · %2$s</string>
+    <string name="settings_proxy_check_again">Check again</string>
+    <!-- The more-options button of a proxy, for screen readers. %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_options">Options for %1$s</string>
+    <string name="settings_proxy_edit">Edit</string>
+    <string name="settings_proxy_delete">Delete</string>
+    <string name="settings_proxy_delete_title">Delete this proxy?</string>
+    <!-- %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_delete_text">%1$s will be removed from Pingogram. If you use it now, Pingogram connects directly.</string>
+    <string name="settings_proxy_delete_confirm">Delete</string>
+    <string name="settings_proxy_none_text">Add a proxy if Telegram is blocked or slow where you are.</string>
+    <!-- Adding or editing a proxy -->
+    <string name="settings_proxy_new">New proxy</string>
+    <string name="settings_proxy_edit_title">Edit proxy</string>
+    <string name="settings_proxy_edit_loading">Loading the proxy</string>
+    <string name="settings_proxy_protocol">Protocol</string>
+    <string name="settings_proxy_server">Server</string>
+    <string name="settings_proxy_server_error">Enter the server’s address, without spaces.</string>
+    <string name="settings_proxy_port">Port</string>
+    <string name="settings_proxy_port_error">Enter a port from 1 to 65535.</string>
+    <string name="settings_proxy_username">Username (optional)</string>
+    <string name="settings_proxy_password">Password (optional)</string>
+    <string name="settings_proxy_secret">Secret</string>
+    <string name="settings_proxy_secret_error">Enter the secret the proxy’s owner gave you.</string>
+    <string name="settings_proxy_http_only">HTTP requests only</string>
+    <string name="settings_proxy_http_only_summary">For proxies that don’t allow other connections</string>
+    <string name="settings_proxy_name">Name (optional)</string>
+    <string name="settings_proxy_check">Check</string>
+    <string name="settings_proxy_save">Save</string>
+    <string name="settings_proxy_save_connect">Save and connect</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is saved. -->
+    <string name="settings_proxy_saving">Saving the proxy</string>
+    <!-- The sheet a proxy link opens -->
+    <string name="settings_proxy_link_title">Connect through this proxy?</string>
+    <string name="settings_proxy_link_text">Pingogram will connect to Telegram through this server. Its owner can see that you use Telegram, and from which address, but not your messages. Only use proxies you trust.</string>
+    <string name="settings_proxy_link_in_use">You already use this proxy.</string>
+    <string name="settings_proxy_link_connect">Connect</string>
+    <string name="settings_proxy_link_cancel">Cancel</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is added. -->
+    <string name="settings_proxy_link_connecting">Connecting through the proxy</string>
+    <string name="settings_proxy_link_connected">Proxy turned on</string>
+    <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
+    <string name="settings_proxy_link_done">Done</string>
+
+    <!-- Data and storage → Network usage -->
+    <string name="settings_network_usage">Network usage</string>
+    <string name="settings_network_usage_summary">How much data Pingogram sent and received</string>
+    <!-- Data and storage → Network: TDLib's option prefer_ipv6. -->
+    <string name="settings_prefer_ipv6">Prefer IPv6</string>
+    <string name="settings_prefer_ipv6_summary">Connect over IPv6 where your network and Telegram offer it</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_network_usage_loading">Loading network usage</string>
+    <!-- A section header. %1$s is a date such as "Oct 1, 2026". -->
+    <string name="settings_network_usage_since">Since %1$s</string>
+    <string name="settings_network_usage_footer">Counted on this device. Pingogram counts its own traffic only, not other apps’.</string>
+    <string name="settings_network_usage_total">Total</string>
+    <!-- %1$s and %2$s are sizes such as "1.2 MB". -->
+    <string name="settings_network_usage_amount">Sent %1$s · Received %2$s</string>
+    <string name="settings_network_usage_messages">Messages and other data</string>
+    <string name="settings_network_usage_photos">Photos</string>
+    <string name="settings_network_usage_videos">Videos and GIFs</string>
+    <string name="settings_network_usage_voice">Voice and video messages</string>
+    <string name="settings_network_usage_music">Music</string>
+    <string name="settings_network_usage_files">Files</string>
+    <string name="settings_network_usage_other">Stickers, profile photos and thumbnails</string>
+    <string name="settings_network_usage_calls">Calls</string>
+    <string name="settings_network_usage_reset">Reset statistics</string>
+    <string name="settings_network_usage_reset_title">Reset network usage?</string>
+    <string name="settings_network_usage_reset_text">The counts of every network start again from zero.</string>
+    <string name="settings_network_usage_reset_confirm">Reset</string>
+    <!-- Spoken by screen readers for the progress indicator while the statistics are reset. -->
+    <string name="settings_network_usage_resetting">Resetting network usage</string>
+    <string name="settings_network_usage_reset_done">Network usage reset</string>
+    <string name="settings_raise_to_listen">Raise to listen</string>
+    <string name="settings_raise_to_listen_summary">Hold the phone to your ear to hear voice messages through the earpiece</string>
+    <string name="settings_pause_when_lowered">Pause when lowered</string>
+    <string name="settings_pause_when_lowered_summary">Lowering the phone pauses the voice message instead of playing on aloud</string>
+    <!-- Settings → Notifications → Reactions. -->
+    <string name="settings_reactions">Reactions</string>
+    <string name="settings_reactions_summary">Reactions to your messages and stories, votes in your polls</string>
+    <string name="settings_reactions_loading">Loading reaction settings</string>
+    <string name="settings_reactions_messages">Reactions to my messages</string>
+    <string name="settings_reactions_stories">Reactions to my stories</string>
+    <string name="settings_reactions_poll_votes">Votes in my polls</string>
+    <string name="settings_reactions_everyone">Everyone</string>
+    <string name="settings_reactions_contacts">My contacts</string>
+    <string name="settings_reactions_nobody">Nobody</string>
+    <string name="settings_reactions_preview">Show the reaction</string>
+    <string name="settings_reactions_preview_summary">Notifications say who reacted and with which emoji</string>
+    <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet.</string>
+    <string name="settings_double_tap">Double-tap to react</string>
+    <string name="settings_double_tap_summary">Your quick reaction, and on which messages a double tap adds it</string>
+    <string name="settings_double_tap_loading">Loading reactions</string>
+    <string name="settings_quick_reaction">Quick reaction</string>
+    <string name="settings_quick_reaction_footer">Your quick reaction belongs to your Telegram account, so your other apps use it too.</string>
+    <string name="settings_quick_reaction_custom">Your quick reaction is a custom emoji, chosen in another app. Pick an emoji to use one of these instead.</string>
+    <string name="settings_double_tap_section">Double tap</string>
+    <string name="settings_double_tap_incoming">On others’ messages</string>
+    <string name="settings_double_tap_incoming_summary">Double-tap a message you received to react to it</string>
+    <string name="settings_double_tap_outgoing">On your messages</string>
+    <string name="settings_double_tap_outgoing_summary">Double-tap a message you sent to react to it</string>
+    <string name="settings_double_tap_footer">A double tap on a message you already reacted to with your quick reaction takes it back. A single tap still does what it did before, at once.</string>
+    <string name="settings_websites">Websites</string>
+    <string name="settings_websites_summary">Sites you logged in to with Telegram</string>
+    <string name="settings_websites_loading">Loading websites</string>
+    <string name="settings_section_websites">Logged in with Telegram</string>
+    <string name="settings_websites_footer">These websites used “Log in with Telegram”. Logging one out ends its access to your account; it keeps what it already received.</string>
+    <string name="settings_websites_none">You haven’t logged in to any website with Telegram. Sites where you use “Log in with Telegram” show here.</string>
+    <string name="settings_websites_disconnect_all">Log out of all websites</string>
+    <string name="settings_websites_disconnecting_all">Logging out of all websites</string>
+    <string name="settings_websites_all_disconnected">Logged out of all websites</string>
+    <string name="settings_websites_dialog_title">Log out of all websites?</string>
+    <string name="settings_websites_dialog_text">Every website you logged in to with Telegram loses access to your account.</string>
+    <string name="settings_websites_dialog_confirm">Log out all</string>
+    <string name="settings_website_disconnect_button">Log out</string>
+    <string name="settings_website_disconnect">Log out of %1$s</string>
+    <string name="settings_website_disconnecting">Logging out of %1$s</string>
+    <string name="settings_website_disconnected">Logged out of %1$s</string>
+    <string name="settings_website_dialog_title">Log out of this website?</string>
+    <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
+    <string name="settings_website_parts">%1$s · %2$s</string>
+    <string name="settings_contact_joined">Contact joined Telegram</string>
+    <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
+    <string name="settings_personal_channel">Personal channel</string>
+    <string name="settings_personal_channel_summary">Show one of your channels on your profile</string>
+    <string name="settings_personal_channel_loading">Loading your channels</string>
+    <string name="settings_section_personal_channel">Show on your profile</string>
+    <string name="settings_personal_channel_off">None</string>
+    <string name="settings_personal_channel_saving">Saving your personal channel</string>
+    <string name="settings_personal_channel_footer">Everyone who sees your profile sees this channel there.</string>
+    <string name="settings_personal_channel_none_owned">Only public channels you own can be shown on your profile, and you have none.</string>
+    <string name="settings_section_secret_chats">Secret chats</string>
+    <string name="settings_secret_chat_previews">Link previews in secret chats</string>
+    <string name="settings_secret_chat_previews_summary">Telegram’s servers make the previews, so they see the links you send</string>
+    <string name="settings_section_on_screen">On screen</string>
+    <string name="settings_hide_phone_numbers">Hide phone numbers</string>
+    <string name="settings_hide_phone_numbers_summary">Shows only their country code everywhere in Pingogram, for sharing your screen or streaming</string>
+    <string name="settings_show_ids">Show IDs</string>
+    <string name="settings_show_ids_summary">Profiles and info pages show the ID that bots and other apps know a person or chat by</string>
+    <string name="settings_direct_share">Chats in the share sheet</string>
+    <string name="settings_direct_share_summary">Android\'s share sheet shows your recent chats, with their names and photos. Turned off, it shows only Pingogram, and you choose the chat here</string>
+    <!-- Settings → Appearance → Chat list. -->
+    <string name="settings_section_chat_list">Chat list</string>
+    <string name="settings_show_stories">Show stories</string>
+    <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
+    <!-- Settings → Appearance → Chat list → Swipe actions. -->
+    <string name="settings_swipe_actions">Swipe actions</string>
+    <string name="settings_swipe_actions_loading">Loading swipe actions</string>
+    <!-- The swipe actions in Appearance's row, in left-to-right layouts; e.g. "Right: Read · Left: Archive". -->
+    <string name="settings_swipe_actions_summary">Right: %1$s · Left: %2$s</string>
+    <!-- The same in right-to-left layouts, where a swipe toward the end goes left; %1$s is still that swipe's action. -->
+    <string name="settings_swipe_actions_summary_rtl">Left: %1$s · Right: %2$s</string>
+    <string name="settings_swipe_right">Swipe right</string>
+    <string name="settings_swipe_left">Swipe left</string>
+    <string name="settings_swipe_folders">Folders</string>
+    <string name="settings_swipe_changes_folder">Swipe to change folders</string>
+    <string name="settings_swipe_changes_folder_summary">Swipe the chat list sideways to show the next folder</string>
+    <string name="settings_swipe_changes_folder_footer">Swiping right shows the folder tab on the left, swiping left the one on the right. Chats don\'t swipe while this is on; their actions stay in the selection toolbar.</string>
+    <!-- Appearance's "Swipe actions" row while swiping the list changes the folder. -->
+    <string name="settings_swipe_actions_summary_folders">Change folders</string>
+    <string name="settings_swipe_actions_footer">Screen readers offer every action on a chat, whatever the swipes do. Deleting always asks first.</string>
+    <string name="settings_swipe_action_read">Mark as read or unread</string>
+    <string name="settings_swipe_action_archive">Archive or unarchive</string>
+    <string name="settings_swipe_action_pin">Pin or unpin</string>
+    <string name="settings_swipe_action_mute">Mute or unmute</string>
+    <string name="settings_swipe_action_delete">Delete</string>
+    <string name="settings_swipe_action_none">Nothing</string>
+    <string name="settings_swipe_short_read">Read</string>
+    <string name="settings_swipe_short_archive">Archive</string>
+    <string name="settings_swipe_short_pin">Pin</string>
+    <string name="settings_swipe_short_mute">Mute</string>
+    <string name="settings_swipe_short_delete">Delete</string>
+    <string name="settings_swipe_short_none">Nothing</string>
+    <!-- Chats shown first (Appearance → Chats): the chats the forward and share sheets offer first. -->
+    <string name="shown_first_title">Chats shown first</string>
+    <string name="shown_first_summary">First when you forward or share, after Saved Messages</string>
+    <string name="shown_first_loading">Loading chats</string>
+    <string name="shown_first_add">Add a chat</string>
+    <string name="shown_first_remove">Remove</string>
+    <!-- The "Remove" button's name for screen readers; %1$s is the chat's title. -->
+    <string name="shown_first_remove_label">Remove %1$s</string>
+    <plurals name="shown_first_footer">
+        <item quantity="one">Up to %1$d chat shows first when you forward or share, right after Saved Messages, in this order. They stay on this device.</item>
+        <item quantity="other">Up to %1$d chats show first when you forward or share, right after Saved Messages, in this order. They stay on this device.</item>
+    </plurals>
+    <plurals name="shown_first_picker_title">
+        <item quantity="one">Choose up to %1$d chat</item>
+        <item quantity="other">Choose up to %1$d chats</item>
+    </plurals>
 </resources>

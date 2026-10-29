@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [PinnedMessageRepository] on TDLib, without a cache: TDLib introduces no pinned messages by updates, so each
@@ -39,7 +39,7 @@ import javax.inject.Singleton
  *   in it.
  * - A failed answer reads as no pinned messages, which only hides the bar.
  */
-@Singleton
+@AccountScoped
 class TdlibPinnedMessageRepository
     @Inject
     constructor(

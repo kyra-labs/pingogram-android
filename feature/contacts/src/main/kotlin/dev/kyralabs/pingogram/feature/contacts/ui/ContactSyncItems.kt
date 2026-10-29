@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -215,7 +216,7 @@ internal fun InviteRow(
 ) {
     val inviteLabel = stringResource(R.string.contacts_invite_person, item.name)
     val country = LocalConfiguration.current.locales[0].country
-    val number = remember(item.phoneNumber, country) { formatPhoneNumber(item.phoneNumber, country) }
+    val number = phoneNumberToShow(remember(item.phoneNumber, country) { formatPhoneNumber(item.phoneNumber, country) })
     val insets = rowInsets()
     ListItem(
         modifier = modifier.padding(insets),
@@ -229,9 +230,10 @@ internal fun InviteRow(
             )
         },
         supportingContent = {
+            // Two lines at most: at large font scales a number wraps between its groups rather than lose digits.
             Text(
                 text = number,
-                maxLines = 1,
+                maxLines = NUMBER_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium.numericContent,
             )
@@ -292,3 +294,5 @@ private fun ContactSyncItemsPreview() {
         }
     }
 }
+
+private const val NUMBER_MAX_LINES = 2

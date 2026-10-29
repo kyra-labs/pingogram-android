@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.ProfileLink
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
@@ -38,6 +40,13 @@ interface ProfileRepository {
 
     /** Sets the user's bio, plain text; an empty one removes it. */
     suspend fun setBio(bio: String): Outcome<Unit>
+
+    /**
+     * Sets the user's birthday, its year left out where [Birthdate.year] is null; null removes it. Who sees it is the
+     * [PrivacySetting.Birthdate] setting. Telegram refuses a date that cannot be a birthday
+     * (`DomainError.BirthdateInvalid`).
+     */
+    suspend fun setBirthdate(birthdate: Birthdate?): Outcome<Unit>
 
     /**
      * Uploads the image at [path], a JPEG, and makes it the user's profile photo, visible to whoever the user's

@@ -60,6 +60,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.sticker.StickerCover
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -70,6 +71,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.shareStickerSet
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerCount
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerKindTexts
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -83,7 +85,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun StickerSetSheetRoute(
     onClose: () -> Unit,
     viewModel: StickerSetSheetViewModel = hiltViewModel(),
-    share: Context.(name: String) -> Unit = Context::shareStickerSet,
+    share: Context.(name: String, kind: StickerSetKind) -> Unit = Context::shareStickerSet,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sheetState =
@@ -94,7 +96,9 @@ internal fun StickerSetSheetRoute(
     StickerSetSheet(
         state = state,
         onEvent = viewModel::onEvent,
-        onShare = { context.share(it) },
+        onShare = { name ->
+            context.share(name, (state as? StickerSetSheetUiState.Content)?.kind ?: StickerSetKind.Stickers)
+        },
         onClose = { scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnClose() } },
         onDismiss = { currentOnClose() },
         sheetState = sheetState,
@@ -194,7 +198,7 @@ private fun StickerSetDetails(
             if (state.isChanging) {
                 val changing =
                     stringResource(
-                        if (state.isInstalled) R.string.sticker_set_removing else R.string.sticker_set_adding,
+                        stickerKindTexts(state.kind).run { if (state.isInstalled) sheetRemoving else sheetAdding },
                     )
                 LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = changing })
             }
@@ -220,7 +224,7 @@ private fun SetTitle(state: StickerSetSheetUiState.Content) {
             style = MaterialTheme.typography.titleLargeEmphasized.userContent,
         )
         Text(
-            text = stickerCount(state.stickers.size),
+            text = stickerCount(state.stickers.size, state.kind),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
@@ -287,7 +291,10 @@ private fun SetActions(
                 enabled = !state.isChanging,
                 shapes = ButtonDefaults.shapes(),
             ) {
-                Text(stringResource(R.string.sticker_set_add), style = MaterialTheme.typography.labelLargeEmphasized)
+                Text(
+                    stringResource(stickerKindTexts(state.kind).sheetAdd),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
             }
         }
     }

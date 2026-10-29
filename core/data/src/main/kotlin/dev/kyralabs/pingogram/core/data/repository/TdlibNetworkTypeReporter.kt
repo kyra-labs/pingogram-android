@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
@@ -21,7 +22,6 @@ import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Tells TDLib the network the device uses and whether the app is in use (`docs/PERFORMANCE.md` §3):
@@ -38,7 +38,7 @@ import javax.inject.Singleton
  * Each TDLib instance hears them once it has its parameters (any state from `WaitPhoneNumber` on), so a new instance
  * after a logout hears them too. A failure is dropped: the next change sends it again.
  */
-@Singleton
+@AccountScoped
 class TdlibNetworkTypeReporter internal constructor(
     private val client: TdlibClient,
     private val defaultNetwork: Flow<DefaultNetwork>,

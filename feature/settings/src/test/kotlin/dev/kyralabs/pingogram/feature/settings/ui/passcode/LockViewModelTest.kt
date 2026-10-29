@@ -34,6 +34,13 @@ class LockViewModelTest {
     private val appLock = FakeAppLockRepository(state = LockState.Locked, passcode = "2580")
     private val passcodes = FakePasscodeRepository(passcode = "2580")
     private var biometricsAvailable = true
+    private var screenLockAvailable = false
+    private val availability =
+        object : BiometricAvailability {
+            override fun canAuthenticate() = biometricsAvailable
+
+            override fun canUseScreenLock() = screenLockAvailable
+        }
 
     @BeforeEach
     fun setUp() {
@@ -45,7 +52,7 @@ class LockViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.viewModel() = LockViewModel(appLock, passcodes) { biometricsAvailable }.also { runCurrent() }
+    private fun TestScope.viewModel() = LockViewModel(appLock, passcodes, availability).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: LockViewModel): List<LockEffect> {
         val effects = mutableListOf<LockEffect>()
@@ -88,6 +95,27 @@ class LockViewModelTest {
             val state = viewModel().state
             assertFalse(state.biometricUnlock)
             assertFalse(state.promptBiometrics)
+        }
+
+    @Test
+    fun `the phone's screen lock unlocks where it is on and set, alone or with biometrics`() =
+        runTest {
+            screenLockAvailable = true
+            assertEquals(ScreenLock.Off, viewModel().state.screenLock)
+
+            passcodes.setDeviceCredentialUnlock(true)
+            assertEquals(ScreenLock.Also, viewModel().state.screenLock)
+
+            biometricsAvailable = false
+            val only = viewModel().state
+            assertEquals(ScreenLock.Only, only.screenLock)
+            assertTrue(only.biometricUnlock)
+            assertTrue(only.promptBiometrics)
+
+            screenLockAvailable = false
+            val none = viewModel().state
+            assertEquals(ScreenLock.Off, none.screenLock)
+            assertFalse(none.biometricUnlock)
         }
 
     @Test

@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.tdlib.TdlibServers
+import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.phone.matching
@@ -68,12 +70,14 @@ class AuthViewModelTest {
     private fun TestScope.viewModel(
         handle: SavedStateHandle = savedState,
         authRepository: TdlibAuthRepository = authRepository(),
+        deviceAccounts: FakeDeviceAccountsRepository = FakeDeviceAccountsRepository(),
     ): AuthViewModel =
         AuthViewModel(
             savedStateHandle = handle,
             authRepository = authRepository,
             countryRepository = TdlibCountryRepository(client),
             connectionRepository = TdlibConnectionRepository(client),
+            deviceAccounts = deviceAccounts,
             timeSource = testScheduler.timeSource,
         ).also { runCurrent() }
 
@@ -175,6 +179,34 @@ class AuthViewModelTest {
                 send(viewModel, AuthEvent.Back)
 
                 assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
+            }
+
+        @Test
+        fun `an account being added starts at phone number entry, and back leaves its sign-in`() =
+            runTest {
+                val accounts = FakeDeviceAccountsRepository().apply { adding.value = true }
+                val viewModel = viewModel(deviceAccounts = accounts)
+
+                assertFalse(viewModel.step<AuthStepUiState.PhoneNumber>().isChangingNumber)
+                assertTrue(viewModel.state.canGoBack)
+                // Back leaves the flow, so the gesture shows no step of it coming in.
+                assertNull(viewModel.state.backStep)
+
+                send(viewModel, AuthEvent.Back)
+
+                assertEquals(1, accounts.cancels)
+            }
+
+        @Test
+        fun `without an account being added, back from the welcome screen leaves nothing`() =
+            runTest {
+                val accounts = FakeDeviceAccountsRepository()
+                val viewModel = viewModel(deviceAccounts = accounts)
+
+                send(viewModel, AuthEvent.Back)
+
+                assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
+                assertEquals(0, accounts.cancels)
             }
 
         @Test
@@ -301,6 +333,65 @@ class AuthViewModelTest {
                 val phone = viewModel.step<AuthStepUiState.PhoneNumber>()
                 assertEquals("49" to "15123456789", phone.callingCode to phone.number)
                 assertEquals("DE", phone.country?.isoCode)
+            }
+
+        @Test
+        fun `a test account's number pasted as one splits after +999`() =
+            runTest {
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.CallingCodeChanged(""))
+
+                send(viewModel, AuthEvent.PhoneNumberChanged("+999 66 2 1234"))
+
+                val phone = viewModel.step<AuthStepUiState.PhoneNumber>()
+                assertEquals("999" to "6621234", phone.callingCode to phone.number)
+            }
+
+        // REQUIREMENTS.md FR-A9: TDLib restarts on the test servers before it gets the number.
+        @Test
+        fun `a test account's number keeps phone entry, the number and progress while TDLib restarts`() =
+            runTest {
+                val answer = CompletableDeferred<TdResult<TdApi.Ok>>()
+                client.on(TdApi.SetAuthenticationPhoneNumber::class) { answer.await() }
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged("+9996621234"))
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                val restart =
+                    listOf(
+                        TdApiFixtures.closing(),
+                        TdApiFixtures.closed(),
+                        TdApiFixtures.waitTdlibParameters(),
+                        TdApiFixtures.waitPhoneNumber(),
+                    ).map {
+                        tdlib(it)
+                        viewModel.state
+                    }
+                answer.complete(ok())
+                runCurrent()
+                val answered = viewModel.state
+                tdlib(waitCodeFor("+9996621234"))
+
+                assertEquals(listOf(TdlibServers.Test), client.serverSwitches)
+                restart.forEach { state ->
+                    val phone = assertInstanceOf(AuthStepUiState.PhoneNumber::class.java, state.step)
+                    assertEquals("999" to "6621234", phone.callingCode to phone.number)
+                    assertEquals(AuthAction.SubmitPhoneNumber, state.pendingAction)
+                }
+                assertEquals(AuthAction.SubmitPhoneNumber, answered.pendingAction)
+                assertNull(viewModel.state.pendingAction)
+                assertInstanceOf(AuthStepUiState.Code::class.java, viewModel.state.step)
+            }
+
+        @Test
+        fun `a restart that is no server switch still clears the login`() =
+            runTest {
+                val viewModel = onPhoneNumberEntry()
+
+                tdlib(TdApiFixtures.closed())
+                tdlib(TdApiFixtures.waitPhoneNumber())
+
+                assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
             }
 
         @Test

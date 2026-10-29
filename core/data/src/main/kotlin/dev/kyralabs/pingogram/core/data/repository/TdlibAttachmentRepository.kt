@@ -14,6 +14,8 @@ import dev.kyralabs.pingogram.core.data.attachment.AttachmentPreparer
 import dev.kyralabs.pingogram.core.data.attachment.ContentSource
 import dev.kyralabs.pingogram.core.data.attachment.MediaProcessor
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageAnimation
@@ -21,6 +23,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Animation
@@ -30,18 +33,20 @@ import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [AttachmentRepository] on TDLib and the app's cache ([UploadFiles]). Preparing and reading picked content runs on
@@ -51,7 +56,7 @@ import javax.inject.Singleton
  * attachment, as in [AttachmentRepository] (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,
     private val files: UploadFiles,
@@ -124,9 +129,9 @@ class TdlibAttachmentRepository internal constructor(
         attachments: List<Attachment>,
         caption: FormattedText,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
-        val result = client.sendAttachments(chatId, attachments, caption, options, replyToMessageId)
+        val result = client.sendAttachments(chatId, attachments, caption, options, replyTo)
         result.failure?.let { failure ->
             discard(attachments.drop(result.sent))
             return failure
@@ -138,46 +143,70 @@ class TdlibAttachmentRepository internal constructor(
         chatId: Long,
         contact: Contact,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> =
-        client.sendMessage(chatId, contact.toInputMessageContact(), options, replyToMessageId?.let(::replyToMessage))
+        client.sendMessage(chatId, contact.toInputMessageContact(), options, replyTo?.toInputMessageReplyTo())
 
     override suspend fun sendLocation(
         chatId: Long,
         location: DeviceLocation,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> =
-        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyToMessageId?.let(::replyToMessage))
+        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyTo?.toInputMessageReplyTo())
 
     override suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> =
-        client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyToMessageId?.let(::replyToMessage))
+        client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyTo?.toInputMessageReplyTo())
 
     override suspend fun sendAnimation(
         chatId: Long,
         animation: Animation,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> =
         client.sendMessage(
             chatId,
             animation.toInputMessageAnimation(),
             options,
-            replyToMessageId?.let(::replyToMessage),
+            replyTo?.toInputMessageReplyTo(),
         )
 
     override suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ): Outcome<Unit> =
-        client.sendMessage(chatId, poll.toInputMessagePoll(), options, replyToMessageId?.let(::replyToMessage))
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = client.sendMessage(chatId, poll.toInputMessagePoll(), options, replyTo?.toInputMessageReplyTo())
+
+    /**
+     * `editMessageMedia` of [attachment] with [caption], sent in the application [scope] and waited for without a
+     * timeout: TDLib answers once Telegram has the uploaded file, which takes as long as the upload, and the copy is
+     * deleted only then, when TDLib no longer reads it, even if the caller left meanwhile.
+     */
+    override suspend fun editMedia(
+        chatId: Long,
+        messageId: Long,
+        attachment: Attachment,
+        caption: FormattedText,
+        showCaptionAboveMedia: Boolean,
+    ): Outcome<Unit> {
+        val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
+        val content = attachment.toInputMessageContent(tdCaption, showCaptionAboveMedia)
+        val edit =
+            scope.async {
+                try {
+                    client.send(TdApi.EditMessageMedia(chatId, messageId, null, content)).toOutcome()
+                } finally {
+                    withContext(NonCancellable + io) { files.delete(listOf(attachment)) }
+                }
+            }
+        return edit.await().map {}
+    }
 
     /**
      * `deleteMessages` for everyone, which for messages still being sent stops their uploads; TDLib deletes them, and
@@ -198,7 +227,7 @@ class TdlibAttachmentRepository internal constructor(
  * Sends [attachments] to chat [chatId]: `sendMessage` for a group of one and `sendMessageAlbum` for the others
  * ([albumGroups]), one after the other in their order, with [options] (into their topic, if any) and the caption on
  * [captionIndex]'s attachment;
- * only the first group replies to [replyToMessageId]. The first group TDLib refuses ends the send with its error. The
+ * only the first group replies as [replyTo] says. The first group TDLib refuses ends the send with its error. The
  * copies are left as they are: those sent are TDLib's now (`UploadCleaner`), the others still the caller's.
  */
 internal suspend fun TdlibClient.sendAttachments(
@@ -206,7 +235,7 @@ internal suspend fun TdlibClient.sendAttachments(
     attachments: List<Attachment>,
     caption: FormattedText,
     options: SendOptions,
-    replyToMessageId: Long?,
+    replyTo: ReplyTarget?,
 ): AttachmentSend {
     val captioned = captionIndex(attachments)
     val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
@@ -216,13 +245,13 @@ internal suspend fun TdlibClient.sendAttachments(
             group.mapIndexed { offset, attachment ->
                 attachment.toInputMessageContent(tdCaption.takeIf { sent + offset == captioned })
             }
-        val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
+        val tdReplyTo = replyTo?.takeIf { index == 0 }?.toInputMessageReplyTo()
         val result =
             if (contents.size == 1) {
-                sendMessage(chatId, contents[0], options, replyTo)
+                sendMessage(chatId, contents[0], options, tdReplyTo)
             } else {
                 val all = contents.toTypedArray()
-                request(TdApi.SendMessageAlbum(chatId, options.tdTopic(), replyTo, options.toTdOptions(), all))
+                request(TdApi.SendMessageAlbum(chatId, options.tdTopic(), tdReplyTo, options.toTdOptions(), all))
             }
         if (result is Outcome.Failure) return AttachmentSend(sent, result)
         sent += group.size

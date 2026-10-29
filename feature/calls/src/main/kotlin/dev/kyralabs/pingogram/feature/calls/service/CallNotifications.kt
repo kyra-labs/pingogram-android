@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.calls.CallPhase
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.GroupCallPhase
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.slot
 import dev.kyralabs.pingogram.feature.calls.ui.CallActivity
 import dev.kyralabs.pingogram.feature.calls.ui.GroupCallActivity
 import kotlinx.coroutines.CoroutineScope
@@ -99,6 +100,7 @@ class CallNotifications
                     answer = CallActivity.pendingIntent(context, CallActivity.ACTION_ANSWER),
                     decline = CallActionReceiver.pendingIntent(context, CallActionReceiver.ACTION_DECLINE),
                     fullScreen = canUseFullScreenIntent(),
+                    slot = call.slot,
                 )
             } else {
                 builder.ongoing(
@@ -107,6 +109,11 @@ class CallNotifications
                     connectedAtWallMillis = call.connectedAtMillis?.toWallClock(),
                     content = content,
                     hangUp = CallActionReceiver.pendingIntent(context, CallActionReceiver.ACTION_HANG_UP),
+                    stopSharing =
+                        CallActionReceiver
+                            .pendingIntent(context, CallActionReceiver.ACTION_STOP_SHARING)
+                            .takeIf { call.video.isSharingScreen },
+                    slot = call.slot,
                 )
             }
         }
@@ -137,6 +144,7 @@ class CallNotifications
             val phase: Any,
             val isOnHold: Boolean,
             val connectedAtMillis: Long?,
+            val isSharingScreen: Boolean,
         ) {
             /** The call it shows, as last seen: what [build] reads. */
             lateinit var call: ActiveCall
@@ -152,6 +160,7 @@ class CallNotifications
                         if (call.phase is CallPhase.Ringing) call.phase else call.phase::class,
                         call.isOnHold,
                         call.connectedAtMillis,
+                        call.video.isSharingScreen,
                     ).also { it.call = call }
             }
         }

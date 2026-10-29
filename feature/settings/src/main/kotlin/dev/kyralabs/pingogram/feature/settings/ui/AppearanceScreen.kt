@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -42,12 +43,17 @@ import java.text.NumberFormat
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
- * [onOpenChatAppearance] the Chat appearance page; [onBack] leaves.
+ * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react, [onOpenSwipeActions]
+ * Swipe actions, [onOpenShownFirst] Chats shown first; [onBack] leaves.
  */
+@Suppress("LongParameterList") // The five pages it opens, back, the modifier and the view model.
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
     onOpenChatAppearance: () -> Unit,
+    onOpenQuickReaction: () -> Unit,
+    onOpenSwipeActions: () -> Unit,
+    onOpenShownFirst: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -71,6 +77,9 @@ internal fun AppearanceRoute(
         onEvent = viewModel::onEvent,
         onOpenColorTheme = onOpenColorTheme,
         onOpenChatAppearance = onOpenChatAppearance,
+        onOpenQuickReaction = onOpenQuickReaction,
+        onOpenSwipeActions = onOpenSwipeActions,
+        onOpenShownFirst = onOpenShownFirst,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -83,8 +92,11 @@ internal fun AppearanceRoute(
  * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): light or dark (system, light or dark, as a
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
- * the contrast level; then under "Chats" a row that opens the Chat appearance page ([onOpenChatAppearance]: message
- * text size, bubble corners, wallpaper) with their summary, and "Send with Ctrl+Enter" for hardware keyboards.
+ * the contrast level; then under "Chat list" a row that opens Swipe actions ([onOpenSwipeActions]) and whether story
+ * rings show above the chats; then under "Chats" a row that
+ * opens the Chat appearance page ([onOpenChatAppearance]: message text size, bubble corners, wallpaper) with their
+ * summary, a row that opens Double-tap to react ([onOpenQuickReaction]), one that opens Chats shown first
+ * ([onOpenShownFirst]), and which Enter sends on a hardware and on the on-screen keyboard.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -96,6 +108,9 @@ internal fun AppearanceScreen(
     modifier: Modifier = Modifier,
     onOpenColorTheme: () -> Unit = {},
     onOpenChatAppearance: () -> Unit = {},
+    onOpenQuickReaction: () -> Unit = {},
+    onOpenSwipeActions: () -> Unit = {},
+    onOpenShownFirst: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -114,9 +129,15 @@ internal fun AppearanceScreen(
             is AppearanceUiState.Content -> {
                 AppearanceSettingsContent(
                     state.settings,
-                    state.sendWithCtrlEnter,
+                    ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList),
                     onEvent,
-                    AppearancePages(onOpenColorTheme, onOpenChatAppearance),
+                    AppearancePages(
+                        onOpenColorTheme,
+                        onOpenChatAppearance,
+                        onOpenQuickReaction,
+                        onOpenSwipeActions,
+                        onOpenShownFirst,
+                    ),
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -133,11 +154,11 @@ private fun AppearanceLoading() {
     }
 }
 
-@Suppress("LongParameterList") // The settings, the send key, the events, the pages and what the device offers.
+@Suppress("LongParameterList") // The settings, the chats' settings, the events, the pages and what the device offers.
 @Composable
 private fun AppearanceSettingsContent(
     settings: AppearanceSettings,
-    sendWithCtrlEnter: Boolean,
+    chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
     dynamicColorAvailable: Boolean,
@@ -181,54 +202,18 @@ private fun AppearanceSettingsContent(
             )
         }
     }
-    SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
-        item { shapes -> ChatAppearanceItem(settings.chat, shapes, pages.onOpenChatAppearance) }
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_send_with_ctrl_enter),
-                summary = stringResource(R.string.settings_send_with_ctrl_enter_summary),
-                checked = sendWithCtrlEnter,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetSendWithCtrlEnter(it)) },
-            )
-        }
-    }
+    ChatListGroup(chats.chatList, onEvent, pages.onOpenSwipeActions)
+    ChatsGroup(settings.chat, chats, onEvent, pages)
 }
 
 /** What opens the pages above Appearance. */
-private class AppearancePages(
+internal class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
+    val onOpenQuickReaction: () -> Unit,
+    val onOpenSwipeActions: () -> Unit,
+    val onOpenShownFirst: () -> Unit,
 )
-
-/** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
-@Composable
-private fun ChatAppearanceItem(
-    chat: ChatAppearance,
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    val locale = LocalConfiguration.current.locales[0]
-    val percent =
-        remember(chat.textScale, locale) {
-            NumberFormat.getPercentInstance(locale).format(chat.textScale.toDouble())
-        }
-    SettingsRow(
-        title = stringResource(R.string.settings_chat_appearance),
-        shapes = shapes,
-        supportingContent = {
-            Text(
-                stringResource(
-                    R.string.settings_chat_appearance_summary,
-                    percent,
-                    chat.bubbleCorners.label(),
-                    chat.wallpaper.label(),
-                ),
-            )
-        },
-        onClick = onClick,
-    )
-}
 
 @PingogramPreviews
 @Composable

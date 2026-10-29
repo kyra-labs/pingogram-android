@@ -27,21 +27,29 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.account.AccountMenuViewModel
+import dev.kyralabs.pingogram.account.AccountRestart
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
+import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
+import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatGate
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
 import dev.kyralabs.pingogram.language.contextInLanguage
@@ -50,6 +58,8 @@ import dev.kyralabs.pingogram.link.LinkViewModel
 import dev.kyralabs.pingogram.link.linkOf
 import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
+import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
+import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
 import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
@@ -119,6 +129,9 @@ class MainActivity : ComponentActivity() {
     /** Opens Telegram links, from intents and tapped in the app; the activity's, so a lookup survives rotation. */
     private val links: LinkViewModel by viewModels()
 
+    /** The Settings tab's account menu (docs/adr/0031-multiple-accounts.md). */
+    private val accountMenu: AccountMenuViewModel by viewModels()
+
     /** Hands what another app shared to the share sheet or a chat's composer. */
     @Inject
     lateinit var shares: ShareInbox
@@ -131,12 +144,29 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var calls: Calls
 
+    /** Whether phone numbers are hidden on screen ([LocalPhoneNumbersHidden], Privacy and security). */
+    @Inject
+    lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
+
+    /** The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). */
+    @Inject
+    lateinit var chatLock: ChatLockRepository
+
+    /** The device's accounts: a switch opens the app again for the other one ([AccountRestart]). */
+    @Inject
+    lateinit var accounts: Accounts
+
+    private lateinit var accountRestart: AccountRestart
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
 
     @Inject
     lateinit var appLanguageRepository: PlatformAppLanguageRepository
+
+    /** From [onCreate] until the first frame's settings are read ([StartupTrace.AWAIT_SETTINGS]). */
+    private val awaitSettingsTrace = AwaitSettingsTrace()
 
     /** Before Android 13: the language [attachBaseContext] gave this activity, null for the system's. */
     private var attachedLanguageTag: String? = null
@@ -155,64 +185,66 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
-        val splashScreen = installSplashScreen()
-        super.onCreate(savedInstanceState)
-        // The bound reference creates the view model now, which starts listening to TDLib, reading the settings and
-        // the splash time limit.
-        splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
-        splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
-        enableEdgeToEdge()
-        if (savedInstanceState == null) handle(intent)
-        languageApplied = followAppLanguage()
-        setContent {
-            val appearance by viewModel.appearance.collectAsStateWithLifecycle()
-            val lock by viewModel.lock.collectAsStateWithLifecycle()
-            val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
-            val settings = appearance
-            if (settings != null && lock != LockState.Unknown && inAppLanguage) {
-                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
-                val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
-                val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
-                val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
-                val locked = lock == LockState.Locked
-                val secureRequests = remember { SecureWindowRequests() }
-                SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
-                AppTheme(settings) {
-                    CompositionLocalProvider(
-                        LocalAnimatedStickers provides animatedStickers,
-                        LocalSecureWindow provides secureRequests,
-                        // Telegram links tapped in the app open in it (LinkUriHandler).
-                        LocalUriHandler provides rememberLinkUriHandler(links, uiState),
-                        // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
-                        LocalCallStarter provides calls,
-                        // A chat's voice chat bar and its info page's voice chat row (feature:calls).
-                        LocalVoiceChats provides calls,
-                    ) {
-                        LockableApp(
-                            locked = locked,
-                            lockScreen = { AppLockRoute() },
-                            modifier = Modifier.semantics { testTagsAsResourceId = true },
+    override fun onCreate(savedInstanceState: Bundle?) =
+        StartupTrace.section(StartupTrace.ACTIVITY_CREATE) {
+            awaitSettingsTrace.begin()
+            // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
+            val splashScreen = installSplashScreen()
+            super.onCreate(savedInstanceState)
+            // The bound reference creates the view model now, which starts listening to TDLib, reading the settings and
+            // the splash time limit.
+            splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
+            splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
+            enableEdgeToEdge()
+            // Hands the intent on, or switches to its account first; opens the app again when the shown one changes.
+            accountRestart =
+                AccountRestart(this, accounts, ::handle).apply {
+                    start(intent.takeIf { savedInstanceState == null })
+                }
+            languageApplied = followAppLanguage()
+            setContent {
+                val appearance by viewModel.appearance.collectAsStateWithLifecycle()
+                val lock by viewModel.lock.collectAsStateWithLifecycle()
+                val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
+                // Read with the Appearance settings, from the same file: waiting for it costs nothing, and a value that
+                // changed after the first frame would compose the whole app again (a static composition local).
+                val phoneNumbersHiddenSetting by phoneNumberVisibility.hidden
+                    .collectAsStateWithLifecycle(initialValue = null)
+                val settings = appearance
+                val phoneNumbersHidden = phoneNumbersHiddenSetting
+                val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
+                if (settings != null && phoneNumbersHidden != null && lockAndLanguageKnown) {
+                    SideEffect(awaitSettingsTrace::end)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
+                    val locked = lock == LockState.Locked
+                    val secureRequests = remember { SecureWindowRequests() }
+                    val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
+                    SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
+                    AppTheme(settings) {
+                        CompositionLocalProvider(
+                            LocalAnimatedStickers provides animatedStickers,
+                            LocalSecureWindow provides secureRequests,
+                            // Telegram links tapped in the app open in it (LinkUriHandler).
+                            LocalUriHandler provides rememberLinkUriHandler(links, uiState),
+                            // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
+                            LocalCallStarter provides calls,
+                            // A chat's voice chat bar and its info page's voice chat row (feature:calls).
+                            LocalVoiceChats provides calls,
+                            LocalPhoneNumbersHidden provides phoneNumbersHidden,
+                            // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
+                            LocalLockedChatGate provides lockedChatGate,
                         ) {
-                            PingogramApp(
-                                uiState = uiState,
-                                chatToOpen = chatToOpen,
-                                onChatOpened = viewModel::onChatOpened,
-                                links = links,
-                                linkToOpen = linkToOpen,
-                                onLinkOpened = viewModel::onLinkOpened,
-                                shares = shares,
-                                shareToOpen = shareToOpen,
-                                onShareOpened = viewModel::onShareOpened,
-                            )
+                            LockableApp(
+                                locked = locked,
+                                lockScreen = { AppLockRoute() },
+                                modifier = Modifier.semantics { testTagsAsResourceId = true },
+                            ) { App(uiState, viewModel, links, shares, accountMenu) }
                         }
                     }
                 }
             }
         }
-    }
 
     override fun onStart() {
         super.onStart()
@@ -251,7 +283,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handle(intent)
+        accountRestart.onNewIntent(intent)
     }
 
     /**
@@ -276,6 +308,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        if (NotificationIntents.opensLockedChats(intent)) viewModel.setLockedChatsToOpen(true)
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
     }
@@ -320,4 +353,37 @@ class MainActivity : ComponentActivity() {
         val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
         val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
     }
+}
+
+/** `core:ui`'s [LocalLockedChatGate] over [hiddenChatIds]: `feature:settings`' [LockedChatGate]. */
+private fun lockedChatGate(hiddenChatIds: StateFlow<Set<Long>?>): @Composable (Long, @Composable () -> Unit) -> Unit =
+    { chatId, content -> LockedChatGate(hiddenChatIds, chatId, content) }
+
+/** The app, with what a notification, a link or another app asked to open ([MainActivityViewModel]). */
+@Composable
+private fun App(
+    uiState: MainActivityUiState,
+    viewModel: MainActivityViewModel,
+    links: LinkViewModel,
+    shares: ShareInbox,
+    accountMenu: AccountMenuViewModel,
+) {
+    val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
+    val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
+    val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
+    val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
+    PingogramApp(
+        uiState = uiState,
+        chatToOpen = chatToOpen,
+        onChatOpened = viewModel::onChatOpened,
+        lockedChatsToOpen = lockedChatsToOpen,
+        onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },
+        links = links,
+        linkToOpen = linkToOpen,
+        onLinkOpened = viewModel::onLinkOpened,
+        shares = shares,
+        shareToOpen = shareToOpen,
+        onShareOpened = viewModel::onShareOpened,
+        accounts = accountMenu,
+    )
 }

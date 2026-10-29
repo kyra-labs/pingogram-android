@@ -16,7 +16,9 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
+import dev.kyralabs.pingogram.core.ui.text.isPlausibleEmailAddress
 import dev.kyralabs.pingogram.core.ui.time.timeLeft
 import dev.kyralabs.pingogram.core.ui.time.wholeSecondsRoundedUp
 import kotlinx.coroutines.Job
@@ -42,6 +44,10 @@ import kotlin.time.TimeSource
  * tests control time. Typed input and local navigation survive process death through the [SavedStateHandle];
  * passwords and codes do not.
  *
+ * While another account is being added ([DeviceAccountsRepository.isAdding]), the flow starts at phone number entry
+ * and back there leaves it ([DeviceAccountsRepository.cancelAdding]): the app then opens again on the account shown
+ * before (`docs/adr/0031-multiple-accounts.md`).
+ *
  * It has one handler per event of a thirteen-screen flow, hence `TooManyFunctions` is suppressed.
  */
 @Suppress("TooManyFunctions")
@@ -51,6 +57,7 @@ class AuthViewModel internal constructor(
     private val authRepository: AuthRepository,
     private val countryRepository: CountryRepository,
     connectionRepository: ConnectionRepository,
+    private val deviceAccounts: DeviceAccountsRepository,
     private val timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
     @Inject
@@ -59,7 +66,15 @@ class AuthViewModel internal constructor(
         authRepository: AuthRepository,
         countryRepository: CountryRepository,
         connectionRepository: ConnectionRepository,
-    ) : this(savedStateHandle, authRepository, countryRepository, connectionRepository, ElapsedRealtimeTimeSource)
+        deviceAccounts: DeviceAccountsRepository,
+    ) : this(
+        savedStateHandle,
+        authRepository,
+        countryRepository,
+        connectionRepository,
+        deviceAccounts,
+        ElapsedRealtimeTimeSource,
+    )
 
     // Only touched on the main thread: events come from the UI, and the flows are collected in viewModelScope.
     private var model = savedStateHandle.restoreAuthModel()
@@ -85,6 +100,11 @@ class AuthViewModel internal constructor(
 
     init {
         viewModelScope.launch { authRepository.authStep.collect(::onAuthStep) }
+        viewModelScope.launch {
+            deviceAccounts.isAdding.collect { adding ->
+                update { it.copy(addingAccount = adding) }
+            }
+        }
         viewModelScope.launch {
             connectionRepository.connectionStatus.collect { status ->
                 update { it.copy(connection = status) }
@@ -144,6 +164,7 @@ class AuthViewModel internal constructor(
     // TDLib's steps
 
     private fun onAuthStep(step: AuthStep) {
+        if (isServerSwitch(step)) return
         val previous = model.step
         stepCount++
         if (step == AuthStep.Closed && !model.restarting) cancelCountdowns()
@@ -160,6 +181,17 @@ class AuthViewModel internal constructor(
             else -> Unit
         }
         loadCountries()
+    }
+
+    /**
+     * Whether [step] belongs to TDLib restarting on other servers for the number or QR code being sent
+     * (`REQUIREMENTS.md` FR-A9): the screen keeps what was typed, with its progress, until the step the request leads
+     * to. The phone number step the new instance starts at is not that step either.
+     */
+    private fun isServerSwitch(step: AuthStep): Boolean {
+        val switchesServers = model.pendingAction in ServerSwitchingActions
+        val restartStep = step in RestartSteps || (step == AuthStep.WaitPhoneNumber && model.step == step)
+        return switchesServers && restartStep
     }
 
     private fun completeAwaitedStep() {
@@ -559,6 +591,7 @@ class AuthViewModel internal constructor(
         when (val target = model.backTarget()) {
             BackTarget.ChangeNumber -> changePhoneNumber()
             BackTarget.CancelQrCode -> cancelQrCode()
+            BackTarget.LeaveAddingAccount -> deviceAccounts.cancelAdding()
             null -> Unit
             else -> update { it.afterBack(target) }
         }
@@ -717,3 +750,9 @@ private val InputChecks =
         AuthAction.SubmitNewPassword,
         AuthAction.SubmitEmailCode,
     )
+
+/** Requests that may restart TDLib on other servers first ([AuthViewModel]'s server switch). */
+private val ServerSwitchingActions = setOf(AuthAction.SubmitPhoneNumber, AuthAction.RequestQrCode)
+
+/** The steps TDLib reports while it restarts. */
+private val RestartSteps = setOf(AuthStep.LoggingOut, AuthStep.Closed, AuthStep.Initializing)

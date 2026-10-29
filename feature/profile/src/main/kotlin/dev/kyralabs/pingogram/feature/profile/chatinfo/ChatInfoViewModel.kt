@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.domain.model.isAdministrator
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
+import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -99,6 +100,7 @@ class ChatInfoViewModel internal constructor(
     private val userRepository: UserRepository,
     sharedMediaRepository: SharedMediaRepository,
     private val searchRepository: SearchRepository,
+    private val idVisibility: IdVisibilityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -113,6 +115,7 @@ class ChatInfoViewModel internal constructor(
         userRepository: UserRepository,
         sharedMediaRepository: SharedMediaRepository,
         searchRepository: SearchRepository,
+        idVisibility: IdVisibilityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -125,6 +128,7 @@ class ChatInfoViewModel internal constructor(
         userRepository,
         sharedMediaRepository,
         searchRepository,
+        idVisibility,
         clock,
         timePatterns,
         dispatcher,
@@ -199,7 +203,9 @@ class ChatInfoViewModel internal constructor(
         }.combine(clock.minutes) { sources, now -> sources to now }
             .combine(canDeleteForEveryone) { (sources, now), canDelete -> Triple(sources, now, canDelete) }
             .combine(overlay) { (sources, now, canDelete), overlay -> sources.toUiState(now, canDelete, overlay) }
-            .flowOn(dispatcher)
+            .combine(idVisibility.shown) { state, shown ->
+                if (shown && state is ChatInfoUiState.Content) state.copy(id = chatId) else state
+            }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatInfoUiState.Loading)
 
     init {
@@ -220,6 +226,7 @@ class ChatInfoViewModel internal constructor(
             ChatInfoEvent.Confirm -> confirm()
             ChatInfoEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
             ChatInfoEvent.CopyLink -> link()?.let { send(ChatInfoEffect.CopyText(it.url, CopiedChatText.Link)) }
+            ChatInfoEvent.CopyId -> send(ChatInfoEffect.CopyText(chatId.toString(), CopiedChatText.Id))
             ChatInfoEvent.ShareLink -> link()?.let { send(ChatInfoEffect.Share(it.url)) }
             ChatInfoEvent.ShowQrCode -> link()?.let { showDialog(ChatInfoDialog.QrCode(it.url)) }
             ChatInfoEvent.CopyDescription -> copyDescription()
@@ -418,6 +425,12 @@ class ChatInfoViewModel internal constructor(
                         },
                     // Boosts are a supergroup's or channel's; basic groups have none.
                     canViewBoosts = info.kind != GroupKind.BasicGroup,
+                    canEditSettings = rights.canChangeInfo || info.myRole is MemberRole.Owner,
+                    isChannel = info.kind == GroupKind.Channel,
+                    joinRequestCount = info.pendingJoinRequests.takeIf { it > 0 && rights.canInviteUsers },
+                    // Every administrator of a supergroup or channel may read its recent actions.
+                    canViewRecentActions = info.kind != GroupKind.BasicGroup,
+                    canViewStatistics = details?.canGetStatistics == true,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

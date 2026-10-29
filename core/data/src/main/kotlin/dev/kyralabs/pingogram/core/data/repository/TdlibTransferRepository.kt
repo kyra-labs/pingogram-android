@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.Transfers
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [TransferRepository] on TDLib's updates, followed from before TDLib starts (`UpdateCacheModule`):
@@ -34,7 +34,7 @@ import javax.inject.Singleton
  *
  * TDLib closing (logout) ends them all ([UpdateStore]).
  */
-@Singleton
+@AccountScoped
 class TdlibTransferRepository
     @Inject
     constructor(

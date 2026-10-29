@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatAction
 import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatActionRepository] on TDLib's `updateChatAction`: the last action of each sender in each chat, until TDLib
@@ -32,7 +32,7 @@ import javax.inject.Singleton
  *   cancellation, both for the topic and for the chat itself (`DialogActionManager::on_dialog_action`), so the chat's
  *   own updates hold every sender's action in the chat. Actions per topic are left for forums, later.
  */
-@Singleton
+@AccountScoped
 class TdlibChatActionRepository
     @Inject
     constructor(

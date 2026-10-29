@@ -3,16 +3,18 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInlineQueryResults
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.domain.model.InlineBot
 import dev.kyralabs.pingogram.core.domain.model.InlineQueryResults
 import dev.kyralabs.pingogram.core.domain.model.Location
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [InlineBotRepository] on TDLib. No cache, so no `TdlibUpdateCache`: TDLib keeps the users it resolved, and answers a
@@ -27,7 +29,7 @@ import javax.inject.Singleton
  *
  * Neither the queries nor the results are logged.
  */
-@Singleton
+@AccountScoped
 class TdlibInlineBotRepository
     @Inject
     constructor(
@@ -82,14 +84,13 @@ class TdlibInlineBotRepository
             queryId: Long,
             resultId: String,
             options: SendOptions,
-            replyToMessageId: Long?,
+            replyTo: ReplyTarget?,
         ): Outcome<Unit> {
-            val replyTo = replyToMessageId?.let(::replyToMessage)
             val send =
                 TdApi.SendInlineQueryResultMessage(
                     chatId,
                     options.tdTopic(),
-                    replyTo,
+                    replyTo?.toInputMessageReplyTo(),
                     options.toTdOptions(),
                     queryId,
                     resultId,

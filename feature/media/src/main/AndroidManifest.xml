@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- A viewer's video in picture-in-picture (docs/DESIGN_SYSTEM.md §6, media viewer): its own task, out of the
+             recent apps, opened only by the app, so the app's own activity never resizes into the window. -->
+        <activity
+            android:name=".pip.VideoPipActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:taskAffinity="dev.kyralabs.pingogram.pictureinpicture" />
+
+        <!-- The picture-in-picture window's play or pause button; only the app's own pending intent reaches it. -->
+        <receiver
+            android:name=".pip.PipActionReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

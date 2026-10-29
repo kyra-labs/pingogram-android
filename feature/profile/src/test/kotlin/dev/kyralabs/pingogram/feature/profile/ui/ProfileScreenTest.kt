@@ -2,17 +2,20 @@ package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
+import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
@@ -43,23 +46,26 @@ class ProfileScreenTest {
         state: ProfileUiState = ProfilePreviewData.content,
         media: SharedMediaUiState = ProfilePreviewData.media,
         withContactEditor: Boolean = true,
+        numbersHidden: Boolean = false,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                ProfileScreen(
-                    state = state,
-                    media = media,
-                    onEvent = { events += it },
-                    onMediaEvent = { mediaEvents += it },
-                    onBack = {},
-                    mediaActions =
-                        SharedMediaActions(
-                            onOpenMedia = { chatId, messageId -> opened += "media:$chatId:$messageId" },
-                            onOpenMessage = { chatId, messageId -> opened += "message:$chatId:$messageId" },
-                            onOpenUrl = { opened += "url:$it" },
-                        ),
-                    onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
-                )
+                CompositionLocalProvider(LocalPhoneNumbersHidden provides numbersHidden) {
+                    ProfileScreen(
+                        state = state,
+                        media = media,
+                        onEvent = { events += it },
+                        onMediaEvent = { mediaEvents += it },
+                        onBack = {},
+                        mediaActions =
+                            SharedMediaActions(
+                                onOpenMedia = { chatId, messageId -> opened += "media:$chatId:$messageId" },
+                                onOpenMessage = { chatId, messageId -> opened += "message:$chatId:$messageId" },
+                                onOpenUrl = { opened += "url:$it" },
+                            ),
+                        onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
+                    )
+                }
             }
         }
     }
@@ -110,6 +116,26 @@ class ProfileScreenTest {
         composeRule.onNode(hasContentDescription(string(R.string.profile_copy_phone))).performClick()
 
         assertEquals(listOf(ProfileEvent.CallPhone, ProfileEvent.CopyPhone), events)
+    }
+
+    @Test
+    fun `a hidden phone number shows its calling code only, and still dials and copies`() {
+        setScreen(numbersHidden = true)
+
+        scrollTo(string(R.string.profile_phone))
+        composeRule.onNodeWithText("+44 •••• ••••••", useUnmergedTree = true).assertIsDisplayed()
+        assertTrue(
+            composeRule
+                .onAllNodesWithText(
+                    "7700",
+                    substring = true,
+                    useUnmergedTree = true,
+                ).fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        composeRule.onNode(hasContentDescription(string(R.string.profile_copy_phone))).performClick()
+
+        assertEquals(listOf(ProfileEvent.CopyPhone), events)
     }
 
     @Test

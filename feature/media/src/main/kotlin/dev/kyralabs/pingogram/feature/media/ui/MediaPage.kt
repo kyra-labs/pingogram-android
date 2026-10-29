@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.WavyProgressIndicatorDefaults
@@ -27,12 +30,19 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.keepScreenOn
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.toSize
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
@@ -47,6 +57,8 @@ import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import dev.kyralabs.pingogram.feature.media.ui.zoom.detectZoomGestures
 import dev.kyralabs.pingogram.feature.media.ui.zoom.fittedSize
 import kotlinx.collections.immutable.ImmutableMap
+import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * One page of the viewer: [item]'s media fitted in the page, centered, on the screen's background.
@@ -58,7 +70,8 @@ import kotlinx.collections.immutable.ImmutableMap
  *   while zoomed ([ZoomState], drawn in the draw phase).
  * - **Videos and GIFs**: the blurred minithumbnail and the thumbnail, with the download's progress, until the file is
  *   on the device; once the item is in the player ([playback]), [videoSurface] under them, uncovered when the first
- *   frame shows. The screen stays on while a video plays.
+ *   frame shows. The screen stays on while a video plays. While power saving keeps it from playing by itself
+ *   ([VideoPlayback.waitsForTap]), a play button over it calls [onPlay].
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
  * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
  *   conversation ([sharedMediaViewerBounds]), growing out of it as the viewer opens and shrinking back into it as it
@@ -66,18 +79,23 @@ import kotlinx.collections.immutable.ImmutableMap
  *   zoomed photo fades out with the screen instead. The layers crop to the moving bounds, so a photo cropped in its
  *   bubble uncrops as it grows.
  *
- * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a double tap waits for the second tap only
- * where it zooms. Screen readers get no semantics from here: the pager describes the page.
+ * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a tap near the start or end side
+ * ([SIDE_TAP_FRACTION] of the width, mirrored right to left) calls [onSideTap] instead, with whether it was the end
+ * side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap only where it
+ * zooms. Screen readers get no semantics from here: the pager describes the page.
  */
+@Suppress("LongParameterList") // The item, its files and its player, its taps, the video's surface and the zoom.
 @Composable
 internal fun MediaPage(
     item: MediaItem,
     files: ImmutableMap<Int, FileState>,
     playback: VideoPlayback?,
     onTap: () -> Unit,
+    onPlay: () -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
     zoom: ZoomState? = null,
+    onSideTap: ((end: Boolean) -> Unit)? = null,
 ) {
     val media = item.media
     val zoomState = zoom?.takeIf { media is ViewerMedia.Image && !item.isHidden }
@@ -86,7 +104,7 @@ internal fun MediaPage(
         modifier
             .fillMaxSize()
             .then(if (playing) Modifier.keepScreenOn() else Modifier)
-            .pageGestures(zoomState, onTap),
+            .pageGestures(zoomState, onTap, onSideTap),
     ) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
         val fitted = fittedSize(media.width, media.height, container)
@@ -102,29 +120,39 @@ internal fun MediaPage(
         ) {
             MediaLayers(item, files, playback, videoSurface, fittedDp)
         }
-        if (item.isHidden) {
-            SpoilerLabel(Modifier.align(Alignment.Center))
-        } else {
-            DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
+        when {
+            item.isHidden -> SpoilerLabel(Modifier.align(Alignment.Center))
+
+            playback?.waitsForTap == true -> PlayButton(onPlay, Modifier.align(Alignment.Center))
+
+            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
+            playback?.showsFrame != true -> DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
         }
     }
 }
 
 /**
- * Taps ([onTap]) and, with [zoom], double taps that zoom around the tap and pinches ([detectZoomGestures]). The taps
- * are outside the pinch, so they see the moves the pinch consumed and take no pan for a tap.
+ * Taps ([onTap], or [onSideTap] near a side) and, with [zoom], double taps that zoom around the tap and pinches
+ * ([detectZoomGestures]). The taps are outside the pinch, so they see the moves the pinch consumed and take no pan for
+ * a tap.
  */
 @Composable
 private fun Modifier.pageGestures(
     zoom: ZoomState?,
     onTap: () -> Unit,
+    onSideTap: ((end: Boolean) -> Unit)?,
 ): Modifier {
     val scope = rememberCoroutineScope()
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnTap by rememberUpdatedState(onTap)
-    return pointerInput(zoom) {
+    val currentOnSideTap by rememberUpdatedState(onSideTap)
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    return pointerInput(zoom, rtl) {
         detectTapGestures(
-            onTap = { currentOnTap() },
+            onTap = { tap ->
+                val side = currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let { sideOf(tap.x, size.width, rtl) }
+                if (side == null) currentOnTap() else currentOnSideTap?.invoke(side)
+            },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
     }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom) } else Modifier)
@@ -213,17 +241,59 @@ private fun DownloadProgress(
             is FileState.Downloaded, null -> return
         }
     val description = stringResource(R.string.media_downloading)
+    // Screen readers hear the progress as it moves, in steps of a tenth, so they are not interrupted at every update.
+    val step = (progress * PROGRESS_STEPS).toInt().coerceIn(0, PROGRESS_STEPS)
+    val locale = LocalConfiguration.current.locales[0]
+    val percent =
+        remember(step, locale) {
+            NumberFormat.getPercentInstance(locale).format(step / PROGRESS_STEPS.toDouble())
+        }
     Box(
         modifier =
             modifier
                 .background(MaterialTheme.pingogramColors.mediaOverlay, CircleShape)
                 .padding(MaterialTheme.spacing.small)
-                .semantics { contentDescription = description },
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    stateDescription = percent
+                    liveRegion = LiveRegionMode.Polite
+                },
         contentAlignment = Alignment.Center,
     ) {
         CircularWavyProgressIndicator(
             progress = { progress },
             modifier = Modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize),
+        )
+    }
+}
+
+/** How finely screen readers hear a download's progress: in tenths. */
+private const val PROGRESS_STEPS = 10
+
+/**
+ * Play, over a video or GIF that power saving keeps from playing by itself: a large filled icon button on
+ * `mediaOverlay`, as the conversation's download button over a photo left for a tap.
+ */
+@Composable
+private fun PlayButton(
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.pingogramColors
+    FilledIconButton(
+        onClick = onPlay,
+        modifier = modifier.size(IconButtonDefaults.largeContainerSize()),
+        shapes = IconButtonDefaults.shapes(),
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = colors.mediaOverlay,
+                contentColor = colors.onMediaOverlay,
+            ),
+    ) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_play_arrow_filled),
+            contentDescription = stringResource(R.string.media_play),
+            modifier = Modifier.size(IconButtonDefaults.largeIconSize),
         )
     }
 }
