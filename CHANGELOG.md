@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-29
+
 ### Added
 - Group calls by link: "Add people" at the top of the participants invites your contacts, each with a message in
   your chat with them that opens the call.
@@ -1055,7 +1057,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0

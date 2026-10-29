@@ -2,7 +2,7 @@
 
 `REQUIREMENTS.md` §2 and §9.5 ask for Telegram's API terms (https://core.telegram.org/api/terms) to be reviewed by
 the owner and documented in the release notes. This is that review's checklist: each rule as the page states it
-(read 2026-10-22), and where Pingogram meets it. Every GitHub release links here. Before 1.0, the owner reads the
+(read 2026-10-22), and where Pingogram meets it. Every GitHub release links here. The owner reads the
 current page again, checks each row and signs off at the bottom. Telegram sends changes to the terms as an in-app
 notification to the developer's account.
 
@@ -25,7 +25,7 @@ Also followed, from `docs/TDLIB.md` "Compliance notes": the client identifies it
 `applicationVersion` "Pingogram x.y.z"). Pingogram has no automation, mass actions or scraping. `FLOOD_WAIT` is shown
 as a countdown and never retried in a loop.
 
-To check before 1.0 (the owner):
+To check (the owner; still open when 1.0.0 was released, `docs/ROADMAP.md` M6):
 
 - [ ] Telegram's terms page read again; nothing new since 2026-10-22, or the table updated
 - [ ] The store listing (`docs/PLAY_STORE.md` §4) and the GitHub README say "Telegram client" prominently, and that it
