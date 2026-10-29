@@ -1,4 +1,4 @@
-<p>Pingogram is an open-source, third-party Telegram client, written from scratch in Kotlin and Jetpack Compose on top of TDLib, Telegram's official client library. Sign in with your Telegram account and keep all your chats; what changes is the interface, which follows Google's Material 3 Expressive design: Google Sans Flex type, expressive shapes and spring motion, color themes and dynamic color from your wallpaper, and layouts that adapt from phones to tablets and foldables.</p>
+<p>Pingogram is an open-source, third-party Telegram client, written from scratch in Kotlin and Jetpack Compose on top of TDLib, Telegram's official client library. Sign in with your Telegram account and keep all your chats; what changes is the interface, which follows Material 3 Expressive: Google Sans Flex type, expressive shapes and spring motion, color themes and dynamic color from your wallpaper, and layouts that adapt from phones to tablets and foldables.</p>
 
 <p>Pingogram is <b>not</b> affiliated with Telegram. It complies with the Telegram API Terms of Service and shows sponsored messages in channels as Telegram requires.</p>
 
