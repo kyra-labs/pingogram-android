@@ -301,7 +301,7 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   (`:app:checkFossBenchmarkReleaseApkSize`, build-logic's `ApkSize`), so a change that grows the APK past its budget
   fails before it merges. Each release checks the APKs it publishes, both flavors (`release.yml`, "Check APK sizes").
   A change to a budget changes both. The job builds `fossBenchmarkRelease`, which shrinks as `release` does, signed
-  with the debug key. A megabyte is 1,048,576 bytes, as GitHub's release pages and the Bot API's 50 MB limit count it.
+  with the debug key. A megabyte is 1,048,576 bytes, as GitHub's release pages count it.
   - Measured 2026-10-23 with voice chats and live streams (`foss`, #183): arm64-v8a 48.2 MB, universal 121.1 MB,
     armeabi-v7a 39.4 MB, x86_64 55.4 MB (2026-10-22, before them: 47.8, 120.7, 39.0 and 55.0 MB). `gms` APKs are
     0.2 MB larger than `foss` ones (v0.5.0's release: arm64-v8a 48.1 and 48.2 MB, universal 121.0 and 121.2 MB).

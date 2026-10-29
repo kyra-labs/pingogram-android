@@ -1,0 +1,108 @@
+name: Telegram post
+
+# Posts a published release to a Telegram channel again, exactly as release.yml does (docs/RELEASE.md, "Channel
+# uploads"): its announcement from the tag's CHANGELOG.md, then its 8 APKs from the release's assets. Run by hand to
+# repost a release whose post failed, or to preview the format in the debug channel. A pull request that changes the
+# uploader runs it as a dry run over the latest release instead: nothing is sent, no secret is used, and the job's log
+# shows every message and caption.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to post, e.g. v1.0.0
+        required: true
+      channel:
+        description: Channel to post to
+        type: choice
+        options:
+          - debug
+          - releases
+        default: debug
+      dry_run:
+        description: Print the posts without sending them
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - tools/ci/telegram_publish.py
+      - tools/ci/requirements-telegram.txt
+      - .github/workflows/telegram-post.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegram-post-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  post:
+    name: post
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Choose the release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="$INPUT_TAG"
+          if [[ -z "$tag" ]]; then
+            # The newest published app release (the TDLib and NTgCalls releases have other tags).
+            tag="$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 50 --json tagName \
+              --jq '[.[] | select(.tagName | test("^v[0-9]+\\.[0-9]+\\.[0-9]+"))][0].tagName')"
+          fi
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Not a release tag: $tag"; exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download the release's assets and changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/dist"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/dist" \
+            --pattern '*.apk' --pattern SHA256SUMS.txt
+          git fetch --quiet --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          git show "$TAG:CHANGELOG.md" > "$RUNNER_TEMP/CHANGELOG.md"
+          ls -la "$RUNNER_TEMP/dist"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Dry run
+        if: github.event_name == 'pull_request' || inputs.dry_run
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          CHANNEL: ${{ inputs.channel || 'debug' }}
+        run: |
+          python tools/ci/telegram_publish.py release --version "$VERSION" --dist "$RUNNER_TEMP/dist" \
+            --changelog "$RUNNER_TEMP/CHANGELOG.md" --repo "$GITHUB_REPOSITORY" --server-url "$GITHUB_SERVER_URL" \
+            --channel "$CHANNEL" --dry-run
+
+      - name: Post
+        if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          TELEGRAM_DEBUG_CHANNEL_ID: ${{ secrets.TELEGRAM_DEBUG_CHANNEL_ID }}
+          TELEGRAM_UPLOAD_API_ID: ${{ secrets.TELEGRAM_UPLOAD_API_ID }}
+          TELEGRAM_UPLOAD_API_HASH: ${{ secrets.TELEGRAM_UPLOAD_API_HASH }}
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          VERSION: ${{ steps.release.outputs.version }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          python -m pip install --quiet --require-hashes -r tools/ci/requirements-telegram.txt
+          python tools/ci/telegram_publish.py release --version "$VERSION" --dist "$RUNNER_TEMP/dist" \
+            --changelog "$RUNNER_TEMP/CHANGELOG.md" --repo "$GITHUB_REPOSITORY" --server-url "$GITHUB_SERVER_URL" \
+            --channel "$CHANNEL"

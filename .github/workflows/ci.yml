@@ -38,6 +38,15 @@ jobs:
           npm run generate
           git diff --exit-code -- ../../core/ui/src/main ../../app/src/main
 
+      # The channel uploader's tests (tools/ci/telegram_publish.py): the standard library only, no secrets.
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Test the channel uploader
+        run: python -m unittest discover -s tools/ci -p 'test_*.py' -v
+
       - name: Set up JDK
         uses: actions/setup-java@v6
         with:
@@ -68,21 +77,6 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleFossDebug --stacktrace --no-daemon
 
-      # The debug APK of every push to main goes to the owner's channel (docs/RELEASE.md, "Channel uploads"); pull
-      # requests never post, and a channel problem never fails the build. Only arm64-v8a: a bot may send at most 50 MB,
-      # and the run's artifact has every ABI.
-      - name: Post debug APK to the channel
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        continue-on-error: true
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          caption="Pingogram debug ${GITHUB_SHA::7}"$'\n'"$(git log -1 --format=%s)"$'\n\n'
-          caption+="Debug build for arm64-v8a phones; it installs next to the release app. Every ABI: ${RUN_URL}"
-          tools/ci/telegram-publish.sh "$caption" app/build/outputs/apk/foss/debug/*-arm64-v8a-debug.apk
-
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -99,6 +93,46 @@ jobs:
             **/build/reports/**
             **/build/test-results/**
           retention-days: 7
+
+  # The debug APKs of every push to main go to the owner's debug channel (docs/RELEASE.md, "Channel uploads"): every
+  # ABI, from the build's artifact, posted by the bot over MTProto (tools/ci/telegram_publish.py), never to the releases
+  # channel. A job of its own, so uploading never holds up or times out the build. Pull requests never post, and a
+  # channel problem never fails CI.
+  debug-channel:
+    name: debug channel
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download the debug APKs
+        uses: actions/download-artifact@v8
+        with:
+          name: pingogram-foss-debug
+          path: ${{ runner.temp }}/debug-apks
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Post the debug APKs to the debug channel
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_DEBUG_CHANNEL_ID: ${{ secrets.TELEGRAM_DEBUG_CHANNEL_ID }}
+          TELEGRAM_UPLOAD_API_ID: ${{ secrets.TELEGRAM_UPLOAD_API_ID }}
+          TELEGRAM_UPLOAD_API_HASH: ${{ secrets.TELEGRAM_UPLOAD_API_HASH }}
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python -m pip install --quiet --require-hashes -r tools/ci/requirements-telegram.txt
+          python tools/ci/telegram_publish.py debug --sha "$GITHUB_SHA" --subject "$(git log -1 --format=%s)" \
+            --run-url "$RUN_URL" --apk-dir "$RUNNER_TEMP/debug-apks"
 
   # The APK size budget (docs/PERFORMANCE.md §1, §8): the foss APKs built as a release is (R8, resource shrinking),
   # signed with the debug key so no release credentials are needed; arm64-v8a at most 50 MB, universal 123 MB. Its own
