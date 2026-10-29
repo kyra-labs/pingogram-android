@@ -5,8 +5,10 @@ the store listing, the content rating, Play App Signing with the existing key, a
 answers are derived from the code as of 0.5.0; when a feature changes what the app reads or sends, update this file in
 the same PR (`docs/audit/v1-readiness.md` lists it as a release check).
 
-The `foss` build stays on GitHub (and later F-Droid). Both builds share the application id `dev.kyralabs.pingogram` and
-the signing key, so a phone moves between them without losing its data (`docs/RELEASE.md`).
+Samsung's Galaxy Store and Huawei's AppGallery reuse these answers (`docs/STORES.md`); keep both files in step. The
+`foss` build stays on GitHub (and later F-Droid and AppGallery). Both builds share the application id
+`dev.kyralabs.pingogram` and the signing key, so a phone moves between them without losing its data
+(`docs/RELEASE.md`).
 
 ## 1. App details
 

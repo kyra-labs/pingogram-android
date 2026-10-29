@@ -184,3 +184,9 @@ store (F-Droid's "reproducible builds", IzzyOnDroid's checks) verify that a sign
 existing key, and the `gms` bundle each tag builds (the artifact `pingogram-X.Y.Z-play`). Its optional upload to the
 internal track (`release.yml`'s `upload-to-play` job, Gradle Play Publisher) is off unless the repository variable
 `PLAY_PUBLISH` is `true` and the secret `PLAY_SERVICE_ACCOUNT_JSON` is set. GitHub stays the canonical release channel.
+
+## Galaxy Store and AppGallery
+
+`docs/STORES.md`: Galaxy Store gets the `gms` universal APK (`pingogram-X.Y.Z-universal-gms.apk`), AppGallery the
+`foss` one (`pingogram-X.Y.Z-universal.apk`), both from the GitHub release's assets and signed with the same key, and
+both uploaded by hand for now. Their listing images come from `tools/stores/images.sh`.
