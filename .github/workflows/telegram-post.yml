@@ -39,7 +39,8 @@ jobs:
   post:
     name: post
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # About 2 minutes per 100 MB uploaded: v0.6.0's 8 APKs took 16 minutes (2026-10-29).
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v7

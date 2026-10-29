@@ -103,7 +103,8 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # About 2 minutes per 100 MB uploaded (0.85 MB/s from GitHub's runners, 2026-10-29).
+    timeout-minutes: 40
     continue-on-error: true
     steps:
       - name: Checkout

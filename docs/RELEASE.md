@@ -74,8 +74,9 @@ lives in memory only; the token and the API hash are never printed, put on a com
 third-party action sees them. Telethon and cryptg are pinned with their hashes in `tools/ci/requirements-telegram.txt`
 (`pip install --require-hashes`). Without the token or a channel's secret nothing is posted, so forks build as before.
 
-- **Releases channel** (`TELEGRAM_CHANNEL_ID`, `release.yml`, tags only, after the GitHub Release is published and the
-  bundles are saved):
+- **Releases channel** (`TELEGRAM_CHANNEL_ID`, `release.yml`'s `releases channel` job, tags only, after the release job
+  published the GitHub Release, from its assets; the uploads take about 2 minutes per 100 MB, some 15 minutes for the 8
+  APKs, so they have a job of their own and never hold up the release or the Play upload):
   - **The announcement**, which notifies:
     - "Pingogram X.Y.Z" in bold, "Beta" under it for a pre-release, then the date of the version's CHANGELOG heading;
     - that CHANGELOG section as Telegram HTML: headings in bold, "•" bullets ("◦" nested), `code` and links kept,

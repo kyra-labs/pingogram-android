@@ -31,6 +31,7 @@ import html
 import os
 import re
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -419,6 +420,7 @@ async def send_all(posts, token, api_id, api_hash, channel):
                 failures += 1
                 continue
             parse_mode = "html" if post.html else None
+            started = time.monotonic()
             try:
                 if post.file is None:
                     await call(
@@ -441,7 +443,11 @@ async def send_all(posts, token, api_id, api_hash, channel):
                         ),
                         what,
                     )
-                log(f"Posted {what}.")
+                if post.file is None:
+                    log(f"Posted {what}.")
+                else:
+                    size = f"{size_in_megabytes(post.file.stat().st_size)} MB in " if post.file.is_file() else ""
+                    log(f"Posted {what} ({size}{time.monotonic() - started:.0f} s).")
             except (errors.RPCError, OSError, ConnectionError, asyncio.TimeoutError) as error:
                 # Telegram's error names the request, never the token.
                 warn(f"{what} was not posted: {type(error).__name__}: {error}")
