@@ -66,22 +66,33 @@ keytool -genkeypair -v \
 | `SIGNING_KEY_ALIAS` | `pingogram` |
 | `SIGNING_KEY_PASSWORD` | key password |
 | `GOOGLE_SERVICES_JSON_BASE64` | optional, only for `gms` releases (§8b) |
-| `TELEGRAM_BOT_TOKEN` | optional: the bot that posts builds to your channel (below) |
-| `TELEGRAM_CHANNEL_ID` | optional: that channel, `@name` for a public one, `-100…` for a private one (below) |
+| `TELEGRAM_BOT_TOKEN` | optional: the bot that posts builds to your channels (below) |
+| `TELEGRAM_CHANNEL_ID` | optional: the releases channel, `@name` for a public one, `-100…` for a private one (below) |
+| `TELEGRAM_DEBUG_CHANNEL_ID` | optional: the debug channel, the same way (below) |
+| `TELEGRAM_UPLOAD_API_ID`, `TELEGRAM_UPLOAD_API_HASH` | optional: an `api_id` and `api_hash` of their own for the uploader; without both, it uses `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` (below) |
 
 Delete `keystore.b64` from disk afterwards.
 
-**Builds in your channel (optional).** CI posts the debug APK of every push to `main`, and the release workflow the
-APKs of every release, to a Telegram channel of yours (`docs/RELEASE.md`, "Channel uploads"). Without the two secrets
-nothing is posted.
+**Builds in your channels (optional).** The release workflow posts every release (an announcement with its changes,
+then its 8 APKs) to your releases channel, and CI the debug APKs of every push to `main` to your debug channel
+(`docs/RELEASE.md`, "Channel uploads"). Without the token, or without a channel's secret, nothing is posted there.
 
 1. In Telegram, open @BotFather, send `/newbot`, pick a name and a username. It answers with the bot's token: keep it
    like a password (anyone with it can post as the bot), and put it only into the secret `TELEGRAM_BOT_TOKEN`.
-2. Add the bot to your channel as an administrator with the right to post messages (nothing else).
-3. The channel's id: `@yourchannel` for a public channel. For a private one, forward a post of the channel to
-   @userinfobot (or any bot that shows ids) and use the `-100…` number. Put it into `TELEGRAM_CHANNEL_ID`.
-4. The next push to `main` posts its debug APK; check the "Post debug APK to the channel" step of the CI run if
-   nothing arrives (it warns with Telegram's reason, e.g. "chat not found" or "not enough rights").
+2. Add the bot to **both** channels as an administrator with the right to post messages (nothing else).
+3. Each channel's id: `@yourchannel` for a public channel. For a private one, forward a post of the channel to
+   @userinfobot (or any bot that shows ids) and use the `-100…` number. The releases channel goes into
+   `TELEGRAM_CHANNEL_ID`, the debug one into `TELEGRAM_DEBUG_CHANNEL_ID`; debug builds are never posted to the releases
+   channel.
+4. The bot uploads over MTProto, as Telegram's apps do, which lets it send files of up to 2 GB (the Bot API stops at
+   50 MB). MTProto needs an `api_id` and `api_hash`: by default the app's, from step 2. To keep the uploader apart from
+   the app (its own entry in my.telegram.org's list, its own limits), create another application at
+   https://my.telegram.org and put its values into `TELEGRAM_UPLOAD_API_ID` and `TELEGRAM_UPLOAD_API_HASH`; both or
+   neither.
+5. To see the format before a release, run **Actions → Telegram post → Run workflow** with a published tag (e.g.
+   `v0.6.0`) and the channel `debug`; the same workflow posts a release again if its post failed. The next push to
+   `main` posts its debug APKs: check the "debug channel" job of the CI run if nothing arrives (it warns with
+   Telegram's reason, e.g. that the bot cannot reach the channel).
 
 ## 5. Local development setup
 
