@@ -83,7 +83,8 @@ then its 8 APKs) to your releases channel, and CI the debug APKs of every push t
 3. Each channel's id: `@yourchannel` for a public channel. For a private one, forward a post of the channel to
    @userinfobot (or any bot that shows ids) and use the `-100…` number. The releases channel goes into
    `TELEGRAM_CHANNEL_ID`, the debug one into `TELEGRAM_DEBUG_CHANNEL_ID`; debug builds are never posted to the releases
-   channel.
+   channel: if both secrets name it, the "debug channel" job posts nothing and warns that
+   `TELEGRAM_DEBUG_CHANNEL_ID names the releases channel`.
 4. The bot uploads over MTProto, as Telegram's apps do, which lets it send files of up to 2 GB (the Bot API stops at
    50 MB). MTProto needs an `api_id` and `api_hash`: by default the app's, from step 2. To keep the uploader apart from
    the app (its own entry in my.telegram.org's list, its own limits), create another application at

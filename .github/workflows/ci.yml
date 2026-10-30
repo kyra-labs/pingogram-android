@@ -125,6 +125,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_DEBUG_CHANNEL_ID: ${{ secrets.TELEGRAM_DEBUG_CHANNEL_ID }}
+          # Not posted to: only compared, so nothing is posted when the debug secret names the releases channel.
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
           TELEGRAM_UPLOAD_API_ID: ${{ secrets.TELEGRAM_UPLOAD_API_ID }}
           TELEGRAM_UPLOAD_API_HASH: ${{ secrets.TELEGRAM_UPLOAD_API_HASH }}
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
