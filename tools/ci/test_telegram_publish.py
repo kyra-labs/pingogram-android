@@ -50,10 +50,10 @@ class ConversionTest(unittest.TestCase):
         self.assertEqual(tp.inline("snake_case_name and 2 * 3"), "snake_case_name and 2 * 3")
 
     def test_the_section_becomes_bold_headings_and_bullets_without_markdown(self):
-        date, body = tp.changelog_section(CHANGELOG, "1.0.0")
-        self.assertEqual(date, datetime.date(2026, 10, 29))
+        heading, date, body = tp.changelog_section(CHANGELOG, "1.0.0")
+        self.assertEqual((heading, date), ("[1.0.0] - 2026-10-29", datetime.date(2026, 10, 29)))
         units = tp.changelog_units(body)
-        html = "".join(separator + unit for separator, unit, _ in units)
+        html = "".join(separator + unit for separator, unit in units)
         self.assertEqual(
             html,
             "\n\n<b>Added</b>\n"
@@ -67,82 +67,76 @@ class ConversionTest(unittest.TestCase):
         )
         for leftover in ("**", "`", "](", "### ", "\n- "):
             self.assertNotIn(leftover, html)
-        self.assertEqual([section for _, _, section in units], [None, "<b>Added</b>", None])
+        self.assertEqual(len(units), 3)  # a heading with its first bullet, the second bullet, the next heading
 
     def test_the_section_stops_before_the_next_version_and_the_links(self):
-        _, body = tp.changelog_section(CHANGELOG, "0.6.0")
+        _, _, body = tp.changelog_section(CHANGELOG, "0.6.0")
         self.assertEqual([line for line in body if line.strip()], ["### Added", "- Older."])
 
+    def announcement(self, version, changelog=CHANGELOG, **options):
+        return tp.announcement(
+            version, changelog, "https://github.com/o/r/releases/tag/v" + version,
+            "https://github.com/o/r/blob/v" + version + "/CHANGELOG.md", **options
+        )
+
     def test_a_missing_section_says_so(self):
-        messages = tp.announcement("9.9.9", CHANGELOG, "https://x.org/r", today=datetime.date(2026, 1, 2))
-        self.assertIn("No changelog section for 9.9.9.", messages[0])
-        self.assertIn("January 2, 2026", messages[0])
+        message = self.announcement("9.9.9", today=datetime.date(2026, 1, 2))
+        self.assertIn("No changelog section for 9.9.9.", message)
+        self.assertIn("January 2, 2026", message)
 
     def test_the_announcement_heads_with_the_version_and_date_and_ends_with_the_release(self):
-        messages = tp.announcement("1.0.0", CHANGELOG, "https://github.com/o/r/releases/tag/v1.0.0")
-        self.assertEqual(len(messages), 1)
-        self.assertTrue(messages[0].startswith("<b>Pingogram 1.0.0</b>\nOctober 29, 2026\n\n<b>Added</b>"))
-        self.assertNotIn("Beta", messages[0])
+        message = self.announcement("1.0.0")
+        self.assertTrue(message.startswith("<b>Pingogram 1.0.0</b>\nOctober 29, 2026\n\n<b>Added</b>"))
+        self.assertNotIn("Beta", message)
+        self.assertNotIn("CHANGELOG.md", message)
         self.assertTrue(
-            messages[0].endswith(
+            message.endswith(
                 'Release on GitHub: <a href="https://github.com/o/r/releases/tag/v1.0.0">'
                 "https://github.com/o/r/releases/tag/v1.0.0</a>"
             )
         )
 
     def test_pre_releases_say_beta(self):
-        messages = tp.announcement("0.6.0", CHANGELOG, "https://x.org/r")
-        self.assertTrue(messages[0].startswith("<b>Pingogram 0.6.0</b>\nBeta\nOctober 26, 2026"))
+        self.assertTrue(self.announcement("0.6.0").startswith("<b>Pingogram 0.6.0</b>\nBeta\nOctober 26, 2026"))
         self.assertTrue(tp.is_prerelease("1.1.0-rc.1"))
         self.assertFalse(tp.is_prerelease("1.0.0"))
 
 
-def bullets(count, length):
-    return [("\n", "• " + str(n).rjust(4, "0") + " " + "x" * (length - 7), None) for n in range(count)]
+def long_changelog(bullets):
+    lines = "\n".join(f"- Change {number} " + "x" * 300 for number in range(bullets))
+    return f"## [1.1.0] - 2026-11-02\n\n### Added\n{lines}\n\n## [1.0.0] - 2026-10-29\n"
 
 
-class SplittingTest(unittest.TestCase):
+class LengthTest(unittest.TestCase):
+    def announcement(self, changelog):
+        return tp.announcement(
+            "1.1.0", changelog, "https://github.com/o/r/releases/tag/v1.1.0",
+            "https://github.com/o/r/blob/v1.1.0/CHANGELOG.md",
+        )
+
     def test_visible_length_counts_text_not_tags_in_utf16_units(self):
         self.assertEqual(tp.visible_length('<b>a</b> <a href="https://x.org">&amp;</a> 😀'), 6)
 
-    def test_a_long_section_splits_at_bullet_boundaries_into_messages_of_at_most_4096(self):
-        units = bullets(30, 300)
-        messages = tp.split_messages("<b>Head</b>", units, "end", "…and more")
-        self.assertEqual(len(messages), 3)
-        self.assertTrue(all(tp.visible_length(message) <= tp.TEXT_LIMIT for message in messages))
-        joined = "\n".join(messages)
-        for _, unit, _ in units:
-            self.assertIn(unit, joined)  # no bullet is cut
-        self.assertTrue(messages[-1].endswith("\n\nend"))
+    def test_a_section_that_fits_is_posted_whole(self):
+        message = self.announcement(long_changelog(12))
+        self.assertLessEqual(tp.visible_length(message), tp.TEXT_LIMIT)
+        self.assertIn("Change 11 ", message)
+        self.assertNotIn("CHANGELOG.md", message)
 
-    def test_what_does_not_fit_in_three_messages_ends_with_and_more(self):
-        units = bullets(60, 300)
-        messages = tp.split_messages("<b>Head</b>", units, "end", "…and more: link")
-        self.assertEqual(len(messages), 3)
-        self.assertTrue(all(tp.visible_length(message) <= tp.TEXT_LIMIT for message in messages))
-        self.assertTrue(messages[-1].endswith("\n\n…and more: link"))
-        self.assertNotIn("end", messages[-1].replace("…and more", ""))
-        last_bullet = messages[-1].split("\n\n…and more")[0].split("\n")[-1]
-        self.assertIn(last_bullet, [unit for _, unit, _ in units])  # it ends on a whole bullet
+    def test_a_section_that_does_not_fit_is_a_link_to_it_in_the_changelog(self):
+        message = self.announcement(long_changelog(14))
+        url = "https://github.com/o/r/blob/v1.1.0/CHANGELOG.md#110---2026-11-02"
+        self.assertEqual(
+            message,
+            "<b>Pingogram 1.1.0</b>\nNovember 2, 2026\n\n"
+            f'What\'s new: <a href="{url}">{url}</a>\n\n'
+            'Release on GitHub: <a href="https://github.com/o/r/releases/tag/v1.1.0">'
+            "https://github.com/o/r/releases/tag/v1.1.0</a>",
+        )
 
-    def test_the_footer_takes_a_message_of_its_own_when_the_last_is_full(self):
-        units = bullets(13, 300)  # one full message
-        first, _ = tp._fill("H", units, [tp.TEXT_LIMIT])
-        self.assertGreater(tp.visible_length(first[0] + "\n\n" + "e" * 200), tp.TEXT_LIMIT)
-        messages = tp.split_messages("H", units, "e" * 200, "more")
-        self.assertEqual(messages[-1], "e" * 200)
-
-    def test_a_message_that_starts_within_a_section_repeats_its_heading(self):
-        units = [("\n\n", "<b>Added</b>\n• first", None)] + [
-            ("\n", "• " + "y" * 1000, "<b>Added</b>") for _ in range(6)
-        ]
-        messages = tp.split_messages("H", units, "end", "more")
-        self.assertEqual(len(messages), 2)
-        self.assertTrue(messages[1].startswith("<b>Added</b>\n• yyy"))
-
-    def test_a_bullet_longer_than_a_message_is_shortened(self):
-        messages = tp.split_messages("H", [("\n", "• " + "word " * 2000, None)], "end", "more")
-        self.assertTrue(all(tp.visible_length(message) <= tp.TEXT_LIMIT for message in messages))
+    def test_anchors_are_github_s(self):
+        self.assertEqual(tp.heading_anchor("[1.0.0] - 2026-10-29"), "100---2026-10-29")
+        self.assertEqual(tp.heading_anchor("[1.1.0-rc.1] - 2026-11-02"), "110-rc1---2026-11-02")
 
 
 class FilesTest(unittest.TestCase):
@@ -257,6 +251,17 @@ class SecretsTest(unittest.TestCase):
         self.assertEqual(status, 0)  # a debug build never falls back to the releases channel
         self.assertIn("TELEGRAM_DEBUG_CHANNEL_ID is not set", out)
 
+    def test_a_debug_build_is_never_posted_when_both_channels_are_one(self):
+        status, out = self.run_main(
+            {"TELEGRAM_BOT_TOKEN": "t", "TELEGRAM_API_ID": "1", "TELEGRAM_API_HASH": "h",
+             "TELEGRAM_CHANNEL_ID": "@Pingogram_Releases", "TELEGRAM_DEBUG_CHANNEL_ID": "@pingogram_releases"}
+        )
+        self.assertEqual(status, 1)
+        self.assertIn("TELEGRAM_DEBUG_CHANNEL_ID names the releases channel", out)
+        self.assertNotIn("pingogram_releases", out.lower())  # the values are never printed
+        self.assertTrue(tp.same_reference(-1001234567, -1001234567))
+        self.assertFalse(tp.same_reference("a_channel", -1001234567))
+
     def test_the_uploader_credentials_win_when_both_are_set(self):
         app = {"TELEGRAM_API_ID": "1", "TELEGRAM_API_HASH": "app"}
         self.assertEqual(tp.credentials(app), (1, "app"))
@@ -304,8 +309,9 @@ class FakeTelethon:
             super().__init__(f"A wait of {seconds} seconds is required")
             self.seconds = seconds
 
-    def __init__(self, failures):
+    def __init__(self, failures, channels=None):
         self.failures = failures  # what each send raises, in order (None: it succeeds)
+        self.channels = channels or {}  # reference → channel ID, for references that name the same channel
         self.sent = []
         self.slept = []
         fake = self
@@ -318,7 +324,7 @@ class FakeTelethon:
                 fake.token = bot_token
 
             async def get_input_entity(self, channel):
-                return ("entity", channel)
+                return ("entity", fake.channels.get(channel, channel))
 
             async def disconnect(self):
                 fake.disconnected = True
@@ -339,18 +345,19 @@ class FakeTelethon:
             "telethon": types.SimpleNamespace(
                 TelegramClient=Client,
                 errors=types.SimpleNamespace(RPCError=self.RPCError, FloodWaitError=self.FloodWaitError),
+                utils=types.SimpleNamespace(get_peer_id=lambda entity: entity[1]),
             ),
             "telethon.sessions": types.SimpleNamespace(StringSession=type("StringSession", (), {})),
             "telethon.tl.types": types.SimpleNamespace(DocumentAttributeFilename=lambda name: ("filename", name)),
         }
 
-    def run(self, posts):
+    def run(self, posts, avoid=None):
         async def sleep(seconds):
             self.slept.append(seconds)
 
         with mock.patch.dict(sys.modules, self.modules), mock.patch.object(tp.asyncio, "sleep", sleep):
             with redirect_stdout(io.StringIO()) as out:
-                failures = asyncio.run(tp.send_all(posts, "123:token", 1, "hash", "channel"))
+                failures = asyncio.run(tp.send_all(posts, "123:token", 1, "hash", "channel", avoid))
         return failures, out.getvalue()
 
 
@@ -394,6 +401,17 @@ class SendingTest(unittest.TestCase):
         self.assertEqual(len(telethon.sent), 1)
         self.assertIn("c.apk was not posted: RPCError: CHAT_WRITE_FORBIDDEN", out)
         self.assertNotIn("123:token", out)
+
+    def test_nothing_is_posted_to_the_channel_it_must_avoid(self):
+        telethon = FakeTelethon([], channels={"channel": -1001, "releases_name": -1001})
+        failures, out = telethon.run(self.posts(), avoid="releases_name")
+        self.assertEqual((failures, telethon.sent), (4, []))
+        self.assertIn("TELEGRAM_DEBUG_CHANNEL_ID names the releases channel", out)
+
+    def test_another_channel_to_avoid_changes_nothing(self):
+        telethon = FakeTelethon([], channels={"channel": -1001, "releases_name": -1002})
+        failures, _ = telethon.run(self.posts(), avoid="releases_name")
+        self.assertEqual((failures, len(telethon.sent)), (1, 3))
 
     def test_plain_posts_are_not_parsed(self):
         telethon = FakeTelethon([])

@@ -8,10 +8,12 @@ A bot logs in over MTProto with Telethon, which lets it upload files of up to 2 
                                 [--channel releases|debug] [--dry-run]
     telegram_publish.py debug --sha <commit> --subject <subject> --run-url <url> --apk-dir <dir> [--dry-run]
 
-release: one announcement (the version, "Beta" for pre-releases, the date, the CHANGELOG section, a link to the
-GitHub Release), which notifies, then each of the 8 APKs as a silent document whose caption gives its architecture,
-build, size, SHA-256 (checked against SHA256SUMS.txt) and download link. debug: one plain message (the commit, its
-subject, the run), then the foss debug APKs of every ABI, silent. Debug builds go only to the debug channel.
+release: one announcement (the version, "Beta" for pre-releases, the date, the CHANGELOG section or, when it does not
+fit in a message, a link to it, and a link to the GitHub Release), which notifies, then each of the 8 APKs as a silent
+document whose caption gives its architecture, build, size, SHA-256 (checked against SHA256SUMS.txt) and download
+link. debug: one plain message (the commit, its
+subject, the run), then the foss debug APKs of every ABI, silent. Debug builds go only to the debug channel: none is
+posted when TELEGRAM_DEBUG_CHANNEL_ID names the releases channel.
 
 Secrets come from the environment and are never printed, put on a command line or written to disk; the session lives
 in memory only (StringSession). TELEGRAM_BOT_TOKEN logs in; TELEGRAM_UPLOAD_API_ID and TELEGRAM_UPLOAD_API_HASH when
@@ -37,7 +39,6 @@ from pathlib import Path
 
 TEXT_LIMIT = 4096
 CAPTION_LIMIT = 1024
-MAX_MESSAGES = 3
 MEGABYTE = 1_048_576
 FLOOD_WAIT_MAX_SECONDS = 300
 PAUSE_SECONDS = 2
@@ -110,7 +111,8 @@ def inline(markdown):
 
 
 def changelog_section(changelog, version):
-    """The date and the lines of `## [version] - date` in a Keep a Changelog file; (None, []) without one."""
+    """The heading's text, the date and the lines of `## [version] - date` in a Keep a Changelog file; (None, None,
+    []) without one."""
     lines = changelog.splitlines()
     heading = re.compile(r"^## \[" + re.escape(version) + r"\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?\s*$")
     for index, line in enumerate(lines):
@@ -122,13 +124,13 @@ def changelog_section(changelog, version):
                     break
                 body.append(following)
             date = datetime.date.fromisoformat(match.group(1)) if match.group(1) else None
-            return date, body
-    return None, []
+            return line[3:].strip(), date, body
+    return None, None, []
 
 
 def changelog_units(body):
-    """The section as units that are never split: each top-level bullet with its nested ones, the section heading
-    joined to its first bullet. Each unit is (separator before it, Telegram HTML, its section's heading or None)."""
+    """The section as Telegram HTML, in units: each top-level bullet with its nested ones, a heading joined to its
+    first bullet. Each unit is (separator before it, Telegram HTML)."""
     entries = []  # (kind, level, markdown): kind "heading", "bullet" or "text"
     for raw in body:
         line = raw.rstrip()
@@ -147,12 +149,11 @@ def changelog_units(body):
 
     units = []
     pending_heading = None
-    heading = None
     for kind, level, markdown in entries:
         if kind == "heading":
             if pending_heading is not None:
-                units.append(("\n\n", pending_heading, None))
-            pending_heading = heading = f"<b>{inline(markdown)}</b>"
+                units.append(("\n\n", pending_heading))
+            pending_heading = f"<b>{inline(markdown)}</b>"
             continue
         if kind == "bullet" and level == 1:
             rendered = f"    ◦ {inline(markdown)}"
@@ -161,61 +162,22 @@ def changelog_units(body):
         else:
             rendered = inline(markdown)
         if level == 1 and units and pending_heading is None:
-            separator, previous, section = units[-1]
-            units[-1] = (separator, previous + "\n" + rendered, section)
+            separator, previous = units[-1]
+            units[-1] = (separator, previous + "\n" + rendered)
         elif pending_heading is not None:
-            units.append(("\n\n", pending_heading + "\n" + rendered, None))
+            units.append(("\n\n", pending_heading + "\n" + rendered))
             pending_heading = None
         else:
-            units.append(("\n", rendered, heading))
+            units.append(("\n", rendered))
     if pending_heading is not None:
-        units.append(("\n\n", pending_heading, None))
+        units.append(("\n\n", pending_heading))
     return units
 
 
-def _shorten(unit, limit):
-    """A unit too long for a message on its own, as plain text cut at a word before [limit]."""
-    plain = html.unescape(re.sub(r"<[^>]*>", "", unit))
-    while visible_length(escape(plain)) > limit - 1:
-        plain = plain[: max(0, len(plain) - 64)].rsplit(" ", 1)[0]
-    return escape(plain) + "…"
-
-
-def _fill(header, units, limits):
-    """Packs [units] after [header] into at most len(limits) messages; returns them and how many units fit. A message
-    that starts within a section starts with that section's heading again."""
-    messages = [header]
-    placed = 0
-    for separator, unit, section in units:
-        opening = f"{section}\n{unit}" if section else unit
-        if visible_length(messages[-1] + separator + unit) <= limits[len(messages) - 1]:
-            messages[-1] += separator + unit
-        elif len(messages) < len(limits) and visible_length(opening) <= limits[len(messages)]:
-            messages.append(opening)
-        else:
-            break
-        placed += 1
-    return messages, placed
-
-
-def split_messages(header, units, footer, more):
-    """The announcement in at most MAX_MESSAGES messages of TEXT_LIMIT, split at bullet boundaries, [footer] at the
-    end. When it does not fit, the last message ends at a bullet boundary with [more]."""
-    units = [
-        (separator, unit if visible_length(unit) <= TEXT_LIMIT - 200 else _shorten(unit, TEXT_LIMIT - 200), section)
-        for separator, unit, section in units
-    ]
-    messages, placed = _fill(header, units, [TEXT_LIMIT] * MAX_MESSAGES)
-    if placed == len(units):
-        if visible_length(messages[-1] + "\n\n" + footer) <= TEXT_LIMIT:
-            messages[-1] += "\n\n" + footer
-            return messages
-        if len(messages) < MAX_MESSAGES:
-            return messages + [footer]
-    limits = [TEXT_LIMIT] * (MAX_MESSAGES - 1) + [TEXT_LIMIT - visible_length("\n\n" + more)]
-    messages, _ = _fill(header, units, limits)
-    messages[-1] += "\n\n" + more
-    return messages
+def heading_anchor(heading):
+    """The anchor GitHub gives a Markdown heading: lowercase, every character but letters, digits, "_", "-" and spaces
+    dropped, spaces as hyphens. "[1.0.0] - 2026-10-29" is "100---2026-10-29"."""
+    return re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
 
 
 def human_date(date):
@@ -227,17 +189,27 @@ def is_prerelease(version):
     return version.startswith("0.") or "-" in version
 
 
-def announcement(version, changelog, release_url, today=None):
-    date, body = changelog_section(changelog, version)
+def announcement(version, changelog, release_url, changelog_url, today=None):
+    """One message: the version, "Beta" for a pre-release, the date, the CHANGELOG section and the release's link. A
+    section that does not fit in a message is left out for a link to it in [changelog_url]'s CHANGELOG.md."""
+    heading, date, body = changelog_section(changelog, version)
     lines = [f"<b>Pingogram {escape(version)}</b>"]
     if is_prerelease(version):
         lines.append("Beta")
     lines.append(human_date(date or today or datetime.date.today()))
-    units = changelog_units(body) or [("\n\n", escape(f"No changelog section for {version}."), None)]
-    link = f'<a href="{html.escape(release_url, quote=True)}">{escape(release_url)}</a>'
-    footer = f"Release on GitHub: {link}"
-    more = f"…and more: {link}"
-    return split_messages("\n".join(lines), units, footer, more)
+    header = "\n".join(lines)
+    footer = f"Release on GitHub: {link(release_url)}"
+    units = changelog_units(body) or [("\n\n", escape(f"No changelog section for {version}."))]
+    message = header + "".join(separator + unit for separator, unit in units) + "\n\n" + footer
+    if visible_length(message) <= TEXT_LIMIT:
+        return message
+    if heading is not None:
+        changelog_url += "#" + heading_anchor(heading)
+    return f"{header}\n\nWhat's new: {link(changelog_url)}\n\n{footer}"
+
+
+def link(url):
+    return f'<a href="{html.escape(url, quote=True)}">{escape(url)}</a>'
 
 
 # --- Files --------------------------------------------------------------------------------------------------------
@@ -282,7 +254,7 @@ def caption(version, architecture, description, flavor_label, build, size, sha25
         f"Build: {build}",
         f"Size: {size_in_megabytes(size)} MB",
         f"SHA-256: <code>{sha256}</code>",
-        f'Source: <a href="{html.escape(url, quote=True)}">{escape(url)}</a>',
+        f"Source: {link(url)}",
     ]
     text = "\n".join(lines)
     if visible_length(text) > CAPTION_LIMIT:
@@ -293,9 +265,9 @@ def caption(version, architecture, description, flavor_label, build, size, sha25
 def release_posts(version, dist, changelog, repository, server="https://github.com", today=None):
     tag = f"v{version}"
     release_url = f"{server}/{repository}/releases/tag/{tag}"
-    # Only the announcement's first message notifies; its continuations and the files arrive silently.
-    messages = announcement(version, changelog, release_url, today)
-    posts = [Post(text, silent=number > 0) for number, text in enumerate(messages)]
+    changelog_url = f"{server}/{repository}/blob/{tag}/CHANGELOG.md"
+    # Only the announcement notifies; the files arrive silently.
+    posts = [Post(announcement(version, changelog, release_url, changelog_url, today), silent=False)]
     sums_file = dist / "SHA256SUMS.txt"
     sums = read_checksums(sums_file.read_text()) if sums_file.is_file() else {}
     for flavor, flavor_label, build in FLAVORS:
@@ -365,6 +337,22 @@ def channel_reference(value):
     raise ValueError("the channel must be an @username or a numeric -100… ID")
 
 
+def releases_channel(environment):
+    """The releases channel, which a debug build must not go to; None when it is not set or not a channel."""
+    try:
+        return channel_reference(environment.get(CHANNEL_SECRETS["releases"], "")) or None
+    except ValueError:
+        return None
+
+
+def same_reference(first, second):
+    """Whether two channel references are written the same (usernames ignore case); after the login, send_all
+    compares the channels themselves, which also catches a username and an ID of one channel."""
+    if isinstance(first, str) and isinstance(second, str):
+        return first.lower() == second.lower()
+    return first == second
+
+
 def credentials(environment):
     """The API ID and hash: the uploader's own when both are set, otherwise the app's; None when neither is."""
     for id_name, hash_name in (
@@ -379,8 +367,10 @@ def credentials(environment):
     return None
 
 
-async def send_all(posts, token, api_id, api_hash, channel):
-    from telethon import TelegramClient, errors
+async def send_all(posts, token, api_id, api_hash, channel, avoid=None):
+    """Sends [posts] to [channel], none of them when it is the same channel as [avoid] (the releases channel, for a
+    debug build). Returns how many were not posted."""
+    from telethon import TelegramClient, errors, utils
     from telethon.sessions import StringSession
     from telethon.tl.types import DocumentAttributeFilename
 
@@ -411,6 +401,14 @@ async def send_all(posts, token, api_id, api_hash, channel):
         except (ValueError, errors.RPCError):
             warn("The bot cannot reach the channel: check its ID and that the bot is an admin who may post there.")
             return len(posts)
+        if avoid is not None:
+            try:
+                other = await client.get_input_entity(avoid)
+            except (ValueError, errors.RPCError):
+                other = None  # the bot cannot reach it, so it is not the channel it posts to
+            if other is not None and utils.get_peer_id(other) == utils.get_peer_id(entity):
+                warn(f"{CHANNEL_SECRETS['debug']} names the releases channel: debug builds are not posted there.")
+                return len(posts)
         for number, post in enumerate(posts):
             if number:
                 await asyncio.sleep(PAUSE_SECONDS)
@@ -507,7 +505,11 @@ def main(argv=None, environment=None):
     if api is None:
         log("Channel upload skipped: TELEGRAM_API_ID and TELEGRAM_API_HASH are not set.")
         return 0
-    failures = asyncio.run(send_all(posts, token, api[0], api[1], reference))
+    avoid = releases_channel(environment) if channel == "debug" else None
+    if avoid is not None and same_reference(avoid, reference):
+        warn(f"Channel upload skipped: {secret} names the releases channel, where debug builds are never posted.")
+        return 1
+    failures = asyncio.run(send_all(posts, token, api[0], api[1], reference, avoid))
     if failures:
         warn(f"{failures} of {len(posts)} posts were not posted.")
     return 1 if failures else 0

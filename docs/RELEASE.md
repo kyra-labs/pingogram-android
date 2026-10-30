@@ -84,9 +84,9 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
       everything else escaped;
     - a link to the GitHub Release, with link previews off.
 
-    A message holds 4,096 characters, so a long section continues in up to 3 messages, split between bullets (a
-    message that starts within a section repeats its heading). A section longer still ends at a bullet with "…and more:"
-    and the release's link.
+    It is one message. A message holds 4,096 characters: a section too long for it is left out, and "What's new:" links
+    it in the tag's `CHANGELOG.md` instead (`…/blob/vX.Y.Z/CHANGELOG.md#xyz---yyyy-mm-dd`, GitHub's anchor of its
+    heading).
   - **Then each APK as a document of its own**, silently, so only the announcement notifies:
     - the order is `foss` universal, arm64-v8a, armeabi-v7a, x86_64, then `gms` in the same order;
     - in Telegram they are named `pingogram-X.Y.Z-<arch>-foss.apk` / `-gms.apk`, while the GitHub Release keeps its
@@ -103,7 +103,8 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
 - **Debug channel** (`TELEGRAM_DEBUG_CHANNEL_ID`, `ci.yml`'s `debug channel` job, pushes to `main` only): one plain
   message (the short commit, its subject, the run), then the `foss` debug APKs of every ABI, universal first, under
   their built names, silently. No `gms`. Debug builds never go to the releases channel; without the debug secret they
-  are not posted.
+  are not posted, and when it names the releases channel (the same value, or the same channel once the bot resolves
+  both) nothing is posted and the job warns. Before 1.0.0 (#293), CI sent its debug APK to `TELEGRAM_CHANNEL_ID`.
 - **Reposting** (`.github/workflows/telegram-post.yml`, run by hand): a tag and a channel (`debug` by default, or
   `releases`). It downloads that published release's APKs and `SHA256SUMS.txt`, reads the tag's `CHANGELOG.md` and
   posts exactly as `release.yml` does: to preview the format in the debug channel, or to post a release again after a
