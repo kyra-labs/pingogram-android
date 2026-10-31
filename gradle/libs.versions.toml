@@ -79,7 +79,7 @@ ktlintGradlePlugin = "14.2.0"
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
 # material3-adaptive-navigation-suite uses this version too: it is released in lockstep with material3,
 # and the BOM's 1.4.0 suite would mix two material3 lines in one NavigationSuiteScaffold.
-material3 = "1.5.0-beta01"
+material3 = "1.5.0-beta02"
 # Voice messages and music in conversations (feature:chat), approved by the owner on 2026-10-18, and videos and GIFs
 # in the media viewer (feature:media). media3-exoplayer plays files TDLib has already downloaded, so no
 # media3-datasource-* network module; media3-ui-compose draws the videos (PlayerSurface), and never media3-ui
