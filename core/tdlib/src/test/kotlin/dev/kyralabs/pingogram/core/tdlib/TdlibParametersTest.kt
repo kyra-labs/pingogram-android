@@ -19,11 +19,10 @@ class TdlibParametersTest {
     private val key = ByteArray(32) { it.toByte() }
     private val device = DeviceInfo(manufacturer = "Example", model = "Phone 9", androidVersion = "16")
 
-    private fun parameters(servers: TdlibServers = TdlibServers.Production) =
+    private fun parameters() =
         tdlibParameters(
             config,
-            servers,
-            TdlibDirectories.of(filesDir, useTestDc = servers == TdlibServers.Test),
+            TdlibDirectories.of(filesDir),
             key,
             device,
             languageTag = "en-GB",
@@ -35,16 +34,6 @@ class TdlibParametersTest {
 
         assertEquals(
             listOf(false, "$filesDir/tdlib/db", "$filesDir/tdlib/files"),
-            listOf(parameters.useTestDc, parameters.databaseDirectory, parameters.filesDirectory),
-        )
-    }
-
-    @Test
-    fun `the test servers get their own directories`() {
-        val parameters = parameters(TdlibServers.Test)
-
-        assertEquals(
-            listOf(true, "$filesDir/tdlib-test/db", "$filesDir/tdlib-test/files"),
             listOf(parameters.useTestDc, parameters.databaseDirectory, parameters.filesDirectory),
         )
     }

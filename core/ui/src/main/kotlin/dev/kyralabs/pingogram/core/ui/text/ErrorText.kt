@@ -99,5 +99,6 @@ private fun DomainError.messageRes(): Int =
         DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
         DomainError.MessageViewersUnavailable -> R.string.error_message_viewers_unavailable
         DomainError.PollClosed -> R.string.error_poll_closed
+        DomainError.NotAvailableInDemo -> R.string.error_not_available_in_demo
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

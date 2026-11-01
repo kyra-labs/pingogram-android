@@ -9,10 +9,10 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
-import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -61,6 +61,7 @@ class SettingsViewModel
         userRepository: UserRepository,
         private val countryRepository: CountryRepository,
         private val deviceAccounts: DeviceAccountsRepository,
+        private val demo: DemoRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(SettingsUiState(isLogOutDialogOpen = savedStateHandle[KEY_LOG_OUT_DIALOG_OPEN] ?: false))
@@ -76,11 +77,10 @@ class SettingsViewModel
         private val otherPhoneNumbers = mutableMapOf<String, String>()
 
         init {
-            combine(account(userRepository), authRepository.servers) { account, servers ->
-                account?.copy(isOnTestServers = servers == TelegramServers.Test)
-            }.onEach { account -> mutableUiState.update { it.copy(account = account) } }
+            account(userRepository)
+                .onEach { account -> mutableUiState.update { it.copy(account = account) } }
                 .launchIn(viewModelScope)
-            if (deviceAccounts.isAvailable) {
+            if (deviceAccounts.isAvailable && !demo.isDemo.value) {
                 combine(otherAccounts(), deviceAccounts.canAddAccount) { others, canAdd -> others to canAdd }
                     .onEach { (others, canAdd) ->
                         mutableUiState.update { it.copy(otherAccounts = others, canAddAccount = canAdd) }
@@ -157,11 +157,18 @@ class SettingsViewModel
                 ?.takeIf { it.callingCode.isNotEmpty() }
                 ?.let { "+${it.callingCode} ${it.formattedNumber.replace("-", "").trim()}".trim() }
 
-        /** Sends one logout at a time; a second confirmation while it runs (a double tap) does nothing. */
+        /**
+         * Sends one logout at a time; a second confirmation while it runs (a double tap) does nothing. In the demo it
+         * leaves the demo instead, deleting what it made; the app then opens again at its first screen (docs/adr/0034).
+         */
         private fun logOut() {
             if (uiState.value.isLoggingOut) return
             setLogOutDialogOpen(false)
             mutableUiState.update { it.copy(isLoggingOut = true) }
+            if (demo.isDemo.value) {
+                viewModelScope.launch { demo.leave() }
+                return
+            }
             viewModelScope.launch {
                 // On success the progress stays until the app leaves this screen.
                 val error = (authRepository.logOut() as? Outcome.Failure)?.error ?: return@launch

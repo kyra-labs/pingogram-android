@@ -99,9 +99,9 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 
 | Field | Value |
 |---|---|
-| `useTestDc` | `false`; `true` only for a test account's number (Test servers, below) |
-| `databaseDirectory` | `filesDir/tdlib/db` (`filesDir/tdlib-test/db` on the test DC) |
-| `filesDirectory` | `filesDir/tdlib/files` (`tdlib-test/files` on the test DC; cache-clearable via `optimizeStorage`) |
+| `useTestDc` | `false` |
+| `databaseDirectory` | `filesDir/tdlib/db` |
+| `filesDirectory` | `filesDir/tdlib/files` (cache-clearable via `optimizeStorage`) |
 | `databaseEncryptionKey` | 32 random bytes generated once, wrapped by an Android Keystore AES key, stored in `noBackupFilesDir` (see below) |
 | `useFileDatabase`, `useChatInfoDatabase`, `useMessageDatabase` | `true` |
 | `useSecretChats` | `true` |
@@ -115,30 +115,19 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 `TdlibConfigModule`, which reads `BuildConfig`; `AndroidTdlibParametersProvider` builds the rest.
 
 Each account has its own directories, key file and Keystore key (`AccountSlot`, `docs/adr/0031-multiple-accounts.md`):
-the first keeps the names above (`tdlib`, `tdlib-test`, `tdlib_database_key`, the alias
-`pingogram.tdlib.database_key`), so an update moves nothing; the second uses `tdlib-1`, `tdlib-test-1`,
-`tdlib_database_key_1` and `pingogram.tdlib.database_key.1`, and so on up to four. `AccountStorage.delete` removes all
-of a slot's once its client is closed. TDLib's log is the process's, so it stays in `tdlib/logs` for every account.
+the first keeps the names above (`tdlib`, `tdlib_database_key`, the alias `pingogram.tdlib.database_key`), so an
+update moves nothing; the second uses `tdlib-1`, `tdlib_database_key_1` and `pingogram.tdlib.database_key.1`, and so
+on up to four. `AccountStorage.delete` removes all of a slot's once its client is closed. TDLib's log is the process's,
+so it stays in `tdlib/logs` for every account.
 
-### Test servers
+### Test servers (removed)
 
-`REQUIREMENTS.md` FR-A9 (owner decision 2026-10-25: Google Play's review signs in with a Telegram test account, whose
-login code can be used again and again; `docs/PLAY_STORE.md` §1). TDLib takes `use_test_dc` only with its parameters,
-so switching servers restarts it:
-
-- `TdlibClient.servers` says which servers TDLib uses (`TdlibServers`: `Production` or `Test`), and `useServers`
-  switches: it sends `close`, and on `AuthorizationStateClosed` the client starts the next instance with the
-  parameters of the servers asked for, each with its own directories (`tdlib` or `tdlib-test`; one database key for
-  both). It returns once the new instance asks for a phone number (or anything after starting).
-- `TdlibAuthRepository.setPhoneNumber` decides: a test account's number (`core:domain`'s `telegramServersFor`: digits
-  99966, then 1 to 3, then four digits, nothing else) switches to the test servers before
-  `setAuthenticationPhoneNumber`, every other number to the production servers, and it sends nothing if TDLib is on
-  other servers by then. `requestQrCodeAuthentication` switches to the production servers. Nothing else switches.
-- Any other `AuthorizationStateClosed` (a logout, an account deleted) starts the next instance on the production
-  servers. Which servers the last parameters were for is kept in `noBackupFilesDir/tdlib_test_servers` (present only
-  for the test servers), so a restart of the app stays signed in to a test account (`tdlib_test_servers_1` and so on for the other
-  account slots).
-- The log file stays in `filesDir/tdlib/logs` on either servers (`docs/TESTING_GUIDE.md`).
+Versions up to 1.0.0 signed Telegram's test accounts in on its test servers for the stores' review (FR-A9 then).
+Telegram's test servers no longer sign them in, and the stores' reviewers now use the demo
+(`docs/adr/0034-demo-mode-for-store-review.md`), which has no TDLib instance. `AndroidTdlibParametersProvider`
+deletes what an earlier version kept for the test servers (`filesDir/tdlib-test`, `noBackupFilesDir/tdlib_test_servers`
+and the other slots' `-1`… and `_1`… ones) before it builds the parameters, and `AccountStorage.delete` removes them
+with a slot.
 
 ### Database encryption key
 

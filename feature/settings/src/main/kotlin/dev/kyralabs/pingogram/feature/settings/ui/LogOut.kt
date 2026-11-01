@@ -13,7 +13,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.feature.settings.R
 
-// "Log out" at the end of Settings and its confirmation (REQUIREMENTS.md FR-A8).
+// "Log out" at the end of Settings and its confirmation (REQUIREMENTS.md FR-A8); "Leave demo" in its place while the
+// demo shows (docs/adr/0034-demo-mode-for-store-review.md).
 
 /** Destructive, so in the error role; disabled with progress while logging out. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -22,13 +23,18 @@ internal fun LogOutItem(
     isLoggingOut: Boolean,
     shapes: ListItemShapes,
     onClick: () -> Unit,
+    isDemo: Boolean = false,
 ) {
     val loggingOut = stringResource(R.string.settings_logging_out)
     SettingsRow(
-        title = stringResource(R.string.settings_log_out),
+        title = stringResource(if (isDemo) R.string.settings_leave_demo else R.string.settings_log_out),
         shapes = shapes,
         icon = R.drawable.ic_logout,
-        supportingContent = { Text(stringResource(R.string.settings_log_out_summary)) },
+        supportingContent = {
+            Text(
+                stringResource(if (isDemo) R.string.settings_leave_demo_summary else R.string.settings_log_out_summary),
+            )
+        },
         trailingContent =
             if (isLoggingOut) {
                 { LoadingIndicator(Modifier.semantics { contentDescription = loggingOut }) }
@@ -58,15 +64,24 @@ internal fun destructiveItemColors(): ListItemColors =
 internal fun LogOutDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    isDemo: Boolean = false,
 ) {
     DestructiveDialog(
         icon = R.drawable.ic_logout,
         texts =
-            DestructiveDialogTexts(
-                title = stringResource(R.string.settings_log_out_dialog_title),
-                text = stringResource(R.string.settings_log_out_dialog_text),
-                confirm = stringResource(R.string.settings_log_out_dialog_confirm),
-            ),
+            if (isDemo) {
+                DestructiveDialogTexts(
+                    title = stringResource(R.string.settings_leave_demo_dialog_title),
+                    text = stringResource(R.string.settings_leave_demo_dialog_text),
+                    confirm = stringResource(R.string.settings_leave_demo_dialog_confirm),
+                )
+            } else {
+                DestructiveDialogTexts(
+                    title = stringResource(R.string.settings_log_out_dialog_title),
+                    text = stringResource(R.string.settings_log_out_dialog_text),
+                    confirm = stringResource(R.string.settings_log_out_dialog_confirm),
+                )
+            },
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )

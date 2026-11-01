@@ -13,6 +13,8 @@
     <!-- The account's card at the top of Settings. %1$s is the username, without @. -->
     <string name="settings_account_username">\@%1$s</string>
     <!-- On the account's card when the account subscribes to Telegram Premium: a status, not an offer. -->
+    <!-- On the account's card instead of a phone number while the demo for app store reviewers shows (sample chats on the phone, no Telegram account). -->
+    <string name="settings_account_demo">Demo</string>
     <string name="settings_account_premium">Premium</string>
     <!-- Below the account card: another account's row says what a tap does for screen readers. -->
     <string name="settings_switch_account">Switch to %1$s</string>
@@ -21,8 +23,6 @@
         <item quantity="one">%1$d unread chat</item>
         <item quantity="other">%1$d unread chats</item>
     </plurals>
-    <!-- A label on the account's card and in Active sessions: the account is signed in on Telegram's test servers (Telegram's test accounts, used by app reviewers), not the real ones. -->
-    <string name="settings_account_test_server">Test server</string>
     <!-- What tapping the account's card does, spoken by screen readers ("double-tap to edit profile"). -->
     <string name="settings_edit_profile_button">Edit profile</string>
     <!-- Snackbar on Settings after the profile was saved. -->
@@ -1321,4 +1321,10 @@
         <item quantity="one">Choose up to %1$d chat</item>
         <item quantity="other">Choose up to %1$d chats</item>
     </plurals>
+    <!-- In place of "Log out" while the demo for app store reviewers shows: it ends the demo, deleting what was done in it, and returns to the first screen. -->
+    <string name="settings_leave_demo">Leave demo</string>
+    <string name="settings_leave_demo_summary">Deletes what you did in it and goes back to the start</string>
+    <string name="settings_leave_demo_dialog_title">Leave the demo?</string>
+    <string name="settings_leave_demo_dialog_text">What you did in the demo is deleted, and Pingogram goes back to its first screen.</string>
+    <string name="settings_leave_demo_dialog_confirm">Leave</string>
 </resources>

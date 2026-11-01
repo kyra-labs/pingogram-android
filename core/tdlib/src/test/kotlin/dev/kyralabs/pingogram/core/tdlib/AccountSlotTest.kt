@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.tdlib
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -18,8 +19,7 @@ class AccountSlotTest {
 
     private fun names(slot: AccountSlot) =
         listOf(
-            TdlibDirectories.of(filesDir, useTestDc = false, slot).root.name,
-            TdlibDirectories.of(filesDir, useTestDc = true, slot).root.name,
+            TdlibDirectories.of(filesDir, slot).root.name,
             KeystoreDatabaseKeyProvider.keyFileName(slot),
             AndroidKeystoreWrappingKeyStore.aliasOf(slot),
         )
@@ -27,7 +27,7 @@ class AccountSlotTest {
     @Test
     fun `the first account keeps the names of before multiple accounts`() {
         assertEquals(
-            listOf("tdlib", "tdlib-test", "tdlib_database_key", "pingogram.tdlib.database_key"),
+            listOf("tdlib", "tdlib_database_key", "pingogram.tdlib.database_key"),
             names(AccountSlot.First),
         )
     }
@@ -35,15 +35,15 @@ class AccountSlotTest {
     @Test
     fun `the default directories are the first account's`() {
         assertEquals(
-            TdlibDirectories.of(filesDir, useTestDc = false, AccountSlot.First).root,
-            TdlibDirectories.of(filesDir, useTestDc = false).root,
+            TdlibDirectories.of(filesDir, AccountSlot.First).root,
+            TdlibDirectories.of(filesDir).root,
         )
     }
 
     @Test
     fun `other accounts add their index`() {
         assertEquals(
-            listOf("tdlib-2", "tdlib-test-2", "tdlib_database_key_2", "pingogram.tdlib.database_key.2"),
+            listOf("tdlib-2", "tdlib_database_key_2", "pingogram.tdlib.database_key.2"),
             names(AccountSlot(2)),
         )
     }
@@ -53,7 +53,13 @@ class AccountSlotTest {
         AccountSlot(AccountSlot.MAX_ACCOUNTS - 1)
 
         assertThrows<IllegalArgumentException> { AccountSlot(AccountSlot.MAX_ACCOUNTS) }
-        assertThrows<IllegalArgumentException> { AccountSlot(-1) }
+        assertThrows<IllegalArgumentException> { AccountSlot(-2) }
+    }
+
+    @Test
+    fun `the demo has a slot of its own, none of the accounts'`() {
+        assertTrue(AccountSlot.Demo.isDemo)
+        assertTrue((0 until AccountSlot.MAX_ACCOUNTS).none { AccountSlot(it).isDemo })
     }
 
     @Test
@@ -68,10 +74,10 @@ class AccountSlotTest {
         assertEquals(listOf(false, true), keys.values.map { it.deleted })
     }
 
-    /** Both directories with a file each, the key file and the test servers marker. */
+    /** Its directory with a file, the key file, and what the test-server sign-in of up to 1.0.0 left. */
     private fun createStorage(slot: AccountSlot): List<File> =
-        listOf(false, true).map { testDc ->
-            TdlibDirectories.of(filesDir, testDc, slot).database.resolve("db.sqlite").apply {
+        listOf(TdlibDirectories.of(filesDir, slot).root, TdlibDirectories.legacyTestDc(filesDir, slot)).map { root ->
+            root.resolve("db/db.sqlite").apply {
                 checkNotNull(parentFile).mkdirs()
                 writeText("database")
             }
@@ -80,7 +86,7 @@ class AccountSlotTest {
                 checkNotNull(parentFile).mkdirs()
                 writeText("key")
             } +
-            noBackupFilesDir.resolve(testServersMarkerName(slot)).apply { createNewFile() }
+            noBackupFilesDir.resolve(legacyTestServersMarkerName(slot)).apply { createNewFile() }
 
     private class RecordedKey : WrappingKeyStore {
         var deleted = false

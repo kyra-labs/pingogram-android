@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.notifications.PingogramChannel
+import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -176,7 +177,8 @@ internal fun NotificationSettingsScreen(
             onOpenReactions = { onOpen(NotificationSettingsPage.Reactions) },
             onContactJoinedChange = { onEvent(NotificationSettingsEvent.SetContactJoined(it)) },
         )
-        if (state.isKeepConnectedOffered) {
+        // Not in the demo: the service would keep the real accounts' connection open (docs/adr/0034).
+        if (state.isKeepConnectedOffered && !LocalIsDemo.current) {
             KeepConnectedGroup(
                 enabled = state.keepConnected,
                 onCheckedChange = { onEvent(NotificationSettingsEvent.SetKeepConnected(it)) },

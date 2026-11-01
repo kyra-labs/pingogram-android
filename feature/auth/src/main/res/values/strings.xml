@@ -103,4 +103,9 @@
     <string name="auth_premium_support">Questions about the purchase? Write to Telegram support at %1$s.</string>
     <string name="auth_premium_contact_support">Contact support</string>
     <string name="auth_premium_change_number">Use a different number</string>
+    <!-- The hidden way into the demo for app store reviewers: holding the Welcome screen's logo asks this. The demo shows sample chats stored on the phone and does not connect to Telegram. -->
+    <string name="auth_demo_title">Open the demo?</string>
+    <string name="auth_demo_text">It shows sample chats stored on this phone, without a Telegram account.</string>
+    <string name="auth_demo_cancel">Cancel</string>
+    <string name="auth_demo_open">Open</string>
 </resources>

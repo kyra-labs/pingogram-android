@@ -13,7 +13,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
-import dev.kyralabs.pingogram.core.tdlib.TdlibServers
+import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -62,6 +62,7 @@ class SettingsViewModelTest {
         handle: SavedStateHandle = savedState,
         users: TdlibUserRepository = TdlibUserRepository(client, backgroundScope),
         deviceAccounts: FakeDeviceAccountsRepository = FakeDeviceAccountsRepository(isAvailable = false),
+        demo: FakeDemoRepository = FakeDemoRepository(),
     ): SettingsViewModel =
         SettingsViewModel(
             handle,
@@ -69,6 +70,7 @@ class SettingsViewModelTest {
             users,
             TdlibCountryRepository(client),
             deviceAccounts,
+            demo,
         ).also { runCurrent() }
 
     private suspend fun TestScope.announceMe(user: TdApi.User) {
@@ -136,6 +138,18 @@ class SettingsViewModelTest {
 
             assertEquals(SettingsUiState(), viewModel.state)
             assertTrue(client.sent.isEmpty())
+        }
+
+    @Test
+    fun `in the demo, confirming leaves it instead of logging out`() =
+        runTest {
+            val demo = FakeDemoRepository(isDemo = true)
+            val viewModel = viewModel(demo = demo)
+
+            send(viewModel, SettingsEvent.LogOut, SettingsEvent.ConfirmLogOut)
+
+            assertEquals(1, demo.left)
+            assertTrue(client.sentOf<TdApi.LogOut>().isEmpty())
         }
 
     @Test
@@ -295,23 +309,6 @@ class SettingsViewModelTest {
             announceMe(TdApiFixtures.user(id = 7, phoneNumber = "447911123456"))
 
             assertEquals("+447911123456", viewModel.state.account?.phoneNumber)
-        }
-
-    @Test
-    fun `the card says Test server only while signed in on Telegram's test servers`() =
-        runTest {
-            answerPhoneNumberInfo(callingCode = "", formattedNumber = "")
-            val viewModel = viewModel()
-            announceMe(TdApiFixtures.user(id = 7, phoneNumber = "9996621234"))
-            assertEquals(false, viewModel.state.account?.isOnTestServers)
-
-            client.servers.value = TdlibServers.Test
-            runCurrent()
-            assertEquals(true, viewModel.state.account?.isOnTestServers)
-
-            client.servers.value = TdlibServers.Production
-            runCurrent()
-            assertEquals(false, viewModel.state.account?.isOnTestServers)
         }
 
     @Test
