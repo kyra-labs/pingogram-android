@@ -37,6 +37,10 @@ internal class DemoData(
 
     private var nextId = 1L
 
+    /** The id of the sample message in Spanish, which "Translate" turns into English. */
+    var spanishMessageId = 0L
+        private set
+
     private fun id(): Long = (nextId++) shl MESSAGE_ID_SHIFT
 
     /** Every chat's messages, oldest first. */
@@ -79,6 +83,8 @@ internal class DemoData(
                     incoming(GROUP_CHAT, CHLOE, minutesAgo = 120, content = textOf(R.string.demo_group_morning)),
                     incoming(GROUP_CHAT, ADA, minutesAgo = 100, content = poll()),
                     incoming(GROUP_CHAT, BEN, minutesAgo = 60, content = plainText(PARTY)),
+                    incoming(GROUP_CHAT, BEN, minutesAgo = 40, content = textOf(R.string.demo_group_spanish))
+                        .also { spanishMessageId = it.id },
                     incoming(GROUP_CHAT, CHLOE, minutesAgo = 20, content = textOf(R.string.demo_group_checklist))
                         .apply { isPinned = true },
                 ),
@@ -327,24 +333,68 @@ internal class DemoData(
             false,
         )
 
-    /** A sticker the demo has, by its file's id (the panel sends stickers by file id). */
-    fun stickerByFileId(fileId: Int): TdApi.Sticker? = sticker().sticker.takeIf { it.sticker.id == fileId }
+    /** The English of the message in Spanish; the demo's other messages are in the app's language already. */
+    val spanishTranslation: String get() = text(R.string.demo_group_spanish_translation)
 
-    private fun sticker() =
-        TdApi.MessageSticker(
-            TdApi.Sticker(
-                DemoFile.Sticker.id.toLong(),
-                0,
-                STICKER_SIZE,
-                STICKER_SIZE,
-                WAVE,
-                TdApi.StickerFormatWebp(),
-                TdApi.StickerFullTypeRegular(null),
-                null,
-                DemoFiles.remote(DemoFile.Sticker),
+    /** The sample sticker sets: "Pings", installed, and "Ring shapes", trending. */
+    val stickerSets: List<TdApi.StickerSet> =
+        listOf(
+            stickerSet(
+                PINGS_SET,
+                R.string.demo_sticker_set_pings,
+                "DemoPings",
+                listOf(
+                    DemoFile.Sticker to WAVE,
+                    DemoFile.StickerTeal to "👍",
+                    DemoFile.StickerWarm to "🎉",
+                    DemoFile.StickerPink to "❤",
+                ),
             ),
-            false,
+            stickerSet(
+                SHAPES_SET,
+                R.string.demo_sticker_set_shapes,
+                "DemoRingShapes",
+                listOf(DemoFile.StickerGreen to "😮", DemoFile.StickerPurple to "🔥", DemoFile.StickerGold to "🙏"),
+            ),
         )
+
+    /** A sticker the demo has, by its file's id (the panel sends stickers by file id). */
+    fun stickerByFileId(fileId: Int): TdApi.Sticker? =
+        stickerSets.flatMap { it.stickers.toList() }.firstOrNull { it.sticker.id == fileId }
+
+    private fun stickerSet(
+        id: Long,
+        title: Int,
+        name: String,
+        stickers: List<Pair<DemoFile, String>>,
+    ) = TdApi.StickerSet().apply {
+        this.id = id
+        this.title = text(title)
+        this.name = name
+        stickerType = TdApi.StickerTypeRegular()
+        isInstalled = id == PINGS_SET
+        isViewed = id == PINGS_SET
+        this.stickers = stickers.map { (file, emoji) -> stickerOf(file, emoji, id) }.toTypedArray()
+        emojis = stickers.map { TdApi.Emojis(arrayOf(it.second)) }.toTypedArray()
+    }
+
+    private fun stickerOf(
+        file: DemoFile,
+        emoji: String,
+        setId: Long = PINGS_SET,
+    ) = TdApi.Sticker(
+        file.id.toLong(),
+        setId,
+        STICKER_SIZE,
+        STICKER_SIZE,
+        emoji,
+        TdApi.StickerFormatWebp(),
+        TdApi.StickerFullTypeRegular(null),
+        null,
+        DemoFiles.remote(file),
+    )
+
+    private fun sticker() = TdApi.MessageSticker(stickerOf(DemoFile.Sticker, WAVE), false)
 
     private fun poll(): TdApi.MessagePoll {
         val options =
@@ -354,14 +404,19 @@ internal class DemoData(
                 R.string.demo_group_poll_friday to 0,
             )
         return TdApi.MessagePoll(
-            DemoPolls.poll(
-                POLL_ID,
-                text(R.string.demo_group_poll_question),
-                options.map {
-                    text(it.first) to
-                        it.second
+            DemoPolls
+                .poll(
+                    POLL_ID,
+                    text(R.string.demo_group_poll_question),
+                    options.map {
+                        text(it.first) to
+                            it.second
+                    },
+                ).apply {
+                    // A public poll, so "View votes" has voters to list (POLL_VOTERS).
+                    isAnonymous = false
+                    canGetVoters = true
                 },
-            ),
             TdApi.FormattedText("", emptyArray()),
             null,
             false,
@@ -381,9 +436,9 @@ internal class DemoData(
                 .map { (emoji, count) ->
                     TdApi.MessageReaction(TdApi.ReactionTypeEmoji(emoji), count, emoji == chosen, null, emptyArray())
                 }.toTypedArray(),
-            true,
-            emptyArray(),
             false,
+            emptyArray(),
+            true,
         ),
     )
 
@@ -408,6 +463,12 @@ internal class DemoData(
         const val POLL_ID = 1L
 
         val GROUP_MEMBERS = listOf(ME, ADA, BEN, CHLOE)
+
+        /** Who voted for each answer of the sample poll, as the vote counts it starts with say. */
+        val POLL_VOTERS = listOf(listOf(BEN), listOf(ADA, CHLOE), emptyList())
+
+        const val PINGS_SET = 1L
+        const val SHAPES_SET = 2L
 
         /** The emoji the demo offers as reactions, as Telegram's active emoji reactions. */
         val REACTIONS = listOf("👍", "❤", "🔥", "🎉", "😂", "😮", "😢", "🙏")

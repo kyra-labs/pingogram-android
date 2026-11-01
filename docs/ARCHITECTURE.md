@@ -94,8 +94,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
   - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
   - **The areas**: `DemoTdlibClient` asks its `DemoArea`s in turn (`DemoMessages`: history, sending every kind of
-    content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoChats`: chats, lists, people),
-    each answering on `DemoWorld`, the demo's state.
+    content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoSearch`: chats, messages and
+    shared media, recently found chats, text entities; `DemoDetails`: who saw, reacted and voted, translation;
+    `DemoStickers`: the sample sticker sets, drawn on the phone; `DemoChats`: chats, lists, people), each answering on
+    `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
+    rebuilt by the same replay).
   - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took
     as a change, written by `DemoCodec` (TDLib's objects field by field, by reflection; TDLib's keep rules keep the
     fields through R8) with its date, and replayed through the same areas at the next start, so a process death keeps
