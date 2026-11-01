@@ -166,6 +166,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHAT_TOO_BIG" to DomainError.MessageViewersUnavailable,
         // Polls: messages.sendVote in a poll that was closed meanwhile.
         "MESSAGE_POLL_CLOSED" to DomainError.PollClosed,
+        // The demo's client (core:demo's DemoTdlibClient.NOT_AVAILABLE) for what its sample data cannot do.
+        "NOT_AVAILABLE_IN_DEMO" to DomainError.NotAvailableInDemo,
     )
 
 /**

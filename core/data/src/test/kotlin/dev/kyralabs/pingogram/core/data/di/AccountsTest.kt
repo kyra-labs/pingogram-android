@@ -28,6 +28,7 @@ import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -51,6 +52,14 @@ class AccountsTest {
 
     private val deleted = mutableListOf<Int>()
 
+    /** The demo's marker as the factory keeps it, its clients, and whether leaving deleted what it made. */
+    private var demoOn = false
+    private val demoClients = mutableListOf<FakeTdlibClient>()
+    private var demoDeleted = false
+
+    /** Each graph made, by the slot it was made for. */
+    private val components = mutableMapOf<Int, AccountComponent>()
+
     private fun TestScope.accounts(start: Boolean = true): Accounts {
         val dispatcher = StandardTestDispatcher(testScheduler)
         clients[0] = FakeTdlibClient()
@@ -67,10 +76,23 @@ class AccountsTest {
                         slot: AccountSlot,
                         client: TdlibClient,
                         scope: CoroutineScope,
-                    ) = component(slot.index, client, scope)
+                    ) = component(slot.index, client, scope).also { components[slot.index] = it }
 
                     override fun deleteStorage(slot: AccountSlot) {
                         deleted += slot.index
+                    }
+
+                    override fun demoClient(scope: CoroutineScope) = FakeTdlibClient().also { demoClients += it }
+
+                    override fun isDemoOn() = demoOn
+
+                    override fun turnDemoOn() {
+                        demoOn = true
+                    }
+
+                    override fun deleteDemo() {
+                        demoOn = false
+                        demoDeleted = true
                     }
                 },
             registryFile = registryFile,
@@ -100,7 +122,7 @@ class AccountsTest {
                 }
             }
         val userRepository = proxy<UserRepository> { name -> if (name == "getMyUserId") user else null }
-        return proxy { name ->
+        return proxy<AccountComponent> { name ->
             when (name) {
                 "authRepository" -> auth
                 "userRepository" -> userRepository
@@ -130,6 +152,52 @@ class AccountsTest {
         steps.getValue(slot).value = AuthStep.Ready
         runCurrent()
     }
+
+    @Test
+    fun `the demo is a graph of its own, never a TDLib client nor one of the accounts`() =
+        runTest {
+            val accounts = accounts()
+            val graphs = DefaultAccountGraphs(accounts, backgroundScope)
+
+            accounts.enterDemo()
+            runCurrent()
+
+            val active = accounts.active
+            assertTrue(demoOn && accounts.isDemo.value)
+            assertSame(components.getValue(AccountSlot.Demo.index), active)
+            assertTrue(demoClients.single().isStarted)
+            // Only the first account's client exists: the demo asked the factory for no TDLib client.
+            assertEquals(setOf(0), clients.keys)
+            assertEquals(listOf(0), accounts.all().map { it.slot.index })
+            assertEquals(AccountRegistry.First, accounts.registry.value)
+            assertNull(graphs.repositories(AccountSlot.Demo.index))
+        }
+
+    @Test
+    fun `a demo left on at the last start shows again`() =
+        runTest {
+            demoOn = true
+
+            val accounts = accounts()
+
+            val active = accounts.active
+            assertTrue(accounts.isDemo.value)
+            assertSame(components.getValue(AccountSlot.Demo.index), active)
+        }
+
+    @Test
+    fun `leaving the demo deletes what it made and shows the accounts again`() =
+        runTest {
+            val accounts = accounts()
+            accounts.enterDemo()
+            accounts.active
+
+            accounts.leaveDemo()
+            runCurrent()
+
+            assertTrue(demoDeleted && !demoOn && !accounts.isDemo.value)
+            assertSame(components.getValue(0), accounts.active)
+        }
 
     @Test
     fun `without a registry the first account is the only one, and shown`() =

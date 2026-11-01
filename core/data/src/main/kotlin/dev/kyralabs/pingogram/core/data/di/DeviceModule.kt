@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepositor
 import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
+import dev.kyralabs.pingogram.core.data.repository.DefaultDemoRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDevicePushRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
@@ -24,6 +25,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
+import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
@@ -53,6 +55,10 @@ interface DeviceModule {
 
     @Binds
     fun accountGraphs(graphs: DefaultAccountGraphs): AccountGraphs
+
+    /** The demo is the device's: it shows instead of the accounts while it is on (docs/adr/0034). */
+    @Binds
+    fun demoRepository(repository: DefaultDemoRepository): DemoRepository
 
     @Binds
     fun devicePushRepository(repository: DefaultDevicePushRepository): DevicePushRepository

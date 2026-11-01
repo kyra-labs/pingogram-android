@@ -17,8 +17,11 @@ data class AccountSlot(
     val index: Int,
 ) {
     init {
-        require(index in 0 until MAX_ACCOUNTS) { "No account slot $index" }
+        require(index in 0 until MAX_ACCOUNTS || index == DEMO_INDEX) { "No account slot $index" }
     }
+
+    /** The demo's slot ([Demo]): not one of the accounts, with no TDLib directories or database key of its own. */
+    val isDemo: Boolean get() = index == DEMO_INDEX
 
     /** "" for the first slot, else [separator] and the index. */
     internal fun suffix(separator: String) = if (index == 0) "" else "$separator$index"
@@ -28,6 +31,14 @@ data class AccountSlot(
         const val MAX_ACCOUNTS = 4
 
         val First = AccountSlot(0)
+
+        private const val DEMO_INDEX = -1
+
+        /**
+         * The demo's graph (`docs/adr/0034-demo-mode-for-store-review.md`), apart from the accounts: never in their
+         * registry, so notifications, push, widgets and the accounts limit never see it.
+         */
+        val Demo = AccountSlot(DEMO_INDEX)
     }
 }
 
