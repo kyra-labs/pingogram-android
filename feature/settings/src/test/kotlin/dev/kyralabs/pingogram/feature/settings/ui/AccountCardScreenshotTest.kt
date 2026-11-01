@@ -52,17 +52,6 @@ class AccountCardScreenshotTest {
     fun premiumDark() = capture(ThemeMode.Dark, SettingsPreviewData.premiumAccount)
 
     @Test
-    fun testServerLight() = capture(ThemeMode.Light, SettingsPreviewData.testServerAccount)
-
-    @Test
-    fun testServerDark() = capture(ThemeMode.Dark, SettingsPreviewData.testServerAccount)
-
-    @Test
-    @Config(fontScale = FONT_SCALE_200)
-    fun premiumOnTestServerFontScale200() =
-        capture(ThemeMode.Light, SettingsPreviewData.testServerAccount.copy(isPremium = true))
-
-    @Test
     @Config(fontScale = FONT_SCALE_200)
     fun premiumFontScale200() = capture(ThemeMode.Light, SettingsPreviewData.premiumAccount)
 

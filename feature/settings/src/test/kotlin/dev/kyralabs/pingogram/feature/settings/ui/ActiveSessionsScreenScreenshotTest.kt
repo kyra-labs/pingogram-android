@@ -32,27 +32,21 @@ class ActiveSessionsScreenScreenshotTest {
     fun onlyThisDeviceLight() = capture("onlyThisDeviceLight", ThemeMode.Light, SettingsPreviewData.onlyThisDevice)
 
     @Test
-    fun testServerLight() = capture("testServerLight", ThemeMode.Light, onTestServers)
+    fun amoled() = capture("sessions", ScreenshotVariant.Amoled)
 
     @Test
-    fun testServerDark() = capture("testServerDark", ThemeMode.Dark, onTestServers)
+    fun highContrast() = capture("sessions", ScreenshotVariant.HighContrast)
 
     @Test
-    fun testServerAmoled() = capture("testServer", ScreenshotVariant.Amoled)
-
-    @Test
-    fun testServerHighContrast() = capture("testServer", ScreenshotVariant.HighContrast)
-
-    @Test
-    fun testServerRtl() = capture("testServer", ScreenshotVariant.Rtl)
+    fun rtl() = capture("sessions", ScreenshotVariant.Rtl)
 
     @Test
     @Config(qualifiers = MEDIUM)
-    fun testServerMedium() = capture("testServer", ScreenshotVariant.Medium)
+    fun medium() = capture("sessions", ScreenshotVariant.Medium)
 
     @Test
     @Config(fontScale = FONT_SCALE_200)
-    fun testServerFontScale200() = capture("testServerFontScale200", ThemeMode.Light, onTestServers)
+    fun fontScale200() = capture("fontScale200", ThemeMode.Light, SettingsPreviewData.sessions)
 
     @Test
     fun terminateDialogLight() = capture("terminateDialogLight", ThemeMode.Light, withSessionDialog)
@@ -82,13 +76,11 @@ class ActiveSessionsScreenScreenshotTest {
 
     private val failed = ActiveSessionsUiState(sessions = SessionsState.Failed(DomainError.Network))
 
-    private val onTestServers = SettingsPreviewData.sessions.copy(isOnTestServers = true)
-
     private fun capture(
         name: String,
         variant: ScreenshotVariant,
     ) = composeRule.captureScreen(javaClass, "$name${variant.name}", variant) {
-        ActiveSessionsScreen(state = onTestServers, onEvent = {}, onBack = {})
+        ActiveSessionsScreen(state = SettingsPreviewData.sessions, onEvent = {}, onBack = {})
     }
 
     private fun capture(

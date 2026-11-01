@@ -136,7 +136,7 @@ private fun AccountAvatar(account: AccountUiModel) {
 
 /**
  * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and below
- * them the "Premium" label for Telegram Premium subscribers and "Test server" on Telegram's test servers.
+ * them the "Premium" label for Telegram Premium subscribers.
  */
 @Composable
 private fun AccountDetails(account: AccountUiModel) {
@@ -153,21 +153,13 @@ private fun AccountDetails(account: AccountUiModel) {
                 style = LocalTextStyle.current.userContent,
             )
         }
-        if (account.isPremium || account.isOnTestServers) {
-            FlowRow(
+        if (account.isPremium) {
+            AccountLabel(
+                text = stringResource(R.string.settings_account_premium),
+                container = MaterialTheme.colorScheme.tertiaryContainer,
+                content = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.padding(top = MaterialTheme.spacing.small),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-            ) {
-                if (account.isPremium) {
-                    AccountLabel(
-                        text = stringResource(R.string.settings_account_premium),
-                        container = MaterialTheme.colorScheme.tertiaryContainer,
-                        content = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-                if (account.isOnTestServers) TestServerLabel()
-            }
+            )
         }
     }
 }
@@ -192,20 +184,6 @@ private fun AccountLabel(
                 .padding(horizontal = spacing.small, vertical = spacing.extraSmall / 2),
         color = content,
         style = MaterialTheme.typography.labelMediumEmphasized,
-    )
-}
-
-/**
- * "Test server" in `secondaryContainer`: the account signed in on Telegram's test servers (`REQUIREMENTS.md` FR-A9),
- * shown by Settings home's account card and Active sessions.
- */
-@Composable
-internal fun TestServerLabel(modifier: Modifier = Modifier) {
-    AccountLabel(
-        text = stringResource(R.string.settings_account_test_server),
-        container = MaterialTheme.colorScheme.secondaryContainer,
-        content = MaterialTheme.colorScheme.onSecondaryContainer,
-        modifier = modifier,
     )
 }
 
@@ -234,12 +212,6 @@ private fun AccountCardPreview() {
 @Composable
 private fun AccountCardPremiumPreview() {
     PingogramPreview { AccountCard(SettingsPreviewData.premiumAccount, onEditProfile = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun AccountCardTestServerPreview() {
-    PingogramPreview { AccountCard(SettingsPreviewData.testServerAccount, onEditProfile = {}) }
 }
 
 @PingogramPreviews

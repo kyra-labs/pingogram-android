@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Removed
+- Signing in with Telegram's test accounts on Telegram's test servers: those servers no longer sign them in. A demo for
+  the app stores' reviewers replaces it.
+
 ## [1.0.0] - 2026-10-29
 
 ### Added

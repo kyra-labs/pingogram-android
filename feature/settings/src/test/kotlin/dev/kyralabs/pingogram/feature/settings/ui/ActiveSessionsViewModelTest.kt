@@ -2,12 +2,10 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
-import dev.kyralabs.pingogram.core.tdlib.TdlibServers
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -29,7 +27,6 @@ import kotlinx.coroutines.test.setMain
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -58,7 +55,6 @@ class ActiveSessionsViewModelTest {
             handle,
             TdlibSessionRepository(client),
             testTimeFormats(),
-            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
         ).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: ActiveSessionsViewModel): List<ActiveSessionsEffect> {
@@ -150,19 +146,6 @@ class ActiveSessionsViewModelTest {
             assertEquals(listOf(2L), loaded.unconfirmed.map { it.id })
             assertEquals(listOf(3L), loaded.others.map { it.id })
             assertEquals(180, loaded.inactiveSessionTtlDays)
-        }
-
-    @Test
-    fun `says when this session is on Telegram's test servers`() =
-        runTest {
-            answerTypical()
-            val viewModel = viewModel()
-            assertFalse(viewModel.state.isOnTestServers)
-
-            client.servers.value = TdlibServers.Test
-            runCurrent()
-
-            assertTrue(viewModel.state.isOnTestServers)
         }
 
     @Test

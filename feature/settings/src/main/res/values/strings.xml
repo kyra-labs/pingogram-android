@@ -21,8 +21,6 @@
         <item quantity="one">%1$d unread chat</item>
         <item quantity="other">%1$d unread chats</item>
     </plurals>
-    <!-- A label on the account's card and in Active sessions: the account is signed in on Telegram's test servers (Telegram's test accounts, used by app reviewers), not the real ones. -->
-    <string name="settings_account_test_server">Test server</string>
     <!-- What tapping the account's card does, spoken by screen readers ("double-tap to edit profile"). -->
     <string name="settings_edit_profile_button">Edit profile</string>
     <!-- Snackbar on Settings after the profile was saved. -->

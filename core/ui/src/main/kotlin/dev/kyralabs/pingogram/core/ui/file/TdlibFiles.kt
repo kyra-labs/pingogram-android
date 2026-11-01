@@ -18,10 +18,10 @@ import java.util.Locale
 // user picks with a read grant for its URI alone, which ends with that app's task.
 
 /**
- * The directories under `filesDir` whose files may be handed out: TDLib's files directories, of the production and of
- * the test data center (`core:tdlib`'s `TdlibDirectories.files`). Keep in sync with `:app`'s `res/xml/file_paths.xml`.
+ * The directories under `filesDir` whose files may be handed out: TDLib's files directory (`core:tdlib`'s
+ * `TdlibDirectories.files`). Keep in sync with `:app`'s `res/xml/file_paths.xml`.
  */
-private val SHAREABLE_DIRECTORIES = listOf("tdlib/files", "tdlib-test/files")
+private val SHAREABLE_DIRECTORIES = listOf("tdlib/files")
 
 /** The authority of the app's `FileProvider`: `${applicationId}.files`, the package name at run time. */
 fun Context.tdlibFilesAuthority(): String = "$packageName.files"

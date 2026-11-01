@@ -32,8 +32,8 @@ data class AccountSlot(
 }
 
 /**
- * Deletes what an account left on the device: both of its TDLib directories (the production and the test DC's), its
- * database key file, its test servers marker and its Keystore key. Only for a slot whose TDLib client is closed.
+ * Deletes what an account left on the device: its TDLib directory, its database key file and its Keystore key, and what
+ * the test-server sign-in of versions up to 1.0.0 left. Only for a slot whose TDLib client is closed.
  * Blocking: off the main thread.
  */
 class AccountStorage internal constructor(
@@ -51,11 +51,10 @@ class AccountStorage internal constructor(
     )
 
     fun delete(slot: AccountSlot) {
-        for (useTestDc in listOf(false, true)) {
-            TdlibDirectories.of(filesDir(), useTestDc, slot).root.deleteRecursively()
-        }
+        TdlibDirectories.of(filesDir(), slot).root.deleteRecursively()
+        TdlibDirectories.legacyTestDc(filesDir(), slot).deleteRecursively()
         noBackupFilesDir().resolve(KeystoreDatabaseKeyProvider.keyFileName(slot)).delete()
-        noBackupFilesDir().resolve(testServersMarkerName(slot)).delete()
+        noBackupFilesDir().resolve(legacyTestServersMarkerName(slot)).delete()
         wrappingKeys(slot).delete()
     }
 }

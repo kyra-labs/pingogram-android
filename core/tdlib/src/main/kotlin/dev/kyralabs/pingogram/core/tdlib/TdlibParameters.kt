@@ -28,23 +28,18 @@ data class TdlibConfig(
 
 /** Builds the `SetTdlibParameters` that [TdlibClient] sends when TDLib asks for them. */
 interface TdlibParametersProvider {
-    /** The servers of the last [parameters], so a restart while signed in to a test account stays on its servers. */
-    suspend fun lastServers(): TdlibServers
-
-    /** The parameters of an instance on [servers], which [lastServers] then answers. */
-    suspend fun parameters(servers: TdlibServers): TdApi.SetTdlibParameters
+    suspend fun parameters(): TdApi.SetTdlibParameters
 
     /**
-     * TDLib rejected the database key (error 401): forget the key and delete the local database of [servers], so the
-     * next [parameters] start a new, logged-out session.
+     * TDLib rejected the database key (error 401): forget the key and delete the local database, so the next
+     * [parameters] start a new, logged-out session.
      */
-    suspend fun discardDatabase(servers: TdlibServers)
+    suspend fun discardDatabase()
 }
 
 /**
  * Where TDLib keeps its data: under `filesDir`, which is never backed up (`android:allowBackup="false"`,
- * `REQUIREMENTS.md` §6.2). The test DC gets its own directories, as a database belongs to one environment, and so does
- * each account ([AccountSlot]): "tdlib" for the first, "tdlib-1" for the second.
+ * `REQUIREMENTS.md` §6.2). Each account ([AccountSlot]) has its own: "tdlib" for the first, "tdlib-1" for the second.
  */
 class TdlibDirectories(
     val root: File,
@@ -58,9 +53,17 @@ class TdlibDirectories(
     companion object {
         fun of(
             filesDir: File,
-            useTestDc: Boolean,
             slot: AccountSlot = AccountSlot.First,
-        ) = TdlibDirectories(filesDir.resolve((if (useTestDc) "tdlib-test" else "tdlib") + slot.suffix("-")))
+        ) = TdlibDirectories(filesDir.resolve("tdlib" + slot.suffix("-")))
+
+        /**
+         * What the test-server sign-in of versions up to 1.0.0 left of [slot] (removed in favour of the demo,
+         * `docs/adr/0034-demo-mode-for-store-review.md`): the test DC's directory, "tdlib-test" or "tdlib-test-1".
+         */
+        internal fun legacyTestDc(
+            filesDir: File,
+            slot: AccountSlot,
+        ) = filesDir.resolve("tdlib-test" + slot.suffix("-"))
     }
 }
 
@@ -78,14 +81,13 @@ internal data class DeviceInfo(
 @Suppress("LongParameterList") // One per source of TDLib's parameters; a class would only move the list.
 internal fun tdlibParameters(
     config: TdlibConfig,
-    servers: TdlibServers,
     directories: TdlibDirectories,
     databaseKey: ByteArray,
     device: DeviceInfo,
     languageTag: String,
 ): TdApi.SetTdlibParameters =
     TdApi.SetTdlibParameters().apply {
-        useTestDc = servers == TdlibServers.Test
+        useTestDc = false
         databaseDirectory = directories.database.path
         filesDirectory = directories.files.path
         databaseEncryptionKey = databaseKey
@@ -111,52 +113,44 @@ class AndroidTdlibParametersProvider
         private val databaseKeys: DatabaseKeyProvider,
         @Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : TdlibParametersProvider {
-        // Lazy: Context.getNoBackupFilesDir() touches the disk, and this class is created on the main thread.
-        private val testServersMarker by lazy {
-            context.noBackupFilesDir.resolve(testServersMarkerName(slot))
-        }
-
-        override suspend fun lastServers(): TdlibServers =
-            withContext(io) { if (testServersMarker.exists()) TdlibServers.Test else TdlibServers.Production }
-
-        override suspend fun parameters(servers: TdlibServers): TdApi.SetTdlibParameters =
+        override suspend fun parameters(): TdApi.SetTdlibParameters =
             withContext(io) {
-                rememberServers(servers)
+                deleteLegacyTestServerData()
                 val key = databaseKeys.databaseKey()
                 // A database encrypted with a lost key can never be opened again: start over, logged out.
-                if (key.isNew) deleteDatabase(servers)
+                if (key.isNew) deleteDatabase()
                 tdlibParameters(
                     config,
-                    servers,
-                    directories(servers),
+                    directories(),
                     key.bytes,
                     DeviceInfo.current(),
                     Locale.getDefault().toLanguageTag(),
                 )
             }
 
-        override suspend fun discardDatabase(servers: TdlibServers) =
+        override suspend fun discardDatabase() =
             withContext(io) {
                 databaseKeys.discard()
-                deleteDatabase(servers)
+                deleteDatabase()
             }
 
-        private fun rememberServers(servers: TdlibServers) {
-            if (servers == TdlibServers.Test) testServersMarker.createNewFile() else testServersMarker.delete()
+        /** Telegram's test servers no longer sign test accounts in: what an earlier version kept for them goes. */
+        private fun deleteLegacyTestServerData() {
+            context.noBackupFilesDir.resolve(legacyTestServersMarkerName(slot)).delete()
+            TdlibDirectories.legacyTestDc(context.filesDir, slot).deleteRecursively()
         }
 
-        private fun directories(servers: TdlibServers) =
-            TdlibDirectories.of(context.filesDir, useTestDc = servers == TdlibServers.Test, slot)
+        private fun directories() = TdlibDirectories.of(context.filesDir, slot)
 
-        private fun deleteDatabase(servers: TdlibServers) {
-            val directories = directories(servers)
+        private fun deleteDatabase() {
+            val directories = directories()
             directories.database.deleteRecursively()
             directories.files.deleteRecursively()
         }
     }
 
 /**
- * The file in `noBackupFilesDir` present while [slot]'s last instance was set up for the test servers (FR-A9):
- * "tdlib_test_servers" for the first slot, "tdlib_test_servers_1" for the second.
+ * The file in `noBackupFilesDir` that versions up to 1.0.0 kept while [slot]'s last instance was set up for Telegram's
+ * test servers: "tdlib_test_servers" for the first slot, "tdlib_test_servers_1" for the second. Deleted where found.
  */
-internal fun testServersMarkerName(slot: AccountSlot) = "tdlib_test_servers" + slot.suffix("_")
+internal fun legacyTestServersMarkerName(slot: AccountSlot) = "tdlib_test_servers" + slot.suffix("_")

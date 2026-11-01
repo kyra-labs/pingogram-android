@@ -9,7 +9,6 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
-import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
@@ -76,9 +75,8 @@ class SettingsViewModel
         private val otherPhoneNumbers = mutableMapOf<String, String>()
 
         init {
-            combine(account(userRepository), authRepository.servers) { account, servers ->
-                account?.copy(isOnTestServers = servers == TelegramServers.Test)
-            }.onEach { account -> mutableUiState.update { it.copy(account = account) } }
+            account(userRepository)
+                .onEach { account -> mutableUiState.update { it.copy(account = account) } }
                 .launchIn(viewModelScope)
             if (deviceAccounts.isAvailable) {
                 combine(otherAccounts(), deviceAccounts.canAddAccount) { others, canAdd -> others to canAdd }

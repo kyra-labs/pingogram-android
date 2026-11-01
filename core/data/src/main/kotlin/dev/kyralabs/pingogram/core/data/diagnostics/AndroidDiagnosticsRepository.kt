@@ -38,8 +38,8 @@ class AndroidDiagnosticsRepository internal constructor(
         @Dispatcher(IO) io: CoroutineDispatcher,
     ) : this(
         crashFile = CrashRecorder.crashFile(context),
-        // TDLib keeps one log, under the production servers' directory, whichever servers it uses.
-        tdlibLog = TdlibDirectories.of(context.filesDir, useTestDc = false).logFile,
+        // TDLib keeps one log, under the first account's directory, for every account.
+        tdlibLog = TdlibDirectories.of(context.filesDir).logFile,
         app = app,
         device = currentDevice(),
         now = System::currentTimeMillis,
