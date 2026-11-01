@@ -93,8 +93,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
     `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
   - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
-  - **What the user does** (texts sent, reads, reactions, votes, pins, archiving, muting) goes into a journal
-    (`DemoJournal`, `filesDir/demo/journal.txt`), replayed at its next start, so a process death keeps the demo.
+  - **The areas**: `DemoTdlibClient` asks its `DemoArea`s in turn (`DemoMessages`: history, sending every kind of
+    content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoChats`: chats, lists, people),
+    each answering on `DemoWorld`, the demo's state.
+  - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took
+    as a change, written by `DemoCodec` (TDLib's objects field by field, by reflection; TDLib's keep rules keep the
+    fields through R8) with its date, and replayed through the same areas at the next start, so a process death keeps
+    the demo. Files a function names (photos, voice and video messages) are copied into `filesDir/demo/files/sent`
+    first and the copies named instead, so they outlive the upload cache; nothing leaves the phone.
   - **Pictures and the voice message** are made on the phone at their first download (`DemoFile`), never stock or
     Telegram's.
   - **The graph**: `Accounts` keeps the demo's graph beside the accounts, under `AccountSlot.Demo`, made with the demo's

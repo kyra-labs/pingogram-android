@@ -30,18 +30,14 @@ class DemoTextAndJournalTest {
 
     @Test
     fun `every event comes back from the journal's file as it went in`() {
+        val text = TdApi.InputMessageText(TdApi.FormattedText("Tabs\tand\nlines, emoji 🎉", emptyArray()), null, false)
         val events =
             listOf(
                 DemoEvent.Started(1_800_000_000),
-                DemoEvent.Sent(1, 2L shl 20, 1_800_000_100, "Tabs\tand\nlines, emoji 🎉", 1L shl 20),
-                DemoEvent.Read(1, 2L shl 20),
-                DemoEvent.Reaction(1, 2, "❤", added = true),
-                DemoEvent.Vote(-200_001, 3, listOf(0, 2)),
-                DemoEvent.Deleted(1, listOf(4, 5)),
-                DemoEvent.Pinned(1, pinned = true),
-                DemoEvent.MarkedUnread(1, unread = false),
-                DemoEvent.Muted(1, 3_600),
-                DemoEvent.Archived(1, archived = true),
+                DemoEvent.Call(1_800_000_100, TdApi.SendMessage(1, null, null, null, null, text)),
+                DemoEvent.Call(1_800_000_200, TdApi.SetPollAnswer(-200_001, 3L shl 20, intArrayOf(0, 2))),
+                DemoEvent.Call(1_800_000_300, TdApi.DeleteMessages(1, longArrayOf(4, 5), true)),
+                DemoEvent.Call(1_800_000_400, TdApi.AddChatToList(1, TdApi.ChatListArchive())),
             )
         val file = dir.resolve("demo/journal.txt")
         val journal = DemoJournal(FileDemoJournalStorage(file))
@@ -52,10 +48,53 @@ class DemoTextAndJournalTest {
     }
 
     @Test
-    fun `a line cut short by a crash is left out`() {
-        val file = dir.resolve("journal.txt").apply { writeText("read\t1\t2\nsent\t1\n") }
+    fun `TDLib's objects come back from the codec field for field, nested arrays and nulls included`() {
+        val keyboard =
+            TdApi.ReplyMarkupInlineKeyboard(
+                arrayOf(
+                    arrayOf(
+                        TdApi.InlineKeyboardButton(
+                            "Open",
+                            0,
+                            null,
+                            TdApi.InlineKeyboardButtonTypeUrl("https://example.org"),
+                        ),
+                    ),
+                ),
+                false,
+            )
+        val function =
+            TdApi.SendMessage(
+                -200_001,
+                null,
+                TdApi.InputMessageReplyToMessage(1L shl 20, null, 0, ""),
+                TdApi.MessageSendOptions().apply {
+                    schedulingState =
+                        TdApi.MessageSchedulingStateSendAtDate(1_900_000_000, 0)
+                },
+                keyboard,
+                TdApi.InputMessageVoiceNote(
+                    TdApi.InputVoiceNote(TdApi.InputFileLocal("/data/voice.ogg"), 3, byteArrayOf(1, 2, 3)),
+                    null,
+                    null,
+                ),
+            )
 
-        assertEquals(listOf(DemoEvent.Read(1, 2)), DemoJournal(FileDemoJournalStorage(file)).read())
+        val copy = DemoCodec.decode<TdApi.SendMessage>(DemoCodec.encode(function))
+
+        assertTrue(DemoCodec.encode(copy).contentEquals(DemoCodec.encode(function)))
+        val voice = (copy.inputMessageContent as TdApi.InputMessageVoiceNote).voiceNote
+        assertEquals("/data/voice.ogg", (voice.voiceNote as TdApi.InputFileLocal).path)
+        assertTrue(voice.waveform.contentEquals(byteArrayOf(1, 2, 3)))
+        val button = (copy.replyMarkup as TdApi.ReplyMarkupInlineKeyboard).rows[0][0]
+        assertEquals("https://example.org", (button.type as TdApi.InlineKeyboardButtonTypeUrl).url)
+    }
+
+    @Test
+    fun `a line cut short by a crash is left out`() {
+        val file = dir.resolve("journal.txt").apply { writeText("started\t5\ncall\t6\tAAAA\n") }
+
+        assertEquals(listOf(DemoEvent.Started(5)), DemoJournal(FileDemoJournalStorage(file)).read())
     }
 
     @Test

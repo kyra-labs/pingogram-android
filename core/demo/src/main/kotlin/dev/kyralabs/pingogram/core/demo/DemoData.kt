@@ -234,13 +234,28 @@ internal class DemoData(
             lastReadOutboxMessageId = history.last().id
             notificationSettings = DemoNotifications.chatSettings(muteFor = 0)
             canBeDeletedOnlyForSelf = true
-            permissions =
-                TdApi.ChatPermissions().apply {
-                    canSendBasicMessages = type !is TdApi.ChatTypeSupergroup
-                }
+            permissions = permissionsFor(type)
             accentColorId = (id % ACCENT_COLORS).toInt().let { if (it < 0) -it else it }
             profileAccentColorId = -1
             clientData = ""
+        }
+    }
+
+    /** Everything a member may send, except in the channel, where only its admins post. */
+    private fun permissionsFor(type: TdApi.ChatType): TdApi.ChatPermissions {
+        val canSend = type !is TdApi.ChatTypeSupergroup || !type.isChannel
+        return TdApi.ChatPermissions().apply {
+            canSendBasicMessages = canSend
+            canSendAudios = canSend
+            canSendDocuments = canSend
+            canSendPhotos = canSend
+            canSendVideos = canSend
+            canSendVideoNotes = canSend
+            canSendVoiceNotes = canSend
+            canSendPolls = canSend
+            canSendOtherMessages = canSend
+            canAddLinkPreviews = canSend
+            canReactToMessages = true
         }
     }
 
@@ -311,6 +326,9 @@ internal class DemoData(
             TdApi.FormattedText("", emptyArray()),
             false,
         )
+
+    /** A sticker the demo has, by its file's id (the panel sends stickers by file id). */
+    fun stickerByFileId(fileId: Int): TdApi.Sticker? = sticker().sticker.takeIf { it.sticker.id == fileId }
 
     private fun sticker() =
         TdApi.MessageSticker(
