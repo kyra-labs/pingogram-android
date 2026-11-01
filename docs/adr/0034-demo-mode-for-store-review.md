@@ -33,8 +33,8 @@ see it.
 - **Leaving**: "Leave demo" sits where "Log out" is, in Settings. It returns to Welcome and deletes everything the demo
   made.
 - **Restarts**: rotation and process death keep the demo as it was.
-- **To confirm**: a banner above everything rather than a label in each top bar. One place covers every screen, also
-  those without a top bar (the media and story viewers, the scanner, full-screen sheets), and no screen changes.
+- **A banner, not a label per top bar** (owner, 2026-11-01): one place covers every screen, also those without a top
+  bar (the media and story viewers, the scanner, full-screen sheets), and no screen changes.
 
 ### The demo client
 
