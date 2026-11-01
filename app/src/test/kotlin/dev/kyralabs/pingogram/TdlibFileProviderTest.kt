@@ -26,16 +26,15 @@ import java.io.File
 import java.nio.file.Files
 
 /**
- * The app's `FileProvider` with `core:ui`'s `TdlibFiles`: TDLib's downloaded files (`TdlibDirectories.files`, of
- * either data center) get content URIs of the app's authority, anything else (TDLib's database above all) none; shared
+ * The app's `FileProvider` with `core:ui`'s `TdlibFiles`: TDLib's downloaded files (`TdlibDirectories.files`) get
+ * content URIs of the app's authority, anything else (TDLib's database above all) none; shared
  * files go to the system's chooser and documents to the app that opens them, each with a read grant for its URI.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class TdlibFileProviderTest {
     private val context = RuntimeEnvironment.getApplication()
-    private val production = TdlibDirectories.of(context.filesDir, useTestDc = false)
-    private val testDc = TdlibDirectories.of(context.filesDir, useTestDc = true)
+    private val production = TdlibDirectories.of(context.filesDir)
 
     /**
      * FileProvider keeps the paths of each authority in a static cache, which outlives the test's application (and its
@@ -59,16 +58,6 @@ class TdlibFileProviderTest {
         assertEquals(
             Uri.parse("content://${context.packageName}.files/tdlib/photos/file_1.jpg"),
             context.tdlibFileUri(photo.path),
-        )
-    }
-
-    @Test
-    fun `so does one of the test data center`() {
-        val video = file(testDc.files, "videos/file_2.mp4")
-
-        assertEquals(
-            Uri.parse("content://${context.packageName}.files/tdlib-test/videos/file_2.mp4"),
-            context.tdlibFileUri(video.path),
         )
     }
 

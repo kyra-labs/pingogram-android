@@ -48,7 +48,6 @@ internal fun SessionRow(
     onClick: (() -> Unit)? = null,
     overline: String? = null,
     colors: ListItemColors = settingsRowColors(),
-    isOnTestServers: Boolean = false,
 ) {
     val busy = stringResource(R.string.settings_session_busy)
     val leading: @Composable () -> Unit = { SettingsItemIcon(session.device.iconRes()) }
@@ -65,7 +64,6 @@ internal fun SessionRow(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            if (isOnTestServers) TestServerLabel(Modifier.padding(top = MaterialTheme.spacing.small))
         }
     }
     if (onClick != null) {

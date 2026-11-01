@@ -83,12 +83,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and adds, switches and leaves an account's sign-in, offered on screen as the background parts follow every account
   (`isAvailable`). The passcode lock is the app's (`DefaultAppLockRepository`, `@Singleton`):
   it follows the accounts' login steps together, and forgetting the passcode logs every account out.
-- **Test servers** (FR-A9, `docs/TDLIB.md` "Test servers"): `TdlibClient.servers` / `useServers` restart TDLib on
-  Telegram's test servers or back. Only `TdlibAuthRepository` asks for a switch: `setPhoneNumber` by the number
-  (`core:domain`'s `telegramServersFor`), `requestQrCode` for the production servers; any other close returns to them.
-  `AuthRepository.servers` (`TelegramServers`) tells `feature:settings` (the account card, Active sessions) to show
-  "Test server", and `AuthViewModel` keeps the phone number step, with what was typed, through the restart's steps
-  while it sends the number.
+- **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers, answered
+  by `:core:demo`'s `DemoTdlibClient` in an account graph of its own, outside the registry of accounts. It replaces the
+  test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
   (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model

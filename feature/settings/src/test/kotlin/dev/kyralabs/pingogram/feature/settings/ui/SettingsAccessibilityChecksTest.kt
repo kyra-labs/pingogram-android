@@ -426,12 +426,6 @@ class SettingsAccessibilityChecksTest {
     fun activeSessions() = check { ActiveSessionsScreen(SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
 
     @Test
-    fun activeSessionsOnTestServers() =
-        check {
-            ActiveSessionsScreen(SettingsPreviewData.sessions.copy(isOnTestServers = true), onEvent = {}, onBack = {})
-        }
-
-    @Test
     fun blockedUsers() = check { BlockedUsersScreen(SettingsPreviewData.blockedUsers, onEvent = {}, onBack = {}) }
 
     @Test

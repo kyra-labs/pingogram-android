@@ -97,13 +97,18 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-A6 Must: QR login (`WaitOtherDeviceConfirmation`) as alternative, using Expressive shapes.
 - FR-A7 Must: Email verification states (`WaitEmailAddress`, `WaitEmailCode`) handled gracefully.
 - FR-A8 Must: Log out, and `AuthorizationStateClosed` / `LoggingOut` handled by resetting the graph.
-- FR-A9 Must: Telegram's test servers for its test accounts (https://core.telegram.org/api/auth#test-accounts), in every
-  build, so Google Play's review can sign in again and again (owner decision 2026-10-25, `docs/PLAY_STORE.md` §1): a
-  number +99966 X YYYY (X the data center, 1 to 3; its login code X five times) sent from the phone number step
-  restarts TDLib on the test servers, in their own directories, then sends the number; the number stays on screen
-  meanwhile. Logging out (and TDLib closing for any other reason) returns to the production servers. While signed in
-  that way, Settings' account card and Active sessions show a "Test server" label. Every other number signs in on the
-  production servers, and nothing else switches servers (`docs/TDLIB.md`, "Parameters").
+- FR-A9 Must: a demo mode for the stores' reviewers, who cannot be given credentials, as every login needs a code
+  Telegram sends to the account's phone (owner decision 2026-11-01, `docs/adr/0034-demo-mode-for-store-review.md`;
+  it replaces the test-server sign-in, which Telegram's test servers no longer allow). In every build:
+  - **Entry**: pressing and holding the Welcome screen's logo for about a second opens a dialog that opens the demo.
+    Nothing on screen points to it.
+  - **What it shows**: sample chats stored on the phone. A `DemoTdlibClient` answers the app's requests, with no
+    network and no TDLib instance.
+  - **Labels**: a "Demo" banner on every screen, and "Demo" on Settings' account card.
+  - **Leaving**: "Leave demo" in Settings deletes everything it made and returns to Welcome.
+  - **Kept apart**: it runs as an account graph of its own, which notifications, push, widgets, shortcuts, Direct
+    Share and the accounts limit never see.
+  - **Permanent**: the stores' App access instructions describe it (`docs/PLAY_STORE.md` §1).
 
 ### 5.2 Chat list [M2]
 

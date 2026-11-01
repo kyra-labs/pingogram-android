@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
-import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
@@ -22,17 +21,7 @@ interface AuthRepository {
      */
     val authStep: Flow<AuthStep>
 
-    /**
-     * The servers TDLib uses now: [TelegramServers.Test] only after a test account's number was sent, until logout
-     * (`REQUIREMENTS.md` FR-A9).
-     */
-    val servers: Flow<TelegramServers>
-
-    /**
-     * Sends a login code to [phoneNumber] (international format, `+` and digits). Also changes the number. A test
-     * account's number ([dev.kyralabs.pingogram.core.domain.model.telegramServersFor]) first restarts TDLib on the
-     * test servers, any other number on the production servers; [authStep] then reports the restart's steps.
-     */
+    /** Sends a login code to [phoneNumber] (international format, `+` and digits). Also changes the number. */
     suspend fun setPhoneNumber(phoneNumber: String): Outcome<Unit>
 
     /** Sends a new login code the next way ([AuthStep.WaitCode.nextType]), or a new email code. */

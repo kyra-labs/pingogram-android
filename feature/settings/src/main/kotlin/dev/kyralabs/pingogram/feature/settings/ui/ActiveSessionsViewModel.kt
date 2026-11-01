@@ -8,8 +8,6 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ActiveSession
 import dev.kyralabs.pingogram.core.domain.model.ActiveSessions
-import dev.kyralabs.pingogram.core.domain.model.TelegramServers
-import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -23,8 +21,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -41,7 +37,6 @@ import javax.inject.Inject
  * - A terminated session leaves the list at once; terminating all others leaves this device alone. Telegram refuses
  *   terminations from a device that logged in recently, with error 406 ([ActiveSessionsEffect.TerminationRefused]).
  * - A confirmed login loads the list again, where it is one of the others.
- * - This device's row says "Test server" while the account is signed in on Telegram's test servers (FR-A9).
  *
  * The open confirmation survives process death through the [SavedStateHandle]; terminations in progress do not, as
  * TDLib finishes them anyway and the list loads again.
@@ -53,7 +48,6 @@ class ActiveSessionsViewModel
         private val savedStateHandle: SavedStateHandle,
         private val sessionRepository: SessionRepository,
         private val timeFormats: SettingsTimeFormats,
-        authRepository: AuthRepository,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow(ActiveSessionsUiState(dialog = savedStateHandle.restoredDialog()))
         val uiState: StateFlow<ActiveSessionsUiState> = mutableUiState.asStateFlow()
@@ -64,10 +58,6 @@ class ActiveSessionsViewModel
         private var loadJob: Job? = null
 
         init {
-            authRepository.servers
-                .onEach { servers ->
-                    mutableUiState.update { it.copy(isOnTestServers = servers == TelegramServers.Test) }
-                }.launchIn(viewModelScope)
             load(keepContent = false)
         }
 
