@@ -95,6 +95,13 @@ fun AuthRoute(
         }
     }
     AuthScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier, snackbarHostState = snackbarHostState)
+    val demoDialog by viewModel.demoDialog.collectAsStateWithLifecycle()
+    if (demoDialog) {
+        DemoDialog(
+            onOpen = { viewModel.onEvent(AuthEvent.OpenDemo) },
+            onDismiss = { viewModel.onEvent(AuthEvent.DismissDemoDialog) },
+        )
+    }
 }
 
 /**

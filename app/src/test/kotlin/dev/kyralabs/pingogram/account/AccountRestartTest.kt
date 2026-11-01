@@ -36,6 +36,8 @@ class AccountRestartTest {
     ) : AccountSwitching {
         override val registry = MutableStateFlow(AccountRegistry(slots, active))
 
+        override val isDemo = MutableStateFlow(false)
+
         override suspend fun awaitLoaded() = Unit
 
         override fun switchTo(slot: Int) {
@@ -54,6 +56,20 @@ class AccountRestartTest {
     ) = AccountRestart(backgroundScope, accounts, recorded.handled::add, recorded.restarts::add)
 
     private fun chatIntent(slot: Int) = checkNotNull(NotificationIntents.openChat(context, chatId = 100, slot = slot))
+
+    @Test
+    fun `entering or leaving the demo opens the app again`() =
+        runTest {
+            val recorded = Recorded()
+            val accounts = FakeSwitching(listOf(0), active = 0)
+            restart(accounts, recorded).start(null)
+            runCurrent()
+
+            accounts.isDemo.value = true
+            runCurrent()
+
+            assertEquals(listOf<Intent?>(null), recorded.restarts)
+        }
 
     @Test
     fun `an intent of no account in particular is handed on at once`() =

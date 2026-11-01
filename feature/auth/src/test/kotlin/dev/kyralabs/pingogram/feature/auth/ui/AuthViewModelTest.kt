@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -70,6 +71,7 @@ class AuthViewModelTest {
         handle: SavedStateHandle = savedState,
         authRepository: TdlibAuthRepository = authRepository(),
         deviceAccounts: FakeDeviceAccountsRepository = FakeDeviceAccountsRepository(),
+        demo: FakeDemoRepository = FakeDemoRepository(),
     ): AuthViewModel =
         AuthViewModel(
             savedStateHandle = handle,
@@ -77,6 +79,7 @@ class AuthViewModelTest {
             countryRepository = TdlibCountryRepository(client),
             connectionRepository = TdlibConnectionRepository(client),
             deviceAccounts = deviceAccounts,
+            demo = demo,
             timeSource = testScheduler.timeSource,
         ).also { runCurrent() }
 
@@ -235,6 +238,46 @@ class AuthViewModelTest {
 
                 assertEquals(ConnectionStatus.WaitingForNetwork, viewModel.state.connection)
                 assertTrue(viewModel.state.isOffline)
+            }
+    }
+
+    @Nested
+    inner class Demo {
+        @Test
+        fun `holding the logo asks first, and a rotation keeps the question`() =
+            runTest {
+                val demo = FakeDemoRepository()
+                send(viewModel(demo = demo), AuthEvent.ShowDemoDialog)
+
+                val restored = viewModel(demo = demo)
+
+                assertTrue(restored.demoDialog.value)
+                assertEquals(0, demo.entered)
+            }
+
+        @Test
+        fun `open turns the demo on`() =
+            runTest {
+                val demo = FakeDemoRepository()
+                val viewModel = viewModel(demo = demo)
+
+                send(viewModel, AuthEvent.ShowDemoDialog, AuthEvent.OpenDemo)
+
+                assertEquals(1, demo.entered)
+                assertFalse(viewModel.demoDialog.value)
+            }
+
+        @Test
+        fun `cancel leaves the demo off`() =
+            runTest {
+                val demo = FakeDemoRepository()
+                val viewModel = viewModel(demo = demo)
+
+                send(viewModel, AuthEvent.ShowDemoDialog, AuthEvent.DismissDemoDialog)
+
+                assertEquals(0, demo.entered)
+                assertFalse(viewModel.demoDialog.value)
+                assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
             }
     }
 

@@ -16,6 +16,16 @@ sealed interface AuthEvent {
 
     data object OpenPrivacyPolicy : AuthEvent
 
+    // The demo for app store reviewers (docs/adr/0034-demo-mode-for-store-review.md)
+
+    /** The Welcome screen's logo held for about a second: asks whether to open the demo. */
+    data object ShowDemoDialog : AuthEvent
+
+    data object DismissDemoDialog : AuthEvent
+
+    /** "Open" in that dialog: the demo turns on, and the app opens again on its sample chats. */
+    data object OpenDemo : AuthEvent
+
     // Phone number
 
     /** Digits of the calling code; a whole international number is split into code and number. */

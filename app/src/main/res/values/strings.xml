@@ -68,4 +68,8 @@
     <string name="link_not_found_user_token">This contact link has expired</string>
     <string name="link_not_found_message">This message isn\'t available</string>
     <string name="link_not_found_chat">This channel or group isn\'t available</string>
+    <!-- The banner above every screen of the demo for app store reviewers (sample chats on the phone, without a Telegram account). The label starts it, then the separator and the text. -->
+    <string name="demo_banner_label">Demo</string>
+    <string name="demo_banner_separator" translatable="false">" · "</string>
+    <string name="demo_banner_text">Sample chats on this device. Not connected to Telegram.</string>
 </resources>

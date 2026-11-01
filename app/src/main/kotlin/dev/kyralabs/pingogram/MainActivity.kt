@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
@@ -60,6 +61,7 @@ import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
 import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
 import dev.kyralabs.pingogram.startup.StartupTrace
+import dev.kyralabs.pingogram.ui.DemoFrame
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
 import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
@@ -220,6 +222,8 @@ class MainActivity : ComponentActivity() {
                     val locked = lock == LockState.Locked
                     val secureRequests = remember { SecureWindowRequests() }
                     val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
+                    // The app opens again when the demo turns on or off (AccountRestart): read once per activity.
+                    val isDemo = remember { accounts.isDemo.value }
                     SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
                     AppTheme(settings) {
                         CompositionLocalProvider(
@@ -227,19 +231,26 @@ class MainActivity : ComponentActivity() {
                             LocalSecureWindow provides secureRequests,
                             // Telegram links tapped in the app open in it (LinkUriHandler).
                             LocalUriHandler provides rememberLinkUriHandler(links, uiState),
-                            // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
-                            LocalCallStarter provides calls,
+                            // The conversation's and the profile's call buttons, and "Call back" (feature:calls);
+                            // none in the demo, which has no one to call (docs/adr/0034).
+                            LocalCallStarter provides calls.takeUnless { isDemo },
                             // A chat's voice chat bar and its info page's voice chat row (feature:calls).
-                            LocalVoiceChats provides calls,
+                            LocalVoiceChats provides calls.takeUnless { isDemo },
                             LocalPhoneNumbersHidden provides phoneNumbersHidden,
+                            LocalIsDemo provides isDemo,
                             // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
                             LocalLockedChatGate provides lockedChatGate,
                         ) {
-                            LockableApp(
-                                locked = locked,
-                                lockScreen = { AppLockRoute() },
-                                modifier = Modifier.semantics { testTagsAsResourceId = true },
-                            ) { App(uiState, viewModel, links, shares, accountMenu) }
+                            DemoFrame(isDemo) {
+                                LockableApp(
+                                    locked = locked,
+                                    lockScreen = { AppLockRoute() },
+                                    modifier = Modifier.semantics { testTagsAsResourceId = true },
+                                ) {
+                                    // No switcher in the demo: its graph is no account (docs/adr/0034).
+                                    App(uiState, viewModel, links, shares, accountMenu.takeUnless { isDemo })
+                                }
+                            }
                         }
                     }
                 }
@@ -366,7 +377,7 @@ private fun App(
     viewModel: MainActivityViewModel,
     links: LinkViewModel,
     shares: ShareInbox,
-    accountMenu: AccountMenuViewModel,
+    accountMenu: AccountMenuViewModel?,
 ) {
     val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
     val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -21,6 +22,9 @@ import kotlinx.coroutines.launch
  * target) switches to that account first, and the app opens again with that intent, which then opens its chat there
  * (behind the passcode lock, which is the app's). One of an account no longer on the device opens nothing. Every
  * other intent (a Telegram link, a share from the share sheet) is the shown account's, handed to [handle] at once.
+ *
+ * Entering or leaving the demo opens the app again the same way (`docs/adr/0034-demo-mode-for-store-review.md`): the
+ * screens then take the demo's repositories, or the accounts' again.
  */
 internal class AccountRestart(
     private val scope: CoroutineScope,
@@ -53,8 +57,13 @@ internal class AccountRestart(
         scope.launch {
             accounts.awaitLoaded()
             val shown = accounts.registry.value.active
+            val demo = accounts.isDemo.value
             if (accountOf(created) != null) open(created, shown)
-            accounts.registry.first { it.active != shown }
+            combine(
+                accounts.registry,
+                accounts.isDemo,
+            ) { registry, isDemo -> registry.active != shown || isDemo != demo }
+                .first { it }
             restart(next)
         }
     }
@@ -102,6 +111,9 @@ internal class AccountRestart(
 internal interface AccountSwitching {
     val registry: StateFlow<AccountRegistry>
 
+    /** Whether the demo shows instead of the accounts. */
+    val isDemo: StateFlow<Boolean>
+
     suspend fun awaitLoaded()
 
     fun switchTo(slot: Int)
@@ -110,6 +122,8 @@ internal interface AccountSwitching {
 private fun Accounts.switching(): AccountSwitching =
     object : AccountSwitching {
         override val registry get() = this@switching.registry
+
+        override val isDemo get() = this@switching.isDemo
 
         override suspend fun awaitLoaded() = this@switching.awaitLoaded()
 

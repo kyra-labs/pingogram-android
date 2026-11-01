@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -82,6 +83,8 @@ internal fun SettingsRoute(
  * device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
  * ([SettingsGroup]) without headings, as their rows name them already: General (Appearance, Notifications, Data and
  * storage, Language), Privacy and security, About, and "Log out" on its own, which asks for confirmation first (FR-A8).
+ * In the demo ([LocalIsDemo]) the card says "Demo", the other accounts are left out, and "Leave demo" replaces "Log
+ * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
  * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
  */
@@ -95,6 +98,7 @@ internal fun SettingsScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val isDemo = LocalIsDemo.current
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
@@ -113,12 +117,15 @@ internal fun SettingsScreen(
                     selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
                 )
             }
-            OtherAccountsGroup(
-                accounts = state.otherAccounts,
-                canAdd = state.canAddAccount,
-                onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
-                onAdd = { onEvent(SettingsEvent.AddAccount) },
-            )
+            // The demo's graph is no account: no switching or adding from it (docs/adr/0034).
+            if (!isDemo) {
+                OtherAccountsGroup(
+                    accounts = state.otherAccounts,
+                    canAdd = state.canAddAccount,
+                    onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
+                    onAdd = { onEvent(SettingsEvent.AddAccount) },
+                )
+            }
             PageGroups(onOpenPage, selection)
             SettingsGroup {
                 item { shapes ->
@@ -126,6 +133,7 @@ internal fun SettingsScreen(
                         isLoggingOut = state.isLoggingOut,
                         shapes = shapes,
                         onClick = { onEvent(SettingsEvent.LogOut) },
+                        isDemo = isDemo,
                     )
                 }
             }
@@ -135,6 +143,7 @@ internal fun SettingsScreen(
         LogOutDialog(
             onConfirm = { onEvent(SettingsEvent.ConfirmLogOut) },
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
+            isDemo = isDemo,
         )
     }
 }
