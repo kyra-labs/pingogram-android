@@ -112,24 +112,6 @@ internal class DemoChats : DemoArea {
                 ok(TdApi.ChatActiveStories(function.chatId, null, 0, false, 0, emptyArray()))
             }
 
-            is TdApi.SearchChatMessages -> {
-                val pinned = function.filter is TdApi.SearchMessagesFilterPinned
-                val found = if (pinned) world.pinned(function.chatId) else emptyList()
-                ok(TdApi.FoundChatMessages(found.size, found.toTypedArray(), 0))
-            }
-
-            is TdApi.GetInstalledStickerSets, is TdApi.GetTrendingStickerSets, is TdApi.GetArchivedStickerSets -> {
-                ok(TdApi.StickerSets(0, emptyArray()))
-            }
-
-            is TdApi.GetRecentStickers, is TdApi.GetFavoriteStickers -> {
-                ok(TdApi.Stickers(emptyArray()))
-            }
-
-            is TdApi.GetSavedAnimations -> {
-                ok(TdApi.Animations(emptyArray()))
-            }
-
             is TdApi.ToggleChatIsPinned -> {
                 okChanged(world.pinChat(function.chatId, function.isPinned))
             }

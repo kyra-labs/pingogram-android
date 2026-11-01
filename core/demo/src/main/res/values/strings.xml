@@ -43,6 +43,11 @@
     <string name="demo_group_poll_monday">Monday</string>
     <string name="demo_group_poll_wednesday">Wednesday</string>
     <string name="demo_group_poll_friday">Friday</string>
+    <!-- A message in Spanish, so "Translate" has something to translate; it stays Spanish in every language. -->
+    <string name="demo_group_spanish" translatable="false">¿Alguien quiere café antes de la reunión?</string>
+    <string name="demo_group_spanish_translation">Does anyone want coffee before the meeting?</string>
+    <string name="demo_sticker_set_pings">Pings</string>
+    <string name="demo_sticker_set_shapes">Ring shapes</string>
     <string name="demo_group_checklist">Launch checklist: design done, copy done, testing in progress.</string>
 
     <!-- The channel's posts. -->

@@ -252,7 +252,7 @@ internal class DemoWorld(
                 return emptyList()
             }
         }
-        info.reactions = TdApi.MessageReactions(reactions.toTypedArray(), true, emptyArray(), false)
+        info.reactions = TdApi.MessageReactions(reactions.toTypedArray(), false, emptyArray(), true)
         message.interactionInfo = info
         return listOf(TdApi.UpdateMessageInteractionInfo(chatId, messageId, info))
     }
@@ -285,6 +285,7 @@ internal class DemoWorld(
         return DemoPolls.poll(poll.id, poll.question.text, options, chosen).apply {
             isAnonymous = poll.isAnonymous
             allowsMultipleAnswers = poll.allowsMultipleAnswers
+            canGetVoters = poll.canGetVoters
             type = poll.type
             isClosed = poll.id in closedPolls
             canSeeResults = canSeeResults || isClosed

@@ -283,6 +283,7 @@ internal class DemoMessages : DemoArea {
         canBePinned = !inChannel && message.schedulingState == null
         canGetLink = chat.type is TdApi.ChatTypeSupergroup
         canReportChat = !message.isOutgoing
+        canGetViewers = chat.id == DemoData.GROUP_CHAT && message.isOutgoing && message.schedulingState == null
         customEmojiIds = longArrayOf()
     }
 

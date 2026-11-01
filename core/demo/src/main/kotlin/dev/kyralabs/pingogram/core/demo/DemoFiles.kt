@@ -32,6 +32,16 @@ internal enum class DemoFile(
 
     /** A sticker: concentric rings, a "ping". */
     Sticker(4, "sticker.png"),
+
+    /** The sample sticker set's others: the same rings in teal, warm and pink tones. */
+    StickerTeal(5, "sticker_teal.png"),
+    StickerWarm(6, "sticker_warm.png"),
+    StickerPink(7, "sticker_pink.png"),
+
+    /** "Ring shapes", the trending sample set: rings in green, purple and gold. */
+    StickerGreen(8, "sticker_green.png"),
+    StickerPurple(9, "sticker_purple.png"),
+    StickerGold(10, "sticker_gold.png"),
     ;
 
     companion object {
@@ -58,7 +68,13 @@ internal object AndroidDemoFileWriter : DemoFileWriter {
             DemoFile.Photo -> gradient(target, BRAND_BLUE, BRAND_TEAL)
             DemoFile.ChannelPhoto -> gradient(target, WARM_ORANGE, WARM_PINK)
             DemoFile.Voice -> writeWav(target, tones())
-            DemoFile.Sticker -> rings(target)
+            DemoFile.Sticker -> rings(target, RING_COLORS)
+            DemoFile.StickerTeal -> rings(target, TEAL_RINGS)
+            DemoFile.StickerWarm -> rings(target, WARM_RINGS)
+            DemoFile.StickerPink -> rings(target, PINK_RINGS)
+            DemoFile.StickerGreen -> rings(target, GREEN_RINGS)
+            DemoFile.StickerPurple -> rings(target, PURPLE_RINGS)
+            DemoFile.StickerGold -> rings(target, GOLD_RINGS)
         }
     }
 
@@ -85,14 +101,17 @@ internal object AndroidDemoFileWriter : DemoFileWriter {
         save(bitmap, target)
     }
 
-    private fun rings(target: File) {
+    private fun rings(
+        target: File,
+        colors: List<Int>,
+    ) {
         val bitmap = createBitmap(STICKER_SIZE, STICKER_SIZE)
         val canvas = Canvas(bitmap)
         val center = STICKER_SIZE / 2f
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        RING_COLORS.forEachIndexed { index, color ->
+        colors.forEachIndexed { index, color ->
             paint.color = color
-            canvas.drawCircle(center, center, center * (RING_COLORS.size - index) / RING_COLORS.size, paint)
+            canvas.drawCircle(center, center, center * (colors.size - index) / colors.size, paint)
         }
         save(bitmap, target)
     }
@@ -173,6 +192,12 @@ private const val BRAND_TEAL = 0xFF00897B.toInt()
 private const val WARM_ORANGE = 0xFFFF9800.toInt()
 private const val WARM_PINK = 0xFFE91E63.toInt()
 private val RING_COLORS = listOf(0xFFD9E2FF.toInt(), 0xFF7C9CF0.toInt(), BRAND_BLUE, 0xFF0B2E7A.toInt())
+private val TEAL_RINGS = listOf(0xFFB2DFDB.toInt(), 0xFF4DB6AC.toInt(), BRAND_TEAL, 0xFF004D40.toInt())
+private val WARM_RINGS = listOf(0xFFFFE0B2.toInt(), 0xFFFFB74D.toInt(), WARM_ORANGE, 0xFFE65100.toInt())
+private val PINK_RINGS = listOf(0xFFF8BBD0.toInt(), 0xFFF06292.toInt(), WARM_PINK, 0xFF880E4F.toInt())
+private val GREEN_RINGS = listOf(0xFFC8E6C9.toInt(), 0xFF81C784.toInt(), 0xFF43A047.toInt(), 0xFF1B5E20.toInt())
+private val PURPLE_RINGS = listOf(0xFFE1BEE7.toInt(), 0xFFBA68C8.toInt(), 0xFF8E24AA.toInt(), 0xFF4A148C.toInt())
+private val GOLD_RINGS = listOf(0xFFFFF9C4.toInt(), 0xFFFFF176.toInt(), 0xFFFDD835.toInt(), 0xFFF57F17.toInt())
 
 private const val SAMPLE_RATE = 16_000
 private const val MILLIS = 1_000
