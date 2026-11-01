@@ -1,0 +1,20 @@
+# What tools/ci/telegram_publish.py needs to post (docs/RELEASE.md, "Channel uploads"), every package at an exact
+# version with its SHA-256: pip install --require-hashes -r tools/ci/requirements-telegram.txt
+#
+# Telethon (MIT) logs the bot in over MTProto; cryptg (CC0) speeds up its encryption, for the uploads. The rest are
+# Telethon's own dependencies. cryptg's hash is its wheel for CPython 3.13 on Linux x86_64, what the workflows set up
+# (actions/setup-python, ubuntu-latest); another Python or platform fails the install instead of building it.
+# pyaes publishes only a source archive, which pip builds with setuptools at install time.
+#
+# To update: pip download --no-deps <package>==<version> (cryptg with --only-binary=:all: --platform
+# manylinux_2_28_x86_64 --python-version 3.13) into an empty directory, then sha256sum the files.
+telethon==1.45.0 \
+    --hash=sha256:339e24c83aedc9f12cbe389264627edc49779e4289c535aa90aafc4ce62f7972
+cryptg==0.6.0 \
+    --hash=sha256:28497a18178b09f39b3d5faeaa34235ac1762b74017fbeac7bc34724c8efe0a0
+pyaes==1.6.1 \
+    --hash=sha256:02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f
+rsa==4.9.1 \
+    --hash=sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762
+pyasn1==0.6.5 \
+    --hash=sha256:4017b0fce125096b8573b39c989fdb1a4b19cf761e683398184550fea0e66587

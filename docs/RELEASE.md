@@ -9,7 +9,8 @@
   `build-logic` (`AndroidApplicationConventionPlugin`), reading the version from the Gradle
   property `-Pversion=` (set by CI from the tag) with a fallback `0.0.0-dev` locally.
 - Pre-releases: `v0.x.y` (anything before 1.0) and `-beta.N`/`-rc.N` suffixes are marked
-  as pre-release on GitHub.
+  as pre-release on GitHub. From 1.0.0 (2026-10-29) on, a version without a suffix is a full release, and the newest one
+  is GitHub's "Latest"; the TDLib and NTgCalls releases stay pre-releases, so they never take it.
 
 ## Signing
 
@@ -67,20 +68,54 @@ on a phone with its data kept. Distributing `gms` is allowed by `LICENSE-EXCEPTI
 
 ## Channel uploads
 
-Builds also go to the owner's Telegram channel, posted by a bot through the Bot API (`tools/ci/telegram-publish.sh`,
-secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHANNEL_ID`, `docs/OWNER_SETUP.md` §4). Without the secrets nothing is
-posted, so forks build as before.
+Builds also go to the owner's two Telegram channels, posted by a bot that logs in over MTProto with Telethon
+(`tools/ci/telegram_publish.py`), which lets a bot upload files of up to 2 GB; the Bot API refused files over 50 MB. The
+bot is the one of `TELEGRAM_BOT_TOKEN`, an admin who may post in both channels (`docs/OWNER_SETUP.md` §4). Its session
+lives in memory only; the token and the API hash are never printed, put on a command line or written to disk, and no
+third-party action sees them. Telethon and cryptg are pinned with their hashes in `tools/ci/requirements-telegram.txt`
+(`pip install --require-hashes`). Without the token or a channel's secret nothing is posted, so forks build as before.
 
-- **Debug** (`ci.yml`): after `check` and the debug build of every push to `main`, the arm64-v8a debug APK, with the
-  commit and a link to the run, whose artifact has every ABI. Pull requests never post.
-- **Release** (`release.yml`): after the GitHub Release of a tag, the per-ABI `foss` APKs, the arm64-v8a `gms` APK and
-  `SHA256SUMS.txt`, with
-  the version, whether it is a pre-release, the link to the GitHub Release and the changelog section (the caption is cut
-  at Telegram's 1024 characters).
-- A bot may send files of at most 50 MB: larger files (the universal APK, ~62 MB; debug APKs once they pass 50 MB) are
-  not attached, and the caption names them; they are on the GitHub Release or the CI run it links.
-- Both steps are `continue-on-error`: a Telegram outage or a wrong secret shows as a warning, never as a failed build
-  or release. The token is never printed or put on a command line.
+- **Releases channel** (`TELEGRAM_CHANNEL_ID`, `release.yml`'s `releases channel` job, tags only, after the release job
+  published the GitHub Release, from its assets; the uploads take about 2 minutes per 100 MB, some 15 minutes for the 8
+  APKs, so they have a job of their own and never hold up the release or the Play upload):
+  - **The announcement**, which notifies:
+    - "Pingogram X.Y.Z" in bold, "Beta" under it for a pre-release, then the date of the version's CHANGELOG heading;
+    - that CHANGELOG section as Telegram HTML: headings in bold, "•" bullets ("◦" nested), `code` and links kept,
+      everything else escaped;
+    - a link to the GitHub Release, with link previews off.
+
+    It is one message. A message holds 4,096 characters: a section too long for it is left out, and "What's new:" links
+    it in the tag's `CHANGELOG.md` instead (`…/blob/vX.Y.Z/CHANGELOG.md#xyz---yyyy-mm-dd`, GitHub's anchor of its
+    heading).
+  - **Then each APK as a document of its own**, silently, so only the announcement notifies:
+    - the order is `foss` universal, arm64-v8a, armeabi-v7a, x86_64, then `gms` in the same order;
+    - in Telegram they are named `pingogram-X.Y.Z-<arch>-foss.apk` / `-gms.apk`, while the GitHub Release keeps its
+      names, which Obtainium, `SHA256SUMS.txt`, the README and the website rely on.
+
+    Each caption gives:
+    - the architecture and who it is for, and the build (FOSS, or GMS with push through Firebase Cloud Messaging);
+    - the size in whole MB (1,048,576 bytes, as the size budgets count it);
+    - the SHA-256, computed from the file and checked against `SHA256SUMS.txt`: a file that does not match is not
+      posted, and the step fails;
+    - the asset's download URL on the GitHub Release, in full. Captions show no link preview.
+
+    No `SHA256SUMS.txt` is posted: each caption holds its file's checksum.
+- **Debug channel** (`TELEGRAM_DEBUG_CHANNEL_ID`, `ci.yml`'s `debug channel` job, pushes to `main` only): one plain
+  message (the short commit, its subject, the run), then the `foss` debug APKs of every ABI, universal first, under
+  their built names, silently. No `gms`. Debug builds never go to the releases channel; without the debug secret they
+  are not posted, and when it names the releases channel (the same value, or the same channel once the bot resolves
+  both) nothing is posted and the job warns. Before 1.0.0 (#293), CI sent its debug APK to `TELEGRAM_CHANNEL_ID`.
+- **Reposting** (`.github/workflows/telegram-post.yml`, run by hand): a tag and a channel (`debug` by default, or
+  `releases`). It downloads that published release's APKs and `SHA256SUMS.txt`, reads the tag's `CHANGELOG.md` and
+  posts exactly as `release.yml` does: to preview the format in the debug channel, or to post a release again after a
+  failed post. Its `dry_run` prints the posts without sending them. A pull request that changes the uploader runs it as
+  a dry run over the latest release, without secrets.
+- Telegram's flood waits are waited out (up to 5 minutes, then retried once), with a short pause between posts. A file
+  that fails does not stop the rest; the step fails at the end. Both channel steps are `continue-on-error`: a Telegram
+  outage or a wrong secret never fails a build or a release.
+- `python3 tools/ci/telegram_publish.py release --version X.Y.Z --dist <dir> --changelog CHANGELOG.md --repo
+  owner/name --dry-run` prints every message and caption locally, without secrets, network or Telethon. Its tests
+  (`python3 -m unittest discover -s tools/ci -p 'test_*.py'`) run in CI.
 
 ## Release checklist
 

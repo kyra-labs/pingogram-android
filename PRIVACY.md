@@ -16,14 +16,20 @@ your data. It applies to every build: the ones on GitHub, Google Play, Samsung G
   them.
 - **What you send**: messages, photos, videos, voice messages, files, stickers, reactions and polls, when you send
   them. Secret chats are end-to-end encrypted on your device.
-- **Calls**: voice calls are end-to-end encrypted; their audio is streamed to the other person and never stored.
+- **Calls**: one-to-one calls, and group calls you join by a link or that a call turns into, are end-to-end
+  encrypted; their audio and video are streamed to the others and never stored. Sharing your screen in a call (Android
+  asks you each time) sends it the same way, until you stop. Voice chats and live streams in groups and channels are
+  not end-to-end encrypted: they go through Telegram's servers to everyone in them, and Telegram lets their
+  administrators record them. Pingogram itself records nothing.
 - **Your location**: only when you choose to send it in a chat. Pingogram never reads it in the background.
 - **Your phone's contacts**: only if you turn on contacts sync (off by default). Then the names and phone numbers of
   your contacts are sent to Telegram when you turn it on, when you open Contacts and when you tap "Sync now". Turning
   it off deletes them from Telegram.
 - **A push token** (Google Play build only): so that new messages can reach your phone while Pingogram is closed, the
   app registers a Firebase Cloud Messaging token with Telegram. Telegram encrypts each push for your device; Google
-  only sees that something arrived. The GitHub builds without Google services send no token.
+  only sees that something arrived. To make the token, Firebase creates a random installation ID on the phone and
+  registers it with Google; logging out deletes the token, not this ID. The GitHub builds without Google services send
+  no token.
 
 ## What stays on your phone
 
@@ -31,7 +37,8 @@ your data. It applies to every build: the ones on GitHub, Google Play, Samsung G
 - Your Pingogram settings, the passcode (stored as a salted hash) and your recent emoji.
 - What the camera sees while you scan a QR code: it is decoded on the phone and dropped. In a video call, your camera's
   picture goes to the person you are talking to only, end-to-end encrypted, while your camera is on; it is not
-  recorded or kept.
+  recorded or kept. A round video message is recorded only while you hold the record button, and goes only into the
+  message you send.
 - Diagnostic logs. "Send feedback" prepares a report on your phone (app version, device, Android version, the last
   crash, a log excerpt without message texts or phone numbers) that you can read and then share yourself, through
   Android's share sheet or a GitHub issue. Nothing is sent without you.

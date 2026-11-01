@@ -1,12 +1,12 @@
 # Tester guide
 
-For the dogfood before 1.0 (`docs/ROADMAP.md` M6: 7 days, at least 10 testers, crash-free sessions ≥ 99.5%). Thank you
+For the dogfood (`docs/ROADMAP.md` M6, still open at 1.0.0: 7 days, at least 10 testers, crash-free sessions ≥ 99.5%). Thank you
 for helping. Pingogram is an unofficial Telegram client: you sign in with your own Telegram account, and everything
 you do in it is real (messages are sent, calls ring, groups are created). Test with people who know you are testing.
 
 ## Installing
 
-- Download an APK from the latest pre-release on GitHub
+- Download an APK from the latest release on GitHub
   (https://github.com/kyra-labs/pingogram-android/releases) or the owner's channel:
   - `pingogram-X.Y.Z-universal.apk` works on every phone; `-arm64-v8a.apk` is smaller and fits almost every phone
     since 2017.
