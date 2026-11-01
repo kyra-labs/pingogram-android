@@ -27,6 +27,8 @@
     <string name="demo_stat_left">Left</string>
     <string name="demo_stat_views">Views</string>
     <string name="demo_stat_messages">Messages</string>
+    <string name="demo_bot_name">Sample Login Bot</string>
+    <string name="demo_story_caption">A sample story, made on this phone.</string>
     <string name="demo_ada_bio">Made up for the demo. Likes trains and tea.</string>
 
     <!-- The sample group and channel, and the folder they are in. -->

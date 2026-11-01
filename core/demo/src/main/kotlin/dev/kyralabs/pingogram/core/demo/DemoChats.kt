@@ -36,10 +36,6 @@ internal class DemoChats : DemoArea {
                 world.users[function.userId]?.let(::ok) ?: notFound()
             }
 
-            is TdApi.GetUserFullInfo -> {
-                ok(world.data.userFullInfo(function.userId))
-            }
-
             is TdApi.GetContacts -> {
                 ok(users(world.users.values.filter { it.isContact }))
             }
@@ -90,10 +86,6 @@ internal class DemoChats : DemoArea {
 
             is TdApi.GetChatSponsoredMessages -> {
                 ok(TdApi.SponsoredMessages(emptyArray(), 0))
-            }
-
-            is TdApi.GetChatActiveStories -> {
-                ok(TdApi.ChatActiveStories(function.chatId, null, 0, false, 0, emptyArray()))
             }
 
             is TdApi.ToggleChatIsPinned -> {

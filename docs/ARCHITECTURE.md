@@ -98,7 +98,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     shared media, recently found chats, text entities; `DemoDetails`: who saw, reacted and voted, translation;
     `DemoStickers`: the sample sticker sets, drawn on the phone; `DemoGroups` and `DemoGroupAdmin`: the group and the
     channel the user owns, with members, settings, invite links, join requests, recent actions, statistics and boosts
-    (`DemoGroupState`), new groups and channels, upgrading, leaving and deleting; `DemoChats`: chats, lists, people), each answering on
+    (`DemoGroupState`), new groups and channels, upgrading, leaving and deleting; `DemoAccount`: the user's profile,
+    contacts (sample people have numbers of the UK range kept for fiction), blocking, privacy, sample sessions and
+    websites, Ada's sample story, the phone number fields' countries; `DemoChats`: chats, lists, people), each answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
   - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took
