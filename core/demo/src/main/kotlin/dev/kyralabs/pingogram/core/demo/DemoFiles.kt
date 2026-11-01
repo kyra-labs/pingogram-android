@@ -42,6 +42,9 @@ internal enum class DemoFile(
     StickerGreen(8, "sticker_green.png"),
     StickerPurple(9, "sticker_purple.png"),
     StickerGold(10, "sticker_gold.png"),
+
+    /** Ada's story: a portrait gradient, as a phone's photo story is. */
+    StoryPhoto(11, "story.png"),
     ;
 
     companion object {
@@ -75,6 +78,7 @@ internal object AndroidDemoFileWriter : DemoFileWriter {
             DemoFile.StickerGreen -> rings(target, GREEN_RINGS)
             DemoFile.StickerPurple -> rings(target, PURPLE_RINGS)
             DemoFile.StickerGold -> rings(target, GOLD_RINGS)
+            DemoFile.StoryPhoto -> gradient(target, BRAND_TEAL, WARM_PINK, STORY_WIDTH, STORY_HEIGHT)
         }
     }
 
@@ -82,22 +86,24 @@ internal object AndroidDemoFileWriter : DemoFileWriter {
         target: File,
         start: Int,
         end: Int,
+        width: Int = PHOTO_WIDTH,
+        height: Int = PHOTO_HEIGHT,
     ) {
-        val bitmap = createBitmap(PHOTO_WIDTH, PHOTO_HEIGHT)
+        val bitmap = createBitmap(width, height)
         val paint =
             Paint().apply {
                 shader =
                     LinearGradient(
                         0f,
                         0f,
-                        PHOTO_WIDTH.toFloat(),
-                        PHOTO_HEIGHT.toFloat(),
+                        width.toFloat(),
+                        height.toFloat(),
                         start,
                         end,
                         Shader.TileMode.CLAMP,
                     )
             }
-        Canvas(bitmap).drawRect(0f, 0f, PHOTO_WIDTH.toFloat(), PHOTO_HEIGHT.toFloat(), paint)
+        Canvas(bitmap).drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         save(bitmap, target)
     }
 
@@ -183,6 +189,8 @@ internal const val VOICE_SECONDS = 3
 
 private const val PHOTO_WIDTH = 1280
 private const val PHOTO_HEIGHT = 960
+internal const val STORY_WIDTH = 720
+internal const val STORY_HEIGHT = 1280
 private const val STICKER_SIZE = 512
 private const val PNG_QUALITY = 100
 

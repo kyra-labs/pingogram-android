@@ -56,8 +56,19 @@ class DemoTdlibClient internal constructor(
     private val mutableUpdates = MutableSharedFlow<TdApi.Update>(extraBufferCapacity = UPDATE_BUFFER_CAPACITY)
     override val updates: SharedFlow<TdApi.Update> = mutableUpdates.asSharedFlow()
 
+    private val account = DemoAccount()
+
     private val areas: List<DemoArea> =
-        listOf(DemoMessages(), DemoSearch(), DemoDetails(), DemoStickers(), DemoGroups(), DemoGroupAdmin(), DemoChats())
+        listOf(
+            DemoMessages(),
+            DemoSearch(),
+            DemoDetails(),
+            DemoStickers(),
+            DemoGroups(),
+            DemoGroupAdmin(),
+            account,
+            DemoChats(),
+        )
 
     private val started = AtomicBoolean(false)
     private val ready = CompletableDeferred<DemoWorld>()
@@ -152,6 +163,7 @@ class DemoTdlibClient internal constructor(
             add(TdApi.UpdateDefaultReactionType(TdApi.ReactionTypeEmoji(DemoData.REACTIONS.first())))
             world.allChats().forEach { add(TdApi.UpdateNewChat(it)) }
             add(TdApi.UpdateChatFolders(arrayOf(data.folder), 0, false))
+            add(TdApi.UpdateChatActiveStories(account.activeStories(world)))
         }
 
     /**

@@ -22,6 +22,7 @@ internal class DemoData(
             user(CHLOE, R.string.demo_chloe_first_name, R.string.demo_chloe_last_name),
             user(DEV, R.string.demo_dev_first_name, R.string.demo_dev_last_name),
             user(FINN, R.string.demo_finn_first_name, R.string.demo_finn_last_name, isContact = false),
+            bot(LOGIN_BOT, R.string.demo_bot_name, "sample_login_bot"),
         ).associateBy { it.id }
 
     /** The user made the group and the channel, so their info and admin pages are all there to see. */
@@ -39,6 +40,9 @@ internal class DemoData(
         }
 
     private var nextId = 1L
+
+    /** When Ada posted her sample story: two hours before the demo started. */
+    val storyDate = now - 2 * HOUR
 
     /** The id of the sample message in Spanish, which "Translate" turns into English. */
     var spanishMessageId = 0L
@@ -227,12 +231,31 @@ internal class DemoData(
         this.firstName = text(firstName)
         this.lastName = text(lastName)
         usernames = TdApi.Usernames(emptyArray(), emptyArray(), "", emptyArray(), "")
-        phoneNumber = ""
+        // Numbers of the UK range Ofcom keeps for fiction (07700 900000–900999): they reach no one.
+        phoneNumber = FICTION_NUMBERS + (id - ME).toString().padStart(FICTION_DIGITS, '0')
         status = if (online) TdApi.UserStatusOnline(now + ONLINE_FOR) else TdApi.UserStatusRecently(false)
         this.isContact = isContact
         isMutualContact = isContact
         haveAccess = true
         type = TdApi.UserTypeRegular()
+        languageCode = "en"
+        accentColorId = (id % ACCENT_COLORS).toInt()
+        profileAccentColorId = -1
+    }
+
+    private fun bot(
+        id: Long,
+        name: Int,
+        username: String,
+    ) = TdApi.User().apply {
+        this.id = id
+        firstName = text(name)
+        lastName = ""
+        usernames = TdApi.Usernames(arrayOf(username), emptyArray(), username, emptyArray(), "")
+        phoneNumber = ""
+        status = TdApi.UserStatusEmpty()
+        haveAccess = true
+        type = TdApi.UserTypeBot().apply { inlineQueryPlaceholder = "" }
         languageCode = "en"
         accentColorId = (id % ACCENT_COLORS).toInt()
         profileAccentColorId = -1
@@ -472,6 +495,11 @@ internal class DemoData(
         const val CHLOE = 100_004L
         const val DEV = 100_005L
         const val FINN = 100_006L
+        const val LOGIN_BOT = 100_007L
+
+        /** The start of the UK numbers kept for fiction, and the digits that follow it. */
+        private const val FICTION_NUMBERS = "4477009"
+        private const val FICTION_DIGITS = 5
         const val GROUP = 200_001L
         const val CHANNEL = 300_001L
 
@@ -505,6 +533,7 @@ internal class DemoData(
         private const val PARTY = "🎉"
         private const val WAVE = "👋"
         private const val MINUTE = 60
+        private const val HOUR = 3_600
         private const val DAY = 86_400
         private const val DAY_MINUTES = 1_440
         private const val WEEKS = 30
