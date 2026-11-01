@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.demo
 
+import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.util.Base64
 
@@ -14,56 +15,23 @@ internal sealed interface DemoEvent {
         val date: Int,
     ) : DemoEvent
 
-    data class Sent(
-        val chatId: Long,
-        val messageId: Long,
+    /**
+     * A TDLib function the demo took as a change (a sent message, a reaction, a renamed folder…), at [date]: replayed
+     * through the same code, it changes the sample data as it did, with the same ids. The files it names are the
+     * demo's own copies, kept in its folder.
+     */
+    class Call(
         val date: Int,
-        val text: String,
-        val replyToMessageId: Long,
-    ) : DemoEvent
+        val function: TdApi.Function<*>,
+    ) : DemoEvent {
+        override fun equals(other: Any?): Boolean =
+            other is Call && other.date == date &&
+                DemoCodec.encode(other.function).contentEquals(DemoCodec.encode(function))
 
-    data class Read(
-        val chatId: Long,
-        val messageId: Long,
-    ) : DemoEvent
+        override fun hashCode(): Int = 31 * date + DemoCodec.encode(function).contentHashCode()
 
-    data class Reaction(
-        val chatId: Long,
-        val messageId: Long,
-        val emoji: String,
-        val added: Boolean,
-    ) : DemoEvent
-
-    data class Vote(
-        val chatId: Long,
-        val messageId: Long,
-        val optionIds: List<Int>,
-    ) : DemoEvent
-
-    data class Deleted(
-        val chatId: Long,
-        val messageIds: List<Long>,
-    ) : DemoEvent
-
-    data class Pinned(
-        val chatId: Long,
-        val pinned: Boolean,
-    ) : DemoEvent
-
-    data class MarkedUnread(
-        val chatId: Long,
-        val unread: Boolean,
-    ) : DemoEvent
-
-    data class Muted(
-        val chatId: Long,
-        val muteFor: Int,
-    ) : DemoEvent
-
-    data class Archived(
-        val chatId: Long,
-        val archived: Boolean,
-    ) : DemoEvent
+        override fun toString(): String = "Call($date, ${function.javaClass.simpleName})"
+    }
 }
 
 /** Where the journal's lines live: a file in the app, or memory in tests. Blocking: off the main thread. */
@@ -94,116 +62,26 @@ internal class DemoJournal(
 
     private fun encode(event: DemoEvent): String =
         when (event) {
-            is DemoEvent.Started -> {
-                line("started", event.date)
-            }
-
-            is DemoEvent.Sent -> {
-                line("sent", event.chatId, event.messageId, event.date, base64(event.text), event.replyToMessageId)
-            }
-
-            is DemoEvent.Read -> {
-                line("read", event.chatId, event.messageId)
-            }
-
-            is DemoEvent.Reaction -> {
-                line("reaction", event.chatId, event.messageId, base64(event.emoji), event.added)
-            }
-
-            is DemoEvent.Vote -> {
-                line("vote", event.chatId, event.messageId, event.optionIds.joinToString(","))
-            }
-
-            is DemoEvent.Deleted -> {
-                line("deleted", event.chatId, event.messageIds.joinToString(","))
-            }
-
-            is DemoEvent.Pinned -> {
-                line("pinned", event.chatId, event.pinned)
-            }
-
-            is DemoEvent.MarkedUnread -> {
-                line("unread", event.chatId, event.unread)
-            }
-
-            is DemoEvent.Muted -> {
-                line("muted", event.chatId, event.muteFor)
-            }
-
-            is DemoEvent.Archived -> {
-                line("archived", event.chatId, event.archived)
-            }
+            is DemoEvent.Started -> line(STARTED, event.date)
+            is DemoEvent.Call -> line(CALL, event.date, base64.encodeToString(DemoCodec.encode(event.function)))
         }
 
-    // One branch per kind of event, the counterpart of encode; the numbers are the fields' positions in its lines.
-    @Suppress("CyclomaticComplexMethod", "MagicNumber")
     private fun decode(line: String): DemoEvent? {
         val fields = line.split('\t')
         return runCatching {
             when (fields[0]) {
-                "started" -> {
-                    DemoEvent.Started(fields[1].toInt())
-                }
-
-                "sent" -> {
-                    DemoEvent.Sent(
-                        fields[1].toLong(),
-                        fields[2].toLong(),
-                        fields[3].toInt(),
-                        text(fields[4]),
-                        fields[5].toLong(),
-                    )
-                }
-
-                "read" -> {
-                    DemoEvent.Read(fields[1].toLong(), fields[2].toLong())
-                }
-
-                "reaction" -> {
-                    DemoEvent.Reaction(
-                        fields[1].toLong(),
-                        fields[2].toLong(),
-                        text(fields[3]),
-                        fields[4].toBooleanStrict(),
-                    )
-                }
-
-                "vote" -> {
-                    DemoEvent.Vote(fields[1].toLong(), fields[2].toLong(), numbers(fields[3]).map(String::toInt))
-                }
-
-                "deleted" -> {
-                    DemoEvent.Deleted(fields[1].toLong(), numbers(fields[2]).map(String::toLong))
-                }
-
-                "pinned" -> {
-                    DemoEvent.Pinned(fields[1].toLong(), fields[2].toBooleanStrict())
-                }
-
-                "unread" -> {
-                    DemoEvent.MarkedUnread(fields[1].toLong(), fields[2].toBooleanStrict())
-                }
-
-                "muted" -> {
-                    DemoEvent.Muted(fields[1].toLong(), fields[2].toInt())
-                }
-
-                "archived" -> {
-                    DemoEvent.Archived(fields[1].toLong(), fields[2].toBooleanStrict())
-                }
-
-                else -> {
-                    null
-                }
+                STARTED -> DemoEvent.Started(fields[1].toInt())
+                CALL -> DemoEvent.Call(fields[1].toInt(), DemoCodec.decode(Base64.getDecoder().decode(fields[2])))
+                else -> null
             }
         }.getOrNull()
     }
 
     private fun line(vararg fields: Any) = fields.joinToString("\t")
 
-    private fun base64(text: String) = Base64.getEncoder().encodeToString(text.toByteArray())
-
-    private fun text(field: String) = String(Base64.getDecoder().decode(field))
-
-    private fun numbers(field: String) = field.split(',').filter(String::isNotEmpty)
+    private companion object {
+        const val STARTED = "started"
+        const val CALL = "call"
+        val base64: Base64.Encoder = Base64.getEncoder()
+    }
 }

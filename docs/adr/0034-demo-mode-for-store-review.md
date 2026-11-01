@@ -48,8 +48,13 @@ see it.
 - **Unsupported functions** fail with a TDLib error the repositories map to `DomainError.NotAvailableInDemo`. Error
   texts and snackbars show it as "Not available in the demo". That covers calls, voice chats, joining links, sign-in
   and account changes, 2-step verification, proxies, sessions, reporting, and every request the demo has no data for.
-- **Persistence**: what the user does in the demo (messages sent, chats read, reactions) is appended to a small file in
-  `filesDir/demo/`, read back when the demo client starts. So a process death keeps it, and leaving deletes the folder.
+- **Full access** (owner, 2026-11-01): Google Play's App access form asks whether the reviewers' access covers every
+  feature, so the demo answers every screen of a signed-in session with sample data, calls included, and "needs a
+  Telegram account" is left only where no sample makes sense, each such place listed in this ADR for the owner to
+  check. The client asks areas of functions in turn (`DemoArea`: messages, chats…), added in small pull requests.
+- **Persistence**: each function the demo took as a change (a sent message, a reaction, an edited folder…) is appended
+  to a small file in `filesDir/demo/` with its date, its files copied into the demo's folder first, and replayed through
+  the same code when the demo client starts. So a process death keeps it, and leaving deletes the folder.
 
 ### Its own account graph
 
