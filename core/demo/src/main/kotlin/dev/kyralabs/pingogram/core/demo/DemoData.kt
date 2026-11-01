@@ -10,7 +10,7 @@ import org.drinkless.tdlib.TdApi
  */
 @Suppress("LargeClass", "LongMethod", "TooManyFunctions") // One place for all the sample data, a few lines a chat.
 internal class DemoData(
-    private val text: (Int) -> String,
+    val text: (Int) -> String,
     private val now: Int,
 ) {
     val me = user(ME, R.string.demo_me_first_name, R.string.demo_me_last_name, isContact = false)
@@ -21,18 +21,21 @@ internal class DemoData(
             user(BEN, R.string.demo_ben_first_name, R.string.demo_ben_last_name),
             user(CHLOE, R.string.demo_chloe_first_name, R.string.demo_chloe_last_name),
             user(DEV, R.string.demo_dev_first_name, R.string.demo_dev_last_name),
+            user(FINN, R.string.demo_finn_first_name, R.string.demo_finn_last_name, isContact = false),
         ).associateBy { it.id }
 
-    val group = TdApi.BasicGroup(GROUP, GROUP_MEMBERS.size, TdApi.ChatMemberStatusMember(0), true, 0)
+    /** The user made the group and the channel, so their info and admin pages are all there to see. */
+    val group = TdApi.BasicGroup(GROUP, GROUP_MEMBERS.size, TdApi.ChatMemberStatusCreator(false, true), true, 0)
 
     val channel =
         TdApi.Supergroup().apply {
             id = CHANNEL
             usernames = TdApi.Usernames(emptyArray(), emptyArray(), "", emptyArray(), "")
             date = now - DAY * WEEKS
-            status = TdApi.ChatMemberStatusMember(0)
+            status = TdApi.ChatMemberStatusCreator(false, true)
             memberCount = CHANNEL_SUBSCRIBERS
             isChannel = true
+            joinByRequest = true
         }
 
     private var nextId = 1L
@@ -166,18 +169,16 @@ internal class DemoData(
         TdApi.BasicGroupFullInfo(
             null,
             "",
-            ADA,
+            ME,
             GROUP_MEMBERS
                 .map { member ->
                     val status =
-                        if (member ==
-                            ADA
-                        ) {
-                            TdApi.ChatMemberStatusCreator(false, true)
-                        } else {
-                            TdApi.ChatMemberStatusMember(0)
+                        when (member) {
+                            ME -> TdApi.ChatMemberStatusCreator(false, true)
+                            ADA -> TdApi.ChatMemberStatusAdministrator(true, adminRights())
+                            else -> TdApi.ChatMemberStatusMember(0)
                         }
-                    TdApi.ChatMember(TdApi.MessageSenderUser(member), "", ADA, now - DAY * WEEKS, status)
+                    TdApi.ChatMember(TdApi.MessageSenderUser(member), "", ME, now - DAY * WEEKS, status)
                 }.toTypedArray(),
             false,
             false,
@@ -189,6 +190,28 @@ internal class DemoData(
         TdApi.SupergroupFullInfo().apply {
             description = text(R.string.demo_channel_description)
             memberCount = CHANNEL_SUBSCRIBERS
+            administratorCount = 1
+            canGetMembers = true
+            canGetStatistics = true
+            canSetStickerSet = false
+            isAllHistoryAvailable = true
+            botCommands = emptyArray()
+        }
+
+    /** Every right an administrator can have, as the group's Ada has them. */
+    fun adminRights() =
+        TdApi.ChatAdministratorRights().apply {
+            canManageChat = true
+            canChangeInfo = true
+            canPostMessages = true
+            canEditMessages = true
+            canDeleteMessages = true
+            canInviteUsers = true
+            canRestrictMembers = true
+            canPinMessages = true
+            canManageTopics = true
+            canPromoteMembers = true
+            canManageVideoChats = true
         }
 
     private fun name(userId: Long) = users.getValue(userId).let { "${it.firstName} ${it.lastName}".trim() }
@@ -448,6 +471,7 @@ internal class DemoData(
         const val BEN = 100_003L
         const val CHLOE = 100_004L
         const val DEV = 100_005L
+        const val FINN = 100_006L
         const val GROUP = 200_001L
         const val CHANNEL = 300_001L
 

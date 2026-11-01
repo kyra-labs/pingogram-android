@@ -93,7 +93,7 @@ class DemoTdlibClientTest {
                 ),
                 chats.toSet(),
             )
-            assertEquals(5, updates.filterIsInstance<TdApi.UpdateUser>().size)
+            assertEquals(6, updates.filterIsInstance<TdApi.UpdateUser>().size)
             assertEquals(
                 listOf(
                     DemoData.WORK_FOLDER,
@@ -285,7 +285,6 @@ class DemoTdlibClientTest {
                 TdApi.JoinChatByInviteLink().apply { inviteLink = "https://t.me/+abc" },
                 TdApi.SetAuthenticationPhoneNumber().apply { phoneNumber = "+447911123456" },
                 TdApi.GetActiveSessions(),
-                TdApi.SendMessage(DemoData.CHANNEL_CHAT, null, null, null, null, text("Hello")),
             ).forEach { function ->
                 val failure = client.send(function) as TdResult.Failure
                 assertEquals(DemoTdlibClient.NOT_AVAILABLE, failure.error.message, function.javaClass.simpleName)

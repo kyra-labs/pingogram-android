@@ -50,7 +50,7 @@ internal class DemoMessages : DemoArea {
             is TdApi.GetMessageProperties -> {
                 val chat = world.chat(function.chatId)
                 val message = world.message(function.chatId, function.messageId)
-                if (chat == null || message == null) notFound() else ok(properties(chat, message))
+                if (chat == null || message == null) notFound() else ok(properties(world, chat, message))
             }
 
             is TdApi.GetMessageAvailableReactions -> {
@@ -143,7 +143,7 @@ internal class DemoMessages : DemoArea {
         function: TdApi.SendMessage,
     ): DemoAnswer {
         val chat = world.chat(function.chatId) ?: return notFound()
-        if (!canSend(chat)) return needsAccount()
+        if (!canSend(world, chat)) return needsAccount()
         val content = content(world, function.inputMessageContent) ?: return needsAccount()
         val (message, updates) =
             world.addOwn(
@@ -161,7 +161,7 @@ internal class DemoMessages : DemoArea {
         function: TdApi.SendMessageAlbum,
     ): DemoAnswer {
         val chat = world.chat(function.chatId) ?: return notFound()
-        if (!canSend(chat)) return needsAccount()
+        if (!canSend(world, chat)) return needsAccount()
         val contents = function.inputMessageContents.map { content(world, it) ?: return needsAccount() }
         val albumId = world.nextAlbumId()
         val replyTo = replyTo(world, chat.id, function.replyTo)
@@ -183,7 +183,7 @@ internal class DemoMessages : DemoArea {
         function: TdApi.ForwardMessages,
     ): DemoAnswer {
         val chat = world.chat(function.chatId) ?: return notFound()
-        if (!canSend(chat)) return needsAccount()
+        if (!canSend(world, chat)) return needsAccount()
         val sent =
             function.messageIds.toList().mapNotNull { world.message(function.fromChatId, it) }.mapNotNull { source ->
                 val content = copyOf(source.content)
@@ -264,30 +264,38 @@ internal class DemoMessages : DemoArea {
 
     /** What a message lets the user do, as TDLib tells it: the demo's own messages can be edited, pinned, deleted. */
     private fun properties(
+        world: DemoWorld,
         chat: TdApi.Chat,
         message: TdApi.Message,
     ) = TdApi.MessageProperties().apply {
         val content = message.content
         val inChannel = (chat.type as? TdApi.ChatTypeSupergroup)?.isChannel == true
+        val owner = world.groups.statusOf(chat.id) is TdApi.ChatMemberStatusCreator
         canBeCopied = true
         canBeCopiedToSecretChat = true
         canBeForwarded = true
         canBeSaved = true
-        canBeReplied = canSend(chat) && message.schedulingState == null
+        canBeReplied = canSend(world, chat) && message.schedulingState == null
         canBeRepliedInAnotherChat = message.schedulingState == null
         canBeDeletedOnlyForSelf = !inChannel
-        canBeDeletedForAllUsers = message.isOutgoing
+        canBeDeletedForAllUsers = message.isOutgoing || owner
         canBeEdited = message.isOutgoing && (content is TdApi.MessageText || captionOf(content) != null)
         canEditMedia = message.isOutgoing && isReplaceableMedia(content)
         canEditSchedulingState = message.schedulingState != null
-        canBePinned = !inChannel && message.schedulingState == null
+        canBePinned = (!inChannel || owner) && message.schedulingState == null
         canGetLink = chat.type is TdApi.ChatTypeSupergroup
         canReportChat = !message.isOutgoing
         canGetViewers = chat.id == DemoData.GROUP_CHAT && message.isOutgoing && message.schedulingState == null
         customEmojiIds = longArrayOf()
     }
 
-    private fun canSend(chat: TdApi.Chat) = chat.permissions.canSendBasicMessages || chat.id == DemoData.ME
+    /** Whether the user may post: where the chat lets members write, in Saved Messages, and as a channel's owner. */
+    private fun canSend(
+        world: DemoWorld,
+        chat: TdApi.Chat,
+    ) = chat.permissions.canSendBasicMessages ||
+        chat.id == DemoData.ME ||
+        world.groups.statusOf(chat.id) is TdApi.ChatMemberStatusCreator
 
     private fun ownMessage(
         world: DemoWorld,

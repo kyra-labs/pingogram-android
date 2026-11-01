@@ -17,6 +17,16 @@
     <string name="demo_chloe_last_name">Placeholder</string>
     <string name="demo_dev_first_name">Dev</string>
     <string name="demo_dev_last_name">Demo</string>
+    <string name="demo_finn_first_name">Finn</string>
+    <string name="demo_finn_last_name">Mock</string>
+    <string name="demo_dev_join_request">Saw the channel in a sample post.</string>
+    <string name="demo_finn_join_request">I\'d like the weekly news, please.</string>
+    <string name="demo_link_newsletter">Newsletter</string>
+    <string name="demo_stat_subscribers">Subscribers</string>
+    <string name="demo_stat_joined">Joined</string>
+    <string name="demo_stat_left">Left</string>
+    <string name="demo_stat_views">Views</string>
+    <string name="demo_stat_messages">Messages</string>
     <string name="demo_ada_bio">Made up for the demo. Likes trains and tea.</string>
 
     <!-- The sample group and channel, and the folder they are in. -->
