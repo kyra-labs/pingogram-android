@@ -8,9 +8,10 @@ import java.io.File
  * TDLib would send for it. Not thread-safe: [DemoTdlibClient] uses it under its lock.
  *
  * One function per change it takes, as TDLib's functions, each starting with guard clauses for what it does not
- * know (a chat or message that is not the demo's), which return nothing to announce: hence the suppressions.
+ * know (a chat or message that is not the demo's), which return nothing to announce, all of the demo's state in one
+ * place: hence the suppressions.
  */
-@Suppress("TooManyFunctions", "ReturnCount")
+@Suppress("LargeClass", "TooManyFunctions", "ReturnCount")
 internal class DemoWorld(
     val data: DemoData,
 ) {
@@ -314,6 +315,7 @@ internal class DemoWorld(
             )
         (topic as? TdApi.MessageTopicThread)?.let { updates += replied(chatId, it.messageThreadId, message) }
         if (chatId == DemoData.CHANNEL_CHAT) updates += forwardToDiscussion(message)
+        if (chatId == DemoData.LOGIN_BOT) updates += DemoBots.answer(this, message)
         if (chatId == DemoData.ME) {
             savedTopic((message.topicId as TdApi.MessageTopicSavedMessages).savedMessagesTopicId)
                 ?.let { updates += TdApi.UpdateSavedMessagesTopic(it) }
@@ -334,6 +336,44 @@ internal class DemoWorld(
                 else -> TdApi.SavedMessagesTopicTypeSavedFromChat(topicId)
             }
         return TdApi.SavedMessagesTopic(topicId, type, false, orderOf(last.date), last, null)
+    }
+
+    /** A message someone else sends into a chat (the sample bot's answers), with its buttons or keyboard. */
+    fun addIncoming(
+        chatId: Long,
+        from: Long,
+        content: TdApi.MessageContent,
+        markup: TdApi.ReplyMarkup? = null,
+    ): Pair<TdApi.Message, List<TdApi.Update>>? {
+        val chat = chats[chatId] ?: return null
+        val message =
+            TdApi.Message().apply {
+                id = nextMessageId()
+                this.chatId = chatId
+                senderId = TdApi.MessageSenderUser(from)
+                date = now
+                this.content = content
+                canBeSaved = true
+                replyMarkup = markup
+                unreadReactions = emptyArray()
+                senderTag = ""
+                summaryLanguageCode = ""
+                authorSignature = ""
+            }
+        histories.getOrPut(chatId) { mutableListOf() } += message
+        chat.lastMessage = message
+        chat.lastReadInboxMessageId = message.id
+        val updates =
+            mutableListOf<TdApi.Update>(
+                TdApi.UpdateNewMessage(message),
+                TdApi.UpdateChatLastMessage(chat.id, message, chat.positions),
+                TdApi.UpdateChatReadInbox(chat.id, message.id, 0),
+            )
+        if (markup is TdApi.ReplyMarkupShowKeyboard) {
+            chat.replyMarkupMessageId = message.id
+            updates += TdApi.UpdateChatReplyMarkup(chat.id, message)
+        }
+        return message to updates
     }
 
     /** Saved Messages files a message under where it came from: the user's notes, a person, a chat, a hidden author. */

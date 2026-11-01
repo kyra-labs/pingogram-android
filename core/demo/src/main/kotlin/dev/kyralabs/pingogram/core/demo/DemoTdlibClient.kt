@@ -74,6 +74,7 @@ class DemoTdlibClient internal constructor(
             folders,
             topics,
             DemoLinks(),
+            DemoBots(),
             DemoChats(),
         )
 
