@@ -11,7 +11,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - A demo for the app stores' reviewers, who cannot be given a Telegram account: pressing and holding the logo on the
-  first screen opens sample chats stored on the phone, without an account or the network. A banner says so on every
+  first screen opens sample chats stored on the phone, without an account or the network. Every screen works in it with
+  sample data: messages of every kind, groups and channels with their admin pages, a forum, comments, secret chats, a
+  sample bot, links to join, Settings, and calls that ring and connect on the phone alone. A banner says so on every
   screen, and "Leave demo" in Settings deletes everything it made.
 
 ### Removed

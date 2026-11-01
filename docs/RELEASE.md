@@ -148,7 +148,9 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
 7. Announce (README "Download" badge updates automatically via shields.io "latest release").
 8. Before each store upload (Google Play, Galaxy Store, AppGallery): on a phone signed out of Pingogram, press and hold
    the Welcome screen's logo for a second, tap Open, and check that the demo starts with its sample chats and the
-   "Demo" banner; then leave it from Settings. The stores' reviewers sign in that way (`docs/PLAY_STORE.md` §1,
+   "Demo" banner. Then go through it as a reviewer would, since App access says every screen works in it: the chat
+   list, a chat (send a message and a photo), a call (call Ada, wait for the answer, turn the camera on, hang up) and
+   Settings; then leave it from Settings. The stores' reviewers sign in that way (`docs/PLAY_STORE.md` §1,
    `docs/adr/0034-demo-mode-for-store-review.md`): a release whose demo does not open is not uploaded.
 
 ## Hotfix
