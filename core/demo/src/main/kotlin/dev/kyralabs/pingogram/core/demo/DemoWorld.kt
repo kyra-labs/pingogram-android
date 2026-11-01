@@ -22,6 +22,9 @@ internal class DemoWorld(
     /** The groups and channels beyond their chats: full info, members, links, requests, recent actions. */
     val groups = DemoGroupState(data) { now }
 
+    /** The 2-step verification password the user set in the demo, which an ownership transfer asks for. */
+    var password: String? = null
+
     private val chats = data.chats.associateBy { it.id }.toMutableMap()
     private val histories = data.messages.mapValues { it.value.toMutableList() }.toMutableMap()
     private val scheduled = mutableMapOf<Long, MutableList<TdApi.Message>>()
@@ -155,6 +158,35 @@ internal class DemoWorld(
         sentFiles[id]?.let { localFile(id, it) } ?: DemoFile.of(id)?.let(DemoFiles::remote)
 
     fun sentFileById(id: Int): File? = sentFiles[id]
+
+    fun sentFileSizes(): List<Long> = sentFiles.values.map { it.length() }
+
+    /** Puts each chat [holds] says into folder [folderId]'s list, and takes the others out of it. */
+    fun placeInFolder(
+        folderId: Int,
+        holds: (TdApi.Chat) -> Boolean,
+    ): List<TdApi.Update> =
+        chats.values.mapNotNull { chat ->
+            val list = TdApi.ChatListFolder(folderId)
+            val inFolder = chat.positions.any { it.list.sameAs(list) }
+            val order = chat.positions.firstOrNull { it.list !is TdApi.ChatListFolder }?.order ?: 0
+            when {
+                holds(chat) && !inFolder -> {
+                    val position = TdApi.ChatPosition(list, order, false, null)
+                    chat.positions += position
+                    TdApi.UpdateChatPosition(chat.id, position)
+                }
+
+                !holds(chat) && inFolder -> {
+                    chat.positions = chat.positions.filterNot { it.list.sameAs(list) }.toTypedArray()
+                    TdApi.UpdateChatPosition(chat.id, TdApi.ChatPosition(list, 0, false, null))
+                }
+
+                else -> {
+                    null
+                }
+            }
+        }
 
     /**
      * Adds a message of the user's to [chatId] as Telegram would once sent: the message, then the chat's last

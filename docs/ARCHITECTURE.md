@@ -100,7 +100,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     channel the user owns, with members, settings, invite links, join requests, recent actions, statistics and boosts
     (`DemoGroupState`), new groups and channels, upgrading, leaving and deleting; `DemoAccount`: the user's profile,
     contacts (sample people have numbers of the UK range kept for fiction), blocking, privacy, sample sessions and
-    websites, Ada's sample story, the phone number fields' countries; `DemoChats`: chats, lists, people), each answering on
+    websites, Ada's sample story, the phone number fields' countries; `DemoSettings`: 2-step verification, the login
+    email and the phone number (any code of the length asked), notification settings and exceptions, storage and
+    network statistics, proxies (kept, never connected through), the archive's settings; `DemoFolders`: chat folders
+    with their rules applied to the demo's chats, suggestions and invite links; `DemoChats`: chats, lists, people), each
+    answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
   - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took

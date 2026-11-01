@@ -29,6 +29,10 @@
     <string name="demo_stat_messages">Messages</string>
     <string name="demo_bot_name">Sample Login Bot</string>
     <string name="demo_story_caption">A sample story, made on this phone.</string>
+    <string name="demo_folder_unread">Unread</string>
+    <string name="demo_folder_unread_description">Chats with unread messages</string>
+    <string name="demo_folder_personal">Personal</string>
+    <string name="demo_folder_personal_description">Only chats with people</string>
     <string name="demo_ada_bio">Made up for the demo. Likes trains and tea.</string>
 
     <!-- The sample group and channel, and the folder they are in. -->

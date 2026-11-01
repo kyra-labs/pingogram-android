@@ -76,14 +76,6 @@ internal class DemoChats : DemoArea {
                 notFound()
             }
 
-            is TdApi.GetChatFolder -> {
-                if (function.chatFolderId == DemoData.WORK_FOLDER) ok(world.data.folderSettings) else notFound()
-            }
-
-            is TdApi.GetScopeNotificationSettings -> {
-                ok(DemoNotifications.scopeSettings())
-            }
-
             is TdApi.GetChatSponsoredMessages -> {
                 ok(TdApi.SponsoredMessages(emptyArray(), 0))
             }

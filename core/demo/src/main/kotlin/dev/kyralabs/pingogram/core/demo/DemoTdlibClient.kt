@@ -57,6 +57,8 @@ class DemoTdlibClient internal constructor(
     override val updates: SharedFlow<TdApi.Update> = mutableUpdates.asSharedFlow()
 
     private val account = DemoAccount()
+    private val settings = DemoSettings()
+    private val folders = DemoFolders()
 
     private val areas: List<DemoArea> =
         listOf(
@@ -67,6 +69,8 @@ class DemoTdlibClient internal constructor(
             DemoGroups(),
             DemoGroupAdmin(),
             account,
+            settings,
+            folders,
             DemoChats(),
         )
 
@@ -86,7 +90,7 @@ class DemoTdlibClient internal constructor(
                 world.now = event.date
                 answer(world, event.function)
             }
-            announce(data, world).forEach { mutableUpdates.emit(it) }
+            announce(world).forEach { mutableUpdates.emit(it) }
             ready.complete(world)
         }
     }
@@ -143,17 +147,16 @@ class DemoTdlibClient internal constructor(
     }
 
     /** What TDLib announces after it starts: the user, the people, the group and channel, the chats and the folder. */
-    private fun announce(
-        data: DemoData,
-        world: DemoWorld,
-    ): List<TdApi.Update> =
+    private fun announce(world: DemoWorld): List<TdApi.Update> =
         buildList {
             add(TdApi.UpdateAuthorizationState(TdApi.AuthorizationStateReady()))
             add(TdApi.UpdateOption("my_id", TdApi.OptionValueInteger(DemoData.ME)))
             add(TdApi.UpdateConnectionState(TdApi.ConnectionStateReady()))
             world.users.values.forEach { add(TdApi.UpdateUser(it)) }
-            add(TdApi.UpdateBasicGroup(data.group))
-            add(TdApi.UpdateSupergroup(data.channel))
+            world.groups.basicGroups.values
+                .forEach { add(TdApi.UpdateBasicGroup(it)) }
+            world.groups.supergroups.values
+                .forEach { add(TdApi.UpdateSupergroup(it)) }
             listOf(
                 TdApi.NotificationSettingsScopePrivateChats(),
                 TdApi.NotificationSettingsScopeGroupChats(),
@@ -162,8 +165,9 @@ class DemoTdlibClient internal constructor(
             add(TdApi.UpdateActiveEmojiReactions(DemoData.REACTIONS.toTypedArray()))
             add(TdApi.UpdateDefaultReactionType(TdApi.ReactionTypeEmoji(DemoData.REACTIONS.first())))
             world.allChats().forEach { add(TdApi.UpdateNewChat(it)) }
-            add(TdApi.UpdateChatFolders(arrayOf(data.folder), 0, false))
+            add(folders.announce(world))
             add(TdApi.UpdateChatActiveStories(account.activeStories(world)))
+            addAll(settings.announce())
         }
 
     /**
