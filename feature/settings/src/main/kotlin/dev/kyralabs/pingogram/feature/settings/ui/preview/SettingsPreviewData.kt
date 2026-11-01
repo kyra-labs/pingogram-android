@@ -77,6 +77,9 @@ internal object SettingsPreviewData {
             username = "ada",
         )
 
+    /** The demo's account (docs/adr/0034): a made-up name, no phone number, no username. */
+    val demoAccount = account.copy(name = "Sam Example", phoneNumber = "", username = null)
+
     /**
      * The account with a photo and Telegram Premium; the photo shows where Coil has a preview image (screenshot tests),
      * else its placeholder.

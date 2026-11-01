@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -59,7 +66,7 @@ fun WelcomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         centerVertically = true,
         header = {
-            WelcomeHero(isMorphed = isStartPressed)
+            WelcomeHero(isMorphed = isStartPressed, onHold = { onEvent(AuthEvent.ShowDemoDialog) })
             val brandStyle = MaterialTheme.typography.displayMediumEmphasized
             Text(
                 text = stringResource(R.string.auth_welcome_title),
@@ -132,10 +139,20 @@ private fun ColumnScope.WelcomeActions(
 /**
  * Decorative brand artwork: Pingogram's mark (`art/`) on a [MaterialShapes] cookie that morphs into a soft burst while
  * [isMorphed] (a fast spatial spring, `docs/DESIGN_SYSTEM.md` §5: press feedback).
+ *
+ * Held for about a second ([DEMO_HOLD_MILLIS]), it calls [onHold] with a `LongPress` haptic: the hidden way into the
+ * demo for app store reviewers (`docs/adr/0034-demo-mode-for-store-review.md`), whose instructions name it. Nothing on
+ * screen shows it, and screen readers get no action for it. Never move the logo or change the gesture without the
+ * owner's decision and the store instructions updated with it (`docs/PLAY_STORE.md` §1).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun WelcomeHero(isMorphed: Boolean) {
+private fun WelcomeHero(
+    isMorphed: Boolean,
+    onHold: () -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    val currentOnHold by rememberUpdatedState(onHold)
     val shape =
         rememberMorphShape(
             start = MaterialShapes.Cookie9Sided,
@@ -150,7 +167,17 @@ private fun WelcomeHero(isMorphed: Boolean) {
             Modifier
                 .squareOfWidth(HERO_WIDTH_FRACTION, maxSize)
                 .background(MaterialTheme.colorScheme.primaryContainer, shape)
-                .clearAndSetSemantics {},
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        // Held without lifting or moving away for the whole time: a press, not a tap or a scroll.
+                        val released = withTimeoutOrNull(DEMO_HOLD_MILLIS) { waitForUpOrCancellation() }
+                        if (released == null && currentEvent.changes.all { it.pressed }) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            currentOnHold()
+                        }
+                    }
+                }.clearAndSetSemantics {},
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -163,6 +190,9 @@ private fun WelcomeHero(isMorphed: Boolean) {
 }
 
 private const val HERO_WIDTH_FRACTION = 0.5f
+
+/** How long the logo is held to open the demo's question: "about a second", as the store instructions say. */
+private const val DEMO_HOLD_MILLIS = 1_000L
 private const val HERO_ICON_FRACTION = 0.4f
 private const val COMPACT_HEIGHT_SCALE = 0.5f
 

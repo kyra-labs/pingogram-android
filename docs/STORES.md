@@ -112,9 +112,14 @@ Both stores review signed-in apps with a login the developer gives:
 - **Galaxy Store:** the **Review comment** field, which only the review team sees (Seller Portal's launch guide).
 - **AppGallery:** the **For reviewer** area; account details must not appear in the listing itself (review guidelines §1).
 
-Paste the instructions of `PLAY_STORE.md` §1, "App access". The Telegram test account they gave no longer signs in
-(Telegram's test servers stopped), and the demo that replaces it is on its way
-(`docs/adr/0034-demo-mode-for-store-review.md`): do not submit before it ships.
+Paste the instructions of `PLAY_STORE.md` §1, "App access", the same for both stores (the demo is in both flavors:
+Galaxy Store reviews `gms`, AppGallery `foss`, `docs/adr/0034-demo-mode-for-store-review.md`):
+
+> Pingogram is a client for Telegram accounts. Signing in needs a Telegram account and a one-time code Telegram sends to its phone, so we can't share credentials. To see the app without an account: on the first screen, press and hold the Pingogram logo for a second, then tap Open. It shows sample chats stored on the device and does not connect to Telegram. Reviewers with their own Telegram account can also sign in with it.
+
+The demo is permanent: check before each submission that it still opens (`docs/RELEASE.md`, release checklist), and
+never remove it, move the logo or change the gesture without the owner's decision and these instructions updated in
+the same pull request.
 
 ## 4. Listing texts
 

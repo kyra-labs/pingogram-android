@@ -105,6 +105,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     accounts limit never see it.
   - **Entering and leaving**: `core:domain`'s `DemoRepository` (`DefaultDemoRepository`) enters and leaves. Leaving
     cancels the graph's scope and deletes the demo's folder and marker.
+  - **On screen**: `feature:auth`'s Welcome opens the question (`DemoDialog`, `AuthViewModel.demoDialog` in the saved
+    state) when its logo is held, and "Open" enters. `:app`'s `AccountRestart` opens the app again in a new task when
+    `Accounts.isDemo` changes, as a switch of accounts does. `MainActivity` reads it once per activity: it wraps the app
+    in `DemoFrame` (the banner above every screen), provides `core:ui`'s `LocalIsDemo` and leaves out the call starter,
+    the voice chats and the account menu. `feature:settings` reads `LocalIsDemo` for the account card's "Demo", "Leave
+    demo" (`SettingsViewModel` leaves instead of logging out) and the rows it leaves out.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
   (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model

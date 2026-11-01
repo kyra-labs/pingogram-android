@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- A demo for the app stores' reviewers, who cannot be given a Telegram account: pressing and holding the logo on the
+  first screen opens sample chats stored on the phone, without an account or the network. A banner says so on every
+  screen, and "Leave demo" in Settings deletes everything it made.
+
 ### Removed
 - Signing in with Telegram's test accounts on Telegram's test servers: those servers no longer sign them in. A demo for
   the app stores' reviewers replaces it.

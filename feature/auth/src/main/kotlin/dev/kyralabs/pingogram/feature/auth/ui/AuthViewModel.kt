@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
 import dev.kyralabs.pingogram.core.ui.text.isPlausibleEmailAddress
@@ -48,9 +49,11 @@ import kotlin.time.TimeSource
  * and back there leaves it ([DeviceAccountsRepository.cancelAdding]): the app then opens again on the account shown
  * before (`docs/adr/0031-multiple-accounts.md`).
  *
- * It has one handler per event of a thirteen-screen flow, hence `TooManyFunctions` is suppressed.
+ * It has one handler per event of a thirteen-screen flow, hence `TooManyFunctions` is suppressed. Its internal
+ * constructor takes the time source on top of the six injected dependencies, so tests control time, hence
+ * `LongParameterList`.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @HiltViewModel
 class AuthViewModel internal constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -58,6 +61,7 @@ class AuthViewModel internal constructor(
     private val countryRepository: CountryRepository,
     connectionRepository: ConnectionRepository,
     private val deviceAccounts: DeviceAccountsRepository,
+    private val demo: DemoRepository,
     private val timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
     @Inject
@@ -67,14 +71,22 @@ class AuthViewModel internal constructor(
         countryRepository: CountryRepository,
         connectionRepository: ConnectionRepository,
         deviceAccounts: DeviceAccountsRepository,
+        demo: DemoRepository,
     ) : this(
         savedStateHandle,
         authRepository,
         countryRepository,
         connectionRepository,
         deviceAccounts,
+        demo,
         ElapsedRealtimeTimeSource,
     )
+
+    /**
+     * Whether the dialog that opens the demo shows (`docs/adr/0034-demo-mode-for-store-review.md`); in the saved state,
+     * so a rotation or a process death keeps it.
+     */
+    val demoDialog: StateFlow<Boolean> = savedStateHandle.getStateFlow(DEMO_DIALOG_KEY, false)
 
     // Only touched on the main thread: events come from the UI, and the flows are collected in viewModelScope.
     private var model = savedStateHandle.restoreAuthModel()
@@ -119,6 +131,9 @@ class AuthViewModel internal constructor(
             AuthEvent.StartMessaging -> startMessaging()
             AuthEvent.OpenTermsOfService -> sendEffect(AuthEffect.OpenUrl(TERMS_OF_SERVICE_URL))
             AuthEvent.OpenPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(PRIVACY_POLICY_URL))
+            AuthEvent.ShowDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = true
+            AuthEvent.DismissDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = false
+            AuthEvent.OpenDemo -> openDemo()
             is AuthEvent.CallingCodeChanged -> onCallingCodeChanged(event.callingCode)
             is AuthEvent.PhoneNumberChanged -> onPhoneNumberChanged(event.phoneNumber)
             AuthEvent.OpenCountryPicker -> openCountryPicker()
@@ -159,6 +174,12 @@ class AuthViewModel internal constructor(
             AuthEvent.ResetEmailAddress -> resetEmailAddress()
             AuthEvent.ContactSupport -> contactSupport()
         }
+    }
+
+    /** Turns the demo on; the app then opens again on its sample chats (`AccountRestart`). */
+    private fun openDemo() {
+        savedStateHandle[DEMO_DIALOG_KEY] = false
+        viewModelScope.launch { demo.enter() }
     }
 
     // TDLib's steps
@@ -738,3 +759,6 @@ private val InputChecks =
         AuthAction.SubmitNewPassword,
         AuthAction.SubmitEmailCode,
     )
+
+/** The saved state's key of [AuthViewModel.demoDialog]. */
+private const val DEMO_DIALOG_KEY = "auth_demo_dialog"

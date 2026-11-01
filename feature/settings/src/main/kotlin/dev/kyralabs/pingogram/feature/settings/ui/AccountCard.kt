@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.numericContent
@@ -136,11 +137,20 @@ private fun AccountAvatar(account: AccountUiModel) {
 
 /**
  * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and below
- * them the "Premium" label for Telegram Premium subscribers.
+ * them the "Premium" label for Telegram Premium subscribers. In the demo ([LocalIsDemo]) a "Demo" label in
+ * `secondaryContainer` takes the phone number's place: the demo's account has none (docs/adr/0034).
  */
 @Composable
 private fun AccountDetails(account: AccountUiModel) {
     Column {
+        if (LocalIsDemo.current) {
+            AccountLabel(
+                text = stringResource(R.string.settings_account_demo),
+                container = MaterialTheme.colorScheme.secondaryContainer,
+                content = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(vertical = MaterialTheme.spacing.extraSmall),
+            )
+        }
         if (account.phoneNumber.isNotEmpty()) {
             Text(
                 text = phoneNumberToShow(account.phoneNumber),

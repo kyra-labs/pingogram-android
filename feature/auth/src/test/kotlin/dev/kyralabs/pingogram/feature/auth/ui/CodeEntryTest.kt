@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -143,6 +144,7 @@ class CodeEntryTest {
                 countryRepository = TdlibCountryRepository(client),
                 connectionRepository = TdlibConnectionRepository(client),
                 deviceAccounts = FakeDeviceAccountsRepository(),
+                demo = FakeDemoRepository(),
                 timeSource = ElapsedRealtimeTimeSource,
             )
         composeRule.setContent {
