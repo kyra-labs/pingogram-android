@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import kotlin.time.Duration
@@ -43,10 +45,16 @@ internal object CallIds {
     fun slotOf(callId: Int): Int = callId / SLOT_STRIDE
 
     fun tdlibId(callId: Int): Int = callId % SLOT_STRIDE
+
+    /** The demo's calls (`docs/adr/0034-demo-mode-for-store-review.md`): above every account's slot. */
+    const val DEMO_SLOT = 64
 }
 
-/** The account a call belongs to ([CallIds]); null while Telegram has not created an outgoing call yet. */
-internal val ActiveCall.slot: Int? get() = callId?.let(CallIds::slotOf)
+/**
+ * The account a call belongs to ([CallIds]); null while Telegram has not created an outgoing call yet, and for the
+ * demo's calls, whose people are the shown graph's (the demo's).
+ */
+internal val ActiveCall.slot: Int? get() = callId?.let(CallIds::slotOf)?.takeUnless { it == CallIds.DEMO_SLOT }
 
 /** Every account's calls as one [CallRepository] ([AllAccountsCallRepository]), which [CallManager] runs. */
 @Qualifier
@@ -58,16 +66,32 @@ internal annotation class AllAccounts
  * [CallRepository]: each account's calls and signaling data with ids that carry its slot ([CallIds]), so a call to an
  * account in the background rings as one to the shown account does, and each action goes to the call's own account.
  * New calls go out from the shown account, whose screens start them. One call at a time across them all, as before
- * ([CallManager], [CallLine]).
+ * ([CallManager], [CallLine]). While the demo shows, its calls alone ([CallIds.DEMO_SLOT]): the shown graph's
+ * repository, the demo's (`docs/adr/0034-demo-mode-for-store-review.md`).
  */
 @Singleton
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // CallRepository's, and the demo's calls beside the accounts'.
 internal class AllAccountsCallRepository
     @Inject
     constructor(
         private val graphs: AccountGraphs,
+        private val demo: DemoRepository,
+        // The shown graph's, which is the demo's while the demo shows; a provider, as it changes with the demo.
+        private val shown: Provider<CallRepository>,
     ) : CallRepository {
         override val calls: Flow<ImmutableMap<Int, Call>> =
+            demo.isDemo.flatMapLatest { isDemo -> if (isDemo) demoCalls() else accountCalls() }
+
+        private fun demoCalls(): Flow<ImmutableMap<Int, Call>> =
+            shown.get().calls.map { calls ->
+                calls.values
+                    .map { call -> call.copy(id = CallIds.of(CallIds.DEMO_SLOT, call.id)) }
+                    .associateBy { it.id }
+                    .toImmutableMap()
+            }
+
+        private fun accountCalls(): Flow<ImmutableMap<Int, Call>> =
             graphs.accounts.flatMapLatest { accounts ->
                 if (accounts.isEmpty()) return@flatMapLatest flowOf(persistentMapOf())
                 combine(
@@ -86,6 +110,20 @@ internal class AllAccountsCallRepository
                 ?.distinctUntilChanged() ?: flowOf(null)
 
         override val signalingData: Flow<CallSignalingData> =
+            demo.isDemo.flatMapLatest { isDemo ->
+                if (isDemo) {
+                    shown.get().signalingData.map {
+                        CallSignalingData(
+                            CallIds.of(CallIds.DEMO_SLOT, it.callId),
+                            it.data(),
+                        )
+                    }
+                } else {
+                    accountSignalingData()
+                }
+            }
+
+        private fun accountSignalingData(): Flow<CallSignalingData> =
             graphs.accounts.flatMapLatest { accounts ->
                 if (accounts.isEmpty()) return@flatMapLatest emptyFlow()
                 accounts
@@ -101,8 +139,8 @@ internal class AllAccountsCallRepository
             isVideo: Boolean,
             protocol: CallProtocol,
         ): Outcome<Int> {
-            val slot = graphs.activeSlot.value
-            val repository = graphs.repositories(slot)?.callRepository() ?: return gone()
+            val slot = if (demo.isDemo.value) CallIds.DEMO_SLOT else graphs.activeSlot.value
+            val repository = repository(CallIds.of(slot, 0)) ?: return gone()
             return when (val started = repository.startCall(userId, isVideo, protocol)) {
                 is Outcome.Success -> Outcome.Success(CallIds.of(slot, started.value))
                 is Outcome.Failure -> started
@@ -138,7 +176,10 @@ internal class AllAccountsCallRepository
         ): Outcome<Unit> = repository(callId)?.sendSignalingData(CallIds.tdlibId(callId), data) ?: gone()
 
         private fun repository(callId: Int): CallRepository? =
-            graphs.repositories(CallIds.slotOf(callId))?.callRepository()
+            when (val slot = CallIds.slotOf(callId)) {
+                CallIds.DEMO_SLOT -> shown.get().takeIf { demo.isDemo.value }
+                else -> graphs.repositories(slot)?.callRepository()
+            }
 
         /** The call's account left the device: its call ended with it. */
         private fun <T> gone(): Outcome<T> = Outcome.Failure(DomainError.Unauthorized)

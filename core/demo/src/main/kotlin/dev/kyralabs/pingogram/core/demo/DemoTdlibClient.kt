@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -60,6 +61,7 @@ class DemoTdlibClient internal constructor(
     private val settings = DemoSettings()
     private val folders = DemoFolders()
     private val topics = DemoTopics()
+    private val calls = DemoCalls()
 
     private val areas: List<DemoArea> =
         listOf(
@@ -75,6 +77,7 @@ class DemoTdlibClient internal constructor(
             topics,
             DemoLinks(),
             DemoBots(),
+            calls,
             DemoChats(),
         )
 
@@ -109,6 +112,17 @@ class DemoTdlibClient internal constructor(
                 else -> change(world, function)
             }
         answer.updates.forEach { mutableUpdates.emit(it) }
+        answer.later.forEach { later ->
+            scope.launch {
+                delay(later.delayMillis)
+                val updates =
+                    lock.withLock {
+                        world.now = clock()
+                        later.change(world)
+                    }
+                updates.forEach { mutableUpdates.emit(it) }
+            }
+        }
         // Each area answers what td_api.tl says the function returns.
         @Suppress("UNCHECKED_CAST")
         return answer.result as TdResult<T>
@@ -169,6 +183,7 @@ class DemoTdlibClient internal constructor(
             add(TdApi.UpdateActiveEmojiReactions(DemoData.REACTIONS.toTypedArray()))
             add(TdApi.UpdateDefaultReactionType(TdApi.ReactionTypeEmoji(DemoData.REACTIONS.first())))
             addAll(topics.announce())
+            addAll(calls.announce(world))
             world.allChats().forEach { add(TdApi.UpdateNewChat(it)) }
             add(folders.announce(world))
             add(TdApi.UpdateChatActiveStories(account.activeStories(world)))

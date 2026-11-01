@@ -21,6 +21,15 @@ interface CallStarter {
      * `userFullInfo.can_be_called`, `supports_video_calls`). False until known, and if the full info fails.
      */
     fun canVideoCall(userId: Long): Flow<Boolean>
+
+    /** Whether the call button offers to have the user called ([receiveDemoCall]): only in the demo. */
+    val canReceiveDemoCall: Boolean get() = false
+
+    /**
+     * In the demo, has user [userId] call a moment later, so the reviewers can answer a call
+     * (`docs/adr/0034-demo-mode-for-store-review.md`); nothing otherwise.
+     */
+    fun receiveDemoCall(userId: Long) = Unit
 }
 
 /** The app's [CallStarter]; null in previews and tests, where the call buttons are left out. */

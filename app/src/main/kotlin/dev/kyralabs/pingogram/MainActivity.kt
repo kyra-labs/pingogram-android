@@ -232,10 +232,10 @@ class MainActivity : ComponentActivity() {
                             // Telegram links tapped in the app open in it (LinkUriHandler).
                             LocalUriHandler provides rememberLinkUriHandler(links, uiState),
                             // The conversation's and the profile's call buttons, and "Call back" (feature:calls);
-                            // none in the demo, which has no one to call (docs/adr/0034).
-                            LocalCallStarter provides calls.takeUnless { isDemo },
+                            // scripted calls in the demo, which connect to nothing (docs/adr/0034).
+                            LocalCallStarter provides calls,
                             // A chat's voice chat bar and its info page's voice chat row (feature:calls).
-                            LocalVoiceChats provides calls.takeUnless { isDemo },
+                            LocalVoiceChats provides calls,
                             LocalPhoneNumbersHidden provides phoneNumbersHidden,
                             LocalIsDemo provides isDemo,
                             // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).

@@ -227,7 +227,9 @@ internal class DemoData(
                 folders = listOf(WORK_FOLDER),
             ),
             chat(CHANNEL_CHAT, TdApi.ChatTypeSupergroup(CHANNEL, true), text(R.string.demo_channel_title), unread = 1),
-            chat(FORUM_CHAT, TdApi.ChatTypeSupergroup(FORUM, false), text(R.string.demo_forum_title), unread = 1),
+            // The book club meets in a voice chat that goes on, with sample people in it.
+            chat(FORUM_CHAT, TdApi.ChatTypeSupergroup(FORUM, false), text(R.string.demo_forum_title), unread = 1)
+                .apply { videoChat = TdApi.VideoChat(SAMPLE_VOICE_CHAT, true, TdApi.MessageSenderUser(ME)) },
             chat(
                 DISCUSSION_CHAT,
                 TdApi.ChatTypeSupergroup(DISCUSSION, false),
@@ -749,6 +751,9 @@ internal class DemoData(
         const val BOOK_SWAP_LINK = "https://t.me/+DemoBookSwap"
         const val HOBBIES_LINK = "https://t.me/addlist/DemoHobbies"
         const val GENERAL_TOPIC = 1
+
+        /** The forum's voice chat, which goes on when the demo starts. */
+        const val SAMPLE_VOICE_CHAT = 1
         const val READING_TOPIC = 2
         const val MEETUPS_TOPIC = 3
 

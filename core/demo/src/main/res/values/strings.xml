@@ -146,4 +146,7 @@
     <string name="demo_bot_result_lighthouse_description">A walk to the end of the pier.</string>
     <string name="demo_bot_result_market">The market</string>
     <string name="demo_bot_result_market_description">Saturday morning stalls.</string>
+
+    <!-- The voice chat's title, as the book club named it. -->
+    <string name="demo_voice_chat_title">Reading night</string>
 </resources>
