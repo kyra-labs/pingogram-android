@@ -73,6 +73,7 @@ class DemoTdlibClient internal constructor(
             settings,
             folders,
             topics,
+            DemoLinks(),
             DemoChats(),
         )
 

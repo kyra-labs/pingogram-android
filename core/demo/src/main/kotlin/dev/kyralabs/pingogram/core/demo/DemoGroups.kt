@@ -103,8 +103,19 @@ internal class DemoGroups : DemoArea {
             }
 
             // The demo's groups are basic groups or channels, which cannot be a channel's discussion group.
+            // The groups the user owns that are no forum and no other channel's discussion group.
             is TdApi.GetSuitableDiscussionChats -> {
-                ok(TdApi.Chats(0, longArrayOf()))
+                val suitable =
+                    world.groups.supergroups.values
+                        .filter {
+                            !it.isChannel && !it.isForum && it.status is TdApi.ChatMemberStatusCreator &&
+                                !it.hasLinkedChat
+                        }.map { DemoIds.supergroupChat(it.id) }
+                ok(TdApi.Chats(suitable.size, suitable.toLongArray()))
+            }
+
+            is TdApi.SetChatDiscussionGroup -> {
+                setDiscussion(world, function.chatId, function.discussionChatId)
             }
 
             is TdApi.CheckChatUsername -> {
@@ -132,7 +143,7 @@ internal class DemoGroups : DemoArea {
             }
 
             is TdApi.LeaveChat -> {
-                okChanged(world.removeChat(function.chatId))
+                okChanged(world.leave(function.chatId))
             }
 
             is TdApi.DeleteChatHistory -> {
@@ -631,6 +642,44 @@ internal class DemoGroups : DemoArea {
         } else {
             okChanged(world.clearHistory(function.chatId))
         }
+
+    /** Links the channel to a group, or unlinks it with 0, both sides' full info following. */
+    private fun setDiscussion(
+        world: DemoWorld,
+        chatId: Long,
+        discussionChatId: Long,
+    ): DemoAnswer {
+        val groups = world.groups
+        val channelId = DemoIds.supergroupId(chatId) ?: return badRequest("CHAT_INVALID")
+        val channel = groups.supergroups[channelId]?.takeIf { it.isChannel } ?: return badRequest("CHAT_INVALID")
+        val channelInfo = groups.supergroupFullInfo.getValue(channelId)
+        val updates = mutableListOf<TdApi.Update>()
+        DemoIds.supergroupId(channelInfo.linkedChatId)?.let { oldId ->
+            val old = groups.supergroups[oldId] ?: return@let
+            old.hasLinkedChat = false
+            groups.supergroupFullInfo[oldId]?.let { info ->
+                info.linkedChatId = 0
+                updates += TdApi.UpdateSupergroupFullInfo(oldId, info)
+            }
+            updates += TdApi.UpdateSupergroup(old)
+        }
+        val newId = DemoIds.supergroupId(discussionChatId)
+        val group = newId?.let { groups.supergroups[it] }?.takeIf { !it.isChannel }
+        if (discussionChatId != 0L && group == null) return badRequest("CHAT_INVALID")
+        channelInfo.linkedChatId = if (group != null) discussionChatId else 0
+        channel.hasLinkedChat = group != null
+        if (group != null) {
+            group.hasLinkedChat = true
+            groups.supergroupFullInfo[newId]?.let { info ->
+                info.linkedChatId = chatId
+                updates += TdApi.UpdateSupergroupFullInfo(newId, info)
+            }
+            updates += TdApi.UpdateSupergroup(group)
+        }
+        updates += TdApi.UpdateSupergroup(channel)
+        updates += TdApi.UpdateSupergroupFullInfo(channelId, channelInfo)
+        return okChanged(updates)
+    }
 
     private fun present(list: List<TdApi.ChatMember>) = list.filter { it.status.isPresent() }
 

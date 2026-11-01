@@ -116,6 +116,66 @@ internal class DemoWorld(
         return updates + TdApi.UpdateChatLastMessage(chatId, null, emptyArray())
     }
 
+    /** A demo person's private chat, made in no list (as TDLib's `createPrivateChat`), or null for a stranger. */
+    fun privateChat(userId: Long): Pair<TdApi.Chat, List<TdApi.Update>>? {
+        chats[userId]?.let { return it to emptyList() }
+        val user = users[userId] ?: return null
+        val chat = demoChat(userId, TdApi.ChatTypePrivate(userId), "${user.firstName} ${user.lastName}".trim(), true)
+        chat.canBeDeletedForAllUsers = false
+        chats[userId] = chat
+        histories[userId] = mutableListOf()
+        return chat to listOf(TdApi.UpdateNewChat(chat))
+    }
+
+    /** The user joins a group or channel they are not in: it takes its place in the main list, its history kept. */
+    fun join(chatId: Long): List<TdApi.Update> {
+        val chat = chats[chatId] ?: return emptyList()
+        val id = DemoIds.supergroupId(chatId) ?: return emptyList()
+        val group = groups.supergroups[id] ?: return emptyList()
+        if (group.status !is TdApi.ChatMemberStatusLeft) return emptyList()
+        group.status = TdApi.ChatMemberStatusMember(0)
+        val members =
+            groups.membersOf(chatId).filterNot { it.isMe() } +
+                TdApi.ChatMember(
+                    TdApi.MessageSenderUser(DemoData.ME),
+                    "",
+                    0,
+                    now,
+                    TdApi.ChatMemberStatusMember(0),
+                )
+        val updates = mutableListOf<TdApi.Update>(TdApi.UpdateSupergroup(group))
+        updates += groups.setMembers(chatId, members)
+        val order = orderOf(chat.lastMessage?.date ?: now)
+        chat.chatLists = arrayOf(TdApi.ChatListMain())
+        chat.positions = arrayOf(TdApi.ChatPosition(TdApi.ChatListMain(), order, false, null))
+        updates += TdApi.UpdateChatAddedToList(chatId, TdApi.ChatListMain())
+        updates += TdApi.UpdateChatPosition(chatId, chat.positions.first())
+        return updates
+    }
+
+    /** The user leaves a group or channel: it leaves their lists, its history kept for if they join again. */
+    fun leave(chatId: Long): List<TdApi.Update> {
+        val chat = chats[chatId] ?: return emptyList()
+        val updates = mutableListOf<TdApi.Update>()
+        val supergroup = DemoIds.supergroupId(chatId)?.let { groups.supergroups[it] }
+        val basicGroup = DemoIds.basicGroupId(chatId)?.let { groups.basicGroups[it] }
+        if (supergroup != null) {
+            supergroup.status = TdApi.ChatMemberStatusLeft()
+            updates += TdApi.UpdateSupergroup(supergroup)
+            updates += groups.setMembers(chatId, groups.membersOf(chatId).filterNot { it.isMe() })
+        }
+        if (basicGroup != null) {
+            basicGroup.status = TdApi.ChatMemberStatusLeft()
+            updates += TdApi.UpdateBasicGroup(basicGroup)
+        }
+        updates += chat.positions.map { TdApi.UpdateChatPosition(chatId, TdApi.ChatPosition(it.list, 0, false, null)) }
+        chat.positions = emptyArray()
+        chat.chatLists = emptyArray()
+        return updates
+    }
+
+    private fun TdApi.ChatMember.isMe() = (memberId as? TdApi.MessageSenderUser)?.userId == DemoData.ME
+
     /** Deletes a chat's history for the user, the chat itself staying in its lists. */
     fun clearHistory(chatId: Long): List<TdApi.Update> {
         val history = histories[chatId] ?: return emptyList()
@@ -238,8 +298,14 @@ internal class DemoWorld(
         histories.getOrPut(chatId) { mutableListOf() } += message
         chat.lastMessage = message
         chat.lastReadOutboxMessageId = message.id
+        // A chat in no list yet (a private chat opened from a profile) joins the main list with its first message.
+        if (chat.positions.isEmpty()) chat.chatLists = arrayOf(TdApi.ChatListMain())
         chat.positions =
-            chat.positions.map { TdApi.ChatPosition(it.list, orderOf(message.date), it.isPinned, null) }.toTypedArray()
+            chat.chatLists
+                .map { list ->
+                    val pinned = chat.positions.firstOrNull { it.list.sameAs(list) }?.isPinned == true
+                    TdApi.ChatPosition(list, orderOf(message.date), pinned, null)
+                }.toTypedArray()
         val updates =
             mutableListOf<TdApi.Update>(
                 TdApi.UpdateNewMessage(message),
@@ -314,14 +380,15 @@ internal class DemoWorld(
 
     /** A new post goes into the discussion group too, as Telegram forwards it, so it can take comments. */
     private fun forwardToDiscussion(post: TdApi.Message): List<TdApi.Update> {
-        val discussion = chats[DemoData.DISCUSSION_CHAT] ?: return emptyList()
+        val linked = DemoIds.supergroupId(post.chatId)?.let { groups.supergroupFullInfo[it]?.linkedChatId } ?: 0
+        val discussion = chats[linked] ?: return emptyList()
         val empty = TdApi.MessageReplyInfo(0, emptyArray(), 0, 0, 0)
         post.interactionInfo = TdApi.MessageInteractionInfo(post.interactionInfo?.viewCount ?: 1, 0, empty, null)
         val copy =
             TdApi.Message().apply {
                 id = nextMessageId()
                 chatId = discussion.id
-                senderId = TdApi.MessageSenderChat(DemoData.CHANNEL_CHAT)
+                senderId = TdApi.MessageSenderChat(post.chatId)
                 date = post.date
                 content = post.content
                 canBeSaved = true

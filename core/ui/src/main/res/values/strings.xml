@@ -60,7 +60,7 @@
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
     <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
-    <string name="error_not_available_in_demo">Not available in the demo</string>
+    <string name="error_not_available_in_demo">This needs a Telegram account. The demo can\'t do it.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

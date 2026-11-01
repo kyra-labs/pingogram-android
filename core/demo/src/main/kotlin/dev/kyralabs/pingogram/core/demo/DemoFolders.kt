@@ -67,6 +67,29 @@ internal class DemoFolders : DemoArea {
                 deleteLink(function.chatFolderId, function.inviteLink)
             }
 
+            // The groups and channels a folder holds, which its link may share.
+            is TdApi.GetChatsForChatFolderInviteLink -> {
+                val folder = folders[function.chatFolderId]
+                if (folder == null) {
+                    notFound()
+                } else {
+                    val shareable =
+                        world.allChats().filter { chat ->
+                            chat.type !is TdApi.ChatTypePrivate && chat.type !is TdApi.ChatTypeSecret &&
+                                holds(world, folder, chat)
+                        }
+                    ok(TdApi.Chats(shareable.size, shareable.map { it.id }.toLongArray()))
+                }
+            }
+
+            is TdApi.CheckChatFolderInviteLink -> {
+                checkInvite(world, function.inviteLink)
+            }
+
+            is TdApi.AddChatFolderByInviteLink -> {
+                addByInvite(world, function.inviteLink, function.chatIds.toList())
+            }
+
             else -> {
                 null
             }
@@ -150,6 +173,79 @@ internal class DemoFolders : DemoArea {
         links[id]?.removeAll { it.inviteLink == inviteLink }
         return okChanged(listOf(foldersUpdate()))
     }
+
+    /**
+     * A shared folder's link: Ben's sample "Hobbies" (the forum, which the user is in, and the photo walks group and
+     * the news channel, which they are not), or one of the user's own folders' links.
+     */
+    private fun checkInvite(
+        world: DemoWorld,
+        link: String,
+    ): DemoAnswer {
+        val slug = slugOf(link)
+        if (slug == slugOf(DemoData.HOBBIES_LINK)) {
+            val chats = hobbyChats(world)
+            val (added, missing) = chats.partition { world.groups.statusOf(it) !is TdApi.ChatMemberStatusLeft }
+            val existing = folders.entries.firstOrNull { it.value.name.text.text == hobbiesName(world) }
+            val info =
+                existing?.let { info(it.key, it.value) }
+                    ?: TdApi.ChatFolderInfo(
+                        0,
+                        hobbiesFolder(world).name,
+                        TdApi.ChatFolderIcon("Favorite"),
+                        -1,
+                        true,
+                        false,
+                    )
+            return ok(
+                TdApi.ChatFolderInviteLinkInfo(
+                    info,
+                    missing.toLongArray(),
+                    added.toLongArray(),
+                ),
+            )
+        }
+        val own = links.entries.firstOrNull { (_, list) -> list.any { slugOf(it.inviteLink) == slug } }
+        val folder = own?.let { folders[it.key] } ?: return badRequest("INVITE_SLUG_INVALID")
+        return ok(TdApi.ChatFolderInviteLinkInfo(info(own.key, folder), longArrayOf(), folder.includedChatIds))
+    }
+
+    private fun addByInvite(
+        world: DemoWorld,
+        link: String,
+        chatIds: List<Long>,
+    ): DemoAnswer {
+        if (slugOf(link) != slugOf(DemoData.HOBBIES_LINK)) return badRequest("INVITE_SLUG_INVALID")
+        val chats = hobbyChats(world)
+        val updates = mutableListOf<TdApi.Update>()
+        chatIds.filter { it in chats }.forEach { updates += world.join(it) }
+        val existing = folders.entries.firstOrNull { it.value.name.text.text == hobbiesName(world) }
+        val id = existing?.key ?: nextId++
+        val folder =
+            (existing?.value ?: hobbiesFolder(world)).apply {
+                includedChatIds =
+                    chats.filter { world.groups.statusOf(it) !is TdApi.ChatMemberStatusLeft }.toLongArray()
+            }
+        folders[id] = folder
+        updates += world.placeInFolder(id) { chat -> holds(world, folder, chat) }
+        updates += foldersUpdate()
+        return okChanged(updates)
+    }
+
+    private fun hobbyChats(world: DemoWorld) =
+        listOf(DemoData.FORUM_CHAT, DemoData.PHOTO_WALKS_CHAT, DemoData.NEWS_CHAT).filter { world.chat(it) != null }
+
+    private fun hobbiesName(world: DemoWorld) = world.data.text(R.string.demo_folder_hobbies)
+
+    private fun hobbiesFolder(world: DemoWorld) =
+        emptyFolder(hobbiesName(world), "Favorite").apply { isShareable = true }
+
+    private fun slugOf(link: String) =
+        link
+            .trim()
+            .substringAfter("addlist/")
+            .substringBefore('?')
+            .trimEnd('/')
 
     /** Two of Telegram's usual suggestions: unread chats, and people. */
     private fun recommended(world: DemoWorld): TdApi.RecommendedChatFolders {
