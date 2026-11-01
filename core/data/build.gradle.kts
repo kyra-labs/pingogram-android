@@ -7,6 +7,8 @@ dependencies {
     api(projects.core.domain)
     implementation(projects.core.datastore)
     implementation(projects.core.tdlib)
+    // The demo's client and its storage (Accounts, docs/adr/0034-demo-mode-for-store-review.md).
+    implementation(projects.core.demo)
     // LocationManagerCompat and ContextCompat (AndroidDeviceLocationRepository, AndroidSharedStorageRepository,
     // AndroidNetworkRepository's Data Saver receiver).
     implementation(libs.androidx.core)

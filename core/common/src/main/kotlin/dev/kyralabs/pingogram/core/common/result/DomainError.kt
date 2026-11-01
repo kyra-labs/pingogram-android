@@ -215,4 +215,9 @@ sealed interface DomainError {
 
     /** The poll was closed meanwhile: no one may vote in it or change a vote (`MESSAGE_POLL_CLOSED`). */
     data object PollClosed : DomainError
+
+    // The demo (REQUIREMENTS.md FR-A9, docs/adr/0034-demo-mode-for-store-review.md).
+
+    /** The demo's sample data cannot do this: calls, joining links, sign-in changes, uploads and the like. */
+    data object NotAvailableInDemo : DomainError
 }

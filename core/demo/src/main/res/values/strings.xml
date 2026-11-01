@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The demo's sample chats (docs/adr/0034-demo-mode-for-store-review.md): made-up people, a group and a channel that
+     app store reviewers see without a Telegram account. Everything is fictional and plainly so. In message texts,
+     **two asterisks** mark bold, __two underscores__ italic and `backticks` code; keep the marks around the words
+     they format. Links stay as they are. -->
+<resources>
+    <!-- The person using the demo: their name in Settings and on their own messages. -->
+    <string name="demo_me_first_name">Sam</string>
+    <string name="demo_me_last_name">Example</string>
+
+    <!-- Fictional people: first and last names. -->
+    <string name="demo_ada_first_name">Ada</string>
+    <string name="demo_ada_last_name">Example</string>
+    <string name="demo_ben_first_name">Ben</string>
+    <string name="demo_ben_last_name">Sample</string>
+    <string name="demo_chloe_first_name">Chloe</string>
+    <string name="demo_chloe_last_name">Placeholder</string>
+    <string name="demo_dev_first_name">Dev</string>
+    <string name="demo_dev_last_name">Demo</string>
+    <string name="demo_ada_bio">Made up for the demo. Likes trains and tea.</string>
+
+    <!-- The sample group and channel, and the folder they are in. -->
+    <string name="demo_group_title">Launch team</string>
+    <string name="demo_channel_title">Weekly Sample</string>
+    <string name="demo_channel_description">Made-up news for the demo, once a week.</string>
+    <string name="demo_folder_work">Work</string>
+
+    <!-- Messages with Ada. -->
+    <string name="demo_ada_hello">Hi! Welcome to the demo 👋</string>
+    <string name="demo_ada_explain">Everything here is sample data stored on this phone. Reply if you like: your messages stay on this device.</string>
+    <string name="demo_me_reply_ada">Looks good!</string>
+    <string name="demo_ada_photo_caption">The view from the office</string>
+    <string name="demo_ada_formatting">Messages can be **bold**, __italic__ or `code`, with links like https://example.org</string>
+
+    <!-- Messages with Ben. -->
+    <string name="demo_ben_slides">Can you look at the slides before Friday?</string>
+    <string name="demo_me_reply_ben">Sure, I\'ll send my notes tonight.</string>
+    <string name="demo_chloe_agenda">Draft agenda: goals, timeline, questions.</string>
+
+    <!-- The group. -->
+    <string name="demo_group_morning">Morning, team!</string>
+    <string name="demo_group_poll_question">When should we meet?</string>
+    <string name="demo_group_poll_monday">Monday</string>
+    <string name="demo_group_poll_wednesday">Wednesday</string>
+    <string name="demo_group_poll_friday">Friday</string>
+    <string name="demo_group_checklist">Launch checklist: design done, copy done, testing in progress.</string>
+
+    <!-- The channel's posts. -->
+    <string name="demo_channel_welcome">Welcome to **Weekly Sample**, a channel of made-up news.</string>
+    <string name="demo_channel_colors">This week\'s colours.</string>
+    <string name="demo_channel_tip">Tip: press and hold a message to react to it or reply.</string>
+
+    <!-- Saved Messages, the person's own notes. -->
+    <string name="demo_saved_ideas">Ideas for the weekend: bike ride, bake bread.</string>
+    <string name="demo_saved_note">Notes saved here stay on this phone.</string>
+
+    <!-- The archived chat. -->
+    <string name="demo_dev_old">Thanks for last month\'s help!</string>
+</resources>

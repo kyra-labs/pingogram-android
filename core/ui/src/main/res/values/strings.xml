@@ -59,6 +59,8 @@
     <!-- Who saw a message ("Seen by"): Telegram keeps it for a while only, and not in large groups. -->
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
+    <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
+    <string name="error_not_available_in_demo">Not available in the demo</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

@@ -20,6 +20,8 @@
 │  :core:domain    — plain Kotlin models + use cases, no Android │
 │  :core:tdlib     — TdlibClient (coroutine wrapper), TDLib AAR, │
 │                    lifecycle, auth state machine               │
+│  :core:demo      — the demo's TdlibClient and sample chats     │
+│                    (store review; no TDLib, no network)        │
 │  :core:common    — Result/Error types, dispatchers, utils      │
 │  :core:datastore — app settings (Preferences DataStore)        │
 │  :core:notifications — channels, MessagingStyle builder        │
@@ -83,9 +85,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and adds, switches and leaves an account's sign-in, offered on screen as the background parts follow every account
   (`isAvailable`). The passcode lock is the app's (`DefaultAppLockRepository`, `@Singleton`):
   it follows the accounts' login steps together, and forgetting the passcode logs every account out.
-- **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers, answered
-  by `:core:demo`'s `DemoTdlibClient` in an account graph of its own, outside the registry of accounts. It replaces the
-  test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
+- **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers. It replaces
+  the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
+  - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
+    `DemoData` (made-up people, a group, a channel, Saved Messages, an archived chat and a "Work" folder, texts in
+    translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
+  - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
+    `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
+  - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
+  - **What the user does** (texts sent, reads, reactions, votes, pins, archiving, muting) goes into a journal
+    (`DemoJournal`, `filesDir/demo/journal.txt`), replayed at its next start, so a process death keeps the demo.
+  - **Pictures and the voice message** are made on the phone at their first download (`DemoFile`), never stock or
+    Telegram's.
+  - **The graph**: `Accounts` keeps the demo's graph beside the accounts, under `AccountSlot.Demo`, made with the demo's
+    client (`DemoClients`, through `AccountFactory.demoClient`), never one of `TdlibClientFactory`'s.
+  - **On and off**: while the demo is on (`noBackupFilesDir/demo`, `Accounts.isDemo`), `Accounts.active` is its graph,
+    so `ActiveAccountModule` hands its repositories to the screens. `registry`, `all()` and `AccountGraphs` never list
+    it, so notifications, push, widgets, shortcuts, Direct Share, the storage clean-up, the call managers and the
+    accounts limit never see it.
+  - **Entering and leaving**: `core:domain`'s `DemoRepository` (`DefaultDemoRepository`) enters and leaves. Leaving
+    cancels the graph's scope and deletes the demo's folder and marker.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
   (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model

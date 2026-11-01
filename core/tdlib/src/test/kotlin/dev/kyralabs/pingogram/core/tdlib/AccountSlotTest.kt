@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.tdlib
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -52,7 +53,13 @@ class AccountSlotTest {
         AccountSlot(AccountSlot.MAX_ACCOUNTS - 1)
 
         assertThrows<IllegalArgumentException> { AccountSlot(AccountSlot.MAX_ACCOUNTS) }
-        assertThrows<IllegalArgumentException> { AccountSlot(-1) }
+        assertThrows<IllegalArgumentException> { AccountSlot(-2) }
+    }
+
+    @Test
+    fun `the demo has a slot of its own, none of the accounts'`() {
+        assertTrue(AccountSlot.Demo.isDemo)
+        assertTrue((0 until AccountSlot.MAX_ACCOUNTS).none { AccountSlot(it).isDemo })
     }
 
     @Test

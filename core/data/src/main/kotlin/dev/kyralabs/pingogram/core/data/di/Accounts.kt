@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.account.AccountRegistry
 import dev.kyralabs.pingogram.core.data.account.AccountRegistryFile
+import dev.kyralabs.pingogram.core.demo.DemoClients
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
 import dev.kyralabs.pingogram.core.tdlib.AccountStorage
@@ -46,6 +47,10 @@ import javax.inject.Singleton
  * ([start]). Something that asks for [active] before then reads it itself, on its own thread: a millisecond's read,
  * where the activity comes 30–40 ms after the application's start, so in practice only tests do (Hilt's test
  * application never calls [start]).
+ *
+ * The demo (`docs/adr/0034-demo-mode-for-store-review.md`) is a graph of its own beside the accounts, under
+ * [AccountSlot.Demo]: while it is on ([isDemo]), [active] is its graph, so the screens show its sample chats, and the
+ * registry, [all] and the background parts that follow them never see it. Its client is the demo's, never TDLib.
  *
  * One function per change of the registry and the parts each needs, hence `TooManyFunctions`.
  */
@@ -100,10 +105,19 @@ class Accounts internal constructor(
     private val mutableAdding = MutableStateFlow<Adding?>(null)
     val adding: StateFlow<Adding?> = mutableAdding.asStateFlow()
 
-    /** The active account's graph. */
+    // Changed only under this object's lock; null while the demo is off or its graph not made yet.
+    private var demo: Account? = null
+
+    private val mutableIsDemo = MutableStateFlow(false)
+
+    /** Whether the demo shows instead of the accounts; read with the registry, so false until it is read. */
+    val isDemo: StateFlow<Boolean> = mutableIsDemo.asStateFlow()
+
+    /** The graph the screens show: the demo's while it is on, otherwise the active account's. */
     val active: AccountComponent
         get() {
             if (!loaded.isCompleted) readRegistry()
+            if (mutableIsDemo.value) return demoAccount().component
             return account(AccountSlot(mutableRegistry.value.active)).component
         }
 
@@ -123,6 +137,7 @@ class Accounts internal constructor(
             registryRead = true
             val registry = registryFile.read()
             mutableRegistry.value = registry
+            mutableIsDemo.value = factory.isDemoOn()
             registry.slots.forEach { account(AccountSlot(it)) }
         }
         loaded.complete(Unit)
@@ -202,6 +217,41 @@ class Accounts internal constructor(
         account.scope.cancel()
         withContext(io) { factory.deleteStorage(slot) }
     }
+
+    /**
+     * Turns the demo on: from the next screens on, [active] is the demo's graph, and it stays on at the next start.
+     * The caller opens the app again (`AccountRestart`), as a switch of accounts does.
+     */
+    suspend fun enterDemo() {
+        awaitLoaded()
+        withContext(io) { factory.turnDemoOn() }
+        mutableIsDemo.value = true
+    }
+
+    /** Turns the demo off and deletes everything it made; the accounts show again from the next screens on. */
+    suspend fun leaveDemo() {
+        awaitLoaded()
+        val account =
+            synchronized(this) {
+                mutableIsDemo.value = false
+                demo.also { demo = null }
+            }
+        account?.scope?.cancel()
+        withContext(io) { factory.deleteDemo() }
+    }
+
+    /** The demo's graph, made the first time it is asked for: its caches subscribe before its client starts. */
+    private fun demoAccount(): Account =
+        synchronized(this) {
+            demo ?: run {
+                val scope = CoroutineScope(appScope.coroutineContext + SupervisorJob(appScope.coroutineContext.job))
+                val client = factory.demoClient(scope)
+                val component = factory.component(AccountSlot.Demo, client, scope)
+                component.updateCaches()
+                client.start()
+                Account(AccountSlot.Demo, client, component, scope).also { demo = it }
+            }
+        }
 
     /** Whether [slot] is still on the device, which decides whether its client starts again after closing. */
     private fun kept(slot: AccountSlot) = slot.index in mutableRegistry.value.slots
@@ -315,15 +365,31 @@ interface AccountFactory {
 
     /** Blocking: off the main thread. */
     fun deleteStorage(slot: AccountSlot)
+
+    /** The demo's client (`docs/adr/0034-demo-mode-for-store-review.md`), never TDLib's, running in [scope]. */
+    fun demoClient(scope: CoroutineScope): TdlibClient
+
+    /** Whether the demo is on. Blocking: off the main thread. */
+    fun isDemoOn(): Boolean
+
+    /** Blocking: off the main thread. */
+    fun turnDemoOn()
+
+    /** Turns the demo off and deletes everything it made. Blocking: off the main thread. */
+    fun deleteDemo()
 }
 
-/** The accounts' clients from [TdlibClientFactory], their graphs from Dagger, their storage from [AccountStorage]. */
+/**
+ * The accounts' clients from [TdlibClientFactory], their graphs from Dagger, their storage from [AccountStorage]; the
+ * demo's client and storage from [DemoClients].
+ */
 class DefaultAccountFactory
     @Inject
     constructor(
         private val clients: TdlibClientFactory,
         private val storage: AccountStorage,
         private val dependencies: Provider<AccountDependencies>,
+        private val demo: DemoClients,
     ) : AccountFactory {
         override fun client(
             slot: AccountSlot,
@@ -337,4 +403,12 @@ class DefaultAccountFactory
         ): AccountComponent = DaggerAccountComponent.factory().create(slot, client, scope, dependencies.get())
 
         override fun deleteStorage(slot: AccountSlot) = storage.delete(slot)
+
+        override fun demoClient(scope: CoroutineScope): TdlibClient = demo.client(scope)
+
+        override fun isDemoOn(): Boolean = demo.isOn()
+
+        override fun turnDemoOn() = demo.turnOn()
+
+        override fun deleteDemo() = demo.turnOffAndDelete()
     }
