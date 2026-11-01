@@ -19,6 +19,9 @@ internal class DemoWorld(
     /** The time of the change being answered (Unix seconds): now, or a journal entry's while it is replayed. */
     var now: Int = 0
 
+    /** The groups and channels beyond their chats: full info, members, links, requests, recent actions. */
+    val groups = DemoGroupState(data) { now }
+
     private val chats = data.chats.associateBy { it.id }.toMutableMap()
     private val histories = data.messages.mapValues { it.value.toMutableList() }.toMutableMap()
     private val scheduled = mutableMapOf<Long, MutableList<TdApi.Message>>()
@@ -29,6 +32,12 @@ internal class DemoWorld(
     private var nextFileId = FIRST_SENT_FILE_ID
     private var nextAlbumId = 1L
     private var nextPollId = DemoData.POLL_ID + 1
+
+    init {
+        val requests = groups.requests[DemoData.CHANNEL_CHAT].orEmpty()
+        chats[DemoData.CHANNEL_CHAT]?.pendingJoinRequests =
+            TdApi.ChatJoinRequestsInfo(requests.size, requests.map { it.userId }.toLongArray())
+    }
 
     fun chat(id: Long): TdApi.Chat? = chats[id]
 
@@ -72,6 +81,63 @@ internal class DemoWorld(
 
     fun nextMessageId(): Long = (++nextMessageId) shl DemoData.MESSAGE_ID_SHIFT
 
+    /** A new chat, at the top of the main list, with its first messages (a service message, as Telegram adds one). */
+    fun addChat(
+        chat: TdApi.Chat,
+        firstMessages: List<TdApi.MessageContent> = emptyList(),
+    ): List<TdApi.Update> {
+        chat.positions = arrayOf(TdApi.ChatPosition(TdApi.ChatListMain(), orderOf(now), false, null))
+        chat.chatLists = arrayOf(TdApi.ChatListMain())
+        chats[chat.id] = chat
+        histories[chat.id] = mutableListOf()
+        val updates = mutableListOf<TdApi.Update>(TdApi.UpdateNewChat(chat))
+        firstMessages.forEach { content -> addOwn(chat.id, content)?.let { updates += it.second } }
+        return updates
+    }
+
+    /** Takes a chat out of every list, as deleting or leaving it does; its messages go with it. */
+    fun removeChat(chatId: Long): List<TdApi.Update> {
+        val chat = chats[chatId] ?: return emptyList()
+        val updates =
+            chat.positions.map {
+                TdApi.UpdateChatPosition(
+                    chatId,
+                    TdApi.ChatPosition(it.list, 0, false, null),
+                )
+            }
+        chat.positions = emptyArray()
+        chat.chatLists = emptyArray()
+        histories[chatId]?.clear()
+        chat.lastMessage = null
+        return updates + TdApi.UpdateChatLastMessage(chatId, null, emptyArray())
+    }
+
+    /** Deletes a chat's history for the user, the chat itself staying in its lists. */
+    fun clearHistory(chatId: Long): List<TdApi.Update> {
+        val history = histories[chatId] ?: return emptyList()
+        val ids = history.map { it.id }
+        history.clear()
+        val chat = chats.getValue(chatId)
+        chat.lastMessage = null
+        chat.unreadCount = 0
+        return listOf(
+            TdApi.UpdateDeleteMessages(chatId, ids.toLongArray(), true, false),
+            TdApi.UpdateChatLastMessage(chatId, null, chat.positions),
+            TdApi.UpdateChatReadInbox(chatId, chat.lastReadInboxMessageId, 0),
+        )
+    }
+
+    /** A copy of a chat's history moved to a new chat, as upgrading a group to a supergroup keeps it. */
+    fun moveHistory(
+        fromChatId: Long,
+        toChatId: Long,
+    ) {
+        val moved = histories[fromChatId].orEmpty().map { message -> message.also { it.chatId = toChatId } }
+        histories[toChatId] = moved.toMutableList()
+        histories[fromChatId] = mutableListOf()
+        chats[toChatId]?.lastMessage = moved.lastOrNull()
+    }
+
     fun nextAlbumId(): Long = nextAlbumId++
 
     fun nextPollId(): Long = nextPollId++
@@ -107,7 +173,11 @@ internal class DemoWorld(
             TdApi.Message().apply {
                 id = nextMessageId()
                 this.chatId = chatId
-                senderId = TdApi.MessageSenderUser(DemoData.ME)
+                // In a channel the user posts as the channel, as its owner does.
+                val channel = (chat.type as? TdApi.ChatTypeSupergroup)?.isChannel == true
+                senderId = if (channel) TdApi.MessageSenderChat(chatId) else TdApi.MessageSenderUser(DemoData.ME)
+                isChannelPost = channel
+                if (channel) interactionInfo = TdApi.MessageInteractionInfo(1, 0, null, null)
                 date = now
                 this.content = content
                 isOutgoing = true
@@ -299,8 +369,11 @@ internal class DemoWorld(
     ): List<TdApi.Update> {
         val history = histories[chatId].orEmpty()
         val queued = scheduled[chatId].orEmpty()
+        val ownsChat = groups.statusOf(chatId) is TdApi.ChatMemberStatusCreator
         val ids =
-            messageIds.filter { id -> history.any { it.id == id && !it.isChannelPost } || queued.any { it.id == id } }
+            messageIds.filter { id ->
+                history.any { it.id == id && (!it.isChannelPost || ownsChat) } || queued.any { it.id == id }
+            }
         if (ids.isEmpty()) return emptyList()
         histories[chatId]?.removeAll { it.id in ids }
         scheduled[chatId]?.removeAll { it.id in ids }

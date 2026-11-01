@@ -96,7 +96,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - **The areas**: `DemoTdlibClient` asks its `DemoArea`s in turn (`DemoMessages`: history, sending every kind of
     content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoSearch`: chats, messages and
     shared media, recently found chats, text entities; `DemoDetails`: who saw, reacted and voted, translation;
-    `DemoStickers`: the sample sticker sets, drawn on the phone; `DemoChats`: chats, lists, people), each answering on
+    `DemoStickers`: the sample sticker sets, drawn on the phone; `DemoGroups` and `DemoGroupAdmin`: the group and the
+    channel the user owns, with members, settings, invite links, join requests, recent actions, statistics and boosts
+    (`DemoGroupState`), new groups and channels, upgrading, leaving and deleting; `DemoChats`: chats, lists, people), each answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
   - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took

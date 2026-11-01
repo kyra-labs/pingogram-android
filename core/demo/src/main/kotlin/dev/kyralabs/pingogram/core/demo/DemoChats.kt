@@ -84,22 +84,6 @@ internal class DemoChats : DemoArea {
                 if (function.chatFolderId == DemoData.WORK_FOLDER) ok(world.data.folderSettings) else notFound()
             }
 
-            is TdApi.GetBasicGroup -> {
-                ok(world.data.group)
-            }
-
-            is TdApi.GetSupergroup -> {
-                ok(world.data.channel)
-            }
-
-            is TdApi.GetBasicGroupFullInfo -> {
-                ok(world.data.groupFullInfo)
-            }
-
-            is TdApi.GetSupergroupFullInfo -> {
-                ok(world.data.channelFullInfo)
-            }
-
             is TdApi.GetScopeNotificationSettings -> {
                 ok(DemoNotifications.scopeSettings())
             }

@@ -57,7 +57,7 @@ class DemoTdlibClient internal constructor(
     override val updates: SharedFlow<TdApi.Update> = mutableUpdates.asSharedFlow()
 
     private val areas: List<DemoArea> =
-        listOf(DemoMessages(), DemoSearch(), DemoDetails(), DemoStickers(), DemoChats())
+        listOf(DemoMessages(), DemoSearch(), DemoDetails(), DemoStickers(), DemoGroups(), DemoGroupAdmin(), DemoChats())
 
     private val started = AtomicBoolean(false)
     private val ready = CompletableDeferred<DemoWorld>()
