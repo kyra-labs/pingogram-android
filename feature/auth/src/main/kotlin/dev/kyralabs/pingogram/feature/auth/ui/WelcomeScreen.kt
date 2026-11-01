@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
@@ -171,13 +172,14 @@ private fun WelcomeHero(
                     awaitEachGesture {
                         awaitFirstDown(requireUnconsumed = false)
                         // Held without lifting or moving away for the whole time: a press, not a tap or a scroll.
-                        val released = withTimeoutOrNull(DEMO_HOLD_MILLIS) { waitForUpOrCancellation() }
-                        if (released == null && currentEvent.changes.all { it.pressed }) {
+                        // Only the timeout gives null: a lift, or a scroll that takes the pointer, ends the gesture.
+                        val ended = withTimeoutOrNull(DEMO_HOLD_MILLIS) { waitForUpOrCancellation() != null }
+                        if (ended == null) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             currentOnHold()
                         }
                     }
-                }.clearAndSetSemantics {},
+                }.clearAndSetSemantics { testTag = WELCOME_LOGO_TAG },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -190,6 +192,9 @@ private fun WelcomeHero(
 }
 
 private const val HERO_WIDTH_FRACTION = 0.5f
+
+/** The logo's test tag: only a tag, so screen readers still get nothing from the decorative artwork. */
+internal const val WELCOME_LOGO_TAG = "welcome_logo"
 
 /** How long the logo is held to open the demo's question: "about a second", as the store instructions say. */
 private const val DEMO_HOLD_MILLIS = 1_000L
