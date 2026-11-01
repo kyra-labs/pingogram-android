@@ -139,9 +139,19 @@ internal class DemoGroups : DemoArea {
                 deleteHistory(world, function)
             }
 
-            // The demo has no 2-step verification password, which Telegram asks for before a transfer.
+            // Telegram asks for a 2-step verification password before a transfer: the one set in the demo.
             is TdApi.CanTransferOwnership -> {
-                ok(TdApi.CanTransferOwnershipResultPasswordNeeded())
+                ok(
+                    if (world.password == null) {
+                        TdApi.CanTransferOwnershipResultPasswordNeeded()
+                    } else {
+                        TdApi.CanTransferOwnershipResultOk()
+                    },
+                )
+            }
+
+            is TdApi.TransferChatOwnership -> {
+                transfer(world, function)
             }
 
             else -> {
@@ -579,6 +589,37 @@ internal class DemoGroups : DemoArea {
         updates += world.removeChat(chatId)
         updates += TdApi.UpdateChatLastMessage(newChatId, chat.lastMessage, chat.positions)
         return changed(chat, updates)
+    }
+
+    /** The user hands the chat to a member, staying an administrator, as Telegram does. */
+    private fun transfer(
+        world: DemoWorld,
+        function: TdApi.TransferChatOwnership,
+    ): DemoAnswer {
+        if (world.password == null || function.password != world.password) return badRequest("PASSWORD_HASH_INVALID")
+        val groups = world.groups
+        val id = DemoIds.supergroupId(function.chatId) ?: return badRequest("CHAT_INVALID")
+        val group = groups.supergroups[id] ?: return notFound()
+        val list = groups.membersOf(function.chatId).toMutableList()
+        val index = list.indexOfFirst { userOf(it) == function.userId }
+        if (index < 0) return badRequest("USER_NOT_PARTICIPANT")
+        val admin = TdApi.ChatMemberStatusAdministrator(false, world.data.adminRights())
+        list[index] =
+            TdApi.ChatMember(
+                list[index].memberId,
+                "",
+                DemoData.ME,
+                list[index].joinedChatDate,
+                TdApi.ChatMemberStatusCreator(false, true),
+            )
+        val mine = list.indexOfFirst { userOf(it) == DemoData.ME }
+        if (mine >= 0) list[mine] = TdApi.ChatMember(list[mine].memberId, "", 0, list[mine].joinedChatDate, admin)
+        group.status = admin
+        groups.record(
+            function.chatId,
+            TdApi.ChatEventMemberPromoted(function.userId, TdApi.ChatMemberStatusMember(0), list[index].status),
+        )
+        return okChanged(groups.setMembers(function.chatId, list) + TdApi.UpdateSupergroup(group))
     }
 
     private fun deleteHistory(
