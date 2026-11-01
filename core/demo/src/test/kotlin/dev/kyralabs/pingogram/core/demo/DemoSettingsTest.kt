@@ -119,7 +119,7 @@ class DemoSettingsTest {
             val inFolder = client.ask(TdApi.GetChats(TdApi.ChatListFolder(created.id), 20)).chatIds.toList()
             client.ask(TdApi.DeleteChatFolder(created.id, longArrayOf()))
 
-            assertEquals(listOf(DemoData.GROUP_CHAT), inFolder)
+            assertEquals(setOf(DemoData.GROUP_CHAT, DemoData.FORUM_CHAT, DemoData.DISCUSSION_CHAT), inFolder.toSet())
             assertTrue(client.ask(TdApi.GetChats(TdApi.ChatListFolder(created.id), 20)).chatIds.isEmpty())
         }
 

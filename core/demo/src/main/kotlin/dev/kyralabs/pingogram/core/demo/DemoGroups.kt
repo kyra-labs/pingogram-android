@@ -468,7 +468,7 @@ internal class DemoGroups : DemoArea {
                 groups.link(primary = true),
                 emptyArray(),
             )
-        val chat = newChat(chatId, TdApi.ChatTypeBasicGroup(id), function.title.trim(), canSend = true)
+        val chat = demoChat(chatId, TdApi.ChatTypeBasicGroup(id), function.title.trim(), canSend = true)
         chat.messageAutoDeleteTime = function.messageAutoDeleteTime
         val updates =
             listOf(
@@ -524,7 +524,7 @@ internal class DemoGroups : DemoArea {
                 ),
             )
         val chat =
-            newChat(
+            demoChat(
                 chatId,
                 TdApi.ChatTypeSupergroup(id, function.isChannel),
                 function.title.trim(),
@@ -577,7 +577,7 @@ internal class DemoGroups : DemoArea {
             isActive = false
             upgradedToSupergroupId = id
         }
-        val chat = newChat(newChatId, TdApi.ChatTypeSupergroup(id, false), old.title, canSend = true)
+        val chat = demoChat(newChatId, TdApi.ChatTypeSupergroup(id, false), old.title, canSend = true)
         chat.permissions = old.permissions
         chat.photo = old.photo
         val updates = mutableListOf<TdApi.Update>()
@@ -632,38 +632,6 @@ internal class DemoGroups : DemoArea {
             okChanged(world.clearHistory(function.chatId))
         }
 
-    private fun newChat(
-        id: Long,
-        type: TdApi.ChatType,
-        title: String,
-        canSend: Boolean,
-    ) = TdApi.Chat().apply {
-        this.id = id
-        this.type = type
-        this.title = title
-        permissions =
-            TdApi.ChatPermissions().apply {
-                canSendBasicMessages = canSend
-                canSendAudios = canSend
-                canSendDocuments = canSend
-                canSendPhotos = canSend
-                canSendVideos = canSend
-                canSendVideoNotes = canSend
-                canSendVoiceNotes = canSend
-                canSendPolls = canSend
-                canSendOtherMessages = canSend
-                canAddLinkPreviews = canSend
-                canReactToMessages = true
-                canInviteUsers = true
-            }
-        notificationSettings = DemoNotifications.chatSettings(muteFor = 0)
-        canBeDeletedOnlyForSelf = true
-        canBeDeletedForAllUsers = true
-        accentColorId = (id % ACCENT_COLORS).toInt().let { if (it < 0) -it else it }
-        profileAccentColorId = -1
-        clientData = ""
-    }
-
     private fun present(list: List<TdApi.ChatMember>) = list.filter { it.status.isPresent() }
 
     private fun members(
@@ -691,6 +659,5 @@ internal class DemoGroups : DemoArea {
 
     private companion object {
         val USERNAME = Regex("[A-Za-z][A-Za-z0-9_]{4,31}")
-        const val ACCENT_COLORS = 7
     }
 }

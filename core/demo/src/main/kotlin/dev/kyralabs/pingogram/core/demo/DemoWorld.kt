@@ -58,8 +58,9 @@ internal class DemoWorld(
         fromMessageId: Long,
         offset: Int,
         limit: Int,
+        filter: (TdApi.Message) -> Boolean = { true },
     ): List<TdApi.Message> {
-        val newestFirst = histories[chatId].orEmpty().asReversed()
+        val newestFirst = histories[chatId].orEmpty().filter(filter).asReversed()
         val from =
             if (fromMessageId == 0L) {
                 0
@@ -199,6 +200,7 @@ internal class DemoWorld(
         forwardInfo: TdApi.MessageForwardInfo? = null,
         schedulingState: TdApi.MessageSchedulingState? = null,
         albumId: Long = 0,
+        topic: TdApi.MessageTopic? = null,
     ): Pair<TdApi.Message, List<TdApi.Update>>? {
         val chat = chats[chatId] ?: return null
         val message =
@@ -218,6 +220,7 @@ internal class DemoWorld(
                 this.forwardInfo = forwardInfo
                 this.schedulingState = schedulingState
                 mediaAlbumId = albumId
+                topicId = if (chatId == DemoData.ME) savedTopicOf(forwardInfo) else topic
                 unreadReactions = emptyArray()
                 senderTag = ""
                 summaryLanguageCode = ""
@@ -237,13 +240,118 @@ internal class DemoWorld(
         chat.lastReadOutboxMessageId = message.id
         chat.positions =
             chat.positions.map { TdApi.ChatPosition(it.list, orderOf(message.date), it.isPinned, null) }.toTypedArray()
-        return message to
-            listOf(
+        val updates =
+            mutableListOf<TdApi.Update>(
                 TdApi.UpdateNewMessage(message),
                 TdApi.UpdateChatLastMessage(chat.id, message, chat.positions),
                 TdApi.UpdateChatReadOutbox(chat.id, message.id),
             )
+        (topic as? TdApi.MessageTopicThread)?.let { updates += replied(chatId, it.messageThreadId, message) }
+        if (chatId == DemoData.CHANNEL_CHAT) updates += forwardToDiscussion(message)
+        if (chatId == DemoData.ME) {
+            savedTopic((message.topicId as TdApi.MessageTopicSavedMessages).savedMessagesTopicId)
+                ?.let { updates += TdApi.UpdateSavedMessagesTopic(it) }
+        }
+        return message to updates
     }
+
+    /** One of Saved Messages' topics, with its newest message, as TDLib announces it. */
+    fun savedTopic(topicId: Long): TdApi.SavedMessagesTopic? {
+        val last =
+            histories[DemoData.ME].orEmpty().lastOrNull {
+                (it.topicId as? TdApi.MessageTopicSavedMessages)?.savedMessagesTopicId == topicId
+            } ?: return null
+        val type =
+            when (topicId) {
+                DemoData.ME -> TdApi.SavedMessagesTopicTypeMyNotes()
+                DemoData.AUTHOR_HIDDEN_TOPIC -> TdApi.SavedMessagesTopicTypeAuthorHidden()
+                else -> TdApi.SavedMessagesTopicTypeSavedFromChat(topicId)
+            }
+        return TdApi.SavedMessagesTopic(topicId, type, false, orderOf(last.date), last, null)
+    }
+
+    /** Saved Messages files a message under where it came from: the user's notes, a person, a chat, a hidden author. */
+    private fun savedTopicOf(forwardInfo: TdApi.MessageForwardInfo?): TdApi.MessageTopic =
+        TdApi.MessageTopicSavedMessages(
+            when (val origin = forwardInfo?.origin) {
+                null -> DemoData.ME
+                is TdApi.MessageOriginUser -> origin.senderUserId
+                is TdApi.MessageOriginChat -> origin.senderChatId
+                is TdApi.MessageOriginChannel -> origin.chatId
+                else -> DemoData.AUTHOR_HIDDEN_TOPIC
+            },
+        )
+
+    /** A comment counted on the post's copy in the discussion group and on the post, as their links show it. */
+    private fun replied(
+        chatId: Long,
+        threadId: Long,
+        reply: TdApi.Message,
+    ): List<TdApi.Update> {
+        val head = message(chatId, threadId) ?: return emptyList()
+        val origin = head.forwardInfo?.origin as? TdApi.MessageOriginChannel
+        val post = origin?.let { message(it.chatId, it.messageId) }
+        return listOfNotNull(head, post).map { counted ->
+            val old = counted.interactionInfo
+            val info = old?.replyInfo
+            val repliers = (listOf(reply.senderId) + info?.recentReplierIds.orEmpty()).distinctBy(::senderKey)
+            counted.interactionInfo =
+                TdApi.MessageInteractionInfo(
+                    old?.viewCount ?: 0,
+                    old?.forwardCount ?: 0,
+                    TdApi.MessageReplyInfo(
+                        (info?.replyCount ?: 0) + 1,
+                        repliers.take(RECENT_REPLIERS).toTypedArray(),
+                        reply.id,
+                        reply.id,
+                        reply.id,
+                    ),
+                    old?.reactions,
+                )
+            TdApi.UpdateMessageInteractionInfo(counted.chatId, counted.id, counted.interactionInfo)
+        }
+    }
+
+    /** A new post goes into the discussion group too, as Telegram forwards it, so it can take comments. */
+    private fun forwardToDiscussion(post: TdApi.Message): List<TdApi.Update> {
+        val discussion = chats[DemoData.DISCUSSION_CHAT] ?: return emptyList()
+        val empty = TdApi.MessageReplyInfo(0, emptyArray(), 0, 0, 0)
+        post.interactionInfo = TdApi.MessageInteractionInfo(post.interactionInfo?.viewCount ?: 1, 0, empty, null)
+        val copy =
+            TdApi.Message().apply {
+                id = nextMessageId()
+                chatId = discussion.id
+                senderId = TdApi.MessageSenderChat(DemoData.CHANNEL_CHAT)
+                date = post.date
+                content = post.content
+                canBeSaved = true
+                forwardInfo =
+                    TdApi.MessageForwardInfo(TdApi.MessageOriginChannel(post.chatId, post.id, ""), post.date, null, "")
+                interactionInfo = TdApi.MessageInteractionInfo(0, 0, empty, null)
+                unreadReactions = emptyArray()
+                senderTag = ""
+                summaryLanguageCode = ""
+                authorSignature = ""
+            }
+        histories.getOrPut(discussion.id) { mutableListOf() } += copy
+        discussion.lastMessage = copy
+        discussion.positions =
+            discussion.positions
+                .map { TdApi.ChatPosition(it.list, orderOf(copy.date), it.isPinned, null) }
+                .toTypedArray()
+        return listOf(
+            TdApi.UpdateMessageInteractionInfo(post.chatId, post.id, post.interactionInfo),
+            TdApi.UpdateNewMessage(copy),
+            TdApi.UpdateChatLastMessage(discussion.id, copy, discussion.positions),
+        )
+    }
+
+    private fun senderKey(sender: TdApi.MessageSender): Long =
+        when (sender) {
+            is TdApi.MessageSenderUser -> sender.userId
+            is TdApi.MessageSenderChat -> sender.chatId
+            else -> 0
+        }
 
     /** A scheduled message sent now: it leaves the scheduled ones and arrives in the chat as a new message. */
     fun sendScheduledNow(
@@ -499,6 +607,7 @@ internal class DemoWorld(
 
     private companion object {
         const val ORDER_SHIFT = 20
+        const val RECENT_REPLIERS = 3
 
         /** Sent files' ids start above [DemoFile]'s, as TDLib numbers a client's files. */
         const val FIRST_SENT_FILE_ID = 1_000

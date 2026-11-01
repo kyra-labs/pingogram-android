@@ -59,6 +59,7 @@ class DemoTdlibClient internal constructor(
     private val account = DemoAccount()
     private val settings = DemoSettings()
     private val folders = DemoFolders()
+    private val topics = DemoTopics()
 
     private val areas: List<DemoArea> =
         listOf(
@@ -71,6 +72,7 @@ class DemoTdlibClient internal constructor(
             account,
             settings,
             folders,
+            topics,
             DemoChats(),
         )
 
@@ -164,6 +166,7 @@ class DemoTdlibClient internal constructor(
             ).forEach { add(TdApi.UpdateScopeNotificationSettings(it, DemoNotifications.scopeSettings())) }
             add(TdApi.UpdateActiveEmojiReactions(DemoData.REACTIONS.toTypedArray()))
             add(TdApi.UpdateDefaultReactionType(TdApi.ReactionTypeEmoji(DemoData.REACTIONS.first())))
+            addAll(topics.announce())
             world.allChats().forEach { add(TdApi.UpdateNewChat(it)) }
             add(folders.announce(world))
             add(TdApi.UpdateChatActiveStories(account.activeStories(world)))
