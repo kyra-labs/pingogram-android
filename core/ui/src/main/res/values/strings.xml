@@ -54,6 +54,8 @@
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>
     <string name="call_video">Video call</string>
+    <!-- The demo's call button: the sample person calls the user a moment later, so a call can be answered. -->
+    <string name="call_receive_demo">Receive a demo call</string>
     <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
     <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
     <!-- Who saw a message ("Seen by"): Telegram keeps it for a while only, and not in large groups. -->

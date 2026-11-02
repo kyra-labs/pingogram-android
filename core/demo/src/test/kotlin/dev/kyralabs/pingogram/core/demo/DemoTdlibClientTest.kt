@@ -285,7 +285,6 @@ class DemoTdlibClientTest {
             val (client, _) = client()
 
             listOf(
-                TdApi.CreateCall().apply { userId = DemoData.ADA },
                 TdApi.DeleteAccount().apply { reason = "" },
                 TdApi.SetAuthenticationPhoneNumber().apply { phoneNumber = "+447911123456" },
                 TdApi.BoostChat().apply { chatId = DemoData.CHANNEL_CHAT },

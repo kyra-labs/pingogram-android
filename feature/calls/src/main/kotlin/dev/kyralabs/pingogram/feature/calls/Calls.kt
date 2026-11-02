@@ -2,7 +2,9 @@ package dev.kyralabs.pingogram.feature.calls
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.ui.component.CallStarter
@@ -13,6 +15,7 @@ import dev.kyralabs.pingogram.feature.calls.service.isOver
 import dev.kyralabs.pingogram.feature.calls.ui.CallActivity
 import dev.kyralabs.pingogram.feature.calls.ui.CameraAccess
 import dev.kyralabs.pingogram.feature.calls.ui.GroupCallActivity
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +37,8 @@ import javax.inject.Singleton
 @Singleton
 class Calls
     @Inject
-    @Suppress("LongParameterList") // Injected: both managers, the notifications, profiles, the camera, group calls.
+    // Injected: both managers, the notifications, profiles, the camera, group calls, the demo and its scope.
+    @Suppress("LongParameterList")
     internal constructor(
         @param:ApplicationContext private val context: Context,
         private val manager: CallManager,
@@ -42,6 +47,8 @@ class Calls
         private val camera: CameraAccess,
         private val groupCalls: GroupCallRepository,
         private val groupCallManager: GroupCallManager,
+        private val demo: DemoRepository,
+        @param:ApplicationScope private val scope: CoroutineScope,
     ) : CallStarter,
         VoiceChats {
         fun start() {
@@ -60,6 +67,13 @@ class Calls
         override fun videoCall(userId: Long) = CallActivity.startCall(context, userId, video = true)
 
         override fun canVideoCall(userId: Long): Flow<Boolean> = videoCallable(userId, profiles, camera)
+
+        override val canReceiveDemoCall: Boolean get() = demo.isDemo.value
+
+        /** In the demo, user [userId] calls a moment later (`docs/adr/0034-demo-mode-for-store-review.md`). */
+        override fun receiveDemoCall(userId: Long) {
+            scope.launch { demo.receiveCall(userId) }
+        }
 
         override fun voiceChat(chatId: Long): Flow<VoiceChatSummary?> =
             voiceChatSummary(chatId, groupCalls, groupCallManager.call)

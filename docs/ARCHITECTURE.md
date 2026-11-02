@@ -108,7 +108,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `DemoLinks`: what kind of link a text is (`DemoLinkParser`, as TDLib parses links on the device), usernames,
     message links, the sample invite links (a group to join, one that asks first, a public channel) and private chats
     with the sample people; `DemoBots`: the sample bot, its commands, inline buttons, reply keyboard and inline results,
-    which answers what is sent to it; `DemoChats`: chats, lists, people), each
+    which answers what is sent to it; `DemoCalls`: scripted calls (the other side rings and answers on timed
+    `DemoLater` changes, its key's emojis made up; `DemoIncomingCall`, the demo's own function, has a sample person call)
+    and the book club's voice chat with sample people; `DemoChats`: chats, lists, people), each
     answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
@@ -121,6 +123,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     Telegram's.
   - **The graph**: `Accounts` keeps the demo's graph beside the accounts, under `AccountSlot.Demo`, made with the demo's
     client (`DemoClients`, through `AccountFactory.demoClient`), never one of `TdlibClientFactory`'s.
+  - **Calls**: `feature:calls` runs the demo's calls with the real call screens, Telecom and service: while the demo shows,
+    `AllAccountsCallRepository` takes the shown graph's (the demo's) calls under `CallIds.DEMO_SLOT`, and
+    `DemoAwareCallEngine` hands the call managers `DemoCallEngine`, which connects to nothing and never loads NTgCalls:
+    the camera's frames (`DemoCamera`, the platform's camera API, only while the camera is on in a call) go to the
+    self-view alone, and the microphone is not opened. The call button's menu offers "Receive a demo call"
+    (`CallStarter.receiveDemoCall`, `DemoRepository.receiveCall`).
   - **On and off**: while the demo is on (`noBackupFilesDir/demo`, `Accounts.isDemo`), `Accounts.active` is its graph,
     so `ActiveAccountModule` hands its repositories to the screens. `registry`, `all()` and `AccountGraphs` never list
     it, so notifications, push, widgets, shortcuts, Direct Share, the storage clean-up, the call managers and the
@@ -130,8 +138,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - **On screen**: `feature:auth`'s Welcome opens the question (`DemoDialog`, `AuthViewModel.demoDialog` in the saved
     state) when its logo is held, and "Open" enters. `:app`'s `AccountRestart` opens the app again in a new task when
     `Accounts.isDemo` changes, as a switch of accounts does. `MainActivity` reads it once per activity: it wraps the app
-    in `DemoFrame` (the banner above every screen), provides `core:ui`'s `LocalIsDemo` and leaves out the call starter,
-    the voice chats and the account menu. `feature:settings` reads `LocalIsDemo` for the account card's "Demo", "Leave
+    in `DemoFrame` (the banner above every screen), provides `core:ui`'s `LocalIsDemo` and leaves out the account menu. `feature:settings` reads `LocalIsDemo` for the account card's "Demo", "Leave
     demo" (`SettingsViewModel` leaves instead of logging out) and the rows it leaves out.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill

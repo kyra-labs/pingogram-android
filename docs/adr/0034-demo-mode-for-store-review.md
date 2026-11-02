@@ -52,6 +52,14 @@ see it.
   feature, so the demo answers every screen of a signed-in session with sample data, calls included, and "needs a
   Telegram account" is left only where no sample makes sense, each such place listed in this ADR for the owner to
   check. The client asks areas of functions in turn (`DemoArea`: messages, chats…), added in small pull requests.
+- **Calls** (owner, 2026-11-01): scripted. Calling a sample person rings after a second and is answered a few seconds
+  later; the call screen shows the timer, the key's four emojis (made up) and every control: mute, speaker or audio
+  route, camera with the real self-view, hold, screen sharing's consent, hang up. The call button's menu offers
+  "Receive a demo call", which has that person call a moment later. The book club's voice chat goes on with sample
+  people, who speak in turn. Telecom, the call notification and the service run as in a real call, and the camera and
+  microphone permissions are asked as there; no audio or video leaves the phone and nothing reaches Telegram or
+  NTgCalls' network: the demo's engine connects to nothing, never loads NTgCalls, opens the camera only for the
+  self-view while it is on, and does not open the microphone. Each call ends in the chat and in Recent calls.
 - **Persistence**: each function the demo took as a change (a sent message, a reaction, an edited folder…) is appended
   to a small file in `filesDir/demo/` with its date, its files copied into the demo's folder first, and replayed through
   the same code when the demo client starts. So a process death keeps it, and leaving deletes the folder.
@@ -65,7 +73,8 @@ say that they need a Telegram account, or are not shown in the demo (owner to ch
   deletes what the user did in it.
 - **Signing in, adding an account and logging out**: left out of the demo's screens; "Leave demo" takes the place of
   logging out.
-- **Calls and voice chats**, until the scripted demo calls arrive (a pull request of their own).
+- **Conference calls** (`t.me/call/…` links, upgrading a call): the demo has no conference call to join, so a call
+  does not offer "Add people" and such a link says it needs a Telegram account.
 - **GIF search**: the demo names no GIF search bot, so the GIF tab shows the saved GIFs (none) without its search
   field. The sample bot shows inline results, buttons and a keyboard instead; Mini Apps, games and payments are not
   offered by Pingogram at all.

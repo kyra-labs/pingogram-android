@@ -6,13 +6,31 @@ import org.drinkless.tdlib.TdApi
 
 /**
  * What the demo answers a TDLib function: its [result], the [updates] TDLib would send with it, and whether it
- * [changed] the demo, in which case the function goes into the journal and is replayed at the next start.
+ * [changed] the demo, in which case the function goes into the journal and is replayed at the next start. [later]
+ * holds what the other side does a moment after (a call ringing, then answered): run after its delay, never while the
+ * journal is replayed, and kept in no journal.
  */
 internal class DemoAnswer(
     val result: TdResult<TdApi.Object>,
     val updates: List<TdApi.Update> = emptyList(),
     val changed: Boolean = false,
+    val later: List<DemoLater> = emptyList(),
 )
+
+/** A change [delayMillis] after an answer, on the demo's state, and the updates it sends. */
+internal class DemoLater(
+    val delayMillis: Long,
+    val change: (DemoWorld) -> List<TdApi.Update>,
+)
+
+/** [this] answer with [later] changes after it. */
+internal fun DemoAnswer.then(later: List<DemoLater>): DemoAnswer =
+    DemoAnswer(
+        result,
+        updates,
+        changed,
+        this.later + later,
+    )
 
 /**
  * One area of TDLib's functions the demo answers (messages, chats, settings…), on the demo's state. It answers null
