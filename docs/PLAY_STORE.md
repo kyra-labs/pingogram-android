@@ -220,6 +220,11 @@ that key, not a key Google generates:
   (Settings → Privacy and security), and `docs/website/delete-account.md` is published on the Pingogram website at
   `https://pingogram.kyralabs.dev/delete-account/` (§2.1). Enter that address in the Data safety form's "Delete account
   URL".
+- **Child safety standards** (Play's child safety standards policy for social and communication apps, Play Console →
+  App content → Child safety standards): `docs/website/child-safety.md` is published at
+  `https://pingogram.kyralabs.dev/child-safety/` (owner decision 2026-11-02). Enter that address as the published
+  standards; the in-app way to report is Report in a message's actions, in the selection toolbar and on a profile
+  (reports go to Telegram's moderators); the child safety point of contact is `contact@kyralabs.dev`.
 - **Privacy policy**: `PRIVACY.md` once this is merged; its GitHub URL is the policy's address.
 - **Screenshots** padded to 9:16 (§4).
 - **Telegram's terms**: Telegram allows third-party clients built on its API (`https://core.telegram.org/api/terms`)
