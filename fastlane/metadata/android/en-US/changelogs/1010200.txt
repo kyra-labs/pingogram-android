@@ -1,0 +1,1 @@
+No changes in the app since 1.1.1: this version is the first build published on Google Play.
