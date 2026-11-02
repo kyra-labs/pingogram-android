@@ -14,6 +14,12 @@
         android:name="android.permission.WAKE_LOCK"
         tools:node="replace" />
 
+    <!-- No advertising ID: nothing in Pingogram reads it, and no library may bring its permission in (Play Console's
+         advertising ID declaration answers "No", docs/PLAY_STORE.md §3). -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
     <application>
 
         <!-- Android Auto takes the conversation notifications (MessagingStyle with Reply and Mark as read) to the car's

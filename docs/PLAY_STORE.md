@@ -99,6 +99,10 @@ types). The texts are ready to paste; each feature also explains itself in the a
 | `POST_NOTIFICATIONS`, `POST_PROMOTED_NOTIFICATIONS` | none | message notifications; Live Updates of transfers on Android 16 | |
 
 Not in the `gms` build: `FOREGROUND_SERVICE_SPECIAL_USE` ("Keep connected", `foss` only, which Play would question).
+
+**Advertising ID** (App content → Advertising ID): **No**. Nothing in Pingogram reads it, and the `gms` manifest removes
+`com.google.android.gms.permission.AD_ID` in case a library brings it, so the answer stays true.
+
 No `QUERY_ALL_PACKAGES`, no `READ_MEDIA_*` (Photo Picker), no exact alarms, no accessibility service, no SMS or call
 log permissions.
 
