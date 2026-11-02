@@ -14,6 +14,9 @@
     <string name="auth_flood_wait">Too many attempts. Try again in %1$s.</string>
     <string name="auth_terms_of_service">Terms of Service</string>
     <string name="auth_privacy_policy">Privacy Policy</string>
+    <!-- On the first screen, after Telegram's Terms of Service and Privacy Policy: opens Pingogram's own privacy
+         policy (its website), which says what the app does with your data. -->
+    <string name="auth_pingogram_privacy_policy">Pingogram\'s privacy policy</string>
 
     <!-- Welcome (FR-A1) -->
     <string name="auth_welcome_title" translatable="false">Pingogram</string>

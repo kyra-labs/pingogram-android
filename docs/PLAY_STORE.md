@@ -19,7 +19,7 @@ Samsung's Galaxy Store and Huawei's AppGallery reuse these answers (`docs/STORES
 | Category | Communication |
 | Contact email | the owner's support address (Play shows it publicly) |
 | Website | `https://github.com/kyra-labs/pingogram-android` |
-| Privacy policy | `https://github.com/kyra-labs/pingogram-android/blob/main/PRIVACY.md` (§2 in prose); update both together |
+| Privacy policy | `https://pingogram.kyralabs.dev/privacy/`, the Pingogram website's page made from `PRIVACY.md` (§2 in prose; update both together), the same URL the app links in Settings → About and on the Welcome screen (§8) |
 | App access | Pingogram needs a Telegram account, and every login needs a one-time code Telegram sends to the account's phone, so review cannot be given credentials. Review uses the demo instead (`docs/adr/0034-demo-mode-for-store-review.md`, `REQUIREMENTS.md` FR-A9): sample chats stored on the phone, without an account or the network. In "App access", choose "All or some functionality is restricted", add these instructions and tick the box saying they give access to all of the app's functionality (owner, 2026-11-01: the demo answers every screen of a signed-in session with sample data, calls included; what it cannot do is listed in the ADR): "Pingogram is a client for Telegram accounts. Signing in needs a Telegram account and a one-time code Telegram sends to its phone, so we can't share credentials. Reviewers with their own Telegram account can sign in with it. To see the app without an account: on the first screen, press and hold the Pingogram logo for a second, then tap Open. The demo shows sample chats stored on the device and does not connect to Telegram. Every screen works in it with sample data, calls included." **The demo is permanent**: the stores review every update, so it must open in every release (`docs/RELEASE.md`, release checklist). Never remove it, move the logo or change the gesture without the owner's decision and these instructions updated in the same pull request |
 | Ads | **No ads.** Sponsored messages in channels are Telegram's, shown as Telegram requires (`REQUIREMENTS.md` §2), not ads Pingogram serves or earns from: answer "No, my app does not contain ads", and say so in the review notes |
 
@@ -225,7 +225,10 @@ that key, not a key Google generates:
   `https://pingogram.kyralabs.dev/child-safety/` (owner decision 2026-11-02). Enter that address as the published
   standards; the in-app way to report is Report in a message's actions, in the selection toolbar and on a profile
   (reports go to Telegram's moderators); the child safety point of contact is `contact@kyralabs.dev`.
-- **Privacy policy**: `PRIVACY.md` once this is merged; its GitHub URL is the policy's address.
+- **Privacy policy**: the website's page made from `PRIVACY.md`, `https://pingogram.kyralabs.dev/privacy/`. Play asks
+  for it to be reachable in the app: Settings → About has a "Privacy policy" row, and the Welcome screen links it after
+  Telegram's terms and privacy policy, which signing in accepts. Enter the same URL in Play Console's App content →
+  Privacy policy (§1).
 - **Screenshots** padded to 9:16 (§4).
 - **Telegram's terms**: Telegram allows third-party clients built on its API (`https://core.telegram.org/api/terms`)
   but a store may still receive a trademark complaint; the listing's disclaimer and name follow §4 to keep that unlikely.

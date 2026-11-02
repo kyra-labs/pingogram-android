@@ -217,15 +217,26 @@ class AuthViewModelTest {
                 val viewModel = viewModel()
                 val effects = effectsOf(viewModel)
 
-                send(viewModel, AuthEvent.OpenTermsOfService, AuthEvent.OpenPrivacyPolicy)
+                send(viewModel, AuthEvent.OpenTermsOfService, AuthEvent.OpenTelegramPrivacyPolicy)
 
                 assertEquals(
                     listOf(
-                        AuthEffect.OpenUrl(AuthViewModel.TERMS_OF_SERVICE_URL),
-                        AuthEffect.OpenUrl(AuthViewModel.PRIVACY_POLICY_URL),
+                        AuthEffect.OpenUrl("https://telegram.org/tos"),
+                        AuthEffect.OpenUrl("https://telegram.org/privacy"),
                     ),
                     effects,
                 )
+            }
+
+        @Test
+        fun `Pingogram's privacy policy opens Pingogram's page`() =
+            runTest {
+                val viewModel = viewModel()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.OpenPingogramPrivacyPolicy)
+
+                assertEquals(listOf(AuthEffect.OpenUrl("https://pingogram.kyralabs.dev/privacy/")), effects)
             }
 
         @Test

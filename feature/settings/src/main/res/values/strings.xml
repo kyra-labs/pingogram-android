@@ -503,6 +503,10 @@
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_source_code">Source code</string>
     <string name="settings_about_source_code_summary">github.com/kyra-labs/pingogram-android</string>
+    <!-- Opens Pingogram's own privacy policy (its website) in the browser; Telegram's has its own on the first screen. -->
+    <string name="settings_about_privacy_policy">Privacy policy</string>
+    <!-- Under "Privacy policy" in About. -->
+    <string name="settings_about_privacy_policy_summary">What Pingogram does with your data</string>
     <string name="settings_about_license">License</string>
     <string name="settings_about_license_summary">GNU General Public License v3.0 or later</string>
     <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>

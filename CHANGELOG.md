@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Pingogram's privacy policy, linked in Settings → About and on the first screen.
+
 ## [1.1.0] - 2026-11-02
 
 ### Added

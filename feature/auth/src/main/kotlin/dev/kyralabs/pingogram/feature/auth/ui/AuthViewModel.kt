@@ -130,7 +130,8 @@ class AuthViewModel internal constructor(
             AuthEvent.Back -> onBack()
             AuthEvent.StartMessaging -> startMessaging()
             AuthEvent.OpenTermsOfService -> sendEffect(AuthEffect.OpenUrl(TERMS_OF_SERVICE_URL))
-            AuthEvent.OpenPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(PRIVACY_POLICY_URL))
+            AuthEvent.OpenTelegramPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(TELEGRAM_PRIVACY_POLICY_URL))
+            AuthEvent.OpenPingogramPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(PINGOGRAM_PRIVACY_POLICY_URL))
             AuthEvent.ShowDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = true
             AuthEvent.DismissDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = false
             AuthEvent.OpenDemo -> openDemo()
@@ -735,7 +736,13 @@ class AuthViewModel internal constructor(
 
     internal companion object {
         const val TERMS_OF_SERVICE_URL = "https://telegram.org/tos"
-        const val PRIVACY_POLICY_URL = "https://telegram.org/privacy"
+        const val TELEGRAM_PRIVACY_POLICY_URL = "https://telegram.org/privacy"
+
+        /**
+         * Pingogram's own privacy policy, the website's page made from `PRIVACY.md` (`docs/PLAY_STORE.md` §8: the same
+         * URL as Play Console's and About's).
+         */
+        const val PINGOGRAM_PRIVACY_POLICY_URL = "https://pingogram.kyralabs.dev/privacy/"
 
         /** Telegram's limit for first and last names (td/telegram/AuthManager.h). */
         const val MAX_NAME_LENGTH = 64
