@@ -25,11 +25,48 @@ internal class DemoDetails : DemoArea {
 
             is TdApi.TranslateMessageText -> translate(world, function)
 
+            is TdApi.ReportChat -> report(world, function)
+
             // The demo's texts have no custom emoji.
             is TdApi.GetCustomEmojiStickers -> ok(TdApi.Stickers(emptyArray()))
 
             else -> null
         }
+
+    /**
+     * A report of a chat or its messages, as Telegram asks for it: a reason first, then a comment for "Something
+     * else". It goes nowhere: the demo's people and chats are made up.
+     */
+    private fun report(
+        world: DemoWorld,
+        function: TdApi.ReportChat,
+    ): DemoAnswer {
+        world.chat(function.chatId) ?: return notFound()
+        val option = function.optionId?.decodeToString().orEmpty()
+        val text = world.data.text
+        return when {
+            option.isEmpty() -> {
+                ok(
+                    TdApi.ReportChatResultOptionRequired(
+                        text(R.string.demo_report_title),
+                        arrayOf(
+                            TdApi.ReportOption(REPORT_SPAM.encodeToByteArray(), text(R.string.demo_report_spam)),
+                            TdApi.ReportOption(REPORT_FAKE.encodeToByteArray(), text(R.string.demo_report_fake)),
+                            TdApi.ReportOption(REPORT_OTHER.encodeToByteArray(), text(R.string.demo_report_other)),
+                        ),
+                    ),
+                )
+            }
+
+            option == REPORT_OTHER && function.text.isNullOrBlank() -> {
+                ok(TdApi.ReportChatResultTextRequired(function.optionId, false))
+            }
+
+            else -> {
+                ok(TdApi.ReportChatResultOk())
+            }
+        }
+    }
 
     /** The group's other members saw the user's message a minute apart, the latest first. */
     private fun viewers(
@@ -138,6 +175,9 @@ internal class DemoDetails : DemoArea {
     }
 
     private companion object {
+        const val REPORT_SPAM = "spam"
+        const val REPORT_FAKE = "fake"
+        const val REPORT_OTHER = "other"
         const val MINUTE = 60
     }
 }

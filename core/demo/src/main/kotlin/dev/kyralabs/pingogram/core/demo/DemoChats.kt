@@ -24,6 +24,8 @@ internal class DemoChats : DemoArea {
             is TdApi.SetOption, is TdApi.OpenChat, is TdApi.CloseChat, is TdApi.SetChatDraftMessage,
             is TdApi.ReadAllChatMentions, is TdApi.ReadAllChatReactions, is TdApi.CancelDownloadFile,
             is TdApi.SetNetworkType,
+            // The demo keeps no cloud drafts.
+            is TdApi.ClearAllDraftMessages,
             -> {
                 ok(TdApi.Ok())
             }
@@ -52,10 +54,6 @@ internal class DemoChats : DemoArea {
 
             is TdApi.GetChat -> {
                 world.chat(function.chatId)?.let(::ok) ?: notFound()
-            }
-
-            is TdApi.CreatePrivateChat -> {
-                world.chat(function.userId)?.let(::ok) ?: needsAccount()
             }
 
             is TdApi.GetChats -> {

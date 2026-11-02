@@ -32,10 +32,6 @@ internal class DemoSearch : DemoArea {
                 ok(chats(emptyList()))
             }
 
-            is TdApi.SearchPublicChat -> {
-                notFound()
-            }
-
             is TdApi.SearchRecentlyFoundChats -> {
                 val found =
                     recentlyFound

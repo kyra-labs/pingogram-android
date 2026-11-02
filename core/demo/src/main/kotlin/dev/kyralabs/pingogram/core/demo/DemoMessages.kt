@@ -266,8 +266,17 @@ internal class DemoMessages : DemoArea {
     ): DemoAnswer {
         val type = world.chat(chatId)?.type as? TdApi.ChatTypeSupergroup ?: return needsAccount()
         world.message(chatId, messageId) ?: return notFound()
-        val link = "https://t.me/c/${type.supergroupId}/${messageId shr DemoData.MESSAGE_ID_SHIFT}"
-        return ok(TdApi.MessageLink(link, false))
+        val number = messageId shr DemoData.MESSAGE_ID_SHIFT
+        val username =
+            world.groups.supergroups[type.supergroupId]
+                ?.usernames
+                ?.editableUsername
+                .orEmpty()
+        return if (username.isNotEmpty()) {
+            ok(TdApi.MessageLink("https://t.me/$username/$number", true))
+        } else {
+            ok(TdApi.MessageLink("https://t.me/c/${type.supergroupId}/$number", false))
+        }
     }
 
     /** What a message lets the user do, as TDLib tells it: the demo's own messages can be edited, pinned, deleted. */

@@ -46,6 +46,22 @@ internal class DemoData(
     /** The channel's discussion group, where its posts get comments; the user made it with the channel. */
     val discussion = supergroup(DISCUSSION).apply { hasLinkedChat = true }
 
+    /** A public channel the user is not in: a sample link opens it, with "Join" in the composer's place. */
+    val news =
+        supergroup(NEWS).apply {
+            usernames = TdApi.Usernames(arrayOf(NEWS_USERNAME), emptyArray(), NEWS_USERNAME, emptyArray(), "")
+            status = TdApi.ChatMemberStatusLeft()
+            memberCount = NEWS_SUBSCRIBERS
+            isChannel = true
+        }
+
+    /** A private group the user is not in: its sample invite link opens the join sheet. */
+    val photoWalks =
+        supergroup(PHOTO_WALKS).apply {
+            status = TdApi.ChatMemberStatusLeft()
+            memberCount = PHOTO_WALKS_MEMBERS.size
+        }
+
     /** The forum's topics: General, and two that people made. */
     val forumTopics: List<TdApi.ForumTopicInfo> =
         listOf(
@@ -103,6 +119,7 @@ internal class DemoData(
                         content = photo(DemoFile.Photo, R.string.demo_ada_photo_caption),
                     ),
                     incoming(ADA_CHAT, ADA, minutesAgo = 12, content = voice()),
+                    incoming(ADA_CHAT, ADA, minutesAgo = 8, content = textOf(R.string.demo_ada_links)),
                     incoming(ADA_CHAT, ADA, minutesAgo = 5, content = textOf(R.string.demo_ada_formatting))
                         .apply { interactionInfo = reactions(THUMBS_UP to 1, chosen = THUMBS_UP) },
                 ),
@@ -121,7 +138,8 @@ internal class DemoData(
                                 forwardInfo =
                                     TdApi.MessageForwardInfo(TdApi.MessageOriginUser(CHLOE), now - DAY, null, "")
                             } +
-                        incoming(BEN_CHAT, BEN, minutesAgo = 159, content = sticker())
+                        incoming(BEN_CHAT, BEN, minutesAgo = 159, content = sticker()) +
+                        incoming(BEN_CHAT, BEN, minutesAgo = 150, content = textOf(R.string.demo_ben_folder))
                 },
             GROUP_CHAT to
                 listOf(
@@ -135,6 +153,28 @@ internal class DemoData(
                 ),
             CHANNEL_CHAT to channelPosts,
             DISCUSSION_CHAT to discussionMessages,
+            PHOTO_WALKS_CHAT to
+                listOf(
+                    incoming(
+                        PHOTO_WALKS_CHAT,
+                        CHLOE,
+                        minutesAgo = 300,
+                        content = textOf(R.string.demo_photo_walks_message),
+                    ),
+                ),
+            NEWS_CHAT to
+                listOf(
+                    message(
+                        NEWS_CHAT,
+                        TdApi.MessageSenderChat(NEWS_CHAT),
+                        minutesAgo = 200,
+                        content = textOf(R.string.demo_news_post),
+                        outgoing = false,
+                    ).apply {
+                        isChannelPost = true
+                        interactionInfo = TdApi.MessageInteractionInfo(NEWS_SUBSCRIBERS / 2, 0, null, null)
+                    },
+                ),
             FORUM_CHAT to
                 listOf(
                     incoming(FORUM_CHAT, CHLOE, minutesAgo = 600, content = textOf(R.string.demo_forum_welcome))
@@ -193,6 +233,20 @@ internal class DemoData(
                 TdApi.ChatTypeSupergroup(DISCUSSION, false),
                 text(R.string.demo_discussion_title),
                 unread = 0,
+            ),
+            chat(
+                PHOTO_WALKS_CHAT,
+                TdApi.ChatTypeSupergroup(PHOTO_WALKS, false),
+                text(R.string.demo_photo_walks_title),
+                unread = 0,
+                listed = false,
+            ),
+            chat(
+                NEWS_CHAT,
+                TdApi.ChatTypeSupergroup(NEWS, true),
+                text(R.string.demo_news_title),
+                unread = 0,
+                listed = false,
             ),
             chat(ME, TdApi.ChatTypePrivate(ME), name(ME), unread = 0),
             chat(DEV_CHAT, TdApi.ChatTypePrivate(DEV), name(DEV), unread = 0, archived = true),
@@ -267,12 +321,22 @@ internal class DemoData(
             botCommands = emptyArray()
         }
 
-    /** The forum's and the discussion group's full info: four members, the user and Ada administrators. */
+    /** The other supergroups' full info: the forum and discussion group with the user and Ada administrators. */
     fun groupFullInfo(supergroupId: Long) =
         TdApi.SupergroupFullInfo().apply {
-            description = ""
-            memberCount = SUPERGROUP_MEMBERS.size
-            administratorCount = 2
+            description =
+                when (supergroupId) {
+                    NEWS -> text(R.string.demo_news_description)
+                    PHOTO_WALKS -> text(R.string.demo_photo_walks_description)
+                    else -> ""
+                }
+            memberCount =
+                when (supergroupId) {
+                    NEWS -> NEWS_SUBSCRIBERS
+                    PHOTO_WALKS -> PHOTO_WALKS_MEMBERS.size
+                    else -> SUPERGROUP_MEMBERS.size
+                }
+            administratorCount = if (supergroupId == NEWS || supergroupId == PHOTO_WALKS) 1 else 2
             canGetMembers = true
             isAllHistoryAvailable = true
             linkedChatId = if (supergroupId == DISCUSSION) CHANNEL_CHAT else 0
@@ -412,12 +476,18 @@ internal class DemoData(
         unread: Int,
         folders: List<Int> = emptyList(),
         archived: Boolean = false,
+        listed: Boolean = true,
     ): TdApi.Chat {
         val history = messages.getValue(id)
         val last = history.last()
         val order = last.date.toLong() shl ORDER_SHIFT
         val lists =
-            listOf(if (archived) TdApi.ChatListArchive() else TdApi.ChatListMain()) + folders.map(TdApi::ChatListFolder)
+            if (listed) {
+                listOf(if (archived) TdApi.ChatListArchive() else TdApi.ChatListMain()) +
+                    folders.map(TdApi::ChatListFolder)
+            } else {
+                emptyList()
+            }
         return TdApi.Chat().apply {
             this.id = id
             this.type = type
@@ -649,6 +719,16 @@ internal class DemoData(
         const val FORUM = 300_002L
         const val DISCUSSION = 300_003L
         val SUPERGROUP_MEMBERS = listOf(ME, ADA, BEN, CHLOE)
+        const val NEWS = 300_004L
+        const val PHOTO_WALKS = 300_005L
+        val PHOTO_WALKS_MEMBERS = listOf(CHLOE, ADA, DEV)
+        const val NEWS_USERNAME = "sample_news"
+        const val NEWS_SUBSCRIBERS = 2_400
+
+        // The sample links in Ada's and Ben's messages: made up, opening nothing outside the demo.
+        const val PHOTO_WALKS_LINK = "https://t.me/+DemoPhotoWalks"
+        const val BOOK_SWAP_LINK = "https://t.me/+DemoBookSwap"
+        const val HOBBIES_LINK = "https://t.me/addlist/DemoHobbies"
         const val GENERAL_TOPIC = 1
         const val READING_TOPIC = 2
         const val MEETUPS_TOPIC = 3
@@ -667,6 +747,8 @@ internal class DemoData(
         const val CHANNEL_CHAT = -1_000_000_000_000L - CHANNEL
         const val FORUM_CHAT = -1_000_000_000_000L - FORUM
         const val DISCUSSION_CHAT = -1_000_000_000_000L - DISCUSSION
+        const val NEWS_CHAT = -1_000_000_000_000L - NEWS
+        const val PHOTO_WALKS_CHAT = -1_000_000_000_000L - PHOTO_WALKS
 
         /** Telegram's id of the Saved Messages topic of messages whose authors hid their accounts. */
         const val AUTHOR_HIDDEN_TOPIC = 2_666_000L

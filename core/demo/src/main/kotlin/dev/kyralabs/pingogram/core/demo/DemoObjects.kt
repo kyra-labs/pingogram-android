@@ -97,6 +97,8 @@ internal fun demoChat(
     this.id = id
     this.type = type
     this.title = title
+    positions = emptyArray()
+    chatLists = emptyArray()
     permissions =
         TdApi.ChatPermissions().apply {
             canSendBasicMessages = canSend

@@ -90,6 +90,8 @@ class DemoTdlibClientTest {
                     DemoData.CHANNEL_CHAT,
                     DemoData.FORUM_CHAT,
                     DemoData.DISCUSSION_CHAT,
+                    DemoData.PHOTO_WALKS_CHAT,
+                    DemoData.NEWS_CHAT,
                     DemoData.ME,
                     DemoData.DEV_CHAT,
                 ),
@@ -138,9 +140,9 @@ class DemoTdlibClientTest {
 
             assertEquals(2, newest.size)
             assertTrue(newest[0].id > newest[1].id)
-            assertEquals(4, older.size)
+            assertEquals(5, older.size)
             assertTrue(older.all { it.id < newest.last().id })
-            assertInstanceOf(TdApi.MessagePhoto::class.java, older.first().content)
+            assertInstanceOf(TdApi.MessageVoiceNote::class.java, older.first().content)
         }
 
     @Test
@@ -278,13 +280,13 @@ class DemoTdlibClientTest {
         }
 
     @Test
-    fun `what the demo cannot do fails as not available in the demo`() =
+    fun `what needs a Telegram account fails as such`() =
         runTest {
             val (client, _) = client()
 
             listOf(
                 TdApi.CreateCall().apply { userId = DemoData.ADA },
-                TdApi.JoinChatByInviteLink().apply { inviteLink = "https://t.me/+abc" },
+                TdApi.DeleteAccount().apply { reason = "" },
                 TdApi.SetAuthenticationPhoneNumber().apply { phoneNumber = "+447911123456" },
                 TdApi.BoostChat().apply { chatId = DemoData.CHANNEL_CHAT },
             ).forEach { function ->

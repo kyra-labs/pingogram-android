@@ -92,4 +92,23 @@
     <string name="demo_discussion_title">Weekly Sample chat</string>
     <string name="demo_comment_ada">Congratulations on the first issue!</string>
     <string name="demo_comment_ben">Subscribed. Looking forward to the next one.</string>
+
+    <!-- Chats the person is not in yet, which the sample links open. -->
+    <string name="demo_photo_walks_title">Photo walks</string>
+    <string name="demo_photo_walks_description">A walk with cameras every Sunday morning.</string>
+    <string name="demo_photo_walks_message">Sunday\'s walk: meet at the old harbour at 9.</string>
+    <string name="demo_book_swap_title">Book swap</string>
+    <string name="demo_book_swap_description">Bring a book, take a book. New members are approved by the admins.</string>
+    <string name="demo_news_title">Sample News</string>
+    <string name="demo_news_description">The demo\'s public channel. Join it to follow it.</string>
+    <string name="demo_news_post">Welcome to Sample News: one made-up story a day.</string>
+    <string name="demo_folder_hobbies">Hobbies</string>
+    <string name="demo_ada_links">Join our photo walks: https://t.me/+DemoPhotoWalks The book swap asks first: https://t.me/+DemoBookSwap And the news: https://t.me/sample_news</string>
+    <string name="demo_ben_folder">My folder of hobby chats: https://t.me/addlist/DemoHobbies</string>
+
+    <!-- Reporting a chat or messages: the reasons it offers. Reports go nowhere. -->
+    <string name="demo_report_title">What\'s wrong?</string>
+    <string name="demo_report_spam">Spam</string>
+    <string name="demo_report_fake">Fake account</string>
+    <string name="demo_report_other">Something else</string>
 </resources>

@@ -46,8 +46,8 @@ see it.
   and `TdApi`'s plain Java classes, and on `core:common`. It never touches `org.drinkless.tdlib.Client` or the JNI
   library, so no TDLib instance exists for the demo.
 - **Unsupported functions** fail with a TDLib error the repositories map to `DomainError.NotAvailableInDemo`. Error
-  texts and snackbars show it as "Not available in the demo". That covers calls, voice chats, joining links, sign-in
-  and account changes, 2-step verification, proxies, sessions, reporting, and every request the demo has no data for.
+  texts and snackbars show it as "This needs a Telegram account. The demo can't do it." The places are listed below
+  ("What needs a Telegram account").
 - **Full access** (owner, 2026-11-01): Google Play's App access form asks whether the reviewers' access covers every
   feature, so the demo answers every screen of a signed-in session with sample data, calls included, and "needs a
   Telegram account" is left only where no sample makes sense, each such place listed in this ADR for the owner to
@@ -55,6 +55,23 @@ see it.
 - **Persistence**: each function the demo took as a change (a sent message, a reaction, an edited folder…) is appended
   to a small file in `filesDir/demo/` with its date, its files copied into the demo's folder first, and replayed through
   the same code when the demo client starts. So a process death keeps it, and leaving deletes the folder.
+
+### What needs a Telegram account
+
+Everything else a signed-in session shows works on the sample data. These places alone have no sensible sample and
+say that they need a Telegram account, or are not shown in the demo (owner to check):
+
+- **Deleting the account** (Settings → Privacy and security → Delete account): the demo has no account. "Leave demo"
+  deletes what the user did in it.
+- **Signing in, adding an account and logging out**: left out of the demo's screens; "Leave demo" takes the place of
+  logging out.
+- **Calls and voice chats**, until the scripted demo calls arrive (a pull request of their own).
+- **Bot buttons, bot keyboards and inline bots** (the GIF search included), until the sample bot's pull request.
+- **Sponsored messages**: Telegram chooses them; the demo shows none rather than made-up advertisements.
+- **Notifications, push and the home screen widget**: they never see the demo (its account graph is kept apart).
+
+What the demo has no data for is not an error but empty, as Telegram would answer: public chats, usernames, invite
+links and message links that are not the demo's find nothing, and public search finds only the demo's chats.
 
 ### Its own account graph
 
@@ -125,7 +142,7 @@ The stores review every update, so App access must work for each release:
 - The reviewers get the app's real screens with sample data, offline, in both flavors, without an account. Reviewers
   with their own Telegram account can still sign in with it.
 - One more module and one more `TdlibClient`. Each screen's requests need an answer in the demo client, or the screen
-  shows "Not available in the demo". New screens should check what the demo shows for them.
+  says it needs a Telegram account. New screens add their answers to the demo, or their place to the list above.
 - No dependency and no permission are added. The sample pictures are made on the device the first time the demo starts.
 - Built in three pull requests:
   1. this ADR and the removal of the test servers;

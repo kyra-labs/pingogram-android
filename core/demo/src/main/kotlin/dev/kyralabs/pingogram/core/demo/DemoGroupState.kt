@@ -18,17 +18,13 @@ internal class DemoGroupState(
     val basicGroups = mutableMapOf(data.group.id to data.group)
     val basicFullInfo = mutableMapOf(data.group.id to data.groupFullInfo)
     val supergroups =
-        mutableMapOf(
-            data.channel.id to data.channel,
-            data.forum.id to data.forum,
-            data.discussion.id to data.discussion,
-        )
+        listOf(data.channel, data.forum, data.discussion, data.news, data.photoWalks)
+            .associateBy { it.id }
+            .toMutableMap()
     val supergroupFullInfo =
-        mutableMapOf(
-            data.channel.id to data.channelFullInfo,
-            data.forum.id to data.groupFullInfo(data.forum.id),
-            data.discussion.id to data.groupFullInfo(data.discussion.id),
-        )
+        supergroups.keys
+            .associateWith { if (it == data.channel.id) data.channelFullInfo else data.groupFullInfo(it) }
+            .toMutableMap()
 
     /** A supergroup's or channel's members; a basic group's live in its full info. */
     val members = mutableMapOf<Long, MutableList<TdApi.ChatMember>>()
@@ -69,6 +65,27 @@ internal class DemoGroupState(
                         TdApi.ChatMember(TdApi.MessageSenderUser(user), "", DemoData.ME, started + index * HOUR, status)
                     }.toMutableList()
         }
+        members[DemoData.PHOTO_WALKS_CHAT] =
+            DemoData.PHOTO_WALKS_MEMBERS
+                .map { user ->
+                    val status =
+                        if (user == DemoData.CHLOE) {
+                            TdApi.ChatMemberStatusCreator(false, true)
+                        } else {
+                            TdApi.ChatMemberStatusMember(0)
+                        }
+                    TdApi.ChatMember(TdApi.MessageSenderUser(user), "", DemoData.CHLOE, started, status)
+                }.toMutableList()
+        members[DemoData.NEWS_CHAT] =
+            mutableListOf(
+                TdApi.ChatMember(
+                    TdApi.MessageSenderUser(DemoData.BEN),
+                    "",
+                    0,
+                    started,
+                    TdApi.ChatMemberStatusCreator(false, true),
+                ),
+            )
         links[DemoData.GROUP_CHAT] = mutableListOf(link(primary = true, date = started))
         links[DemoData.CHANNEL_CHAT] =
             mutableListOf(

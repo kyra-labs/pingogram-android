@@ -89,9 +89,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
   - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
     `DemoData` (made-up people, a group, a channel with its discussion group, a forum, Saved Messages, an archived
-    chat and a "Work" folder, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
+    chat, a "Work" folder, and a group and a channel the user is not in, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
-    `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
+    `core:data` maps to `DomainError.NotAvailableInDemo` ("This needs a Telegram account. The demo can't do it.").
   - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
   - **The areas**: `DemoTdlibClient` asks its `DemoArea`s in turn (`DemoMessages`: history, sending every kind of
     content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoSearch`: chats, messages and
@@ -105,7 +105,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     network statistics, proxies (kept, never connected through), the archive's settings; `DemoFolders`: chat folders
     with their rules applied to the demo's chats, suggestions and invite links; `DemoTopics`: the forum's topics, the
     channel posts' comment threads, secret chats (ready at once, their key made up) and Saved Messages' topics;
-    `DemoChats`: chats, lists, people), each
+    `DemoLinks`: what kind of link a text is (`DemoLinkParser`, as TDLib parses links on the device), usernames,
+    message links, the sample invite links (a group to join, one that asks first, a public channel) and private chats
+    with the sample people; `DemoChats`: chats, lists, people), each
     answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
