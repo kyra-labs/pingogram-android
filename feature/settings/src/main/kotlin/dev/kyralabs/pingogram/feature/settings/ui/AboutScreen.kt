@@ -94,11 +94,11 @@ private fun Context.openLinkSettings() {
 
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source
- * code on GitHub and its privacy policy (both opened in the browser), its license, the open-source licenses of what it is built from
- * ([onOpenLicenses]), "Open Telegram links" in Android's settings where they have it ([onOpenLinkSettings], null
- * where they do not), "Send feedback" ([onSendFeedback], where the app has it), and the statement that it is an
- * unofficial client, not affiliated with Telegram, as Telegram's
- * API terms require of third-party apps (`CLAUDE.md` rule 3).
+ * code on GitHub and its privacy policy (both opened in the browser), its license, the open-source licenses of what it
+ * is built from ([onOpenLicenses]), "Open Telegram links" in Android's settings where they have it
+ * ([onOpenLinkSettings], null where they do not), "Send feedback" ([onSendFeedback], where the app has it), and the
+ * statement that it is an unofficial client, not affiliated with Telegram, as Telegram's API terms require of
+ * third-party apps (`CLAUDE.md` rule 3).
  */
 @Composable
 internal fun AboutScreen(
@@ -134,19 +134,7 @@ internal fun AboutScreen(
                     onClick = { onEvent(AboutEvent.OpenSourceCode) },
                 )
             }
-            item { shapes ->
-                SettingsRow(
-                    title = stringResource(R.string.settings_about_privacy_policy),
-                    shapes = shapes,
-                    icon = R.drawable.ic_shield,
-                    supportingContent = { Text(stringResource(R.string.settings_about_privacy_policy_summary)) },
-                    trailingContent = {
-                        // Says that the row leaves the app; the row's text names it.
-                        Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null)
-                    },
-                    onClick = { onEvent(AboutEvent.OpenPrivacyPolicy) },
-                )
-            }
+            privacyPolicyItem(onClick = { onEvent(AboutEvent.OpenPrivacyPolicy) })
             item { shapes ->
                 SettingsRow(
                     title = stringResource(R.string.settings_about_license),
@@ -191,6 +179,22 @@ private fun AboutLogo() {
                 .wrapContentWidth(),
     )
 }
+
+/** "Privacy policy", which opens Pingogram's own privacy policy in the browser ([onClick]). */
+private fun SettingsGroupScope.privacyPolicyItem(onClick: () -> Unit) =
+    item { shapes ->
+        SettingsRow(
+            title = stringResource(R.string.settings_about_privacy_policy),
+            shapes = shapes,
+            icon = R.drawable.ic_shield,
+            supportingContent = { Text(stringResource(R.string.settings_about_privacy_policy_summary)) },
+            trailingContent = {
+                // Says that the row leaves the app; the row's text names it.
+                Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null)
+            },
+            onClick = onClick,
+        )
+    }
 
 /** "Open Telegram links" (Android 12+), which opens Android's "Open by default" settings of the app ([onClick]). */
 private fun SettingsGroupScope.openTelegramLinksItem(onClick: () -> Unit) =
