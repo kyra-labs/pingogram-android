@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-02
+
 ### Added
 - A demo for the app stores' reviewers, who cannot be given a Telegram account: pressing and holding the logo on the
   first screen opens sample chats stored on the phone, without an account or the network. Every screen works in it with
@@ -1068,7 +1070,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
