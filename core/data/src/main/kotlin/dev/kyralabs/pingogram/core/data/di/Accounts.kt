@@ -113,6 +113,9 @@ class Accounts internal constructor(
     /** Whether the demo shows instead of the accounts; read with the registry, so false until it is read. */
     val isDemo: StateFlow<Boolean> = mutableIsDemo.asStateFlow()
 
+    /** The demo's client while the demo is on, for the demo's own functions (`DemoIncomingCall`); null otherwise. */
+    fun demoClient(): TdlibClient? = if (mutableIsDemo.value) demoAccount().client else null
+
     /** The graph the screens show: the demo's while it is on, otherwise the active account's. */
     val active: AccountComponent
         get() {

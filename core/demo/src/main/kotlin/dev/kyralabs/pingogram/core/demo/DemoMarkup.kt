@@ -8,9 +8,13 @@ private val Marks = Regex("""\*\*(.+?)\*\*|__(.+?)__|`([^`]+)`""")
 /** A link in a text, as TDLib finds them in received messages. */
 private val Links = Regex("""https?://[^\s]+[^\s.,!?)]""")
 
+/** A mention of a username, as TDLib finds them in received messages. */
+private val Mentions = Regex("""(?<![\w/])@[A-Za-z][A-Za-z0-9_]{4,31}""")
+
 /**
  * [markup] as TDLib's formatted text: its marks become bold, italic and code entities (the marks themselves dropped),
- * and its links URL entities. Offsets count UTF-16 code units, as td_api.tl's do and Kotlin strings are.
+ * its links URL entities and its `@usernames` mention entities. Offsets count UTF-16 code units, as td_api.tl's
+ * do and Kotlin strings are.
  */
 @Suppress("MagicNumber") // The groups of [Marks], in its order.
 internal fun formattedText(markup: String): TdApi.FormattedText {
@@ -34,6 +38,9 @@ internal fun formattedText(markup: String): TdApi.FormattedText {
     Links.findAll(plain).forEach {
         entities +=
             TdApi.TextEntity(it.range.first, it.value.length, TdApi.TextEntityTypeUrl())
+    }
+    Mentions.findAll(plain).forEach {
+        entities += TdApi.TextEntity(it.range.first, it.value.length, TdApi.TextEntityTypeMention())
     }
     return TdApi.FormattedText(plain, entities.sortedBy { it.offset }.toTypedArray())
 }

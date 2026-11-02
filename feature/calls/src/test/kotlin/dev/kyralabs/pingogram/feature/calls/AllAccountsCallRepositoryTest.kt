@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.CallState
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraph
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.testing.FakeAccountGraphs
+import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -30,7 +31,9 @@ class AllAccountsCallRepositoryTest {
             accounts = persistentListOf(AccountGraph(0, repositories(first)), AccountGraph(1, repositories(second))),
             activeSlot = 1,
         )
-    private val calls = AllAccountsCallRepository(graphs)
+    private val demo = FakeDemoRepository()
+    private val demoCalls = FakeCallRepository()
+    private val calls = AllAccountsCallRepository(graphs, demo) { demoCalls }
 
     /** An account's repositories that answer only its calls. */
     private fun repositories(calls: FakeCallRepository): AccountRepositories =
@@ -116,4 +119,21 @@ class AllAccountsCallRepositoryTest {
         assertEquals(0, CallIds.slotOf(7))
         assertEquals(7, CallIds.tdlibId(CallIds.of(3, 7)))
     }
+
+    @Test
+    fun `while the demo shows, only its calls come, and its actions and new calls go to it`() =
+        runTest {
+            demo.isDemo.value = true
+            first.update(ringing(1))
+            demoCalls.update(ringing(2))
+
+            val all = calls.calls.first()
+            val started = calls.startCall(42, isVideo = false, protocol = ENGINE_PROTOCOL)
+            calls.acceptCall(CallIds.of(CallIds.DEMO_SLOT, 2), ENGINE_PROTOCOL)
+
+            assertEquals(setOf(CallIds.of(CallIds.DEMO_SLOT, 2)), all.keys)
+            assertEquals(Outcome.Success(CallIds.of(CallIds.DEMO_SLOT, FakeCallRepository.STARTED_CALL_ID)), started)
+            assertEquals(listOf(2 to ENGINE_PROTOCOL), demoCalls.accepted)
+            assertTrue(second.started.isEmpty())
+        }
 }

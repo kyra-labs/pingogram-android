@@ -22,6 +22,10 @@ class DemoTdlibClientTest {
     @TempDir
     lateinit var dir: File
 
+    /** Where picked files come from: the app's upload cache, outside the demo's folder. */
+    @TempDir
+    lateinit var outside: File
+
     /** The journal's lines, kept across clients as the file keeps them across process deaths. */
     private val lines = mutableListOf<String>()
 
@@ -84,12 +88,16 @@ class DemoTdlibClientTest {
                     DemoData.BEN_CHAT,
                     DemoData.GROUP_CHAT,
                     DemoData.CHANNEL_CHAT,
+                    DemoData.FORUM_CHAT,
+                    DemoData.DISCUSSION_CHAT,
+                    DemoData.PHOTO_WALKS_CHAT,
+                    DemoData.NEWS_CHAT,
                     DemoData.ME,
                     DemoData.DEV_CHAT,
                 ),
                 chats.toSet(),
             )
-            assertEquals(5, updates.filterIsInstance<TdApi.UpdateUser>().size)
+            assertEquals(7, updates.filterIsInstance<TdApi.UpdateUser>().size)
             assertEquals(
                 listOf(
                     DemoData.WORK_FOLDER,
@@ -132,9 +140,9 @@ class DemoTdlibClientTest {
 
             assertEquals(2, newest.size)
             assertTrue(newest[0].id > newest[1].id)
-            assertEquals(4, older.size)
+            assertEquals(5, older.size)
             assertTrue(older.all { it.id < newest.last().id })
-            assertInstanceOf(TdApi.MessagePhoto::class.java, older.first().content)
+            assertInstanceOf(TdApi.MessageVoiceNote::class.java, older.first().content)
         }
 
     @Test
@@ -272,21 +280,203 @@ class DemoTdlibClientTest {
         }
 
     @Test
-    fun `what the demo cannot do fails as not available in the demo`() =
+    fun `what needs a Telegram account fails as such`() =
         runTest {
             val (client, _) = client()
 
             listOf(
-                TdApi.CreateCall().apply { userId = DemoData.ADA },
-                TdApi.JoinChatByInviteLink().apply { inviteLink = "https://t.me/+abc" },
+                TdApi.DeleteAccount().apply { reason = "" },
                 TdApi.SetAuthenticationPhoneNumber().apply { phoneNumber = "+447911123456" },
-                TdApi.GetActiveSessions(),
-                TdApi.SendMessage(DemoData.ADA_CHAT, null, null, null, null, TdApi.InputMessageContact()),
-                TdApi.SendMessage(DemoData.CHANNEL_CHAT, null, null, null, null, text("Hello")),
+                TdApi.BoostChat().apply { chatId = DemoData.CHANNEL_CHAT },
             ).forEach { function ->
                 val failure = client.send(function) as TdResult.Failure
                 assertEquals(DemoTdlibClient.NOT_AVAILABLE, failure.error.message, function.javaClass.simpleName)
             }
+        }
+
+    @Test
+    fun `a sent photo is copied into the demo's folder, shown, and kept after the original is gone`() =
+        runTest {
+            val (client, _) = client()
+            val picked = File(outside, "IMG_1.jpg").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+
+            val sent =
+                client.ask(
+                    TdApi.SendMessage(
+                        DemoData.BEN_CHAT,
+                        null,
+                        null,
+                        null,
+                        null,
+                        TdApi.InputMessagePhoto(
+                            TdApi.InputPhoto(TdApi.InputFileLocal(picked.path), null, null, intArrayOf(), 640, 480),
+                            TdApi.FormattedText("Look", emptyArray()),
+                            false,
+                            null,
+                            false,
+                        ),
+                    ),
+                )
+            picked.delete()
+            val (restarted, _) = client()
+
+            val photo = (restarted.ask(TdApi.GetMessage(DemoData.BEN_CHAT, sent.id)).content as TdApi.MessagePhoto)
+            val file =
+                photo.photo.sizes
+                    .single()
+                    .photo
+            assertTrue(file.local.path.startsWith(dir.path) && File(file.local.path).length() == 64L)
+            assertEquals("Look", photo.caption.text)
+            assertEquals(file.local.path, restarted.ask(TdApi.DownloadFile(file.id, 32, 0, 0, false)).local.path)
+        }
+
+    @Test
+    fun `a voice message, a location and a poll go out as their kinds`() =
+        runTest {
+            val (client, _) = client()
+            val voice = File(outside, "voice.ogg").apply { writeBytes(ByteArray(8)) }
+
+            val kinds =
+                listOf(
+                    TdApi.InputMessageVoiceNote(
+                        TdApi.InputVoiceNote(TdApi.InputFileLocal(voice.path), 3, byteArrayOf(5)),
+                        null,
+                        null,
+                    ),
+                    TdApi.InputMessageLocation(TdApi.Location(51.5, -0.12, 10.0)),
+                    TdApi.InputMessagePoll().apply {
+                        question = TdApi.FormattedText("Lunch?", emptyArray())
+                        options = arrayOf(TdApi.InputPollOption(TdApi.FormattedText("Yes", emptyArray()), null))
+                        isAnonymous = true
+                        type = TdApi.InputPollTypeRegular()
+                    },
+                ).map { client.ask(TdApi.SendMessage(DemoData.GROUP_CHAT, null, null, null, null, it)).content }
+
+            assertInstanceOf(TdApi.MessageVoiceNote::class.java, kinds[0])
+            assertInstanceOf(TdApi.MessageLocation::class.java, kinds[1])
+            assertEquals(
+                "Yes",
+                (kinds[2] as TdApi.MessagePoll)
+                    .poll.options
+                    .single()
+                    .text.text,
+            )
+        }
+
+    @Test
+    fun `forwarding copies a message into another demo chat with where it came from`() =
+        runTest {
+            val (client, _) = client()
+            val post = client.ask(TdApi.GetChatHistory(DemoData.CHANNEL_CHAT, 0, 0, 1, false)).messages.single()
+
+            val forwarded =
+                client.ask(
+                    TdApi.ForwardMessages(
+                        DemoData.ME,
+                        null,
+                        DemoData.CHANNEL_CHAT,
+                        longArrayOf(post.id),
+                        null,
+                        false,
+                        false,
+                    ),
+                )
+
+            val origin = checkNotNull(forwarded.messages.single().forwardInfo).origin as TdApi.MessageOriginChannel
+            assertEquals(DemoData.CHANNEL_CHAT to post.id, origin.chatId to origin.messageId)
+            assertEquals(forwarded.messages.single().id, client.ask(TdApi.GetChat(DemoData.ME)).lastMessage?.id)
+        }
+
+    @Test
+    fun `the user's own message can be edited and pinned, and others' cannot be edited`() =
+        runTest {
+            val (client, updates) = client()
+            val own = client.ask(TdApi.SendMessage(DemoData.ADA_CHAT, null, null, null, null, text("Draft")))
+            val theirs = client.ask(TdApi.GetChatHistory(DemoData.ADA_CHAT, own.id, 1, 1, false)).messages.single()
+
+            client.ask(TdApi.EditMessageText(DemoData.ADA_CHAT, own.id, null, text("Final")))
+            client.ask(TdApi.PinChatMessage(DemoData.ADA_CHAT, own.id, false, false))
+            runCurrent()
+
+            val edited = client.ask(TdApi.GetMessage(DemoData.ADA_CHAT, own.id))
+            assertEquals("Final", (edited.content as TdApi.MessageText).text.text)
+            assertTrue(edited.isPinned && edited.editDate == NOW)
+            assertTrue(
+                updates.any { it is TdApi.UpdateMessageEdited } && updates.any { it is TdApi.UpdateMessageIsPinned },
+            )
+            assertEquals(
+                404,
+                (
+                    client.send(
+                        TdApi.EditMessageText(DemoData.ADA_CHAT, theirs.id, null, text("x")),
+                    ) as TdResult.Failure
+                ).error.code,
+            )
+        }
+
+    @Test
+    fun `a scheduled message waits outside the history until it is sent now`() =
+        runTest {
+            val (client, _) = client()
+            val later =
+                TdApi.MessageSendOptions().apply {
+                    schedulingState =
+                        TdApi.MessageSchedulingStateSendAtDate(NOW + 3_600, 0)
+                }
+
+            val scheduled = client.ask(TdApi.SendMessage(DemoData.BEN_CHAT, null, null, later, null, text("Tomorrow")))
+
+            assertTrue(client.ask(TdApi.GetChat(DemoData.BEN_CHAT)).hasScheduledMessages)
+            assertEquals(
+                listOf(scheduled.id),
+                client.ask(TdApi.GetChatScheduledMessages(DemoData.BEN_CHAT)).messages.map { it.id },
+            )
+            assertTrue(
+                client
+                    .ask(TdApi.GetChatHistory(DemoData.BEN_CHAT, 0, 0, 1, false))
+                    .messages
+                    .single()
+                    .id != scheduled.id,
+            )
+
+            client.ask(TdApi.EditMessageSchedulingState(DemoData.BEN_CHAT, scheduled.id, null))
+
+            assertTrue(client.ask(TdApi.GetChatScheduledMessages(DemoData.BEN_CHAT)).messages.isEmpty())
+            val newest = client.ask(TdApi.GetChatHistory(DemoData.BEN_CHAT, 0, 0, 1, false)).messages.single()
+            assertEquals("Tomorrow", (newest.content as TdApi.MessageText).text.text)
+        }
+
+    @Test
+    fun `an album's messages share an album id, and a message of someone else's can be deleted for the user`() =
+        runTest {
+            val (client, _) = client()
+            val files = (1..2).map { File(outside, "$it.jpg").apply { writeBytes(ByteArray(4)) } }
+            val photos =
+                files.map {
+                    TdApi.InputMessagePhoto(
+                        TdApi.InputPhoto(TdApi.InputFileLocal(it.path), null, null, intArrayOf(), 10, 10),
+                        null,
+                        false,
+                        null,
+                        false,
+                    )
+                }
+
+            val album = client.ask(TdApi.SendMessageAlbum(DemoData.ADA_CHAT, null, null, null, photos.toTypedArray()))
+            val theirs = client.ask(TdApi.GetChatHistory(DemoData.ADA_CHAT, 0, 2, 1, false)).messages.single()
+            client.ask(TdApi.DeleteMessages(DemoData.ADA_CHAT, longArrayOf(theirs.id), false))
+
+            assertEquals(
+                1,
+                album.messages
+                    .map { it.mediaAlbumId }
+                    .distinct()
+                    .size,
+            )
+            assertEquals(
+                404,
+                (client.send(TdApi.GetMessage(DemoData.ADA_CHAT, theirs.id)) as TdResult.Failure).error.code,
+            )
         }
 
     private fun text(text: String) = TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), null, false)

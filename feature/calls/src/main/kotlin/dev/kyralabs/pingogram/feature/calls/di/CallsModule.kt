@@ -11,8 +11,8 @@ import dev.kyralabs.pingogram.feature.calls.CallTones
 import dev.kyralabs.pingogram.feature.calls.CallerNames
 import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
-import dev.kyralabs.pingogram.feature.calls.engine.NtgCallsEngine
-import dev.kyralabs.pingogram.feature.calls.engine.NtgScreenCaptureConsent
+import dev.kyralabs.pingogram.feature.calls.engine.DemoAwareCallEngine
+import dev.kyralabs.pingogram.feature.calls.engine.DemoAwareScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallService
 import dev.kyralabs.pingogram.feature.calls.service.RepositoryChatTitles
@@ -32,11 +32,12 @@ import dev.kyralabs.pingogram.feature.calls.ui.MicrophoneAccess
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface CallsModule {
+    // NTgCalls, or the demo's engine while the demo shows (docs/adr/0034-demo-mode-for-store-review.md).
     @Binds
-    fun callEngine(engine: NtgCallsEngine): CallEngine
+    fun callEngine(engine: DemoAwareCallEngine): CallEngine
 
     @Binds
-    fun screenCaptureConsent(consent: NtgScreenCaptureConsent): ScreenCaptureConsent
+    fun screenCaptureConsent(consent: DemoAwareScreenCaptureConsent): ScreenCaptureConsent
 
     @Binds
     fun callSystem(system: TelecomCallSystem): CallSystem

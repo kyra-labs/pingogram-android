@@ -54,13 +54,15 @@
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>
     <string name="call_video">Video call</string>
+    <!-- The demo's call button: the sample person calls the user a moment later, so a call can be answered. -->
+    <string name="call_receive_demo">Receive a demo call</string>
     <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
     <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
     <!-- Who saw a message ("Seen by"): Telegram keeps it for a while only, and not in large groups. -->
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
     <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
-    <string name="error_not_available_in_demo">Not available in the demo</string>
+    <string name="error_not_available_in_demo">This needs a Telegram account. The demo can\'t do it.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

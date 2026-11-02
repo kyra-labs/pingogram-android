@@ -16,4 +16,10 @@ interface DemoRepository {
 
     /** Turns the demo off and deletes everything it made (what the user sent, read, reacted to). */
     suspend fun leave()
+
+    /**
+     * Has sample person [userId] call the user a moment later, so an incoming call can be answered in the demo
+     * (`docs/adr/0034-demo-mode-for-store-review.md`); nothing while the demo is off.
+     */
+    suspend fun receiveCall(userId: Long)
 }

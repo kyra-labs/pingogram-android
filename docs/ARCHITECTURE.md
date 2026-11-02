@@ -88,17 +88,47 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers. It replaces
   the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
   - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
-    `DemoData` (made-up people, a group, a channel, Saved Messages, an archived chat and a "Work" folder, texts in
-    translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
+    `DemoData` (made-up people, a group, a channel with its discussion group, a forum, Saved Messages, an archived
+    chat, a "Work" folder, and a group and a channel the user is not in, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
-    `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
+    `core:data` maps to `DomainError.NotAvailableInDemo` ("This needs a Telegram account. The demo can't do it.").
   - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
-  - **What the user does** (texts sent, reads, reactions, votes, pins, archiving, muting) goes into a journal
-    (`DemoJournal`, `filesDir/demo/journal.txt`), replayed at its next start, so a process death keeps the demo.
+  - **The areas**: `DemoTdlibClient` asks its `DemoArea`s in turn (`DemoMessages`: history, sending every kind of
+    content, albums, forwarding, edits, pins, scheduled messages, reactions, votes; `DemoSearch`: chats, messages and
+    shared media, recently found chats, text entities; `DemoDetails`: who saw, reacted and voted, translation;
+    `DemoStickers`: the sample sticker sets, drawn on the phone; `DemoGroups` and `DemoGroupAdmin`: the group and the
+    channel the user owns, with members, settings, invite links, join requests, recent actions, statistics and boosts
+    (`DemoGroupState`), new groups and channels, upgrading, leaving and deleting; `DemoAccount`: the user's profile,
+    contacts (sample people have numbers of the UK range kept for fiction), blocking, privacy, sample sessions and
+    websites, Ada's sample story, the phone number fields' countries; `DemoSettings`: 2-step verification, the login
+    email and the phone number (any code of the length asked), notification settings and exceptions, storage and
+    network statistics, proxies (kept, never connected through), the archive's settings; `DemoFolders`: chat folders
+    with their rules applied to the demo's chats, suggestions and invite links; `DemoTopics`: the forum's topics, the
+    channel posts' comment threads, secret chats (ready at once, their key made up) and Saved Messages' topics;
+    `DemoLinks`: what kind of link a text is (`DemoLinkParser`, as TDLib parses links on the device), usernames,
+    message links, the sample invite links (a group to join, one that asks first, a public channel) and private chats
+    with the sample people; `DemoBots`: the sample bot, its commands, inline buttons, reply keyboard and inline results,
+    which answers what is sent to it; `DemoCalls`: scripted calls (the other side rings and answers on timed
+    `DemoLater` changes, its key's emojis made up; `DemoIncomingCall`, the demo's own function, has a sample person call)
+    and the book club's voice chat with sample people; `DemoChats`: chats, lists, people), each
+    answering on
+    `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
+    rebuilt by the same replay).
+  - **What the user does** goes into a journal (`DemoJournal`, `filesDir/demo/journal.txt`): each function an area took
+    as a change, written by `DemoCodec` (TDLib's objects field by field, by reflection; TDLib's keep rules keep the
+    fields through R8) with its date, and replayed through the same areas at the next start, so a process death keeps
+    the demo. Files a function names (photos, voice and video messages) are copied into `filesDir/demo/files/sent`
+    first and the copies named instead, so they outlive the upload cache; nothing leaves the phone.
   - **Pictures and the voice message** are made on the phone at their first download (`DemoFile`), never stock or
     Telegram's.
   - **The graph**: `Accounts` keeps the demo's graph beside the accounts, under `AccountSlot.Demo`, made with the demo's
     client (`DemoClients`, through `AccountFactory.demoClient`), never one of `TdlibClientFactory`'s.
+  - **Calls**: `feature:calls` runs the demo's calls with the real call screens, Telecom and service: while the demo shows,
+    `AllAccountsCallRepository` takes the shown graph's (the demo's) calls under `CallIds.DEMO_SLOT`, and
+    `DemoAwareCallEngine` hands the call managers `DemoCallEngine`, which connects to nothing and never loads NTgCalls:
+    the camera's frames (`DemoCamera`, the platform's camera API, only while the camera is on in a call) go to the
+    self-view alone, and the microphone is not opened. The call button's menu offers "Receive a demo call"
+    (`CallStarter.receiveDemoCall`, `DemoRepository.receiveCall`).
   - **On and off**: while the demo is on (`noBackupFilesDir/demo`, `Accounts.isDemo`), `Accounts.active` is its graph,
     so `ActiveAccountModule` hands its repositories to the screens. `registry`, `all()` and `AccountGraphs` never list
     it, so notifications, push, widgets, shortcuts, Direct Share, the storage clean-up, the call managers and the
@@ -108,8 +138,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - **On screen**: `feature:auth`'s Welcome opens the question (`DemoDialog`, `AuthViewModel.demoDialog` in the saved
     state) when its logo is held, and "Open" enters. `:app`'s `AccountRestart` opens the app again in a new task when
     `Accounts.isDemo` changes, as a switch of accounts does. `MainActivity` reads it once per activity: it wraps the app
-    in `DemoFrame` (the banner above every screen), provides `core:ui`'s `LocalIsDemo` and leaves out the call starter,
-    the voice chats and the account menu. `feature:settings` reads `LocalIsDemo` for the account card's "Demo", "Leave
+    in `DemoFrame` (the banner above every screen), provides `core:ui`'s `LocalIsDemo` and leaves out the account menu. `feature:settings` reads `LocalIsDemo` for the account card's "Demo", "Leave
     demo" (`SettingsViewModel` leaves instead of logging out) and the rows it leaves out.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
