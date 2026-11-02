@@ -23,4 +23,14 @@ class AboutViewModelTest {
                 assertEquals(AboutEffect.OpenUrl("https://github.com/kyra-labs/pingogram-android"), awaitItem())
             }
         }
+
+    @Test
+    fun `the privacy policy row opens Pingogram's privacy policy`() =
+        runTest {
+            viewModel.effects.test {
+                viewModel.onEvent(AboutEvent.OpenPrivacyPolicy)
+
+                assertEquals(AboutEffect.OpenUrl("https://pingogram.kyralabs.dev/privacy/"), awaitItem())
+            }
+        }
 }

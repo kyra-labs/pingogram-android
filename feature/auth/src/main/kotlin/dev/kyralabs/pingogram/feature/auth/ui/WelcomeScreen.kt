@@ -51,9 +51,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A1: the brand (`displayMediumEmphasized`), an honest note that Pingogram is not Telegram's own app (CLAUDE.md
- * rule 3), "Start messaging", and Telegram's terms of service and privacy policy. The hero, Pingogram's mark on an
- * Expressive shape, morphs while "Start messaging" is pressed. On wide windows and in landscape the hero and the brand
- * are the start pane, the rest the end one.
+ * rule 3), "Start messaging", Telegram's terms of service and privacy policy, and Pingogram's own privacy policy. The
+ * hero, Pingogram's mark on an Expressive shape, morphs while "Start messaging" is pressed. On wide windows and in
+ * landscape the hero and the brand are the start pane, the rest the end one.
  */
 @Composable
 fun WelcomeScreen(
@@ -99,7 +99,8 @@ fun WelcomeScreen(
 
 /**
  * "Start messaging", the hero moment's medium button (`docs/DESIGN_SYSTEM.md` §6): as wide as the column on compact
- * windows, as wide as its label on wider ones. Then the terms of service and privacy policy that continuing accepts.
+ * windows, as wide as its label on wider ones. Then Telegram's terms of service and privacy policy, which continuing
+ * accepts, and Pingogram's own privacy policy, each a button of its own.
  */
 @Composable
 private fun ColumnScope.WelcomeActions(
@@ -132,7 +133,11 @@ private fun ColumnScope.WelcomeActions(
         )
         AuthTextButton(
             text = stringResource(R.string.auth_privacy_policy),
-            onClick = { onEvent(AuthEvent.OpenPrivacyPolicy) },
+            onClick = { onEvent(AuthEvent.OpenTelegramPrivacyPolicy) },
+        )
+        AuthTextButton(
+            text = stringResource(R.string.auth_pingogram_privacy_policy),
+            onClick = { onEvent(AuthEvent.OpenPingogramPrivacyPolicy) },
         )
     }
 }

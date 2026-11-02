@@ -85,19 +85,17 @@ Most answers are `docs/PLAY_STORE.md`'s; the table says where a store differs.
 | App name | `Pingogram` (`PLAY_STORE.md` §1, never "Telegram") | `Pingogram`. AppGallery's guidelines also forbid "trademarks, popular app names or aliases" in a name |
 | Category | **Social**. Galaxy Store has no Communication category; the category cannot be changed later through its API, and Samsung may reclassify an app | **Unconfirmed**: Huawei's category list could not be read. Choose "Communication" if offered, otherwise "Social" |
 | Age rating | Samsung's own scale (0, 4, 12, 16, 18). Answer as Play's IARC questionnaire (`PLAY_STORE.md` §5: users interact, shares location; nothing else): **12**, matching Play's expected Teen / PEGI 12. **Unconfirmed** whether Samsung uses IARC or wants a certificate; a forum answer calls one optional | Huawei's content-rating questionnaire (*Release app → Version information → Content rating*, 3+, 8+, 12+, 16+, 18+), answered as Play's IARC one. **Unconfirmed** result: 12+ expected, 16+ if the questionnaire treats unmoderated chat so. Answer it again when content changes |
-| Privacy policy | `https://github.com/kyra-labs/pingogram-android/blob/main/PRIVACY.md` (`PLAY_STORE.md` §1). Galaxy Store's guide (§3.1.2) asks apps that handle user data to show the policy **in the app** too: see the gap below | the same URL; AppGallery also asks that it can be reached from inside the app: see the gap below |
+| Privacy policy | `https://pingogram.kyralabs.dev/privacy/` (`PLAY_STORE.md` §1). Galaxy Store's guide (§3.1.2) asks apps that handle user data to show the policy **in the app** too: see below | the same URL; AppGallery also asks that it can be reached from inside the app: see below |
 | Account deletion | not required by Galaxy Store. Its guide (§3.1.3) asks that the privacy policy say how data is deleted, "for example, upon account deletion", which `PRIVACY.md` does | **required**: apps with accounts must let users deregister "without obstacles" (review guidelines §7). In the app: Settings → Privacy and security → Delete account. AppGallery's optional URL for exercising the user's rights: `https://pingogram.kyralabs.dev/delete-account/` |
+| Child safety standards | no such declaration found in Galaxy Store's guide (**Unconfirmed**). If Seller Portal asks: `https://pingogram.kyralabs.dev/child-safety/`, contact `contact@kyralabs.dev` (`PLAY_STORE.md` §8) | none found in AppGallery's review guidelines (**Unconfirmed**). If asked, the same page and contact |
 | Data and privacy declarations | the registration's **Data Safety** tab: answer as `PLAY_STORE.md` §2 (the same `gms` build: everything to Telegram, collected not shared, for app functionality; the FCM token as "Device or other IDs") | no data form like Play's (none found). The privacy policy and the permission descriptions below cover it. The `foss` build sends no push token: nothing goes anywhere but Telegram |
 | Permissions | no declaration form. If **South Korea** is among the countries, the guide (§3.4.3) asks to list the required and optional permissions and why; **Unconfirmed** where Seller Portal asks for it. Use `PLAY_STORE.md` §3's texts | the "Privacy Description" step of an APK with sensitive permissions: one explanation per permission, `PLAY_STORE.md` §3's texts. "Highly sensitive" ones also take a usage scenario and an optional demo video; §3's "Demo video shows" column says what to film. Huawei publishes no list of which they are. `foss` adds the two below, and lacks `gms`' `com.google.android.c2dm.permission.RECEIVE` |
 | Ads | none (`PLAY_STORE.md` §1: sponsored messages are Telegram's) | none |
 | Countries | all except **China**: Telegram is blocked there, and Samsung wants China's MIIT registration data. Choose the countries one by one or as groups | all except **Mainland China** (*Release countries/regions*: leave it unselected). A release there needs a software copyright certificate (Huawei, "Releasing an app") and Telegram is blocked there. Whether an ICP filing would also be needed is **Unconfirmed** (forum only), and moot |
 
-**Gap: the policy inside the app.** Both stores ask for the privacy policy to be reachable in the app.
-- **What the app has now:** the Welcome screen's "Privacy Policy" link, which opens **Telegram's** policy
-  (`telegram.org/privacy`); Settings → About has no link to Pingogram's `PRIVACY.md`.
-- **What both stores need:** a "Privacy policy" row in About that opens `PRIVACY.md`'s address, a small change in
-  `feature:settings`. It is listed in `docs/audit/v1-readiness.md` and needed before the first submission to either
-  store. Play asks only for the URL.
+**The policy inside the app.** Both stores ask for the privacy policy to be reachable in the app: Settings → About
+has a "Privacy policy" row, and the Welcome screen links "Pingogram's privacy policy" after Telegram's Terms of Service
+and Privacy Policy, which signing in accepts. Both open the website's page in the browser.
 
 The `foss` build's two permissions beyond `PLAY_STORE.md` §3, for AppGallery's Privacy Description:
 
@@ -213,7 +211,7 @@ approval for `release.yml`):
 - Both accounts approved (§2); for Samsung, commercial seller status (D-U-N-S if corporate).
 - The images made (§5) and the screenshots current.
 - The reviewer's test number checked (§3.1).
-- `PRIVACY.md` names both stores, and Settings → About links it (§3, the gap).
+- `PRIVACY.md` names both stores, and the website's page shows it (Settings → About and Welcome link it, §3).
 - **Telegram's terms**: as on Play (`PLAY_STORE.md` §8). Neither store's rules name Telegram clients. Both forbid
   misleading brand use, and no rejection of a Telegram client's listing on either was found. Telegram X, for one, is on
   AppGallery.

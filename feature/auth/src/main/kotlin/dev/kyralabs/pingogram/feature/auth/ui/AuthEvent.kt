@@ -12,9 +12,14 @@ sealed interface AuthEvent {
 
     data object StartMessaging : AuthEvent
 
+    /** Telegram's terms of service, which signing in accepts. */
     data object OpenTermsOfService : AuthEvent
 
-    data object OpenPrivacyPolicy : AuthEvent
+    /** Telegram's privacy policy, which signing in accepts. */
+    data object OpenTelegramPrivacyPolicy : AuthEvent
+
+    /** Pingogram's own privacy policy: what the app does with the user's data. */
+    data object OpenPingogramPrivacyPolicy : AuthEvent
 
     // The demo for app store reviewers (docs/adr/0034-demo-mode-for-store-review.md)
 
