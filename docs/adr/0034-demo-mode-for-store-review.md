@@ -66,7 +66,9 @@ say that they need a Telegram account, or are not shown in the demo (owner to ch
 - **Signing in, adding an account and logging out**: left out of the demo's screens; "Leave demo" takes the place of
   logging out.
 - **Calls and voice chats**, until the scripted demo calls arrive (a pull request of their own).
-- **Bot buttons, bot keyboards and inline bots** (the GIF search included), until the sample bot's pull request.
+- **GIF search**: the demo names no GIF search bot, so the GIF tab shows the saved GIFs (none) without its search
+  field. The sample bot shows inline results, buttons and a keyboard instead; Mini Apps, games and payments are not
+  offered by Pingogram at all.
 - **Sponsored messages**: Telegram chooses them; the demo shows none rather than made-up advertisements.
 - **Notifications, push and the home screen widget**: they never see the demo (its account graph is kept apart).
 

@@ -285,6 +285,21 @@ internal class DemoData(
     fun userFullInfo(userId: Long) =
         TdApi.UserFullInfo().apply {
             bio = TdApi.FormattedText(if (userId == ADA) text(R.string.demo_ada_bio) else "", emptyArray())
+            if (userId == LOGIN_BOT) botInfo = botInfo()
+        }
+
+    /** What the sample bot says about itself, and its commands. */
+    private fun botInfo() =
+        TdApi.BotInfo().apply {
+            shortDescription = text(R.string.demo_bot_short_description)
+            description = text(R.string.demo_bot_description)
+            commands =
+                arrayOf(
+                    TdApi.BotCommand("start", text(R.string.demo_bot_command_start), false),
+                    TdApi.BotCommand("help", text(R.string.demo_bot_command_help), false),
+                    TdApi.BotCommand("keyboard", text(R.string.demo_bot_command_keyboard), false),
+                )
+            privacyPolicyUrl = ""
         }
 
     val groupFullInfo =
@@ -463,7 +478,11 @@ internal class DemoData(
         phoneNumber = ""
         status = TdApi.UserStatusEmpty()
         haveAccess = true
-        type = TdApi.UserTypeBot().apply { inlineQueryPlaceholder = "" }
+        type =
+            TdApi.UserTypeBot().apply {
+                isInline = true
+                inlineQueryPlaceholder = text(R.string.demo_bot_inline_placeholder)
+            }
         languageCode = "en"
         accentColorId = (id % ACCENT_COLORS).toInt()
         profileAccentColorId = -1

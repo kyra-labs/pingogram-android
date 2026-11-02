@@ -27,7 +27,7 @@
     <string name="demo_stat_left">Left</string>
     <string name="demo_stat_views">Views</string>
     <string name="demo_stat_messages">Messages</string>
-    <string name="demo_bot_name">Sample Login Bot</string>
+    <string name="demo_bot_name">Sample Bot</string>
     <string name="demo_story_caption">A sample story, made on this phone.</string>
     <string name="demo_folder_unread">Unread</string>
     <string name="demo_folder_unread_description">Chats with unread messages</string>
@@ -103,7 +103,7 @@
     <string name="demo_news_description">The demo\'s public channel. Join it to follow it.</string>
     <string name="demo_news_post">Welcome to Sample News: one made-up story a day.</string>
     <string name="demo_folder_hobbies">Hobbies</string>
-    <string name="demo_ada_links">Join our photo walks: https://t.me/+DemoPhotoWalks The book swap asks first: https://t.me/+DemoBookSwap And the news: https://t.me/sample_news</string>
+    <string name="demo_ada_links">Join our photo walks: https://t.me/+DemoPhotoWalks The book swap asks first: https://t.me/+DemoBookSwap And the news: https://t.me/sample_news Or try the sample bot: @sample_login_bot</string>
     <string name="demo_ben_folder">My folder of hobby chats: https://t.me/addlist/DemoHobbies</string>
 
     <!-- Reporting a chat or messages: the reasons it offers. Reports go nowhere. -->
@@ -111,4 +111,39 @@
     <string name="demo_report_spam">Spam</string>
     <string name="demo_report_fake">Fake account</string>
     <string name="demo_report_other">Something else</string>
+
+    <!-- The sample bot: what it says and what its buttons do. Nothing leaves the phone. -->
+    <string name="demo_bot_short_description">A sample bot that shows what bots can do.</string>
+    <string name="demo_bot_description">This sample bot lives on this phone. It answers commands, shows buttons and a keyboard, and offers results when you type @sample_login_bot in a chat.</string>
+    <string name="demo_bot_command_start">Start the bot</string>
+    <string name="demo_bot_command_help">What the bot can do</string>
+    <string name="demo_bot_command_keyboard">Show the bot\'s keyboard</string>
+    <string name="demo_bot_welcome">Hello! Tap a button below, or use the keyboard.</string>
+    <string name="demo_bot_help">Commands: /start shows the buttons, /keyboard the keyboard. Type @sample_login_bot in any chat for results.</string>
+    <string name="demo_bot_keyboard">Here is the keyboard.</string>
+    <string name="demo_bot_echo">You said: %1$s</string>
+    <string name="demo_bot_thanks_contact">Thanks for your number.</string>
+    <string name="demo_bot_thanks_location">Thanks, I have your location.</string>
+    <string name="demo_bot_thanks_poll">Nice poll!</string>
+    <string name="demo_bot_thanks_shared">Thanks, I got %1$s.</string>
+    <string name="demo_bot_button_hello">Say hello</string>
+    <string name="demo_bot_button_alert">Show an alert</string>
+    <string name="demo_bot_button_login">Log in to example.org</string>
+    <string name="demo_bot_button_open">Open example.org</string>
+    <string name="demo_bot_hello_answer">Hello from the sample bot!</string>
+    <string name="demo_bot_alert_answer">This is an alert from the sample bot.</string>
+    <string name="demo_bot_key_hello">Hello</string>
+    <string name="demo_bot_key_phone">Share my number</string>
+    <string name="demo_bot_key_location">Share my location</string>
+    <string name="demo_bot_key_poll">Make a poll</string>
+    <string name="demo_bot_key_person">Pick a person</string>
+    <string name="demo_bot_key_group">Pick a group</string>
+    <string name="demo_bot_placeholder">Message the bot</string>
+    <string name="demo_bot_inline_placeholder">Search samples</string>
+    <string name="demo_bot_result_harbour">The old harbour</string>
+    <string name="demo_bot_result_harbour_description">Boats at sunrise, a sample article.</string>
+    <string name="demo_bot_result_lighthouse">The lighthouse</string>
+    <string name="demo_bot_result_lighthouse_description">A walk to the end of the pier.</string>
+    <string name="demo_bot_result_market">The market</string>
+    <string name="demo_bot_result_market_description">Saturday morning stalls.</string>
 </resources>

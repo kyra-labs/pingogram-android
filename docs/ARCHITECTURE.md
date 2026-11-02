@@ -107,7 +107,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     channel posts' comment threads, secret chats (ready at once, their key made up) and Saved Messages' topics;
     `DemoLinks`: what kind of link a text is (`DemoLinkParser`, as TDLib parses links on the device), usernames,
     message links, the sample invite links (a group to join, one that asks first, a public channel) and private chats
-    with the sample people; `DemoChats`: chats, lists, people), each
+    with the sample people; `DemoBots`: the sample bot, its commands, inline buttons, reply keyboard and inline results,
+    which answers what is sent to it; `DemoChats`: chats, lists, people), each
     answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).
