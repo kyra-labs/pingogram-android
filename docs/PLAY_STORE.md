@@ -113,35 +113,41 @@ description (`REQUIREMENTS.md` §2). Play's metadata policy forbids implying an 
 
 - **App name** (30 characters): `Pingogram`
   (or `Pingogram: Material messenger`, 29)
-- **Short description** (80): `A fast, private Material You client for your Telegram account. Open source.` (75)
+- **Short description** (80): `A private, open-source Telegram client in Material 3 Expressive design` (70)
 - **Full description** (4000):
 
   ```
-  Pingogram is a client for your Telegram account in Material 3 Expressive design: your wallpaper's colors,
-  smooth motion, and layouts that fit phones, foldables and tablets.
+  Pingogram is an open-source client for your Telegram account, designed in Material 3 Expressive: colors from your
+  wallpaper or one of 13 themes, expressive shapes and motion, and layouts that adapt from phones to foldables and
+  tablets.
 
-  Everything you expect from your chats
-  • Chats, groups and channels with folders, archive, pinned chats and a search that finds chats, people, messages,
-    media and links
-  • Photos, videos, GIFs, stickers (animated too), voice messages, files, polls, locations and contacts
-  • Reactions, replies, forwarding, editing, scheduled and silent messages, message threads and forum topics
+  Your chats, all of them
+  • Chats, groups and channels with folders, archive, pinned chats and a search for chats, people, messages, media and
+    links
+  • Photos, videos, GIFs, animated stickers, custom emoji, voice and round video messages, files, polls, locations and
+    contacts
+  • Reactions, replies, quotes, forwarding, editing, scheduled and silent messages, threads and forum topics
+  • Message translation, stories, and search inside a chat
   • Secret chats, end-to-end encrypted on your device
-  • Voice calls, end-to-end encrypted, that ring like phone calls, work with your headset, car and watch
-  • Share from any app straight into a chat
+
+  Calls
+  • End-to-end encrypted voice and video calls that ring like phone calls and work with your headset and car
+  • Voice chats, live streams and group calls, with video and screen sharing
 
   Made for Android
-  • Material You colors from your wallpaper, or one of 13 color themes, light, dark and true black
   • Notifications grouped per chat, with reply and mark as read
-  • Passcode lock with fingerprint or face unlock
-  • Large text, TalkBack and right-to-left languages supported
+  • Passcode lock with fingerprint, face or screen lock, and locked chats
+  • Home screen widget, app shortcuts and sharing from any app into a chat
+  • Large text, TalkBack, keyboard and mouse, and right-to-left languages
 
   Private by design
-  • No ads of its own, no analytics, no tracking. Pingogram talks only to Telegram's servers
+  • No analytics, no trackers, no ads of its own. Pingogram talks only to Telegram's servers, and uses Firebase Cloud
+    Messaging only to wake up for new messages
   • Open source under the GPL: read every line on GitHub
 
-  Pingogram is an unofficial app. It is not affiliated with, endorsed by or sponsored by Telegram. It uses Telegram's
-  official library, TDLib, and you sign in with your Telegram account. Sponsored messages that Telegram shows in some
-  public channels appear as Telegram requires.
+  Pingogram is an unofficial app. It is not affiliated with, endorsed by or sponsored by Telegram. It is built on TDLib,
+  Telegram's official library, and you sign in with your Telegram account. Sponsored messages that Telegram shows in
+  some public channels appear as Telegram requires.
   ```
 
   Keep each bullet true for the version on Play: drop "voice calls" from a listing whose build has none.
@@ -183,6 +189,16 @@ that key, not a key Google generates:
    ```
 
    Upload `pingogram-signing-key.zip`, then delete it.
+
+   - **Do this before the first upload.** Play Console does not always ask: the first bundle uploaded without a key
+     set up turns Play App Signing on with a key Google generates. A bundle processed for that key stays "not
+     available for releases" after the key is changed, and Play never accepts its version code again (1.1.1 was lost
+     this way; 1.1.2 was the first build on Play). Check App signing's SHA-256 against
+     `keytool -list -v -keystore pingogram-release.jks -alias pingogram` before creating the first release.
+   - **Run `pepk.jar` with an OpenJDK** (Android Studio's `jbr`, or Temurin), not Oracle's Java: Oracle's build loads
+     only crypto providers Oracle signed, and refuses the Bouncy Castle copy inside `pepk.jar` ("Cannot find any provider
+     supporting RSA/NONE/OAEPWithSHA1AndMGF1Padding"). The store password unlocks the `.jks` file and the key password
+     the `pingogram` entry; a PKCS12 keystore uses one password for both.
 2. **Upload key**: the simplest choice is the same key (the release workflow already signs the `.aab` with it). A
    separate upload key is safer (it can be reset through Play if it leaks, the app signing key cannot): generate one
    as in `OWNER_SETUP.md` §3, upload its certificate (`keytool -export -rfc -keystore upload.jks -alias upload

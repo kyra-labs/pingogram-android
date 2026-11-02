@@ -9,6 +9,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-02
+
+### Changed
+- Nothing in the app since 1.1.1. This version is the first build published on Google Play, which needed a new version
+  code once Play App Signing was set up with Pingogram's own key.
+
 ## [1.1.1] - 2026-11-02
 
 ### Added
@@ -1079,7 +1085,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.6.0...v1.0.0
