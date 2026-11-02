@@ -88,8 +88,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers. It replaces
   the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
   - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
-    `DemoData` (made-up people, a group, a channel, Saved Messages, an archived chat and a "Work" folder, texts in
-    translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
+    `DemoData` (made-up people, a group, a channel with its discussion group, a forum, Saved Messages, an archived
+    chat and a "Work" folder, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
     `core:data` maps to `DomainError.NotAvailableInDemo` ("Not available in the demo").
   - **No TDLib, no network**: it depends on `core:tdlib` only for the interface and `TdApi`'s plain classes.
@@ -103,7 +103,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     websites, Ada's sample story, the phone number fields' countries; `DemoSettings`: 2-step verification, the login
     email and the phone number (any code of the length asked), notification settings and exceptions, storage and
     network statistics, proxies (kept, never connected through), the archive's settings; `DemoFolders`: chat folders
-    with their rules applied to the demo's chats, suggestions and invite links; `DemoChats`: chats, lists, people), each
+    with their rules applied to the demo's chats, suggestions and invite links; `DemoTopics`: the forum's topics, the
+    channel posts' comment threads, secret chats (ready at once, their key made up) and Saved Messages' topics;
+    `DemoChats`: chats, lists, people), each
     answering on
     `DemoWorld`, the demo's state (an area may keep a little state of its own, such as the installed sticker sets,
     rebuilt by the same replay).

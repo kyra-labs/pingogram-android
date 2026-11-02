@@ -17,8 +17,18 @@ internal class DemoGroupState(
 ) {
     val basicGroups = mutableMapOf(data.group.id to data.group)
     val basicFullInfo = mutableMapOf(data.group.id to data.groupFullInfo)
-    val supergroups = mutableMapOf(data.channel.id to data.channel)
-    val supergroupFullInfo = mutableMapOf(data.channel.id to data.channelFullInfo)
+    val supergroups =
+        mutableMapOf(
+            data.channel.id to data.channel,
+            data.forum.id to data.forum,
+            data.discussion.id to data.discussion,
+        )
+    val supergroupFullInfo =
+        mutableMapOf(
+            data.channel.id to data.channelFullInfo,
+            data.forum.id to data.groupFullInfo(data.forum.id),
+            data.discussion.id to data.groupFullInfo(data.discussion.id),
+        )
 
     /** A supergroup's or channel's members; a basic group's live in its full info. */
     val members = mutableMapOf<Long, MutableList<TdApi.ChatMember>>()
@@ -27,7 +37,7 @@ internal class DemoGroupState(
     val events = mutableMapOf<Long, MutableList<TdApi.ChatEvent>>()
 
     private var nextBasicGroupId = data.group.id + 1
-    private var nextSupergroupId = data.channel.id + 1
+    private var nextSupergroupId = supergroups.keys.max() + 1
     private var nextLink = 1
     private var nextEvent = 1L
 
@@ -46,6 +56,19 @@ internal class DemoGroupState(
                         }
                     TdApi.ChatMember(TdApi.MessageSenderUser(user), "", 0, started + index * HOUR, status)
                 }.toMutableList()
+        listOf(DemoData.FORUM_CHAT, DemoData.DISCUSSION_CHAT).forEach { chatId ->
+            members[chatId] =
+                DemoData.SUPERGROUP_MEMBERS
+                    .mapIndexed { index, user ->
+                        val status =
+                            when (user) {
+                                DemoData.ME -> TdApi.ChatMemberStatusCreator(false, true)
+                                DemoData.ADA -> TdApi.ChatMemberStatusAdministrator(true, data.adminRights())
+                                else -> TdApi.ChatMemberStatusMember(0)
+                            }
+                        TdApi.ChatMember(TdApi.MessageSenderUser(user), "", DemoData.ME, started + index * HOUR, status)
+                    }.toMutableList()
+        }
         links[DemoData.GROUP_CHAT] = mutableListOf(link(primary = true, date = started))
         links[DemoData.CHANNEL_CHAT] =
             mutableListOf(

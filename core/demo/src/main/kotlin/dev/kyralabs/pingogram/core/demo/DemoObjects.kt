@@ -86,3 +86,38 @@ internal object DemoNotifications {
 
     fun scopeSettings() = TdApi.ScopeNotificationSettings(0, 0, true, true, false, 0, true, false, false)
 }
+
+/** A chat the user makes in the demo: a group, a channel or a secret chat, at nothing yet in its lists. */
+internal fun demoChat(
+    id: Long,
+    type: TdApi.ChatType,
+    title: String,
+    canSend: Boolean,
+) = TdApi.Chat().apply {
+    this.id = id
+    this.type = type
+    this.title = title
+    permissions =
+        TdApi.ChatPermissions().apply {
+            canSendBasicMessages = canSend
+            canSendAudios = canSend
+            canSendDocuments = canSend
+            canSendPhotos = canSend
+            canSendVideos = canSend
+            canSendVideoNotes = canSend
+            canSendVoiceNotes = canSend
+            canSendPolls = canSend
+            canSendOtherMessages = canSend
+            canAddLinkPreviews = canSend
+            canReactToMessages = true
+            canInviteUsers = true
+        }
+    notificationSettings = DemoNotifications.chatSettings(muteFor = 0)
+    canBeDeletedOnlyForSelf = true
+    canBeDeletedForAllUsers = true
+    accentColorId = (id % DEMO_ACCENT_COLORS).toInt().let { if (it < 0) -it else it }
+    profileAccentColorId = -1
+    clientData = ""
+}
+
+private const val DEMO_ACCENT_COLORS = 7

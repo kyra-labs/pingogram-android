@@ -77,4 +77,19 @@
 
     <!-- The archived chat. -->
     <string name="demo_dev_old">Thanks for last month\'s help!</string>
+
+    <!-- The sample forum, a group with topics, which the person made. -->
+    <string name="demo_forum_title">Book club</string>
+    <string name="demo_topic_general">General</string>
+    <string name="demo_topic_reading">Reading list</string>
+    <string name="demo_topic_meetups">Meetups</string>
+    <string name="demo_forum_welcome">Welcome! Say hi here, and pick a topic for the rest.</string>
+    <string name="demo_forum_reading">This month: a novel about a lighthouse keeper. Who\'s reading along?</string>
+    <string name="demo_forum_reading_reply">Me! I\'m halfway through already.</string>
+    <string name="demo_forum_meetup">Next meetup: Thursday at 7, same café as last time.</string>
+
+    <!-- The channel's discussion group, where its posts get comments. -->
+    <string name="demo_discussion_title">Weekly Sample chat</string>
+    <string name="demo_comment_ada">Congratulations on the first issue!</string>
+    <string name="demo_comment_ben">Subscribed. Looking forward to the next one.</string>
 </resources>

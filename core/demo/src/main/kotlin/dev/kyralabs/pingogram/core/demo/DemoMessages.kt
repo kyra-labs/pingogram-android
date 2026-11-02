@@ -152,6 +152,7 @@ internal class DemoMessages : DemoArea {
                 replyTo(world, chat.id, function.replyTo),
                 forwardInfo = forwarded(world, function.inputMessageContent),
                 schedulingState = function.options?.schedulingState,
+                topic = function.topicId,
             ) ?: return notFound()
         return changed(message, updates)
     }
@@ -173,6 +174,7 @@ internal class DemoMessages : DemoArea {
                     replyTo,
                     schedulingState = function.options?.schedulingState,
                     albumId = albumId,
+                    topic = function.topicId,
                 )
             }
         return changed(messages(sent.map { it.first }), sent.flatMap { it.second })
@@ -189,7 +191,13 @@ internal class DemoMessages : DemoArea {
                 val content = copyOf(source.content)
                 if (function.removeCaption) setCaption(content, TdApi.FormattedText("", emptyArray()))
                 val info = if (function.sendCopy) null else forwardInfoOf(source)
-                world.addOwn(chat.id, content, forwardInfo = info, schedulingState = function.options?.schedulingState)
+                world.addOwn(
+                    chat.id,
+                    content,
+                    forwardInfo = info,
+                    schedulingState = function.options?.schedulingState,
+                    topic = function.topicId,
+                )
             }
         return changed(messages(sent.map { it.first }), sent.flatMap { it.second })
     }

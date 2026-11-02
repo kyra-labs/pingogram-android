@@ -88,6 +88,8 @@ class DemoTdlibClientTest {
                     DemoData.BEN_CHAT,
                     DemoData.GROUP_CHAT,
                     DemoData.CHANNEL_CHAT,
+                    DemoData.FORUM_CHAT,
+                    DemoData.DISCUSSION_CHAT,
                     DemoData.ME,
                     DemoData.DEV_CHAT,
                 ),
