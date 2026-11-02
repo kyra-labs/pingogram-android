@@ -26,6 +26,9 @@ data class AboutUiState(
 sealed interface AboutEvent {
     /** The source code row was tapped. */
     data object OpenSourceCode : AboutEvent
+
+    /** The privacy policy row was tapped. */
+    data object OpenPrivacyPolicy : AboutEvent
 }
 
 /** One-off side effects of [AboutViewModel], handled once by its route. */
@@ -36,7 +39,7 @@ sealed interface AboutEffect {
     ) : AboutEffect
 }
 
-/** The About page: the app's version from `:app`'s [AppInfo], and its source code on GitHub. */
+/** The About page: the app's version from `:app`'s [AppInfo], its source code on GitHub, and its privacy policy. */
 @HiltViewModel
 class AboutViewModel
     @Inject
@@ -51,11 +54,18 @@ class AboutViewModel
         fun onEvent(event: AboutEvent) {
             when (event) {
                 AboutEvent.OpenSourceCode -> effectChannel.trySend(AboutEffect.OpenUrl(SOURCE_CODE_URL))
+                AboutEvent.OpenPrivacyPolicy -> effectChannel.trySend(AboutEffect.OpenUrl(PRIVACY_POLICY_URL))
             }
         }
 
         internal companion object {
             /** The repository Pingogram is developed and released in (`REQUIREMENTS.md` §2). */
             const val SOURCE_CODE_URL = "https://github.com/kyra-labs/pingogram-android"
+
+            /**
+             * Pingogram's own privacy policy, the website's page made from `PRIVACY.md` (`docs/PLAY_STORE.md` §8: the
+             * same URL as Play Console's). Not Telegram's, which the Welcome screen links as what signing in accepts.
+             */
+            const val PRIVACY_POLICY_URL = "https://pingogram.kyralabs.dev/privacy/"
         }
     }
