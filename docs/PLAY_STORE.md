@@ -99,6 +99,10 @@ types). The texts are ready to paste; each feature also explains itself in the a
 | `POST_NOTIFICATIONS`, `POST_PROMOTED_NOTIFICATIONS` | none | message notifications; Live Updates of transfers on Android 16 | |
 
 Not in the `gms` build: `FOREGROUND_SERVICE_SPECIAL_USE` ("Keep connected", `foss` only, which Play would question).
+
+**Advertising ID** (App content → Advertising ID): **No**. Nothing in Pingogram reads it, and the `gms` manifest removes
+`com.google.android.gms.permission.AD_ID` in case a library brings it, so the answer stays true.
+
 No `QUERY_ALL_PACKAGES`, no `READ_MEDIA_*` (Photo Picker), no exact alarms, no accessibility service, no SMS or call
 log permissions.
 
@@ -216,9 +220,15 @@ that key, not a key Google generates:
   (Settings → Privacy and security), and `docs/website/delete-account.md` is published on the Pingogram website at
   `https://pingogram.kyralabs.dev/delete-account/` (§2.1). Enter that address in the Data safety form's "Delete account
   URL".
-- **Privacy policy**: the website's page made from `PRIVACY.md`, `https://pingogram.kyralabs.dev/privacy/`. Play asks for it to be reachable in the
-  app: Settings → About has a "Privacy policy" row, and the Welcome screen links it after Telegram's terms and privacy
-  policy, which signing in accepts. Enter the same URL in Play Console's App content → Privacy policy (§1).
+- **Child safety standards** (Play's child safety standards policy for social and communication apps, Play Console →
+  App content → Child safety standards): `docs/website/child-safety.md` is published at
+  `https://pingogram.kyralabs.dev/child-safety/` (owner decision 2026-11-02). Enter that address as the published
+  standards; the in-app way to report is Report in a message's actions, in the selection toolbar and on a profile
+  (reports go to Telegram's moderators); the child safety point of contact is `contact@kyralabs.dev`.
+- **Privacy policy**: the website's page made from `PRIVACY.md`, `https://pingogram.kyralabs.dev/privacy/`. Play asks
+  for it to be reachable in the app: Settings → About has a "Privacy policy" row, and the Welcome screen links it after
+  Telegram's terms and privacy policy, which signing in accepts. Enter the same URL in Play Console's App content →
+  Privacy policy (§1).
 - **Screenshots** padded to 9:16 (§4).
 - **Telegram's terms**: Telegram allows third-party clients built on its API (`https://core.telegram.org/api/terms`)
   but a store may still receive a trademark complaint; the listing's disclaimer and name follow §4 to keep that unlikely.
