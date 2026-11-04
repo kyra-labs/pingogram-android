@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- The phone number's country picker says country or region, as some places in it are regions, and "calling code" replaces
+  "country code".
+
 ## [1.1.2] - 2026-11-02
 
 ### Changed

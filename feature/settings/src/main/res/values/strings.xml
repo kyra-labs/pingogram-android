@@ -1272,7 +1272,8 @@
     <string name="settings_secret_chat_previews_summary">Telegram’s servers make the previews, so they see the links you send</string>
     <string name="settings_section_on_screen">On screen</string>
     <string name="settings_hide_phone_numbers">Hide phone numbers</string>
-    <string name="settings_hide_phone_numbers_summary">Shows only their country code everywhere in Pingogram, for sharing your screen or streaming</string>
+    <!-- "Calling code", the "+44" part, never "country code": some places are regions. -->
+    <string name="settings_hide_phone_numbers_summary">Shows only their calling code everywhere in Pingogram, for sharing your screen or streaming</string>
     <string name="settings_show_ids">Show IDs</string>
     <string name="settings_show_ids_summary">Profiles and info pages show the ID that bots and other apps know a person or chat by</string>
     <string name="settings_direct_share">Chats in the share sheet</string>
