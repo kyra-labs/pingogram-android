@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-04
+
 ### Changed
 - The phone number's country picker says country or region, as some places in it are regions, and "calling code" replaces
   "country code".
@@ -1089,7 +1091,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.0.0...v1.1.0

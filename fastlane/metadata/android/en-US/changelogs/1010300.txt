@@ -1,0 +1,1 @@
+The phone number's country picker now says "country or region", as some places in it are regions, and "calling code" replaces "country code".
