@@ -25,10 +25,10 @@
     <string name="auth_start_messaging">Start messaging</string>
     <string name="auth_welcome_agreement">By continuing, you agree to Telegram\'s Terms of Service and Privacy Policy.</string>
 
-    <!-- Phone number (FR-A2) -->
+    <!-- Phone number (FR-A2). "Calling code", the "+44" part, never "country code": some places are regions. -->
     <string name="auth_phone_title">Your phone number</string>
     <string name="auth_phone_change_title">Change phone number</string>
-    <string name="auth_phone_description">Check the country code and enter your phone number. Telegram will send you a login code.</string>
+    <string name="auth_phone_description">Check the calling code and enter your phone number. Telegram will send you a login code.</string>
     <string name="auth_qr_login">Log in with QR code</string>
 
     <!-- Login code (FR-A3); %1$s is the phone number. -->

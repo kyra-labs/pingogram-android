@@ -292,12 +292,14 @@
     <!-- Opens the voice chat the user is in. -->
     <string name="voice_chat_bar_open">Open</string>
 
-    <!-- Phone number entry, sign-in and changing the number in Settings (FR-A2, FR-S1). -->
-    <string name="phone_country">Country</string>
-    <string name="phone_country_choose">Choose a country</string>
-    <string name="phone_country_search">Search countries</string>
+    <!-- Phone number entry, sign-in and changing the number in Settings (FR-A2, FR-S1). The picker lists places that
+         are regions, not countries (Hong Kong, Puerto Rico…): always say "country or region", never "country" alone
+         (Huawei AppGallery review guideline 4.8). -->
+    <string name="phone_country">Country/region</string>
+    <string name="phone_country_choose">Choose a country or region</string>
+    <string name="phone_country_search">Search countries and regions</string>
     <string name="phone_country_search_clear">Clear search</string>
-    <string name="phone_country_none">No countries found</string>
+    <string name="phone_country_none">No countries or regions found</string>
     <string name="phone_calling_code">Code</string>
     <string name="phone_number">Phone number</string>
 

@@ -1,9 +1,12 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
@@ -85,6 +88,32 @@ class AuthAdaptiveScreenshotTest {
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun premiumRequiredFontScale200() = capture("premiumRequiredFontScale200", AuthPreviewData.premiumRequired)
+
+    // "Country/region" and "Search countries and regions" (AppGallery's review guideline 4.8) fit at 200%.
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun phoneNumberFontScale200() = capture("phoneNumberFontScale200", AuthPreviewData.phoneNumber)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun countryPickerFontScale200() = capture("countryPickerFontScale200", AuthPreviewData.countryPicker)
+
+    // The picker is a sheet, a window of its own, whose views take their direction from the configuration and the
+    // app's RTL support, not from the composition; the library's test app does not declare that support.
+    @Test
+    @Config(qualifiers = "+ldrtl")
+    @OptIn(ExperimentalRoborazziApi::class)
+    fun countryPickerRtl() {
+        val info = ApplicationProvider.getApplicationContext<Context>().applicationInfo
+        info.flags = info.flags or ApplicationInfo.FLAG_SUPPORTS_RTL
+        composeRule.setContent {
+            ScreenshotTheme(ScreenshotVariant.Rtl) {
+                AuthScreen(state = AuthPreviewData.countryPicker, onEvent = {})
+            }
+        }
+        composeRule.waitForIdle()
+        captureScreenRoboImage(goldenPath(javaClass, "countryPickerRtl"))
+    }
 
     /** The dynamic goldens of [AuthScreenScreenshotTest] only show Material You if it differs from the brand. */
     @Test

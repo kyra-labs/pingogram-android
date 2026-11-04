@@ -23,7 +23,8 @@
     <string name="poll_option_sending">sending your vote</string>
     <!-- Why the user can't vote, under the answers. -->
     <string name="poll_restricted_members">Only members of the chat can vote</string>
-    <string name="poll_restricted_country">Voting isn\'t available in your country</string>
+    <!-- "Country or region", never "country" alone: some places are regions. -->
+    <string name="poll_restricted_country">Voting isn\'t available in your country or region</string>
     <string name="poll_restricted_scheduled">Voting starts once the message is sent</string>
     <string name="poll_restricted_other">You can\'t vote in this poll</string>
     <!-- Above a quiz's explanation, shown once the user answered it. -->
