@@ -58,13 +58,14 @@
     <string name="contacts_first_name_optional">First name (optional)</string>
     <string name="contacts_last_name_optional">Last name (optional)</string>
     <string name="contacts_phone_number">Phone number</string>
-    <string name="contacts_phone_number_note">With the country code, like +44 7911 123456</string>
+    <!-- "Calling code", the "+44" part, never "country code": some places are regions. -->
+    <string name="contacts_phone_number_note">With the calling code, like +44 7911 123456</string>
     <string name="contacts_username">Username</string>
     <string name="contacts_username_note">Without names, the contact keeps the name they chose</string>
     <string name="contacts_add_action">Add</string>
     <string name="contacts_save">Save</string>
     <string name="contacts_error_first_name">Enter a first name</string>
-    <string name="contacts_error_phone_number">Enter the whole number, with its country code</string>
+    <string name="contacts_error_phone_number">Enter the whole number, with its calling code</string>
     <string name="contacts_error_username">No one on Telegram has this username</string>
     <!-- %1$s is how long to wait, "1 minute 20 seconds". -->
     <string name="contacts_flood_wait">Too many attempts. Try again in %1$s.</string>

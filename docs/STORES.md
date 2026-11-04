@@ -97,6 +97,12 @@ Most answers are `docs/PLAY_STORE.md`'s; the table says where a store differs.
 has a "Privacy policy" row, and the Welcome screen links "Pingogram's privacy policy" after Telegram's Terms of Service
 and Privacy Policy, which signing in accepts. Both open the website's page in the browser.
 
+**Regions in the country picker (AppGallery).** Huawei's review rejected Pingogram under guideline 4.8 because the
+phone number's country picker called places that are regions (Hong Kong, Macau, Taiwan, Puerto Rico, Kosovo)
+"countries". The app says "country or region" there: the field "Country/region", the sheet "Choose a country or
+region", its search "Search countries and regions", and "calling code" rather than "country code" for the "+44". Keep
+that wording in every string and translation (the strings' comments say so for translators).
+
 The `foss` build's two permissions beyond `PLAY_STORE.md` §3, for AppGallery's Privacy Description:
 
 | Permission | Explanation to paste |
