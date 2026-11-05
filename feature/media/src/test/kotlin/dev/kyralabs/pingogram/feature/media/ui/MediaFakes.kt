@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
@@ -57,15 +58,15 @@ import java.util.Locale
 // Fakes of what the media viewer reads, holding their state in fields the tests set.
 
 /**
- * A chat's media, served as TDLib pages them ([serve]), or answered by the tests ([onAround], [onOlder], [onNewer],
+ * A chat's media, served as TDLib pages them ([serve]), or answered by the tests ([onOpened], [onOlder], [onNewer],
  * [onPosition]). Every request is recorded in [calls]; [deletions] emits deleted messages. Whether a message can be
  * saved is [onCanBeSaved]'s answer, yes unless a test says otherwise; the messages asked about go to [saveChecks].
  */
 class FakeChatMediaRepository : ChatMediaRepository {
-    /** `around:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
+    /** `opened:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
     val calls = mutableListOf<String>()
 
-    var onAround: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
+    var onOpened: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onOlder: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onNewer: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onPosition: suspend (Long) -> Outcome<Int> = { Outcome.Failure(DomainError.Unknown(400, "No position")) }
@@ -75,14 +76,13 @@ class FakeChatMediaRepository : ChatMediaRepository {
     val deletions = MutableSharedFlow<Set<Long>>()
 
     /**
-     * Serves [messages] of [filter] (any order), as TDLib pages them: up to [radius] on each side of the opened one,
-     * [pageSize] per older or newer page, each end reached only by a page with nothing on that side; [total] as the
+     * Serves [messages] of [filter] (any order), as TDLib pages them: the opened one alone, [pageSize] per older or
+     * newer page, each end reached only by a page with nothing on that side; [total] as the
      * count, and positions counted from the newest.
      */
     fun serve(
         messages: List<Message>,
         filter: ChatMediaFilter = ChatMediaFilter.PhotosAndVideos,
-        radius: Int = 2,
         pageSize: Int = 3,
         total: Int? = messages.size,
     ) {
@@ -93,14 +93,12 @@ class FakeChatMediaRepository : ChatMediaRepository {
             reachedOldest: Boolean,
             reachedNewest: Boolean,
         ) = Outcome.Success(ChatMediaPage(found.toImmutableList(), filter, reachedOldest, reachedNewest, total))
-        onAround = { id ->
-            val index = newestFirst.indexOfFirst { it.id == id }
-            if (index < 0) {
+        onOpened = { id ->
+            val message = newestFirst.firstOrNull { it.id == id }
+            if (message == null) {
                 Outcome.Failure(DomainError.NotFound)
             } else {
-                val first = (index - radius).coerceAtLeast(0)
-                val found = newestFirst.subList(first, minOf(newestFirst.size, index + radius + 1))
-                page(found, found.none { it.id < id }, found.none { it.id > id })
+                Outcome.Success(ChatMediaPage(persistentListOf(message), filter, false, false, null))
             }
         }
         onOlder = { id ->
@@ -114,12 +112,12 @@ class FakeChatMediaRepository : ChatMediaRepository {
         onPosition = { id -> Outcome.Success(newestFirst.indexOfFirst { it.id == id } + 1) }
     }
 
-    override suspend fun around(
+    override suspend fun opened(
         chatId: Long,
         messageId: Long,
     ): Outcome<ChatMediaPage> {
-        calls += "around:$messageId"
-        return onAround(messageId)
+        calls += "opened:$messageId"
+        return onOpened(messageId)
     }
 
     override suspend fun older(

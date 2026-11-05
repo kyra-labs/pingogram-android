@@ -47,17 +47,24 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
     @Nested
     inner class Loading {
         @Test
-        fun `loads the media around the opened message, then a page on each near side`() =
+        fun `opens on the message alone, then loads pages on each side until it is away from both ends`() =
             runViewModelTest {
                 media.serve(photos(1L..100L))
 
                 val viewModel = viewModel(messageId = 50)
 
                 assertEquals(
-                    listOf("around:50", "older:$photos:48", "newer:$photos:52", "position:$photos:50"),
+                    listOf(
+                        "opened:50",
+                        "older:$photos:50",
+                        "newer:$photos:50",
+                        "position:$photos:50",
+                        "older:$photos:47",
+                        "newer:$photos:53",
+                    ),
                     media.calls,
                 )
-                assertEquals((45L..55L).toList(), viewModel.ids)
+                assertEquals((44L..56L).toList(), viewModel.ids)
                 assertEquals(50, viewModel.current)
             }
 
@@ -65,7 +72,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
         fun `shows loading until the first page is there`() =
             runViewModelTest {
                 val answer = CompletableDeferred<Outcome<ChatMediaPage>>()
-                media.onAround = { answer.await() }
+                media.onOpened = { answer.await() }
 
                 val viewModel = viewModel(messageId = 1)
 
@@ -116,13 +123,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 val viewModel = viewModel(messageId = 2)
 
                 assertTrue(viewModel.content.current.media is ViewerMedia.Gif)
-                assertEquals("older:${ChatMediaFilter.Gifs}:1", media.calls[1])
+                assertEquals("older:${ChatMediaFilter.Gifs}:2", media.calls[1])
             }
 
         @Test
         fun `a failed first page shows the error, and trying again loads it`() =
             runViewModelTest {
-                media.onAround = { Outcome.Failure(DomainError.Network) }
+                media.onOpened = { Outcome.Failure(DomainError.Network) }
                 val viewModel = viewModel(messageId = 5)
                 assertEquals(MediaViewerUiState.Error(DomainError.Network), viewModel.state)
 
@@ -130,13 +137,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 send(viewModel, MediaViewerEvent.Retry)
 
                 assertEquals(5, viewModel.current)
-                assertEquals(2, media.calls.count { it == "around:5" })
+                assertEquals(2, media.calls.count { it == "opened:5" })
             }
 
         @Test
         fun `a flood wait shows its error`() =
             runViewModelTest {
-                media.onAround = { Outcome.Failure(DomainError.FloodWait(30)) }
+                media.onOpened = { Outcome.Failure(DomainError.FloodWait(30)) }
 
                 assertEquals(MediaViewerUiState.Error(DomainError.FloodWait(30)), viewModel(messageId = 5).state)
             }
@@ -152,13 +159,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
         @Test
         fun `nothing is retried by itself`() =
             runViewModelTest {
-                media.onAround = { Outcome.Failure(DomainError.Network) }
+                media.onOpened = { Outcome.Failure(DomainError.Network) }
 
                 viewModel(messageId = 5)
                 advanceTimeBy(60_000)
                 runCurrent()
 
-                assertEquals(listOf("around:5"), media.calls)
+                assertEquals(listOf("opened:5"), media.calls)
             }
     }
 
@@ -172,10 +179,10 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
 
                 send(viewModel, MediaViewerEvent.PageSettled(47))
 
-                assertEquals("older:$photos:45", media.calls.last())
-                assertEquals((42L..55L).toList(), viewModel.ids)
+                assertEquals("older:$photos:44", media.calls.last())
+                assertEquals((41L..56L).toList(), viewModel.ids)
                 assertEquals(47, viewModel.current)
-                assertEquals(5, viewModel.content.currentIndex)
+                assertEquals(6, viewModel.content.currentIndex)
             }
 
         @Test
@@ -186,8 +193,8 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
 
                 send(viewModel, MediaViewerEvent.PageSettled(53))
 
-                assertEquals("newer:$photos:55", media.calls.last())
-                assertEquals((45L..58L).toList(), viewModel.ids)
+                assertEquals("newer:$photos:56", media.calls.last())
+                assertEquals((44L..59L).toList(), viewModel.ids)
                 assertEquals(53, viewModel.current)
             }
 
@@ -202,11 +209,11 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
 
                 send(viewModel, MediaViewerEvent.PageSettled(47), MediaViewerEvent.PageSettled(46))
 
-                assertEquals(1, media.calls.count { it == "older:$photos:45" })
-                held.complete(serveOlder(45))
+                assertEquals(1, media.calls.count { it == "older:$photos:44" })
+                held.complete(serveOlder(44))
                 runCurrent()
-                assertEquals(1, media.calls.count { it == "older:$photos:45" })
-                assertEquals(42L, viewModel.ids.first())
+                assertEquals(1, media.calls.count { it == "older:$photos:44" })
+                assertEquals(41L, viewModel.ids.first())
             }
 
         @Test
@@ -251,13 +258,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 }
                 advanceTimeBy(60_000)
                 runCurrent()
-                assertEquals(1, media.calls.count { it == "older:$photos:45" })
+                assertEquals(1, media.calls.count { it == "older:$photos:44" })
 
                 media.onOlder = serveOlder
-                send(viewModel, MediaViewerEvent.PageSettled(46))
-                assertEquals(2, media.calls.count { it == "older:$photos:45" })
-                // 46 is still near the oldest loaded after that page, so the next one follows.
-                assertEquals(39L, viewModel.ids.first())
+                send(viewModel, MediaViewerEvent.PageSettled(45))
+                assertEquals(2, media.calls.count { it == "older:$photos:44" })
+                // 45 is still near the oldest loaded after that page, so the next one follows.
+                assertEquals(38L, viewModel.ids.first())
             }
 
         @Test
@@ -272,7 +279,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 media.onOlder = serveOlder
                 send(viewModel, MediaViewerEvent.Retry)
 
-                assertEquals(42L, viewModel.ids.first())
+                assertEquals(41L, viewModel.ids.first())
             }
 
         @Test
@@ -291,7 +298,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                         handle = SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }),
                     )
 
-                assertEquals("around:53", media.calls.first())
+                assertEquals("opened:53", media.calls.first())
                 assertEquals(53, restored.current)
             }
     }
@@ -333,13 +340,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
-        fun `around the newest media the position needs no request`() =
+        fun `the newest media is at the count`() =
             runViewModelTest {
                 media.serve(photos(1L..100L))
+                media.onPosition = { Outcome.Failure(DomainError.Unknown(400, "Secret chat")) }
 
                 val viewModel = viewModel(messageId = 100)
 
-                assertFalse(media.calls.any { it.startsWith("position") })
                 assertEquals(MediaPosition(100, 100), viewModel.position)
             }
     }

@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
+  it, instead of fading in over a black screen and snapping back.
+
 ## [1.1.3] - 2026-11-04
 
 ### Changed

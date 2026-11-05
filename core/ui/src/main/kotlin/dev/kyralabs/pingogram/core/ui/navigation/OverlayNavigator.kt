@@ -1,25 +1,34 @@
 package dev.kyralabs.pingogram.core.ui.navigation
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.Transition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.navigation.FloatingWindow
@@ -36,6 +45,8 @@ import androidx.navigation.compose.LocalOwnersProvider
 import androidx.navigation.get
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
@@ -176,8 +187,13 @@ fun OverlayHost(
 }
 
 /**
- * One overlay, [visible] while on the back stack, fading in (at once when [restored] with the back stack) and out;
- * Navigation hears when it came in or went out.
+ * One overlay, [visible] while on the back stack, fading in (at once when [restored] with the back stack) and out on
+ * the default effects spring; Navigation hears when it came in or went out.
+ *
+ * Its content is composed hidden first (the transition at [EnterExitState.PreEnter]), and comes in once it is ready: as
+ * soon as nothing in it holds the way in back ([PostponeOverlayEnter]), a frame after it first composed, or after
+ * [OVERLAY_ENTER_TIMEOUT_MILLIS] at most. Content shared with the screen below (a container transform) has its own
+ * bounds then, instead of growing into a page that has nothing on it yet.
  */
 @Composable
 private fun OverlayEntry(
@@ -188,19 +204,32 @@ private fun OverlayEntry(
     saveableStateHolder: SaveableStateHolder,
 ) {
     val destination = entry.destination as OverlayNavigator.Destination
-    val state = remember { MutableTransitionState(restored) }
-    state.targetState = visible
+    val gate = remember { OverlayEnterGate() }
+    val started = rememberEnterStarted(gate, restored)
+    val target =
+        when {
+            !visible -> EnterExitState.PostExit
+            started -> EnterExitState.Visible
+            else -> EnterExitState.PreEnter
+        }
+    val state = remember { MutableTransitionState(if (restored) EnterExitState.Visible else EnterExitState.PreEnter) }
+    state.targetState = target
+    val transition = rememberTransition(state, label = "overlay")
     val motionScheme = MaterialTheme.motionScheme
-    AnimatedVisibility(
-        visibleState = state,
-        enter = fadeIn(motionScheme.defaultEffectsSpec()),
-        exit = fadeOut(motionScheme.defaultEffectsSpec()),
-    ) {
-        Box(Modifier.fillMaxSize().then(TouchBlocker)) {
-            entry.LocalOwnersProvider(saveableStateHolder) { destination.content(this@AnimatedVisibility, entry) }
+    val alpha =
+        transition.animateFloat({ motionScheme.defaultEffectsSpec() }, label = "overlayAlpha") {
+            if (it == EnterExitState.Visible) 1f else 0f
+        }
+    val scope = remember(transition) { OverlayVisibility(transition) }
+    val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
+    if (!gone) {
+        Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha.value }.then(TouchBlocker)) {
+            CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
+                entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
+            }
         }
     }
-    val settled = state.isIdle && state.currentState == visible
+    val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
     if (settled) {
         LaunchedEffect(visible) {
             navigator.onTransitionComplete(entry)
@@ -219,6 +248,70 @@ private fun OverlayEntry(
         }
     }
 }
+
+/**
+ * Whether the overlay may come in: at once when [restored], else once nothing holds [gate], a frame after its content
+ * first composed, or after [OVERLAY_ENTER_TIMEOUT_MILLIS] at most.
+ */
+@Composable
+private fun rememberEnterStarted(
+    gate: OverlayEnterGate,
+    restored: Boolean,
+): Boolean {
+    var started by remember { mutableStateOf(restored) }
+    if (!started) {
+        LaunchedEffect(gate) {
+            withTimeoutOrNull(OVERLAY_ENTER_TIMEOUT_MILLIS) {
+                // The content's holds come with its first composition, applied before the next frame.
+                withFrameNanos {}
+                snapshotFlow { gate.isHeld }.first { !it }
+            }
+            started = true
+        }
+    }
+    return started
+}
+
+/** An overlay's [AnimatedVisibilityScope]: its own [transition], which its content stays composed through. */
+private class OverlayVisibility(
+    override val transition: Transition<EnterExitState>,
+) : AnimatedVisibilityScope
+
+/**
+ * Holds the way in of the overlay destination this is composed in ([OverlayHost]) while [ready] is false: its content
+ * stays hidden, composed, until it has what it shows (at most [OVERLAY_ENTER_TIMEOUT_MILLIS] after it first composed).
+ * Nothing outside an overlay destination.
+ */
+@Composable
+fun PostponeOverlayEnter(ready: Boolean) {
+    val gate = LocalOverlayEnterGate.current ?: return
+    if (!ready) {
+        DisposableEffect(gate) {
+            gate.hold()
+            onDispose { gate.release() }
+        }
+    }
+}
+
+/** How many parts of an overlay's content hold its way in ([PostponeOverlayEnter]); main thread only. */
+private class OverlayEnterGate {
+    private var holds by mutableIntStateOf(0)
+
+    val isHeld: Boolean get() = holds > 0
+
+    fun hold() {
+        holds++
+    }
+
+    fun release() {
+        holds--
+    }
+}
+
+private val LocalOverlayEnterGate = staticCompositionLocalOf<OverlayEnterGate?> { null }
+
+/** The longest an overlay's content may hold its way in ([PostponeOverlayEnter]): it then comes in as it is. */
+const val OVERLAY_ENTER_TIMEOUT_MILLIS = 500L
 
 /** Content below an overlay: no touches reach it through the overlay, and no focus or screen reader enters it. */
 private val Covered =

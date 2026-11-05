@@ -824,8 +824,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   while it is laid out), so the viewer morphs from and back to exactly those corners. The viewer is an overlay
   destination (`core:ui`'s `OverlayNavigator`, a `FloatingWindow` like a dialog destination, registered by
   `rememberOverlayNavigator` and drawn above the shell by `OverlayHost` in `PingogramApp`): the screen it opened from
-  stays composed and started below it, hidden from touch, focus and screen readers, and the bubbles follow which media
-  the viewer shows (`SharedMediaShapes.isInViewer`) instead of their destination's transition.
+  stays composed and started below it, hidden from touch, focus and screen readers. A bubble's media follows the
+  viewer's own transition (`SharedMediaShapes.viewerTransition`, a child transition of the viewer page's, inverted),
+  so both sides of the container transform move on one transition, frame by frame. An overlay is composed hidden first
+  and comes in once its content is ready (`PostponeOverlayEnter`, at most `OVERLAY_ENTER_TIMEOUT_MILLIS`, 500 ms), so
+  the photo grows into a page that already shows it: the viewer holds it until its first page is there, which
+  `ChatMediaRepository.opened` answers with the opened message alone (`getMessage`, from TDLib's memory), the pages
+  on either side following from it.
 - Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
   on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops
