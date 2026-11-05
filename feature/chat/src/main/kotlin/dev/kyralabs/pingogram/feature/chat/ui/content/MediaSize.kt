@@ -10,8 +10,9 @@ import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 
 /**
  * The size a photo or video of [width] × [height] (any unit; only the aspect ratio counts) is shown at in a message:
- * scaled to fit [maxWidth] × [maxHeight], then each side kept at [minSize] or more (but within the maximum), so
- * panoramas and tall screenshots become a cropped strip rather than a sliver. Without a known size it is a square.
+ * the full [maxWidth], as tall as its aspect ratio makes it, within [minSize] (or [maxHeight] if smaller) and
+ * [maxHeight]. The image is cropped to fill it, so a tall photo shows its middle and a panorama a strip, rather than
+ * a narrow photo beside empty room. Without a known size it is as tall as wide, within [maxHeight].
  */
 internal fun mediaDisplaySize(
     width: Int,
@@ -20,15 +21,9 @@ internal fun mediaDisplaySize(
     maxHeight: Dp,
     minSize: Dp,
 ): DpSize {
-    if (width <= 0 || height <= 0) {
-        val side = min(maxWidth, maxHeight)
-        return DpSize(side, side)
-    }
-    val scale = minOf(maxWidth.value / width, maxHeight.value / height)
-    return DpSize(
-        width = Dp(width * scale).coerceIn(min(minSize, maxWidth), maxWidth),
-        height = Dp(height * scale).coerceIn(min(minSize, maxHeight), maxHeight),
-    )
+    if (width <= 0 || height <= 0) return DpSize(maxWidth, min(maxWidth, maxHeight))
+    val fullHeight = Dp(maxWidth.value * height / width)
+    return DpSize(maxWidth, fullHeight.coerceIn(min(minSize, maxHeight), maxHeight))
 }
 
 /**

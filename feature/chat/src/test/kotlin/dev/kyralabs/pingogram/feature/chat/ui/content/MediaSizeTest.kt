@@ -22,23 +22,28 @@ class MediaSizeTest {
     }
 
     @Test
-    fun `a portrait photo is limited by the height`() {
-        assertEquals(DpSize(270.dp, 360.dp), display(960, 1280))
+    fun `a portrait photo takes the full width, cropped to the maximum height`() {
+        assertEquals(DpSize(280.dp, 360.dp), display(960, 1280))
     }
 
     @Test
-    fun `small photos are scaled up to fit`() {
+    fun `a slightly tall photo takes the full width at its own height`() {
+        assertEquals(DpSize(280.dp, 315.dp), display(800, 900))
+    }
+
+    @Test
+    fun `small photos are scaled up to the full width`() {
         assertEquals(DpSize(280.dp, 280.dp), display(100, 100))
     }
 
     @Test
-    fun `panoramas and tall screenshots are kept at the minimum size and cropped`() {
+    fun `panoramas keep the minimum height and tall screenshots the maximum, cropped`() {
         assertEquals(DpSize(280.dp, 120.dp), display(4000, 400))
-        assertEquals(DpSize(120.dp, 360.dp), display(400, 4000))
+        assertEquals(DpSize(280.dp, 360.dp), display(400, 4000))
     }
 
     @Test
-    fun `without a known size it is a square`() {
+    fun `without a known size it is as tall as wide`() {
         assertEquals(DpSize(280.dp, 280.dp), display(0, 0))
         assertEquals(DpSize(280.dp, 280.dp), display(1280, 0))
     }
@@ -46,8 +51,8 @@ class MediaSizeTest {
     @Test
     fun `the minimum gives way to a smaller maximum`() {
         assertEquals(
-            DpSize(100.dp, 360.dp),
-            mediaDisplaySize(400, 4000, maxWidth = 100.dp, maxHeight = 360.dp, minSize = 120.dp),
+            DpSize(280.dp, 100.dp),
+            mediaDisplaySize(4000, 400, maxWidth = 280.dp, maxHeight = 100.dp, minSize = 120.dp),
         )
     }
 
