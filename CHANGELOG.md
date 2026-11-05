@@ -13,6 +13,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
   it, instead of fading in over a black screen and snapping back.
 
+### Changed
+- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
+  portrait picture beside empty room.
+
 ## [1.1.3] - 2026-11-04
 
 ### Changed

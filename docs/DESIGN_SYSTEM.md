@@ -313,7 +313,10 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   `extraLarge`, and a message alone is `extraLarge` all round. The eight shapes are built once per
   theme (`MessageBubbleShapes`, `core:ui`).
 - Media in bubbles: photos, videos and albums clip to the same shape, square only where a header or a caption joins
-  them. The media viewer's container transform morphs from and back to exactly that clip shape.
+  them. The media viewer's container transform morphs from and back to exactly that clip shape. A photo or video takes
+  the bubble's full media width (`sizes.mediaMaxWidth`, the widest a bubble gets on a phone), as tall as its aspect
+  ratio makes it within `sizes.mediaMinSize` and `sizes.mediaMaxHeight`, the picture cropped to fill it: a portrait
+  photo shows its middle at the full width rather than a narrow picture beside empty room.
 - Padding: text and the time keep `spacing.medium` from the sides and `spacing.small` from top and bottom, clear of
   the round corners.
 - Time: the time and the state show on the last bubble of a sender's group only (and on every message that stands
