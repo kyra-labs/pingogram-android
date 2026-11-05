@@ -68,13 +68,14 @@ import javax.inject.Inject
  * The full-screen media viewer (`REQUIREMENTS.md` FR-C10) of the photo, video or GIF the route opens it on, among the
  * chat's media of that kind ([ChatMediaRepository]), as [uiState]. Events come in through [onEvent].
  *
- * - **Loading**: the page around the opened message, then older or newer pages while the current item is within
+ * - **Loading**: the opened message alone first ([ChatMediaRepository.opened], from TDLib's memory, so its page shows
+ *   at once and the photo grows into it), then older and newer pages while the current item is within
  *   [PREFETCH_DISTANCE] of either end of what is loaded, one at a time on each side, until each end ([MediaWindow]).
  *   A failed first page shows [MediaViewerUiState.Error] until [MediaViewerEvent.Retry]; a deleted or unshowable
  *   message [MediaViewerUiState.Unavailable]. A failed page on a side is a snackbar ([MediaViewerEffect.ShowError])
  *   and is not retried by itself: turning the page, or [MediaViewerEvent.Retry], tries again.
  * - **The current item** is the page the pager settled on ([MediaViewerEvent.PageSettled]), kept in the
- *   [SavedStateHandle]: after process death the viewer loads around it again.
+ *   [SavedStateHandle]: after process death the viewer opens on it again.
  * - **Position**: "N of total" ([MediaCount]) from TDLib's position of the opened message and its counts, or from the
  *   loaded media once an end is reached (secret chats, where TDLib cannot tell a position).
  * - **Deletions** ([ChatMediaRepository.deletedMessages]) drop items; a deleted current item gives way to the one
@@ -296,7 +297,7 @@ class MediaViewerViewModel internal constructor(
         viewModelScope.launch {
             combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
         }
-        loadAround(viewer.value.currentId)
+        loadOpened(viewer.value.currentId)
     }
 
     fun onEvent(event: MediaViewerEvent) {
@@ -413,22 +414,22 @@ class MediaViewerViewModel internal constructor(
     private fun retry() {
         failedEdges.clear()
         when (viewer.value.load) {
-            is MediaLoad.Failed -> loadAround(viewer.value.currentId)
+            is MediaLoad.Failed -> loadOpened(viewer.value.currentId)
             is MediaLoad.Loaded -> loadMoreIfNear()
             MediaLoad.Loading, MediaLoad.Gone -> Unit
         }
     }
 
     /**
-     * Loads the page around message [messageId], replacing whatever was loaded. Not found means the message was
+     * Loads message [messageId] alone, replacing whatever was loaded. Not found means the message was
      * deleted or holds no media; other failures can be tried again.
      */
-    private fun loadAround(messageId: Long) {
+    private fun loadOpened(messageId: Long) {
         firstPage?.cancel()
         viewer.update { it.copy(load = MediaLoad.Loading) }
         firstPage =
             viewModelScope.launch {
-                when (val page = mediaRepository.around(chatId, messageId)) {
+                when (val page = mediaRepository.opened(chatId, messageId)) {
                     is Outcome.Success -> onFirstPage(page.value, messageId)
                     is Outcome.Failure -> viewer.update { it.copy(load = page.error.toFailedLoad()) }
                 }
@@ -436,8 +437,9 @@ class MediaViewerViewModel internal constructor(
     }
 
     /**
-     * Shows the first [page], then loads around it and asks for the position of [messageId]. The repository never
-     * leaves the message out; the window does if the viewer cannot show it (a photo without sizes): it is gone.
+     * Shows the first [page], then loads the pages on either side of it and asks for the position of [messageId]. The
+     * repository never leaves the message out; the window does if the viewer cannot show it (a photo without sizes):
+     * it is gone.
      */
     private fun onFirstPage(
         page: ChatMediaPage,
