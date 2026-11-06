@@ -170,9 +170,12 @@ internal object ChatListPreviewData {
             FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1),
         )
 
-    val contentWithFolders = ChatListUiState(content = ChatListContent.Content(items), folderTabs = folders)
+    /** The main list: Saved Messages and Ada pinned, as one group under "Pinned", then the other chats. */
+    val mainList = ChatListContent.Content(items, pinnedCount = items.count { it.isPinned })
 
-    val content = ChatListUiState(content = ChatListContent.Content(items))
+    val contentWithFolders = ChatListUiState(content = mainList, folderTabs = folders)
+
+    val content = ChatListUiState(content = mainList)
 
     /**
      * Names in another script than the strings around them, which keep their order as the names are isolated

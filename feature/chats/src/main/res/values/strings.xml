@@ -16,6 +16,8 @@
         <item quantity="one">%d mention</item>
         <item quantity="other">%d mentions</item>
     </plurals>
+    <!-- The heading above the pinned chats, which the list shows as one group. -->
+    <string name="chat_list_pinned">Pinned</string>
     <!-- The header's search button, for its tooltip and screen readers. -->
     <string name="chat_list_search">Search</string>
     <!-- The header's avatar of the signed-in user, which opens Settings, for its tooltip and screen readers. -->

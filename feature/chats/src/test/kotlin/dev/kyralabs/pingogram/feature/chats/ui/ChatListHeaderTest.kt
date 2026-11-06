@@ -131,7 +131,13 @@ class ChatListHeaderTest {
     ) {
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                ChatListScreen(state = state, onEvent = {}, summary = { summary }, headerActions = actions)
+                ChatListScreen(
+                    state = state,
+                    onEvent = {},
+                    summary = { summary },
+                    headerActions = actions,
+                    onEditFolder = {},
+                )
             }
         }
         composeRule.waitForIdle()

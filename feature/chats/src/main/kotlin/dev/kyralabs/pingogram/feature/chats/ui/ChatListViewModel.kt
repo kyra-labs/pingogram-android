@@ -528,10 +528,22 @@ class ChatListViewModel internal constructor(
     ): ChatListContent {
         val error = load.error
         return when {
-            chats.isNotEmpty() -> ChatListContent.Content(mapper.map(chats, snapshot.sourcesFor(list)))
-            error != null -> ChatListContent.Error(error)
-            load.isComplete -> ChatListContent.Empty(isFolder = list is ChatListType.Folder)
-            else -> ChatListContent.Loading
+            chats.isNotEmpty() -> {
+                val items = mapper.map(chats, snapshot.sourcesFor(list))
+                ChatListContent.Content(items, pinnedCount = items.pinnedCount())
+            }
+
+            error != null -> {
+                ChatListContent.Error(error)
+            }
+
+            load.isComplete -> {
+                ChatListContent.Empty(isFolder = list is ChatListType.Folder)
+            }
+
+            else -> {
+                ChatListContent.Loading
+            }
         }
     }
 
@@ -622,3 +634,6 @@ private fun folderTabs(
 /** These chats without those of [locked]. */
 private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> =
     combine(this, locked) { chats, ids -> if (ids.isEmpty()) chats else chats.filterNot { it.id in ids } }
+
+/** How many rows the list pins, from its first: TDLib orders pinned chats first. */
+private fun List<ChatListItemModel>.pinnedCount(): Int = indexOfFirst { !it.isPinned }.let { if (it < 0) size else it }
