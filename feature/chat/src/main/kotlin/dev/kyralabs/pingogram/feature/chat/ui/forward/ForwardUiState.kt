@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -48,6 +49,7 @@ data class ForwardSheet(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property isSecret a secret chat, marked with a lock.
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class ForwardTarget(
@@ -56,6 +58,7 @@ data class ForwardTarget(
     val photo: ProfilePhoto?,
     @param:DrawableRes val placeholderIcon: Int?,
     val isSecret: Boolean = false,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "ForwardTarget(chatId=$chatId, …)"
 }

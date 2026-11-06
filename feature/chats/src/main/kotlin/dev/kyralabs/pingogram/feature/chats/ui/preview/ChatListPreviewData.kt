@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.ui.ArchiveEntry
@@ -44,6 +45,7 @@ internal object ChatListPreviewData {
         outgoingStatus: OutgoingStatus? = null,
         isMarkedAsUnread: Boolean = false,
         canMute: Boolean = true,
+        avatarShape: AvatarShape = AvatarShape.Circle,
     ) = ChatListItemModel(
         id = id,
         title = UiText.Plain(title),
@@ -63,6 +65,7 @@ internal object ChatListPreviewData {
         outgoingStatus = outgoingStatus,
         preview = preview,
         actions = rowActions(unreadCount > 0 || isMarkedAsUnread, isArchived = false, isPinned, isMuted, canMute),
+        avatarShape = avatarShape,
     )
 
     private fun message(
@@ -143,6 +146,8 @@ internal object ChatListPreviewData {
                 preview = message("Next up: Hidden Figures", UiText.Plain("Mary")),
                 time = "Mar 2",
                 isMarkedAsUnread = true,
+                // A forum: its avatar is a rounded square.
+                avatarShape = AvatarShape.RoundedSquare,
             ),
             row(
                 id = 10,

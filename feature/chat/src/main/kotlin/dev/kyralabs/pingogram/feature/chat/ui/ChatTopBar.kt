@@ -228,6 +228,7 @@ private fun ChatTitle(
             modifier =
                 Modifier.avatarTransform(avatarTransformKey(userId.takeIf { onOpenProfile != null }, openInfo, header)),
             placeholderIcon = header.placeholderIcon,
+            shape = header.avatarShape,
         )
         Column {
             Row(

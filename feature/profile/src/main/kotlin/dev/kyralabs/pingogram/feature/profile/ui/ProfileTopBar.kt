@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
+import dev.kyralabs.pingogram.core.ui.component.rememberPolygon
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -56,7 +58,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * the large flexible bar's own expanded height, and grows with the font scale. [scrollBehavior]
  * (`exitUntilCollapsedScrollBehavior`) collapses it as the page scrolls, to the name alone beside back.
  *
- * The avatar is a circle while the bar is expanded and morphs into a `MaterialShapes.Cookie9Sided` as it collapses
+ * The avatar is a circle while the bar is expanded (a forum's a rounded square, `AvatarShape.ofChat`) and morphs into a
+ * `MaterialShapes.Cookie9Sided` as it collapses
  * past half way, and back, on the motion scheme's default spatial spring (`rememberMorphShape`, which snaps with
  * reduced motion); the morph progress is read in the draw phase, and the collapse only flips a derived boolean.
  *
@@ -171,12 +174,15 @@ private fun ProfileAvatar(
     name: String,
     collapsing: Boolean,
 ) {
-    val shape = rememberMorphShape(MaterialShapes.Circle, MaterialShapes.Cookie9Sided, morphed = collapsing)
+    val size = MaterialTheme.sizes.avatarProfile
+    val start = header.avatarShape.rememberPolygon(size)
+    val shape = rememberMorphShape(start, MaterialShapes.Cookie9Sided, morphed = collapsing)
     Avatar(
         photo = header.photo,
         name = name,
         id = header.userId,
-        size = MaterialTheme.sizes.avatarProfile,
+        size = size,
+        shape = header.avatarShape,
         modifier = Modifier.clip(shape),
         placeholderIcon = header.placeholderIcon,
         contentDescription = stringResource(R.string.profile_photo_description, name),

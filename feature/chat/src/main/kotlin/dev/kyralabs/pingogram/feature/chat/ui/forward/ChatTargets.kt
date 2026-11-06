@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.feature.chat.ui.userId
@@ -239,6 +240,9 @@ internal class ChatTargets(
             )
         }
 
+        private fun supergroupOf(chat: Chat): Supergroup? =
+            (chat.type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] }
+
         private fun targetOf(chat: Chat): ForwardTarget {
             val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
             val isDeletedAccount = chat.userId?.let(users::get)?.isDeleted == true
@@ -258,6 +262,7 @@ internal class ChatTargets(
                         else -> null
                     },
                 isSecret = chat.type is ChatType.Secret,
+                avatarShape = AvatarShape.ofChat(isForum = supergroupOf(chat)?.isForum == true),
             )
         }
     }

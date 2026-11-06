@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
@@ -58,6 +59,7 @@ internal fun HeaderSources.toHeader(): ChatHeader {
         secret = secretHeader(),
         opensChatInfo = chat.hasInfoPage,
         callUserId = callUserId().takeUnless { isSavedMessages },
+        avatarShape = AvatarShape.ofChat(isForum),
     )
 }
 
@@ -102,6 +104,8 @@ internal class HeaderSources(
     val people: ChatPeople,
     val now: Instant,
     val timeFormatter: ChatTimeFormatter,
+    /** The chat is a forum, whose avatar is a rounded square. */
+    val isForum: Boolean = false,
 ) {
     /** The user of a private or secret chat; null for groups and channels, and while TDLib has not announced it. */
     val user: User? get() = chat.userId?.let(people.users::get)

@@ -1479,9 +1479,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Content**: `RecentChatsWidgetUpdater` (singleton, started by `PingogramApplication`) follows, for each account the
   placed widgets keep (`RecentChatsWidgets.slots`: `GlanceAppWidgetManager` and the widgets' states behind a seam for
   tests), that account's login, its first 10 chats of `chatList(Main)` with its users' names and its locked chats
-  (`WidgetAccount`, from `AccountGraphs`), and the app's `PasscodeRepository`; nothing while no widget is placed. It
-  maps them into each account's `RecentChatsContent` (loading, signed out, locked, the chats as `WidgetChat` rows with
-  that account's `AvatarIcons`' bitmaps at 40 dp and its slot) and calls `updateAll` 1 s after the chats last
+  (`WidgetAccount`, from `AccountGraphs`; its supergroups say which chats are forums), and the app's
+  `PasscodeRepository`; nothing while no widget is placed. It maps them into each account's `RecentChatsContent`
+  (loading, signed out, locked, the chats as `WidgetChat` rows with that account's `AvatarIcons`' bitmaps at 40 dp,
+  round or a forum's rounded square, `docs/DESIGN_SYSTEM.md` §4, and its slot) and calls `updateAll` 1 s after the chats last
   changed. A process started for the widget loads the first chats itself (`loadChats`) if TDLib has fewer.
 - **Drawing**: `RecentChatsWidget` (a `GlanceAppWidget`) collects its account's `content(slot)` and the Appearance
   settings in `provideGlance`, and draws `RecentChatsWidgetContent` in `GlanceTheme` with the wallpaper's colors or the

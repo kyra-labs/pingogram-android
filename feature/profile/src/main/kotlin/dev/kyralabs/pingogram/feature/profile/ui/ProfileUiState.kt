@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
@@ -39,6 +40,8 @@ sealed interface ProfileUiState {
  *   account.
  * @property status "online", "last seen …", "bot"; null for a deleted account.
  * @property isOnline the user is online now: the status shows in `primary`.
+ * @property avatarShape the avatar's shape while the bar is expanded: a forum's info page has a rounded square
+ *   ([AvatarShape.ofChat]), everything else a circle.
  */
 @Immutable
 data class ProfileHeader(
@@ -51,6 +54,7 @@ data class ProfileHeader(
     val isVerified: Boolean = false,
     val isPremium: Boolean = false,
     val warning: ProfileWarning? = null,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "ProfileHeader(userId=$userId, …)"
 }

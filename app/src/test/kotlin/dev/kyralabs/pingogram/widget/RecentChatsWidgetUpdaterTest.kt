@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
@@ -87,6 +88,7 @@ class RecentChatsWidgetUpdaterTest {
             auth = TdlibAuthRepository(client, dispatcher),
             chats = TdlibChatRepository(client, backgroundScope, dispatcher, OpenChats()),
             users = TdlibUserRepository(client, backgroundScope),
+            groups = TdlibGroupRepository(client, backgroundScope),
             chatLock = FakeChatLockRepository(locked = lockedChats),
             avatars =
                 AvatarIcons(

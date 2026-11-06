@@ -15,6 +15,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The demo's channel has a sample rich post, with two sections to open and a photo.
 
 ### Changed
+- Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
+  list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
 - The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
   paragraph; an export, all of it and its photos) instead of "Unsupported message".
 - Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow

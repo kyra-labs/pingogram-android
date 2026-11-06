@@ -30,6 +30,8 @@ data class GroupInfo(
     val detailsError: DomainError? = null,
     /** How many people asked to join and wait for an administrator (the chat's `pending_join_requests`). */
     val pendingJoinRequests: Int = 0,
+    /** A supergroup whose messages are in topics (td_api.tl `supergroup.is_forum`). */
+    val isForum: Boolean = false,
 ) {
     /** The rights the current user has here: every right as the owner, none as anyone but an administrator. */
     val myRights: AdministratorRights get() = myRole.rights
