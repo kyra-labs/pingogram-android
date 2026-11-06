@@ -176,7 +176,11 @@ class DockedSearchTest {
         awaitRow(ADA_TITLE)
         searchButton().assertExists()
 
-        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).performClick()
+        composeRule
+            .onNode(
+                (hasText(string(R.string.nav_settings)) or hasContentDescription(string(R.string.nav_settings))) and
+                    isSelectable(),
+            ).performClick()
         composeRule.waitForIdle()
 
         composeRule.onAllNodes(searchButtonMatcher()).assertCountEquals(0)
