@@ -32,12 +32,14 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -53,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.PingogramDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaViewerPreviewStates
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
@@ -106,6 +109,7 @@ internal fun MediaViewerScreen(
     PostponeOverlayEnter(ready = state !is MediaViewerUiState.Loading)
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
+        OpenMediaTraceEffect(shown = content != null)
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
@@ -114,7 +118,12 @@ internal fun MediaViewerScreen(
         ImmersiveSystemBars(hidden = content != null && !chrome.visible)
         val zoom = remember { ZoomState() }
         val scrim = MaterialTheme.colorScheme.scrim
-        BoxWithConstraints(modifier.fillMaxSize().viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave)) {
+        BoxWithConstraints(
+            modifier
+                .fillMaxSize()
+                .testTag(MEDIA_VIEWER_TEST_TAG)
+                .viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave),
+        ) {
             val height = constraints.maxHeight.toFloat()
             Box(Modifier.matchParentSize().drawBehind { drawRect(scrim, alpha = 1f - dismiss.fraction(height)) })
             Scaffold(
@@ -177,6 +186,22 @@ private fun actionsOf(
     val fileState = content.files[media.fileId]
     return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, fileState, onEvent) }
 }
+
+/**
+ * Ends [MediaViewerTrace]'s `openMedia` once the viewer shows its pages ([shown]): at the start of the frame after the
+ * one that composed them, so that frame has been drawn (`docs/PERFORMANCE.md` §9, as `OpenChatTraceEffect`).
+ */
+@Composable
+private fun OpenMediaTraceEffect(shown: Boolean) {
+    if (!shown) return
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        MediaViewerTrace.endOpen()
+    }
+}
+
+/** The viewer's root, which `OpenMediaBenchmark` waits for (`MainActivity` shows test tags as resource ids). */
+internal const val MEDIA_VIEWER_TEST_TAG = "media_viewer"
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
 @Stable
