@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.MessageBubbleShapes
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.feature.chat.ui.rich.RichTextCache
 
 /**
  * How one side's bubbles look (`docs/DESIGN_SYSTEM.md` §2.2): their [colors], `core:ui`'s [BubbleColors] from
@@ -173,6 +174,9 @@ private fun rememberMentionOpener(onMention: (MentionTarget) -> Unit): LinkInter
  */
 @Stable
 internal class AnnotatedTextCache {
+    /** The texts of rich messages, kept the same way, per message. */
+    val rich = RichTextCache()
+
     private val entries =
         object : LinkedHashMap<Long, Entry>(MAX_ENTRIES, LOAD_FACTOR, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Entry>?) = size > MAX_ENTRIES

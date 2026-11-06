@@ -76,7 +76,12 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         contentLabel =
             when {
                 album.isNotEmpty() -> albumLabel(album)
+
                 content is MessageContent.Text -> null
+
+                // The bubble shows its blocks, and screen readers hear them (richDescription).
+                content is MessageContent.RichMessage -> null
+
                 else -> contentKindText(content)
             },
         text = text,

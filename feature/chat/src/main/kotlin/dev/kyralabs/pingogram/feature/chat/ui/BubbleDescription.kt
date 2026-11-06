@@ -2,11 +2,13 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
+import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
@@ -54,6 +56,12 @@ private fun bubbleContent(
         pollDescription(resources, bubble),
         bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
         bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),
+        (bubble.content as? MessageContent.RichMessage)?.let { content ->
+            spokenList(
+                resources,
+                richDescription(resources, content.message, bubble.rich) { spokenText(resources, bubble, it) },
+            )
+        },
         bubble.linkPreview?.title,
         spokenList(
             resources,
@@ -71,6 +79,13 @@ private fun bubbleContent(
         },
         bubble.searchMatch?.let { resources.getString(R.string.chat_bubble_search_match) },
     )
+
+/** [text] of [bubble] as screen readers hear it: its hidden spoilers read "spoiler". */
+internal fun spokenText(
+    resources: Resources,
+    bubble: ChatItem.Bubble,
+    text: FormattedText,
+): String = text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler))
 
 /** The text, with [spoiler] in place of each hidden spoiler, so a screen reader does not give it away. */
 private fun FormattedText.spokenText(

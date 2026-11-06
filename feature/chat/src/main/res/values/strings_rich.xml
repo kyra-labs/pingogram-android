@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rich messages, as channels post them: headings, collapsible sections, photos, lists and tables. -->
+<resources>
+    <!-- In place of a part of a rich message Pingogram cannot show yet (a map, an embedded page, a file). -->
+    <string name="rich_unsupported_block">This part can\'t be shown yet</string>
+    <!-- The button under a long rich message that shows the rest of it. -->
+    <string name="rich_show_more">Show more</string>
+    <!-- The button under a rich message of which Telegram sent only the start: it loads the rest. -->
+    <string name="rich_show_full">Show full message</string>
+    <!-- A collapsible section of a rich message, for screen readers: whether it shows its content. -->
+    <string name="rich_section_expanded">Expanded</string>
+    <string name="rich_section_collapsed">Collapsed</string>
+    <!-- Screen readers' actions on a rich message's section. %1$s is the section's heading. -->
+    <string name="rich_section_expand">Expand %1$s</string>
+    <string name="rich_section_collapse">Collapse %1$s</string>
+    <!-- A section in a rich message's description for screen readers. %1$s is its heading, %2$s whether it is open
+         ("Expanded"). -->
+    <string name="rich_section_description">Section %1$s, %2$s</string>
+    <!-- A checklist item in a rich message's description for screen readers. %1$s is its text. -->
+    <string name="rich_item_checked">Done: %1$s</string>
+    <string name="rich_item_unchecked">Not done: %1$s</string>
+    <!-- A table in a rich message's description for screen readers. -->
+    <plurals name="rich_table_rows">
+        <item quantity="one">Table, %1$d row</item>
+        <item quantity="other">Table, %1$d rows</item>
+    </plurals>
+</resources>
