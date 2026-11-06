@@ -9,6 +9,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A rich message's bubble: a tap on a section's header toggles it and "Show full message" loads the rest; screen
@@ -97,6 +99,15 @@ class RichMessageScreenTest {
             listOf(RichMessageEvent.ToggleSection(POST, 0), RichMessageEvent.LoadFull(POST)),
             events.filterIsInstance<RichMessageEvent>(),
         )
+    }
+
+    @Test
+    fun `screen readers open a section's photo in the media viewer through the bubble's actions`() {
+        setScreen(RichPreviewData.expanded())
+
+        performCustomAction(string(R.string.rich_open_media, string(UiR.string.preview_photo)))
+
+        assertEquals(listOf(ChatEvent.OpenMedia(richMediaId(POST, 0))), events.filterIsInstance<ChatEvent.OpenMedia>())
     }
 
     @Test

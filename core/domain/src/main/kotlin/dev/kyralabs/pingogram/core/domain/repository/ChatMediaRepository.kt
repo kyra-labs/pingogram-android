@@ -27,6 +27,17 @@ interface ChatMediaRepository {
         messageId: Long,
     ): Outcome<ChatMediaPage>
 
+    /**
+     * The photos, videos and GIFs of rich message [messageId] of chat [chatId], the whole of what the viewer pages
+     * through when it opens on one of them: each as a message of its own ([richMediaMessages], ids from
+     * [richMediaId][dev.kyralabs.pingogram.core.domain.model.richMediaId]), both ends reached. Fails with
+     * `DomainError.NotFound` if the message was deleted, or is no rich message with media.
+     */
+    suspend fun richMedia(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<ChatMediaPage>
+
     /** The page of media of [filter] just older than message [messageId] of chat [chatId]. */
     suspend fun older(
         chatId: Long,

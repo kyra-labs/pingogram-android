@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.SharedFile
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.richMediaMessages
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -63,10 +64,13 @@ import java.util.Locale
  * saved is [onCanBeSaved]'s answer, yes unless a test says otherwise; the messages asked about go to [saveChecks].
  */
 class FakeChatMediaRepository : ChatMediaRepository {
-    /** `opened:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
+    /** `opened:<id>`, `rich:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
     val calls = mutableListOf<String>()
 
     var onOpened: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
+
+    /** The rich messages [richMedia] answers for, by id: their media as the real repository gives them. */
+    val richMessages = mutableMapOf<Long, Message>()
     var onOlder: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onNewer: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onPosition: suspend (Long) -> Outcome<Int> = { Outcome.Failure(DomainError.Unknown(400, "No position")) }
@@ -118,6 +122,17 @@ class FakeChatMediaRepository : ChatMediaRepository {
     ): Outcome<ChatMediaPage> {
         calls += "opened:$messageId"
         return onOpened(messageId)
+    }
+
+    override suspend fun richMedia(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<ChatMediaPage> {
+        calls += "rich:$messageId"
+        val media = richMessages[messageId]?.richMediaMessages().orEmpty()
+        if (media.isEmpty()) return Outcome.Failure(DomainError.NotFound)
+        val page = media.sortedByDescending { it.id }.toImmutableList()
+        return Outcome.Success(ChatMediaPage(page, ChatMediaFilter.PhotosAndVideos, true, true, media.size))
     }
 
     override suspend fun older(

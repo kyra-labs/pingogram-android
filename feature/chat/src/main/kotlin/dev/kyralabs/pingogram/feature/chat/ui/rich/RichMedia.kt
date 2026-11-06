@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.rich
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,18 +15,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.InlineKeyboardButtonType
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
 import dev.kyralabs.pingogram.core.domain.model.RichCaption
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.content.GifBadge
@@ -44,6 +49,10 @@ import kotlinx.collections.immutable.ImmutableList
  * caption below it. Photos load the smallest size that covers the box, dimmed in dark theme as all media in the
  * conversation (`docs/DESIGN_SYSTEM.md` §10), and follow the automatic download rules; videos and GIFs show their
  * still with the play or GIF badge. Spoilers show only the blurred minithumbnail.
+ *
+ * A tap opens the media viewer at it ([ChatEvent.OpenMedia] with its [richMediaId]), which pages through the message's
+ * media; it grows into the viewer and shrinks back ([sharedMediaBounds], by that id). A photo that links somewhere
+ * ([RichBlock.Photo.url]) opens its link instead, as a link in a text does.
  */
 @Composable
 internal fun RichMedia(
@@ -52,6 +61,19 @@ internal fun RichMedia(
 ) {
     val sizes = MaterialTheme.sizes
     val shape = MaterialTheme.shapes.medium
+    val uriHandler = LocalUriHandler.current
+    val id = richMediaId(scope.messageId, block.index)
+    val url = (block as? RichBlock.Photo)?.url?.takeIf { it.isNotBlank() }
+    val onEvent = scope.onEvent
+    val open =
+        remember(id, url, onEvent, uriHandler) {
+            { if (url != null) uriHandler.openUri(url) else onEvent(ChatEvent.OpenMedia(id)) }
+        }
+    val frame =
+        Modifier
+            .sharedMediaBounds(id, shape, enabled = url == null)
+            .clip(shape)
+            .clickable(onClickLabel = stringResource(R.string.content_open), onClick = open)
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
         when (block) {
             is RichBlock.Photo -> {
@@ -68,7 +90,7 @@ internal fun RichMedia(
                     photo = block.photo,
                     displaySize = size,
                     hidden = block.hasSpoiler,
-                    modifier = Modifier.fillMaxWidth().height(size.height).clip(shape),
+                    modifier = frame.fillMaxWidth().height(size.height),
                     downloads = scope.downloads,
                     onDownload = { scope.onEvent(ChatEvent.DownloadFile(it)) },
                     onCancelDownload = { scope.onEvent(ChatEvent.CancelDownload(it)) },
@@ -76,11 +98,11 @@ internal fun RichMedia(
             }
 
             is RichBlock.Video -> {
-                RichVideoStill(block.video.still(), block.hasSpoiler, isGif = false)
+                RichVideoStill(block.video.still(), block.hasSpoiler, isGif = false, frame)
             }
 
             is RichBlock.Animation -> {
-                RichVideoStill(block.animation.still(), block.hasSpoiler, isGif = true)
+                RichVideoStill(block.animation.still(), block.hasSpoiler, isGif = true, frame)
             }
         }
         RichCaptionText(block.caption, scope)
@@ -92,11 +114,12 @@ private fun RichVideoStill(
     still: VideoStill,
     hidden: Boolean,
     isGif: Boolean,
+    modifier: Modifier,
 ) {
     val sizes = MaterialTheme.sizes
     val size =
         mediaDisplaySize(still.width, still.height, sizes.mediaMaxWidth, sizes.mediaMaxHeight, sizes.mediaMinSize)
-    Box(Modifier.fillMaxWidth().height(size.height).clip(MaterialTheme.shapes.medium)) {
+    Box(modifier.fillMaxWidth().height(size.height)) {
         VideoThumbnail(still, size, hidden, Modifier.matchParentSize())
         if (isGif) GifBadge(Modifier.align(Alignment.Center)) else PlayBadge(Modifier.align(Alignment.Center))
     }

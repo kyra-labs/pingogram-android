@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
+import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
@@ -100,6 +101,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.rich.ChatRichMessages
+import dev.kyralabs.pingogram.feature.chat.ui.rich.richMediaToOpen
 import dev.kyralabs.pingogram.feature.chat.ui.rich.withRichMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ChatScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.nextText
@@ -1631,6 +1633,7 @@ private fun ChatUiState.mediaToOpen(messageId: Long): ChatEffect.OpenMedia? {
                 else -> null
             }
         }
+    if (isRichMediaId(messageId)) return richMediaToOpen(messageId)
     return if (content?.opensInViewer == true) ChatEffect.OpenMedia(messageId) else null
 }
 

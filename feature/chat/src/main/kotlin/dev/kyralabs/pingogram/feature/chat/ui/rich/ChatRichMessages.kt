@@ -3,7 +3,10 @@ package dev.kyralabs.pingogram.feature.chat.ui.rich
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
+import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
@@ -156,4 +159,18 @@ internal fun ChatUiState.withRichMessages(states: PersistentMap<Long, RichMessag
             }
         }
     return if (changed) copy(content = content.copy(items = items.toImmutableList())) else this
+}
+
+/**
+ * The media viewer's effect for a rich message's media [id] ([richMediaId]), where a bubble shows that message with
+ * that media; null otherwise.
+ */
+internal fun ChatUiState.richMediaToOpen(id: Long): ChatEffect.OpenMedia? {
+    val messageId = richMediaMessageId(id)
+    val rich =
+        (content as? ChatContent.Content)?.items?.firstNotNullOfOrNull { item ->
+            ((item as? ChatItem.Bubble)?.takeIf { it.id == messageId }?.content as? MessageContent.RichMessage)?.message
+        }
+    val shown = rich?.media()?.any { richMediaId(messageId, it.index) == id } == true
+    return if (shown) ChatEffect.OpenMedia(id) else null
 }

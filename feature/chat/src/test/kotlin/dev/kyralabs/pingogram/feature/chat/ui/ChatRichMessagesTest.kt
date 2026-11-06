@@ -6,8 +6,11 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.RichCaption
 import dev.kyralabs.pingogram.core.domain.model.RichMessage
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -157,9 +160,26 @@ class ChatRichMessagesTest : ChatViewModelHarness() {
             }
     }
 
+    @Nested
+    inner class Media {
+        @Test
+        fun `a rich message's photo opens in the media viewer by its own id, one it does not hold does not`() =
+            runViewModelTest {
+                val viewModel = conversation(withPhoto())
+
+                send(
+                    viewModel,
+                    ChatEvent.OpenMedia(richMediaId(MESSAGE, 0)),
+                    ChatEvent.OpenMedia(richMediaId(MESSAGE, 3)),
+                )
+
+                assertEquals(listOf(ChatEffect.OpenMedia(richMediaId(MESSAGE, 0))), effects)
+            }
+    }
+
     private companion object {
-        const val OTHER = 10L
-        const val MESSAGE = 11L
+        const val OTHER = 10L shl 20
+        const val MESSAGE = 11L shl 20
 
         fun text(value: String) = FormattedText(value, persistentListOf())
 
@@ -167,6 +187,15 @@ class ChatRichMessagesTest : ChatViewModelHarness() {
             RichBlock.Details(0, text("Features"), persistentListOf(RichBlock.Paragraph(text("Fast"))), isOpen = false)
         val open =
             RichBlock.Details(1, text("Changes"), persistentListOf(RichBlock.Paragraph(text("New"))), isOpen = true)
+
+        fun withPhoto() =
+            RichMessage(
+                persistentListOf(
+                    RichBlock.Photo(0, Photo(persistentListOf(), null), RichCaption.Empty, "", hasSpoiler = false),
+                ),
+                isRtl = false,
+                isFull = true,
+            )
 
         fun sample(isFull: Boolean = true) =
             RichMessage(

@@ -751,8 +751,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   layout modifier that tells the bubble's layout it cut, in the same measure pass). `ChatRichMessages` (a part of
   `ChatViewModel`, `RichMessageEvent`) keeps the sections the user toggled and the messages shown whole in its saved
   state, copied into their bubble only (`withRichMessages`, `ChatItem.Bubble.rich`), and loads a full message once per
-  tap, a failure a snackbar. Screen readers hear the bubble as one (`richDescription`), sections and the full message as
-  its custom actions (`richActions`).
+  tap, a failure a snackbar. Screen readers hear the bubble as one (`richDescription`), sections, media and the full
+  message as its custom actions (`richActions`). A rich message's photo, video or GIF opens in the media viewer by an id
+  of its own (`core:domain`'s `richMediaId`: negative, in the media's order, `richMediaMessageId` leading back to the
+  message), passed where a message id goes (`ChatEffect.OpenMedia`, `MediaViewerRoute`), so nothing between them
+  changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
+  media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
+  Forward, "Show in chat", saving and deletions, leaving Delete out.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
