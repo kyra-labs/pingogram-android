@@ -8,12 +8,14 @@ import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.mapper.toRichMessage
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
 import dev.kyralabs.pingogram.core.data.repository.HistoryPage.Kind
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -53,10 +55,13 @@ import javax.inject.Inject
  *
  * [message] serves the composer's reply and edit bars from the window, or from TDLib.
  *
+ * [loadFullRichMessage] puts the whole of a rich message Telegram sent only the start of into the windows that hold it.
+ *
  * [sendText] and [setDraft] only send requests: the message being sent reaches the window through TDLib's updates, as
  * every other new message does, and the draft reaches the chat through `updateChatDraftMessage`.
  */
 @AccountScoped
+@Suppress("TooManyFunctions") // One function per request of MessageRepository.
 class TdlibMessageRepository
     @Inject
     constructor(
@@ -162,6 +167,23 @@ class TdlibMessageRepository
                 ?.let { return Outcome.Success(it) }
             return client.request(TdApi.GetMessage(chatId, messageId)).map { it.toMessage() }
         }
+
+        /**
+         * `getFullRichMessage`, whose answer replaces the content of the message in every window that holds it: TDLib
+         * sends no update for it.
+         */
+        override suspend fun loadFullRichMessage(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<Unit> =
+            client.request(TdApi.GetFullRichMessage(chatId, messageId)).map { rich ->
+                val full = MessageContent.RichMessage(rich.toRichMessage())
+                store.update { cache ->
+                    cache.editing(chatId, messageId) { message ->
+                        if (message.content is MessageContent.RichMessage) message.copy(content = full) else message
+                    }
+                }
+            }
 
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 

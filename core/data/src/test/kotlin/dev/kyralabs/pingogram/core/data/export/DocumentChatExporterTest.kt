@@ -18,6 +18,9 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
+import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.RichCaption
+import dev.kyralabs.pingogram.core.domain.model.RichMessage
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportOutcome
@@ -168,6 +171,48 @@ class DocumentChatExporterTest {
             assertTrue(json.contains("\"not_exported\": \"unavailable\""), json)
             // Only the file chosen and small enough was downloaded.
             assertEquals(listOf(50, 40, 10), repository.downloads)
+        }
+
+    @Test
+    fun `a rich message exports its text and each of its photos`() =
+        runTest {
+            fun photo(
+                index: Int,
+                fileId: Int,
+            ) = RichBlock.Photo(
+                index,
+                Photo(persistentListOf(PhotoSize("x", 800, 600, FileRef(fileId, 10))), null),
+                RichCaption.Empty,
+                "",
+                hasSpoiler = false,
+            )
+            val rich =
+                RichMessage(
+                    persistentListOf(
+                        RichBlock.Title(FormattedText("Supernova", persistentListOf())),
+                        RichBlock.Details(
+                            0,
+                            FormattedText("Screenshots", persistentListOf()),
+                            persistentListOf(photo(0, 60), photo(1, 61)),
+                            false,
+                        ),
+                    ),
+                    isRtl = false,
+                    isFull = true,
+                )
+            repository.history = listOf(domainMessage(id = 6, content = MessageContent.RichMessage(rich)))
+            repository.files = mapOf(60 to "first", 61 to "second")
+
+            val outcome = exporter().run(options(media = setOf(ExportMediaKind.Photos)))
+
+            assertEquals(2, (outcome as ChatExportOutcome.Success).result.mediaCount)
+            val folder = tree.child(FakeDocumentTree.ROOT, "Ada – 2026-10-23")
+            val media = tree.child(folder.id, "media")
+            assertEquals("first", tree.child(media.id, "6_photo_6.jpg").text())
+            assertEquals("second", tree.child(media.id, "6_photo_6_2.jpg").text())
+            val json = tree.child(folder.id, "messages.json").text()
+            assertTrue(json.contains("\"text\": \"Supernova\\nScreenshots\""), json)
+            assertTrue(json.contains("\"more_media\": ["), json)
         }
 
     @Test

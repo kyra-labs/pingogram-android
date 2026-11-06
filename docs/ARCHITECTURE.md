@@ -733,6 +733,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+- **Rich messages** (td_api.tl `messageRichMessage`, the posts channels write with headings, collapsible sections,
+  photos, lists and tables): `core:domain`'s `MessageContent.RichMessage` holds a `RichMessage`, its `RichBlock`s (each
+  text a `FormattedText`, its formatting and links as the entities of a text message, with `Marked`, `Subscript` and
+  `Superscript` for what only rich texts have; media as other messages' `Photo`, `Video` and `Animation`, so downloads,
+  automatic download and Coil work unchanged; a block Pingogram does not show is `RichBlock.Unsupported`). `core:data`'s
+  `RichMessageMappers.kt` maps the blocks and walks each `RichText` into one string with its entities, numbering the
+  sections (`RichBlock.Details.id`, depth first) and media (`RichBlock.Media.index`) in order. Where Telegram sent
+  only the start (`isFull` false), `MessageRepository.loadFullRichMessage` sends `getFullRichMessage` and puts the answer
+  into the windows that hold the message (`HistoryCache.editing`), as TDLib sends no update for it. `firstText()` is
+  what previews show (`core:ui`'s `messagePreviewText`), `fullText()` what is copied, exported and translated, and
+  `media()` what the export copies (`ExportMessage.moreMedia` after the first).
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

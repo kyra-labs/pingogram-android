@@ -218,6 +218,7 @@ class ServiceActionMappersTest {
                 "MessageGame",
                 "MessageInvoice",
                 "MessageStory",
+                "MessageRichMessage",
                 "MessageExpiredPhoto",
                 "MessageExpiredVideo",
                 "MessageExpiredVideoNote",

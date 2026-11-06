@@ -44,6 +44,9 @@ internal fun TextEntityType.toEntityName(): EntityName =
         is TextEntityType.CustomEmoji -> EntityName("custom_emoji", number = customEmojiId)
         is TextEntityType.MediaTimestamp -> EntityName("media_timestamp", number = seconds.toLong())
         is TextEntityType.DateTime -> EntityName("date_time", number = unixTime)
+        TextEntityType.Marked -> EntityName("marked")
+        TextEntityType.Subscript -> EntityName("subscript")
+        TextEntityType.Superscript -> EntityName("superscript")
         TextEntityType.Unknown -> EntityName("unknown")
     }
 
@@ -71,6 +74,9 @@ internal fun EntityName.toEntityType(): TextEntityType =
         "phone_number" -> TextEntityType.PhoneNumber
         "bank_card_number" -> TextEntityType.BankCardNumber
         "ton_address" -> TextEntityType.TonAddress
+        "marked" -> TextEntityType.Marked
+        "subscript" -> TextEntityType.Subscript
+        "superscript" -> TextEntityType.Superscript
         "custom_emoji" -> TextEntityType.CustomEmoji(number ?: 0)
         "media_timestamp" -> TextEntityType.MediaTimestamp((number ?: 0).toInt())
         "date_time" -> TextEntityType.DateTime(number ?: 0, null)

@@ -18,6 +18,9 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.RichCaption
+import dev.kyralabs.pingogram.core.domain.model.RichMessage
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -165,6 +168,32 @@ class MessagePreviewTest {
             listOf("Photo expired", "Video expired", "Video message expired", "Voice message expired"),
             ExpiredMedia.entries.map { preview(MessageContent.Expired(it)) },
         )
+    }
+
+    @Test
+    fun richMessagesShowTheirFirstText() {
+        val title = text("Supernova Launcher")
+        val rich =
+            RichMessage(
+                persistentListOf(
+                    RichBlock.Divider,
+                    RichBlock.Title(title),
+                    RichBlock.Paragraph(text("A launcher for Android")),
+                    RichBlock.Details(0, text("Links"), persistentListOf(), isOpen = false),
+                ),
+                isRtl = false,
+                isFull = true,
+            )
+        assertEquals("Supernova Launcher", preview(MessageContent.RichMessage(rich)))
+
+        val photoOnly =
+            RichMessage(
+                persistentListOf(RichBlock.Photo(0, Photo(persistentListOf(), null), RichCaption.Empty, "", false)),
+                isRtl = false,
+                isFull = true,
+            )
+        assertEquals("Photo", preview(MessageContent.RichMessage(photoOnly)))
+        assertEquals("Message", preview(MessageContent.RichMessage(RichMessage.Empty)))
     }
 
     // Service messages

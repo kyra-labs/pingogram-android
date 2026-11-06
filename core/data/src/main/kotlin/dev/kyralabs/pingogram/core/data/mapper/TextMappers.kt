@@ -45,7 +45,7 @@ internal fun TdApi.TextEntityType.toTextEntityType(): TextEntityType =
     }
 
 /** Null for a formatting added by a newer TDLib: the text then stays as written. */
-private fun TdApi.DateTimeFormattingType.toFormat(): DateTimeFormat? =
+internal fun TdApi.DateTimeFormattingType.toFormat(): DateTimeFormat? =
     when (this) {
         is TdApi.DateTimeFormattingTypeRelative -> {
             DateTimeFormat.Relative
@@ -129,6 +129,10 @@ private fun TextEntityType.toTdTextEntityType(): TdApi.TextEntityType? =
         TextEntityType.BankCardNumber,
         TextEntityType.TonAddress,
         is TextEntityType.MediaTimestamp,
+        // Rich messages' own formatting, which a text message cannot carry.
+        TextEntityType.Marked,
+        TextEntityType.Subscript,
+        TextEntityType.Superscript,
         TextEntityType.Unknown,
         -> null
     }

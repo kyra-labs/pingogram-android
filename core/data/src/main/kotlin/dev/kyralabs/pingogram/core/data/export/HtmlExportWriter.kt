@@ -91,6 +91,7 @@ internal class HtmlExportWriter(
             }
         }
         message.media?.let(::media)
+        message.moreMedia.forEach(::media)
         message.summary?.let { out.append("<p class=\"summary\" dir=\"auto\">").append(escape(it)).append("</p>\n") }
         if (message.text.text.isNotEmpty()) {
             out.append("<div class=\"text\" dir=\"auto\">")
@@ -200,6 +201,9 @@ internal class HtmlExportWriter(
             TextEntityType.BlockQuote, TextEntityType.ExpandableBlockQuote -> "<blockquote>" to "</blockquote>"
             TextEntityType.Url -> link(if (SCHEME.containsMatchIn(text)) text else "http://$text")
             is TextEntityType.TextUrl -> link(entity.url)
+            TextEntityType.Marked -> "<mark>" to "</mark>"
+            TextEntityType.Subscript -> "<sub>" to "</sub>"
+            TextEntityType.Superscript -> "<sup>" to "</sup>"
             else -> "" to ""
         }
 

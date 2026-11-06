@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
  * A history is that of a whole chat, or of one of its forum topics or message threads ([MessageTopic], FR-C9), each
  * with a history of its own: the functions take the chat and, where it applies, the topic.
  */
+@Suppress("TooManyFunctions") // What a conversation's history needs: observing, loading, sending, the full message.
 interface MessageRepository {
     /**
      * The loaded history of chat [chatId], then every change, for as long as it is collected. Observing loads nothing:
@@ -95,6 +96,17 @@ interface MessageRepository {
         chatId: Long,
         messageId: Long,
     ): Outcome<Message>
+
+    /**
+     * Loads the whole of rich message [messageId] of chat [chatId], of which Telegram sent only the start
+     * (`RichMessage.isFull` false): the message in [history] then holds it. Cancelling stops the wait, not TDLib's
+     * request. Fails with `DomainError.NotFound` when the message was deleted, `DomainError.Network` or
+     * `DomainError.FloodWait`.
+     */
+    suspend fun loadFullRichMessage(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Unit>
 
     /** Forgets the history of every chat nobody observes, for `ComponentCallbacks2.onTrimMemory`. */
     fun trimMemory()

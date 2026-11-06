@@ -491,7 +491,6 @@ class MessageContentMappersTest {
         /** Regular (not service) contents of the pinned TDLib version that Pingogram does not show yet. */
         val UNSUPPORTED_CONTENTS: List<Class<out TdApi.MessageContent>> =
             listOf(
-                TdApi.MessageRichMessage::class.java,
                 TdApi.MessagePaidMedia::class.java,
                 TdApi.MessageStakeDice::class.java,
                 TdApi.MessageChecklist::class.java,

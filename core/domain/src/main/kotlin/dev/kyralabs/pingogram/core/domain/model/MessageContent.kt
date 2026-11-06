@@ -146,6 +146,11 @@ sealed interface MessageContent {
         val action: ServiceAction,
     ) : MessageContent
 
+    /** A rich message, as channels post them: headings, collapsible sections, photos, lists, tables. */
+    data class RichMessage(
+        val message: dev.kyralabs.pingogram.core.domain.model.RichMessage,
+    ) : MessageContent
+
     /** Content Pingogram cannot show (yet): paid media, giveaways, checklists, …. */
     data object Unsupported : MessageContent
 }

@@ -113,6 +113,15 @@ sealed interface TextEntityType {
         val format: DateTimeFormat?,
     ) : TextEntityType
 
+    /** Highlighted, as with a marker (rich messages only). */
+    data object Marked : TextEntityType
+
+    /** Set lower and smaller (rich messages only). */
+    data object Subscript : TextEntityType
+
+    /** Set higher and smaller (rich messages only). */
+    data object Superscript : TextEntityType
+
     /** A type added by a newer TDLib; the text is shown plain. */
     data object Unknown : TextEntityType
 }

@@ -25,12 +25,14 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
+import dev.kyralabs.pingogram.core.domain.model.RichBlock
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportOutcome
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ExportTexts
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -252,7 +254,7 @@ class DocumentChatExporter internal constructor(
 
         private suspend fun map(message: Message): ExportMessage {
             val content = message.content
-            val media = media(message)
+            val media = content.files().mapIndexed { index, file -> media(message, file, index) }
             val forward = message.forwardInfo
             // The names a service text needs, read before it is worded (its words are no suspending call).
             if (content is MessageContent.Service) content.action.people().forEach { name(MessageSender.User(it)) }
@@ -270,7 +272,8 @@ class DocumentChatExporter internal constructor(
                         ?.takeIf { it != 0L },
                 forwardedFrom = forward?.let { originName(it.origin) },
                 forwardDate = forward?.date ?: 0,
-                media = media,
+                media = media.firstOrNull(),
+                moreMedia = media.drop(1).toImmutableList(),
                 summary = if (content is MessageContent.Service) null else texts.summary(content),
                 service = (content as? MessageContent.Service)?.let { texts.service(message) { names[it] } },
             )
@@ -322,9 +325,15 @@ class DocumentChatExporter internal constructor(
                 }
             }?.takeIf { it.isNotBlank() } ?: texts.labels.deletedAccount
 
-        /** The message's file, copied into `media/` where the user chose it, or named with why it is not. */
-        private suspend fun media(message: Message): ExportMedia? {
-            val file = message.content.file() ?: return null
+        /**
+         * [file] of [message], copied into `media/` where the user chose it, or named with why it is not; [index] tells
+         * the files of a message that has several apart.
+         */
+        private suspend fun media(
+            message: Message,
+            file: MediaFile,
+            index: Int,
+        ): ExportMedia {
             val reason =
                 when {
                     file.type == ExportMediaType.Sticker || file.type.kind !in options.media -> {
@@ -343,7 +352,7 @@ class DocumentChatExporter internal constructor(
                         null
                     }
                 }
-            return if (reason != null) skipped(file, reason) else downloaded(message, file)
+            return if (reason != null) skipped(file, reason) else downloaded(message, file, index)
         }
 
         /**
@@ -353,6 +362,7 @@ class DocumentChatExporter internal constructor(
         private suspend fun downloaded(
             message: Message,
             file: MediaFile,
+            index: Int,
         ): ExportMedia {
             val downloaded = repository.download(file.ref.id) { onProgress(progress(floodWait = it)) }
             val error = (downloaded as? Outcome.Failure)?.error
@@ -361,17 +371,22 @@ class DocumentChatExporter internal constructor(
             return when {
                 source == null -> skipped(file, ExportSkipReason.Unavailable)
                 source.length() > options.maxFileSize -> skipped(file, ExportSkipReason.TooLarge)
-                else -> copy(message, file, source)
+                else -> copy(message, file, index, source)
             }
         }
 
-        /** [source], the file of [message], copied into `media/` as `<message id>_<name>`. */
+        /**
+         * [source], the file of [message], copied into `media/` as `<message id>_<name>`; a made-up name tells the
+         * files of a message apart by [index] after the first.
+         */
         private suspend fun copy(
             message: Message,
             file: MediaFile,
+            index: Int,
             source: File,
         ): ExportMedia {
-            val name = file.name.ifEmpty { "${file.type.schemaName}_${message.id}.${file.type.extension}" }
+            val number = if (index == 0) "" else "_${index + 1}"
+            val name = file.name.ifEmpty { "${file.type.schemaName}_${message.id}$number.${file.type.extension}" }
             val copyName = "${message.id}_${name.replace(UNSAFE, "_")}"
             val media = mediaFolder ?: tree.createFolder(folder, MEDIA_FOLDER).also { mediaFolder = it }
             val document = tree.createFile(media, copyName, COPY_MIME_TYPE)
@@ -454,7 +469,34 @@ private fun MessageContent.text(): FormattedText =
         is MessageContent.Audio -> caption
         is MessageContent.Document -> caption
         is MessageContent.Poll -> description
+        is MessageContent.RichMessage -> message.fullText()
         else -> FormattedText.Empty
+    }
+
+/** The files of a message: its one file, or a rich message's photos, videos and GIFs. */
+private fun MessageContent.files(): List<MediaFile> =
+    if (this is MessageContent.RichMessage) {
+        message.media().mapNotNull { it.file() }
+    } else {
+        listOfNotNull(file())
+    }
+
+/** A rich message's photo (its largest size), video or GIF. */
+private fun RichBlock.Media.file(): MediaFile? =
+    when (this) {
+        is RichBlock.Photo -> {
+            photo.sizes.maxByOrNull { it.width.toLong() * it.height }?.let {
+                MediaFile(ExportMediaType.Photo, it.file, "", isSelfDestructing = false)
+            }
+        }
+
+        is RichBlock.Video -> {
+            MediaFile(ExportMediaType.Video, video.file, "", isSelfDestructing = false)
+        }
+
+        is RichBlock.Animation -> {
+            MediaFile(ExportMediaType.Animation, animation.file, "", isSelfDestructing = false)
+        }
     }
 
 /** The file of a message with one; a photo's largest size. */

@@ -48,6 +48,7 @@ internal class ResourceExportTexts(
             is MessageContent.VideoNote,
             is MessageContent.Audio,
             is MessageContent.Document,
+            is MessageContent.RichMessage,
             -> null
 
             else -> contentKindText(content).text()
