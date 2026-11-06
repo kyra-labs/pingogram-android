@@ -64,7 +64,10 @@ import java.util.Locale
  * saved is [onCanBeSaved]'s answer, yes unless a test says otherwise; the messages asked about go to [saveChecks].
  */
 class FakeChatMediaRepository : ChatMediaRepository {
-    /** `opened:<id>`, `rich:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
+    /**
+     * `opened:<id>`, `rich:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in
+     * order.
+     */
     val calls = mutableListOf<String>()
 
     var onOpened: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
