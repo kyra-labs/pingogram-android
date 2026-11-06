@@ -13,7 +13,7 @@ the owner has read this.
 | # | Finding | Impact | Where |
 |---|---|---|---|
 | M1 | Every frame of the transform renders two blur effects and three to four full-window offscreen layers: the blurred minithumbnail under the viewer's photo and the one under the bubble's (both always drawn, loaded image or not, both resized every frame), the overlay's fade, the shared element's crossfade and the full photo's fade-in. The main thread is idle in those frames; the RenderThread and the GPU are not. | High: the transform's dropped frames at 120 Hz | `MediaPage.kt:203`, `MediaImages.kt:108`, `MessagePhoto.kt:113`, `MediaImage.kt:136`, `OverlayNavigator.kt:228`, `SharedMedia.kt:292-295` |
-| M2 | The opening's first frames do everything on the main thread at once: the view model, the whole viewer (Scaffold, two bars, a floating toolbar with tooltips, three image requests), the bubble's side of the transform, and for a video ExoPlayer's construction; the closing's last frame releases ExoPlayer, which blocks until its playback thread released the codec. | High for videos, medium for photos: a hitch before the transform starts and at its end | `MediaViewerScreen.kt`, `ExoVideoPlayer.kt:135`, `ExoVideoPlayer.kt:127-129`, `MediaViewerViewModel.kt:295` |
+| M2 | The opening's first two frames do everything on the main thread at once: the view model, the whole viewer (Scaffold, two bars, a floating toolbar with tooltips, three image requests), the bubble's side of the transform, and for a video ExoPlayer's construction (measured: 19 and 24 ms of main-thread CPU on the JVM against 1.5 ms for a frame of the transform); the closing's last frame disposes the viewer's composition (13 ms on the JVM) and, for a video, releases ExoPlayer, which blocks until its playback thread released the codec. | High for videos, medium for photos: a hitch before the transform starts and at its end | `MediaViewerScreen.kt`, `ExoVideoPlayer.kt:135`, `ExoVideoPlayer.kt:127-129`, `MediaViewerViewModel.kt:295` |
 | M3 | Each open and close changes window attributes (system bar appearance and behaviour, `FLAG_KEEP_SCREEN_ON` when a video starts, `FLAG_SECURE` in secret chats), each a window relayout: a binder round trip to the window manager on the main thread in the frames of the transform. | Medium: 1–5 ms on the main thread in the first and last frames | `ImmersiveSystemBars.kt:23-32`, `MediaPage.kt:106`, `MainActivity.kt:285` |
 | M4 | The viewer's whole screen recomposes on every download progress update of the opened file (the file states are part of `Content`), so a photo that is still downloading recomposes the bars, the toolbar and the page during the transform. | Medium on a slow network, none for cached photos | `MediaViewerViewModel.kt:291`, `MediaPage.kt:208` |
 | M5 | The full photo is decoded at its full pixel size (up to 2560 × 2560, 20 MB as a hardware bitmap) into a memory cache of 25% of the memory class; a few photos evict the conversation's bubble images, which decode again (placeholder, blur and fade each) as the viewer closes. The preview size is decoded a second time at a size the bubble did not use. | Medium: the way back draws into a conversation that is loading again | `MediaPage.kt:206-208`, `ImageLoaderModule.kt:65` |
@@ -24,6 +24,7 @@ the owner has read this.
 | W3 | Downloads that outlive their screen: the story viewer never cancels its downloads; a conversation's automatic prefetches keep going after it closes (documented, but unbounded). | Low: battery and data after leaving a media-heavy chat | `StoryViewerViewModel.kt:473-478`, `ChatAutoDownloads.kt:55` |
 | W4 | Leaks and stale references across accounts: the widget keeps every account graph it ever saw; call notifications key avatars by slot, so a new account in a removed account's slot gets the removed account's file repository. | Low: rare (removing and adding accounts); the second is also a bug | `RecentChatsWidgetUpdater.kt:265-271`, `CallNotificationBuilder.kt:174-176` |
 | W5 | Small: the raise-to-listen setting is read before it is loaded, so the first voice message of a process listens at the ear even when the setting is off; a `PackageManager` query in the share-location sheet's composition; TDLib's error message reaches logcat in release builds. | Low | `RaiseToListen.kt:59-63`, `LocationInputs.kt:61`, `DefaultTdlibClient.kt:251` |
+| W6 | The power saving policy's flow is cold: every collector (each media viewer, each stories viewer, each call screen) registers its own `BroadcastReceiver` for Battery Saver and asks the power manager, on the main thread, in the frame the screen's view model is made. | Low: a binder call or two in the opening's first frame | `DefaultPowerSavingPolicy.kt:19-20`, `AndroidBatterySaverRepository.kt:30` |
 
 No violation of `CLAUDE.md`'s hard rules was found (§4.5). The chat list has no draw-phase problem of its own (§4.1).
 
@@ -75,14 +76,18 @@ The path, as the code runs it (compact window, a photo whose bubble shows the `y
 
 - *Composition.* `MediaViewerTransitionTest` (`:app`, §2.4) steps the opening and the closing frame by frame above a
   conversation of 31 messages and counts every composable of Pingogram's that composes again, with the main thread's
-  CPU time per frame. The result is in §1.3 (M2): the viewer and its view model compose in two frames, the opened
-  bubble composes once each way, and the frames of the transform compose nothing, in either screen. The conversation's
-  `MessageList` does not run again; the `LazyColumn`'s items keep their compositions.
+  CPU time per frame. The result is in §1.3 (M2): the viewer and its view model compose in two frames; the opened
+  bubble's media (`MediaContent`, `MessagePhoto`, `PhotoImage`) and the title's `Avatar` compose once as the
+  transition starts and once as it ends, both ways (their shared-element modifiers, `sharedMediaBounds` and
+  `avatarTransform`, are composable modifier factories that observe the `SharedTransitionLayout`'s state); the
+  frames of the transform compose nothing, in either screen. No bubble row (`MessageBubbleRow`, `MessageBubble`)
+  composes, the conversation's `MessageList` does not run again, and the `LazyColumn`'s items keep their
+  compositions. The test asserts all of this.
 - *Layout.* The two `sharedBounds` nodes remeasure their own subtrees in every frame (`RemeasureToBounds`,
   `SharedMedia.kt:295`): the page's `Box` with its three images and the blurred minithumbnail, and the bubble's media
   box. Their parents are not remeasured: a shared-bounds node reports its lookahead size to its parent, so the
-  `LazyColumn`, the bubble and the pager keep their layouts. The JFR recording of the test (§1.3, M2) shows no
-  `LazyList` measure frames in the transform's samples.
+  `LazyColumn`, the bubble and the pager keep their layouts. The JFR recording of the test (§1.3, M2) has no
+  `LazyList` measure in any of the transform's 403 main-thread samples, and the shared bounds' approach pass in 52.
 - *Draw.* This is where the frames go, and the JVM cannot see it (Robolectric draws nothing): see M1.
 - *Animated state in composition.* None found: the overlay's alpha (`OverlayNavigator.kt:228`), the clip's fraction
   (`SharedMedia.kt:243`), the dismiss gesture's progress and offset (`DismissState.kt`, `followingDismiss`), the chrome's
@@ -237,7 +242,44 @@ slideshow. Fix 1 also takes a blur per media bubble out of every scroll frame of
 **Evidence.** `MediaViewerTransitionTest`'s table (§2.4; the numbers below are from this machine's JVM and are
 relative, not a phone's):
 
-MEASURED_TABLE_PLACEHOLDER
+The sixth of six openings and closings in one JVM (the JIT warm; the test clock's frames are 16 ms apart, the CPU
+time is the main thread's per frame, on this review's 4-core build machine):
+
+| Frames | What composes | Main-thread CPU per frame |
+|---|---|---|
+| Opening 0 | the app's navigation effects, `OverlayHost`, the viewer in its `Loading` state, the view model | 19.3 ms |
+| Opening 1 | the viewer in its `Content` state: the pager, the page, the top bar, the bottom bar and its toolbar | 23.6 ms |
+| Opening 2 | `OverlayEntry` (the transition starts), the page's shared-bounds lambda | 6.9 ms |
+| Opening 3 | the photo bubble's media (`MediaContent`, `MessagePhoto`, `PhotoImage`: its shared-bounds modifier) | 3.9 ms |
+| Opening 4 | the title's `Avatar` (its own shared-element modifier sees the transition start) | 2.9 ms |
+| Opening 5–50 | nothing | 1.3–2.1 ms (median 1.5) |
+| Opening 51–53 | `OverlayEntry` and `OverlayHost` (settled), `PhotoImage` and `Avatar` again (the transition ended) | 5.1, 3.6, 1.2 ms |
+| Opening 54–59 (at rest) | nothing | 0.04 ms |
+| Closing 0 | the navigation effects, `OverlayHost`, `OverlayEntry`, `DismissibleContent`, `PredictiveBackDismiss`, the bubble's media | 9.8 ms |
+| Closing 1–2 | the bubble's media and the page's lambda again, the `Avatar` | 4.0, 2.5 ms |
+| Closing 3–48 | nothing | 1.1–1.8 ms (median 1.4) |
+| Closing 49 | `OverlayEntry` (gone): the viewer's composition is disposed, Navigation destroys the entry, the view model is cleared | 13.1 ms |
+| Closing 50–51 | `OverlayHost`, the bubble's media, the `Avatar` (the transition ended) | 4.1, 1.1 ms |
+| Closing 52–59 (at rest) | nothing | 0.03 ms |
+
+The first opening of the JVM, cold, took 199 ms and 192 ms in frames 0 and 1 (class loading and the JIT: not a phone's
+cost, but a measure of how much code those two frames run), and 31 ms in the closing's last frame.
+
+The JFR recording of the six repeats (10 ms samples; the main thread's samples inside each phase's frames):
+
+| Phase (6 repeats) | Samples | `LazyColumn` measure | shared bounds' approach measure or place | Compose measure pass | recomposition | the test harness's own idling |
+|---|---|---|---|---|---|---|
+| Opening, frames 0–4 | 100 | 0 | 4 | 23 (+22 lookahead) | 36 | 9 |
+| Opening, the transform | 232 | 0 | 35 | 51 | 9 | 106 |
+| Closing, the transform | 171 | 0 | 17 | 27 | 0 | 99 |
+| Closing, the last frames | 36 | 0 | 3 | 0 | 9 | 7 |
+
+So during the transform the conversation's list is never measured, nothing of Pingogram's composes, and the
+main thread's own work is the two shared-bounds subtrees' approach measure and placement (the rest of the samples
+are Robolectric's idling and the test's frame loop). The first two frames of the opening are composition and layout
+of the viewer (`StaticLayout` for its texts, `PagerState`, the view model's flows, `MediaSharing`, the repository's
+`position` request, and a `BroadcastReceiver` registration for the power saving policy, W6); the closing's last
+frame is the disposal of the viewer's composition, Navigation's `markTransitionComplete` and the view model's clear.
 
 **Where.**
 
@@ -248,8 +290,8 @@ MEASURED_TABLE_PLACEHOLDER
   `toAnnotatedString`, the video controls, `HorizontalFloatingToolbar` with a `TooltipBox` and a `PlainTooltip` state per
   button and a `DropdownMenuPopup`), the predictive back handler, the activity result launcher, the system bars. All
   of it in one or two frames, on the main thread, before the transform may start (`PostponeOverlayEnter` holds it
-  until `Content`). On the JVM those frames cost MEASURED_OPEN_PLACEHOLDER of main-thread CPU against
-  MEASURED_TRANSFORM_PLACEHOLDER for a frame of the transform.
+  until `Content`). On the JVM those frames cost 19 ms and 24 ms (the warm JVM; 199 ms and 192 ms cold) of main-thread CPU against
+  about 1.5 ms (most of it the test harness's own idling, as the JFR samples show) for a frame of the transform.
 - *Opening a video on the device.* `ExoPlayer.Builder.build()` on the main thread (`ExoVideoPlayer.kt:135`) inside
   the frame that composes the content (§1.2, question 3).
 - *Closing, the last frame.* `ExoPlayer.release()` on the main thread (`ExoVideoPlayer.kt:129`), blocking until the
@@ -277,7 +319,12 @@ MEASURED_TABLE_PLACEHOLDER
    flag, as `DelayedLoadingIndicator` delays), or at least after the transform (`OverlayEntry`'s transition settles):
    the photo is what the user looks at during the transform; the bars fade in anyway.
 4. *The view model's construction* is fine as it is once the player is out of it; `files`' `SharingStarted.Eagerly`
-   subscribes TDLib file observers before the first frame, which is wanted.
+   subscribes TDLib file observers before the first frame, which is wanted. The policy's receiver is W6.
+5. *The closing's last frame.* Disposing the viewer's composition (its slot table, layout nodes, effects), Navigation's
+   `markTransitionComplete` and the view model's clear all land in the frame the overlay is gone (13 ms on the JVM,
+   warm). Little of it can move, but the entry's content could leave the composition one frame after the exit
+   settled (`OverlayEntry`'s `gone` deferred by a frame), so that frame is not also the one that draws the
+   conversation uncovered; and the view model's clear can post its heavy parts (fix 2).
 
 **Expected gain.** On the phone: the frame before the transform shrinks by the player's construction (10–30 ms where
 it applies) and by the bottom bar's composition (a few ms); the last frame of closing a video no longer blocks on the
@@ -516,6 +563,14 @@ times place the recording's samples.
   the lock for the file read (`AccountRegistry.kt:38`, `readText()`) and the marker's `exists()`. A few ms on a fast
   phone, part of `main.onCreate`'s 31 ms on the low-end one. Fix: make `active` wait on `loaded` only when needed, and
   give `MainActivity` the lock repository lazily, after the settings it already awaits.
+- **W6, the power saving policy per collector** (low). `DefaultPowerSavingPolicy.inEffect`
+  (`DefaultPowerSavingPolicy.kt:19-20`) is a cold `combine` of the settings and `AndroidBatterySaverRepository.isOn`
+  (`AndroidBatterySaverRepository.kt:30`), a `callbackFlow` that registers a `BroadcastReceiver` and reads
+  `PowerManager.isPowerSaveMode` for each collector; `MediaViewerViewModel`'s `init` collects it, so every opening of
+  the viewer registers a receiver and asks the power manager (binder calls) on the main thread, in the frame that makes
+  the view model (the JFR samples of the opening's first frames show `AndroidBatterySaverRepository.isOn`). The
+  stories viewer and the call screens do the same. Fix: `stateIn(applicationScope, WhileSubscribed(…))` in the
+  singleton, so one receiver serves every collector.
 - Minor: `LocationInputs.kt:61` resolves `geo:` handlers with the `PackageManager` in composition, once per context
   (the share-location sheet, not a scrolled screen); the minithumbnail decode in composition (§1.2, question 2).
 - Checked and fine: `runBlocking` only on the call engine's and the player's own threads (`TdlibConferenceEncryption`,

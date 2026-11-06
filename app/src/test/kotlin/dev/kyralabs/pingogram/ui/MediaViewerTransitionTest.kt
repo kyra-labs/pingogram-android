@@ -139,37 +139,56 @@ class MediaViewerTransitionTest {
         counter.start()
         counter.reset()
 
-        composeRule.runOnUiThread { open.action() }
-        val opening = frames(OPEN_FRAMES)
-        assertTrue(navController.currentDestination?.hasRoute<MediaViewerRoute>() == true)
-        composeRule.onNode(viewerPage).assertExists()
+        // For a JFR recording, more openings and closings give more samples (REPEATS_PROPERTY); the last one counts.
+        var opening = emptyList<FrameRecord>()
+        var closing = emptyList<FrameRecord>()
+        repeat(System.getProperty(REPEATS_PROPERTY)?.toIntOrNull() ?: 1) {
+            composeRule.runOnUiThread { open.action() }
+            opening = frames(OPEN_FRAMES)
+            assertTrue(navController.currentDestination?.hasRoute<MediaViewerRoute>() == true)
+            composeRule.onNode(viewerPage).assertExists()
 
-        composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
-        val closing = frames(CLOSE_FRAMES)
-        assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == true)
-        composeRule.onAllNodes(viewerPage).fetchSemanticsNodes().let { assertEquals(0, it.size) }
+            composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+            closing = frames(CLOSE_FRAMES)
+            assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == true)
+            composeRule.onAllNodes(viewerPage).fetchSemanticsNodes().let { assertEquals(0, it.size) }
+            print("opening", opening)
+            print("closing", closing)
+        }
 
-        print("opening", opening)
-        print("closing", closing)
-
-        // The first frames of the opening compose the viewer (its view model, its page, its chrome) and the bubble's
-        // side of the transform; the frames of the transform after that compose nothing, in either screen.
+        // The first frames of the opening compose the viewer (its view model, its page, its chrome), then the overlay's
+        // entry as its transition starts and the shared media's own composables (the bubble's content, the title's
+        // avatar: their shared-element modifiers read whether a transition is active); the frames of the transform
+        // after that compose nothing, in either screen, until the entry composes again as the transition settles.
         val viewerShown = opening.indexOfFirst { it.recomposed.any { name -> VIEWER_SCREEN in name } }
         assertTrue("the viewer's screen never composed: $opening", viewerShown >= 0)
-        val transformIn = opening.drop(viewerShown + SETTLE_FRAMES)
+        val transformIn = opening.transformFrames(from = viewerShown + SETTLE_FRAMES)
+        assertTrue("too few frames of the transform in: ${transformIn.size}", transformIn.size >= TRANSFORM_FRAMES)
         assertEquals("composed in the frames of the transform in", emptyList<String>(), transformIn.composed())
-        // Closing composes the overlay's host and the bubble's side once, then nothing until the viewer is gone, when
-        // the conversation's covering ends and the overlay leaves the composition.
-        val transformOut = closing.drop(SETTLE_FRAMES).takeWhile { it.recomposed.none { name -> OVERLAY_HOST in name } }
+        // Closing composes the overlay's host, the entry and the shared media's own composables in its first frames,
+        // then nothing until the viewer is gone, when the overlay leaves the composition.
+        val transformOut = closing.transformFrames(from = SETTLE_FRAMES)
+        assertTrue("too few frames of the transform out: ${transformOut.size}", transformOut.size >= TRANSFORM_FRAMES)
         assertEquals("composed in the frames of the transform out", emptyList<String>(), transformOut.composed())
-        // Neither way composes any bubble but the photo's own, or the list, more than once.
-        val bubbles = (opening + closing).flatMap { it.recomposed }.filter { it.isConversationItem() }
-        assertTrue("bubbles composed: $bubbles", bubbles.size <= BUBBLE_RECOMPOSITIONS)
-        val lists = (opening + closing).flatMap { it.recomposed }.filter { MESSAGE_LIST in it }
-        assertTrue("the list composed: $lists", lists.size <= LIST_RECOMPOSITIONS)
+        // No bubble row composes either way: only the shared media's own content, in the photo's bubble, and never the
+        // list.
+        val items = (opening + closing).flatMap { it.recomposed }.filter { it.isConversationItem() }
+        assertEquals("bubble rows composed", emptyList<String>(), items.filter { "MessageBubbleKt" in it })
+        assertEquals("content of other bubbles composed", emptyList<String>(), items.filterNot { it.isSharedMedia() })
+        assertEquals("the list composed", emptyList<String>(), (opening + closing).flatMap { it.recomposed }.filter { MESSAGE_LIST in it })
     }
 
-    /** One frame of the test clock: what Pingogram's own composables composed again, and the main thread's CPU µs. */
+    /**
+     * The frames of the transform: from [from] until the overlay's entry composes again (the transition settled, or the
+     * overlay is gone).
+     */
+    private fun List<FrameRecord>.transformFrames(from: Int): List<FrameRecord> =
+        drop(from).takeWhile { frame -> frame.recomposed.none { OVERLAY_ENTRY in it } }
+
+    /**
+     * One frame of the test clock: what Pingogram's own composables composed again, the main thread's CPU µs, and when
+     * it started (the JVM's clock, for a JFR recording's samples).
+     */
     private class FrameRecord(
         val index: Int,
         val cpuMicros: Long,
@@ -195,10 +214,10 @@ class MediaViewerTransitionTest {
         frames: List<FrameRecord>,
     ) {
         println("== $phase: ${frames.size} frames, ${frames.first().time} to ${frames.last().time}")
-        println("frame  cpu_us  composed")
+        println("frame  start         cpu_us  composed")
         frames.forEach { frame ->
             val composed = frame.recomposed.groupingBy { it }.eachCount().entries.joinToString { "${it.key}×${it.value}" }
-            println("%5d  %6d  %s".format(frame.index, frame.cpuMicros, composed))
+            println("%5d  %-12s  %6d  %s".format(frame.index, frame.time.toString().take(TIME_LENGTH), frame.cpuMicros, composed))
         }
     }
 
@@ -207,7 +226,11 @@ class MediaViewerTransitionTest {
     private fun String.shortName(): String = removePrefix(OWN_PACKAGE)
 
     /** The composables of the conversation's entries: bubbles and what they show. */
-    private fun String.isConversationItem(): Boolean = ITEM_FILES.any { "feature.chat.ui.$it." in this || "feature.chat.ui.content.$it." in this }
+    private fun String.isConversationItem(): Boolean =
+        ITEM_FILES.any { "feature.chat.ui.$it." in this || "feature.chat.ui.content.$it." in this }
+
+    /** The composables of a photo bubble's media, which its shared-element modifier composes again. */
+    private fun String.isSharedMedia(): Boolean = SHARED_MEDIA.any { it in this }
 
     private fun setApp() = composeRule.setContent { App() }
 
@@ -269,14 +292,22 @@ class MediaViewerTransitionTest {
         /** Frames after the viewer's or the overlay's composition in which the sides of the transform still compose. */
         const val SETTLE_FRAMES = 4
 
-        /** The photo's bubble composes once as the viewer takes its media and once as it gives it back. */
-        const val BUBBLE_RECOMPOSITIONS = 4
-        const val LIST_RECOMPOSITIONS = 2
+        /** A system property with how many times to open and close; 1 unless a profiling run sets it. */
+        const val REPEATS_PROPERTY = "pingogram.mediaTransitionRepeats"
+
+        /** The least frames a transform takes on the test clock before its transition settles. */
+        const val TRANSFORM_FRAMES = 20
+
+        /** "HH:MM:SS.mmm" of a frame's start. */
+        const val TIME_LENGTH = 12
 
         const val OWN_PACKAGE = "dev.kyralabs.pingogram."
         const val VIEWER_SCREEN = "MediaViewerScreenKt.MediaViewerScreen"
-        const val OVERLAY_HOST = "OverlayNavigatorKt.OverlayHost"
+        const val OVERLAY_ENTRY = "OverlayNavigatorKt.OverlayEntry"
         const val MESSAGE_LIST = "ChatScreenKt.MessageList"
+
+        /** What `sharedMediaBounds` composes again in a photo's bubble as a transition starts and ends. */
+        val SHARED_MEDIA = listOf("MessageContentBodyKt.MediaContent", "MessagePhotoKt.MessagePhoto", "MessagePhotoKt.PhotoImage")
 
         /** The files whose composables draw the conversation's entries (`feature:chat`'s `ChatRecompositionTest`). */
         val ITEM_FILES =

@@ -417,7 +417,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   Compose's phases), the RenderThread's (time waiting for the GPU is the cost of offscreen layers and blur effects) and
   the CPU time per thread. On the JVM, `:app`'s `MediaViewerTransitionTest` steps the opening and the closing frame by
   frame above a conversation and prints what composed in each with the main thread's CPU time per frame; with
-  `-Ppingogram.jfr` its printed times place the recording's samples.
+  `-Ppingogram.jfr` its printed times place the recording's samples, and the system property
+  `pingogram.mediaTransitionRepeats` (set through a Gradle init script's `systemProperty` on the test task) repeats
+  the opening for more of them.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
