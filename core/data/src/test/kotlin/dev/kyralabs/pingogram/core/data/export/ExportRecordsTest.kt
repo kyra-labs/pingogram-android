@@ -35,6 +35,15 @@ class ExportRecordsTest {
                     service = "Ada joined the group",
                     media = ExportMedia(ExportMediaType.Photo, "x.jpg", 0, null, ExportSkipReason.SelfDestructing),
                 ),
+                exportMessage(
+                    id = 1,
+                    media = ExportMedia(ExportMediaType.Photo, "", 10, "media/1_photo_1.jpg", null),
+                    moreMedia =
+                        listOf(
+                            ExportMedia(ExportMediaType.Photo, "", 11, "media/1_photo_1_2.jpg", null),
+                            ExportMedia(ExportMediaType.Video, "", 0, null, ExportSkipReason.NotChosen),
+                        ),
+                ),
             )
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { it.writePage(page) }

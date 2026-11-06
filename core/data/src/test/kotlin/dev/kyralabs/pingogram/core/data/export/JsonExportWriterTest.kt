@@ -128,6 +128,30 @@ class JsonExportWriterTest {
     }
 
     @Test
+    fun `a message with several files lists the first as its media and the others after it`() {
+        val json =
+            export(
+                exportMessage(
+                    id = 1,
+                    media = ExportMedia(ExportMediaType.Photo, "", 10, "media/1_photo_1.jpg", null),
+                    moreMedia = listOf(ExportMedia(ExportMediaType.Photo, "", 11, "media/1_photo_1_2.jpg", null)),
+                ),
+            )
+
+        assertTrue(
+            json.contains("\"media\": {\n        \"type\": \"photo\",\n        \"file\": \"media/1_photo_1.jpg\""),
+            json,
+        )
+        assertTrue(
+            json.contains(
+                "\"more_media\": [\n        {\n          \"type\": \"photo\",\n" +
+                    "          \"file\": \"media/1_photo_1_2.jpg\"",
+            ),
+            json,
+        )
+    }
+
+    @Test
     fun `an empty chat has an empty list of messages`() {
         val json = export()
 

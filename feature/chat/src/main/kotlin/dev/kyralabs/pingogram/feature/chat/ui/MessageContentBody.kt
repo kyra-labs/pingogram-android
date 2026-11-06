@@ -287,7 +287,8 @@ private fun InfoContent(
             MessageExpired(content, modifier, colors)
         }
 
-        MessageContent.Unsupported -> {
+        // A rich message shows its first text here until the bubble draws its blocks.
+        MessageContent.Unsupported, is MessageContent.RichMessage -> {
             bubble.contentLabel?.let { ContentPlaceholder(it.resolve(), colors, modifier) }
         }
 

@@ -61,7 +61,7 @@ private inline fun <T, R> Array<Array<T>>.rowsOf(map: (T) -> R): ImmutableList<I
 private fun TdApi.InlineKeyboardButton.toInlineKeyboardButton(): InlineKeyboardButton =
     InlineKeyboardButton(text = text.orEmpty(), style = style.toBotButtonStyle(), type = type.toButtonType())
 
-private fun TdApi.InlineKeyboardButtonType?.toButtonType(): InlineKeyboardButtonType =
+internal fun TdApi.InlineKeyboardButtonType?.toButtonType(): InlineKeyboardButtonType =
     when (this) {
         is TdApi.InlineKeyboardButtonTypeUrl -> {
             InlineKeyboardButtonType.Url(url)
@@ -201,7 +201,7 @@ private fun TdApi.KeyboardButtonType?.toKeyboardButtonType(): KeyboardButtonType
     }
 
 /** The style a bot asked for; [BotButtonStyle.Default] without one, and for a style a newer TDLib adds. */
-private fun TdApi.ButtonStyle?.toBotButtonStyle(): BotButtonStyle =
+internal fun TdApi.ButtonStyle?.toBotButtonStyle(): BotButtonStyle =
     when (this) {
         is TdApi.ButtonStylePrimary -> BotButtonStyle.Primary
         is TdApi.ButtonStyleDanger -> BotButtonStyle.Danger

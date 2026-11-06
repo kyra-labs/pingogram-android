@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.export
 
 import dev.kyralabs.pingogram.core.domain.model.ExportChat
+import dev.kyralabs.pingogram.core.domain.model.ExportMedia
 import dev.kyralabs.pingogram.core.domain.model.ExportMessage
 
 /**
@@ -67,17 +68,26 @@ internal class JsonExportWriter(
             json.endObject()
         }
         message.media?.let { media ->
-            json
-                .name("media")
-                .beginObject()
-                .field("type", media.type.schemaName)
-                .field("file", media.path)
-                .field("file_name", media.fileName.takeIf { it.isNotEmpty() })
-                .field("size", media.size.takeIf { it > 0 })
-                .field("not_exported", media.skipped?.schemaName)
-                .endObject()
+            json.name("media")
+            media(media)
+        }
+        if (message.moreMedia.isNotEmpty()) {
+            json.name("more_media").beginArray()
+            message.moreMedia.forEach(::media)
+            json.endArray()
         }
         json.endObject()
+    }
+
+    private fun media(media: ExportMedia) {
+        json
+            .beginObject()
+            .field("type", media.type.schemaName)
+            .field("file", media.path)
+            .field("file_name", media.fileName.takeIf { it.isNotEmpty() })
+            .field("size", media.size.takeIf { it > 0 })
+            .field("not_exported", media.skipped?.schemaName)
+            .endObject()
     }
 
     private fun entities(message: ExportMessage) {

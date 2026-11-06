@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.core.domain.model
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 
 // Exporting a chat's history to a folder the user picked (REQUIREMENTS.md §5.9, docs/adr/0021-chat-export.md): what
@@ -178,8 +180,10 @@ data class ExportMessage(
     val media: ExportMedia?,
     val summary: String?,
     val service: String?,
+    /** The other files of a message that has several (a rich message's photos), after [media]. */
+    val moreMedia: ImmutableList<ExportMedia> = persistentListOf(),
 ) {
-    override fun toString() = "ExportMessage(id=$id, date=$date, media=$media, …)"
+    override fun toString() = "ExportMessage(id=$id, date=$date, media=$media, moreMedia=${moreMedia.size}, …)"
 }
 
 /** A message's sender: user [id], or a chat when [isChat], named [name]. */

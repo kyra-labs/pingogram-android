@@ -341,6 +341,19 @@ class FakeMessageRepository : MessageRepository {
         return onRepliedMessage(chatId, messageId)
     }
 
+    /** Every [loadFullRichMessage] call: the chat and the message. */
+    val fullRichMessageRequests = mutableListOf<Pair<Long, Long>>()
+
+    var onLoadFullRichMessage: suspend (Long, Long) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
+
+    override suspend fun loadFullRichMessage(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Unit> {
+        fullRichMessageRequests += chatId to messageId
+        return onLoadFullRichMessage(chatId, messageId)
+    }
+
     /** Every [message] call: the chat and the message. */
     val messageRequests = mutableListOf<Pair<Long, Long>>()
 

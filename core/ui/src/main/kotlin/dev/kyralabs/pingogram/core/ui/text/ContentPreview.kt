@@ -57,6 +57,8 @@ internal fun contentPreviewText(content: MessageContent): UiText =
         // Without the message there is nobody to name; messagePreviewText handles service messages.
         is MessageContent.Service -> UiText.resource(R.string.preview_service_other)
 
+        is MessageContent.RichMessage -> richMessageText(content.message)
+
         MessageContent.Unsupported -> UiText.resource(R.string.preview_unsupported)
     }
 
