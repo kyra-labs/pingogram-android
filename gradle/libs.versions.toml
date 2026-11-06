@@ -8,13 +8,13 @@ androidxActivity = "1.13.0"
 androidxBenchmark = "1.5.0"
 # androidx.core itself, which the app already gets through Compose, Activity and Navigation at this version; declared
 # where its classes are used directly (core:ui's FileProvider URIs), so the version is pinned here and nothing changes
-androidxCore = "1.18.0"
+androidxCore = "1.19.1"
 androidxCoreSplashscreen = "1.2.0"
 # Calls with Android's Telecom as a self-managed calling app (feature:calls, docs/adr/0016-calls-and-telecom.md):
 # CallsManager, a ConnectionService before Android 14 and the platform's call API from 14, minSdk 24.
 androidxCoreTelecom = "1.0.1"
 # Preferences DataStore for the app's settings (core:datastore): first-party, no network, approved on 2026-10-18.
-androidxDatastore = "1.2.1"
+androidxDatastore = "1.3.0"
 # hilt-lifecycle-viewmodel-compose (hiltViewModel); hilt-navigation-compose's copy is deprecated in its favour. Also
 # hilt-work and its KSP processor, androidx.hilt:hilt-compiler, for HiltWorkerFactory (core:notifications)
 androidxHilt = "1.4.0"
@@ -58,18 +58,18 @@ detekt = "1.23.8"
 # The Google Services plugin turns the owner's git-ignored google-services.json into the resources Firebase reads;
 # :app applies it only when the file exists (pingogram.android.gms, docs/adr/0004-push-delivery.md).
 googleServices = "4.5.0"
-gradleVersionsPlugin = "0.54.0"
+gradleVersionsPlugin = "0.66.0"
 # Gradle Play Publisher: the optional upload of release.yml's Play bundle (docs/PLAY_STORE.md §7).
 gradlePlayPublisher = "4.1.1"
 hilt = "2.60.1"
 # javax.inject annotations (@Qualifier for core:common's @Dispatcher); the API's only release
 javaxInject = "1"
-junit = "5.14.4"
+junit = "6.1.3"
 junit4 = "4.13.2"
 kotlin = "2.4.21"
 kotlinxCollectionsImmutable = "0.5.2"
 kotlinxCoroutines = "1.11.0"
-kotlinxSerialization = "1.11.0"
+kotlinxSerialization = "1.12.0"
 ksp = "2.3.12"
 # ktlint engine used by the ktlint Gradle plugin (pingogram.ktlint)
 ktlint = "1.8.0"
@@ -79,7 +79,7 @@ ktlintGradlePlugin = "14.2.0"
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
 # material3-adaptive-navigation-suite uses this version too: it is released in lockstep with material3,
 # and the BOM's 1.4.0 suite would mix two material3 lines in one NavigationSuiteScaffold.
-material3 = "1.5.0-beta01"
+material3 = "1.5.0-beta02"
 # Voice messages and music in conversations (feature:chat), approved by the owner on 2026-10-18, and videos and GIFs
 # in the media viewer (feature:media). media3-exoplayer plays files TDLib has already downloaded, so no
 # media3-datasource-* network module; media3-ui-compose draws the videos (PlayerSurface), and never media3-ui

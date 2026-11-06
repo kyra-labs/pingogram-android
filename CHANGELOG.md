@@ -19,6 +19,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   paragraph; an export, all of it and its photos) instead of "Unsupported message".
 - Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
   portrait picture beside empty room.
+- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (with its navigation suite; still allowed by
+  CLAUDE.md rule 7, as no stable release has the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and
+  kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
 
 ### Fixed
 - Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
