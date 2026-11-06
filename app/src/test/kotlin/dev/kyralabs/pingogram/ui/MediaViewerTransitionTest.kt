@@ -218,7 +218,11 @@ class MediaViewerTransitionTest {
         println("frame  start         cpu_us  composed")
         frames.forEach { frame ->
             val composed =
-                frame.recomposed.groupingBy { it }.eachCount().entries.joinToString { "${it.key}×${it.value}" }
+                frame.recomposed
+                    .groupingBy { it }
+                    .eachCount()
+                    .entries
+                    .joinToString { "${it.key}×${it.value}" }
             val start = frame.time.toString().take(TIME_LENGTH)
             println("%5d  %-12s  %6d  %s".format(frame.index, start, frame.cpuMicros, composed))
         }
@@ -269,12 +273,18 @@ class MediaViewerTransitionTest {
 
     private val viewerPage =
         SemanticsMatcher("is a viewer page") { node ->
-            node.config.getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull()?.startsWith("Photo, ") == true
+            node.config
+                .getOrNull(SemanticsProperties.ContentDescription)
+                ?.firstOrNull()
+                ?.startsWith("Photo, ") == true
         }
 
     private val adaRow =
         SemanticsMatcher("is Ada's row") { node ->
-            node.config.getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull()?.startsWith(ADA_TITLE) == true
+            node.config
+                .getOrNull(SemanticsProperties.ContentDescription)
+                ?.firstOrNull()
+                ?.startsWith(ADA_TITLE) == true
         } and hasClickAction()
 
     private fun string(
