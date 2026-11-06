@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -98,7 +99,7 @@ internal fun MediaViewerRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
-        modifier = modifier,
+        modifier = modifier.testTag(MEDIA_VIEWER_TEST_TAG),
         snackbarHostState = snackbarHostState,
         // Never a secret chat's media, which only this secure window may show.
         canPictureInPicture = pictureInPicture && !isSecretChat,
