@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ArchiveEntry
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListContent
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListItemModel
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListKind
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListSummary
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListUiState
 import dev.kyralabs.pingogram.feature.chats.ui.ChatPreview
 import dev.kyralabs.pingogram.feature.chats.ui.ChatSelection
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.DeleteDialog
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteForEveryone
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
 import dev.kyralabs.pingogram.feature.chats.ui.FolderTab
+import dev.kyralabs.pingogram.feature.chats.ui.HeaderAccount
 import dev.kyralabs.pingogram.feature.chats.ui.OutgoingStatus
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
 import dev.kyralabs.pingogram.feature.chats.ui.rowActions
@@ -209,6 +211,14 @@ internal object ChatListPreviewData {
         )
 
     val connecting = content.copy(connection = ConnectionStatus.Connecting)
+
+    /** The Chats tab header's status line and avatar: 12 unread chats, 3 of them mentioning the user. */
+    val summary =
+        ChatListSummary(
+            unreadChats = 12,
+            mentionChats = 3,
+            account = HeaderAccount(id = 1, name = UiText.Plain("Ada Lovelace"), photo = null),
+        )
 
     val loading = ChatListUiState()
 

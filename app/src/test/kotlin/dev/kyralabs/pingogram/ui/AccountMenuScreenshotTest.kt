@@ -73,7 +73,6 @@ class AccountMenuScreenshotTest {
                     PingogramNavigationBar(
                         selected = TopLevelDestination.Chats,
                         onSelect = {},
-                        onSearch = {},
                         accountMenu = AccountMenuActions(PreviewMenu, onSwitch = {}, onAdd = {}),
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )

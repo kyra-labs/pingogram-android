@@ -50,6 +50,10 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  * ("Edit folders" on "All chats"), which calls it with the folder's id, or null for "All chats": the hook a folder
  * editor plugs into (`:app` opens `ChatFolderEditRoute(folderId)`, or `ChatFoldersRoute` for null). Screen readers get
  * the menu's items as the tab's custom actions.
+ *
+ * The header (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar") holds global search's button and the signed-in user's
+ * avatar, which do what [headerActions] says: open search and grow into it, open the Settings tab and its account
+ * menu.
  */
 @Composable
 fun ChatListPane(
@@ -60,6 +64,7 @@ fun ChatListPane(
     onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    headerActions: ChatListHeaderActions? = null,
 ) {
     ChatListRoute(
         onOpenArchive = onOpenArchive,
@@ -69,6 +74,7 @@ fun ChatListPane(
         onOpenStory = onOpenStory,
         openChatId = openChatId,
         onEditFolder = onEditFolder,
+        headerActions = headerActions,
     )
 }
 

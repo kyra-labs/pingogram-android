@@ -15,6 +15,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The demo's channel has a sample rich post, with two sections to open and a photo.
 
 ### Changed
+- The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
+  the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
+  there on every screen size, and your picture opens Settings; hold it to switch accounts.
 - Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
   list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
 - The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first

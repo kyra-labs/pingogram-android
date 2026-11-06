@@ -369,7 +369,8 @@ Nothing else is missing at the theme root.
   transition is missing too (G19).
 - **Rail (G16).**
   - It never expands on large or XL windows, which Material recommends.
-  - The rail's search button style differs from the phone's.
+  - The rail's search button style differs from the phone's. (Moot since 2026-11-06: search opens from the Chats tab's
+    header on every window, owner decision.)
   - The rail sits on `surface`, the Material default, while §2.2 says `surfaceContainer`. The doc should change, not
     the code (§6).
 - **Landscape phones (G52).** They get the floating bar, because the suite returns `ShortNavigationBarMedium` for

@@ -171,17 +171,15 @@ class DockedSearchTest {
     }
 
     @Test
-    fun `from another tab, search opens docked in the Chats tab`() {
+    fun `search opens from the Chats tab's header only, not from the rail on other tabs`() {
         setApp()
         awaitRow(ADA_TITLE)
+        searchButton().assertExists()
+
         composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).performClick()
         composeRule.waitForIdle()
 
-        searchButton().performClick()
-        composeRule.waitForIdle()
-
-        assertOnlyChatsTab()
-        awaitText(ChatsR.string.search_hint_title)
+        composeRule.onAllNodes(searchButtonMatcher()).assertCountEquals(0)
     }
 
     @Test
@@ -225,7 +223,8 @@ class DockedSearchTest {
     private fun searchButton() = composeRule.onNode(searchButtonMatcher())
 
     /** The search button, not the search field, which bears the same name. */
-    private fun searchButtonMatcher() = hasContentDescription(string(R.string.nav_search)) and !hasSetTextAction()
+    private fun searchButtonMatcher() =
+        hasContentDescription(string(ChatsR.string.chat_list_search)) and !hasSetTextAction()
 
     /** The Chats tab is the only destination: nothing was pushed. */
     private fun assertOnlyChatsTab() {

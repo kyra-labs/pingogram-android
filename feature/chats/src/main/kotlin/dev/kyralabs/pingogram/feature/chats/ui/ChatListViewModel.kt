@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
@@ -278,6 +279,32 @@ class ChatListViewModel internal constructor(
             )
         }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListUiState(kind = kind))
+
+    /**
+     * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
+     * mention the user, and the signed-in user for its avatar. Apart from [uiState], so a count changing recomposes the
+     * header alone. Nothing in the archive, whose header has no status line.
+     */
+    val summary: StateFlow<ChatListSummary> =
+        if (kind == ChatListKind.Archive) {
+            MutableStateFlow(ChatListSummary())
+        } else {
+            val mentions =
+                chatRepository
+                    .chatList(ChatListType.Main)
+                    .without(lockedChatIds)
+                    .map { chats -> chats.count { it.unreadMentionCount > 0 } }
+                    .distinctUntilChanged()
+            val account =
+                combine(userRepository.myUserId, userRepository.users) { id, users ->
+                    id?.let(users::get)?.let { HeaderAccount(it.id, it.fullName(), it.profilePhoto) }
+                }.distinctUntilChanged()
+            combine(chatRepository.unreadChatCount(ChatListType.Main), mentions, account) { unread, mentioned, me ->
+                ChatListSummary(unreadChats = unread.unreadUnmutedCount, mentionChats = mentioned, account = me)
+            }.distinctUntilChanged()
+                .flowOn(dispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListSummary())
+        }
 
     init {
         viewModelScope.launch {
