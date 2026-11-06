@@ -12,6 +12,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message".
+- The demo's channel has a sample rich post, with two sections to open and a photo.
 
 ### Changed
 - The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
