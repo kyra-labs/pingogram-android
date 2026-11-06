@@ -33,6 +33,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -51,16 +53,24 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** The Chats tab's top bar with the folder tabs ([ChatListTopBar]), or the archive's ([ArchiveTopBar]). */
+/**
+ * The Chats tab's header with the folder tabs ([ChatListTopBar], its status from [summary] and its search and account
+ * buttons from [headerActions]), or the archive's top bar ([ArchiveTopBar]).
+ */
 @Composable
 internal fun ChatListScreenTopBar(
     state: ChatListUiState,
@@ -68,6 +78,8 @@ internal fun ChatListScreenTopBar(
     onEvent: (ChatListEvent) -> Unit,
     onBack: () -> Unit,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    summary: () -> ChatListSummary = { ChatListSummary() },
+    headerActions: ChatListHeaderActions? = null,
 ) {
     val clearSelection = { onEvent(ChatListEvent.ClearSelection) }
     when (state.kind) {
@@ -80,6 +92,8 @@ internal fun ChatListScreenTopBar(
                 onOpenArchive = { onEvent(ChatListEvent.OpenArchive) },
                 onMarkAllAsRead = { onEvent(ChatListEvent.MarkAllAsRead(it)) },
                 onEditFolder = onEditFolder,
+                summary = summary,
+                actions = headerActions,
             )
         }
 
@@ -96,21 +110,26 @@ internal fun ChatListScreenTopBar(
 }
 
 /**
- * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
- * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (56 dp,
- * `sizes.denseTopAppBar`) with `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the
- * screen (§7). The connection pill ([ConnectionPill]) sits below the bar. The title, the pill and the tabs keep the
- * window margin ([windowMargin]): on medium and wider windows they line up with the rows' content.
+ * The Chats tab's header (`docs/DESIGN_SYSTEM.md` §2.2, §3.3, §6 "Chat list top bar"; owner decision 2026-11-06), on
+ * the screen's `surfaceContainer` above the list's sheet: Material's large flexible top bar built from its parts
+ * ([TwoRowsTopAppBar], as the settings pages build the medium one), which [scrollBehavior] collapses as the list
+ * scrolls, in the layout phase. The folder tabs stay below it, collapsed or not.
  *
- * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
- * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
- * lists, which would drop the selection, waits until the selection is done.
+ * - **Expanded**: "Chats" in `displaySmallEmphasized`, and under it the status line ([StatusLine]: "12 unread · 3
+ *   mentions" from [summary], read here alone, so a count changing recomposes nothing else), or while not connected
+ *   the connection pill ([ConnectionPill]) in its place (`REQUIREMENTS.md` FR-L5).
+ * - **Collapsed**: "Chats" in `titleLargeEmphasized` on the dense bar's height (`sizes.denseTopAppBar`, §7); the
+ *   status line goes, and while not connected one line says the connection's state.
+ * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), search ([HeaderSearchButton])
+ *   and the signed-in user's avatar ([HeaderAccountButton]), from [actions].
  *
- * While the user hid the archive row ([ChatListUiState.hiddenArchive]), an "Archived chats" button at the bar's end
- * opens the archive ([onOpenArchive]), with its unread chats in a muted badge. A folder tab's long press opens its
- * menu ([FolderTabs]): [onMarkAllAsRead] and, where given, [onEditFolder].
+ * The bar keeps the window margin ([windowMargin]): on medium and wider windows its title lines up with the rows'
+ * content. In selection mode it shows how many chats are selected, with a button that clears the selection, no
+ * actions and no status; the tabs stay but are disabled, so nothing below moves and switching lists, which would drop
+ * the selection, waits until the selection is done. A folder tab's long press opens its menu ([FolderTabs]):
+ * [onMarkAllAsRead] and, where given, [onEditFolder].
  */
-@Suppress("LongParameterList") // The state, the bar's scroll, and what the selection, archive and tabs lead to.
+@Suppress("LongParameterList") // The state, the bar's scroll, the header's hooks, and what selection and tabs do.
 @Composable
 internal fun ChatListTopBar(
     state: ChatListUiState,
@@ -120,41 +139,49 @@ internal fun ChatListTopBar(
     onOpenArchive: () -> Unit = {},
     onMarkAllAsRead: (Int?) -> Unit = {},
     onEditFolder: ((Int?) -> Unit)? = null,
+    summary: () -> ChatListSummary = { ChatListSummary() },
+    actions: ChatListHeaderActions? = null,
 ) {
     val selectedCount = state.selection?.chatIds?.size
     // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
     val margin = windowMargin()
+    val connection = state.connection
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // Behind the bar: what the user touches there stays the bar's.
-        ConnectedAnnouncement(state.connection, Modifier.matchParentSize())
+        ConnectedAnnouncement(connection, Modifier.matchParentSize())
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-            TopAppBar(
-                // The bar insets its title by the compact margin itself.
-                modifier = Modifier.padding(horizontal = margin - MaterialTheme.spacing.windowMarginCompact),
-                title = {
+            TwoRowsTopAppBar(
+                title = { expanded ->
+                    val typography = MaterialTheme.typography
                     SelectionTitle(
                         title = stringResource(R.string.chat_list_title),
                         selectedCount = selectedCount,
-                        style = MaterialTheme.typography.titleLargeEmphasized,
+                        style = if (expanded) typography.displaySmallEmphasized else typography.titleLargeEmphasized,
                     )
+                },
+                // The bar insets its title by the compact margin itself.
+                modifier = Modifier.padding(horizontal = margin - MaterialTheme.spacing.windowMarginCompact),
+                subtitle = { expanded ->
+                    if (selectedCount == null) HeaderSubtitle(connection, summary, expanded)
                 },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
                 actions = {
-                    val hidden = state.hiddenArchive
-                    if (hidden != null && selectedCount == null) HiddenArchiveButton(hidden, onOpenArchive)
+                    if (selectedCount == null) {
+                        state.hiddenArchive?.let { HiddenArchiveButton(it, onOpenArchive) }
+                        HeaderSearchButton(actions)
+                        HeaderAccountButton(summary, actions)
+                    }
                 },
+                collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
+                expandedHeight = headerExpandedHeight(),
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,
                     ),
-                // A dense list's bar (§7): 56 dp rather than Material's 64 dp.
-                expandedHeight = MaterialTheme.sizes.denseTopAppBar,
                 scrollBehavior = scrollBehavior,
             )
-            // In line with the title and with the tabs.
-            ConnectionPill(connection = state.connection, modifier = Modifier.padding(horizontal = margin))
             if (state.folderTabs.isNotEmpty()) {
                 FolderTabs(
                     tabs = state.folderTabs,
@@ -307,9 +334,10 @@ private fun HiddenArchiveButton(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TopBarAction(
+internal fun TopBarAction(
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     description: (() -> String)? = null,
     icon: @Composable () -> Unit,
 ) {
@@ -320,7 +348,7 @@ private fun TopBarAction(
     ) {
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = Modifier.semantics { contentDescription = description?.invoke() ?: label },
+            modifier = modifier.semantics { contentDescription = description?.invoke() ?: label },
             shapes = IconButtonDefaults.shapes(),
             content = icon,
         )
@@ -340,12 +368,13 @@ private fun ClearSelectionButton(onClick: () -> Unit) {
 
 /**
  * "Connecting…" and the like while not connected (`REQUIREMENTS.md` FR-L5): a pill in `surfaceContainerHighest` with
- * an expressive loading indicator, below the top bar. It grows in and out on the motion scheme's springs, keeping its
+ * an expressive loading indicator, in the status line's place under the header's title. It grows in and out on the
+ * motion scheme's springs, keeping its
  * last text while it leaves, and screen readers announce each change. Connected, it takes no space.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ConnectionPill(
+internal fun ConnectionPill(
     connection: ConnectionStatus,
     modifier: Modifier = Modifier,
 ) {
@@ -361,7 +390,6 @@ private fun ConnectionPill(
     ) { status ->
         if (status != null) {
             Surface(
-                modifier = Modifier.padding(bottom = MaterialTheme.spacing.small),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -426,7 +454,7 @@ private fun ConnectedAnnouncement(
 /** How long [ConnectedAnnouncement] holds "Connected": long enough to be read, short enough not to be found later. */
 internal const val CONNECTED_ANNOUNCEMENT_MILLIS = 3_000L
 
-private fun ConnectionStatus.labelRes(): Int =
+internal fun ConnectionStatus.labelRes(): Int =
     when (this) {
         ConnectionStatus.WaitingForNetwork -> R.string.chat_list_waiting_for_network
         ConnectionStatus.ConnectingToProxy -> R.string.chat_list_connecting_to_proxy

@@ -841,8 +841,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ProvideSharedTransitionScope`); destinations that share content provide their animated visibility scope
   (`ProvideNavAnimatedVisibilityScope`), and `Modifier.containerTransform` (a no-op without both) runs a
   container transform between the two destinations' content of one key: the Chats tab's "New chat" button
-  grows into the New chat screen, and the search button (outside the `NavHost`, in an `AnimatedVisibility` of
-  its own that hides it while search shows) grows into search. `Modifier.sharedMediaBounds` (the bubble's
+  grows into the New chat screen, and the search button of its header (in an `AnimatedVisibility` of its own
+  that hides it while search shows, `SearchButtonSlot`) grows into search. `Modifier.sharedMediaBounds` (the bubble's
   side) and `Modifier.sharedMediaViewerBounds` (the viewer's) run that of a photo, video or GIF between the
   conversation (pushed or in the detail pane) and the media viewer, keyed by message id. Each bubble
   publishes its media's clip shape in `SharedMediaShapes` (`LocalSharedMediaShapes`, from a `Modifier.Node`
@@ -881,7 +881,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Global search: on compact and medium windows a destination (`SearchRoute`) pushed above the tab; on
   expanded ones docked in the Chats tab's list pane (`SearchPane`, `feature:chats`) in place of the chat
   list, its results opening in the detail pane. `GlobalSearchState` (`feature:chats`, held by `PingogramApp`
-  and saved) says whether search is docked and carries the two sides' shapes for the container transform.
+  and saved) says whether search is docked and carries the two sides' shapes for the container transform. Search
+  opens from the Chats tab's header (owner decision 2026-11-06): `PingogramApp` hands the header a
+  `ChatListHeaderActions` (`feature:chats`, through `PingogramNavHost`, `ChatsListDetail` and `ChatListPane`) with
+  search, whether it shows, and the account's avatar's taps: the Settings tab, and the account menu
+  (`AccountMenuAnchor`) on a long press. The header's status line reads `ChatListViewModel.summary`, a flow of its own
+  beside the list's state, so a count changing recomposes the header alone.
 
 ## Profiles
 

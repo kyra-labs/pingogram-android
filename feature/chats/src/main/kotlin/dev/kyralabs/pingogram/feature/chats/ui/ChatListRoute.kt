@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsViewModel
@@ -34,7 +35,8 @@ import kotlinx.coroutines.launch
  * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
  * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat. The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
- * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given.
+ * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
+ * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary].
  */
 @Composable
 internal fun ChatListRoute(
@@ -45,11 +47,14 @@ internal fun ChatListRoute(
     onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    headerActions: ChatListHeaderActions? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Read by the header alone: a count changing recomposes nothing else.
+    val summary = viewModel.summary.collectAsStateWithLifecycle()
     ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
     val rings = storyRings.uiState.collectAsStateWithLifecycle()
     val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
@@ -75,6 +80,8 @@ internal fun ChatListRoute(
         header = { NotificationPromptHost() },
         stories = stories.takeIf { hasStories },
         onEditFolder = onEditFolder,
+        summary = { summary.value },
+        headerActions = headerActions,
     )
 }
 
@@ -126,6 +133,8 @@ private fun ChatListDestination(
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    summary: () -> ChatListSummary = { ChatListSummary() },
+    headerActions: ChatListHeaderActions? = null,
     swipesViewModel: ChatSwipesViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -142,6 +151,8 @@ private fun ChatListDestination(
             header = header,
             stories = stories,
             onEditFolder = onEditFolder,
+            summary = summary,
+            headerActions = headerActions,
         )
     }
 }

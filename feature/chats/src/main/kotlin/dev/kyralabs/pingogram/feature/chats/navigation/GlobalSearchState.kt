@@ -5,9 +5,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,7 +23,8 @@ import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
 
 /**
  * Where global search shows and what it shares with the app's search button (`docs/DESIGN_SYSTEM.md` §5, §6 "Global
- * search"), held by the app shell across its navigation and the `NavHost`.
+ * search"), held by the app shell across its navigation and the `NavHost`. The search button is the Chats tab's
+ * header's ([ChatListHeaderActions]).
  *
  * - **Docked** ([isDocked]): on expanded windows search opens in the Chats tab's list pane ([SearchPane]) instead of as
  *   its own destination ([searchScreen]); the app shows the pane while this is true, and the pane sets it false when it
@@ -43,6 +46,12 @@ class GlobalSearchState(
 
     /** The corners of search where it shows, which the search button grows into. */
     internal var searchShape: CornerBasedShape by mutableStateOf(FullBleedShape)
+
+    /**
+     * How many of search's sides are composed: one while search shows, and while it leaves. A search button composed
+     * meanwhile (the chat list coming back as search leaves) comes in, so that it grows out of search.
+     */
+    internal var searchesComposed by mutableIntStateOf(0)
 
     companion object {
         /** Keeps whether search is docked across rotation and process death. */
@@ -80,6 +89,10 @@ internal fun Modifier.searchTransform(
     shape: CornerBasedShape,
 ): Modifier {
     SideEffect { state.searchShape = shape }
+    DisposableEffect(state) {
+        state.searchesComposed++
+        onDispose { state.searchesComposed-- }
+    }
     // A whole screen: laid out once and scaled as it grows, not measured anew in every frame.
     return containerTransform(
         GlobalSearchTransformKey,

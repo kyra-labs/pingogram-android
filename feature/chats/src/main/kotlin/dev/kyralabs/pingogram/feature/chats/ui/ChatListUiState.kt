@@ -42,6 +42,33 @@ data class ChatListUiState(
     val deleteDialog: DeleteDialog? = null,
 )
 
+/**
+ * What the Chats tab's header says (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar"; owner decision 2026-11-06), kept
+ * apart from [ChatListUiState] so its changes recompose the header alone ([ChatListViewModel.summary]).
+ *
+ * @property unreadChats the main list's unread unmuted chats, as TDLib counts them (the "All chats" tab's badge).
+ * @property mentionChats the main list's chats with unread mentions of the user, among those loaded; locked chats
+ *   never count.
+ * @property account the signed-in user, for the header's avatar; null until TDLib named them.
+ */
+@Immutable
+data class ChatListSummary(
+    val unreadChats: Int = 0,
+    val mentionChats: Int = 0,
+    val account: HeaderAccount? = null,
+) {
+    /** The status line shows: something is unread. */
+    val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0
+}
+
+/** The signed-in user as the header's avatar shows them. */
+@Immutable
+data class HeaderAccount(
+    val id: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+)
+
 /** Which chats a chat list shows. */
 enum class ChatListKind {
     /** The Chats tab: the main list or a folder, with the folder tabs and the archive row. */

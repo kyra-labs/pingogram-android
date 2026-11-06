@@ -248,7 +248,7 @@ class PingogramAppTest {
     fun `the search button opens search full screen, its field focused for typing`() {
         setApp()
 
-        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_search)).performClick()
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
@@ -298,10 +298,9 @@ class PingogramAppTest {
     @Test
     fun `back from search returns to the tab and its navigation bar`() {
         setApp()
-        tab(R.string.nav_contacts).performClick()
-        // The navigation's search button; the Contacts tab's own search field is named "Search" by Material too.
+        // The header's search button; search's own field is named "Search" by Material too.
         val searchButton =
-            hasContentDescription(string(R.string.nav_search)) and
+            hasContentDescription(string(ChatsR.string.chat_list_search)) and
                 SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
         composeRule.onNode(searchButton).performClick()
         composeRule.waitForIdle()
@@ -309,8 +308,8 @@ class PingogramAppTest {
         composeRule.onNodeWithContentDescription(string(ChatsR.string.search_back)).performClick()
         composeRule.waitForIdle()
 
-        tab(R.string.nav_contacts).assertIsSelected()
-        awaitText(ContactsR.string.contacts_sync_offer_title)
+        tab(R.string.nav_chats).assertIsSelected()
+        tab(R.string.nav_contacts).assertIsNotSelected()
     }
 
     // The archive (FR-L9)
@@ -783,7 +782,7 @@ class PingogramAppTest {
 
     /** Opens search from the navigation bar and types [query]. */
     private fun search(query: String) {
-        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_search)).performClick()
         composeRule.waitForIdle()
         composeRule.onNode(hasSetTextAction()).performTextInput(query)
     }

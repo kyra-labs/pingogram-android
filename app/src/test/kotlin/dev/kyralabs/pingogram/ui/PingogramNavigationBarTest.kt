@@ -58,7 +58,6 @@ class PingogramNavigationBarTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val selections = mutableListOf<TopLevelDestination>()
-    private var searches = 0
 
     @Test
     fun `every tab shows its label on a phone`() {
@@ -91,15 +90,6 @@ class PingogramNavigationBarTest {
     }
 
     @Test
-    fun `the search button opens search`() {
-        setBar(selected = TopLevelDestination.Contacts)
-
-        composeRule.onNode(hasContentDescription(string(R.string.nav_search))).performClick()
-
-        assertEquals(1, searches)
-    }
-
-    @Test
     fun `switching tabs keeps the bar in place`() {
         var selected by mutableStateOf(TopLevelDestination.Chats)
         composeRule.setContent {
@@ -109,14 +99,13 @@ class PingogramNavigationBarTest {
                     PingogramNavigationBar(
                         selected = selected,
                         onSelect = {},
-                        onSearch = {},
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.align(Alignment.BottomCenter).testTag(FLOATING_BAR_TAG),
                     )
                 }
             }
         }
         composeRule.waitForIdle()
-        val before = searchButtonLeft()
+        val before = barLeft()
         composeRule.mainClock.autoAdvance = false
 
         selected = TopLevelDestination.Contacts
@@ -124,11 +113,11 @@ class PingogramNavigationBarTest {
             List(SWITCH_FRAMES) {
                 composeRule.mainClock.advanceTimeByFrame()
                 composeRule.waitForIdle()
-                searchButtonLeft()
+                barLeft()
             }
         composeRule.mainClock.autoAdvance = true
         composeRule.waitForIdle()
-        val after = searchButtonLeft()
+        val after = barLeft()
 
         // The labels' widths differ a little, so the bar may settle a few pixels away; on the way it stays between,
         // give or take the spring's overshoot.
@@ -221,7 +210,6 @@ class PingogramNavigationBarTest {
         composeRule.waitForIdle()
 
         composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
-        composeRule.onNode(hasContentDescription(string(R.string.nav_search))).assertDoesNotExist()
         composeRule.onRoot().performTouchInput { click(chats) }
         assertEquals(emptyList<TopLevelDestination>(), selections)
     }
@@ -278,7 +266,6 @@ class PingogramNavigationBarTest {
                         visible = visible(),
                         selected = TopLevelDestination.Chats,
                         onSelect = { selections += it },
-                        onSearch = { searches++ },
                         modifier = Modifier.align(Alignment.BottomCenter).testTag(FLOATING_BAR_TAG),
                     )
                 }
@@ -287,9 +274,9 @@ class PingogramNavigationBarTest {
         composeRule.waitForIdle()
     }
 
-    private fun searchButtonLeft(): Float =
+    private fun barLeft(): Float =
         composeRule
-            .onNode(hasContentDescription(string(R.string.nav_search)))
+            .onNodeWithTag(FLOATING_BAR_TAG)
             .fetchSemanticsNode()
             .boundsInRoot.left
 
@@ -302,7 +289,6 @@ class PingogramNavigationBarTest {
                 PingogramNavigationBar(
                     selected = selected,
                     onSelect = { selections += it },
-                    onSearch = { searches++ },
                     accountMenu = accountMenu,
                 )
             }

@@ -68,23 +68,23 @@ class ChatListRecompositionTest {
     }
 
     @Test
-    fun `dragging the list under its pinned top bar recomposes neither the bar's composables nor the list's`() {
+    fun `dragging the list collapses the header and recomposes neither the header's composables nor the list's`() {
         setScreen(connection = ConnectionStatus.Connecting)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
         val barBottom = list.fetchSemanticsNode().boundsInRoot.top
 
         list.performTouchInput { down(center) }
-        repeat(DRAG_FRAMES) {
+        repeat(COLLAPSE_DRAG_FRAMES) {
             list.performTouchInput { moveBy(Offset(0f, -DRAG_STEP)) }
             frame()
         }
         list.performTouchInput { up() }
         repeat(SETTLE_FRAMES) { frame() }
 
-        // The bar is pinned: the list scrolled under it and stayed where it was.
-        assertEquals(barBottom, list.fetchSemanticsNode().boundsInRoot.top)
+        // The header collapsed, so the list starts higher, and the list scrolled under it.
+        assertTrue(list.fetchSemanticsNode().boundsInRoot.top < barBottom)
         assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > 0)
-        // The bar takes the scroll through its scroll behavior, read in the layout and draw phases. Only the "New
+        // The header takes the scroll through its scroll behavior, read in the layout and draw phases. Only the "New
         // chat" button composes again, as it collapses (`dragging the list back and forth…` counts it).
         assertEquals(
             emptyList<String>(),
@@ -96,7 +96,9 @@ class ChatListRecompositionTest {
     fun `dragging the list back and forth recomposes the New chat button once per direction, and nothing else`() {
         setScreen(connection = ConnectionStatus.Ready)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
-        // The counter sees a composable compose again only from its second time on: collapse and expand it once.
+        // The counter sees a composable compose again only from its second time on: collapse and expand it once. The
+        // header takes the first part of the drag as it collapses, and stays collapsed while the list is away from
+        // its top.
         dragBackAndForth(list)
         counter.reset()
 
@@ -109,14 +111,14 @@ class ChatListRecompositionTest {
         )
     }
 
-    /** Drags [list] towards its end for [DRAG_FRAMES] frames, then halfway back, and lets it settle. */
+    /** Drags [list] towards its end for [COLLAPSE_DRAG_FRAMES] frames, then halfway back, and lets it settle. */
     private fun dragBackAndForth(list: SemanticsNodeInteraction) {
         list.performTouchInput { down(center) }
-        repeat(DRAG_FRAMES) {
+        repeat(COLLAPSE_DRAG_FRAMES) {
             list.performTouchInput { moveBy(Offset(0f, -DRAG_STEP)) }
             frame()
         }
-        repeat(DRAG_FRAMES) {
+        repeat(COLLAPSE_DRAG_FRAMES) {
             list.performTouchInput { moveBy(Offset(0f, DRAG_STEP / 2)) }
             frame()
         }
@@ -164,6 +166,22 @@ class ChatListRecompositionTest {
     }
 
     @Test
+    fun `a count in the status line changing recomposes the header's status alone`() {
+        setScreen(connection = ConnectionStatus.Ready)
+
+        // The counter sees a composable compose again only from its second time on: change the counts once first.
+        summary = summary.copy(unreadChats = summary.unreadChats + 1)
+        repeat(SETTLE_FRAMES) { frame() }
+        counter.reset()
+        summary = summary.copy(unreadChats = summary.unreadChats + 1, mentionChats = summary.mentionChats + 1)
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val recomposed = counter.recomposedOwnFunctions
+        assertTrue(recomposed.toString(), recomposed.isNotEmpty())
+        assertEquals(emptyList<String>(), recomposed.filterNot { HEADER in it || HEADER_STATUS in it })
+    }
+
+    @Test
     fun `the counter sees a recomposition`() {
         setScreen(connection = ConnectionStatus.Ready)
 
@@ -174,6 +192,8 @@ class ChatListRecompositionTest {
     }
 
     private var connection by mutableStateOf(ConnectionStatus.Ready)
+
+    private var summary by mutableStateOf(ChatListPreviewData.summary)
 
     private var rings by mutableStateOf(StoryRingsPreviewData.rings)
 
@@ -216,6 +236,8 @@ class ChatListRecompositionTest {
                             onEvent = {},
                             listState = listState,
                             stories = stories.takeIf { withStories },
+                            // Read by the header alone, as the route hands it over.
+                            summary = { summary },
                         )
                     }
                 }
@@ -244,7 +266,8 @@ class ChatListRecompositionTest {
         /** At most one recomposition in this many frames counts as rare, nothing like one in every frame. */
         const val RARE = 10
 
-        const val DRAG_FRAMES = 30
+        /** Enough to collapse the header and scroll the list past its first rows. */
+        const val COLLAPSE_DRAG_FRAMES = 60
         const val DRAG_STEP = 10f
 
         const val SETTLE_FRAMES = 60
@@ -252,5 +275,7 @@ class ChatListRecompositionTest {
         const val CHAT_LIST_TEST_TAG = "chat_list"
         const val NEW_CHAT_BUTTON = "NewChatButton"
         const val STORY_RINGS = "StoryRingsKt"
+        const val HEADER = "ChatListTopBarKt"
+        const val HEADER_STATUS = "ChatListHeaderStatusKt"
     }
 }

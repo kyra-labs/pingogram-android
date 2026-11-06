@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
@@ -100,6 +101,7 @@ internal fun PingogramNavHost(
     uiState: MainActivityUiState,
     search: GlobalSearchState,
     modifier: Modifier = Modifier,
+    headerActions: ChatListHeaderActions? = null,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
     lockedChatsToOpen: Boolean = false,
@@ -132,7 +134,7 @@ internal fun PingogramNavHost(
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph(navController, search, besideList, onOpenLinkTarget)
+        mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
@@ -212,6 +214,7 @@ private fun NavGraphBuilder.mainGraph(
     search: GlobalSearchState,
     besideList: State<Boolean>,
     onOpenLinkTarget: (LinkTarget) -> Unit,
+    headerActions: ChatListHeaderActions?,
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
@@ -228,6 +231,7 @@ private fun NavGraphBuilder.mainGraph(
             ProvideNavAnimatedVisibilityScope(this) {
                 ChatsListDetail(
                     search = search,
+                    headerActions = headerActions,
                     onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
                     onOpenChat = { chatId, messageId ->
                         if (messageId == null) openChat(chatId) else openMessage(chatId, messageId)

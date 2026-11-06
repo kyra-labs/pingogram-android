@@ -80,6 +80,8 @@ import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
+import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.coroutineScope
@@ -88,8 +90,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab ([ChatListTopBar])
- * or the archive ([ArchiveTopBar]), each with a small, pinned top bar; then the chats, each with its swipe actions
+ * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab, under its large
+ * header that collapses as the list scrolls ([ChatListTopBar]: its status line from [summary], its search and account
+ * buttons from [headerActions]), or the archive under a small, pinned top bar ([ArchiveTopBar]); then the chats, each
+ * with its swipe actions
  * ([ChatRow]), below the archive row on the main list. The bar sits on `surfaceContainer` and the list on a rounded
  * `surface` sheet below it ([ContentSheet]), which the rows scroll in.
  *
@@ -132,11 +136,18 @@ internal fun ChatListScreen(
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    summary: () -> ChatListSummary = { ChatListSummary() },
+    headerActions: ChatListHeaderActions? = null,
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
     val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    // The Chats tab's header collapses as the list scrolls and comes back at its top; the archive's bar stays.
+    val scrollBehavior =
+        when (state.kind) {
+            ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            ChatListKind.Archive -> TopAppBarDefaults.pinnedScrollBehavior()
+        }
     val folderSwitch = remember { FolderSwitch() }
     val newChatButton = rememberNewChatButtonState()
     val insets = contentWindowInsets(state.kind, selectionMode = selection != null)
@@ -152,7 +163,9 @@ internal fun ChatListScreen(
                     .nestedScroll(newChatButton.nestedScrollConnection),
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder) },
+            topBar = {
+                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder, summary, headerActions)
+            },
             snackbarHost = {
                 // Above the "New chat" button, which floats over the Scaffold rather than in its button slot.
                 SnackbarHost(snackbarHostState, Modifier.padding(bottom = newChatButtonSpace))
@@ -689,5 +702,5 @@ private const val SAVED_MESSAGES_TEST_TAG = "saved_messages"
 private fun ChatListScreenPreview(
     @PreviewParameter(ChatListPreviewStates::class) state: ChatListUiState,
 ) {
-    PingogramPreview { ChatListScreen(state = state, onEvent = {}) }
+    PingogramPreview { ChatListScreen(state = state, onEvent = {}, summary = { ChatListPreviewData.summary }) }
 }
