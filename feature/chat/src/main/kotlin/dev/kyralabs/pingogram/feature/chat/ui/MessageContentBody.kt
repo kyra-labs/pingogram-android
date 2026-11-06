@@ -58,7 +58,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   album's items, theirs in it), which the viewer's side morphs from and back to as well.
  * - **Voice messages, songs and documents** show their file's [fileState]; voice messages and songs also how they
  *   play ([playback]), and send play and seek as events for the ViewModel's player.
- * - **Text messages** show nothing here: the bubble shows their text and link preview itself, as it does the caption
+ * - **Text messages** and **rich messages** show nothing here: the bubble shows their text and link preview itself,
+ *   as it does the caption
  *   of any media. Service messages never come here; they are pills. Content Pingogram cannot show yet shows its
  *   [ChatItem.Bubble.contentLabel] in one line.
  *
@@ -287,8 +288,7 @@ private fun InfoContent(
             MessageExpired(content, modifier, colors)
         }
 
-        // A rich message shows its first text here until the bubble draws its blocks.
-        MessageContent.Unsupported, is MessageContent.RichMessage -> {
+        MessageContent.Unsupported -> {
             bubble.contentLabel?.let { ContentPlaceholder(it.resolve(), colors, modifier) }
         }
 

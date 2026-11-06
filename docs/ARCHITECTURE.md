@@ -742,8 +742,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sections (`RichBlock.Details.id`, depth first) and media (`RichBlock.Media.index`) in order. Where Telegram sent
   only the start (`isFull` false), `MessageRepository.loadFullRichMessage` sends `getFullRichMessage` and puts the answer
   into the windows that hold the message (`HistoryCache.editing`), as TDLib sends no update for it. `firstText()` is
-  what previews show (`core:ui`'s `messagePreviewText`), `fullText()` what is copied, exported and translated, and
-  `media()` what the export copies (`ExportMessage.moreMedia` after the first).
+  what previews show (`core:ui`'s `messagePreviewText`), `fullText()` what is copied and exported, and `media()` what
+  the export copies (`ExportMessage.moreMedia` after the first). Translation leaves rich messages out: td_api.tl
+  translates them with a function of their own (`translateMessageRichMessage`), which Pingogram does not use yet.
+  `feature:chat` draws them in the padded bubble (`rich/RichMessageBody`, in place of `MessageContentBody`): one column
+  of blocks (`RichBlocks`, `RichDetails`, `RichMedia`, `RichTable`), their texts built once per message and kept per
+  message id (`RichTextCache`, beside `AnnotatedTextCache`'s), cut at one and a half windows with "Show more" (a
+  layout modifier that tells the bubble's layout it cut, in the same measure pass). `ChatRichMessages` (a part of
+  `ChatViewModel`, `RichMessageEvent`) keeps the sections the user toggled and the messages shown whole in its saved
+  state, copied into their bubble only (`withRichMessages`, `ChatItem.Bubble.rich`), and loads a full message once per
+  tap, a failure a snackbar. Screen readers hear the bubble as one (`richDescription`), sections and the full message as
+  its custom actions (`richActions`).
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

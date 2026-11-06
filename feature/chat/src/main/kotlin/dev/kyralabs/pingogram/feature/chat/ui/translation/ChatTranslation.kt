@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.isLanguageAmong
 import dev.kyralabs.pingogram.core.domain.model.primaryLanguageOf
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
@@ -198,7 +199,7 @@ internal class ChatTranslation(
      * where Telegram does not translate into the user's language.
      */
     suspend fun actionFor(message: Message): MessageAction? {
-        val text = message.textOrCaption
+        val text = message.translatableText
         val target = target.first()
         if (!text.hasLetters || target == null) return null
         val id = message.id
@@ -215,7 +216,7 @@ internal class ChatTranslation(
         setSingles(singles.value.toSet() + messageId)
         scope.launch {
             val target = target.first() ?: return@launch
-            val text = messageOf(messageId)?.textOrCaption?.takeIf { it.hasLetters } ?: return@launch
+            val text = messageOf(messageId)?.translatableText?.takeIf { it.hasLetters } ?: return@launch
             val key = TranslationKey(messageId, target.code)
             failed -= key
             if (translated.value[key]?.source != text && messageId !in jobs) translate(messageId, text, target, true)
@@ -261,7 +262,7 @@ internal class ChatTranslation(
         }
         val target = batch.target ?: return
         for (id in batch.visible.sortedDescending()) {
-            val text = messageOf(id)?.textOrCaption?.takeIf { it.hasLetters }
+            val text = messageOf(id)?.translatableText?.takeIf { it.hasLetters }
             if (id !in jobs && text != null && batch.choices.wants(id)) request(id, text, target, batch.choices)
         }
     }
@@ -301,7 +302,7 @@ internal class ChatTranslation(
                     when (result) {
                         is Outcome.Success -> {
                             // An answer for a text the message no longer has is dropped.
-                            if (messageOf(messageId)?.textOrCaption == text) {
+                            if (messageOf(messageId)?.translatableText == text) {
                                 val from = (detect(messageId, text) as? LanguageDetection.Detected)?.languageTag
                                 translated.update { it.putting(key, Translated(text, result.value, from)) }
                             }
@@ -438,7 +439,7 @@ private fun bubbleTranslations(
         val id = key.messageId
         if (key.code != target.code || !choices.wants(id)) continue
         // A message edited since keeps its own text.
-        if (history.messages.findById(id)?.textOrCaption == done.source) {
+        if (history.messages.findById(id)?.translatableText == done.source) {
             shown[id] = BubbleTranslation.Shown(done.text, done.fromLanguage)
         }
     }
@@ -450,7 +451,7 @@ private fun recentTexts(history: ChatHistory): List<Pair<Long, FormattedText>> =
     history.messages
         .asSequence()
         .filter { !it.isOutgoing }
-        .map { it.id to it.textOrCaption }
+        .map { it.id to it.translatableText }
         .filter { (_, text) -> text.hasLetters }
         .take(ChatTranslation.RECENT_MESSAGES)
         .toList()
@@ -501,3 +502,10 @@ private class Detection(
     val text: String,
     val result: LanguageDetection,
 )
+
+/**
+ * The text Telegram translates for [this] message (`translateMessageText`): its text or caption. Rich messages have a
+ * function of their own (`translateMessageRichMessage`), which Pingogram does not use yet, so they are not offered.
+ */
+private val Message.translatableText: FormattedText
+    get() = if (content is MessageContent.RichMessage) FormattedText.Empty else textOrCaption

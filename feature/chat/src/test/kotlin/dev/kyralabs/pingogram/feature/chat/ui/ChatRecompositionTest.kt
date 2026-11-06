@@ -19,11 +19,14 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.preview.RichPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.junit.Assert.assertEquals
@@ -167,6 +170,22 @@ class ChatRecompositionTest {
         val functions = counter.recomposedOwnFunctions
         assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
         assertEquals(functions.toString(), 1, functions.count { it.endsWith("MessagePollKt.MessagePoll") })
+    }
+
+    @Test
+    fun `opening a rich message's section composes only that bubble`() {
+        val post = RichPreviewData.collapsed().bubbles().first()
+        val before =
+            messages(MESSAGES).withNewest(post.copy(id = MESSAGES + 2L)).withNewest(post.copy(id = MESSAGES + 1L))
+        setScreen(before)
+
+        val opened = before.bubbles().first()
+        state = before.replacing(opened.copy(rich = RichMessageUi(toggledSections = persistentSetOf(0))))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".RichMessageBody") })
     }
 
     @Test

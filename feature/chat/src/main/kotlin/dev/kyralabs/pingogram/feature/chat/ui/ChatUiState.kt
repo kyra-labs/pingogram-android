@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
+import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
@@ -283,6 +284,8 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property rich how its rich message shows where the user changed it: the sections opened or closed, all of a long
+     *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
@@ -322,6 +325,7 @@ sealed interface ChatItem {
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
     ) : ChatItem {

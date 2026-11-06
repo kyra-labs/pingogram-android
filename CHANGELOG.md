@@ -9,17 +9,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
+  conversation instead of "Unsupported message".
+
 ### Changed
 - The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
   paragraph; an export, all of it and its photos) instead of "Unsupported message".
+- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
+  portrait picture beside empty room.
 
 ### Fixed
 - Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
   it, instead of fading in over a black screen and snapping back.
-
-### Changed
-- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
-  portrait picture beside empty room.
 
 ## [1.1.3] - 2026-11-04
 

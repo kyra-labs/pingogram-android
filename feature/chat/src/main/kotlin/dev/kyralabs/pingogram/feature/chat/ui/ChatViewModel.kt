@@ -99,6 +99,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsSheet
+import dev.kyralabs.pingogram.feature.chat.ui.rich.ChatRichMessages
+import dev.kyralabs.pingogram.feature.chat.ui.rich.withRichMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ChatScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.nextText
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
@@ -888,6 +890,15 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val richMessages =
+        ChatRichMessages(
+            chatId = chatId,
+            messages = messageRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     /** Who voted for each answer of a public poll; null while the sheet is closed. Kept out of [uiState]. */
     val pollVotersSheet: StateFlow<PollVotersSheet?> get() = polls.votersSheet
 
@@ -1099,6 +1110,7 @@ class ChatViewModel internal constructor(
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -1169,6 +1181,7 @@ class ChatViewModel internal constructor(
             is TranslationEvent -> translation.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
+            is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
