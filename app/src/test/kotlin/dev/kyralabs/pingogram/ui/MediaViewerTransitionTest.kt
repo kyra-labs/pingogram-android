@@ -175,7 +175,8 @@ class MediaViewerTransitionTest {
         val items = (opening + closing).flatMap { it.recomposed }.filter { it.isConversationItem() }
         assertEquals("bubble rows composed", emptyList<String>(), items.filter { "MessageBubbleKt" in it })
         assertEquals("content of other bubbles composed", emptyList<String>(), items.filterNot { it.isSharedMedia() })
-        assertEquals("the list composed", emptyList<String>(), (opening + closing).flatMap { it.recomposed }.filter { MESSAGE_LIST in it })
+        val lists = (opening + closing).flatMap { it.recomposed }.filter { MESSAGE_LIST in it }
+        assertEquals("the list composed", emptyList<String>(), lists)
     }
 
     /**
@@ -216,12 +217,15 @@ class MediaViewerTransitionTest {
         println("== $phase: ${frames.size} frames, ${frames.first().time} to ${frames.last().time}")
         println("frame  start         cpu_us  composed")
         frames.forEach { frame ->
-            val composed = frame.recomposed.groupingBy { it }.eachCount().entries.joinToString { "${it.key}×${it.value}" }
-            println("%5d  %-12s  %6d  %s".format(frame.index, frame.time.toString().take(TIME_LENGTH), frame.cpuMicros, composed))
+            val composed =
+                frame.recomposed.groupingBy { it }.eachCount().entries.joinToString { "${it.key}×${it.value}" }
+            val start = frame.time.toString().take(TIME_LENGTH)
+            println("%5d  %-12s  %6d  %s".format(frame.index, start, frame.cpuMicros, composed))
         }
     }
 
-    private fun List<FrameRecord>.composed(): List<String> = flatMap { frame -> frame.recomposed.map { "${frame.index}:$it" } }
+    private fun List<FrameRecord>.composed(): List<String> =
+        flatMap { frame -> frame.recomposed.map { "${frame.index}:$it" } }
 
     private fun String.shortName(): String = removePrefix(OWN_PACKAGE)
 
@@ -307,7 +311,8 @@ class MediaViewerTransitionTest {
         const val MESSAGE_LIST = "ChatScreenKt.MessageList"
 
         /** What `sharedMediaBounds` composes again in a photo's bubble as a transition starts and ends. */
-        val SHARED_MEDIA = listOf("MessageContentBodyKt.MediaContent", "MessagePhotoKt.MessagePhoto", "MessagePhotoKt.PhotoImage")
+        val SHARED_MEDIA =
+            listOf("MessageContentBodyKt.MediaContent", "MessagePhotoKt.MessagePhoto", "MessagePhotoKt.PhotoImage")
 
         /** The files whose composables draw the conversation's entries (`feature:chat`'s `ChatRecompositionTest`). */
         val ITEM_FILES =

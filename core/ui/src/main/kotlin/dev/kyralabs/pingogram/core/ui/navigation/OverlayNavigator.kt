@@ -253,8 +253,8 @@ private fun OverlayEntry(
 
 /**
  * [OverlayTrace]'s sections of [state]'s transitions: `overlayEnter` from the frame the overlay starts coming in until
- * it settled, `overlayExit` from the frame it starts going out until it is gone (`docs/PERFORMANCE.md` §9). Nothing for
- * an overlay restored visible.
+ * it settled, `overlayExit` from the frame it starts going out until it is gone (`docs/PERFORMANCE.md` §9). Nothing
+ * for an overlay restored visible.
  */
 @Composable
 private fun OverlayTransitionTrace(state: MutableTransitionState<EnterExitState>) {
