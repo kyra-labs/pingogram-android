@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.SearchSection
 import dev.kyralabs.pingogram.feature.chats.ui.SearchUiState
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -147,6 +148,8 @@ internal object SearchPreviewData {
                 global = SearchSection.Items(global),
                 messages = MessageSection(SearchSection.Items(messages), canLoadMore = true),
             ),
+            // Messages counted by this search, photos and videos by an earlier one under Media (999+ on the chip).
+            counts = persistentMapOf(SearchFilter.Messages to 128, SearchFilter.Media to 1_204),
         )
 
     val loading =
