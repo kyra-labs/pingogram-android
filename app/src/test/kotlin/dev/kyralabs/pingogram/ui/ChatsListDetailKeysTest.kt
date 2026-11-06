@@ -45,7 +45,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
-import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
  * The Chats tab's list-detail layout with a hardware keyboard (`docs/DESIGN_SYSTEM.md` §9, [PaneKeyboard]): a chat
@@ -121,7 +120,8 @@ class ChatsListDetailKeysTest {
         focusRow()
         press(Key.Enter)
         awaitMessage()
-        composeRule.onNode(hasContentDescription(string(ChatsR.string.new_chat))).requestFocus()
+        // The list pane's last focusable: the last row, Alan Turing's ("New chat" is the rail's now).
+        composeRule.onNode(hasContentDescription(LAST_ROW_TITLE, substring = true) and hasClickAction()).requestFocus()
 
         press(Key.Tab)
 
@@ -179,5 +179,6 @@ class ChatsListDetailKeysTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
+        const val LAST_ROW_TITLE = "Alan Turing"
     }
 }

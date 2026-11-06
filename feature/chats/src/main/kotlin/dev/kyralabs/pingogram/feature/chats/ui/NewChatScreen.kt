@@ -269,3 +269,9 @@ private fun NewChatScreenPreview(
 ) {
     PingogramPreview { NewChatScreen(state = state, onEvent = {}, onBack = {}) }
 }
+
+/**
+ * What the "New chat" button (the app shell's, beside the floating navigation bar or in the rail's header,
+ * `newChatButtonTransform`) and the New chat screen share for their container transform.
+ */
+internal data object NewChatTransformKey

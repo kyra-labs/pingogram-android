@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -132,11 +133,17 @@ class MainActivityLinkTest {
     private fun awaitSettingsTab() {
         composeRule.waitUntil(TIMEOUT_MILLIS) {
             composeRule
-                .onAllNodes(hasText(string(R.string.nav_settings)) and isSelectable())
-                .fetchSemanticsNodes()
+                .onAllNodes(
+                    (hasText(string(R.string.nav_settings)) or hasContentDescription(string(R.string.nav_settings))) and
+                        isSelectable(),
+                ).fetchSemanticsNodes()
                 .any { node -> node.config.getOrElseNullable(SemanticsProperties.Selected) { null } == true }
         }
-        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsSelected()
+        composeRule
+            .onNode(
+                (hasText(string(R.string.nav_settings)) or hasContentDescription(string(R.string.nav_settings))) and
+                    isSelectable(),
+            ).assertIsSelected()
     }
 
     private fun awaitText(

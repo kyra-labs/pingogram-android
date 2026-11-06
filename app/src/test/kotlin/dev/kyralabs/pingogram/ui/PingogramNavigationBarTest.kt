@@ -20,6 +20,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
@@ -42,6 +43,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlin.math.abs
+import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
  * [PingogramNavigationBar]: tabs with labels where they fit, icons named by their label where they do not, and the
@@ -60,24 +63,55 @@ class PingogramNavigationBarTest {
     private val selections = mutableListOf<TopLevelDestination>()
 
     @Test
-    fun `every tab shows its label on a phone`() {
+    fun `the selected tab shows its label, the others only their icons, named by their labels`() {
         setBar(selected = TopLevelDestination.Chats)
 
-        labeledTab(R.string.nav_chats).assertIsSelected()
-        labeledTab(R.string.nav_contacts).assertIsNotSelected()
-        labeledTab(R.string.nav_settings).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_chats)) and isSelectable()).assertIsSelected()
+        iconTab(R.string.nav_contacts).assertIsNotSelected()
+        iconTab(R.string.nav_settings).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
+        composeRule.onNode(hasText(string(R.string.nav_settings))).assertDoesNotExist()
     }
 
     @Test
     @Config(qualifiers = "w360dp-h780dp-xxhdpi")
-    fun `on a narrow phone at a large font scale the other tabs show icons named by their labels`() {
+    fun `on a narrow phone at a large font scale the selected tab keeps its label`() {
         RuntimeEnvironment.setFontScale(LARGE_FONT_SCALE)
-        setBar(selected = TopLevelDestination.Chats)
+        setBar(selected = TopLevelDestination.Settings)
 
-        labeledTab(R.string.nav_chats).assertIsSelected()
-        iconTab(R.string.nav_contacts).assertIsNotSelected()
-        iconTab(R.string.nav_settings).assertIsNotSelected()
-        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
+        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsSelected()
+        iconTab(R.string.nav_chats).assertIsNotSelected()
+    }
+
+    @Test
+    fun `the pill stays centred with New chat beside it, and the button sits at its end`() {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                Box(Modifier.fillMaxSize()) {
+                    PingogramNavigationBar(
+                        selected = TopLevelDestination.Chats,
+                        onSelect = {},
+                        newChat = { BarNewChatButton(shown = true, onClick = {}) },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val window = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val chats = labeledTab(R.string.nav_chats).fetchSemanticsNode().boundsInRoot
+        val settings = labeledTab(R.string.nav_settings).fetchSemanticsNode().boundsInRoot
+        val newChat =
+            composeRule
+                .onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
+                .fetchSemanticsNode()
+                .boundsInRoot
+
+        val pillCentre = (chats.left + settings.right) / 2
+        val tolerance = with(composeRule.density) { PILL_PADDING_TOLERANCE.toPx() }
+        assertTrue("$pillCentre vs ${window.center.x}", abs(pillCentre - window.center.x) < tolerance)
+        assertTrue("${newChat.left} > ${settings.right}", newChat.left > settings.right)
+        assertTrue("${newChat.right} <= ${window.right}", newChat.right <= window.right)
     }
 
     @Test
@@ -99,7 +133,7 @@ class PingogramNavigationBarTest {
                     PingogramNavigationBar(
                         selected = selected,
                         onSelect = {},
-                        modifier = Modifier.align(Alignment.BottomCenter).testTag(FLOATING_BAR_TAG),
+                        modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
             }
@@ -274,9 +308,9 @@ class PingogramNavigationBarTest {
         composeRule.waitForIdle()
     }
 
+    /** The pill's start, by its first tab's: the bar itself is as wide as the window. */
     private fun barLeft(): Float =
-        composeRule
-            .onNodeWithTag(FLOATING_BAR_TAG)
+        labeledTab(R.string.nav_chats)
             .fetchSemanticsNode()
             .boundsInRoot.left
 
@@ -302,7 +336,7 @@ class PingogramNavigationBarTest {
 
     private fun labeledTab(
         @StringRes label: Int,
-    ) = composeRule.onNode(hasText(string(label)) and isSelectable())
+    ) = composeRule.onNode((hasText(string(label)) or hasContentDescription(string(label))) and isSelectable())
 
     private fun iconTab(
         @StringRes label: Int,
@@ -336,5 +370,8 @@ class PingogramNavigationBarTest {
 
         /** How far the fast spatial spring's overshoot may widen the bar, half of it on each side. */
         val OVERSHOOT_TOLERANCE = 3.dp
+
+        /** Rounding of the pill's place in the window. */
+        val PILL_PADDING_TOLERANCE = 2.dp
     }
 }

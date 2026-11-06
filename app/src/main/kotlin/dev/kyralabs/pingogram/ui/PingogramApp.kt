@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
@@ -172,6 +173,8 @@ fun PingogramApp(
     val searchOpen = rememberSearchOpen(navController, search)
     val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
     val headerActions = rememberChatListHeaderActions(navController, search, searchOpen, openSearch, accountMenu)
+    val newChatOpen by rememberNewChatOpen(navController)
+    val openNewChat = remember(navController) { { navController.navigate(NewChatRoute) { launchSingleTop = true } } }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
     val openLockedChats =
@@ -187,6 +190,16 @@ fun PingogramApp(
                         PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
                     },
                     navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
+                    // The scaffold shows its primary action even without navigation: "New chat" on the Chats tab.
+                    primaryActionContent = {
+                        if (showRail) {
+                            RailNewChatButton(
+                                navigationSuiteType = adaptiveType,
+                                shown = currentTab == TopLevelDestination.Chats && !newChatOpen,
+                                onClick = openNewChat,
+                            )
+                        }
+                    },
                 ) {
                     Box(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(
@@ -223,6 +236,12 @@ fun PingogramApp(
                                 // The bar shows only on a tab itself.
                                 onSelect = { navController.selectTab(it, currentTab, tabReselection) },
                                 accountMenu = accountMenu,
+                                newChat = {
+                                    BarNewChatButton(
+                                        shown = barTab == TopLevelDestination.Chats && !newChatOpen,
+                                        onClick = openNewChat,
+                                    )
+                                },
                                 modifier =
                                     Modifier
                                         .align(Alignment.BottomCenter)
