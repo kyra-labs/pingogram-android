@@ -88,7 +88,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers. It replaces
   the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
   - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
-    `DemoData` (made-up people, a group, a channel with its discussion group, a forum, Saved Messages, an archived
+    `DemoData` (made-up people, a group, a channel with its discussion group and a rich post, a forum, Saved Messages, an archived
     chat, a "Work" folder, and a group and a channel the user is not in, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
     `core:data` maps to `DomainError.NotAvailableInDemo` ("This needs a Telegram account. The demo can't do it.").

@@ -111,7 +111,8 @@ Kotlin in `:core:demo`, in English. The texts shown as UI are translatable strin
 - **Chats**: Saved Messages, 3–4 people, a group with several members, a channel with a few posts, one archived chat,
   and one folder, "Work".
 - **Messages**: text with formatting and links, emoji-only, a reply, a forward, a poll, a photo, a voice message, a
-  sticker drawn from Pingogram's own mark, reactions, a pinned message, and unread counts.
+  sticker drawn from Pingogram's own mark, reactions, a pinned message, and unread counts. The channel also has a
+  rich post (a long read with a title, a paragraph and two collapsible sections, one with a list and a photo).
 - **Pictures**: only Pingogram's own artwork or images generated in code. Avatars are the app's initials. The photo is
   a gradient of the brand's colors. The sticker is the mark rendered to a bitmap. The voice message is a short tone
   written as a WAV file. No stock photos and no Telegram assets (CLAUDE.md rule 9).

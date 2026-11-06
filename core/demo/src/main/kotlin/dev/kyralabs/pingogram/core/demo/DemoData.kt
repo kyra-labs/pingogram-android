@@ -90,6 +90,7 @@ internal class DemoData(
                 views = 96,
                 content = photo(DemoFile.ChannelPhoto, R.string.demo_channel_colors),
             ),
+            post(minutesAgo = RICH_POST_MINUTES_AGO, views = 71, content = richPost()),
             post(minutesAgo = 45, views = 54, content = textOf(R.string.demo_channel_tip))
                 .apply { interactionInfo = reactions(HEART to 12, views = 54) },
         )
@@ -587,6 +588,63 @@ internal class DemoData(
         interactionInfo = TdApi.MessageInteractionInfo(views, 0, null, null)
     }
 
+    /**
+     * A rich message, as channels post long reads: a kicker, a title, a paragraph, and two sections closed at first,
+     * one with a list and a photo made on the phone ([DemoFile.RichPhoto]), the other with a paragraph.
+     */
+    private fun richPost(): TdApi.MessageRichMessage {
+        fun plain(resource: Int) = TdApi.RichTextPlain(text(resource))
+
+        fun paragraph(resource: Int) = TdApi.PageBlockParagraph(plain(resource))
+
+        fun item(resource: Int) = TdApi.PageBlockListItem("•", arrayOf(paragraph(resource)), false, false, 0, "")
+        val photo =
+            TdApi.PageBlockPhoto(
+                TdApi.Photo(
+                    false,
+                    null,
+                    arrayOf(
+                        TdApi.PhotoSize(
+                            "x",
+                            DemoFiles.remote(DemoFile.RichPhoto),
+                            PHOTO_WIDTH,
+                            PHOTO_HEIGHT,
+                            intArrayOf(),
+                        ),
+                    ),
+                ),
+                TdApi.PageBlockCaption(plain(R.string.demo_rich_photo_caption), TdApi.RichTextPlain("")),
+                "",
+                false,
+            )
+        val blocks =
+            arrayOf<TdApi.PageBlock>(
+                TdApi.PageBlockKicker(plain(R.string.demo_rich_kicker)),
+                TdApi.PageBlockTitle(plain(R.string.demo_rich_title)),
+                paragraph(R.string.demo_rich_intro),
+                TdApi.PageBlockDetails(
+                    plain(R.string.demo_rich_section_inside),
+                    arrayOf(
+                        TdApi.PageBlockList(
+                            arrayOf(
+                                item(R.string.demo_rich_item_headings),
+                                item(R.string.demo_rich_item_lists),
+                                item(R.string.demo_rich_item_photos),
+                            ),
+                        ),
+                        photo,
+                    ),
+                    false,
+                ),
+                TdApi.PageBlockDetails(
+                    plain(R.string.demo_rich_section_more),
+                    arrayOf(paragraph(R.string.demo_rich_more)),
+                    false,
+                ),
+            )
+        return TdApi.MessageRichMessage(TdApi.RichMessage(blocks, false, true))
+    }
+
     private fun textOf(resource: Int) = TdApi.MessageText(formattedText(text(resource)), null, null)
 
     private fun plainText(literal: String) = TdApi.MessageText(TdApi.FormattedText(literal, emptyArray()), null, null)
@@ -796,6 +854,9 @@ internal class DemoData(
 
         /** Server message ids are multiples of 2^20 in TDLib; the demo keeps to that. */
         const val MESSAGE_ID_SHIFT = 20
+
+        /** The rich post: between this week's colours and the tip. */
+        private const val RICH_POST_MINUTES_AGO = 6 * 60
 
         private const val THUMBS_UP = "👍"
         private const val HEART = "❤"
