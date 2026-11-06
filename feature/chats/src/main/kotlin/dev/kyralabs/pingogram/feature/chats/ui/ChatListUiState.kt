@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -120,6 +121,7 @@ sealed interface FolderTab {
  *   Messages and in channels.
  * @property actions what the user can do to the chat, in the order screen readers list them ([rowActions]); the row's
  *   swipes are two of them ([startSwipeAction], [endSwipeAction]).
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class ChatListItemModel(
@@ -141,6 +143,7 @@ data class ChatListItemModel(
     val outgoingStatus: OutgoingStatus?,
     val preview: ChatPreview,
     val actions: ImmutableList<ChatRowAction>,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread

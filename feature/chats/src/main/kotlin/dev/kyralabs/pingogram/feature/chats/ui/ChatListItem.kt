@@ -216,6 +216,7 @@ private fun ChatAvatar(
         size = MaterialTheme.sizes.avatarRow,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
+        shape = item.avatarShape,
         onlineRingColor =
             if (open) ListItemDefaults.colors().selectedContainerColor else MaterialTheme.colorScheme.surface,
         selected = selected,

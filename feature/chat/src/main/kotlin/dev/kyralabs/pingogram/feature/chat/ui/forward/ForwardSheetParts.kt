@@ -79,6 +79,7 @@ internal fun ForwardTargetRow(
                 id = target.chatId,
                 size = MaterialTheme.sizes.avatarSmall,
                 placeholderIcon = target.placeholderIcon,
+                shape = target.avatarShape,
                 selected = selected,
             )
         },

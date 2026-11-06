@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
@@ -166,6 +167,7 @@ data class MessageSection(
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property subtitle the second line: the username ("@ada"), else how many members or subscribers a group or channel
  *   has; null for none.
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class SearchChatItem(
@@ -178,6 +180,7 @@ data class SearchChatItem(
     val isSecret: Boolean,
     val isMuted: Boolean,
     val subtitle: UiText?,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "SearchChatItem(id=$id, …)"
 }
@@ -190,6 +193,7 @@ data class SearchChatItem(
  * @property sender "You" or the sender's first name in a group; null in private chats and channels.
  * @property preview the message as one line, starting shortly before the first match when that is far into the text.
  * @property date when it was sent, formatted as in the chat list.
+ * @property avatarShape the chat's avatar's shape ([AvatarShape.ofChat]).
  */
 @Immutable
 data class SearchMessageItem(
@@ -202,6 +206,7 @@ data class SearchMessageItem(
     val sender: UiText?,
     val preview: UiText,
     val date: String,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "SearchMessageItem(chatId=$chatId, messageId=$messageId, …)"
 }

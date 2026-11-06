@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -339,7 +340,15 @@ private fun headerOf(
         } else {
             UiText.resource(R.string.topics_subtitle_forum)
         }
-    return ChatHeader(chat.id, UiText.Plain(chat.title), chat.photo, null, ChatSubtitle.Status(subtitle))
+    // A forum's: its avatar is a rounded square.
+    return ChatHeader(
+        chatId = chat.id,
+        title = UiText.Plain(chat.title),
+        photo = chat.photo,
+        placeholderIcon = null,
+        subtitle = ChatSubtitle.Status(subtitle),
+        avatarShape = AvatarShape.RoundedSquare,
+    )
 }
 
 /** The row of a topic: its last message's sender (none where the forum itself posts) and preview, and its time. */
