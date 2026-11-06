@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.richMediaMessages
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.persistentListOf
@@ -65,6 +66,34 @@ class TdlibChatMediaRepository
                 ),
             )
         }
+
+        override suspend fun richMedia(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<ChatMediaPage> =
+            when (val found = client.request(TdApi.GetMessage(chatId, messageId))) {
+                is Outcome.Success -> {
+                    val media = found.value.toMessage().richMediaMessages()
+                    if (media.isEmpty()) {
+                        Outcome.Failure(DomainError.NotFound)
+                    } else {
+                        Outcome.Success(
+                            ChatMediaPage(
+                                // Newest first, as pages are: the last media has the highest id.
+                                messages = media.sortedByDescending { it.id }.toImmutableList(),
+                                filter = ChatMediaFilter.PhotosAndVideos,
+                                reachedOldest = true,
+                                reachedNewest = true,
+                                totalCount = media.size,
+                            ),
+                        )
+                    }
+                }
+
+                is Outcome.Failure -> {
+                    found
+                }
+            }
 
         override suspend fun older(
             chatId: Long,

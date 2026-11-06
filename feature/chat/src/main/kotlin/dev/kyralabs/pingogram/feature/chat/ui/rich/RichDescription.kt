@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
 import dev.kyralabs.pingogram.core.domain.model.RichCaption
 import dev.kyralabs.pingogram.core.domain.model.RichMessage
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.RichMessageEvent
@@ -67,10 +68,40 @@ internal fun richActions(
             }
         }
         visit(message.blocks)
+        openActions(resources, messageId, message).forEach(::add)
         if (!message.isFull && ui?.isLoadingFull != true) {
             add(resources.getString(R.string.rich_show_full) to RichMessageEvent.LoadFull(messageId))
         }
     }
+
+/**
+ * "Open Photo 2 of 3" for each photo, video and GIF of [message] that opens in the media viewer (a photo with a link
+ * opens its link, as the text's links do for screen readers), "Open Photo" where there is one.
+ */
+private fun openActions(
+    resources: Resources,
+    messageId: Long,
+    message: RichMessage,
+): List<Pair<String, ChatEvent>> {
+    val media = message.media()
+    return media.filter { (it as? RichBlock.Photo)?.url.isNullOrBlank() }.map { item ->
+        val kind =
+            resources.getString(
+                when (item) {
+                    is RichBlock.Photo -> UiR.string.preview_photo
+                    is RichBlock.Video -> UiR.string.preview_video
+                    is RichBlock.Animation -> UiR.string.preview_gif
+                },
+            )
+        val label =
+            if (media.size == 1) {
+                resources.getString(R.string.rich_open_media, kind)
+            } else {
+                resources.getString(R.string.rich_open_media_of, kind, item.index + 1, media.size)
+            }
+        label to ChatEvent.OpenMedia(richMediaId(messageId, item.index))
+    }
+}
 
 /** Walks a message's blocks into the parts of its description. */
 private class RichSpeaker(

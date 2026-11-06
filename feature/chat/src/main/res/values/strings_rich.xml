@@ -13,6 +13,10 @@
     <!-- Screen readers' actions on a rich message's section. %1$s is the section's heading. -->
     <string name="rich_section_expand">Expand %1$s</string>
     <string name="rich_section_collapse">Collapse %1$s</string>
+    <!-- Screen readers' action that opens a rich message's photo, video or GIF in the media viewer. %1$s is its kind
+         ("Photo"); with several, %2$d is which one and %3$d how many. -->
+    <string name="rich_open_media">Open %1$s</string>
+    <string name="rich_open_media_of">Open %1$s %2$d of %3$d</string>
     <!-- A section in a rich message's description for screen readers. %1$s is its heading, %2$s whether it is open
          ("Expanded"). -->
     <string name="rich_section_description">Section %1$s, %2$s</string>
