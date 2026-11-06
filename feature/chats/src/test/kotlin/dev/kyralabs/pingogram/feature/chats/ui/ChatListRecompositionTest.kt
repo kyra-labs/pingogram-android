@@ -177,6 +177,8 @@ class ChatListRecompositionTest {
                     val base = ChatListPreviewData.items[index % ChatListPreviewData.items.size]
                     base.copy(id = FIRST_ID + index)
                 }.toImmutableList()
+        // The leading pinned chats as one group, as the view model gives them.
+        val content = ChatListContent.Content(items, pinnedCount = items.indexOfFirst { !it.isPinned })
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val holder = rememberSaveableStateHolder()
@@ -191,7 +193,7 @@ class ChatListRecompositionTest {
                         ChatListScreen(
                             state =
                                 ChatListUiState(
-                                    content = ChatListContent.Content(items),
+                                    content = content,
                                     connection = this.connection,
                                     folderTabs = ChatListPreviewData.folders,
                                 ),

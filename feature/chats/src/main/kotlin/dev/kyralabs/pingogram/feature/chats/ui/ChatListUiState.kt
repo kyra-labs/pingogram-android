@@ -97,6 +97,11 @@ sealed interface ChatListContent {
     /** The chats loaded so far, in TDLib's order (pinned first); more load near the end of the list. */
     data class Content(
         val items: ImmutableList<ChatListItemModel>,
+        /**
+         * How many of [items], from the first, the list pins (TDLib orders them first): one group under a "Pinned"
+         * header (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner decision 2026-11-06). 0 shows neither.
+         */
+        val pinnedCount: Int = 0,
     ) : ChatListContent
 }
 

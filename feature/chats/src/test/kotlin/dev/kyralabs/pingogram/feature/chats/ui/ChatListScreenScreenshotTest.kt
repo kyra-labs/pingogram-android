@@ -71,7 +71,12 @@ class ChatListScreenScreenshotTest(
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                ChatListScreen(state = state, onEvent = {}, summary = { ChatListPreviewData.summary })
+                ChatListScreen(
+                    state = state,
+                    onEvent = {},
+                    summary = { ChatListPreviewData.summary },
+                    onEditFolder = {},
+                )
             }
         }
         composeRule.waitForIdle()

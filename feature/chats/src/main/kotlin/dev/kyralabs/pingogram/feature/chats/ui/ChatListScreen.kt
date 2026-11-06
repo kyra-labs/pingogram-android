@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -257,6 +259,7 @@ private fun ChatListBody(
                     is ChatListContent.Content -> {
                         ChatList(
                             items = content.items,
+                            pinnedCount = content.pinnedCount,
                             state = state,
                             stories = stories,
                             listState = listState,
@@ -412,7 +415,7 @@ private class FolderPositions(
 
     /**
      * Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass; the story rings
-     * ([hasStories]) and the archive row come first.
+     * ([hasStories]), the archive row and the "Pinned" header come first.
      */
     fun restore(
         state: ChatListUiState,
@@ -424,13 +427,17 @@ private class FolderPositions(
             listState.requestScrollToItem(0)
             return
         }
-        val items = (state.content as? ChatListContent.Content)?.items.orEmpty()
+        val content = state.content as? ChatListContent.Content
+        val items = content?.items.orEmpty()
+        val hasPinned = (content?.pinnedCount ?: 0) > 0
         val storyRows = if (hasStories) 1 else 0
-        val rowsAbove = storyRows + if (state.archive != null) 1 else 0
+        val headerRows = storyRows + if (state.archive != null) 1 else 0
+        val rowsAbove = headerRows + if (hasPinned) 1 else 0
         val index =
             when (val key = position.key) {
                 STORIES_ROW -> 0.takeIf { hasStories }
                 ARCHIVE_ROW -> storyRows.takeIf { state.archive != null }
+                PINNED_HEADER -> headerRows.takeIf { hasPinned }
                 else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
             }
         if (index != null) {
@@ -487,6 +494,7 @@ private class ListPosition(
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
+    pinnedCount: Int,
     state: ChatListUiState,
     stories: (@Composable (Modifier) -> Unit)?,
     listState: LazyListState,
@@ -508,29 +516,17 @@ private fun ChatList(
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (stories != null) {
-            item(key = STORIES_ROW, contentType = STORIES_ROW) {
-                stories(Modifier.listRow(this, maxWidth, rowMotion))
-            }
+        leadingRows(stories, state, hasPinned = pinnedCount > 0, onEvent) {
+            Modifier.listRow(this, maxWidth, rowMotion)
         }
-        if (archive != null) {
-            item(key = ARCHIVE_ROW, contentType = ARCHIVE_ROW) {
-                ArchiveRow(
-                    entry = archive,
-                    enabled = selection == null,
-                    onClick = { onEvent(ChatListEvent.OpenArchive) },
-                    modifier = Modifier.listRow(this, maxWidth, rowMotion),
-                    onStyle = { onEvent(ChatListEvent.SetArchiveRowStyle(it)) },
-                )
-            }
-        }
-        items(items, key = { it.id }, contentType = { CHAT_ROW }) { item ->
+        itemsIndexed(items, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { index, item ->
             ChatRow(
                 item = item,
                 selected = selectedIds?.contains(item.id) == true,
                 selectionMode = selection != null,
                 open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
+                segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null,
                 modifier =
                     Modifier
                         .listRow(this, maxWidth, rowMotion)
@@ -539,7 +535,10 @@ private fun ChatList(
         }
         if (state.hasLockedChats) lockedChatsRow(selection == null) { Modifier.listRow(this, maxWidth, rowMotion) }
     }
-    ShowRowsAddedAtTop(listState, rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0))
+    ShowRowsAddedAtTop(
+        listState,
+        rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0) + (if (pinnedCount > 0) 1 else 0),
+    )
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId) {
         try {
@@ -668,9 +667,6 @@ private const val ROWS_LAYOUT_FRAMES = 2
 private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
-private const val ARCHIVE_ROW = "archive"
-
-private const val STORIES_ROW = "stories"
 
 // The Macrobenchmarks and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list and the row they
 // scroll and open by these tags, which `MainActivity` shows as resource ids.
@@ -683,5 +679,7 @@ private const val SAVED_MESSAGES_TEST_TAG = "saved_messages"
 private fun ChatListScreenPreview(
     @PreviewParameter(ChatListPreviewStates::class) state: ChatListUiState,
 ) {
-    PingogramPreview { ChatListScreen(state = state, onEvent = {}, summary = { ChatListPreviewData.summary }) }
+    PingogramPreview {
+        ChatListScreen(state = state, onEvent = {}, summary = { ChatListPreviewData.summary }, onEditFolder = {})
+    }
 }

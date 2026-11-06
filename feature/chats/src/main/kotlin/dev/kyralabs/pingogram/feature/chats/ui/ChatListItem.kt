@@ -17,6 +17,7 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param onLongClick e.g. starts selection; only with [onClick].
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
  * @param dragged the row is being swiped: it takes its `large` container, as when pressed ([ChatRow]).
+ * @param segment the row's place in the pinned chats' group (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner
+ *   decision 2026-11-06): at rest it takes Material's segmented shapes (`large` corners at the group's ends,
+ *   `extraSmall` between) on a tonal container a step above the sheet (`surfaceContainerLow`); null for the others.
  */
 @Composable
 internal fun ChatListItem(
@@ -87,6 +91,7 @@ internal fun ChatListItem(
     selected: Boolean = false,
     open: Boolean = false,
     dragged: Boolean = false,
+    segment: RowSegment? = null,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
@@ -126,8 +131,8 @@ internal fun ChatListItem(
             supportingContent = supporting,
             onLongClick = onLongClick,
             onLongClickLabel = onLongClickLabel,
-            shapes = listItemShapes(rounded = selected || open || dragged),
-            colors = listItemColors(selected || open),
+            shapes = listItemShapes(rounded = selected || open || dragged, segment = segment),
+            colors = listItemColors(selected || open, grouped = segment != null),
             contentPadding = contentPadding,
             content = headline,
         )
@@ -179,24 +184,59 @@ internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
  * container. A row being swiped draws its container itself ([ChatListItem]), at once.
  */
 @Composable
-internal fun listItemColors(selected: Boolean): ListItemColors {
+internal fun listItemColors(
+    selected: Boolean,
+    grouped: Boolean = false,
+): ListItemColors {
     val colors = ListItemDefaults.colors()
-    if (!selected) return colors.copy(containerColor = colors.containerColor.copy(alpha = 0f))
-    return colors.copy(
-        containerColor = colors.selectedContainerColor,
-        contentColor = colors.selectedContentColor,
-        leadingContentColor = colors.selectedLeadingContentColor,
-        trailingContentColor = colors.selectedTrailingContentColor,
-        supportingContentColor = colors.selectedSupportingContentColor,
-    )
+    return when {
+        selected -> {
+            colors.copy(
+                containerColor = colors.selectedContainerColor,
+                contentColor = colors.selectedContentColor,
+                leadingContentColor = colors.selectedLeadingContentColor,
+                trailingContentColor = colors.selectedTrailingContentColor,
+                supportingContentColor = colors.selectedSupportingContentColor,
+            )
+        }
+
+        // The pinned group's rows rest on a container one step above the sheet.
+        grouped -> {
+            colors.copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        }
+
+        else -> {
+            colors.copy(containerColor = colors.containerColor.copy(alpha = 0f))
+        }
+    }
 }
 
-/** The list item's shapes, with its selected shape (`large`) in place of its resting one while [rounded]. */
+/**
+ * The list item's shapes, with its selected shape (`large`) in place of its resting one while [rounded]; at rest the
+ * segmented shapes of its place in a group ([segment]).
+ */
 @Composable
-internal fun listItemShapes(rounded: Boolean): ListItemShapes {
-    val shapes = ListItemDefaults.shapes()
+internal fun listItemShapes(
+    rounded: Boolean,
+    segment: RowSegment? = null,
+): ListItemShapes {
+    val shapes =
+        if (segment !=
+            null
+        ) {
+            ListItemDefaults.segmentedShapes(segment.index, segment.count)
+        } else {
+            ListItemDefaults.shapes()
+        }
     return if (rounded) shapes.copy(shape = shapes.selectedShape) else shapes
 }
+
+/** A row's place in a group of [count] rows, from its first ([index] 0): the pinned chats'. */
+@Immutable
+internal data class RowSegment(
+    val index: Int,
+    val count: Int,
+)
 
 /**
  * Decorative: the row's description names the chat, and its semantics say whether it is selected. On an [open] row the
