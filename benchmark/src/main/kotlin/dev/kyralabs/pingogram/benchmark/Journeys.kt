@@ -117,6 +117,7 @@ private const val COMPOSER_FIELD = "composer_field"
 private const val SEND_BUTTON = "composer_send"
 private const val DELETE_ACTION = "message_action_Delete"
 private const val DELETE_CONFIRM = "delete_confirm"
+
 /** How long the journeys wait for a screen: TDLib may still be loading after a cold start. */
 private const val TIMEOUT_MS = 10_000L
 
