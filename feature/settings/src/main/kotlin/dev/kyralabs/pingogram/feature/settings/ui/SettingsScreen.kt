@@ -47,13 +47,15 @@ import kotlinx.coroutines.launch
 
 /**
  * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
- * page it opens. [profileSaved] says that Edit profile just saved the profile, shown in a snackbar once:
- * [onProfileSavedShown] clears it. Beside a page on an expanded window, [selection] says which page is open.
+ * page it opens; a result of settings search that is a page above one of them, [onOpenSubPage]. [profileSaved] says
+ * that Edit profile just saved the profile, shown in a snackbar once: [onProfileSavedShown] clears it. Beside a page
+ * on an expanded window, [selection] says which page is open.
  */
 @Composable
 internal fun SettingsRoute(
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSubPage: (SettingsSubPage) -> Unit = {},
     selection: SettingsPageSelection? = null,
     profileSaved: Boolean = false,
     onProfileSavedShown: () -> Unit = {},
@@ -101,6 +103,7 @@ internal fun SettingsRoute(
         onEvent = viewModel::onEvent,
         onOpenPage = onOpenPage,
         modifier = modifier,
+        onOpenSubPage = onOpenSubPage,
         selection = selection,
         snackbarHostState = snackbarHostState,
         experimentalUi = experimentalUi,
@@ -131,6 +134,7 @@ internal fun SettingsScreen(
     onEvent: (SettingsEvent) -> Unit,
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSubPage: (SettingsSubPage) -> Unit = {},
     selection: SettingsPageSelection? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     experimentalUi: Boolean? = null,
@@ -140,14 +144,7 @@ internal fun SettingsScreen(
     val experimentalLook = LocalExperimentalUi.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val search = rememberSettingsSearch()
-    val onOpenRecentCalls = LocalRecentCallsLauncher.current
-    val onOpen = { destination: HomeDestination ->
-        when (destination) {
-            is HomeDestination.Page -> onOpenPage(destination.page)
-            HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
-        }
-        Unit
-    }
+    val onOpen = homeOpener(onOpenPage, onOpenSubPage)
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
@@ -199,6 +196,22 @@ internal fun SettingsScreen(
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
             isDemo = LocalIsDemo.current,
         )
+    }
+}
+
+/** Opens where an entry of the experimental home leads: a page, a page above one ([onOpenSubPage]), Recent calls. */
+@Composable
+private fun homeOpener(
+    onOpenPage: (SettingsPage) -> Unit,
+    onOpenSubPage: (SettingsSubPage) -> Unit,
+): (HomeDestination) -> Unit {
+    val onOpenRecentCalls = LocalRecentCallsLauncher.current
+    return { destination ->
+        when (destination) {
+            is HomeDestination.Page -> onOpenPage(destination.page)
+            HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
+            is HomeDestination.SubPage -> onOpenSubPage(destination.subPage)
+        }
     }
 }
 

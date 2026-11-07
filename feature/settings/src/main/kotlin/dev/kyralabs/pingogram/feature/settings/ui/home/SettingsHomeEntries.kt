@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.OtherAccountUiModel
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageSelection
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsSubPage
 import kotlinx.collections.immutable.ImmutableList
 import java.text.Normalizer
 import java.util.Locale
@@ -22,6 +23,11 @@ internal sealed interface HomeDestination {
     ) : HomeDestination
 
     data object RecentCalls : HomeDestination
+
+    /** A page above a page of Settings home, opened with that page below it (settings search only). */
+    data class SubPage(
+        val subPage: SettingsSubPage,
+    ) : HomeDestination
 }
 
 /** An entry: where it leads ([destination]), its [title], [summary] and [icon]. */
@@ -38,7 +44,7 @@ internal class HomeGroup(
     val entries: List<HomeEntry>,
 )
 
-private fun page(
+internal fun page(
     page: SettingsPage,
     @StringRes title: Int,
     @StringRes summary: Int,
@@ -134,24 +140,6 @@ internal val HomeGroups: List<HomeGroup> =
             ),
         ),
     )
-
-/** What settings search looks through: every group's entries, then Edit profile and the user's QR code. */
-internal val SearchEntries: List<HomeEntry> =
-    HomeGroups.flatMap { it.entries } +
-        listOf(
-            page(
-                SettingsPage.EditProfile,
-                R.string.settings_edit_profile_button,
-                R.string.settings_home_edit_profile_summary,
-                R.drawable.ic_edit,
-            ),
-            page(
-                SettingsPage.MyQrCode,
-                R.string.settings_my_qr_title,
-                R.string.settings_home_qr_summary,
-                UiR.drawable.ic_qr_code,
-            ),
-        )
 
 /**
  * The entries of [entries] whose title or summary holds every word of [query], ignoring case and accents, in their

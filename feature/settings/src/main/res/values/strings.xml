@@ -1371,4 +1371,7 @@
     <string name="settings_home_search_close">Close search</string>
     <string name="settings_home_search_clear">Clear search</string>
     <string name="settings_home_no_results">No settings found</string>
+    <string name="settings_home_auto_download_mobile">Automatic download on mobile data</string>
+    <string name="settings_home_auto_download_wifi">Automatic download on Wi-Fi</string>
+    <string name="settings_home_auto_download_roaming">Automatic download when roaming</string>
 </resources>
