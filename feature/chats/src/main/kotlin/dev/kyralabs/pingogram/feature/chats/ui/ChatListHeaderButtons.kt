@@ -88,7 +88,8 @@ internal fun HeaderAccountButton(
             // The experimental look's avatar (docs/DESIGN_SYSTEM.md §13): a 48 dp square with `large` corners on
             // `primary`, the placeholder colors of a selected row.
             val experimental = LocalExperimentalUi.current
-            val avatarSize = if (experimental) MaterialTheme.sizes.headerAction else MaterialTheme.sizes.avatarExtraSmall
+            val sizes = MaterialTheme.sizes
+            val avatarSize = if (experimental) sizes.headerAction else sizes.avatarExtraSmall
             IconButton(
                 onClick = { actions?.openAccount?.invoke() },
                 modifier =
