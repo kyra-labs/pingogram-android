@@ -77,7 +77,8 @@ fun AvatarShape.toShape(): Shape {
     if (this == AvatarShape.RoundedSquare) return MaterialTheme.shapes.large
     val experimental = LocalExperimentalUi.current
     val polygon = experimentalPolygon()?.takeIf { experimental } ?: return CircleShape
-    return remember(polygon) { polygon.toShape() }
+    // Material's toShape remembers the shape itself.
+    return polygon.toShape()
 }
 
 /**
