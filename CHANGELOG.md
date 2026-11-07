@@ -28,6 +28,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   divider, and give files a rounded download button.
 - With Experimental UI on, Contacts counts who is online in its header, puts Invite, My QR and Scan in a row under
   it, shows the people online now, sets its letters large, and adds an "Add contact" button beside the navigation bar.
+- With Experimental UI on, Settings home has a search over its pages, an account card with Edit profile, your QR code
+  and an account menu, and its pages in four groups with the storage used, your devices and the language beside them.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

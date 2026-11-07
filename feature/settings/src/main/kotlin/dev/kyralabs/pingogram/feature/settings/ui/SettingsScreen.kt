@@ -21,6 +21,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
+import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
@@ -31,6 +32,16 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.home.AccountSwitcher
+import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalAccountCard
+import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalHomeGroups
+import dev.kyralabs.pingogram.feature.settings.ui.home.HomeDestination
+import dev.kyralabs.pingogram.feature.settings.ui.home.SearchAction
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeViewModel
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchBar
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchResults
+import dev.kyralabs.pingogram.feature.settings.ui.home.rememberSettingsSearch
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 
@@ -51,6 +62,14 @@ internal fun SettingsRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val experimentalUi by experimentalUiViewModel.enabled.collectAsStateWithLifecycle()
+    // Only the experimental look's home shows these values, so only it asks TDLib for them.
+    val summaries =
+        if (LocalExperimentalUi.current) {
+            val homeViewModel: SettingsHomeViewModel = hiltViewModel()
+            homeViewModel.summaries.collectAsStateWithLifecycle().value
+        } else {
+            SettingsHomeSummaries()
+        }
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -86,6 +105,7 @@ internal fun SettingsRoute(
         snackbarHostState = snackbarHostState,
         experimentalUi = experimentalUi,
         onExperimentalUiChange = experimentalUiViewModel::onCheckedChange,
+        summaries = summaries,
     )
 }
 
@@ -104,6 +124,7 @@ internal fun SettingsRoute(
  * label of its own group before "Log out" in the standard look, and the labs card under the account card in the
  * experimental one ([LocalExperimentalUi]).
  */
+@Suppress("LongParameterList") // The state, its events, the list-detail's selection and the experimental look's parts.
 @Composable
 internal fun SettingsScreen(
     state: SettingsUiState,
@@ -114,20 +135,34 @@ internal fun SettingsScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     experimentalUi: Boolean? = null,
     onExperimentalUiChange: (Boolean) -> Unit = {},
+    summaries: SettingsHomeSummaries = SettingsHomeSummaries(),
 ) {
     val experimentalLook = LocalExperimentalUi.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val isDemo = LocalIsDemo.current
+    val search = rememberSettingsSearch()
+    val onOpenRecentCalls = LocalRecentCallsLauncher.current
+    val onOpen = { destination: HomeDestination ->
+        when (destination) {
+            is HomeDestination.Page -> onOpenPage(destination.page)
+            HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
+        }
+        Unit
+    }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
         // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
         topBar = {
-            TabHeader(
-                scrollBehavior = scrollBehavior,
-                title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
-            )
+            if (experimentalLook && search.isOpen) {
+                SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
+            } else {
+                TabHeader(
+                    scrollBehavior = scrollBehavior,
+                    title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
+                    actions = { if (experimentalLook) SearchAction(onClick = search::open) },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
@@ -135,37 +170,25 @@ internal fun SettingsScreen(
     ) { innerPadding ->
         // Without headings between them the groups sit closer, as in the account menus.
         SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-            state.account?.let {
-                AccountCard(
-                    account = it,
-                    onEditProfile = { onOpenPage(SettingsPage.EditProfile) },
-                    selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
-                )
-            }
-            // The demo's graph is no account: no switching or adding from it (docs/adr/0034).
-            if (!isDemo) {
-                OtherAccountsGroup(
-                    accounts = state.otherAccounts,
-                    canAdd = state.canAddAccount,
-                    onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
-                    onAdd = { onEvent(SettingsEvent.AddAccount) },
-                )
-            }
-            if (experimentalLook && experimentalUi != null) {
-                ExperimentalUiCard(checked = experimentalUi, onCheckedChange = onExperimentalUiChange)
-            }
-            PageGroups(onOpenPage, selection)
-            if (!experimentalLook && experimentalUi != null) {
-                ExperimentalUiGroup(experimentalUi, onExperimentalUiChange)
-            }
-            SettingsGroup {
-                item { shapes ->
-                    LogOutItem(
-                        isLoggingOut = state.isLoggingOut,
-                        shapes = shapes,
-                        onClick = { onEvent(SettingsEvent.LogOut) },
-                        isDemo = isDemo,
+            when {
+                experimentalLook && search.isOpen -> {
+                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                }
+
+                experimentalLook -> {
+                    ExperimentalHome(
+                        state,
+                        onEvent,
+                        onOpen,
+                        selection,
+                        experimentalUi,
+                        onExperimentalUiChange,
+                        summaries,
                     )
+                }
+
+                else -> {
+                    StandardHome(state, onEvent, onOpenPage, selection, experimentalUi, onExperimentalUiChange)
                 }
             }
         }
@@ -174,7 +197,7 @@ internal fun SettingsScreen(
         LogOutDialog(
             onConfirm = { onEvent(SettingsEvent.ConfirmLogOut) },
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
-            isDemo = isDemo,
+            isDemo = LocalIsDemo.current,
         )
     }
 }

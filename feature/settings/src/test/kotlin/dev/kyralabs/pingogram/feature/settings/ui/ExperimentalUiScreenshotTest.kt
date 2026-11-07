@@ -78,9 +78,23 @@ class ExperimentalUiScreenshotTest {
         composeRule.captureScreen(javaClass, "experimentalRtl", ScreenshotVariant.Rtl) { ExperimentalHome() }
 
     @Test
-    @Config(fontScale = FONT_SCALE_200)
+    @Config(qualifiers = "w411dp-h1800dp-xxhdpi", fontScale = FONT_SCALE_200)
     fun experimentalFontScale200() =
         composeRule.captureScreen(javaClass, "experimentalFontScale200", ThemeMode.Light) { ExperimentalHome() }
+
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun experimentalWholePage() =
+        composeRule.captureScreen(javaClass, "experimentalWholePage", ThemeMode.Light) {
+            ExperimentalHome(SettingsPreviewData.withOtherAccounts)
+        }
+
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun experimentalWholePageDark() =
+        composeRule.captureScreen(javaClass, "experimentalWholePageDark", ThemeMode.Dark) {
+            ExperimentalHome(SettingsPreviewData.withOtherAccounts)
+        }
 }
 
 /** The standard look's row in a group of its own, as Settings home shows it. */
@@ -98,15 +112,16 @@ private fun Row() {
     }
 }
 
-/** Settings home in the experimental look, the labs card on. */
+/** Settings home in the experimental look, the labs card on, with the values beside its rows. */
 @Composable
-private fun ExperimentalHome() {
+private fun ExperimentalHome(state: SettingsUiState = SettingsPreviewData.content) {
     CompositionLocalProvider(LocalExperimentalUi provides true) {
         SettingsScreen(
-            state = SettingsPreviewData.content,
+            state = state,
             onEvent = {},
             onOpenPage = {},
             experimentalUi = true,
+            summaries = SettingsPreviewData.homeSummaries,
         )
     }
 }

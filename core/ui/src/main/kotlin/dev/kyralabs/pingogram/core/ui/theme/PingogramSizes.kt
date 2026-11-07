@@ -115,6 +115,7 @@ import androidx.compose.ui.unit.dp
  * @property experimentalFab the experimental look's "New chat" button beside that bar, a rounded square as tall.
  * @property experimentalBottomFade the experimental look's fade at the end of a tab's list, under the bar.
  * @property headerAction the experimental look's tonal circular action buttons in a tab's large header.
+ * @property experimentalAccountAvatar the account's avatar on the experimental look's account card in Settings.
  */
 @Immutable
 data class PingogramSizes(
@@ -184,6 +185,7 @@ data class PingogramSizes(
     val experimentalNavigationBar: Dp = 64.dp,
     val experimentalFab: Dp = 64.dp,
     val experimentalBottomFade: Dp = 132.dp,
+    val experimentalAccountAvatar: Dp = 76.dp,
     val headerAction: Dp = 48.dp,
 )
 
