@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -48,8 +49,8 @@ import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
  * [PingogramNavigationBar]: tabs with labels where they fit, icons named by their label where they do not, and the
- * detached search button; [FloatingNavigationBar] hiding and showing it. A plain [Application] keeps app start-up work
- * out of UI tests.
+ * round New chat button beside the pill; [FloatingNavigationBar] hiding and showing it. A plain [Application] keeps app
+ * start-up work out of UI tests.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, qualifiers = "w411dp-h891dp-xxhdpi")
@@ -63,28 +64,28 @@ class PingogramNavigationBarTest {
     private val selections = mutableListOf<TopLevelDestination>()
 
     @Test
-    fun `the selected tab shows its label, the others only their icons, named by their labels`() {
+    fun `every tab shows its label on a phone`() {
         setBar(selected = TopLevelDestination.Chats)
 
         composeRule.onNode(hasText(string(R.string.nav_chats)) and isSelectable()).assertIsSelected()
-        iconTab(R.string.nav_contacts).assertIsNotSelected()
-        iconTab(R.string.nav_settings).assertIsNotSelected()
-        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
-        composeRule.onNode(hasText(string(R.string.nav_settings))).assertDoesNotExist()
+        composeRule.onNode(hasText(string(R.string.nav_contacts)) and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsNotSelected()
     }
 
     @Test
     @Config(qualifiers = "w360dp-h780dp-xxhdpi")
-    fun `on a narrow phone at a large font scale the selected tab keeps its label`() {
+    fun `on a narrow phone at a large font scale the other tabs show icons named by their labels`() {
         RuntimeEnvironment.setFontScale(LARGE_FONT_SCALE)
         setBar(selected = TopLevelDestination.Settings)
 
         composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsSelected()
         iconTab(R.string.nav_chats).assertIsNotSelected()
+        iconTab(R.string.nav_contacts).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_chats))).assertDoesNotExist()
     }
 
     @Test
-    fun `the pill stays centred with New chat beside it, and the button sits at its end`() {
+    fun `the pill stays centred with New chat beside it, or moves toward the start by what the button misses`() {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 Box(Modifier.fillMaxSize()) {
@@ -107,11 +108,39 @@ class PingogramNavigationBarTest {
                 .fetchSemanticsNode()
                 .boundsInRoot
 
+        // Centred, or as near the centre as leaves the button its room before the window's margin.
         val pillCentre = (chats.left + settings.right) / 2
         val tolerance = with(composeRule.density) { PILL_PADDING_TOLERANCE.toPx() }
-        assertTrue("$pillCentre vs ${window.center.x}", abs(pillCentre - window.center.x) < tolerance)
+        val margin = with(composeRule.density) { FloatingToolbarDefaults.ScreenOffset.toPx() }
+        val centred = abs(pillCentre - window.center.x) < tolerance
+        val atTheMargin = abs(newChat.right - (window.right - margin)) < tolerance
+        assertTrue("$pillCentre vs ${window.center.x}, ${newChat.right}", centred || atTheMargin)
         assertTrue("${newChat.left} > ${settings.right}", newChat.left > settings.right)
         assertTrue("${newChat.right} <= ${window.right}", newChat.right <= window.right)
+    }
+
+    @Test
+    fun `the pill sits in the same place with and without the New chat button`() {
+        var withButton by mutableStateOf(true)
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                Box(Modifier.fillMaxSize()) {
+                    PingogramNavigationBar(
+                        selected = TopLevelDestination.Chats,
+                        onSelect = {},
+                        newChat = if (withButton) ({ BarNewChatButton(shown = true, onClick = {}) }) else null,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val with = barLeft()
+
+        withButton = false
+        composeRule.waitForIdle()
+
+        assertEquals(with, barLeft(), 1f)
     }
 
     @Test

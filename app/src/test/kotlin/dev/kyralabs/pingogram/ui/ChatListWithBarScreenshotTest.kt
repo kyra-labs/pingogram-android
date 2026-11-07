@@ -89,8 +89,8 @@ class ChatListWithBarScreenshotTest {
                 PingogramApp(uiState = MainActivityUiState.SignedIn)
             }
         }
-        // The chat list gets its state from a background dispatcher.
-        val row = hasContentDescription(NAMES.first(), substring = true) and hasClickAction()
+        // The chat list gets its state from a background dispatcher: wait for the row the fade lies over.
+        val row = hasContentDescription(NAMES[UNDER_THE_FADE], substring = true) and hasClickAction()
         composeRule.waitUntil(TIMEOUT_MILLIS) { composeRule.onAllNodes(row).fetchSemanticsNodes().isNotEmpty() }
         composeRule.waitForIdle()
         composeRule.onRoot().captureRoboImage()
@@ -100,6 +100,9 @@ class ChatListWithBarScreenshotTest {
         const val TIMEOUT_MILLIS = 5_000L
         const val FIRST_ID = 200L
         const val PINNED = 2
+
+        /** The ninth row, which a 891 dp phone shows behind the fade above the bar. */
+        const val UNDER_THE_FADE = 8
         const val MESSAGE_IDS = 1_000L
         const val MINUTE_SECONDS = 60
 
