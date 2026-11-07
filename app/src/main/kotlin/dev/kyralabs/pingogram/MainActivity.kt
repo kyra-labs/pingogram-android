@@ -15,6 +15,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -282,13 +283,21 @@ class MainActivity : ComponentActivity() {
     ) {
         val recentsScreenshots = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         val secure = locked || requests.isRequested || (hideContent && !recentsScreenshots)
+        // Each change of the window's flags is a relayout (docs/audit/performance-review-2026-11.md, M3): set them
+        // only when they differ from what the window has.
         SideEffect {
-            if (secure) {
+            val isSecure = window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0
+            if (secure && !isSecure) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-            } else {
+            } else if (!secure && isSecure) {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
-            if (recentsScreenshots) setRecentsScreenshotEnabled(!hideContent)
+        }
+        if (recentsScreenshots) {
+            DisposableEffect(hideContent) {
+                setRecentsScreenshotEnabled(!hideContent)
+                onDispose {}
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.ui.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -21,8 +22,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 class SecureWindowRequests {
     private var requests by mutableIntStateOf(0)
 
-    /** Some screen asks for a secure window. */
-    val isRequested: Boolean get() = requests > 0
+    /**
+     * Some screen asks for a secure window. Derived, so a second screen asking (the media viewer over a secret chat)
+     * recomposes nothing that reads it, and the window's flag is not set again.
+     */
+    val isRequested: Boolean by derivedStateOf { requests > 0 }
 
     internal fun request() {
         requests++
