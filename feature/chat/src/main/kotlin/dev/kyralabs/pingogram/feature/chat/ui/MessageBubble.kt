@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -257,10 +256,11 @@ internal fun BubbleRowContent(
         val aligned = Modifier.alignBy { it.bubbleBottom() }
         if (resources.theme.namesAbove(bubble) && !showsShare) {
             // The experimental look's vivid bubbles have their sender's name above them (docs/DESIGN_SYSTEM.md §13.6).
-            Column(aligned) {
-                SenderNameAbove(bubble, resources.theme, onEvent)
-                messageBubble(Modifier)
-            }
+            WithNameAbove(
+                modifier = aligned,
+                name = { SenderNameAbove(bubble, resources.theme, onEvent) },
+                bubble = { messageBubble(Modifier) },
+            )
         } else if (showsShare) {
             WithShareButton(
                 isOutgoing = bubble.isOutgoing,
