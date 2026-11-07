@@ -36,6 +36,11 @@
     <!-- The theme mode "System": light here. -->
     <color name="splash_red_system">#FFFFF8F7</color>
     <color name="splash_red_system_amoled">#FFFFF8F7</color>
+    <color name="splash_coral_light">#FFFFF8F6</color>
+    <color name="splash_coral_dark">#FF1A1110</color>
+    <!-- The theme mode "System": light here. -->
+    <color name="splash_coral_system">#FFFFF8F6</color>
+    <color name="splash_coral_system_amoled">#FFFFF8F6</color>
     <color name="splash_pink_light">#FFFFF8F7</color>
     <color name="splash_pink_dark">#FF191112</color>
     <!-- The theme mode "System": light here. -->

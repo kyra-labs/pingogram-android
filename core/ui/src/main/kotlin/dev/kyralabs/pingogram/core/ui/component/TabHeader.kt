@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 
@@ -37,6 +39,10 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *   [subtitle] gets `expanded = false` to say what it shows there, if anything.
  * - [navigationIcon] at the start (selection mode's close) and [actions] at the end.
  *
+ * In the experimental look (`LocalExperimentalUi`, §13) the title takes the wide styles of
+ * `MaterialTheme.experimentalTypography` at the same sizes, and the actions are 48 dp tonal circles
+ * ([tabHeaderActionModifier]).
+ *
  * It keeps the window margin ([windowMargin]), so its title lines up with the rows' content on wide windows, and is at
  * most `contentMaxWidth` wide, centred. [title] gets the style of the row it fills; [TabHeaderTitle] is the plain one.
  */
@@ -50,12 +56,16 @@ fun TabHeader(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val typography = MaterialTheme.typography
+    // The experimental look's titles are wider (docs/DESIGN_SYSTEM.md §13): the same sizes and line heights.
+    val wide = MaterialTheme.experimentalTypography.takeIf { LocalExperimentalUi.current }
+    val expandedStyle = wide?.displaySmallWide ?: typography.displaySmallEmphasized
+    val collapsedStyle = wide?.titleLargeWide ?: typography.titleLargeEmphasized
     // The bar insets its title by the compact margin itself; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
             title = { expanded ->
-                title(if (expanded) typography.displaySmallEmphasized else typography.titleLargeEmphasized)
+                title(if (expanded) expandedStyle else collapsedStyle)
             },
             modifier =
                 Modifier
@@ -112,3 +122,11 @@ fun tabHeaderExpandedHeight(withSubtitle: Boolean): Dp {
         }
     return MaterialTheme.sizes.denseTopAppBar + lines + spacing.medium
 }
+
+/**
+ * The size of an action button in [TabHeader]'s actions: the button's own (a 40 dp icon button in its 48 dp target), or
+ * in the experimental look a 48 dp tonal circle (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13).
+ */
+@Composable
+fun tabHeaderActionModifier(): Modifier =
+    if (LocalExperimentalUi.current) Modifier.size(MaterialTheme.sizes.headerAction) else Modifier

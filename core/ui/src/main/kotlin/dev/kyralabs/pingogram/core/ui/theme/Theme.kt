@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalRippleThemeConfiguration
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.RippleDefaults
 import androidx.compose.runtime.Composable
@@ -68,6 +69,7 @@ fun PingogramTheme(
     val messageText = pingogramMessageText(chat.textScale, fontWeightAdjustment, effectiveContrast)
     val conversationStyle =
         remember(chat, messageText, colorScheme) { chatStyle(chat, messageText, PingogramShapes, colorScheme) }
+    val experimentalTypography = pingogramExperimentalTypography(fontWeightAdjustment, effectiveContrast)
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
@@ -81,6 +83,7 @@ fun PingogramTheme(
             LocalRippleThemeConfiguration provides RippleDefaults.InsetFocusRingThemeConfiguration,
             LocalThemeSettings provides settings,
             LocalChatStyle provides conversationStyle,
+            LocalExperimentalTypography provides experimentalTypography,
             content = content,
         )
     }
@@ -162,3 +165,12 @@ private fun Configuration.fontWeightAdjustmentOrZero(): Int =
 private val ExpressiveMotionScheme = MotionScheme.expressive()
 private val DefaultSpacing = PingogramSpacing()
 private val DefaultSizes = PingogramSizes()
+
+/** The experimental look's display styles ([ExperimentalTypography]), provided by [PingogramTheme]. */
+val LocalExperimentalTypography = staticCompositionLocalOf { pingogramExperimentalTypography() }
+
+/** The [ExperimentalTypography] provided by [PingogramTheme], for the experimental look only (§13). */
+val MaterialTheme.experimentalTypography: ExperimentalTypography
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalExperimentalTypography.current

@@ -51,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.AvatarColors
+import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
 import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderColors
 import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderColorsOnSelection
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -119,9 +120,15 @@ fun Avatar(
     // From 0 while the photo loads to 1 once it shows; starts over for another photo.
     val photoAlpha = if (fileId != null) remember(fileId) { Animatable(0f) } else null
     val colors = MaterialTheme.colorScheme
+    // The experimental look's vivid fills (docs/DESIGN_SYSTEM.md §13) in place of the four container pairs.
+    val vivid = LocalExperimentalUi.current
     val placeholderColors =
-        remember(colors, id, onSelection) {
-            if (onSelection) colors.avatarPlaceholderColorsOnSelection() else colors.avatarPlaceholderColors(id)
+        remember(colors, id, onSelection, vivid) {
+            when {
+                onSelection -> colors.avatarPlaceholderColorsOnSelection()
+                vivid -> VividAvatarPalette.of(id)
+                else -> colors.avatarPlaceholderColors(id)
+            }
         }
     // The check's painter is built once the avatar is first selected: most never are, and a list would build one for
     // each row it brings into view. Kept from then on, for the morph back.
