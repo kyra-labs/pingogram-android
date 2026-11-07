@@ -70,6 +70,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
 
 ### Fixed
+- With Experimental UI on, scrolling a group whose colored messages show their sender's name above them no longer
+  crashes on a message with code in it.
 - Closing a photo before it finished downloading no longer leaves its bubble in the chat showing only the blurred
   preview: the download goes on, and the photo shows when it arrives.
 - After removing an account and adding another, an incoming call shows the caller's picture from the right account.
