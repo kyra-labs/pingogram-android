@@ -185,6 +185,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
+- **Experimental UI** (FR-S2a, `docs/adr/0035-experimental-ui.md`): an opt-in second look, one UI with style variants.
+  `core:domain`'s `ExperimentalUiRepository` (`DataStoreExperimentalUiRepository`, the settings file, off by default)
+  is read by `MainActivity` with the Appearance settings before the first frame and provided as `core:ui`'s
+  `LocalExperimentalUi`, a static local, so turning it on or off composes the app again in place in the other look.
+  Composables that look different read it and branch at the smallest scope that differs (a color, a shape, a slot);
+  view models never read it, and no screen is copied. `feature:settings`' `ExperimentalUiViewModel` holds the switch:
+  a row in the standard Settings home, the labs card in the experimental one (`docs/DESIGN_SYSTEM.md` §13).
 - **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
   scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
   the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands
