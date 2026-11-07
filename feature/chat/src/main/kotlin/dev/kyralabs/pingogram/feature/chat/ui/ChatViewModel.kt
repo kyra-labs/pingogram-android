@@ -1021,7 +1021,13 @@ class ChatViewModel internal constructor(
         }
 
     private val people: Flow<ChatPeople> =
-        combine(userRepository.users, userRepository.myUserId, referencedChats, ::ChatPeople)
+        combine(
+            userRepository.users,
+            userRepository.myUserId,
+            referencedChats,
+            senderRoles(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, searchRepositories.members),
+            ::ChatPeople,
+        )
 
     private val pinned =
         thread.pinnedMessages(
@@ -1410,6 +1416,8 @@ class ChatViewModel internal constructor(
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
             unreadMentionCount = chat.unreadMentionCount,
+            groupMemberCount = group.memberCount.takeIf { chat.isGroup },
+            typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
             composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },

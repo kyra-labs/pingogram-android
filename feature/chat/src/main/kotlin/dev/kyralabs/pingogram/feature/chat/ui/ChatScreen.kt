@@ -216,10 +216,7 @@ internal fun ChatScreen(
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = scrollingToSent(content, scrollToNewest)
-    val bubbleResources =
-        rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift) { target ->
-            onEvent(ChatEvent.OpenMention(target))
-        }
+    val bubbleResources = rememberChatBubbleResources(state, jumpState, lift, onEvent)
     val lifted = liftedBubble(state, lift)
     Box(modifier.conversationKeys(state, searching = search != null, onEvent)) {
         ChatScaffold(
@@ -338,7 +335,16 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 Box(Modifier.weight(1f)) {
-                    ChatBody(state, onEvent, listState, bubbleResources, contentPadding, nextChannel)
+                    // The experimental look's typing bubble, with room below the newest message while it shows.
+                    ChatBody(
+                        state,
+                        onEvent,
+                        listState,
+                        bubbleResources,
+                        contentPadding.withTypingRoom(state.typing),
+                        nextChannel,
+                    )
+                    TypingRowSlot(state.typing, contentPadding, Modifier.align(Alignment.BottomStart))
                     overlay()
                 }
             }

@@ -70,6 +70,10 @@ data class ChatUiState(
     val unreadCount: Int = 0,
     /** Unread messages that mention the user, for the experimental look's "Jump to mention" (§13.5). */
     val unreadMentionCount: Int = 0,
+    /** The group's member count, which decides the experimental look's automatic group bubbles (§13.6); null else. */
+    val groupMemberCount: Int? = null,
+    /** Who is typing in a group, for the experimental look's typing bubble (§13.6); null while nobody is. */
+    val typing: TypingBubble? = null,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
     val composer: ComposerUiState = ComposerUiState.Hidden,
@@ -318,6 +322,12 @@ sealed interface ChatItem {
      *   scheduled messages, [time] then being its send time; null for messages of the history.
      * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
      *   forwards it, where the chat lets messages be forwarded ([showsShareButton]).
+     * @property senderHue the sender's hue in the experimental look (`SenderHues.indexOf`, `docs/DESIGN_SYSTEM.md`
+     *   §13.6): incoming messages in group chats; -1 for others.
+     * @property senderRole the sender's role in the group ("Owner", "Admin", their tag), after their name in the
+     *   experimental look; null for anyone else.
+     * @property mentionsMe the message mentions the user (TDLib's unread mention, or a mention by name), which the
+     *   experimental look rings.
      */
     data class Bubble(
         val id: Long,
@@ -354,6 +364,9 @@ sealed interface ChatItem {
         val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
+        val senderHue: Int = -1,
+        val senderRole: UiText? = null,
+        val mentionsMe: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -473,6 +486,7 @@ enum class OutgoingStatus {
  *
  * @property messageId the replied message of this chat, which tapping the quote shows ([ChatEvent.OpenReply]); null
  *   for a story or a message of another chat, which it does not open.
+ * @property senderHue the replied sender's hue, whose ink the experimental look's stripe takes (§13.6); -1 for none.
  */
 @Immutable
 data class ReplyQuote(
@@ -481,6 +495,7 @@ data class ReplyQuote(
     val text: UiText,
     val messageId: Long? = null,
     val isQuote: Boolean = false,
+    val senderHue: Int = -1,
 ) {
     override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, isQuote=$isQuote, …)"
 }
@@ -528,4 +543,19 @@ sealed interface ReactionLabel {
 
     /** The paid star reaction of channels. */
     data object Paid : ReactionLabel
+}
+
+/**
+ * Someone typing in a group (the first of TDLib's chat actions by a user, `docs/DESIGN_SYSTEM.md` §13.6): their avatar,
+ * their [hue] for the small bubble with the typing dots, and what the top bar says ("Fadi is typing"), [text].
+ */
+@Immutable
+data class TypingBubble(
+    val userId: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+    val hue: Int,
+    val text: UiText,
+) {
+    override fun toString() = "TypingBubble(userId=$userId, …)"
 }

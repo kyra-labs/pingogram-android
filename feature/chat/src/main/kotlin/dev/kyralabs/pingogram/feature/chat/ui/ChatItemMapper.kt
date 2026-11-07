@@ -48,6 +48,8 @@ internal class ChatPeople(
     val users: Map<Long, User>,
     val myUserId: Long?,
     val chats: Map<Long, ChatRef>,
+    /** The role labels of a group's owner and administrators, by user or chat id ([senderRoles]). */
+    val roles: Map<Long, UiText> = emptyMap(),
 )
 
 /**

@@ -85,10 +85,13 @@ internal class FakeChatSearchRepository : ChatSearchRepository {
 
 /** A group's members for the search's sheet: what was asked, and the answer the test gives. */
 internal class FakeGroupInfoRepository : GroupInfoRepository {
-    /** The queries asked for, in order. */
+    /** The queries of the members' search asked for, in order (the role labels' administrators left out). */
     val queries = mutableListOf<String>()
 
     var answer: suspend (String) -> Outcome<GroupMembersPage> = { Outcome.Success(page()) }
+
+    /** The administrators the role labels ask for; none by default. */
+    var administrators: suspend () -> Outcome<GroupMembersPage> = { Outcome.Success(page()) }
 
     /** What [groupInfo] reports; nothing until a test sets it. */
     val info = MutableStateFlow<Outcome<GroupInfo>?>(null)
@@ -102,6 +105,7 @@ internal class FakeGroupInfoRepository : GroupInfoRepository {
         offset: Int,
         limit: Int,
     ): Outcome<GroupMembersPage> {
+        if (filter == MemberFilter.Administrators) return administrators()
         queries += query
         return answer(query)
     }

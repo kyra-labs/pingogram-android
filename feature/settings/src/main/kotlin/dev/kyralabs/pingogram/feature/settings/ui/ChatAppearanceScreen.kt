@@ -32,7 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -70,6 +72,7 @@ internal fun ChatAppearanceRoute(
         onTextScale = viewModel::setTextScale,
         onBubbleCorners = viewModel::setBubbleCorners,
         onWallpaper = viewModel::setWallpaper,
+        onGroupBubbles = viewModel::setGroupBubbles,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -91,6 +94,7 @@ internal fun ChatAppearanceScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onGroupBubbles: (GroupBubbles) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_chat_appearance),
@@ -108,6 +112,8 @@ internal fun ChatAppearanceScreen(
 
             is ChatAppearanceUiState.Content -> {
                 ChatAppearanceContent(state.appearance, onTextScale, onBubbleCorners, onWallpaper)
+                // Only the experimental look colors groups' bubbles (docs/DESIGN_SYSTEM.md §13.6).
+                if (LocalExperimentalUi.current) GroupBubblesGroup(state.appearance.groupBubbles, onGroupBubbles)
             }
         }
     }
@@ -152,6 +158,54 @@ private fun ChatAppearanceContent(
         }
     }
 }
+
+/**
+ * "Group bubbles" in the experimental look (§13.6, Owner decision to confirm (2026-11-07)): Automatic, Vivid and Tinted
+ * as radio rows, each saying what it does, one radio group for screen readers with a `SegmentTick` per pick.
+ */
+@Composable
+private fun GroupBubblesGroup(
+    selected: GroupBubbles,
+    onSelect: (GroupBubbles) -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    SettingsGroup(
+        title = stringResource(R.string.settings_group_bubbles),
+        modifier = Modifier.selectableGroup(),
+    ) {
+        GroupBubbles.entries.forEach { bubbles ->
+            item { shapes ->
+                RadioItem(
+                    label = stringResource(bubbles.label),
+                    selected = bubbles == selected,
+                    enabled = true,
+                    shapes = shapes,
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onSelect(bubbles)
+                    },
+                    summary = stringResource(bubbles.summary),
+                )
+            }
+        }
+    }
+}
+
+private val GroupBubbles.label: Int
+    get() =
+        when (this) {
+            GroupBubbles.Automatic -> R.string.settings_group_bubbles_automatic
+            GroupBubbles.Vivid -> R.string.settings_group_bubbles_vivid
+            GroupBubbles.Tinted -> R.string.settings_group_bubbles_tinted
+        }
+
+private val GroupBubbles.summary: Int
+    get() =
+        when (this) {
+            GroupBubbles.Automatic -> R.string.settings_group_bubbles_automatic_summary
+            GroupBubbles.Vivid -> R.string.settings_group_bubbles_vivid_summary
+            GroupBubbles.Tinted -> R.string.settings_group_bubbles_tinted_summary
+        }
 
 /** Message text size: "Message text size" over the size in percent ("110%"), and a slider through its steps. */
 @Composable

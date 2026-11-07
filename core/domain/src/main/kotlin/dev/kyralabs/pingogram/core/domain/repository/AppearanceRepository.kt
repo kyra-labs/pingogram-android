@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import kotlinx.coroutines.flow.Flow
@@ -46,4 +47,7 @@ interface AppearanceRepository {
 
     /** Saves the conversation's [wallpaper]; fails as [setThemeMode] does. */
     suspend fun setChatWallpaper(wallpaper: ChatWallpaper): Outcome<Unit>
+
+    /** Saves how the experimental look colors groups' bubbles ([bubbles]); fails as [setThemeMode] does. */
+    suspend fun setGroupBubbles(bubbles: GroupBubbles): Outcome<Unit>
 }

@@ -2,14 +2,26 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupMember
+import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.TextEntity
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.groupChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
@@ -82,5 +94,38 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
 
             assertEquals(listOf(GROUP_CHAT to true, GROUP_CHAT to false), chats.muteCalls)
             assertTrue(viewModel.state.header?.isMuted == false)
+        }
+
+    @Test
+    fun `a group's incoming bubbles take their sender's hue, role and mentions`() =
+        runViewModelTest {
+            users.setUsers(user(ADA).copy(accentColorId = 3), user(GRACE))
+            groupMembers.administrators = {
+                Outcome.Success(
+                    FakeGroupInfoRepository.page(
+                        GroupMember(MessageSender.User(ADA), MemberRole.Owner(isMember = true)),
+                        GroupMember(MessageSender.User(GRACE), MemberRole.Member),
+                    ),
+                )
+            }
+            val mention =
+                groupMessage(2, GRACE).copy(
+                    content =
+                        MessageContent.Text(
+                            FormattedText("Hi Me", persistentListOf(TextEntity(3, 2, TextEntityType.MentionName(ME)))),
+                            linkPreview = null,
+                        ),
+                )
+            val viewModel = showing(groupChat, history(groupMessage(1, ADA), mention))
+            runCurrent()
+
+            val ada = viewModel.bubble(1)
+            val grace = viewModel.bubble(2)
+            assertEquals(3, ada.senderHue)
+            assertEquals(SenderHues.indexOf(-1, GRACE), grace.senderHue)
+            assertEquals(UiText.resource(R.string.search_sender_owner), ada.senderRole)
+            assertEquals(null, grace.senderRole)
+            assertTrue(grace.mentionsMe)
+            assertTrue(!ada.mentionsMe)
         }
 }

@@ -7,9 +7,11 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
@@ -17,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.MessageBubbleShapes
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichTextCache
@@ -44,20 +47,45 @@ internal class BubbleTheme(
     val outgoing: BubbleStyle,
     val selected: BubbleStyle,
     val shapes: MessageBubbleShapes,
+    val hues: List<HueStyle> = emptyList(),
+    val vividHues: Boolean = true,
 ) {
+    /**
+     * The style of a bubble: selected, outgoing, or incoming, which in the experimental look takes its sender's [hue]
+     * (`docs/DESIGN_SYSTEM.md` §13.6), vivid or tinted as [vividHues] says.
+     */
     fun styleOf(
         isOutgoing: Boolean,
         isSelected: Boolean = false,
+        hue: Int = -1,
     ): BubbleStyle =
         when {
             isSelected -> selected
             isOutgoing -> outgoing
+            hue >= 0 && hues.isNotEmpty() -> hues[hue % hues.size].let { if (vividHues) it.vivid else it.tinted }
             else -> incoming
         }
+
+    /** The ink of a sender's [hue] for names and reply stripes (§13.6); null outside the experimental look. */
+    fun inkOf(hue: Int): Color? = if (hue >= 0 && hues.isNotEmpty()) hues[hue % hues.size].ink else null
 }
 
+/** One sender hue's bubble styles and ink in the experimental look (§13.6). */
+@Immutable
+internal class HueStyle(
+    val vivid: BubbleStyle,
+    val tinted: BubbleStyle,
+    val ink: Color,
+)
+
+/**
+ * The bubbles' theme; in the experimental look with the sender hues' styles, vivid where [vividHues] (the group's size
+ * and Chat appearance's "Group bubbles" decide, `GroupBubbles.isVivid`).
+ */
 @Composable
-internal fun rememberBubbleTheme(): BubbleTheme {
+internal fun rememberBubbleTheme(vividHues: Boolean = true): BubbleTheme {
+    val experimental = LocalExperimentalUi.current
+    val hueColors = MaterialTheme.pingogramColors.senderHues
     val bubbles = MaterialTheme.pingogramColors
     val incoming = bubbles.incomingBubble
     val outgoing = bubbles.outgoingBubble
@@ -70,15 +98,46 @@ internal fun rememberBubbleTheme(): BubbleTheme {
         rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.spoiler)
     // The bubbles' shapes with the corners chosen in Chat appearance (docs/DESIGN_SYSTEM.md §4).
     val shapes = MaterialTheme.chatStyle.bubbleShapes
-    return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes) {
+    val hues =
+        remember(experimental, hueColors, incomingText) {
+            if (experimental) hueStyles(hueColors, incomingText) else emptyList()
+        }
+    return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes, hues, vividHues) {
         BubbleTheme(
             incoming = BubbleStyle(incoming, incomingText),
             outgoing = BubbleStyle(outgoing, outgoingText),
             selected = BubbleStyle(selected, selectedText),
             shapes = shapes,
+            hues = hues,
+            vividHues = vividHues,
         )
     }
 }
+
+/**
+ * Each sender hue's vivid and tinted styles: links and mentions in the bubble's accent, readable on its fill, code and
+ * spoilers on its own block and spoiler tones.
+ */
+private fun hueStyles(
+    hues: SenderHues,
+    text: FormattedTextStyles,
+): List<HueStyle> =
+    (0 until hues.size).map { index ->
+        val hue = hues[index]
+
+        fun style(colors: BubbleColors) =
+            BubbleStyle(
+                colors,
+                text.copy(
+                    linkColor = colors.accent,
+                    mentionColor = colors.accent,
+                    codeBackground = colors.block,
+                    spoilerColor = colors.spoiler,
+                    quoteColor = colors.secondaryContent,
+                ),
+            )
+        HueStyle(style(hue.vivid), style(hue.tinted), hue.ink)
+    }
 
 /**
  * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link or a mention does
@@ -113,9 +172,10 @@ internal fun rememberBubbleResources(
     shortcuts: MessageShortcuts,
     mediaDownloads: MediaDownloads = MediaDownloads(),
     lift: MessageLiftState = remember { MessageLiftState() },
+    vividHues: Boolean = true,
     onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
-    val theme = rememberBubbleTheme()
+    val theme = rememberBubbleTheme(vividHues)
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
     val onMentionClick = rememberMentionOpener(onMention)

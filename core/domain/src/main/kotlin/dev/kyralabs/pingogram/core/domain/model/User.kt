@@ -35,6 +35,11 @@ data class User(
     val type: UserType,
     /** False if TDLib knows nothing more than this about the user and accepts its id in no request. */
     val haveAccess: Boolean,
+    /**
+     * The user's Telegram accent color (td_api.tl `user.accent_color_id`: 0–6 built in, larger ones Telegram's own);
+     * the experimental look picks a sender's hue from it. -1 while unknown.
+     */
+    val accentColorId: Int = -1,
 ) {
     override fun toString() = "User(id=$id, type=$type, status=$status, …)"
 }

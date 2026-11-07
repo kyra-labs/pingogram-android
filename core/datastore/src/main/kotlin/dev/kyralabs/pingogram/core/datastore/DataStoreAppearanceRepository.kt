@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -65,6 +66,8 @@ class DataStoreAppearanceRepository
 
         override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) = edit { it[CHAT_WALLPAPER] = wallpaper.name }
 
+        override suspend fun setGroupBubbles(bubbles: GroupBubbles) = edit { it[GROUP_BUBBLES] = bubbles.name }
+
         private suspend fun edit(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -88,6 +91,7 @@ private fun Preferences.toAppearanceSettings(): AppearanceSettings {
                 textScale = this[CHAT_TEXT_SCALE]?.let(ChatAppearance::textScaleOf) ?: defaults.chat.textScale,
                 bubbleCorners = enumOrNull<BubbleCorners>(this[BUBBLE_CORNERS]) ?: defaults.chat.bubbleCorners,
                 wallpaper = enumOrNull<ChatWallpaper>(this[CHAT_WALLPAPER]) ?: defaults.chat.wallpaper,
+                groupBubbles = enumOrNull<GroupBubbles>(this[GROUP_BUBBLES]) ?: defaults.chat.groupBubbles,
             ),
     )
 }
@@ -103,3 +107,4 @@ private val AMOLED = booleanPreferencesKey("appearance.amoled")
 private val CHAT_TEXT_SCALE = floatPreferencesKey("appearance.chat.text_scale")
 private val BUBBLE_CORNERS = stringPreferencesKey("appearance.chat.bubble_corners")
 private val CHAT_WALLPAPER = stringPreferencesKey("appearance.chat.wallpaper")
+private val GROUP_BUBBLES = stringPreferencesKey("appearance.chat.group_bubbles")

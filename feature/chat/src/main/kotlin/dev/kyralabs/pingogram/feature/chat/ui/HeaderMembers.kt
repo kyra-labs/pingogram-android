@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -43,3 +44,19 @@ internal fun recentSenders(
 
 /** How many senders the top bar looks for, so a few TDLib has not announced still leave five. */
 private const val RECENT_SENDERS_SCANNED = 8
+
+/**
+ * The first user doing something in a group (`SenderAction`), as the experimental look's typing bubble shows them,
+ * with what [header]'s subtitle says; null while nobody is, or TDLib has not announced who.
+ */
+internal fun typingBubble(
+    actions: List<SenderAction>,
+    people: ChatPeople,
+    header: ChatHeader,
+): TypingBubble? {
+    val text = (header.subtitle as? ChatSubtitle.Action)?.text ?: return null
+    val user = actions.firstNotNullOfOrNull { (it.sender as? MessageSender.User)?.userId?.let(people.users::get) }
+    return user?.let {
+        TypingBubble(it.id, it.fullName(), it.profilePhoto, senderHueOf(it, it.id), text)
+    }
+}

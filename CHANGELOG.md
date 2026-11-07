@@ -21,6 +21,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, conversations get a centred top bar with a group's latest writers and its online members,
   a channel's notifications toggle, a pill-shaped pinned bar, a "Jump to mention" button and a composer with attach
   and camera buttons.
+- With Experimental UI on, group chats color each person's bubbles in their own hue, vivid in small groups and tinted
+  in big ones (Settings → Appearance → Chat appearance → Group bubbles), with role labels after names, a colored
+  stripe on reply quotes, a ring around messages that mention you, and a typing bubble.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

@@ -102,6 +102,9 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
         hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
+        senderHue = senderHue(showsSender),
+        senderRole = senderRole.takeIf { showsSender },
+        mentionsMe = mentionsMe(text),
     )
 }
 
