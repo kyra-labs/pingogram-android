@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchCursor
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchPage
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchQuery
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import java.time.Instant
 
 /**
@@ -34,6 +35,16 @@ interface ChatSearchRepository {
         chatId: Long,
         start: Instant,
         end: Instant,
+    ): Outcome<Long>
+
+    /**
+     * The id of the oldest message of chat [chatId] (in [topic], where given) that mentions the user and that they
+     * have not read (td_api.tl `searchMessagesFilterUnreadMention`), for "Jump to mention"; `DomainError.NotFound`
+     * when there is none. Showing it marks the mention read, as TDLib does for every message shown.
+     */
+    suspend fun oldestUnreadMention(
+        chatId: Long,
+        topic: MessageTopic? = null,
     ): Outcome<Long>
 
     companion object {

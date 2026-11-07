@@ -18,6 +18,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   their own shapes.
 - With Experimental UI on, search sets its field and filters on a rounded block, the chosen filter filled, chats ending
   in an arrow, and the words found in messages on colored marks.
+- With Experimental UI on, conversations get a centred top bar with a group's latest writers and its online members,
+  a channel's notifications toggle, a pill-shaped pinned bar, a "Jump to mention" button and a composer with attach
+  and camera buttons.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

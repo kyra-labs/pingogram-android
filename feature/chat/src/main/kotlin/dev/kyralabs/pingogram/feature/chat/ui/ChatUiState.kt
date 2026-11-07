@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 
@@ -67,6 +68,8 @@ data class ChatUiState(
     val header: ChatHeader? = null,
     val content: ChatContent = ChatContent.Loading,
     val unreadCount: Int = 0,
+    /** Unread messages that mention the user, for the experimental look's "Jump to mention" (§13.5). */
+    val unreadMentionCount: Int = 0,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
     val composer: ComposerUiState = ComposerUiState.Hidden,
@@ -125,7 +128,13 @@ data class MessagePlayback(
  *   chats.
  * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
  *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
- * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
+ * @property avatarShape the avatar's shape: what the chat is ([AvatarShape.ofChat]), which the composable shows.
+ * @property isChannel the chat is a channel, whose experimental top bar has a mute toggle (`docs/DESIGN_SYSTEM.md`
+ *   §13.5).
+ * @property isMuted the chat is muted.
+ * @property onlineCount the members of a group online now, as TDLib last said for the open chat; 0 while unknown.
+ * @property members up to five people who wrote last in a group, of the messages loaded, for the experimental top
+ *   bar's cluster; empty for other chats.
  */
 @Immutable
 data class ChatHeader(
@@ -139,8 +148,22 @@ data class ChatHeader(
     val opensChatInfo: Boolean = false,
     val callUserId: Long? = null,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val isChannel: Boolean = false,
+    val isMuted: Boolean = false,
+    val onlineCount: Int = 0,
+    val members: ImmutableList<HeaderMember> = persistentListOf(),
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
+}
+
+/** One of the people of a group's cluster in the experimental top bar: their avatar's id, name and photo. */
+@Immutable
+data class HeaderMember(
+    val userId: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+) {
+    override fun toString() = "HeaderMember(userId=$userId, …)"
 }
 
 /** The second line of the top bar. */

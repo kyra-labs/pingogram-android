@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchCursor
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchPage
 import dev.kyralabs.pingogram.core.domain.model.ChatSearchQuery
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository.Companion.PAGE_SIZE
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -29,6 +30,7 @@ import javax.inject.Inject
  *   newer one (`getChatHistory` from it with offset -1). Without any message before the day, the last one up to its
  *   end is shown, which is then the day's. `getChatMessageCalendar` would count the messages of each day, but only of
  *   one kind (photos, videos…): td_api.tl does not accept it for every message, so it cannot say which days have any.
+ * - **Unread mentions**: `searchChatMessages` with `searchMessagesFilterUnreadMention`, the oldest of the newest 100.
  */
 @AccountScoped
 class TdlibChatSearchRepository
@@ -79,6 +81,37 @@ class TdlibChatSearchRepository
                     }
                 }
             }
+
+        override suspend fun oldestUnreadMention(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Outcome<Long> {
+            // Newest first: the last of the page is the oldest. A chat rarely holds more unread mentions than a page;
+            // past it, the next jump finds the next oldest of the newest ones, as every one shown is read.
+            val request =
+                TdApi.SearchChatMessages(
+                    chatId,
+                    topic?.toTdMessageTopic(),
+                    "",
+                    null,
+                    0,
+                    0,
+                    MENTION_PAGE_SIZE,
+                    TdApi.SearchMessagesFilterUnreadMention(),
+                )
+            return when (val found = client.request(request)) {
+                is Outcome.Success -> {
+                    found.value.messages
+                        .filterNotNull()
+                        .lastOrNull()
+                        ?.let { Outcome.Success(it.id) } ?: Outcome.Failure(DomainError.NotFound)
+                }
+
+                is Outcome.Failure -> {
+                    found
+                }
+            }
+        }
 
         private suspend fun chat(
             chatId: Long,
@@ -136,6 +169,9 @@ class TdlibChatSearchRepository
 private val NOTHING = ChatSearchPage(persistentListOf(), totalCount = 0, next = null)
 
 private const val BAD_REQUEST = 400
+
+/** Unread mentions asked for at once, TDLib's most. */
+private const val MENTION_PAGE_SIZE = 100
 
 /** What TDLib could not search (a 400) found nothing instead of failing. */
 private fun Outcome<TdApi.FoundChatMessages>.orNothing(): Outcome<TdApi.FoundChatMessages> =

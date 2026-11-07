@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Badge
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -92,7 +94,23 @@ internal fun ChatTopBar(
     onSearch: (() -> Unit)? = null,
     topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
+    onSetMuted: (Boolean) -> Unit = {},
 ) {
+    if (LocalExperimentalUi.current && selectedCount == null && header != null) {
+        ExperimentalChatTopBar(
+            header = header,
+            onBack = onBack,
+            modifier = modifier,
+            onOpenProfile = onOpenProfile,
+            onSecretChatEvent = onSecretChatEvent,
+            onOpenChatInfo = onOpenChatInfo,
+            onSearch = onSearch,
+            topicAction = topicAction,
+            connection = connection,
+            onSetMuted = onSetMuted,
+        )
+        return
+    }
     val colors = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
     TopAppBar(
@@ -112,31 +130,12 @@ internal fun ChatTopBar(
             }
         },
         modifier = modifier,
-        navigationIcon = {
-            when {
-                selectedCount != null -> {
-                    IconButton(onClick = onClearSelection, shapes = IconButtonDefaults.shapes()) {
-                        Icon(
-                            painter = painterResource(UiR.drawable.ic_close),
-                            contentDescription = stringResource(R.string.selection_clear),
-                        )
-                    }
-                }
-
-                onBack != null -> {
-                    IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
-                        Icon(
-                            painter = painterResource(UiR.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.chat_back),
-                        )
-                    }
-                }
-            }
-        },
+        navigationIcon = { ChatNavigationIcon(selectedCount, onClearSelection, onBack) },
         actions = {
             if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent, topicAction)
         },
-        expandedHeight = titleHeight(),
+        // The experimental look's height in selection mode too, so entering it moves nothing.
+        expandedHeight = if (LocalExperimentalUi.current) experimentalTitleHeight() else titleHeight(),
         colors =
             TopAppBarDefaults.topAppBarColors(
                 containerColor = colors.surfaceContainer,
@@ -314,7 +313,7 @@ private fun SubtitleText(
 }
 
 /** What the subtitle says while not connected, as the chat list's pill does; null once connected. */
-private fun ConnectionStatus.labelRes(): Int? =
+internal fun ConnectionStatus.labelRes(): Int? =
     when (this) {
         ConnectionStatus.WaitingForNetwork -> R.string.chat_waiting_for_network
         ConnectionStatus.ConnectingToProxy -> R.string.chat_connecting_to_proxy

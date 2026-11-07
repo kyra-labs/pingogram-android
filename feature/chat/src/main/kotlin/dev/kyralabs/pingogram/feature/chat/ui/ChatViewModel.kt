@@ -1047,6 +1047,16 @@ class ChatViewModel internal constructor(
             },
         )
 
+    private val headerActions =
+        ChatHeaderActions(
+            chatId = chatId,
+            findMention = { searchRepositories.search.oldestUnreadMention(chatId, topic) },
+            chats = chatRepository,
+            scope = viewModelScope,
+            onShow = window::showMessage,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     private val search =
         ChatSearch(
             chatId = chatId,
@@ -1156,6 +1166,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.NearOldestChanged -> window.onNearOldestChanged(event.isNearOldest)
             is ChatEvent.NearNewestChanged -> window.onNearNewestChanged(event.isNearNewest)
             ChatEvent.ShowNewest -> window.showNewest()
+            ChatEvent.JumpToMention -> headerActions.jumpToMention()
+            is ChatEvent.SetMuted -> headerActions.setMuted(event.isMuted)
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
             is ChatEvent.OpenThread -> thread.open(event.messageId)
@@ -1382,6 +1394,7 @@ class ChatViewModel internal constructor(
                 now = now,
                 timeFormatter = formatter,
                 isForum = group.supergroup?.isForum == true,
+                recentSenders = if (chat.isGroup) recentSenders(messages.state.history.messages) else emptyList(),
             ).toHeader()
                 .let { chatSources.thread.header(it, chat) }
         val history = messages.state.history
@@ -1396,6 +1409,7 @@ class ChatViewModel internal constructor(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
+            unreadMentionCount = chat.unreadMentionCount,
             composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
