@@ -179,7 +179,7 @@ private fun AccountDetails(account: AccountUiModel) {
  * chip: it does nothing when tapped, and Pingogram sells nothing (`REQUIREMENTS.md` §1.2).
  */
 @Composable
-private fun AccountLabel(
+internal fun AccountLabel(
     text: String,
     container: Color,
     content: Color,
