@@ -32,6 +32,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.LocalNavAnimatedVisibilityScope
@@ -82,9 +84,16 @@ internal fun HeaderAccountButton(
             tooltip = { PlainTooltip { Text(label) } },
             state = rememberTooltipState(),
         ) {
+            // The experimental look's avatar (docs/DESIGN_SYSTEM.md §13): a 48 dp square with `large` corners on
+            // `primary`, the placeholder colors of a selected row.
+            val experimental = LocalExperimentalUi.current
+            val avatarSize = if (experimental) MaterialTheme.sizes.headerAction else MaterialTheme.sizes.avatarExtraSmall
             IconButton(
                 onClick = { actions?.openAccount?.invoke() },
-                modifier = menuModifier.semantics { contentDescription = label },
+                modifier =
+                    menuModifier
+                        .then(if (experimental) Modifier.size(avatarSize) else Modifier)
+                        .semantics { contentDescription = label },
                 shapes = IconButtonDefaults.shapes(),
             ) {
                 val shown = account
@@ -93,7 +102,9 @@ internal fun HeaderAccountButton(
                         photo = shown.photo,
                         name = shown.name.resolve(),
                         id = shown.id,
-                        size = MaterialTheme.sizes.avatarExtraSmall,
+                        size = avatarSize,
+                        shape = if (experimental) AvatarShape.RoundedSquare else AvatarShape.Circle,
+                        onSelection = experimental,
                     )
                 } else {
                     Icon(

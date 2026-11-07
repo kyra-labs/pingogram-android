@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -336,9 +337,14 @@ internal fun TopBarAction(
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
+        // The experimental look's 48 dp tonal circles (docs/DESIGN_SYSTEM.md §13).
+        val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = modifier.semantics { contentDescription = description?.invoke() ?: label },
+            modifier =
+                modifier
+                    .then(if (size != null) Modifier.size(size) else Modifier)
+                    .semantics { contentDescription = description?.invoke() ?: label },
             shapes = IconButtonDefaults.shapes(),
             content = icon,
         )

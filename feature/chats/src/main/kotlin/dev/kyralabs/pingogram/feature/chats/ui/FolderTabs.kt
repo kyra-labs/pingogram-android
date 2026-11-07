@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -57,7 +59,9 @@ import kotlinx.collections.immutable.ImmutableList
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless
+ * In the experimental look (`docs/DESIGN_SYSTEM.md` §13) they are chips apart in their scroll, whatever their number:
+ * the selected one a `primary` pill with its count in an inverted badge, the others `small`-cornered on
+ * `surfaceContainerHighest` with a `primary` badge. With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless
  * Appearance → Chat list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
  *
  * @param selectedFolderId the folder shown; null for "All chats".
@@ -100,7 +104,8 @@ internal fun FolderTabs(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.weight(1f).folderTabMenuContainer(menu)) {
-            if (tabs.size > MAX_CONNECTED_TABS) {
+            // The experimental look's chips hold any number of folders in their scroll (docs/DESIGN_SYSTEM.md §13).
+            if (tabs.size > MAX_CONNECTED_TABS && !LocalExperimentalUi.current) {
                 FolderTabRow(tabs, selectedFolderId, onSelect, margin, tabMenu)
             } else {
                 FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
@@ -147,8 +152,8 @@ private fun FolderButtonGroup(
     tabMenu: TabMenu,
 ) {
     val enabled = tabMenu.enabled
-    // The bar is surfaceContainer, the default unchecked container: the next step of the ladder keeps the tabs apart.
-    val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+    val experimental = LocalExperimentalUi.current
+    val colors = folderButtonColors(experimental)
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
     val scroll =
@@ -164,7 +169,10 @@ private fun FolderButtonGroup(
                 .selectableGroup()
                 // A 48 dp row: the buttons' touch targets, 4 dp above and below their 40 dp containers.
                 .padding(horizontal = margin),
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                if (experimental) MaterialTheme.spacing.small else ButtonGroupDefaults.ConnectedSpaceBetween,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEachIndexed { index, tab ->
@@ -179,7 +187,7 @@ private fun FolderButtonGroup(
                         selected = selected,
                         onSelect = onSelect,
                         enabled = enabled,
-                        shapes = connectedShapes(index, tabs.lastIndex),
+                        shapes = if (experimental) chipShapes() else connectedShapes(index, tabs.lastIndex),
                         colors = colors,
                         interactionSource = interactionSource,
                         modifier =
@@ -282,6 +290,37 @@ private fun FolderToggleButton(
         }
     }
 }
+
+/**
+ * The tabs' colors: unchecked on `surfaceContainerHighest` (the bar is `surfaceContainer`, the default unchecked
+ * container, so the next step of the ladder keeps the tabs apart); in the experimental look (§13) the selected chip on
+ * `primary` / `onPrimary` too.
+ */
+@Composable
+private fun folderButtonColors(experimental: Boolean): ToggleButtonColors {
+    val scheme = MaterialTheme.colorScheme
+    return if (experimental) {
+        ToggleButtonDefaults.colors(
+            containerColor = scheme.surfaceContainerHighest,
+            checkedContainerColor = scheme.primary,
+            checkedContentColor = scheme.onPrimary,
+        )
+    } else {
+        ToggleButtonDefaults.colors(containerColor = scheme.surfaceContainerHighest)
+    }
+}
+
+/**
+ * The experimental look's folder chips (`docs/DESIGN_SYSTEM.md` §13): apart rather than connected, at rest with the
+ * shape scale's `small` corners, the selected one a full pill, morphing on press.
+ */
+@Composable
+private fun chipShapes(): ToggleButtonShapes =
+    ToggleButtonDefaults.shapes(
+        shape = MaterialTheme.shapes.small,
+        pressedShape = MaterialTheme.shapes.extraSmall,
+        checkedShape = CircleShape,
+    )
 
 @Composable
 private fun connectedShapes(

@@ -26,12 +26,14 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The end of a row: the time with the state of the current user's last message, over the unread badges or the pin.
  * Without [showTime] (large font scales, [timeOnPreviewLine]), only the state over the badges, a narrow column that
- * leaves the title its line. Screen readers get the row's description instead.
+ * leaves the title its line. With [highlightTime] (the experimental look) an unread chat that is not muted shows its
+ * time in `primary`. Screen readers get the row's description instead.
  */
 @Composable
 internal fun ChatMeta(
     item: ChatListItemModel,
     showTime: Boolean = true,
+    highlightTime: Boolean = false,
 ) {
     Column(
         modifier = Modifier.clearAndSetSemantics {},
@@ -44,11 +46,14 @@ internal fun ChatMeta(
         ) {
             item.outgoingStatus?.let { OutgoingStatusIcon(it) }
             if (showTime) {
+                // The experimental look's time of an unread chat that is not muted: `primary`, emphasized (§13).
+                val hot = highlightTime && item.isUnread && !item.isMuted
+                val typography = MaterialTheme.typography
                 Text(
                     text = item.time,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (hot) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    style = MaterialTheme.typography.labelSmall.userContent,
+                    style = (if (hot) typography.labelSmallEmphasized else typography.labelSmall).userContent,
                 )
             }
         }

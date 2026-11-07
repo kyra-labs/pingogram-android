@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import androidx.annotation.DrawableRes
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
@@ -153,7 +154,13 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         title = chatTitle(chat, isSavedMessages, isDeletedAccount),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
-        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
+        avatarShape =
+            AvatarShape.ofChat(
+                isForum = supergroup?.isForum == true,
+                isGroup = chat.isGroup,
+                isChannel = chat.isChannel,
+                isSavedMessages = isSavedMessages,
+            ),
         isSavedMessages = isSavedMessages,
         isOnline = !isSavedMessages && user?.showsOnlineAt(now) == true,
         badge = titleBadge(user, supergroup),
@@ -231,11 +238,29 @@ private fun RowInputs.preview(
     val message = chat.lastMessage
     val secretState = secretChat?.stateText(user?.shortName() ?: UiText.Plain(chat.title))
     return when {
-        action != null -> ChatPreview.Action(action)
-        secretState != null -> ChatPreview.SecretChat(secretState)
-        draft != null -> ChatPreview.Draft(draftPreviewText(draft.content))
-        message != null -> ChatPreview.Message(senderPrefix(message, name), messagePreviewText(message, myUserId, name))
-        else -> ChatPreview.None
+        action != null -> {
+            ChatPreview.Action(action)
+        }
+
+        secretState != null -> {
+            ChatPreview.SecretChat(secretState)
+        }
+
+        draft != null -> {
+            ChatPreview.Draft(draftPreviewText(draft.content))
+        }
+
+        message != null -> {
+            ChatPreview.Message(
+                sender = senderPrefix(message, name),
+                text = messagePreviewText(message, myUserId, name),
+                contentIcon = contentIcon(message.content),
+            )
+        }
+
+        else -> {
+            ChatPreview.None
+        }
     }
 }
 
@@ -292,3 +317,22 @@ internal val Chat.isGroup: Boolean
 
 private val Chat.isChannel: Boolean
     get() = (type as? ChatType.Supergroup)?.isChannel == true
+
+/**
+ * What kind of message [content] is, as an outlined symbol the experimental look shows before the preview
+ * (`docs/DESIGN_SYSTEM.md` §13); null for plain texts, service messages and what has no symbol of its own.
+ */
+@DrawableRes
+internal fun contentIcon(content: MessageContent): Int? =
+    when (content) {
+        is MessageContent.Photo -> R.drawable.ic_image
+        is MessageContent.Video, is MessageContent.VideoNote -> R.drawable.ic_videocam
+        is MessageContent.Animation -> R.drawable.ic_gif_box
+        is MessageContent.VoiceNote -> R.drawable.ic_mic
+        is MessageContent.Audio -> R.drawable.ic_music_note
+        is MessageContent.Document -> R.drawable.ic_description
+        is MessageContent.Location, is MessageContent.Venue -> R.drawable.ic_location_on
+        is MessageContent.Poll -> R.drawable.ic_poll_filled
+        is MessageContent.Text -> if (content.linkPreview != null) R.drawable.ic_link else null
+        else -> null
+    }

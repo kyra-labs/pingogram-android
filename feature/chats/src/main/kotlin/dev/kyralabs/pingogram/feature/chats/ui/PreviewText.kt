@@ -1,9 +1,13 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -15,6 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 
 /** A row's preview: [styled] for the second line, [text] for the row's description. */
@@ -104,16 +110,34 @@ private data class PreviewParts(
 
 /**
  * One line, in `bodyMedium`, with the sender inline: Material's two-line list item, 72 dp rows of one height
- * (`docs/DESIGN_SYSTEM.md` §6–7). Screen readers get the row's description instead.
+ * (`docs/DESIGN_SYSTEM.md` §6–7), after the kind of message ([contentIcon], the experimental look's, §13). Screen
+ * readers get the row's description instead.
  */
 @Composable
-internal fun ChatPreviewText(preview: PreviewText) {
-    Text(
-        text = preview.styled,
-        modifier = Modifier.clearAndSetSemantics {},
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        overflow = TextOverflow.Ellipsis,
-        maxLines = 1,
-        style = MaterialTheme.typography.bodyMedium.userContent,
-    )
+internal fun ChatPreviewText(
+    preview: PreviewText,
+    @DrawableRes contentIcon: Int? = null,
+) {
+    val text =
+        @Composable {
+            Text(
+                text = preview.styled,
+                modifier = Modifier.clearAndSetSemantics {},
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                style = MaterialTheme.typography.bodyMedium.userContent,
+            )
+        }
+    if (contentIcon == null) {
+        text()
+    } else {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            InlineIcon(contentIcon, MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.sizes.inlineIconSmall)
+            text()
+        }
+    }
 }
