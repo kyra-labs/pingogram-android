@@ -4,7 +4,8 @@
 --
 -- The app's sections: openMedia (the tap until the viewer drew the photo's page), overlayEnter (the frames of the
 -- container transform in), closeMedia (back until the viewer is gone) and overlayExit (the transform out). A frame is
--- a Choreographer#doFrame slice on the app's main thread, drawn by a DrawFrames slice on its RenderThread; the frame
+-- a Choreographer#doFrame slice on the app's main thread, drawn by a DrawFrames slice on its RenderThread (some
+-- phones name it with the frame's vsync id, "DrawFrames 162342341"); the frame
 -- timeline says which were presented late.
 
 -- The app's sections: how many, and how long each kind took (ms), median and worst. An opening is one tap to one
@@ -47,12 +48,12 @@ SELECT
   (SELECT COUNT(*) FROM slice AS d JOIN thread_track AS tt ON d.track_id = tt.id JOIN thread USING (utid)
    JOIN process USING (upid)
    WHERE process.name LIKE 'dev.kyralabs.pingogram%' AND thread.name = 'RenderThread'
-     AND d.name IN ('DrawFrames', 'DrawFrame') AND d.depth = 0
+     AND d.name GLOB 'DrawFrame*' AND d.depth = 0
      AND d.ts < s.ts + s.dur AND d.ts + d.dur > s.ts) AS render_frames,
   ROUND((SELECT MAX(d.dur) FROM slice AS d JOIN thread_track AS tt ON d.track_id = tt.id JOIN thread USING (utid)
    JOIN process USING (upid)
    WHERE process.name LIKE 'dev.kyralabs.pingogram%' AND thread.name = 'RenderThread'
-     AND d.name IN ('DrawFrames', 'DrawFrame') AND d.depth = 0
+     AND d.name GLOB 'DrawFrame*' AND d.depth = 0
      AND d.ts < s.ts + s.dur AND d.ts + d.dur > s.ts) / 1e6, 1) AS render_frame_max_ms
 FROM slice AS s
 WHERE s.name IN ('openMedia', 'overlayEnter', 'closeMedia', 'overlayExit')

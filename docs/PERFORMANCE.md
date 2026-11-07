@@ -447,8 +447,40 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     M2 moves work out of the frames that start and end the transform into frames where nothing moves. M1 changed
     drawing only (no blur layers, no placeholder under a loaded image, one fade, the bubble's side scaled), which
     Robolectric does not do: the frames of the transform composed nothing before or after it. Neither shows ExoPlayer,
-    whose build (10–30 ms) and release left those frames with M2. The phone's numbers, from `media-viewer.ps1` and
-    `OpenMediaBenchmark` before M1 (`b4abfa18^`) and on `main`, go here once measured.
+    whose build (10–30 ms) and release left those frames with M2.
+  - **Before and after on the owner's phone** (2026-11-07, Galaxy S24 Ultra SM-S928B, Android 17, 120 Hz,
+    `benchmarkRelease`; before: `b4abfa18^`, the review's build; after: `main` with M1, M2 and M6). Microsoft Phone
+    Link's screen mirroring ran as an accessibility service in both, so Compose worked out its semantics in every
+    frame (about 16 ms over each closing), and the frame timeline marked nearly every frame late in both ("Buffer
+    Stuffing"): compare the two, not each against the display's 8.3 ms. `OpenMediaBenchmark`, 10 iterations per
+    compilation mode, the profile's first:
+
+    | Metric | Before | After |
+    |---|---|---|
+    | `frameDurationCpuMs` P50 / P90 / P95 / P99 | 8.6 / 36.3 / 66.7 / 231.3 ms | 7.3 / 25.7 / 35.7 / 51.1 ms |
+    | `frameOverrunMs` P50 / P90 / P95 / P99 | 4.0 / 47.2 / 98.6 / 273.8 ms | 2.3 / 30.7 / 43.3 / 113.1 ms |
+    | Frames drawn per opening and closing (median) | 108 | 133.5 |
+    | `openMediaSumMs` (median) | 43.0 ms | 40.6 ms |
+    | Without the profile: `frameDurationCpuMs` P90 / P99 | 34.9 / 207.6 ms | 23.9 / 99.9 ms |
+
+    The journey presses back as soon as the page shows, before the way in settles, so `overlayEnter` never ends there
+    and has no count; `closeMedia` (about 816 ms) is the exit spring's length, not work. `media-viewer.ps1`, 10
+    openings and closings, each waiting for the way in to settle; the main thread's frames per transform, from
+    `summary.txt`:
+
+    | Transform | Before | After |
+    |---|---|---|
+    | In: frames drawn (of about 97 in 813 ms) | 11–76 | 81–92 |
+    | In: longest frame | 47–284 ms | 14–110 ms (8 of 10 under 33 ms) |
+    | In: 90th percentile | 4.9–81.2 ms | 4.9–9.6 ms |
+    | Out: frames drawn | 63–81 | 76–94 |
+    | Out: longest frame | 48–207 ms | 16–158 ms (9 of 10 under 26 ms) |
+
+    One opening before took 2.0 s instead of 0.8 s. The CPU of `Dispatchers.Default` (Coil's decodes, the view
+    models) during the ways in fell from 12.8 s to 4.3 s over the 10; what remains is mostly the full photo's decode,
+    which M5 caps. The RenderThread still spends about 5 ms on each frame of the way out ("Drawing", "flush
+    commands", "dequeueBuffer"). `media-viewer.sql` counted no RenderThread draws on this phone, which names them
+    with their vsync id ("DrawFrames 162342341"); it matches those now.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
