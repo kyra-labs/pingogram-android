@@ -314,5 +314,5 @@ internal val Chat.userId: Long?
 internal val Chat.isGroup: Boolean
     get() = type is ChatType.BasicGroup || (type as? ChatType.Supergroup)?.isChannel == false
 
-private val Chat.isChannel: Boolean
+internal val Chat.isChannel: Boolean
     get() = (type as? ChatType.Supergroup)?.isChannel == true

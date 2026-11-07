@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The logged-in account at the top of Settings: a card (a
@@ -208,7 +209,7 @@ private fun ChevronButton(onClick: () -> Unit) {
                 .clearAndSetSemantics {}
                 .focusProperties { canFocus = false },
     ) {
-        Icon(painter = painterResource(R.drawable.ic_chevron_right), contentDescription = null)
+        Icon(painter = painterResource(UiR.drawable.ic_chevron_right), contentDescription = null)
     }
 }
 

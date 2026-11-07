@@ -174,7 +174,7 @@ data class MessageSection(
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property subtitle the second line: the username ("@ada"), else how many members or subscribers a group or channel
  *   has; null for none.
- * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
+ * @property avatarShape the avatar's shape: what the chat is, which the composable shows ([AvatarShape.ofChat]).
  */
 @Immutable
 data class SearchChatItem(
