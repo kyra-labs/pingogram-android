@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -108,17 +107,7 @@ internal fun ChatListItem(
     val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine, highlightTime = experimental) }
     val contentIcon = (item.preview as? ChatPreview.Message)?.contentIcon?.takeIf { experimental }
     val supporting = @Composable { ChatPreviewText(shownPreview, contentIcon) }
-    val headline =
-        @Composable {
-            ChatTitle(
-                title = title,
-                isSecret = item.isSecret,
-                badge = item.badge,
-                isMuted = item.isMuted && !(experimental && item.isUnread),
-                isUnread = item.isUnread,
-                kindIcon = item.avatarShape.kindIcon().takeIf { experimental },
-            )
-        }
+    val headline = @Composable { ChatRowTitle(item, title, experimental) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
     if (onClick != null) {
@@ -283,9 +272,9 @@ private fun ChatAvatar(
 }
 
 /**
- * The lock of a secret chat ([isSecret]), in the experimental look the kind of chat ([kindIcon]: a group's people, a
- * channel's megaphone), the name ([title]), its [badge], and the mute icon ([isMuted]); the name in the emphasized style
- * if [isUnread]. Also the title of a search result.
+ * The lock of a secret chat ([isSecret]), in the experimental look the kind of chat ([kindIcon]: a group's people,
+ * a channel's megaphone), the name ([title]), its [badge], and the mute icon ([isMuted]); the name in the emphasized
+ * style if [isUnread]. Also the title of a search result.
  */
 @Composable
 internal fun ChatTitle(
@@ -338,18 +327,6 @@ internal fun ChatTitle(
         }
     }
 }
-
-/**
- * The experimental look's symbol of what a chat is, before its name (`docs/DESIGN_SYSTEM.md` §13): people for a group
- * or a forum, a megaphone for a channel; null for people, bots and Saved Messages.
- */
-@DrawableRes
-internal fun AvatarShape.kindIcon(): Int? =
-    when (this) {
-        AvatarShape.Group, AvatarShape.RoundedSquare -> UiR.drawable.ic_group
-        AvatarShape.Channel -> UiR.drawable.ic_campaign
-        AvatarShape.Circle, AvatarShape.SavedMessages -> null
-    }
 
 /** "Scam" or "Fake" in the error role, as Telegram's warning badges. */
 @Composable

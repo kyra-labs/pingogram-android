@@ -61,8 +61,9 @@ import kotlinx.collections.immutable.ImmutableList
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
  * In the experimental look (`docs/DESIGN_SYSTEM.md` §13) they are chips apart in their scroll, whatever their number:
  * the selected one a `primary` pill with its count in an inverted badge, the others `small`-cornered on
- * `surfaceContainerHighest` with a `primary` badge. With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless
- * Appearance → Chat list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
+ * `surfaceContainerHighest` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
+ * folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless Appearance → Chat list
+ * turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
  *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
@@ -290,37 +291,6 @@ private fun FolderToggleButton(
         }
     }
 }
-
-/**
- * The tabs' colors: unchecked on `surfaceContainerHighest` (the bar is `surfaceContainer`, the default unchecked
- * container, so the next step of the ladder keeps the tabs apart); in the experimental look (§13) the selected chip on
- * `primary` / `onPrimary` too.
- */
-@Composable
-private fun folderButtonColors(experimental: Boolean): ToggleButtonColors {
-    val scheme = MaterialTheme.colorScheme
-    return if (experimental) {
-        ToggleButtonDefaults.colors(
-            containerColor = scheme.surfaceContainerHighest,
-            checkedContainerColor = scheme.primary,
-            checkedContentColor = scheme.onPrimary,
-        )
-    } else {
-        ToggleButtonDefaults.colors(containerColor = scheme.surfaceContainerHighest)
-    }
-}
-
-/**
- * The experimental look's folder chips (`docs/DESIGN_SYSTEM.md` §13): apart rather than connected, at rest with the
- * shape scale's `small` corners, the selected one a full pill, morphing on press.
- */
-@Composable
-private fun chipShapes(): ToggleButtonShapes =
-    ToggleButtonShapes(
-        shape = MaterialTheme.shapes.small,
-        pressedShape = MaterialTheme.shapes.extraSmall,
-        checkedShape = CircleShape,
-    )
 
 @Composable
 private fun connectedShapes(
