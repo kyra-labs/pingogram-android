@@ -35,6 +35,7 @@ import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -223,10 +224,13 @@ private fun BoxScope.PhotoLayers(
             preview.height,
             Modifier.matchParentSize(),
             fadeIn = false,
+            fromMemory = true,
             onShown = { previewShown.value = true },
         )
     }
-    ViewerImage(media.full.file.id, media.full.width, media.full.height, Modifier.matchParentSize(), alpha = full)
+    val window = LocalWindowInfo.current.containerSize
+    val decode = remember(media.full, window) { viewerDecodeSize(media.full.width, media.full.height, window) }
+    ViewerImage(media.full.file.id, decode.width, decode.height, Modifier.matchParentSize(), alpha = full)
 }
 
 /**
