@@ -18,6 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Opening and closing a photo or video, and scrolling a chat with photos, draw much less per frame: the blurred
   preview under a photo is made once instead of being blurred again in every frame, and is no longer drawn under a
   photo that has loaded. The blurred preview now shows on Android 8 to 11 too, where it was a plain grey box.
+- A video starts opening without a pause before the animation and closes without a hitch at its end. The caption and
+  the viewer's buttons fade in once the photo or video has opened.
 - The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
   the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
   there on every screen size, and your picture opens Settings; hold it to switch accounts.
