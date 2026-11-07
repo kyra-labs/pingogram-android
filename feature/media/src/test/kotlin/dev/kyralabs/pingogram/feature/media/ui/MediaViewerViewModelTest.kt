@@ -384,7 +384,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
-        fun `downloads of items more than two pages away are cancelled`() =
+        fun `downloads of items more than two pages away are cancelled, but not the shown item's`() =
             runViewModelTest {
                 media.serve(photos(1L..100L))
                 notDownloaded(1L..100L)
@@ -393,13 +393,13 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
 
                 send(viewModel, MediaViewerEvent.PageSettled(53))
 
+                // 50 was shown: its bubble may wait for the same file (docs/audit/performance-review-2026-11.md, M6).
                 assertEquals(
                     setOf(
                         "download:531:Visible",
                         "download:521:Prefetch",
                         "download:541:Prefetch",
                         "cancel:491",
-                        "cancel:501",
                     ),
                     files.calls.toSet(),
                 )
@@ -418,7 +418,7 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
-        fun `unfinished downloads are cancelled when the viewer closes`() =
+        fun `closing cancels the neighbours' unfinished downloads, never the shown item's, which its bubble needs`() =
             runViewModelTest {
                 media.serve(photos(1L..100L))
                 notDownloaded(1L..100L)
@@ -429,7 +429,8 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 clear(viewModel)
                 runCurrent()
 
-                assertEquals(setOf("cancel:501", "cancel:491"), files.calls.toSet())
+                // The opened photo's file is the one its bubble shows when it has no larger size: TDLib finishes it.
+                assertEquals(listOf("cancel:491"), files.calls)
             }
 
         @Test

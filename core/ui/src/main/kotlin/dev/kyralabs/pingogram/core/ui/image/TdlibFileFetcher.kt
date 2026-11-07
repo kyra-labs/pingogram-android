@@ -47,10 +47,15 @@ class TdlibFileFetcher internal constructor(
         )
     }
 
-    /** The download of one request: started at most once, and failed once it stopped. */
+    /**
+     * The download of one request: asked for once, and again once if it stopped without completing (someone else
+     * cancelled it, e.g. the media viewer closing over a photo whose bubble still waits for it), then failed if it
+     * stops again.
+     */
     private inner class Download {
         private var requested = false
         private var started = false
+        private var restarted = false
 
         /** The local path once the file is downloaded; null while waiting for it. */
         suspend fun pathOnceDownloaded(state: FileState): String? {
@@ -63,7 +68,12 @@ class TdlibFileFetcher internal constructor(
                 // Only an inactive state that follows an active one: right after the request, TDLib may still report
                 // the state from before it.
                 val active = state is FileState.Downloading && state.isActive
-                if (started && !active) fail("the download stopped")
+                if (started && !active) {
+                    if (restarted) fail("the download stopped")
+                    restarted = true
+                    started = false
+                    requested = false
+                }
                 if (!requested) {
                     requested = true
                     fileRepository
