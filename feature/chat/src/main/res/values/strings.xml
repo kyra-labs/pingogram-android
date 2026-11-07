@@ -19,6 +19,15 @@
         <item quantity="other">%d online</item>
     </plurals>
     <string name="chat_jump_to_mention">Jump to mention</string>
+    <!-- The experimental look's unread divider (docs/DESIGN_SYSTEM.md §13.7). -->
+    <plurals name="chat_unread_posts_divider">
+        <item quantity="one">%d unread post</item>
+        <item quantity="other">%d unread posts</item>
+    </plurals>
+    <plurals name="chat_unread_messages_divider">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
     <!-- On the "Jump to mention" button; not a word, so it is not translated. -->
     <string name="chat_mention_sign" translatable="false">\@</string>
     <plurals name="chat_unread_mentions">

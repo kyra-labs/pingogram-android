@@ -635,7 +635,7 @@ private fun ChatItemRow(
         }
 
         is ChatItem.UnreadDivider -> {
-            UnreadDividerRow(modifier)
+            UnreadDividerRow(modifier, item)
         }
 
         is ChatItem.Sponsored -> {

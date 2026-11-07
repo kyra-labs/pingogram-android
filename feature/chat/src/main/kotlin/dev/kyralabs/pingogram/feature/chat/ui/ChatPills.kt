@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -150,9 +151,20 @@ internal fun ServiceMessageRow(
     }
 }
 
-/** "Unread messages" between two dividers, above the first message that was unread when the chat was opened. */
+/**
+ * "Unread messages" between two dividers, above the first message that was unread when the chat was opened; in the
+ * experimental look (`docs/DESIGN_SYSTEM.md` §13.7) `primary` lines around a `primary` pill counting them ("4 unread
+ * posts").
+ */
 @Composable
-internal fun UnreadDividerRow(modifier: Modifier = Modifier) {
+internal fun UnreadDividerRow(
+    modifier: Modifier = Modifier,
+    item: ChatItem.UnreadDivider? = null,
+) {
+    if (item != null && item.count > 0 && LocalExperimentalUi.current) {
+        UnreadPill(item, modifier)
+        return
+    }
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
@@ -196,4 +208,32 @@ internal fun FloatingDatePill(
         )
     val pillModifier = remember(modifier, alpha) { modifier.graphicsLayer { this.alpha = alpha.value } }
     date?.let { DatePill(it.resolve(), pillModifier, floating = true) }
+}
+
+@Composable
+private fun UnreadPill(
+    item: ChatItem.UnreadDivider,
+    modifier: Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val spacing = MaterialTheme.spacing
+    val plural = if (item.isChannel) R.plurals.chat_unread_posts_divider else R.plurals.chat_unread_messages_divider
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(Modifier.weight(1f), thickness = MaterialTheme.sizes.avatarRing, color = colors.primary)
+        Text(
+            text = pluralStringResource(plural, item.count, item.count),
+            modifier =
+                Modifier
+                    .semantics { heading() }
+                    .background(colors.primary, CircleShape)
+                    .padding(horizontal = spacing.medium, vertical = spacing.extraSmall),
+            color = colors.onPrimary,
+            style = MaterialTheme.typography.labelMediumEmphasized,
+        )
+        HorizontalDivider(Modifier.weight(1f), thickness = MaterialTheme.sizes.avatarRing, color = colors.primary)
+    }
 }

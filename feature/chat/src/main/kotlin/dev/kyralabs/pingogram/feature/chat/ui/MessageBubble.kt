@@ -366,7 +366,7 @@ private fun MessageBubble(
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
 ) {
-    val style = resources.theme.styleOf(bubble.isOutgoing, isSelected, bubble.senderHue)
+    val style = resources.theme.styleOf(bubble.isOutgoing, isSelected, bubble.senderHue, bubble.isChannelPost)
     val position = bubble.position
     val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
+import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.PinnedPreviewData
 import kotlinx.collections.immutable.persistentListOf
@@ -178,13 +179,58 @@ class ExperimentalChatScreenshotTest(
                 )
             }
 
+        /** A channel's posts with their views, the unread divider counting them, and four files sent together. */
+        private val channelPosts =
+            channel.copy(
+                content =
+                    ChatContent.Content(
+                        items =
+                            persistentListOf(
+                                file(
+                                    14,
+                                    "app-foss-x86_64-debug.apk",
+                                    GroupPosition.Last,
+                                    caption = "Debug build, all ABIs",
+                                ),
+                                file(13, "app-foss-armeabi-v7a-debug.apk", GroupPosition.Middle),
+                                file(12, "app-foss-arm64-v8a-debug.apk", GroupPosition.Middle),
+                                file(11, "app-foss-universal-debug.apk", GroupPosition.First),
+                                ChatItem.UnreadDivider(UiText.Plain("Today"), count = 4, isChannel = true),
+                                ChatPreviewData
+                                    .bubble(10, "feat(chats): chat folders slide like a pager", "2:18 PM")
+                                    .copy(isChannelPost = true, views = 12_480, hasShareButton = true),
+                                ChatItem.DateSeparator(epochDay = 1, date = UiText.Plain("Today")),
+                            ),
+                        reachedStart = true,
+                        isLoadingOlder = false,
+                        olderError = null,
+                    ),
+            )
+
+        private fun file(
+            id: Long,
+            name: String,
+            position: GroupPosition,
+            caption: String = "",
+        ) = ChatPreviewData
+            .bubble(id, caption, "2:28 PM", position = position, content = ContentPreviewData.document(name, MIME_APK))
+            .copy(isChannelPost = true, views = 1, showsTime = position == GroupPosition.Last)
+
+        private const val MIME_APK = "application/vnd.android.package-archive"
+
         private val private =
             ChatPreviewData.privateChat.let { state ->
                 state.copy(header = state.header?.copy(callUserId = null))
             }
 
         val STATES =
-            mapOf("group" to group, "groupTinted" to groupTinted, "channel" to channel, "privateChat" to private)
+            mapOf(
+                "group" to group,
+                "groupTinted" to groupTinted,
+                "channel" to channel,
+                "channelPosts" to channelPosts,
+                "privateChat" to private,
+            )
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
