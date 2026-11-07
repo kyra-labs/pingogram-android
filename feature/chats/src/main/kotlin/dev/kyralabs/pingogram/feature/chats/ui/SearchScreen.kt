@@ -81,6 +81,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewStates
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -141,6 +142,7 @@ internal fun SearchScreen(
                 SearchHeader(
                     textFieldState = textFieldState,
                     filter = state.filter,
+                    counts = state.counts,
                     focusRequester = focusRequester,
                     onBack = onBack,
                     onEvent = onEvent,
@@ -157,13 +159,15 @@ internal fun SearchScreen(
 }
 
 /**
- * The search field, then the filter chips with [filter] selected, at most
+ * The search field, then the filter chips with [filter] selected and their [counts], at most
  * [contentMaxWidth][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes.contentMaxWidth] wide and below the status bar.
  */
+@Suppress("LongParameterList") // The chips' filter and counts, not the whole state: new results skip the header.
 @Composable
 private fun SearchHeader(
     textFieldState: TextFieldState,
     filter: SearchFilter,
+    counts: ImmutableMap<SearchFilter, Int>,
     focusRequester: FocusRequester,
     onBack: () -> Unit,
     onEvent: (SearchEvent) -> Unit,
@@ -191,7 +195,7 @@ private fun SearchHeader(
             },
             modifier = width.focusRequester(focusRequester),
         )
-        SearchFilters(filter, onSelect = { onEvent(SearchEvent.FilterChanged(it)) }, modifier = width)
+        SearchFilters(filter, counts, onSelect = { onEvent(SearchEvent.FilterChanged(it)) }, modifier = width)
     }
 }
 
@@ -245,11 +249,13 @@ private fun SearchField(
 /**
  * The filter chips (`docs/DESIGN_SYSTEM.md` §6, "Global search"): one [FilterChip] per [SearchFilter], [selected]
  * selected, each morphing its shape when pressed ([FilterChipDefaults.shapes]), in a row that scrolls sideways where
- * they do not fit, bringing the selected one into view; choosing one calls [onSelect].
+ * they do not fit, bringing the selected one into view; choosing one calls [onSelect]. A chip TDLib gave a count for
+ * ([counts]) shows it after its label ([ChipLabel]).
  */
 @Composable
 private fun SearchFilters(
     selected: SearchFilter,
+    counts: ImmutableMap<SearchFilter, Int>,
     onSelect: (SearchFilter) -> Unit,
     modifier: Modifier,
 ) {
@@ -268,7 +274,7 @@ private fun SearchFilters(
             FilterChip(
                 selected = filter == selected,
                 onClick = { onSelect(filter) },
-                label = { Text(stringResource(filter.label)) },
+                label = { ChipLabel(stringResource(filter.label), counts[filter]) },
                 shapes = FilterChipDefaults.shapes(),
                 modifier = if (filter == selected) Modifier.bringIntoViewRequester(selectedChip) else Modifier,
             )

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
+import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
@@ -123,6 +125,7 @@ data class MessagePlayback(
  *   chats.
  * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
  *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class ChatHeader(
@@ -135,6 +138,7 @@ data class ChatHeader(
     val secret: SecretChatHeader? = null,
     val opensChatInfo: Boolean = false,
     val callUserId: Long? = null,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }
@@ -283,6 +287,8 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property rich how its rich message shows where the user changed it: the sections opened or closed, all of a long
+     *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
@@ -322,6 +328,7 @@ sealed interface ChatItem {
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
     ) : ChatItem {

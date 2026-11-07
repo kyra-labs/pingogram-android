@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +52,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -66,6 +71,7 @@ import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
@@ -80,6 +86,8 @@ import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
+import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.coroutineScope
@@ -88,8 +96,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab ([ChatListTopBar])
- * or the archive ([ArchiveTopBar]), each with a small, pinned top bar; then the chats, each with its swipe actions
+ * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab, under its large
+ * header that collapses as the list scrolls ([ChatListTopBar]: its status line from [summary], its search and account
+ * buttons from [headerActions]), or the archive under a small, pinned top bar ([ArchiveTopBar]); then the chats, each
+ * with its swipe actions
  * ([ChatRow]), below the archive row on the main list. The bar sits on `surfaceContainer` and the list on a rounded
  * `surface` sheet below it ([ContentSheet]), which the rows scroll in.
  *
@@ -104,11 +114,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   following the gesture) and the top bar's close button leave it.
  * - **Back to the top** (Chats tab only): tapping the Chats tab while it is selected scrolls the list back to its top
  *   ([ScrollToTopOnReselect]).
- * - **New chat** (Chats tab only): the [NewChatButton] at the bottom end, above the floating navigation bar or in the
- *   list pane, collapsing while the list scrolls towards its end; it hides in selection mode. The list's end keeps
- *   clear of it. "No chats yet" has a button for the same screen.
- * - **Snackbars** show above the floating bar or toolbar, and the "New chat" button; the delete confirmation is a
- *   dialog ([DeleteChatDialog]).
+ * - **New chat**: the app shell's button beside the floating navigation bar or in the rail's header
+ *   (`newChatButtonTransform`); "No chats yet" has a button for the same screen. Behind the floating bar the list's end
+ *   fades into the sheet ([BottomFade]).
+ * - **Snackbars** show above the floating bar or toolbar; the delete confirmation is a dialog ([DeleteChatDialog]).
  * - **Open chat**: beside the conversation of [openChatId] (the list pane on expanded windows), that chat's row looks
  *   and reads as selected ([ChatListItem]); not in selection mode, whose own selection the toolbar acts on.
  * - **Header**: [header] shows at the top of the sheet, above the list, which does not scroll it away: the request to
@@ -132,48 +141,33 @@ internal fun ChatListScreen(
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
+    summary: () -> ChatListSummary = { ChatListSummary() },
+    headerActions: ChatListHeaderActions? = null,
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
     val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    // The Chats tab's header collapses as the list scrolls and comes back at its top; the archive's bar stays.
+    val scrollBehavior =
+        when (state.kind) {
+            ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            ChatListKind.Archive -> TopAppBarDefaults.pinnedScrollBehavior()
+        }
     val folderSwitch = remember { FolderSwitch() }
-    val newChatButton = rememberNewChatButtonState()
     val insets = contentWindowInsets(state.kind, selectionMode = selection != null)
-    // The room the "New chat" button takes above the bottom: the button and the 16 dp below it; none in the archive.
-    val newChatButtonSpace =
-        if (state.kind == ChatListKind.Chats) MaterialTheme.sizes.fabSmall + MaterialTheme.spacing.large else 0.dp
     ScrollToTopOnReselect(ChatsRoute, listState, enabled = state.kind == ChatListKind.Chats)
     Box(modifier) {
         Scaffold(
-            modifier =
-                Modifier
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .nestedScroll(newChatButton.nestedScrollConnection),
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder) },
-            snackbarHost = {
-                // Above the "New chat" button, which floats over the Scaffold rather than in its button slot.
-                SnackbarHost(snackbarHostState, Modifier.padding(bottom = newChatButtonSpace))
+            topBar = {
+                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder, summary, headerActions)
             },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = insets,
         ) { innerPadding ->
             ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header, stories)
-        }
-        if (state.kind == ChatListKind.Chats) {
-            // Over the Scaffold: in its button slot, every frame of the button's width animation (collapsing while
-            // the list scrolls) measured the whole Scaffold again.
-            NewChatButton(
-                state = newChatButton,
-                visible = selection == null,
-                onClick = { onEvent(ChatListEvent.NewChat) },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .windowInsetsPadding(insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.End))
-                        .padding(MaterialTheme.spacing.large),
-            )
         }
         SelectionToolbarHost(
             selection = selection,
@@ -230,7 +224,7 @@ private fun ChatListBody(
     val animateRows = folderSwitch.animateRows
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
-        val contentPadding = rememberClearOfNewChatButton(sheetPadding, state.kind)
+        val contentPadding = sheetPadding
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
             Box(Modifier.fillMaxWidth().padding(contentPadding.sidesOnly()), Alignment.TopCenter) { header() }
@@ -265,6 +259,7 @@ private fun ChatListBody(
                     is ChatListContent.Content -> {
                         ChatList(
                             items = content.items,
+                            pinnedCount = content.pinnedCount,
                             state = state,
                             stories = stories,
                             listState = listState,
@@ -278,6 +273,8 @@ private fun ChatListBody(
                 }
             }
         }
+        // Behind the floating navigation bar on compact windows: no room there on rail windows and in the archive.
+        if (state.kind == ChatListKind.Chats) BottomFade(Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -418,7 +415,7 @@ private class FolderPositions(
 
     /**
      * Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass; the story rings
-     * ([hasStories]) and the archive row come first.
+     * ([hasStories]), the archive row and the "Pinned" header come first.
      */
     fun restore(
         state: ChatListUiState,
@@ -430,13 +427,17 @@ private class FolderPositions(
             listState.requestScrollToItem(0)
             return
         }
-        val items = (state.content as? ChatListContent.Content)?.items.orEmpty()
+        val content = state.content as? ChatListContent.Content
+        val items = content?.items.orEmpty()
+        val hasPinned = (content?.pinnedCount ?: 0) > 0
         val storyRows = if (hasStories) 1 else 0
-        val rowsAbove = storyRows + if (state.archive != null) 1 else 0
+        val headerRows = storyRows + if (state.archive != null) 1 else 0
+        val rowsAbove = headerRows + if (hasPinned) 1 else 0
         val index =
             when (val key = position.key) {
                 STORIES_ROW -> 0.takeIf { hasStories }
                 ARCHIVE_ROW -> storyRows.takeIf { state.archive != null }
+                PINNED_HEADER -> headerRows.takeIf { hasPinned }
                 else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
             }
         if (index != null) {
@@ -493,6 +494,7 @@ private class ListPosition(
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
+    pinnedCount: Int,
     state: ChatListUiState,
     stories: (@Composable (Modifier) -> Unit)?,
     listState: LazyListState,
@@ -514,29 +516,17 @@ private fun ChatList(
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (stories != null) {
-            item(key = STORIES_ROW, contentType = STORIES_ROW) {
-                stories(Modifier.listRow(this, maxWidth, rowMotion))
-            }
+        leadingRows(stories, state, hasPinned = pinnedCount > 0, onEvent) {
+            Modifier.listRow(this, maxWidth, rowMotion)
         }
-        if (archive != null) {
-            item(key = ARCHIVE_ROW, contentType = ARCHIVE_ROW) {
-                ArchiveRow(
-                    entry = archive,
-                    enabled = selection == null,
-                    onClick = { onEvent(ChatListEvent.OpenArchive) },
-                    modifier = Modifier.listRow(this, maxWidth, rowMotion),
-                    onStyle = { onEvent(ChatListEvent.SetArchiveRowStyle(it)) },
-                )
-            }
-        }
-        items(items, key = { it.id }, contentType = { CHAT_ROW }) { item ->
+        itemsIndexed(items, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { index, item ->
             ChatRow(
                 item = item,
                 selected = selectedIds?.contains(item.id) == true,
                 selectionMode = selection != null,
                 open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
+                segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null,
                 modifier =
                     Modifier
                         .listRow(this, maxWidth, rowMotion)
@@ -545,7 +535,10 @@ private fun ChatList(
         }
         if (state.hasLockedChats) lockedChatsRow(selection == null) { Modifier.listRow(this, maxWidth, rowMotion) }
     }
-    ShowRowsAddedAtTop(listState, rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0))
+    ShowRowsAddedAtTop(
+        listState,
+        rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0) + (if (pinnedCount > 0) 1 else 0),
+    )
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId) {
         try {
@@ -674,9 +667,6 @@ private const val ROWS_LAYOUT_FRAMES = 2
 private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
-private const val ARCHIVE_ROW = "archive"
-
-private const val STORIES_ROW = "stories"
 
 // The Macrobenchmarks and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list and the row they
 // scroll and open by these tags, which `MainActivity` shows as resource ids.
@@ -689,5 +679,7 @@ private const val SAVED_MESSAGES_TEST_TAG = "saved_messages"
 private fun ChatListScreenPreview(
     @PreviewParameter(ChatListPreviewStates::class) state: ChatListUiState,
 ) {
-    PingogramPreview { ChatListScreen(state = state, onEvent = {}) }
+    PingogramPreview {
+        ChatListScreen(state = state, onEvent = {}, summary = { ChatListPreviewData.summary }, onEditFolder = {})
+    }
 }

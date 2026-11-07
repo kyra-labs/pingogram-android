@@ -49,16 +49,29 @@ private fun DataOutputStream.writeMessage(message: ExportMessage) {
     writeOptional(message.replyToMessageId) { writeLong(it) }
     writeOptional(message.forwardedFrom) { writeText(it) }
     writeLong(message.forwardDate)
-    writeOptional(message.media) { media ->
-        writeInt(media.type.ordinal)
-        writeText(media.fileName)
-        writeLong(media.size)
-        writeOptional(media.path) { writeText(it) }
-        writeOptional(media.skipped) { writeInt(it.ordinal) }
-    }
+    writeOptional(message.media) { writeMedia(it) }
     writeOptional(message.summary) { writeText(it) }
     writeOptional(message.service) { writeText(it) }
+    writeInt(message.moreMedia.size)
+    message.moreMedia.forEach { writeMedia(it) }
 }
+
+private fun DataOutputStream.writeMedia(media: ExportMedia) {
+    writeInt(media.type.ordinal)
+    writeText(media.fileName)
+    writeLong(media.size)
+    writeOptional(media.path) { writeText(it) }
+    writeOptional(media.skipped) { writeInt(it.ordinal) }
+}
+
+private fun DataInputStream.readMedia() =
+    ExportMedia(
+        type = ExportMediaType.entries[readInt()],
+        fileName = readText(),
+        size = readLong(),
+        path = readOptional { readText() },
+        skipped = readOptional { ExportSkipReason.entries[readInt()] },
+    )
 
 private fun DataInputStream.readMessage(): ExportMessage {
     val id = readLong()
@@ -84,18 +97,10 @@ private fun DataInputStream.readMessage(): ExportMessage {
         replyToMessageId = readOptional { readLong() },
         forwardedFrom = readOptional { readText() },
         forwardDate = readLong(),
-        media =
-            readOptional {
-                ExportMedia(
-                    type = ExportMediaType.entries[readInt()],
-                    fileName = readText(),
-                    size = readLong(),
-                    path = readOptional { readText() },
-                    skipped = readOptional { ExportSkipReason.entries[readInt()] },
-                )
-            },
+        media = readOptional { readMedia() },
         summary = readOptional { readText() },
         service = readOptional { readText() },
+        moreMedia = List(readInt()) { readMedia() }.toImmutableList(),
     )
 }
 

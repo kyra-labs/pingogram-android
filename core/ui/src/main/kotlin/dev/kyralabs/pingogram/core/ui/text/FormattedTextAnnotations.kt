@@ -13,7 +13,9 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.em
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
@@ -25,7 +27,8 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
  * this either.
  *
  * - **Styles**: bold, italic, underline and strikethrough (combined where they nest), code, pre and pre-code
- *   (monospace on [FormattedTextStyles.codeBackground]; the language of pre-code is not shown), block quotes (italic).
+ *   (monospace on [FormattedTextStyles.codeBackground]; the language of pre-code is not shown), block quotes (italic),
+ *   and rich messages' marked text (on the code background), subscripts and superscripts (smaller, shifted).
  * - **Links**: URLs, text URLs, email addresses and phone numbers are [LinkAnnotation.Url]s (`https://` added to a URL
  *   without a scheme, `mailto:`, `tel:`), which `Text` opens with `LocalUriHandler` unless [onLinkClick] handles them.
  * - **Mentions** (`@username`) and mention names (a user without a username) are colored and, with [onMentionClick],
@@ -95,6 +98,9 @@ fun FormattedText.toAnnotatedString(
             }
         }.toAnnotatedString()
 }
+
+/** Subscripts and superscripts are set at three quarters of the text's size, as typography usually sets them. */
+private val SCRIPT_SIZE = 0.75.em
 
 /** The tag of the [LinkAnnotation.Clickable] on a hidden spoiler. */
 const val SPOILER_TAG = "spoiler"
@@ -202,6 +208,19 @@ private fun TextEntityType.spanStyle(
 
         TextEntityType.BlockQuote, TextEntityType.ExpandableBlockQuote -> {
             SpanStyle(fontStyle = FontStyle.Italic, color = styles.quoteColor)
+        }
+
+        // A rich message's highlight, on the surface's block color like code.
+        TextEntityType.Marked -> {
+            SpanStyle(background = styles.codeBackground)
+        }
+
+        TextEntityType.Subscript -> {
+            SpanStyle(baselineShift = BaselineShift.Subscript, fontSize = SCRIPT_SIZE)
+        }
+
+        TextEntityType.Superscript -> {
+            SpanStyle(baselineShift = BaselineShift.Superscript, fontSize = SCRIPT_SIZE)
         }
 
         TextEntityType.Mention,

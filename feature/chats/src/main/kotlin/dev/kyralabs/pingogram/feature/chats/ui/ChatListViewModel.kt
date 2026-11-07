@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
@@ -279,6 +280,32 @@ class ChatListViewModel internal constructor(
         }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListUiState(kind = kind))
 
+    /**
+     * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
+     * mention the user, and the signed-in user for its avatar. Apart from [uiState], so a count changing recomposes the
+     * header alone. Nothing in the archive, whose header has no status line.
+     */
+    val summary: StateFlow<ChatListSummary> =
+        if (kind == ChatListKind.Archive) {
+            MutableStateFlow(ChatListSummary())
+        } else {
+            val mentions =
+                chatRepository
+                    .chatList(ChatListType.Main)
+                    .without(lockedChatIds)
+                    .map { chats -> chats.count { it.unreadMentionCount > 0 } }
+                    .distinctUntilChanged()
+            val account =
+                combine(userRepository.myUserId, userRepository.users) { id, users ->
+                    id?.let(users::get)?.let { HeaderAccount(it.id, it.fullName(), it.profilePhoto) }
+                }.distinctUntilChanged()
+            combine(chatRepository.unreadChatCount(ChatListType.Main), mentions, account) { unread, mentioned, me ->
+                ChatListSummary(unreadChats = unread.unreadUnmutedCount, mentionChats = mentioned, account = me)
+            }.distinctUntilChanged()
+                .flowOn(dispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListSummary())
+        }
+
     init {
         viewModelScope.launch {
             selectedList.collect { list ->
@@ -501,10 +528,22 @@ class ChatListViewModel internal constructor(
     ): ChatListContent {
         val error = load.error
         return when {
-            chats.isNotEmpty() -> ChatListContent.Content(mapper.map(chats, snapshot.sourcesFor(list)))
-            error != null -> ChatListContent.Error(error)
-            load.isComplete -> ChatListContent.Empty(isFolder = list is ChatListType.Folder)
-            else -> ChatListContent.Loading
+            chats.isNotEmpty() -> {
+                val items = mapper.map(chats, snapshot.sourcesFor(list))
+                ChatListContent.Content(items, pinnedCount = items.pinnedCount())
+            }
+
+            error != null -> {
+                ChatListContent.Error(error)
+            }
+
+            load.isComplete -> {
+                ChatListContent.Empty(isFolder = list is ChatListType.Folder)
+            }
+
+            else -> {
+                ChatListContent.Loading
+            }
         }
     }
 
@@ -595,3 +634,6 @@ private fun folderTabs(
 /** These chats without those of [locked]. */
 private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> =
     combine(this, locked) { chats, ids -> if (ids.isEmpty()) chats else chats.filterNot { it.id in ids } }
+
+/** How many rows the list pins, from its first: TDLib orders pinned chats first. */
+private fun List<ChatListItemModel>.pinnedCount(): Int = indexOfFirst { !it.isPinned }.let { if (it < 0) size else it }

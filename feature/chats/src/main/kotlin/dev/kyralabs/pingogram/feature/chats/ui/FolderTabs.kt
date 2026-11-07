@@ -57,6 +57,7 @@ import kotlinx.collections.immutable.ImmutableList
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
+ * With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null).
  *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
@@ -92,13 +93,32 @@ internal fun FolderTabs(
         remember(menu, canEditFolders, enabled, haptics, resources, onAction) {
             TabMenu(menu, canEditFolders, enabled, haptics, resources, onAction)
         }
-    Box(modifier.fillMaxWidth().folderTabMenuContainer(menu)) {
-        if (tabs.size > MAX_CONNECTED_TABS) {
-            FolderTabRow(tabs, selectedFolderId, onSelect, margin, tabMenu)
-        } else {
-            FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
+    // spacing.medium below the row, between it and the list's sheet (owner decision 2026-11-06).
+    Row(
+        modifier.fillMaxWidth().padding(bottom = MaterialTheme.spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f).folderTabMenuContainer(menu)) {
+            if (tabs.size > MAX_CONNECTED_TABS) {
+                FolderTabRow(tabs, selectedFolderId, onSelect, margin, tabMenu)
+            } else {
+                FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
+            }
+            if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
         }
-        if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
+        if (onEditFolder != null) {
+            // spacing.small from the tabs' fade; at the end in line with the header's buttons: the window margin
+            // less the touch target's room around the button.
+            EditFoldersButton(
+                onClick = { onEditFolder(null) },
+                enabled = enabled,
+                modifier =
+                    Modifier.padding(
+                        start = MaterialTheme.spacing.small,
+                        end = margin - MaterialTheme.spacing.extraSmall,
+                    ),
+            )
+        }
     }
 }
 

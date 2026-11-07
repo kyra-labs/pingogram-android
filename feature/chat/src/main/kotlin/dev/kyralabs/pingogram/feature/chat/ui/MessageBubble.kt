@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.customEmoji
@@ -60,6 +61,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
+import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -313,6 +316,12 @@ private fun bubbleActions(
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val rich =
+        (bubble.content as? MessageContent.RichMessage)
+            ?.let { content ->
+                richActions(resources, bubble.id, content.message, bubble.rich) { spokenText(resources, bubble, it) }
+            }.orEmpty()
+            .map { (label, event) -> action(label, event) }
     val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =
         bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
@@ -331,7 +340,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + buttons + reactions + allReactions +
+    } + original + poll + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
@@ -421,7 +430,12 @@ private fun PaddedBubble(
             listOf(
                 {
                     BubbleHeader(bubble, style.colors, onEvent)
-                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                    val content = bubble.content
+                    if (content is MessageContent.RichMessage) {
+                        RichMessageBody(bubble, content.message, style, resources, onEvent)
+                    } else {
+                        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                    }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
                 { bubble.linkPreview?.let { LinkPreviewBlock(it, style.colors) } },

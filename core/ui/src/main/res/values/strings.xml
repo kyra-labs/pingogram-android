@@ -138,6 +138,8 @@
     <string name="preview_expired_voice_message">Voice message expired</string>
     <string name="preview_expired_video_message">Video message expired</string>
     <string name="preview_unsupported">Unsupported message</string>
+    <!-- A rich message (a channel's post with headings and sections) that has no text or media to name it by. -->
+    <string name="preview_rich_message">Message</string>
     <!-- A service message of a kind Pingogram does not describe yet (gifts, payments, forum topics, …). -->
     <string name="preview_service_other">Chat event</string>
 

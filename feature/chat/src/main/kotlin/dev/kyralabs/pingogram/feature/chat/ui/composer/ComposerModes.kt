@@ -111,12 +111,22 @@ internal val Message.textOrCaption: FormattedText
     get() =
         when (val content = content) {
             is MessageContent.Text -> content.text
+
             is MessageContent.Photo -> content.caption
+
             is MessageContent.Video -> content.caption
+
             is MessageContent.Animation -> content.caption
+
             is MessageContent.Audio -> content.caption
+
             is MessageContent.Document -> content.caption
+
             is MessageContent.VoiceNote -> content.caption
+
+            // Every block's text, a line each, for copying; a rich message is never edited (editTarget).
+            is MessageContent.RichMessage -> content.message.fullText()
+
             else -> FormattedText.Empty
         }
 

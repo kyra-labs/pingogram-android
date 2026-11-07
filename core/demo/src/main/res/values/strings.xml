@@ -69,6 +69,18 @@
     <!-- The channel's posts. -->
     <string name="demo_channel_welcome">Welcome to **Weekly Sample**, a channel of made-up news.</string>
     <string name="demo_channel_colors">This week\'s colours.</string>
+    <!-- The channel's rich post, a long read with sections: a short line above its title, the title, its first
+         paragraph, two sections and what they hold. -->
+    <string name="demo_rich_kicker">LONG READ</string>
+    <string name="demo_rich_title">How this post is made</string>
+    <string name="demo_rich_intro">Some channels post articles with headings, sections, lists and photos. Tap a section to open it.</string>
+    <string name="demo_rich_section_inside">What\'s inside</string>
+    <string name="demo_rich_item_headings">Headings and paragraphs</string>
+    <string name="demo_rich_item_lists">Lists like this one</string>
+    <string name="demo_rich_item_photos">A photo, made on this phone</string>
+    <string name="demo_rich_photo_caption">This week\'s second colours.</string>
+    <string name="demo_rich_section_more">One more thing</string>
+    <string name="demo_rich_more">Sections stay open or closed as you leave them while you read.</string>
     <string name="demo_channel_tip">Tip: press and hold a message to react to it or reply.</string>
 
     <!-- Saved Messages, the person's own notes. -->

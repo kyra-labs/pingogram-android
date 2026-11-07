@@ -88,7 +88,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Demo** (FR-A9, `docs/adr/0034-demo-mode-for-store-review.md`): sample chats for the stores' reviewers. It replaces
   the test-server sign-in of versions up to 1.0.0 (`docs/TDLIB.md`, "Test servers (removed)").
   - **The client**: `:core:demo`'s `DemoTdlibClient` is a `TdlibClient` that answers TDLib's functions from
-    `DemoData` (made-up people, a group, a channel with its discussion group, a forum, Saved Messages, an archived
+    `DemoData` (made-up people, a group, a channel with its discussion group and a rich post, a forum, Saved Messages, an archived
     chat, a "Work" folder, and a group and a channel the user is not in, texts in translatable strings) and emits the updates TDLib would, so the repositories and screens work unchanged.
   - **What it does not answer**: every function it does not know fails with `NOT_AVAILABLE_IN_DEMO`, which
     `core:data` maps to `DomainError.NotAvailableInDemo` ("This needs a Telegram account. The demo can't do it.").
@@ -733,6 +733,31 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+- **Rich messages** (td_api.tl `messageRichMessage`, the posts channels write with headings, collapsible sections,
+  photos, lists and tables): `core:domain`'s `MessageContent.RichMessage` holds a `RichMessage`, its `RichBlock`s (each
+  text a `FormattedText`, its formatting and links as the entities of a text message, with `Marked`, `Subscript` and
+  `Superscript` for what only rich texts have; media as other messages' `Photo`, `Video` and `Animation`, so downloads,
+  automatic download and Coil work unchanged; a block Pingogram does not show is `RichBlock.Unsupported`). `core:data`'s
+  `RichMessageMappers.kt` maps the blocks and walks each `RichText` into one string with its entities, numbering the
+  sections (`RichBlock.Details.id`, depth first) and media (`RichBlock.Media.index`) in order. Where Telegram sent
+  only the start (`isFull` false), `MessageRepository.loadFullRichMessage` sends `getFullRichMessage` and puts the answer
+  into the windows that hold the message (`HistoryCache.editing`), as TDLib sends no update for it. `firstText()` is
+  what previews show (`core:ui`'s `messagePreviewText`), `fullText()` what is copied and exported, and `media()` what
+  the export copies (`ExportMessage.moreMedia` after the first). Translation leaves rich messages out: td_api.tl
+  translates them with a function of their own (`translateMessageRichMessage`), which Pingogram does not use yet.
+  `feature:chat` draws them in the padded bubble (`rich/RichMessageBody`, in place of `MessageContentBody`): one column
+  of blocks (`RichBlocks`, `RichDetails`, `RichMedia`, `RichTable`), their texts built once per message and kept per
+  message id (`RichTextCache`, beside `AnnotatedTextCache`'s), cut at one and a half windows with "Show more" (a
+  layout modifier that tells the bubble's layout it cut, in the same measure pass). `ChatRichMessages` (a part of
+  `ChatViewModel`, `RichMessageEvent`) keeps the sections the user toggled and the messages shown whole in its saved
+  state, copied into their bubble only (`withRichMessages`, `ChatItem.Bubble.rich`), and loads a full message once per
+  tap, a failure a snackbar. Screen readers hear the bubble as one (`richDescription`), sections, media and the full
+  message as its custom actions (`richActions`). A rich message's photo, video or GIF opens in the media viewer by an id
+  of its own (`core:domain`'s `richMediaId`: negative, in the media's order, `richMediaMessageId` leading back to the
+  message), passed where a message id goes (`ChatEffect.OpenMedia`, `MediaViewerRoute`), so nothing between them
+  changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
+  media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
+  Forward, "Show in chat", saving and deletions, leaving Delete out.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -815,17 +840,23 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SharedTransitionLayout`, whose scope `core:ui` hands down as `LocalSharedTransitionScope`
   (`ProvideSharedTransitionScope`); destinations that share content provide their animated visibility scope
   (`ProvideNavAnimatedVisibilityScope`), and `Modifier.containerTransform` (a no-op without both) runs a
-  container transform between the two destinations' content of one key: the Chats tab's "New chat" button
-  grows into the New chat screen, and the search button (outside the `NavHost`, in an `AnimatedVisibility` of
-  its own that hides it while search shows) grows into search. `Modifier.sharedMediaBounds` (the bubble's
+  container transform between the two destinations' content of one key: the "New chat" button (`:app`'s, beside
+  the floating navigation bar or in the rail's header on the Chats tab, in an `AnimatedVisibility` of its own that
+  hides it while New chat shows, `newChatButtonTransform`) grows into the New chat screen, and the search button of its header (in an `AnimatedVisibility` of its own
+  that hides it while search shows, `SearchButtonSlot`) grows into search. `Modifier.sharedMediaBounds` (the bubble's
   side) and `Modifier.sharedMediaViewerBounds` (the viewer's) run that of a photo, video or GIF between the
   conversation (pushed or in the detail pane) and the media viewer, keyed by message id. Each bubble
   publishes its media's clip shape in `SharedMediaShapes` (`LocalSharedMediaShapes`, from a `Modifier.Node`
   while it is laid out), so the viewer morphs from and back to exactly those corners. The viewer is an overlay
   destination (`core:ui`'s `OverlayNavigator`, a `FloatingWindow` like a dialog destination, registered by
   `rememberOverlayNavigator` and drawn above the shell by `OverlayHost` in `PingogramApp`): the screen it opened from
-  stays composed and started below it, hidden from touch, focus and screen readers, and the bubbles follow which media
-  the viewer shows (`SharedMediaShapes.isInViewer`) instead of their destination's transition.
+  stays composed and started below it, hidden from touch, focus and screen readers. A bubble's media follows the
+  viewer's own transition (`SharedMediaShapes.viewerTransition`, a child transition of the viewer page's, inverted),
+  so both sides of the container transform move on one transition, frame by frame. An overlay is composed hidden first
+  and comes in once its content is ready (`PostponeOverlayEnter`, at most `OVERLAY_ENTER_TIMEOUT_MILLIS`, 500 ms), so
+  the photo grows into a page that already shows it: the viewer holds it until its first page is there, which
+  `ChatMediaRepository.opened` answers with the opened message alone (`getMessage`, from TDLib's memory), the pages
+  on either side following from it.
 - Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
   on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops
@@ -851,7 +882,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Global search: on compact and medium windows a destination (`SearchRoute`) pushed above the tab; on
   expanded ones docked in the Chats tab's list pane (`SearchPane`, `feature:chats`) in place of the chat
   list, its results opening in the detail pane. `GlobalSearchState` (`feature:chats`, held by `PingogramApp`
-  and saved) says whether search is docked and carries the two sides' shapes for the container transform.
+  and saved) says whether search is docked and carries the two sides' shapes for the container transform. Search
+  opens from the Chats tab's header (owner decision 2026-11-06): `PingogramApp` hands the header a
+  `ChatListHeaderActions` (`feature:chats`, through `PingogramNavHost`, `ChatsListDetail` and `ChatListPane`) with
+  search, whether it shows, and the account's avatar's taps: the Settings tab, and the account menu
+  (`AccountMenuAnchor`) on a long press. The header's status line reads `ChatListViewModel.summary`, a flow of its own
+  beside the list's state, so a count changing recomposes the header alone.
 
 ## Profiles
 
@@ -1449,9 +1485,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Content**: `RecentChatsWidgetUpdater` (singleton, started by `PingogramApplication`) follows, for each account the
   placed widgets keep (`RecentChatsWidgets.slots`: `GlanceAppWidgetManager` and the widgets' states behind a seam for
   tests), that account's login, its first 10 chats of `chatList(Main)` with its users' names and its locked chats
-  (`WidgetAccount`, from `AccountGraphs`), and the app's `PasscodeRepository`; nothing while no widget is placed. It
-  maps them into each account's `RecentChatsContent` (loading, signed out, locked, the chats as `WidgetChat` rows with
-  that account's `AvatarIcons`' bitmaps at 40 dp and its slot) and calls `updateAll` 1 s after the chats last
+  (`WidgetAccount`, from `AccountGraphs`; its supergroups say which chats are forums), and the app's
+  `PasscodeRepository`; nothing while no widget is placed. It maps them into each account's `RecentChatsContent`
+  (loading, signed out, locked, the chats as `WidgetChat` rows with that account's `AvatarIcons`' bitmaps at 40 dp,
+  round or a forum's rounded square, `docs/DESIGN_SYSTEM.md` §4, and its slot) and calls `updateAll` 1 s after the chats last
   changed. A process started for the widget loads the first chats itself (`loadChats`) if TDLib has fewer.
 - **Drawing**: `RecentChatsWidget` (a `GlanceAppWidget`) collects its account's `content(slot)` and the Appearance
   settings in `provideGlance`, and draws `RecentChatsWidgetContent` in `GlanceTheme` with the wallpaper's colors or the

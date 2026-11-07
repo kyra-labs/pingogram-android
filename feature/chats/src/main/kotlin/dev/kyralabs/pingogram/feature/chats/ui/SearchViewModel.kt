@@ -151,8 +151,17 @@ class SearchViewModel internal constructor(
             SearchRowSources(users, supergroups, basicGroups, myUserId, now, timeFormatter())
         }
 
+    /** What TDLib counted for the query searched last, by chip; see [SearchUiState.counts]. */
+    private val counts = MutableStateFlow(SearchCounts())
+
+    /** The counts, none while locked chats are hidden: TDLib's counts would include their messages. */
+    private val shownCounts: Flow<SearchCounts> =
+        combine(counts, chatLock.hiddenChatIds.filterNotNull()) { counts, hidden ->
+            if (hidden.isEmpty()) counts else SearchCounts()
+        }
+
     val uiState: StateFlow<SearchUiState> =
-        combine(search, filter, people, ::toUiState)
+        combine(search, filter, people, shownCounts, ::toUiState)
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SearchUiState())
 
@@ -212,17 +221,29 @@ class SearchViewModel internal constructor(
                     }
                 }
             }
-            search.state.collect { send(it) }
+            search.state.collect { state ->
+                send(state)
+                countOf(state)
+            }
         }
 
-    /** Runs on [dispatcher]: maps [state] to rows with [sources], under the chips' [filter]. */
+    /** Keeps the count of messages TDLib gave for [state]'s query under its filter's chip. */
+    private fun countOf(state: SearchState.Results) {
+        val total = state.messages.totalCount ?: return
+        val chip = state.filter.countedChip ?: return
+        counts.update { it.with(state.query, chip, total) }
+    }
+
+    /** Runs on [dispatcher]: maps [state] to rows with [sources], under the chips' [filter] with their [counts]. */
     private fun toUiState(
         state: SearchState,
         filter: SearchFilter,
         sources: SearchRowSources,
+        counts: SearchCounts,
     ): SearchUiState =
         SearchUiState(
             filter = filter,
+            counts = counts.of(state.query),
             content =
                 when (state) {
                     is SearchState.Suggestions -> {

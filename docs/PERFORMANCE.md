@@ -234,7 +234,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   instead (`core:ui`'s `OverlayNavigator`, drawn by the shell's `OverlayHost`): the screen below stays composed under
   it, so the way back composes nothing. As a destination of its own, closing the viewer composed the whole
   conversation in the first frames of the photo's way back, which then moved only every 40 ms or so (a screen
-  recording on the owner's phone, 2026-10-26).
+  recording on the owner's phone, 2026-10-26). The way in waits for the overlay's content (`PostponeOverlayEnter`, at
+  most 500 ms), as the media viewer's first page did: a search of the chat's media (`searchChatMessages`) could take
+  long enough that the photo faded in over a black screen and then popped, and the bubble's media followed a transition
+  of its own, so the way back snapped in one frame (a screen recording on the owner's phone, 2026-11-06). The viewer now
+  opens on the message alone (`getMessage`), and both sides move on the viewer's transition.
 - A `Scaffold` composes its content lambda again whenever it measures it anew, e.g. in every frame of a
   collapsing top app bar: put the body in its own skippable composable, so those frames stop there.
 - Opening a screen: nothing composes a loading indicator for the first 150 ms (`DelayedLoadingIndicator`,

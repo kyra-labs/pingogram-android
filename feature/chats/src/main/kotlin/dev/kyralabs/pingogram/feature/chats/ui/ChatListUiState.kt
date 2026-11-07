@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -41,6 +42,33 @@ data class ChatListUiState(
     val deleteDialog: DeleteDialog? = null,
 )
 
+/**
+ * What the Chats tab's header says (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar"; owner decision 2026-11-06), kept
+ * apart from [ChatListUiState] so its changes recompose the header alone ([ChatListViewModel.summary]).
+ *
+ * @property unreadChats the main list's unread unmuted chats, as TDLib counts them (the "All chats" tab's badge).
+ * @property mentionChats the main list's chats with unread mentions of the user, among those loaded; locked chats
+ *   never count.
+ * @property account the signed-in user, for the header's avatar; null until TDLib named them.
+ */
+@Immutable
+data class ChatListSummary(
+    val unreadChats: Int = 0,
+    val mentionChats: Int = 0,
+    val account: HeaderAccount? = null,
+) {
+    /** The status line shows: something is unread. */
+    val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0
+}
+
+/** The signed-in user as the header's avatar shows them. */
+@Immutable
+data class HeaderAccount(
+    val id: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+)
+
 /** Which chats a chat list shows. */
 enum class ChatListKind {
     /** The Chats tab: the main list or a folder, with the folder tabs and the archive row. */
@@ -69,6 +97,11 @@ sealed interface ChatListContent {
     /** The chats loaded so far, in TDLib's order (pinned first); more load near the end of the list. */
     data class Content(
         val items: ImmutableList<ChatListItemModel>,
+        /**
+         * How many of [items], from the first, the list pins (TDLib orders them first): one group under a "Pinned"
+         * header (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner decision 2026-11-06). 0 shows neither.
+         */
+        val pinnedCount: Int = 0,
     ) : ChatListContent
 }
 
@@ -120,6 +153,7 @@ sealed interface FolderTab {
  *   Messages and in channels.
  * @property actions what the user can do to the chat, in the order screen readers list them ([rowActions]); the row's
  *   swipes are two of them ([startSwipeAction], [endSwipeAction]).
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class ChatListItemModel(
@@ -141,6 +175,7 @@ data class ChatListItemModel(
     val outgoingStatus: OutgoingStatus?,
     val preview: ChatPreview,
     val actions: ImmutableList<ChatRowAction>,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread

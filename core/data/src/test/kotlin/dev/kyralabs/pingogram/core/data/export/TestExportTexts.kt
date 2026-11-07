@@ -83,6 +83,7 @@ internal fun exportMessage(
     media: ExportMedia? = null,
     summary: String? = null,
     service: String? = null,
+    moreMedia: List<ExportMedia> = emptyList(),
 ) = ExportMessage(
     id = id,
     date = date,
@@ -96,4 +97,5 @@ internal fun exportMessage(
     media = media,
     summary = summary,
     service = service,
+    moreMedia = moreMedia.toImmutableList(),
 )

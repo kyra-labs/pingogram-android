@@ -304,6 +304,7 @@ class TdlibGroupInfoRepository
                         isVerified = verification?.isVerified == true,
                         isScam = verification?.isScam == true,
                         isFake = verification?.isFake == true,
+                        isForum = group.isForum,
                     )
                 }
 
@@ -358,6 +359,7 @@ private data class GroupHead(
     val isVerified: Boolean = false,
     val isScam: Boolean = false,
     val isFake: Boolean = false,
+    val isForum: Boolean = false,
 )
 
 /** The group and its full info as far as read: null while on their way. */
@@ -406,6 +408,7 @@ private data class GroupState(
                         details = (details as? Outcome.Success)?.value,
                         pendingJoinRequests = joinRequests,
                         detailsError = (details as? Outcome.Failure)?.error,
+                        isForum = group.isForum,
                     ),
                 )
             }

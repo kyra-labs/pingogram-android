@@ -9,6 +9,34 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
+  conversation instead of "Unsupported message". Their photos and videos open in the media viewer.
+- The demo's channel has a sample rich post, with two sections to open and a photo.
+
+### Changed
+- The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
+  the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
+  there on every screen size, and your picture opens Settings; hold it to switch accounts.
+- The navigation bar shows only icons on the tabs you are not on, and "New chat" is a square button beside it on the
+  Chats tab (in the side rail on tablets). The chats fade out behind the bar instead of ending under it.
+- Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.
+- Pinned chats sit together at the top of the list under "Pinned", and a button at the end of the folder tabs opens
+  the folder settings.
+- Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
+  list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
+- The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
+  paragraph; an export, all of it and its photos) instead of "Unsupported message".
+- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
+  portrait picture beside empty room.
+- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (with its navigation suite; still allowed by
+  CLAUDE.md rule 7, as no stable release has the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and
+  kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
+
+### Fixed
+- Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
+  it, instead of fading in over a black screen and snapping back.
+
 ## [1.1.3] - 2026-11-04
 
 ### Changed

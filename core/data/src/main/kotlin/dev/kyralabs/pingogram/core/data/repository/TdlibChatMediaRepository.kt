@@ -9,8 +9,10 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.richMediaMessages
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
@@ -25,13 +27,14 @@ import javax.inject.Inject
  * in secret chats, which the server cannot search), else from the server; either way it leaves self-destructing media
  * out. Nothing is cached, so it is no `TdlibUpdateCache`.
  *
- * - **Pages** are [PAGE_SIZE] messages: [around] asks for [AROUND_NEWER] newer ones, the message and older ones (a
- *   negative offset); [older] starts at the message (offset 0, which includes it), [newer] ends at it. The message
- *   itself is left out of [older] and [newer] pages.
+ * - **The opened message** ([opened]) is `getMessage` alone, which TDLib answers from memory for a message on screen,
+ *   so the viewer opens on it at once; its filter comes from the message itself, and a deleted message fails with
+ *   TDLib's 404, `DomainError.NotFound`. The search goes to the server where TDLib's database does not hold the chat's
+ *   media, which can take a while in a large chat.
+ * - **Pages** are [PAGE_SIZE] messages: [older] starts at the message (offset 0, which includes it), [newer] ends at
+ *   it. The message itself is left out of both.
  * - **Ends**: TDLib may answer with fewer messages than asked although there are more, so only a side with no message
  *   at all counts as reached, as in [TdlibMessageRepository].
- * - **The filter** of [around] comes from the message itself (`getMessage`, which TDLib answers from memory for a
- *   message on screen); a deleted message fails with TDLib's 404, `DomainError.NotFound`.
  * - **Saving** ([canBeSaved]) is `getMessageProperties`' `can_be_saved`, which TDLib works out locally, as it is when
  *   asked: the chat's protection may change while the message is loaded.
  */
@@ -41,31 +44,56 @@ class TdlibChatMediaRepository
     constructor(
         private val client: TdlibClient,
     ) : ChatMediaRepository {
-        override suspend fun around(
+        override suspend fun opened(
             chatId: Long,
             messageId: Long,
         ): Outcome<ChatMediaPage> =
             when (val found = client.request(TdApi.GetMessage(chatId, messageId))) {
-                is Outcome.Success -> pageAround(found.value.toMessage())
+                is Outcome.Success -> pageOf(found.value.toMessage())
                 is Outcome.Failure -> found
             }
 
-        /** The page around [message], of the filter of its kind. */
-        private suspend fun pageAround(message: Message): Outcome<ChatMediaPage> {
-            val messageId = message.id
+        /** The page of [message] alone, of the filter of its kind. */
+        private fun pageOf(message: Message): Outcome<ChatMediaPage> {
             val filter = message.content.mediaFilter ?: return Outcome.Failure(DomainError.NotFound)
-            return search(message.chatId, filter, messageId, offset = -AROUND_NEWER, limit = PAGE_SIZE).map { found ->
-                val media = found.media(filter)
-                val withMessage = if (media.any { it.id == messageId }) media else media + message
+            return Outcome.Success(
                 ChatMediaPage(
-                    messages = withMessage.sortedByDescending { it.id }.toImmutableList(),
+                    messages = persistentListOf(message),
                     filter = filter,
-                    reachedOldest = found.ids().none { it < messageId },
-                    reachedNewest = found.ids().none { it > messageId },
-                    totalCount = found.totalCount.takeIf { it >= 0 },
-                )
-            }
+                    reachedOldest = false,
+                    reachedNewest = false,
+                    totalCount = null,
+                ),
+            )
         }
+
+        override suspend fun richMedia(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<ChatMediaPage> =
+            when (val found = client.request(TdApi.GetMessage(chatId, messageId))) {
+                is Outcome.Success -> {
+                    val media = found.value.toMessage().richMediaMessages()
+                    if (media.isEmpty()) {
+                        Outcome.Failure(DomainError.NotFound)
+                    } else {
+                        Outcome.Success(
+                            ChatMediaPage(
+                                // Newest first, as pages are: the last media has the highest id.
+                                messages = media.sortedByDescending { it.id }.toImmutableList(),
+                                filter = ChatMediaFilter.PhotosAndVideos,
+                                reachedOldest = true,
+                                reachedNewest = true,
+                                totalCount = media.size,
+                            ),
+                        )
+                    }
+                }
+
+                is Outcome.Failure -> {
+                    found
+                }
+            }
 
         override suspend fun older(
             chatId: Long,
@@ -132,9 +160,6 @@ class TdlibChatMediaRepository
 
 /** Messages per page; TDLib allows up to 100. */
 private const val PAGE_SIZE = 40
-
-/** How many of [PAGE_SIZE] are newer than the message a page is around. */
-private const val AROUND_NEWER = PAGE_SIZE / 2
 
 private fun ChatMediaFilter.tdlibFilter(): TdApi.SearchMessagesFilter =
     when (this) {

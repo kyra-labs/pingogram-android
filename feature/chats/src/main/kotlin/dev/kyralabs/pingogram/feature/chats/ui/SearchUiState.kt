@@ -6,21 +6,29 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * Everything global search shows below its search field (`REQUIREMENTS.md` FR-L6): the [filter] chosen with the chips
- * under the field, then suggestions while the query is empty, the results of the query otherwise. The query itself
- * lives in the search field.
+ * under the field, with the [counts] TDLib gave for some of them, then suggestions while the query is empty, the
+ * results of the query otherwise. The query itself lives in the search field.
+ *
+ * [counts]: about how many messages, photos and videos, or links match the query, by chip, from the searches already
+ * made for it (`docs/DESIGN_SYSTEM.md` §6 "Global search"); none for a chip not searched yet, and none at all while
+ * locked chats are hidden, whose messages TDLib's counts would include.
  */
 @Immutable
 data class SearchUiState(
     val content: SearchContent = SearchContent.Suggestions(),
     val filter: SearchFilter = SearchFilter.All,
+    val counts: ImmutableMap<SearchFilter, Int> = persistentMapOf(),
 )
 
 /**
@@ -166,6 +174,7 @@ data class MessageSection(
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property subtitle the second line: the username ("@ada"), else how many members or subscribers a group or channel
  *   has; null for none.
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class SearchChatItem(
@@ -178,6 +187,7 @@ data class SearchChatItem(
     val isSecret: Boolean,
     val isMuted: Boolean,
     val subtitle: UiText?,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "SearchChatItem(id=$id, …)"
 }
@@ -190,6 +200,7 @@ data class SearchChatItem(
  * @property sender "You" or the sender's first name in a group; null in private chats and channels.
  * @property preview the message as one line, starting shortly before the first match when that is far into the text.
  * @property date when it was sent, formatted as in the chat list.
+ * @property avatarShape the chat's avatar's shape ([AvatarShape.ofChat]).
  */
 @Immutable
 data class SearchMessageItem(
@@ -202,6 +213,7 @@ data class SearchMessageItem(
     val sender: UiText?,
     val preview: UiText,
     val date: String,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "SearchMessageItem(chatId=$chatId, messageId=$messageId, …)"
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.navigation.PostponeOverlayEnter
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
@@ -79,7 +80,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   closing past a threshold or with a fling, else springing back on the default spatial spring ([DismissState]).
  *   Both call [onBack]. With animations off (reduced motion), the springs snap.
  * - **States**: a [LoadingIndicator] while the first media loads, an error with "Try again", and "This media is no
- *   longer available"; the top bar's back button in each.
+ *   longer available"; the top bar's back button in each. As an overlay destination, the viewer comes in only once it
+ *   is past loading ([PostponeOverlayEnter]), so the opened photo has a page to grow into.
  * - **Keyboard and mouse** (`docs/DESIGN_SYSTEM.md` §9): the pages take the focus as they show; Left and Right turn
  *   them (mirrored in right-to-left layouts), Space plays or pauses a video ([pagesKeys]); +, − and 0 zoom the photo
  *   and Esc closes the viewer wherever the focus is ([viewerKeys]); the wheel with Ctrl zooms around the pointer.
@@ -100,6 +102,8 @@ internal fun MediaViewerScreen(
     videoSurface: @Composable (Modifier) -> Unit = {},
     canPictureInPicture: Boolean = false,
 ) {
+    // The photo grows out of its bubble into its page: the viewer comes in once it has one.
+    PostponeOverlayEnter(ready = state !is MediaViewerUiState.Loading)
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }

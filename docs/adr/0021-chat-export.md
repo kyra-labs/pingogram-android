@@ -67,7 +67,10 @@ Options considered:
   a message without text is: "Location", a poll's question), `reply_to_message_id`, `forwarded` (`from`, `date`,
   `date_unix`), `media` (`type`: `photo`, `video`, `animation`, `video_message`, `voice_message`, `audio`, `file`,
   `sticker`; `file`, the path of the copy relative to the JSON file; `file_name`; `size` in bytes; `not_exported`:
-  `not_chosen`, `too_large`, `self_destructing`, `unavailable`). A field without a value is left out.
+  `not_chosen`, `too_large`, `self_destructing`, `unavailable`), and for a message with several files (a rich
+  message's photos, videos and GIFs, added 2026-11-06) the others after the first as `more_media`, a list of the same
+  objects. A rich message's `text` is the text of all its blocks, one per line, whose entities may also be `marked`,
+  `subscript` and `superscript`. A field without a value is left out.
 - **Cancelled or failed**: the export deletes its folder and its temporary files; nothing half-written stays, rather
   than a folder named "(incomplete)" that looks like an export. A flood wait that does not end, no network, a
   logged-out session, a folder that is gone or full each fail it with their own words on the page.

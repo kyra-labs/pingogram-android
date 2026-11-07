@@ -41,8 +41,9 @@ internal sealed interface SearchState {
 
 /**
  * The pages of messages found so far ([found], every page in order), what the next page starts from ([nextOffset],
- * null once there is none), whether the first page arrived ([hasFirstPage]), and the state of the page asked for last:
- * [isLoading], or failed with [error].
+ * null once there is none), whether the first page arrived ([hasFirstPage]), about how many match in all as TDLib
+ * counted them with the last page ([totalCount], null while it does not know), and the state of the page asked for
+ * last: [isLoading], or failed with [error].
  */
 internal data class MessagePages(
     val found: PersistentList<FoundMessage> = persistentListOf(),
@@ -50,6 +51,7 @@ internal data class MessagePages(
     val hasFirstPage: Boolean = false,
     val isLoading: Boolean = true,
     val error: DomainError? = null,
+    val totalCount: Int? = null,
 ) {
     /** There is a page after the ones found. */
     val hasNext: Boolean get() = hasFirstPage && nextOffset != null
@@ -58,7 +60,13 @@ internal data class MessagePages(
     fun adding(page: FoundMessages): MessagePages {
         val known = found.mapTo(HashSet()) { it.chat.id to it.message.id }
         val new = page.messages.filter { (it.chat.id to it.message.id) !in known }
-        return copy(found = found.addingAll(new), nextOffset = page.nextOffset, hasFirstPage = true, isLoading = false)
+        return copy(
+            found = found.addingAll(new),
+            nextOffset = page.nextOffset,
+            hasFirstPage = true,
+            isLoading = false,
+            totalCount = page.totalCount ?: totalCount,
+        )
     }
 
     override fun toString() = "MessagePages(found=${found.size}, hasFirstPage=$hasFirstPage, isLoading=$isLoading, …)"

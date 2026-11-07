@@ -164,9 +164,10 @@ class MediaViewerNavigationTest {
         // The viewer is an overlay: the conversation stays composed and started below it, out of screen readers' reach.
         assertEquals(Lifecycle.State.STARTED, navController.getBackStackEntry<ChatRoute>().lifecycle.currentState)
         composeRule.onAllNodes(photoBubble).assertCountEquals(0)
-        // The viewer's one search for media; the conversation's pinned messages bar searches for the pins.
+        // The viewer opens on the photo alone, then searches once on each side of it; the conversation's pinned
+        // messages bar searches for the pins.
         assertEquals(
-            1,
+            2,
             tdlib.sentOf<TdApi.SearchChatMessages>().count { it.filter !is TdApi.SearchMessagesFilterPinned },
         )
 

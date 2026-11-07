@@ -38,7 +38,8 @@ import kotlin.time.Duration.Companion.seconds
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The round avatars of notifications, conversation shortcuts and the home screen widget: the small profile photo when
+ * The avatars of notifications, conversation shortcuts and the home screen widget, round (a forum's a rounded square in
+ * the widget, [bitmap]'s `cornerRadiusPx`, `docs/DESIGN_SYSTEM.md` §4): the small profile photo when
  * TDLib has it (one that is missing downloads first, briefly awaited), otherwise the initials on one of the placeholder
  * colors the app's avatars use (`docs/DESIGN_SYSTEM.md` §2.2), from the wallpaper's scheme when dynamic color is on, or
  * the color theme's. Bitmaps are drawn on the IO dispatcher, never on the main thread, and kept for the process
@@ -75,35 +76,46 @@ class AvatarIcons
             name: String,
         ): IconCompat = avatar(photo, id, name, size).icon
 
-        /** The same avatar as [icon], [sizePx] wide, e.g. for the home screen widget's rows. */
+        /**
+         * The same avatar as [icon], [sizePx] wide, e.g. for the home screen widget's rows: round, or a square with
+         * corners of [cornerRadiusPx] (a forum's avatar, `AvatarShape.RoundedSquare`) when that is given.
+         */
         suspend fun bitmap(
             photo: ProfilePhoto?,
             id: Long,
             name: String,
             sizePx: Int,
-        ): Bitmap = avatar(photo, id, name, sizePx).bitmap
+            cornerRadiusPx: Float? = null,
+        ): Bitmap = avatar(photo, id, name, AvatarOutline(sizePx, cornerRadiusPx)).bitmap
 
         private suspend fun avatar(
             photo: ProfilePhoto?,
             id: Long,
             name: String,
             size: Int,
+        ): Avatar = avatar(photo, id, name, AvatarOutline(size, cornerRadiusPx = null))
+
+        private suspend fun avatar(
+            photo: ProfilePhoto?,
+            id: Long,
+            name: String,
+            outline: AvatarOutline,
         ): Avatar {
             val path = photo?.let { downloadedPath(it.small.id) }
-            return path?.let { photoAvatar(it, size) } ?: initialsAvatar(id, name, size)
+            return path?.let { photoAvatar(it, outline) } ?: initialsAvatar(id, name, outline)
         }
 
         private suspend fun initialsAvatar(
             id: Long,
             name: String,
-            size: Int,
+            outline: AvatarOutline,
         ): Avatar {
             val appearance = appearanceRepository.appearance.first()
             val dynamicColor = appearance.dynamicColor
             val palette = appearance.palette
-            val key = "initials:$size:$id:$dynamicColor:$palette:$name"
+            val key = "initials:${outline.key}:$id:$dynamicColor:$palette:$name"
             return cache.get(key)
-                ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor, palette, size) })
+                ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor, palette, outline) })
         }
 
         /** Where file [fileId] is once downloaded, downloading it if needed; null if it does not arrive in time. */
@@ -125,14 +137,14 @@ class AvatarIcons
                 }
             }
 
-        /** The round photo at [path], [size] wide; null if it cannot be decoded. */
+        /** The photo at [path] in [outline]; null if it cannot be decoded. */
         private suspend fun photoAvatar(
             path: String,
-            size: Int,
+            outline: AvatarOutline,
         ): Avatar? {
-            val key = "photo:$size:$path"
+            val key = "photo:${outline.key}:$path"
             return cache.get(key)
-                ?: withContext(ioDispatcher) { BitmapFactory.decodeFile(path)?.let { circle(it, size) } }
+                ?: withContext(ioDispatcher) { BitmapFactory.decodeFile(path)?.let { clipped(it, outline) } }
                     ?.let { cached(key, it) }
         }
 
@@ -148,11 +160,12 @@ class AvatarIcons
             val icon: IconCompat by lazy { IconCompat.createWithBitmap(bitmap) }
         }
 
-        /** [source] cropped to its centered square and drawn round, [size] wide. */
-        private fun circle(
+        /** [source] cropped to its centered square and drawn in [outline]. */
+        private fun clipped(
             source: Bitmap,
-            size: Int,
+            outline: AvatarOutline,
         ): Bitmap {
+            val size = outline.size
             val output = createBitmap(size, size)
             val side = minOf(source.width, source.height).toFloat()
             val scale = size / side
@@ -168,7 +181,7 @@ class AvatarIcons
                             setLocalMatrix(matrix)
                         }
                 }
-            Canvas(output).drawCircle(size / 2f, size / 2f, size / 2f, paint)
+            outline.draw(Canvas(output), paint)
             return output
         }
 
@@ -178,14 +191,15 @@ class AvatarIcons
             name: String,
             dynamicColor: Boolean,
             palette: ThemePalette,
-            size: Int,
+            outline: AvatarOutline,
         ): Bitmap {
+            val size = outline.size
             val colors = standaloneColorScheme(context, dynamicColor, palette).avatarPlaceholderColors(id)
             val output = createBitmap(size, size)
             val canvas = Canvas(output)
             val center = size / 2f
             val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.container.toArgb() }
-            canvas.drawCircle(center, center, center, background)
+            outline.draw(canvas, background)
             val text =
                 Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     color = colors.content.toArgb()
@@ -211,3 +225,24 @@ class AvatarIcons
             const val INITIALS_WEIGHT = 500
         }
     }
+
+/** An avatar bitmap's [size] and outline: a circle, or a square with corners of [cornerRadiusPx]. */
+private data class AvatarOutline(
+    val size: Int,
+    val cornerRadiusPx: Float?,
+) {
+    /** Tells cached bitmaps of other sizes and outlines apart. */
+    val key: String get() = if (cornerRadiusPx == null) "$size" else "$size:r$cornerRadiusPx"
+
+    fun draw(
+        canvas: Canvas,
+        paint: Paint,
+    ) {
+        val side = size.toFloat()
+        if (cornerRadiusPx == null) {
+            canvas.drawCircle(side / 2, side / 2, side / 2, paint)
+        } else {
+            canvas.drawRoundRect(0f, 0f, side, side, cornerRadiusPx, cornerRadiusPx, paint)
+        }
+    }
+}

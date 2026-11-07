@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.PREVIEW_MAX_LENGTH
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -58,6 +59,7 @@ internal fun Chat.toSearchItem(sources: SearchRowSources): SearchChatItem {
         isSecret = type is ChatType.Secret,
         isMuted = isMuted,
         subtitle = if (isSavedMessages || isDeletedAccount) null else subtitle(user, supergroup, sources),
+        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
     )
 }
 
@@ -100,6 +102,7 @@ internal fun FoundMessage.toSearchItem(
         sender = sender(sources),
         preview = preview(sources, highlight),
         date = sources.timeFormatter.format(message.date, sources.now),
+        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
     )
 }
 

@@ -11,13 +11,17 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.PowerSaving
+import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
+import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -68,13 +72,14 @@ import javax.inject.Inject
  * The full-screen media viewer (`REQUIREMENTS.md` FR-C10) of the photo, video or GIF the route opens it on, among the
  * chat's media of that kind ([ChatMediaRepository]), as [uiState]. Events come in through [onEvent].
  *
- * - **Loading**: the page around the opened message, then older or newer pages while the current item is within
+ * - **Loading**: the opened message alone first ([ChatMediaRepository.opened], from TDLib's memory, so its page shows
+ *   at once and the photo grows into it), then older and newer pages while the current item is within
  *   [PREFETCH_DISTANCE] of either end of what is loaded, one at a time on each side, until each end ([MediaWindow]).
  *   A failed first page shows [MediaViewerUiState.Error] until [MediaViewerEvent.Retry]; a deleted or unshowable
  *   message [MediaViewerUiState.Unavailable]. A failed page on a side is a snackbar ([MediaViewerEffect.ShowError])
  *   and is not retried by itself: turning the page, or [MediaViewerEvent.Retry], tries again.
  * - **The current item** is the page the pager settled on ([MediaViewerEvent.PageSettled]), kept in the
- *   [SavedStateHandle]: after process death the viewer loads around it again.
+ *   [SavedStateHandle]: after process death the viewer opens on it again.
  * - **Position**: "N of total" ([MediaCount]) from TDLib's position of the opened message and its counts, or from the
  *   loaded media once an end is reached (secret chats, where TDLib cannot tell a position).
  * - **Deletions** ([ChatMediaRepository.deletedMessages]) drop items; a deleted current item gives way to the one
@@ -182,7 +187,7 @@ class MediaViewerViewModel internal constructor(
 
     private val sharing =
         MediaSharing(
-            canBeSaved = { messageId -> mediaRepository.canBeSaved(chatId, messageId) },
+            canBeSaved = { id -> mediaRepository.canBeSaved(chatId, messageIdOf(id)) },
             isProtected = chatRepository.chat(chatId).map { chat -> chat?.hasProtectedContent != false },
             sharedStorage = sharedStorage,
             savedStateHandle = savedStateHandle,
@@ -192,7 +197,7 @@ class MediaViewerViewModel internal constructor(
 
     private val deletion =
         MediaDeletion(
-            properties = { messageId -> messageActions.properties(chatId, messageId) },
+            properties = { id -> messageActions.properties(chatId, messageIdOf(id)).map { it.forItem(id) } },
             delete = { messageId, forEveryone -> messageActions.delete(chatId, listOf(messageId), forEveryone) },
             scope = viewModelScope,
             onFailure = effectChannel::showError,
@@ -296,7 +301,7 @@ class MediaViewerViewModel internal constructor(
         viewModelScope.launch {
             combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
         }
-        loadAround(viewer.value.currentId)
+        loadOpened(viewer.value.currentId)
     }
 
     fun onEvent(event: MediaViewerEvent) {
@@ -350,12 +355,14 @@ class MediaViewerViewModel internal constructor(
             }
 
             MediaViewerEvent.ShowInChat -> {
-                viewer.value.loadedCurrentId?.let { effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, it)) }
+                viewer.value.loadedCurrentId?.let {
+                    effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, messageIdOf(it)))
+                }
             }
 
             MediaViewerEvent.Forward -> {
                 val current = viewer.value.loadedCurrentId?.takeIf(deletion::allowsForward)
-                current?.let { effectChannel.trySend(MediaViewerEffect.Forward(chatId, it)) }
+                current?.let { effectChannel.trySend(MediaViewerEffect.Forward(chatId, messageIdOf(it))) }
             }
 
             is MediaViewerEvent.StoragePermissionChecked -> {
@@ -413,22 +420,29 @@ class MediaViewerViewModel internal constructor(
     private fun retry() {
         failedEdges.clear()
         when (viewer.value.load) {
-            is MediaLoad.Failed -> loadAround(viewer.value.currentId)
+            is MediaLoad.Failed -> loadOpened(viewer.value.currentId)
             is MediaLoad.Loaded -> loadMoreIfNear()
             MediaLoad.Loading, MediaLoad.Gone -> Unit
         }
     }
 
     /**
-     * Loads the page around message [messageId], replacing whatever was loaded. Not found means the message was
+     * Loads message [messageId] alone, replacing whatever was loaded; for a rich message's media ([isRichMediaId]),
+     * all of that message's media, which are all the viewer shows then. Not found means the message was
      * deleted or holds no media; other failures can be tried again.
      */
-    private fun loadAround(messageId: Long) {
+    private fun loadOpened(messageId: Long) {
         firstPage?.cancel()
         viewer.update { it.copy(load = MediaLoad.Loading) }
         firstPage =
             viewModelScope.launch {
-                when (val page = mediaRepository.around(chatId, messageId)) {
+                val opened =
+                    if (isRichMediaId(messageId)) {
+                        mediaRepository.richMedia(chatId, richMediaMessageId(messageId))
+                    } else {
+                        mediaRepository.opened(chatId, messageId)
+                    }
+                when (val page = opened) {
                     is Outcome.Success -> onFirstPage(page.value, messageId)
                     is Outcome.Failure -> viewer.update { it.copy(load = page.error.toFailedLoad()) }
                 }
@@ -436,8 +450,9 @@ class MediaViewerViewModel internal constructor(
     }
 
     /**
-     * Shows the first [page], then loads around it and asks for the position of [messageId]. The repository never
-     * leaves the message out; the window does if the viewer cannot show it (a photo without sizes): it is gone.
+     * Shows the first [page], then loads the pages on either side of it and asks for the position of [messageId]. The
+     * repository never leaves the message out; the window does if the viewer cannot show it (a photo without sizes):
+     * it is gone.
      */
     private fun onFirstPage(
         page: ChatMediaPage,
@@ -496,8 +511,16 @@ class MediaViewerViewModel internal constructor(
         }
     }
 
-    private fun onDeleted(ids: Set<Long>) {
+    private fun onDeleted(deleted: Set<Long>) {
         val state = viewer.value
+        // A rich message's media go with their message.
+        val richMedia =
+            state.window
+                ?.messages
+                ?.map { it.id }
+                ?.filter { isRichMediaId(it) && richMediaMessageId(it) in deleted }
+                .orEmpty()
+        val ids = deleted + richMedia
         val next = state.without(ids)
         if (next != state) {
             viewer.value = next
@@ -535,6 +558,9 @@ class MediaViewerViewModel internal constructor(
         deletion.focus(message.id)
     }
 
+    /** The message of item [id]: its own, or for a rich message's media, that message. */
+    private fun messageIdOf(id: Long): Long = if (isRichMediaId(id)) richMediaMessageId(id) else id
+
     private fun updateWindow(transform: (MediaWindow) -> MediaWindow) =
         viewer.update { viewer ->
             val load = viewer.load as? MediaLoad.Loaded ?: return@update viewer
@@ -551,6 +577,13 @@ class MediaViewerViewModel internal constructor(
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+/**
+ * A rich message's media is not deleted on its own: deleting from the viewer would take the whole message with it,
+ * which the conversation's actions do. Forward still forwards the message.
+ */
+private fun MessageProperties.forItem(id: Long): MessageProperties =
+    if (isRichMediaId(id)) copy(canBeDeletedOnlyForSelf = false, canBeDeletedForAllUsers = false) else this
 
 /** What is loaded: the first page, its failure, nothing to show, or the media loaded so far. */
 private sealed interface MediaLoad {

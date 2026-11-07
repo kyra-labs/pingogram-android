@@ -142,6 +142,27 @@ class ChatListFolderSwitchTest {
     }
 
     @Test
+    fun `back in a folder with pinned chats, the "Pinned" header counts among the rows above the chats`() {
+        // Chats 1 and 2 pinned under "Pinned" (index 0), so chat 6 is the list's index 6.
+        val pinned = allChats.copy(content = ChatListContent.Content(numberedRows(1..30), pinnedCount = 2))
+        val listState = LazyListState()
+        state = pinned
+        setScreen(listState)
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToIndex(6)
+        // The clock is stepped by hand here: the scroll lands in the next frame.
+        composeRule.mainClock.advanceTimeByFrame()
+        assertEquals(6L, firstVisibleKey(listState))
+
+        state = folder(1, numberedRows(8..20))
+        composeRule.waitForIdle()
+        state = pinned
+        composeRule.waitForIdle()
+
+        assertEquals(6, listState.firstVisibleItemIndex)
+        assertEquals(6L, firstVisibleKey(listState))
+    }
+
+    @Test
     fun `each folder keeps its own position`() {
         val listState = LazyListState()
         state = allChats

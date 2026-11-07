@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,21 +39,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -66,23 +62,21 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * out on the fast ones. The slide and the fade are read in the draw phase, so they never recompose or relayout.
  *
  * Hidden, it stays composed, but is neither placed (drawn, touched) nor in the semantics tree. Screens pushed above a
- * tab hide it, and composing it anew on the way back, its labels measured again ([labelsFit]), would add to the frame
+ * tab hide it, and composing it anew on the way back would add to the frame
  * that composes the tab's screen again, at the start of the back transition.
  *
  * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
- * back as it was instead of deselecting its tab on the way out and selecting it again on the way in. [searchOpen] and
- * [search] are the search button's, [accountMenu] the Settings tab's ([PingogramNavigationBar]).
+ * back as it was instead of deselecting its tab on the way out and selecting it again on the way in. [accountMenu] is
+ * the Settings tab's ([PingogramNavigationBar]).
  */
 @Composable
 internal fun FloatingNavigationBar(
     visible: Boolean,
     selected: TopLevelDestination?,
     onSelect: (TopLevelDestination) -> Unit,
-    onSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    searchOpen: Boolean = false,
-    search: GlobalSearchState? = null,
     accountMenu: AccountMenuActions? = null,
+    newChat: (@Composable () -> Unit)? = null,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     // 1 while shown, 0 while hidden: how far the bar is in its place, and its alpha.
@@ -102,10 +96,8 @@ internal fun FloatingNavigationBar(
     PingogramNavigationBar(
         selected = selected,
         onSelect = onSelect,
-        onSearch = onSearch,
-        searchOpen = searchOpen,
-        search = search,
         accountMenu = accountMenu,
+        newChat = newChat,
         modifier =
             modifier
                 .placedWhile { visible || placed.value }
@@ -126,67 +118,55 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
 
 /**
  * The navigation bar of compact windows (`docs/DESIGN_SYSTEM.md` §6.1): a pill that floats over the content and holds
- * the [TopLevelDestination]s as tabs, with the search button detached at its end. It takes less height than a
- * navigation bar and keeps the tabs within thumb's reach.
+ * the [TopLevelDestination]s as tabs. It takes less height than a navigation bar and keeps the tabs within thumb's
+ * reach. Search opens from the Chats tab's header (owner decision 2026-11-06).
  *
  * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
  * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
- * `sizes.floatingNavigationBar` (56 dp), as tall as the search button beside it. The tabs are
- * built from tokens: the selected tab shows its filled icon and label on a `secondaryContainer` pill, the others only
- * their label. Where the labels do not fit (narrow phones, large font scales), the other tabs show their outlined icon
- * instead, named for screen readers by the label.
+ * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens (owner decision 2026-11-06): the selected tab
+ * shows its filled icon and label on a `secondaryContainer` pill, the others only their outlined icon, named for screen
+ * readers by the label. With an [accountMenu], a long press on the Settings tab opens it ([AccountMenuAnchor]).
  *
- * The search button ([onSearch]) grows into search and back ([SearchButtonSlot], through [search]'s container
- * transform), and is away while search is [searchOpen]. With an [accountMenu], a long press on the Settings tab opens
- * it ([AccountMenuAnchor]).
+ * [newChat] (the Chats tab's "New chat", [BarNewChatButton]) sits `spacing.small` beside the pill, at its end. The pill
+ * stays centred in the window, wherever the button is or is not, so switching tabs never moves it; only where the two
+ * would not fit side by side does the pill move toward the start, by what is missing.
  */
 @Composable
 internal fun PingogramNavigationBar(
     selected: TopLevelDestination?,
     onSelect: (TopLevelDestination) -> Unit,
-    onSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    searchOpen: Boolean = false,
-    search: GlobalSearchState? = null,
     accountMenu: AccountMenuActions? = null,
+    newChat: (@Composable () -> Unit)? = null,
 ) {
-    BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
-        val showLabels = labelsFit(maxWidth)
-        val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
-        val spacing = MaterialTheme.spacing
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
+    val gap = MaterialTheme.spacing.small
+    Layout(
+        content = {
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
                 color = colors.toolbarContainerColor,
                 contentColor = colors.toolbarContentColor,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
-                NavigationTabs(selected, onSelect, showLabels, accountMenu)
+                NavigationTabs(selected, onSelect, accountMenu)
             }
-            // As tall as the pill: the floating toolbar's button fills what it is given.
-            SearchButtonSlot(
-                shown = !searchOpen,
-                search = search,
-                shape = CircleShape,
-                modifier = Modifier.size(MaterialTheme.sizes.floatingNavigationBar),
-            ) { transform ->
-                // A circle in the toolbar's own colors, so the pill and the button read as one bar.
-                FloatingToolbarDefaults.StandardFloatingActionButton(
-                    onClick = onSearch,
-                    modifier = transform,
-                    shape = CircleShape,
-                    containerColor = colors.toolbarContainerColor,
-                    contentColor = colors.toolbarContentColor,
-                ) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_search),
-                        contentDescription = stringResource(R.string.nav_search),
-                    )
-                }
-            }
+            newChat?.invoke()
+        },
+        modifier = modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset),
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val pill = measurables[0].measure(loose)
+        val button = measurables.getOrNull(1)?.measure(loose)
+        val gapPx = gap.roundToPx()
+        val width = constraints.maxWidth
+        val height = maxOf(pill.height, button?.height ?: 0)
+        val centred = (width - pill.width) / 2
+        val missing = if (button == null) 0 else centred + pill.width + gapPx + button.width - width
+        val pillX = (centred - missing.coerceAtLeast(0)).coerceAtLeast(0)
+        layout(width, height) {
+            pill.placeRelative(pillX, (height - pill.height) / 2)
+            button?.placeRelative(pillX + pill.width + gapPx, (height - button.height) / 2)
         }
     }
 }
@@ -196,7 +176,6 @@ internal fun PingogramNavigationBar(
 private fun NavigationTabs(
     selected: TopLevelDestination?,
     onSelect: (TopLevelDestination) -> Unit,
-    showLabels: Boolean,
     accountMenu: AccountMenuActions?,
 ) {
     Row(
@@ -216,7 +195,7 @@ private fun NavigationTabs(
                 NavigationTab(
                     destination = destination,
                     selected = isSelected,
-                    showLabel = showLabels || isSelected,
+                    showLabel = isSelected,
                     onClick = { onSelect(destination) },
                     modifier = Modifier.fillMaxHeight().then(trigger),
                 )
@@ -320,40 +299,6 @@ private fun Modifier.tabIndicator(
     }
 
 /**
- * Whether every tab can show its label in [maxWidth], the bar's width with the search button. Measured for the widest
- * selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another tab
- * never switches between labels and icons.
- */
-@Composable
-private fun labelsFit(maxWidth: Dp): Boolean {
-    val textMeasurer = rememberTextMeasurer()
-    val typography = MaterialTheme.typography
-    val spacing = MaterialTheme.spacing
-    val density = LocalDensity.current
-    val barHeight = MaterialTheme.sizes.floatingNavigationBar
-    val labels = TopLevelDestination.entries.map { stringResource(it.label) }
-    return remember(textMeasurer, typography, spacing, density, barHeight, labels, maxWidth) {
-        with(density) {
-            fun width(
-                label: String,
-                emphasized: Boolean,
-            ): Int {
-                val style = if (emphasized) typography.labelLargeEmphasized else typography.labelLarge
-                return textMeasurer.measure(label, style, maxLines = 1).size.width
-            }
-            val labelsWidth = labels.sumOf { width(it, emphasized = false) }.toDp()
-            val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
-            val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
-            val icon = ICON_SIZE + spacing.small
-            val toolbarPadding = spacing.small * 2
-            // The search button is as large as the pill is high, a small gap away.
-            val searchButton = barHeight + spacing.small
-            labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding + searchButton <= maxWidth
-        }
-    }
-}
-
-/**
  * Shows this content at [fraction] of its width (0 hides it, values past 1 leave room after it), clipped, the fraction
  * read in the layout phase. Unlike `AnimatedVisibility`'s horizontal expand and shrink, whose intrinsic width stays
  * the content's full width, its intrinsic width is the width it takes: [HorizontalFloatingToolbar] sizes itself from
@@ -368,13 +313,10 @@ private fun Modifier.revealHorizontally(fraction: () -> Float): Modifier =
         layout(width, placeable.height) { placeable.placeRelative(0, 0) }
     }
 
-/** Material Symbols are 24 dp (`docs/DESIGN_SYSTEM.md` §8). */
-private val ICON_SIZE = 24.dp
-
 @PingogramPreviews
 @Composable
 private fun PingogramNavigationBarPreview() {
     PingogramPreview {
-        PingogramNavigationBar(selected = TopLevelDestination.Chats, onSelect = {}, onSearch = {})
+        PingogramNavigationBar(selected = TopLevelDestination.Chats, onSelect = {})
     }
 }

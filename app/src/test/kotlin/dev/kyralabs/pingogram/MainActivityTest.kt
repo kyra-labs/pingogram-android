@@ -6,6 +6,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
@@ -112,7 +113,8 @@ class MainActivityTest {
 
     private fun tab(
         @StringRes label: Int,
-    ): SemanticsNodeInteraction = composeRule.onNode(hasText(string(label)) and isSelectable())
+    ): SemanticsNodeInteraction =
+        composeRule.onNode((hasText(string(label)) or hasContentDescription(string(label))) and isSelectable())
 
     private fun string(
         @StringRes id: Int,

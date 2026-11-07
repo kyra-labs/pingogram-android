@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
@@ -24,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
@@ -61,16 +61,17 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
 /**
- * A user's or chat's avatar (`docs/DESIGN_SYSTEM.md` §2.2, §4, §8): its [photo] in a circle, or a placeholder while the
- * photo loads, when there is none, and when it cannot be loaded.
+ * A user's or chat's avatar (`docs/DESIGN_SYSTEM.md` §2.2, §4, §8): its [photo] in its [shape] (a circle, or a rounded
+ * square for a forum, [AvatarShape.ofChat]), or a placeholder while the photo loads, when there is none, and when it
+ * cannot be loaded.
  *
  * - **Photo**: `photo.small` (160 × 160 px), loaded from TDLib's files by Coil ([TdlibFileImage]) at the avatar's
  *   [size] and faded in on the motion scheme's default effects spring; shown at once when Coil's memory cache has it,
  *   e.g. when a list scrolls back.
  * - **Placeholder**: the initials of [name] (or [placeholderIcon], or a person when [name] has no initials) on a
- *   circle in one of the four avatar color pairs, chosen by [id], so a chat looks the same everywhere. Circles: a
- *   person's picture reads best in a plain circle, and one silhouette per list reads calmer than one per chat. On a
- *   selected or open row
+ *   [shape] in one of the four avatar color pairs, chosen by [id], so a chat looks the same everywhere. Circles but
+ *   for forums: a person's picture reads best in a plain circle, and one silhouette per list reads calmer than one per
+ *   chat; a forum's rounded square tells it apart from a group, as its rows open topics. On a selected or open row
  *   ([onSelection]) the placeholder takes `primary`, which stands out from the row's `secondaryContainer`.
  * - **Online**: a dot in `MaterialTheme.pingogramColors.online` at the bottom end, set off from the avatar by a ring of
  *   [onlineRingColor]. It grows in and shrinks away on the motion scheme's fast spatial spring.
@@ -93,6 +94,7 @@ import kotlinx.coroutines.launch
  *   Messages or a deleted account.
  * @param contentDescription what the avatar shows, for screen readers; null keeps it decorative.
  * @param onlineRingColor the color behind the avatar (a row's container color), which sets the online dot off.
+ * @param shape the avatar's shape: [AvatarShape.ofChat] for a chat's avatar, a circle for a person's.
  * @param selected shows the selected look instead of the avatar.
  * @param onSelection the avatar sits on a selected or open row, whose `secondaryContainer` would swallow a
  *   container-colored placeholder.
@@ -109,6 +111,7 @@ fun Avatar(
     @DrawableRes placeholderIcon: Int? = null,
     contentDescription: String? = null,
     onlineRingColor: Color = MaterialTheme.colorScheme.surface,
+    shape: AvatarShape = AvatarShape.Circle,
     selected: Boolean = false,
     onSelection: Boolean = false,
 ) {
@@ -125,6 +128,7 @@ fun Avatar(
     val everSelected = remember { SelectionSeen() }
     if (selected) everSelected.value = true
     val check = if (everSelected.value) painterResource(R.drawable.ic_check) else null
+    val clipShape = shape.toShape()
     Box(
         modifier
             .size(size)
@@ -132,7 +136,7 @@ fun Avatar(
             // Outside the online dot, which fades out with the avatar.
             .avatarSelection(
                 selected = selected,
-                avatarShape = MaterialShapes.Circle,
+                avatarShape = shape.rememberPolygon(size),
                 mark = SelectedMark(check, colors.primary, colors.onPrimary),
                 animationSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultSpatialSpec()),
             ).onlineIndicator(
@@ -146,12 +150,19 @@ fun Avatar(
             name = name,
             colors = placeholderColors,
             size = size,
+            shape = clipShape,
             icon = placeholderIcon,
             photoAlpha = photoAlpha,
             modifier = Modifier.matchParentSize().fadingOutAs(photoAlpha),
         )
         if (fileId != null && photoAlpha != null) {
-            AvatarPhoto(fileId = fileId, size = size, alpha = photoAlpha, modifier = Modifier.matchParentSize())
+            AvatarPhoto(
+                fileId = fileId,
+                size = size,
+                shape = clipShape,
+                alpha = photoAlpha,
+                modifier = Modifier.matchParentSize(),
+            )
         }
     }
 }
@@ -172,6 +183,7 @@ private fun Modifier.fadingOutAs(photoAlpha: Animatable<Float, AnimationVector1D
 private fun AvatarPhoto(
     fileId: Int,
     size: Dp,
+    shape: Shape,
     alpha: Animatable<Float, AnimationVector1D>,
     modifier: Modifier,
 ) {
@@ -193,7 +205,7 @@ private fun AvatarPhoto(
         modifier =
             modifier.graphicsLayer {
                 this.alpha = alpha.value
-                shape = CircleShape
+                this.shape = shape
                 clip = true
             },
         contentScale = ContentScale.Crop,
@@ -211,15 +223,16 @@ private fun AvatarPhoto(
 }
 
 /**
- * The placeholder's circle with the initials of [name], or [icon]. Behind a photo ([photoAlpha]) the initials are
+ * The placeholder's [shape] with the initials of [name], or [icon]. Behind a photo ([photoAlpha]) the initials are
  * drawn by [lazyInitials], which lays them out only while the photo does not cover them yet.
  */
-@Suppress("LongParameterList") // The name, its colors, size and icon, the photo fading in over it, the modifier.
+@Suppress("LongParameterList") // The name, its colors, size, shape and icon, the photo fading in over it, the modifier.
 @Composable
 private fun AvatarPlaceholder(
     name: String,
     colors: AvatarColors,
     size: Dp,
+    shape: Shape,
     @DrawableRes icon: Int?,
     photoAlpha: Animatable<Float, AnimationVector1D>?,
     modifier: Modifier,
@@ -228,7 +241,7 @@ private fun AvatarPlaceholder(
     val showsInitials = icon == null && initials.isNotEmpty()
     // The photo's fade-in, where the initials sit behind a photo: lazyInitials draws them.
     val behindPhoto = photoAlpha?.takeIf { showsInitials }
-    val background = modifier.background(colors.container, CircleShape)
+    val background = modifier.background(colors.container, shape)
     Box(
         if (behindPhoto != null) {
             background.lazyInitials(initials, colors.content, rememberInitialsStyle(size), behindPhoto)
@@ -345,6 +358,14 @@ internal fun AvatarShowcase(modifier: Modifier = Modifier) {
                 Avatar(photo = SamplePhoto, name = "Ada Lovelace", id = 10, size = medium, selected = true)
                 Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, isOnline = true, selected = true)
                 Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, onSelection = true)
+            }
+            // Forums: a rounded square, a photo in it, selected, and on a selected row.
+            ShowcaseRow {
+                val forum = AvatarShape.RoundedSquare
+                Avatar(photo = null, name = "Book club", id = 12, size = medium, shape = forum)
+                Avatar(photo = SamplePhoto, name = "Book club", id = 13, size = medium, shape = forum)
+                Avatar(photo = null, name = "Book club", id = 12, size = medium, shape = forum, selected = true)
+                Avatar(photo = null, name = "Book club", id = 12, size = medium, shape = forum, onSelection = true)
             }
             ShowcaseRow {
                 listOf(ProfileSize, medium, BetweenSize, MaterialTheme.sizes.avatarSmall, TinySize).forEach { size ->

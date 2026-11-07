@@ -279,61 +279,6 @@ class ChatListScreenTest {
     // New chat
 
     @Test
-    fun `the New chat button opens the New chat screen`() {
-        setScreen(ChatListPreviewData.content)
-
-        composeRule.onNode(newChatButton).assertIsDisplayed().performClick()
-
-        assertEquals(listOf(ChatListEvent.NewChat), events)
-    }
-
-    @Test
-    fun `the New chat button collapses as the list scrolls towards its end and expands as it scrolls back`() {
-        setScreen(ChatListPreviewData.content)
-        val label = string(R.string.new_chat)
-        val list = composeRule.onNode(hasScrollAction())
-        val expandedWidth =
-            composeRule
-                .onNode(newChatButton)
-                .fetchSemanticsNode()
-                .size.width
-
-        list.performTouchInput { swipeUp() }
-        composeRule.waitForIdle()
-        val collapsedWidth =
-            composeRule
-                .onNode(newChatButton)
-                .fetchSemanticsNode()
-                .size.width
-        list.performTouchInput { swipeDown() }
-        composeRule.waitForIdle()
-
-        assertTrue("$collapsedWidth < $expandedWidth", collapsedWidth < expandedWidth)
-        assertEquals(
-            expandedWidth,
-            composeRule
-                .onNode(newChatButton)
-                .fetchSemanticsNode()
-                .size.width,
-        )
-        composeRule.onNode(newChatButton).assertContentDescriptionEquals(label)
-    }
-
-    @Test
-    fun `the New chat button hides in selection mode`() {
-        setScreen(ChatListPreviewData.selecting)
-
-        assertNewChatButtonHidden()
-    }
-
-    @Test
-    fun `the archive has no New chat button`() {
-        setScreen(ChatListPreviewData.archived)
-
-        composeRule.onNode(newChatButton).assertDoesNotExist()
-    }
-
-    @Test
     fun `no chats yet offers a New chat button`() {
         setScreen(ChatListPreviewData.empty)
 
@@ -407,17 +352,6 @@ class ChatListScreenTest {
         setScreen(ChatListPreviewData.archivedEmpty)
 
         composeRule.onNode(hasText(string(R.string.new_chat))).assertDoesNotExist()
-    }
-
-    /** The "New chat" floating action button: named for screen readers, whether or not it shows its label. */
-    private val newChatButton: SemanticsMatcher
-        get() = hasContentDescription(string(R.string.new_chat)) and hasClickAction()
-
-    /** The button is not on screen: scaled away by its animation, or not there at all. */
-    private fun assertNewChatButtonHidden() {
-        composeRule.waitForIdle()
-        val buttons = composeRule.onAllNodes(newChatButton)
-        repeat(buttons.fetchSemanticsNodes().size) { buttons[it].assertIsNotDisplayed() }
     }
 
     // The delete dialog

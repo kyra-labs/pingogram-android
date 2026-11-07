@@ -45,6 +45,9 @@ internal enum class DemoFile(
 
     /** Ada's story: a portrait gradient, as a phone's photo story is. */
     StoryPhoto(11, "story.png"),
+
+    /** The photo in the channel's rich post: Pingogram's blue into a warm orange. */
+    RichPhoto(12, "rich.png"),
     ;
 
     companion object {
@@ -79,6 +82,7 @@ internal object AndroidDemoFileWriter : DemoFileWriter {
             DemoFile.StickerPurple -> rings(target, PURPLE_RINGS)
             DemoFile.StickerGold -> rings(target, GOLD_RINGS)
             DemoFile.StoryPhoto -> gradient(target, BRAND_TEAL, WARM_PINK, STORY_WIDTH, STORY_HEIGHT)
+            DemoFile.RichPhoto -> gradient(target, BRAND_BLUE, WARM_ORANGE)
         }
     }
 

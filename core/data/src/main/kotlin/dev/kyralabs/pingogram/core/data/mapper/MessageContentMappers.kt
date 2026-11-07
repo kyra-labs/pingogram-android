@@ -67,6 +67,10 @@ internal fun TdApi.MessageContent.toMessageContent(
             MessageContent.Story(storyPosterChatId, storyId)
         }
 
+        is TdApi.MessageRichMessage -> {
+            message?.toRichMessage()?.let(MessageContent::RichMessage) ?: MessageContent.Unsupported
+        }
+
         is TdApi.MessageExpiredPhoto -> {
             MessageContent.Expired(ExpiredMedia.Photo)
         }

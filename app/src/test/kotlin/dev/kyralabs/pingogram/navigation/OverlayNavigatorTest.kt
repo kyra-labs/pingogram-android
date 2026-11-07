@@ -4,7 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -15,7 +18,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dev.kyralabs.pingogram.core.ui.navigation.OVERLAY_ENTER_TIMEOUT_MILLIS
 import dev.kyralabs.pingogram.core.ui.navigation.OverlayHost
+import dev.kyralabs.pingogram.core.ui.navigation.PostponeOverlayEnter
 import dev.kyralabs.pingogram.core.ui.navigation.overlay
 import dev.kyralabs.pingogram.core.ui.navigation.rememberOverlayNavigator
 import dev.kyralabs.pingogram.ui.ActivityRegistration
@@ -30,7 +35,8 @@ import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute as Picture
 /**
  * `core:ui`'s overlay destinations (the media viewer's, `OverlayNavigator`): the screen below an overlay stays
  * composed and started while it shows, so coming back composes nothing anew, and is hidden from screen readers
- * meanwhile; the overlay keeps its route's arguments and leaves the back stack with back.
+ * meanwhile; the overlay keeps its route's arguments and leaves the back stack with back, and comes in only once its
+ * content is ready.
  */
 @RunWith(RobolectricTestRunner::class)
 class OverlayNavigatorTest {
@@ -45,6 +51,9 @@ class OverlayNavigatorTest {
     /** How often the screen below was composed from nothing. */
     private var screensCreated = 0
 
+    /** Whether the overlay's content has what it shows ([PostponeOverlayEnter]). */
+    private var ready by mutableStateOf(true)
+
     private fun setContent() {
         composeRule.setContent {
             val controller = rememberNavController().also { navController = it }
@@ -56,6 +65,7 @@ class OverlayNavigatorTest {
                         Text(SCREEN)
                     }
                     overlay<Picture> { entry ->
+                        PostponeOverlayEnter(ready)
                         Box(Modifier.fillMaxSize()) { Text("$PICTURE ${entry.toRoute<Picture>().messageId}") }
                     }
                 }
@@ -99,6 +109,38 @@ class OverlayNavigatorTest {
         composeRule.waitForIdle()
 
         assertEquals(Lifecycle.State.DESTROYED, entry.lifecycle.currentState)
+    }
+
+    @Test
+    fun `an overlay waits for its content before it comes in`() {
+        ready = false
+        setContent()
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.runOnUiThread { navController.navigate(Picture(chatId = 1, messageId = 5)) }
+        composeRule.mainClock.advanceTimeBy(OVERLAY_ENTER_TIMEOUT_MILLIS / 2)
+        val entry = navController.currentBackStackEntry!!
+        // Composed but held at the start of its way in.
+        composeRule.onNodeWithText("$PICTURE 5").assertExists()
+        assertEquals(Lifecycle.State.STARTED, entry.lifecycle.currentState)
+
+        ready = true
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+
+        assertEquals(Lifecycle.State.RESUMED, entry.lifecycle.currentState)
+    }
+
+    @Test
+    fun `an overlay whose content is never ready comes in after the timeout`() {
+        ready = false
+        setContent()
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.runOnUiThread { navController.navigate(Picture(chatId = 1, messageId = 5)) }
+        composeRule.mainClock.advanceTimeBy(OVERLAY_ENTER_TIMEOUT_MILLIS * 3)
+
+        assertEquals(Lifecycle.State.RESUMED, navController.currentBackStackEntry!!.lifecycle.currentState)
     }
 
     private companion object {
