@@ -117,4 +117,20 @@
     <string name="contacts_recent_calls">Recent calls</string>
     <string name="contacts_my_qr_code">Your QR code</string>
     <string name="contacts_scan_qr_code">Scan QR code</string>
+    <!-- The experimental look (docs/DESIGN_SYSTEM.md §13.8). -->
+    <plurals name="contacts_count">
+        <item quantity="one">%1$d on Telegram</item>
+        <item quantity="other">%1$d on Telegram</item>
+    </plurals>
+    <string name="contacts_status_separator">" · "</string>
+    <plurals name="contacts_online_count">
+        <item quantity="one">%1$d online</item>
+        <item quantity="other">%1$d online</item>
+    </plurals>
+    <string name="contacts_actions">Contact actions</string>
+    <string name="contacts_action_invite">Invite</string>
+    <string name="contacts_action_my_qr">My QR</string>
+    <string name="contacts_action_scan">Scan</string>
+    <string name="contacts_online_now">Online now</string>
+    <string name="contacts_online_person">%1$s, online</string>
 </resources>

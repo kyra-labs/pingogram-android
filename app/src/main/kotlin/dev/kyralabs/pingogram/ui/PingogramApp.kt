@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
@@ -65,6 +66,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
+import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.navigateToFeedback
 import dev.kyralabs.pingogram.link.LinkDispatcher
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
@@ -175,6 +177,8 @@ fun PingogramApp(
     val headerActions = rememberChatListHeaderActions(navController, search, searchOpen, openSearch, accountMenu)
     val newChatOpen by rememberNewChatOpen(navController)
     val openNewChat = remember(navController) { { navController.navigate(NewChatRoute) { launchSingleTop = true } } }
+    val openNewContact = remember(navController) { { navController.navigateToNewContact() } }
+    val experimental = LocalExperimentalUi.current
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
     val openLockedChats =
@@ -193,11 +197,21 @@ fun PingogramApp(
                     // The scaffold shows its primary action even without navigation: "New chat" on the Chats tab.
                     primaryActionContent = {
                         if (showRail) {
-                            RailNewChatButton(
-                                navigationSuiteType = adaptiveType,
-                                shown = currentTab == TopLevelDestination.Chats && !newChatOpen,
-                                onClick = openNewChat,
-                            )
+                            Box {
+                                RailNewChatButton(
+                                    navigationSuiteType = adaptiveType,
+                                    shown = currentTab == TopLevelDestination.Chats && !newChatOpen,
+                                    onClick = openNewChat,
+                                )
+                                // The experimental look's "Add contact" (docs/DESIGN_SYSTEM.md §13.8).
+                                if (experimental) {
+                                    RailAddContactButton(
+                                        navigationSuiteType = adaptiveType,
+                                        shown = currentTab == TopLevelDestination.Contacts,
+                                        onClick = openNewContact,
+                                    )
+                                }
+                            }
                         }
                     },
                 ) {
@@ -237,10 +251,18 @@ fun PingogramApp(
                                 onSelect = { navController.selectTab(it, currentTab, tabReselection) },
                                 accountMenu = accountMenu,
                                 newChat = {
-                                    BarNewChatButton(
-                                        shown = barTab == TopLevelDestination.Chats && !newChatOpen,
-                                        onClick = openNewChat,
-                                    )
+                                    Box {
+                                        BarNewChatButton(
+                                            shown = barTab == TopLevelDestination.Chats && !newChatOpen,
+                                            onClick = openNewChat,
+                                        )
+                                        if (experimental) {
+                                            BarAddContactButton(
+                                                shown = barTab == TopLevelDestination.Contacts,
+                                                onClick = openNewContact,
+                                            )
+                                        }
+                                    }
                                 },
                                 modifier =
                                     Modifier

@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
 import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
+import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
@@ -115,6 +116,84 @@ internal fun RailNewChatButton(
                 Icon(painter = icon, contentDescription = label)
             }
         }
+    }
+}
+
+/**
+ * The Contacts tab's "Add contact" in the experimental look (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to confirm,
+ * 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp rounded square
+ * on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and fades in and out;
+ * [onClick] opens Add contact.
+ */
+@Composable
+internal fun BarAddContactButton(
+    shown: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val size = MaterialTheme.sizes.experimentalFab
+    val shape = MaterialTheme.shapes.largeIncreased
+    FadingButton(shown, modifier.size(size)) {
+        FloatingToolbarDefaults.StandardFloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.size(size),
+            shape = shape,
+            containerColor = colors.tertiaryContainer,
+            contentColor = colors.onTertiaryContainer,
+        ) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_person_add),
+                contentDescription = stringResource(ContactsR.string.contacts_add),
+            )
+        }
+    }
+}
+
+/**
+ * The rail's "Add contact" on the Contacts tab in the experimental look, as [RailNewChatButton] on the Chats tab: a
+ * round FAB on the collapsed rail, an extended one with its label on the expanded rail. It fades in and out with
+ * [shown].
+ */
+@Composable
+internal fun RailAddContactButton(
+    navigationSuiteType: NavigationSuiteType,
+    shown: Boolean,
+    onClick: () -> Unit,
+) {
+    val icon = painterResource(UiR.drawable.ic_person_add)
+    val label = stringResource(ContactsR.string.contacts_add)
+    FadingButton(shown, Modifier.padding(start = RAIL_HEADER_START_PADDING)) {
+        if (navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded) {
+            ExtendedFloatingActionButton(
+                onClick = onClick,
+                icon = { Icon(painter = icon, contentDescription = null) },
+                text = { Text(label) },
+                shape = CircleShape,
+            )
+        } else {
+            FloatingActionButton(onClick = onClick, shape = CircleShape) {
+                Icon(painter = icon, contentDescription = label)
+            }
+        }
+    }
+}
+
+/** [button] while [shown], fading in and out on the effects springs. */
+@Composable
+private fun FadingButton(
+    shown: Boolean,
+    modifier: Modifier = Modifier,
+    button: @Composable () -> Unit,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedVisibility(
+        visible = shown,
+        modifier = modifier,
+        enter = fadeIn(motionScheme.fastEffectsSpec()),
+        exit = fadeOut(motionScheme.fastEffectsSpec()),
+    ) {
+        button()
     }
 }
 
