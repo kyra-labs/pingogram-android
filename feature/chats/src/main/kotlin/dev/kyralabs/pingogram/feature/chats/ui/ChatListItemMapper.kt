@@ -153,7 +153,13 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         title = chatTitle(chat, isSavedMessages, isDeletedAccount),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
-        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
+        avatarShape =
+            AvatarShape.ofChat(
+                isForum = supergroup?.isForum == true,
+                isGroup = chat.isGroup,
+                isChannel = chat.isChannel,
+                isSavedMessages = isSavedMessages,
+            ),
         isSavedMessages = isSavedMessages,
         isOnline = !isSavedMessages && user?.showsOnlineAt(now) == true,
         badge = titleBadge(user, supergroup),
@@ -231,11 +237,29 @@ private fun RowInputs.preview(
     val message = chat.lastMessage
     val secretState = secretChat?.stateText(user?.shortName() ?: UiText.Plain(chat.title))
     return when {
-        action != null -> ChatPreview.Action(action)
-        secretState != null -> ChatPreview.SecretChat(secretState)
-        draft != null -> ChatPreview.Draft(draftPreviewText(draft.content))
-        message != null -> ChatPreview.Message(senderPrefix(message, name), messagePreviewText(message, myUserId, name))
-        else -> ChatPreview.None
+        action != null -> {
+            ChatPreview.Action(action)
+        }
+
+        secretState != null -> {
+            ChatPreview.SecretChat(secretState)
+        }
+
+        draft != null -> {
+            ChatPreview.Draft(draftPreviewText(draft.content))
+        }
+
+        message != null -> {
+            ChatPreview.Message(
+                sender = senderPrefix(message, name),
+                text = messagePreviewText(message, myUserId, name),
+                contentIcon = contentIcon(message.content),
+            )
+        }
+
+        else -> {
+            ChatPreview.None
+        }
     }
 }
 
