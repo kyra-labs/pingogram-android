@@ -180,4 +180,67 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
             assertEquals(2, divider.count)
             assertTrue(divider.isChannel)
         }
+
+    @Test
+    fun `a group's short word in capitals shouts, other messages do not`() =
+        runViewModelTest {
+            users.setUsers(user(ADA), user(GRACE))
+
+            fun text(
+                id: Long,
+                value: String,
+                sender: Long = GRACE,
+            ) = groupMessage(
+                id,
+                sender,
+            ).copy(content = MessageContent.Text(FormattedText(value, persistentListOf()), linkPreview = null))
+            val viewModel =
+                showing(
+                    groupChat,
+                    history(
+                        text(1, "LOL"),
+                        text(2, "OK!"),
+                        text(3, "Hi"),
+                        text(4, "NOT NOW"),
+                        text(5, "LOLOLOL"),
+                        text(6, "123"),
+                    ),
+                )
+            runCurrent()
+
+            assertEquals(
+                listOf(true, true, false, false, false, false),
+                (1L..6L).map { viewModel.bubble(it).isShout },
+            )
+        }
+
+    @Test
+    fun `a channel post's short bold first line is its headline`() =
+        runViewModelTest {
+            fun post(
+                id: Long,
+                text: String,
+                boldLength: Int,
+            ) = message(
+                id,
+                chatId = ChatFixtures.CHANNEL_CHAT,
+                content =
+                    MessageContent.Text(
+                        FormattedText(text, persistentListOf(TextEntity(0, boldLength, TextEntityType.Bold))),
+                        linkPreview = null,
+                    ),
+            ).copy(isChannelPost = true)
+            val viewModel =
+                showing(
+                    ChatFixtures.channelChat,
+                    history(
+                        post(1, "36dea27\nThe build of today", boldLength = 7),
+                        post(2, "Partly bold\nThe rest", boldLength = 4),
+                        post(3, "Bold without more", boldLength = 17),
+                    ),
+                )
+            runCurrent()
+
+            assertEquals(listOf(7, 0, 0), (1L..3L).map { viewModel.bubble(it).headlineLength })
+        }
 }
