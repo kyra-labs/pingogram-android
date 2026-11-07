@@ -203,11 +203,11 @@ private fun BoxScope.PhotoLayers(
     val full = rememberViewerImageAlpha(media.full.file.id)
     // The preview shows at full opacity from the start (what the bubble decoded stands in while it loads), so what
     // covers the minithumbnail is its having loaded, or the full size having faded in.
-    var previewShown by remember(media.full.file.id) { mutableStateOf(false) }
+    val previewShown = remember(media.full.file.id) { mutableStateOf(false) }
     BlurredMinithumbnail(
         media.minithumbnail,
         Modifier.matchParentSize(),
-        covered = { previewShown || full.value >= 1f },
+        covered = remember(full, previewShown) { { previewShown.value || full.value >= 1f } },
     )
     val preview = remember(media, files) { previewSize(media, files) }
     if (preview != null) {
@@ -217,7 +217,7 @@ private fun BoxScope.PhotoLayers(
             preview.height,
             Modifier.matchParentSize(),
             fadeIn = false,
-            onShown = { previewShown = true },
+            onShown = { previewShown.value = true },
         )
     }
     ViewerImage(media.full.file.id, media.full.width, media.full.height, Modifier.matchParentSize(), alpha = full)
@@ -241,7 +241,7 @@ private fun BoxScope.VideoLayers(
         BlurredMinithumbnail(
             media.minithumbnail,
             Modifier.matchParentSize(),
-            covered = if (picture != null) coveredBy(alpha) else ({ false }),
+            covered = if (picture != null) remember(alpha) { coveredBy(alpha) } else NotCovered,
         )
         if (picture != null) {
             ViewerImage(picture.file.id, picture.width, picture.height, Modifier.matchParentSize(), alpha = alpha)
@@ -351,3 +351,6 @@ private val Thumbnail.isPicture: Boolean
             ThumbnailFormat.Jpeg, ThumbnailFormat.Png, ThumbnailFormat.Webp, ThumbnailFormat.Gif -> true
             ThumbnailFormat.Mpeg4, ThumbnailFormat.Webm, ThumbnailFormat.Tgs -> false
         }
+
+/** Nothing covers the minithumbnail: an item without a picture to show over it. */
+private val NotCovered: () -> Boolean = { false }

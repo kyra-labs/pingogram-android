@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -178,7 +179,7 @@ internal fun VideoThumbnail(
             still.minithumbnail,
             Modifier.matchParentSize(),
             dim,
-            covered = if (picture != null) coveredBy(alpha) else NeverCovered,
+            covered = if (picture != null) remember(alpha) { coveredBy(alpha) } else NeverCovered,
         )
         if (picture != null) {
             val density = LocalDensity.current

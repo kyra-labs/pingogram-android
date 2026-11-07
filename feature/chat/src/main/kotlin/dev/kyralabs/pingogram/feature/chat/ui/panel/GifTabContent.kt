@@ -253,7 +253,7 @@ private fun GifGrid(
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
             items(count = gifs.size, key = { gifs[it].file.id }, contentType = { GIF }) { index ->
-                GifCell(gifs[index], cell, cellPx, onGif, onRemove)
+                GifCell(gifs[index], cellPx, onGif, onRemove)
             }
             if (footer != null) {
                 item(key = FOOTER, span = { GridItemSpan(maxLineSpan) }, contentType = FOOTER) { footer() }
@@ -263,7 +263,7 @@ private fun GifGrid(
 }
 
 /**
- * A GIF as a square cell of [cellSize], `extraSmall` corners: its still picture (its thumbnail, when that is a
+ * A GIF as a square cell, `extraSmall` corners: its still picture (its thumbnail, when that is a
  * picture) decoded at [cellPx] over the blurred minithumbnail, and a "GIF" label. Screen readers hear "GIF", send it
  * with the click and remove it with a custom action where [onRemove] is given.
  */
@@ -271,7 +271,6 @@ private fun GifGrid(
 @Composable
 private fun GifCell(
     gif: Animation,
-    cellSize: Dp,
     cellPx: Int,
     onGif: (Animation) -> Unit,
     onRemove: ((Animation) -> Unit)?,

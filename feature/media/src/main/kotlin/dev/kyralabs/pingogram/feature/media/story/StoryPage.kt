@@ -231,7 +231,7 @@ private fun StoryMediaContent(
 
             is StoryMedia.Photo -> {
                 val alpha = rememberViewerImageAlpha(media.fileId)
-                BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize(), covered = coveredBy(alpha))
+                BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize(), covered = remember(alpha) { coveredBy(alpha) })
                 if (media.isReady) {
                     ViewerImage(media.fileId, widthPx, heightPx, Modifier.fillMaxSize(), alpha = alpha)
                 } else {

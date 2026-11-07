@@ -121,7 +121,7 @@ internal fun PhotoImage(
             photo.minithumbnail,
             Modifier.matchParentSize(),
             colorFilter,
-            covered = if (fileId != null) coveredBy(alpha) else NeverCovered,
+            covered = if (fileId != null) remember(alpha) { coveredBy(alpha) } else NeverCovered,
         )
         if (fileId != null) {
             TdlibImage(

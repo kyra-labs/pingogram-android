@@ -68,17 +68,20 @@ private val NeverCovered: () -> Boolean = { false }
  * their bytes, and each is a few KB at most), so a bubble scrolling back in, or the viewer's page of a bubble just
  * shown, gets the same bitmap. Null when it cannot be decoded.
  */
-fun blurredMinithumbnail(minithumbnail: Minithumbnail): ImageBitmap? {
-    BlurredMinithumbnails.cache.get(minithumbnail)?.let { return it }
+fun blurredMinithumbnail(minithumbnail: Minithumbnail): ImageBitmap? =
+    BlurredMinithumbnails.cache.get(minithumbnail)
+        ?: blur(minithumbnail)?.also { BlurredMinithumbnails.cache.put(minithumbnail, it) }
+
+/** [minithumbnail] decoded and blurred; null when it cannot be decoded. */
+private fun blur(minithumbnail: Minithumbnail): ImageBitmap? {
     val decoded = BitmapFactory.decodeByteArray(minithumbnail.jpeg, 0, minithumbnail.jpeg.size) ?: return null
     val width = decoded.width
     val height = decoded.height
     val pixels = IntArray(width * height)
     decoded.getPixels(pixels, 0, width, 0, 0, width, height)
-    val blurredPixels = gaussianBlur(pixels, width, height, BLUR_SIGMA)
-    val blurred = Bitmap.createBitmap(blurredPixels, width, height, Bitmap.Config.ARGB_8888)
     decoded.recycle()
-    return blurred.asImageBitmap().also { BlurredMinithumbnails.cache.put(minithumbnail, it) }
+    val blurred = gaussianBlur(pixels, width, height, BLUR_SIGMA)
+    return Bitmap.createBitmap(blurred, width, height, Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
 /** The blurred minithumbnails made so far, the most recently used kept. */
@@ -98,52 +101,62 @@ internal fun gaussianBlur(
     sigma: Float,
 ): IntArray {
     if (width == 0 || height == 0) return pixels.copyOf()
-    val kernel = gaussianKernel(sigma)
+    val kernel = GaussianKernel(sigma)
     val rows = IntArray(pixels.size)
-    for (y in 0 until height) blurLine(pixels, rows, kernel, y * width, 1, width)
+    for (y in 0 until height) kernel.blur(pixels, rows, Line(start = y * width, step = 1, count = width))
     val result = IntArray(pixels.size)
-    for (x in 0 until width) blurLine(rows, result, kernel, x, width, height)
+    for (x in 0 until width) kernel.blur(rows, result, Line(start = x, step = width, count = height))
     return result
 }
 
-/** Blurs the [count] pixels of [source] from [start], [step] apart, into the same places of [target]. */
-private fun blurLine(
-    source: IntArray,
-    target: IntArray,
-    kernel: FloatArray,
-    start: Int,
-    step: Int,
-    count: Int,
+/** The [count] pixels of an image's array from [start], [step] apart: a row or a column. */
+private class Line(
+    val start: Int,
+    val step: Int,
+    val count: Int,
+)
+
+/** A normalised Gaussian kernel of [sigma], three sigmas each side. */
+private class GaussianKernel(
+    sigma: Float,
 ) {
-    val radius = kernel.size / 2
-    for (i in 0 until count) {
-        var a = 0f
-        var r = 0f
-        var g = 0f
-        var b = 0f
-        for (k in kernel.indices) {
-            val pixel = source[start + (i + k - radius).coerceIn(0, count - 1) * step]
-            val weight = kernel[k]
-            a += (pixel ushr ALPHA_SHIFT and CHANNEL) * weight
-            r += (pixel ushr RED_SHIFT and CHANNEL) * weight
-            g += (pixel ushr GREEN_SHIFT and CHANNEL) * weight
-            b += (pixel and CHANNEL) * weight
+    private val radius = ceil(sigma * KERNEL_SIGMAS).toInt().coerceAtLeast(1)
+    private val weights =
+        FloatArray(radius * 2 + 1) { i -> exp(-((i - radius) * (i - radius)) / (2 * sigma * sigma)) }.also { kernel ->
+            val sum = kernel.sum()
+            for (i in kernel.indices) kernel[i] /= sum
         }
-        target[start + i * step] =
-            (a.channel() shl ALPHA_SHIFT) or (r.channel() shl RED_SHIFT) or (g.channel() shl GREEN_SHIFT) or b.channel()
+
+    /** Blurs [line] of [source] into the same places of [target]. */
+    fun blur(
+        source: IntArray,
+        target: IntArray,
+        line: Line,
+    ) {
+        val start = line.start
+        val step = line.step
+        val count = line.count
+        for (i in 0 until count) {
+            var a = 0f
+            var r = 0f
+            var g = 0f
+            var b = 0f
+            for (k in weights.indices) {
+                val pixel = source[start + (i + k - radius).coerceIn(0, count - 1) * step]
+                val weight = weights[k]
+                a += (pixel ushr ALPHA_SHIFT and CHANNEL) * weight
+                r += (pixel ushr RED_SHIFT and CHANNEL) * weight
+                g += (pixel ushr GREEN_SHIFT and CHANNEL) * weight
+                b += (pixel and CHANNEL) * weight
+            }
+            target[start + i * step] =
+                (a.channel() shl ALPHA_SHIFT) or (r.channel() shl RED_SHIFT) or (g.channel() shl GREEN_SHIFT) or
+                b.channel()
+        }
     }
 }
 
 private fun Float.channel(): Int = (this + HALF).toInt().coerceIn(0, CHANNEL)
-
-/** A normalised Gaussian kernel of [sigma], three sigmas each side. */
-private fun gaussianKernel(sigma: Float): FloatArray {
-    val radius = ceil(sigma * KERNEL_SIGMAS).toInt().coerceAtLeast(1)
-    val kernel = FloatArray(radius * 2 + 1) { i -> exp(-((i - radius) * (i - radius)) / (2 * sigma * sigma)) }
-    val sum = kernel.sum()
-    for (i in kernel.indices) kernel[i] /= sum
-    return kernel
-}
 
 /**
  * The blur the placeholders had as a `RenderEffect`: 1.5 px of the 40 px picture (enough to hide its JPEG blocks,
