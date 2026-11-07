@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
+import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
@@ -120,10 +121,54 @@ internal fun RailNewChatButton(
 }
 
 /**
- * The Contacts tab's "Add contact" in the experimental look (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to confirm,
- * 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp rounded square
- * on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and fades in and out;
- * [onClick] opens Add contact.
+ * What sits beside the floating navigation bar for [tab]: "New chat" on the Chats tab while New chat is not open
+ * ([newChatOpen]), and in the experimental look "Add contact" on the Contacts tab (`docs/DESIGN_SYSTEM.md` §13.8).
+ */
+@Composable
+internal fun BarPrimaryActions(
+    tab: TopLevelDestination?,
+    newChatOpen: Boolean,
+    onNewChat: () -> Unit,
+    onNewContact: () -> Unit,
+) {
+    Box {
+        BarNewChatButton(shown = tab == TopLevelDestination.Chats && !newChatOpen, onClick = onNewChat)
+        if (LocalExperimentalUi.current) {
+            BarAddContactButton(shown = tab == TopLevelDestination.Contacts, onClick = onNewContact)
+        }
+    }
+}
+
+/** The rail header's counterpart of [BarPrimaryActions]. */
+@Composable
+internal fun RailPrimaryActions(
+    navigationSuiteType: NavigationSuiteType,
+    tab: TopLevelDestination?,
+    newChatOpen: Boolean,
+    onNewChat: () -> Unit,
+    onNewContact: () -> Unit,
+) {
+    Box {
+        RailNewChatButton(
+            navigationSuiteType = navigationSuiteType,
+            shown = tab == TopLevelDestination.Chats && !newChatOpen,
+            onClick = onNewChat,
+        )
+        if (LocalExperimentalUi.current) {
+            RailAddContactButton(
+                navigationSuiteType = navigationSuiteType,
+                shown = tab == TopLevelDestination.Contacts,
+                onClick = onNewContact,
+            )
+        }
+    }
+}
+
+/**
+ * The Contacts tab's "Add contact" in the experimental look (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to
+ * confirm, 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp
+ * rounded square on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and
+ * fades in and out; [onClick] opens Add contact.
  */
 @Composable
 internal fun BarAddContactButton(
