@@ -263,6 +263,8 @@ class DefaultTdlibClientTest {
             runCurrent()
 
             assertTrue(tdlib.requests.size == 1 && log.messages.any { "SetTdlibParameters failed: 400" in it })
+            // TDLib's message stays out of what release builds log (docs/audit/performance-review-2026-11.md, W5).
+            assertTrue(log.warnings.none { "api_id" in it })
         }
 
     @Test
