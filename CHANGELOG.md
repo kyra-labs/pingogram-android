@@ -13,6 +13,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings has an "Experimental UI" switch, marked Beta, for trying a bolder Material 3 Expressive look for chats,
   contacts and settings. It is off by default and can be switched back anytime; with it on, Settings shows it as a
   card under your account.
+- With Experimental UI on, the chat list shows folders as chips, the kind of chat before its name, what kind of message
+  the last one is, and the time in color while a chat is unread; groups, channels and Saved Messages get avatars of
+  their own shapes.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

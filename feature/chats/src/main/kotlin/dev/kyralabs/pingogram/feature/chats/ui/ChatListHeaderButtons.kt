@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -94,7 +95,12 @@ internal fun HeaderAccountButton(
                     menuModifier
                         .then(if (experimental) Modifier.size(avatarSize) else Modifier)
                         .semantics { contentDescription = label },
-                shapes = IconButtonDefaults.shapes(),
+                shapes =
+                    if (experimental) {
+                        IconButtonShapes(shape = MaterialTheme.shapes.large, pressedShape = MaterialTheme.shapes.medium)
+                    } else {
+                        IconButtonDefaults.shapes()
+                    },
             ) {
                 val shown = account
                 if (shown != null) {
