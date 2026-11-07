@@ -245,10 +245,7 @@ private fun OverlayEntry(
     }
     val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
     if (settled) {
-        LaunchedEffect(visible) {
-            navigator.onTransitionComplete(entry)
-            if (!visible) saveableStateHolder.removeState(entry.id)
-        }
+        LaunchedEffect(visible) { completeTransition(navigator, entry, visible, saveableStateHolder) }
     }
     DisposableEffect(entry) {
         // Left before its transition ended (e.g. the whole back stack replaced): Navigation still hears of it.
@@ -260,6 +257,26 @@ private fun OverlayEntry(
                     .orEmpty()
             if (entry !in onBackStack) navigator.onTransitionComplete(entry)
         }
+    }
+}
+
+/**
+ * Tells Navigation that [entry]'s transition ended. Once it is gone (not [visible]), its content left the composition
+ * in this frame, and Navigation destroys the entry (clearing its view models) in the next one, so the frame that
+ * uncovers the screen below does not do both (docs/audit/performance-review-2026-11.md, M2); its saved state goes too.
+ */
+private suspend fun completeTransition(
+    navigator: OverlayNavigator,
+    entry: NavBackStackEntry,
+    visible: Boolean,
+    saveableStateHolder: SaveableStateHolder,
+) {
+    if (visible) {
+        navigator.onTransitionComplete(entry)
+    } else {
+        withFrameNanos {}
+        navigator.onTransitionComplete(entry)
+        saveableStateHolder.removeState(entry.id)
     }
 }
 

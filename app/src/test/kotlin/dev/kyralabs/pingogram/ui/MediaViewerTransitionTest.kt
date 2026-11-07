@@ -44,6 +44,7 @@ import org.robolectric.annotation.Config
 import java.lang.management.ManagementFactory
 import java.time.LocalTime
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
+import dev.kyralabs.pingogram.feature.media.R as MediaR
 
 /**
  * What composes, frame by frame on the test clock, while a photo opens from a conversation into the media viewer and
@@ -162,6 +163,11 @@ class MediaViewerTransitionTest {
         // after that compose nothing, in either screen, until the entry composes again as the transition settles.
         val viewerShown = opening.indexOfFirst { it.recomposed.any { name -> VIEWER_SCREEN in name } }
         assertTrue("the viewer's screen never composed: $opening", viewerShown >= 0)
+        // The bottom bar (caption, toolbar and its tooltips) composes once the way in has settled, not with the pages
+        // in the frames before the transform starts (docs/audit/performance-review-2026-11.md, M2).
+        val bottomBar = opening.indexOfFirst { it.bottomBarShown }
+        assertTrue("the bottom bar never showed", bottomBar >= 0)
+        assertTrue("the bottom bar composed before the way in settled: $bottomBar", bottomBar > TRANSFORM_FRAMES)
         val transformIn = opening.transformFrames(from = viewerShown + SETTLE_FRAMES)
         assertTrue("too few frames of the transform in: ${transformIn.size}", transformIn.size >= TRANSFORM_FRAMES)
         assertEquals("composed in the frames of the transform in", emptyList<String>(), transformIn.composed())
@@ -195,6 +201,7 @@ class MediaViewerTransitionTest {
         val cpuMicros: Long,
         val recomposed: List<String>,
         val time: LocalTime,
+        val bottomBarShown: Boolean,
     )
 
     private fun frames(count: Int): List<FrameRecord> =
@@ -206,7 +213,9 @@ class MediaViewerTransitionTest {
             composeRule.mainClock.advanceTimeByFrame()
             composeRule.waitForIdle()
             val after = cpu.currentThreadCpuTime
-            FrameRecord(index, (after - before) / NANOS_PER_MICRO, counter.recomposedOwn.map { it.shortName() }, time)
+            val bottomBar = composeRule.onAllNodes(forwardButton).fetchSemanticsNodes().isNotEmpty()
+            val recomposed = counter.recomposedOwn.map { it.shortName() }
+            FrameRecord(index, (after - before) / NANOS_PER_MICRO, recomposed, time, bottomBar)
         }
 
     /** The frames' table, for the review and for placing a JFR recording's samples (the clock is the JVM's). */
@@ -270,6 +279,9 @@ class MediaViewerTransitionTest {
                 .orEmpty()
                 .any { it.label == string(ChatR.string.content_open) }
         }
+
+    /** The viewer's toolbar's Forward button: there once its bottom bar composed. */
+    private val forwardButton = hasContentDescription(string(MediaR.string.media_forward))
 
     private val viewerPage =
         SemanticsMatcher("is a viewer page") { node ->

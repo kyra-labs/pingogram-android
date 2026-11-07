@@ -1025,6 +1025,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  The viewers' video player (`ExoVideoPlayer`) belongs to the main looper, as Media3's views need: it is built on a
+  thread of its own (`setLooper` with the main looper), what is asked of it meanwhile applied once it is there, its
+  `surfacePlayer` snapshot state so the surface attaches as it arrives; `release()` stops it at once and frees it a
+  second later on the main looper, past the viewer's exit transition.
   A voice message holds a transient audio focus of its own (`SpeechFocus`, `AUDIOFOCUS_GAIN_TRANSIENT`, paused rather
   than ducked), so another app's music pauses for it and plays on after; music keeps ExoPlayer's permanent focus.
   Calls without Telecom take the focus as a call (`AudioManagerCall`), so a playing voice message or video pauses.

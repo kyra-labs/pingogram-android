@@ -125,7 +125,7 @@ internal fun MediaViewerScreen(
                 },
                 bottomBar = {
                     if (content != null) {
-                        Chrome(visible = chrome.visible, dismiss, height) {
+                        Chrome(visible = chrome.visible, dismiss, height, afterEnter = true) {
                             ViewerBottomBar(
                                 content.current,
                                 content.playback,
@@ -283,8 +283,11 @@ private fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
+    afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    // The bottom bar waits for the way in to end (rememberEnterSettled); the top bar shows from the start.
+    if (afterEnter && !rememberEnterSettled()) return
     val motionScheme = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = visible,

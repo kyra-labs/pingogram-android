@@ -194,6 +194,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `TextLayoutResult` cache for bubble sizing; avoid `AnnotatedString` rebuilds on recomposition.
 - Images: Coil 3 `AsyncImage` with explicit `size`, `crossfade` via motion scheme, hardware
   bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy).
+- The media viewer's first and last frames (`docs/audit/performance-review-2026-11.md`, M2): the video player is built
+  off the main thread and freed a second after the viewer closes, its bottom bar (caption, toolbar and tooltips)
+  composes once the opening transform settled, and the overlay's entry is destroyed (its view models cleared) a frame
+  after its content left the composition. `MediaViewerTransitionTest` checks the bottom bar's timing.
 - No blur effects on media: a placeholder's minithumbnail is blurred once on its 40 px bitmap and drawn scaled up
   (`core:ui`'s `BlurredMinithumbnail`), and is not drawn under an image that has faded in. A `Modifier.blur` there
   re-rendered a layer the size of the media in every frame, under every media bubble while scrolling and on both sides
