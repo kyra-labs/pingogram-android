@@ -21,6 +21,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
   the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
   there on every screen size, and your picture opens Settings; hold it to switch accounts.
+- Contacts and Settings have the same large header as Chats, shrinking to one line as you scroll.
 - "New chat" is a round button beside the navigation bar on the Chats tab (in the side rail on tablets). The bar keeps
   its tab names, and shows icons instead only where the names don't fit. The chats fade out above the bar instead of ending under it.
 - Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.

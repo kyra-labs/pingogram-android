@@ -20,6 +20,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
+import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -78,11 +80,12 @@ internal fun SettingsRoute(
 }
 
 /**
- * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a medium flexible top bar ([SettingsTopBar]) that
- * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile) with the
- * device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
- * ([SettingsGroup]) without headings, as their rows name them already: General (Appearance, Notifications, Data and
- * storage, Language), Privacy and security, About, and "Log out" on its own, which asks for confirmation first (FR-A8).
+ * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): the tabs' large header ([TabHeader], as the Chats and
+ * Contacts tabs have it) that collapses as the page scrolls, then the logged-in account's card ([AccountCard], which
+ * opens Edit profile) with the device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups
+ * of segmented rows ([SettingsGroup]) without headings, as their rows name them already: General (Appearance,
+ * Notifications, Data and storage, Language), Privacy and security, About, and "Log out" on its own, which asks for
+ * confirmation first (FR-A8).
  * In the demo ([LocalIsDemo]) the card says "Demo", the other accounts are left out, and "Leave demo" replaces "Log
  * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
@@ -103,7 +106,13 @@ internal fun SettingsScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
-        topBar = { SettingsTopBar(title = stringResource(R.string.settings_title), scrollBehavior = scrollBehavior) },
+        // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
+        topBar = {
+            TabHeader(
+                scrollBehavior = scrollBehavior,
+                title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
