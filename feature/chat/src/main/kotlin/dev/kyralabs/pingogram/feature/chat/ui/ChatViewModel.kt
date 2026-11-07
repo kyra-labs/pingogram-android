@@ -10,6 +10,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -139,6 +140,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -352,6 +354,7 @@ class ChatViewModel internal constructor(
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
+    private val cleanupScope: CoroutineScope? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -392,6 +395,7 @@ class ChatViewModel internal constructor(
         pollRepository: PollRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
         targetPreferences: TargetPreferences,
+        @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -436,6 +440,7 @@ class ChatViewModel internal constructor(
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
         targetPreferences = targetPreferences,
+        cleanupScope = applicationScope,
     )
 
     /**
@@ -1121,6 +1126,9 @@ class ChatViewModel internal constructor(
         addCloseable { playback.release() }
         addCloseable { attachments.release() }
         addCloseable { recorder.release() }
+        // Leaving the chat stops the automatic downloads still on their way (docs/audit/performance-review-2026-11.md,
+        // W3): they would hold the connection the next chat needs. What came stays; the media viewer asks for its own.
+        addCloseable { cleanupScope?.let(autoDownloads::cancelStarted) }
         // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
         // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
         viewModelScope.launch(Dispatchers.Main) {

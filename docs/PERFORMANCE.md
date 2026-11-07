@@ -148,7 +148,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
   Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
   messages on screen auto-download (`ChatAutoDownloads`, prefetch priority, once per file per screen), never the whole
-  history; a started download is not cancelled when the network or the screen changes, as the viewer may show it.
+  history; a started download is not cancelled when the network or the screen changes, as the viewer may show it,
+  but those still on their way stop when the conversation closes (`ChatAutoDownloads.cancelStarted`), as do the
+  stories viewer's (`docs/audit/performance-review-2026-11.md`, W3).
 - Storage: `optimizeStorage` once a week per account (owner decision 2026-10-27), and "Clear cache" in Data and storage
   as it is, with `getStorageStatisticsFast`. The weekly clean-up (`core:notifications`' `StorageOptimizationWorker`,
   `StorageRepository.optimizeStorage`):

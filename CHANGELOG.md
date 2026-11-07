@@ -23,6 +23,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The media viewer decodes a photo at most at twice the screen's size and reuses the copy the chat already shows, so
   paging through photos no longer pushes the chat's own pictures out of memory and makes them load again on the way
   back.
+- Leaving a chat or the stories stops the downloads they started by themselves, so they no longer use data and battery
+  after you left.
 - The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
   the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
   there on every screen size, and your picture opens Settings; hold it to switch accounts.
@@ -47,6 +49,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - Closing a photo before it finished downloading no longer leaves its bubble in the chat showing only the blurred
   preview: the download goes on, and the photo shows when it arrives.
+- After removing an account and adding another, an incoming call shows the caller's picture from the right account.
 - Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
   it, instead of fading in over a black screen and snapping back.
 

@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
  *   ([AutoDownloadRules.fileToDownload]: videos and GIFs, documents and music within their size limits, voice and video
  *   messages) downloads at prefetch priority, once per file while the view model lives: a download the user cancelled
  *   does not start again by itself. Nothing is cancelled when the rules change or a message leaves the screen: the
- *   media viewer may be showing the same file. Only messages on screen count, never the whole history.
+ *   media viewer may be showing the same file. Only messages on screen count, never the whole history. When the
+ *   conversation closes, those still on their way stop ([cancelStarted]); what came stays.
  * - **Photos** download in their bubbles while the rules allow photos ([state]); otherwise each shows a download
  *   button, and the photos the user asked for ([download]) show a download in progress until they show.
  *
@@ -66,6 +67,16 @@ internal class ChatAutoDownloads(
     fun download(fileId: Int) {
         requestedFiles.update { it.add(fileId) }
         files.download(fileId)
+    }
+
+    /**
+     * Cancels, in [scope] (the conversation's own is gone), the downloads this started by itself; a finished one is not
+     * affected, and the files the user asked for go on.
+     */
+    fun cancelStarted(scope: CoroutineScope) {
+        val files = started - requestedFiles.value
+        started.clear()
+        if (files.isNotEmpty()) scope.launch { files.forEach { repository.cancelDownload(it) } }
     }
 
     /** The user cancelled the download of [fileId]. */

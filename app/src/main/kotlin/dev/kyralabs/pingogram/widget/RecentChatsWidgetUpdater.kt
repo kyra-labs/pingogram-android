@@ -296,7 +296,12 @@ internal class WidgetAccounts
         private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
 
         val accounts: Flow<Map<Int, WidgetAccount>> =
-            graphs.accounts.map { list -> list.associate { it.slot to account(it.repositories) } }
+            graphs.accounts.map { list ->
+                // An account that left the device leaves its graph to the garbage collector
+                // (docs/audit/performance-review-2026-11.md, W4).
+                made.keys.retainAll(list.map { it.repositories }.toSet())
+                list.associate { it.slot to account(it.repositories) }
+            }
 
         private fun account(repositories: AccountRepositories) =
             made.getOrPut(repositories) {

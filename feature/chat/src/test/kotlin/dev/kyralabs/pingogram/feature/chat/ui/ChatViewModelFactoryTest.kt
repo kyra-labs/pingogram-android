@@ -115,6 +115,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 pollRepository = FakePollRepository(),
                 scheduledMessageRepository = FakeScheduledMessageRepository(),
                 targetPreferences = TargetPreferences(),
+                applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

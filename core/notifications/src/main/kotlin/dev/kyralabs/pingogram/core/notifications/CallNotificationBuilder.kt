@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -18,7 +19,6 @@ import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 /**
@@ -49,7 +49,12 @@ class CallNotificationBuilder
         private val appearance: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
     ) {
-        private val accountAvatars = ConcurrentHashMap<Int, AvatarIcons>()
+        /**
+         * Each other account's avatars, by slot, with the account they belong to: a slot that another account took
+         * after the first left the device gets avatars of its own, not the old account's, from its closed client
+         * (docs/audit/performance-review-2026-11.md, W4).
+         */
+        private val accountAvatars = SlotCache<AccountRepositories, AvatarIcons>()
 
         @Suppress("LongParameterList") // The caller, their account, and the notification's four intents.
         suspend fun incoming(
@@ -171,7 +176,7 @@ class CallNotificationBuilder
                 if (account == null) {
                     avatars
                 } else {
-                    accountAvatars.getOrPut(slot) {
+                    accountAvatars.get(slot, account) {
                         AvatarIcons(context, account.fileRepository(), appearance, ioDispatcher)
                     }
                 }
