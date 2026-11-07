@@ -20,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   photo that has loaded. The blurred preview now shows on Android 8 to 11 too, where it was a plain grey box.
 - A video starts opening without a pause before the animation and closes without a hitch at its end. The caption and
   the viewer's buttons fade in once the photo or video has opened.
+- The media viewer decodes a photo at most at twice the screen's size and reuses the copy the chat already shows, so
+  paging through photos no longer pushes the chat's own pictures out of memory and makes them load again on the way
+  back.
 - The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
   the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
   there on every screen size, and your picture opens Settings; hold it to switch accounts.
