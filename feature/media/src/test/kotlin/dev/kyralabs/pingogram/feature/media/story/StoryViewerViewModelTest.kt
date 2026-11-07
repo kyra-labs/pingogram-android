@@ -389,6 +389,25 @@ class StoryViewerViewModelTest {
         }
 
     @Test
+    fun `clearing the view model stops the downloads it asked for`() =
+        runViewModelTest {
+            val viewModel = viewModel()
+            runCurrent()
+            val asked =
+                files.calls
+                    .filter { it.startsWith("download:") }
+                    .map { it.split(":")[1] }
+                    .toSet()
+            files.calls.clear()
+
+            clear(viewModel)
+            runCurrent()
+
+            assertTrue(asked.isNotEmpty())
+            assertEquals(asked.map { "cancel:$it" }.toSet(), files.calls.toSet())
+        }
+
+    @Test
     fun `clearing the view model closes the story it showed`() =
         runViewModelTest {
             val viewModel = viewModel()
