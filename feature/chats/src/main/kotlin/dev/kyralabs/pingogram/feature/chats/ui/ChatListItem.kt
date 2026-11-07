@@ -200,9 +200,11 @@ internal fun listItemColors(
             )
         }
 
-        // The pinned group's rows rest on a container one step above the sheet.
+        // The pinned group's rows rest on a container two tones above the sheet's `surface`: one tone was barely
+        // visible in dark theme and vanished with AMOLED, which moves the container ladder down one tone (owner
+        // decision 2026-11-07).
         grouped -> {
-            colors.copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+            colors.copy(containerColor = MaterialTheme.colorScheme.surfaceContainer)
         }
 
         else -> {
