@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.VoiceChatBarSlot
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
@@ -255,7 +256,7 @@ internal fun ChatScreen(
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
-            jumpButton = { JumpButtonSlot(content, showJump, state.unreadCount, scrollToNewest) },
+            jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
             // Over the messages, above the composer, while a video message records.
             overlay = { RoundVideoPreview(recording, videoNotePreview) },
@@ -301,7 +302,7 @@ private fun ChatScaffold(
                 SearchTopBarSlot(
                     searching = search != null && selection == null,
                     query = searchQuery,
-                    height = titleHeight(),
+                    height = if (LocalExperimentalUi.current) experimentalTitleHeight() else titleHeight(),
                     onClose = { onEvent(ChatSearchEvent.Close) },
                 ) {
                     ChatTopBar(
@@ -315,6 +316,7 @@ private fun ChatScaffold(
                         onSearch = { onEvent(ChatSearchEvent.Open) },
                         topicAction = topicAction,
                         connection = connection,
+                        onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
                     )
                 }
                 // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
@@ -396,6 +398,7 @@ private fun ChatScreenBottomBar(
                 onReplaceMedia = { onEvent(ReplyEvent.ReplaceMedia) },
                 onAttach = { onAttach(null) },
                 onGallery = { onAttach(AttachOption.Gallery) },
+                onCamera = { onAttach(AttachOption.Camera) },
                 recording = recording,
                 onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
                 recordMode = recordMode,

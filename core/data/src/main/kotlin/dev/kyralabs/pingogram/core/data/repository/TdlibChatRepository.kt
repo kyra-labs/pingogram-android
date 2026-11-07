@@ -368,6 +368,10 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(unreadMentionCount = update.unreadMentionCount) }
         }
 
+        is TdApi.UpdateChatOnlineMemberCount -> {
+            ChatChange(update.chatId) { it.copy(onlineMemberCount = update.onlineMemberCount) }
+        }
+
         is TdApi.UpdateChatUnreadReactionCount -> {
             ChatChange(update.chatId) { it.copy(unreadReactionCount = update.unreadReactionCount) }
         }

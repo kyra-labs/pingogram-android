@@ -7,7 +7,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
@@ -20,15 +23,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.spokenList
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -140,19 +147,78 @@ internal fun scrollingToSent(
 
 /**
  * The jump-to-bottom button, while the list is away from the newest message ([showJump]) or the history does not reach
- * it yet; [onClick] goes there.
+ * it yet, with [state]'s unread count; [onClick] goes there. In the experimental look "Jump to mention" above it, while
+ * [state] has unread mentions, which sends [ChatEvent.JumpToMention].
  */
 @Composable
 internal fun JumpButtonSlot(
     content: ChatContent,
     showJump: Boolean,
-    unreadCount: Int,
+    state: ChatUiState,
+    onClick: () -> Unit,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val unreadCount = state.unreadCount
+    val jump =
+        @Composable {
+            JumpToBottomButton(
+                visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
+                unreadCount = unreadCount,
+                motionScheme = MaterialTheme.motionScheme,
+                onClick = onClick,
+            )
+        }
+    if (!LocalExperimentalUi.current) {
+        jump()
+        return
+    }
+    // The experimental look adds "Jump to mention" above it (`docs/DESIGN_SYSTEM.md` §13.5), so the jump button never
+    // moves as mentions come and go.
+    Column(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        JumpToMentionButton(
+            visible = content is ChatContent.Content && state.unreadMentionCount > 0,
+            count = state.unreadMentionCount,
+            onClick = { onEvent(ChatEvent.JumpToMention) },
+        )
+        jump()
+    }
+}
+
+/**
+ * The experimental look's "Jump to mention" (§13.5): a round `FloatingActionButton` in `primary` / `onPrimary` with
+ * "@",
+ * while unread messages mention the user; screen readers hear how many. It grows in and out as the jump button does.
+ */
+@Composable
+private fun JumpToMentionButton(
+    visible: Boolean,
+    count: Int,
     onClick: () -> Unit,
 ) {
-    JumpToBottomButton(
-        visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
-        unreadCount = unreadCount,
-        motionScheme = MaterialTheme.motionScheme,
-        onClick = onClick,
-    )
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedVisibility(
+        visible = visible,
+        enter = scaleIn(motionScheme.fastSpatialSpec()) + fadeIn(motionScheme.fastEffectsSpec()),
+        exit = scaleOut(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+    ) {
+        val label = stringResource(R.string.chat_jump_to_mention)
+        val mentions = pluralStringResource(R.plurals.chat_unread_mentions, count, count)
+        val resources = LocalResources.current
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.semantics { contentDescription = spokenList(resources, listOf(label, mentions)) },
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ) {
+            Text(
+                text = stringResource(R.string.chat_mention_sign),
+                modifier = Modifier.clearAndSetSemantics {},
+                style = MaterialTheme.typography.titleLargeEmphasized,
+            )
+        }
+    }
 }

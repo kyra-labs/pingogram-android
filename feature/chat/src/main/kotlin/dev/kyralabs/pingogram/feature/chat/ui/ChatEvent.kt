@@ -38,6 +38,17 @@ sealed interface ChatEvent {
     data object ShowNewest : ChatEvent
 
     /**
+     * Show the oldest unread message that mentions the user (the experimental look's "Jump to mention",
+     * `docs/DESIGN_SYSTEM.md` §13.5); showing it reads it.
+     */
+    data object JumpToMention : ChatEvent
+
+    /** Mute the chat forever, or unmute it (the experimental look's channel top bar, §13.5). */
+    data class SetMuted(
+        val isMuted: Boolean,
+    ) : ChatEvent
+
+    /**
      * The messages the list shows now, wholly or in part, by id (every item of an album); reported whenever that
      * changes, and empty when the list leaves the screen. They go to TDLib as viewed, which reads them.
      */

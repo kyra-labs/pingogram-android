@@ -3,10 +3,12 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -29,7 +31,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The buttons of the composer: sending, with its menu of other ways to send, saving an edit, and those in the pill.
@@ -87,7 +92,7 @@ internal fun SendButton(
                             )
                     },
             enabled = enabled,
-            shapes = composerActionShapes(),
+            shapes = sendShapes(),
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
@@ -112,6 +117,21 @@ internal fun composerActionShapes(): IconButtonShapes =
         shape = IconButtonDefaults.mediumRoundShape,
         pressedShape = IconButtonDefaults.mediumPressedShape,
     )
+
+/**
+ * The send button's shapes: [composerActionShapes], or in the experimental look a rounded square
+ * (`IconButtonDefaults.mediumSquareShape`) beside the round microphone (`docs/DESIGN_SYSTEM.md` §13.5).
+ */
+@Composable
+private fun sendShapes(): IconButtonShapes =
+    if (LocalExperimentalUi.current) {
+        IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.mediumSquareShape,
+            pressedShape = IconButtonDefaults.mediumPressedShape,
+        )
+    } else {
+        composerActionShapes()
+    }
 
 /**
  * Calls [onLongPress] when a press lasts the platform's long-press time while [enabled]; that press's later changes
