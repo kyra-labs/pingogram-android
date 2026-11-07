@@ -198,7 +198,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the experimental look's "Wave" on a join message (`ChatItem.Service.canWave`, `ChatEvent.Wave`, which
   `ChatAttachments` sends as `AttachmentRepository.sendGreetingSticker`: `getGreetingStickers`, one at random, in reply),
   `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
-  and a channel's mute toggle; the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
+  and a channel's mute toggle; global search's top people narrowed to the words typed (`SearchViewModel.topPeople`,
+  read once and shared with the suggestions, collected only by the experimental header); the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
   `online`, from the list it already maps); and Settings home's values (`SettingsHomeViewModel`: the active sessions, the
   storage used and the language), a view model only the experimental home asks for. Its settings search opens the
   pages above Settings home's pages too (`SettingsSubPage`, routed by `SettingsSubPages.kt`): `SettingsListDetail` pushes

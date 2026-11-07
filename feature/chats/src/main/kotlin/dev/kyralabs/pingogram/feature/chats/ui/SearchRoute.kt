@@ -15,8 +15,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -35,6 +37,13 @@ internal fun SearchRoute(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Only the experimental look's header shows the top people (docs/DESIGN_SYSTEM.md §13.4).
+    val topPeople =
+        if (LocalExperimentalUi.current) {
+            viewModel.topPeople.collectAsStateWithLifecycle().value
+        } else {
+            persistentListOf()
+        }
     val textFieldState = rememberTextFieldState()
     val focusRequester = remember { FocusRequester() }
     var focusedOnEntry by rememberSaveable { mutableStateOf(false) }
@@ -78,5 +87,6 @@ internal fun SearchRoute(
         modifier = modifier,
         focusRequester = focusRequester,
         snackbarHostState = snackbarHostState,
+        topPeople = topPeople,
     )
 }

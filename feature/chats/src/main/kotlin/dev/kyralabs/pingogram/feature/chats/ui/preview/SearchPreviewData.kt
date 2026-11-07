@@ -146,7 +146,7 @@ internal object SearchPreviewData {
             ),
         )
 
-    private val topPeople =
+    val topPeople =
         persistentListOf(
             chat(8, "Grace Hopper", isOnline = true),
             chat(6, "Charles Babbage"),

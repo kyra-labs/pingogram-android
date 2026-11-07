@@ -89,7 +89,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewStates
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -132,6 +134,7 @@ internal fun SearchScreen(
     focusRequester: FocusRequester = remember { FocusRequester() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
 ) {
     val colors = SearchBarDefaults.colors()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -162,6 +165,7 @@ internal fun SearchScreen(
                     focusRequester = focusRequester,
                     onBack = onBack,
                     onEvent = onEvent,
+                    topPeople = topPeople,
                 )
                 ResultCountDivider(
                     state.content,
@@ -190,6 +194,7 @@ private fun SearchHeader(
     focusRequester: FocusRequester,
     onBack: () -> Unit,
     onEvent: (SearchEvent) -> Unit,
+    topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
 ) {
     Column(
         modifier =
@@ -216,6 +221,7 @@ private fun SearchHeader(
             },
             modifier = width.padding(horizontal = fieldInset).focusRequester(focusRequester),
         )
+        HeaderPeople(topPeople, onEvent, width)
         SearchFilters(filter, counts, onSelect = { onEvent(SearchEvent.FilterChanged(it)) }, modifier = width)
     }
 }
