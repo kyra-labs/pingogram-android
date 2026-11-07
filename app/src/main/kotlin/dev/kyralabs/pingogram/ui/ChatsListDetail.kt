@@ -61,6 +61,7 @@ import dev.kyralabs.pingogram.core.ui.trace.OpenChatTrace
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListPane
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.SearchPane
@@ -140,6 +141,7 @@ internal fun ChatsListDetail(
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
     onOpenScheduledMessages: (chatId: Long) -> Unit = {},
+    headerActions: ChatListHeaderActions? = null,
 ) {
     val navigator = rememberChatsPaneNavigator(chatsPaneScaffoldDirective(currentWindowAdaptiveInfoV2()))
     FollowScaffoldDirective(navigator)
@@ -197,6 +199,7 @@ internal fun ChatsListDetail(
                                 onOpenStory = onOpenStory,
                                 openChatId = shownChatId,
                                 onEditFolder = onEditFolder,
+                                headerActions = headerActions,
                             )
                         }
                     }

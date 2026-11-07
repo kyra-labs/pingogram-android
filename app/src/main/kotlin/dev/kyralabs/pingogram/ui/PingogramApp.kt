@@ -23,6 +23,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
@@ -60,6 +62,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.feature.calls.navigation.navigateToRecentCalls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
 import dev.kyralabs.pingogram.feature.feedback.navigation.navigateToFeedback
@@ -82,7 +85,7 @@ import dev.kyralabs.pingogram.share.IncomingShare
  * Only the signed-in app has navigation; the login flow is full screen. The window size class picks it: in compact
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
  * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows and in windows of
- * compact height a `WideNavigationRail` with the search button at its top, from a `NavigationSuiteScaffold`, expanded
+ * compact height a `WideNavigationRail` from a `NavigationSuiteScaffold`, expanded
  * in large windows ([pingogramNavigationSuiteType]). The `NavHost` keeps its place in the composition across both, so
  * rotating or resizing the window never resets its screens. Full-screen destinations (the stories viewer, the QR code
  * scanner) show neither. The media viewer is an overlay destination ([OverlayHost]): it covers the whole shell, which
@@ -98,7 +101,8 @@ import dev.kyralabs.pingogram.share.IncomingShare
  * (a conversation, the archive) would do that in the frames that start and end its transition. Screens pushed on top
  * of a tab do not read them.
  *
- * Global search (`docs/DESIGN_SYSTEM.md` §6 "Global search") opens from the search button: pushed full screen above
+ * Global search (`docs/DESIGN_SYSTEM.md` §6 "Global search") opens from the search button of the Chats tab's header
+ * ([rememberChatListHeaderActions]): pushed full screen above
  * the tab in compact and medium windows, docked in the Chats tab's list pane in expanded and wider ones
  * ([GlobalSearchState]), which the Chats tab then shows. The button grows into search and back: the shell is a
  * [SharedTransitionLayout] around the navigation and the `NavHost`, whose scope goes down through
@@ -166,8 +170,11 @@ fun PingogramApp(
     val floatingBarSpace = inMainGraph && floatingBar
     val showRail = showNavigation && !floatingBar
     val search = rememberGlobalSearchState()
-    val searchOpen by rememberSearchOpen(navController, search)
+    val searchOpen = rememberSearchOpen(navController, search)
     val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
+    val headerActions = rememberChatListHeaderActions(navController, search, searchOpen, openSearch, accountMenu)
+    val newChatOpen by rememberNewChatOpen(navController)
+    val openNewChat = remember(navController) { { navController.navigate(NewChatRoute) { launchSingleTop = true } } }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
     val openLockedChats =
@@ -183,14 +190,13 @@ fun PingogramApp(
                         PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
                     },
                     navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
-                    // The scaffold shows its primary action even without navigation.
+                    // The scaffold shows its primary action even without navigation: "New chat" on the Chats tab.
                     primaryActionContent = {
                         if (showRail) {
-                            RailSearchButton(
-                                adaptiveType,
-                                searchOpen,
-                                search,
-                                openSearch,
+                            RailNewChatButton(
+                                navigationSuiteType = adaptiveType,
+                                shown = currentTab == TopLevelDestination.Chats && !newChatOpen,
+                                onClick = openNewChat,
                             )
                         }
                     },
@@ -213,6 +219,7 @@ fun PingogramApp(
                                     navController = navController,
                                     uiState = uiState,
                                     search = search,
+                                    headerActions = headerActions,
                                     chatToOpen = chatToOpen,
                                     onChatOpened = onChatOpened,
                                     lockedChatsToOpen = lockedChatsToOpen,
@@ -228,10 +235,13 @@ fun PingogramApp(
                                 selected = barTab,
                                 // The bar shows only on a tab itself.
                                 onSelect = { navController.selectTab(it, currentTab, tabReselection) },
-                                onSearch = openSearch,
-                                searchOpen = searchOpen,
-                                search = search,
                                 accountMenu = accountMenu,
+                                newChat = {
+                                    BarNewChatButton(
+                                        shown = barTab == TopLevelDestination.Chats && !newChatOpen,
+                                        onClick = openNewChat,
+                                    )
+                                },
                                 modifier =
                                     Modifier
                                         .align(Alignment.BottomCenter)

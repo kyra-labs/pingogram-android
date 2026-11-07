@@ -33,6 +33,9 @@ class FakeSearchRepository : SearchRepository {
         Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, totalCount = null))
     }
 
+    /** The total TDLib counts for each kind of message search, given with every page [onSearchMessages] finds. */
+    var totalCounts: Map<MessageSearchFilter, Int> = emptyMap()
+
     /** The answer to adding, removing and clearing recent chats, by call; succeeds by default. */
     var onChangeRecents: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
@@ -62,7 +65,12 @@ class FakeSearchRepository : SearchRepository {
         filter: MessageSearchFilter,
     ): Outcome<FoundMessages> {
         val call = "messages:$query:$offset" + if (filter == MessageSearchFilter.All) "" else ":$filter"
-        return record(call) { onSearchMessages(query, offset) }
+        return record(call) {
+            when (val page = onSearchMessages(query, offset)) {
+                is Outcome.Success -> Outcome.Success(page.value.copy(totalCount = totalCounts[filter]))
+                is Outcome.Failure -> page
+            }
+        }
     }
 
     override suspend fun recentChats() = record("recents") { Outcome.Success(recents.toImmutableList()) }

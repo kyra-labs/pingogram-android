@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
@@ -124,6 +125,7 @@ data class MessagePlayback(
  *   chats.
  * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
  *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
+ * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  */
 @Immutable
 data class ChatHeader(
@@ -136,6 +138,7 @@ data class ChatHeader(
     val secret: SecretChatHeader? = null,
     val opensChatInfo: Boolean = false,
     val callUserId: Long? = null,
+    val avatarShape: AvatarShape = AvatarShape.Circle,
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }

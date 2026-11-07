@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
@@ -323,6 +324,30 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertEquals(
                 listOf(TitleBadge.Verified, TitleBadge.Fake, TitleBadge.Scam, TitleBadge.Verified, null),
                 viewModel.items.map { it.badge },
+            )
+        }
+
+    @Test
+    fun `a forum's avatar is a rounded square, every other chat's a circle`() =
+        runTest {
+            groups.supergroupMap.value =
+                persistentMapOf(
+                    9L to supergroup(9, isForum = true),
+                    10L to supergroup(10),
+                )
+            chats.setChats(
+                ChatListType.Main,
+                chat(id = 2),
+                chat(id = 20, type = ChatType.Supergroup(9, isChannel = false)),
+                chat(id = 21, type = ChatType.Supergroup(10, isChannel = false)),
+                chat(id = 22, type = BASIC_GROUP),
+            )
+
+            val viewModel = viewModel()
+
+            assertEquals(
+                listOf(AvatarShape.Circle, AvatarShape.RoundedSquare, AvatarShape.Circle, AvatarShape.Circle),
+                viewModel.items.map { it.avatarShape },
             )
         }
 

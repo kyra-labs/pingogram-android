@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
@@ -152,6 +153,7 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         title = chatTitle(chat, isSavedMessages, isDeletedAccount),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
+        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
         isSavedMessages = isSavedMessages,
         isOnline = !isSavedMessages && user?.showsOnlineAt(now) == true,
         badge = titleBadge(user, supergroup),

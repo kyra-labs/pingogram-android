@@ -4,12 +4,14 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.ui.ArchiveEntry
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListContent
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListItemModel
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListKind
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListSummary
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListUiState
 import dev.kyralabs.pingogram.feature.chats.ui.ChatPreview
 import dev.kyralabs.pingogram.feature.chats.ui.ChatSelection
@@ -17,6 +19,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.DeleteDialog
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteForEveryone
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
 import dev.kyralabs.pingogram.feature.chats.ui.FolderTab
+import dev.kyralabs.pingogram.feature.chats.ui.HeaderAccount
 import dev.kyralabs.pingogram.feature.chats.ui.OutgoingStatus
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
 import dev.kyralabs.pingogram.feature.chats.ui.rowActions
@@ -44,6 +47,7 @@ internal object ChatListPreviewData {
         outgoingStatus: OutgoingStatus? = null,
         isMarkedAsUnread: Boolean = false,
         canMute: Boolean = true,
+        avatarShape: AvatarShape = AvatarShape.Circle,
     ) = ChatListItemModel(
         id = id,
         title = UiText.Plain(title),
@@ -63,6 +67,7 @@ internal object ChatListPreviewData {
         outgoingStatus = outgoingStatus,
         preview = preview,
         actions = rowActions(unreadCount > 0 || isMarkedAsUnread, isArchived = false, isPinned, isMuted, canMute),
+        avatarShape = avatarShape,
     )
 
     private fun message(
@@ -143,6 +148,8 @@ internal object ChatListPreviewData {
                 preview = message("Next up: Hidden Figures", UiText.Plain("Mary")),
                 time = "Mar 2",
                 isMarkedAsUnread = true,
+                // A forum: its avatar is a rounded square.
+                avatarShape = AvatarShape.RoundedSquare,
             ),
             row(
                 id = 10,
@@ -163,9 +170,12 @@ internal object ChatListPreviewData {
             FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1),
         )
 
-    val contentWithFolders = ChatListUiState(content = ChatListContent.Content(items), folderTabs = folders)
+    /** The main list: Saved Messages and Ada pinned, as one group under "Pinned", then the other chats. */
+    val mainList = ChatListContent.Content(items, pinnedCount = items.count { it.isPinned })
 
-    val content = ChatListUiState(content = ChatListContent.Content(items))
+    val contentWithFolders = ChatListUiState(content = mainList, folderTabs = folders)
+
+    val content = ChatListUiState(content = mainList)
 
     /**
      * Names in another script than the strings around them, which keep their order as the names are isolated
@@ -204,6 +214,14 @@ internal object ChatListPreviewData {
         )
 
     val connecting = content.copy(connection = ConnectionStatus.Connecting)
+
+    /** The Chats tab header's status line and avatar: 12 unread chats, 3 of them mentioning the user. */
+    val summary =
+        ChatListSummary(
+            unreadChats = 12,
+            mentionChats = 3,
+            account = HeaderAccount(id = 1, name = UiText.Plain("Ada Lovelace"), photo = null),
+        )
 
     val loading = ChatListUiState()
 

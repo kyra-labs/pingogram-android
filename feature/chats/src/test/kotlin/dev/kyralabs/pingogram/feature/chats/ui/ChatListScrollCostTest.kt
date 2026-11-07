@@ -113,7 +113,7 @@ class ChatListScrollCostTest {
                 ChatListScreen(
                     state =
                         ChatListUiState(
-                            content = ChatListContent.Content(items),
+                            content = ChatListContent.Content(items, pinnedCount = items.indexOfFirst { !it.isPinned }),
                             connection = ConnectionStatus.Ready,
                             folderTabs = ChatListPreviewData.folders,
                         ),

@@ -5,14 +5,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,32 +29,69 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import dev.kyralabs.pingogram.R
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
-import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
-import dev.kyralabs.pingogram.feature.chats.navigation.searchButtonTransform
+import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
 import dev.kyralabs.pingogram.core.ui.R as UiR
+import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
- * The rail's primary action: global search, as the floating bar's detached button is in compact windows. The collapsed
- * rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6), both in the FAB's
- * `large` corners. The rail's header places it at its start edge, so it brings its own start padding, as in Material's
- * rail samples. It grows into search and back ([SearchButtonSlot]), and is away while search is [searchOpen].
+ * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
+ * `docs/DESIGN_SYSTEM.md` §6 "New chat", §6.1; owner decision 2026-11-06): a square [FloatingActionButton] as tall as
+ * the pill (`sizes.floatingNavigationBar`), with the FAB's `large` corners and the filled edit symbol, in
+ * `primaryContainer` / `onPrimaryContainer`, named "New chat" for screen readers. It shows while [shown] (on the Chats
+ * tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
-internal fun RailSearchButton(
+internal fun BarNewChatButton(
+    shown: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = MaterialTheme.shapes.large
+    val colors = MaterialTheme.colorScheme
+    NewChatButtonSlot(
+        shown = shown,
+        shape = shape,
+        modifier = modifier.size(MaterialTheme.sizes.floatingNavigationBar),
+    ) { transform ->
+        FloatingToolbarDefaults.StandardFloatingActionButton(
+            onClick = onClick,
+            modifier = transform,
+            shape = shape,
+            containerColor = colors.primaryContainer,
+            contentColor = colors.onPrimaryContainer,
+        ) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_edit),
+                contentDescription = stringResource(ChatsR.string.new_chat),
+            )
+        }
+    }
+}
+
+/**
+ * The rail's primary action on the Chats tab: "New chat", in search's old place (owner decision 2026-11-06). The
+ * collapsed rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6), both in the
+ * FAB's `large` corners and `primaryContainer`. The rail's header places it at its start edge, so it brings its own
+ * start padding, as in Material's rail samples. It grows into New chat and back ([NewChatButtonSlot]), and is away
+ * while not [shown].
+ */
+@Composable
+internal fun RailNewChatButton(
     navigationSuiteType: NavigationSuiteType,
-    searchOpen: Boolean,
-    search: GlobalSearchState,
+    shown: Boolean,
     onClick: () -> Unit,
 ) {
     val expanded = navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded
-    val icon = painterResource(UiR.drawable.ic_search)
-    val label = stringResource(R.string.nav_search)
+    val icon = painterResource(UiR.drawable.ic_edit)
+    val label = stringResource(ChatsR.string.new_chat)
     val shape = MaterialTheme.shapes.large
-    SearchButtonSlot(
-        shown = !searchOpen,
-        search = search,
+    NewChatButtonSlot(
+        shown = shown,
         shape = shape,
         // The extended and the collapsed button differ in size: each keeps its own place.
         sizeKey = expanded,
@@ -76,22 +117,21 @@ internal fun RailSearchButton(
 private val RAIL_HEADER_START_PADDING = 20.dp
 
 /**
- * Where the search button sits, the floating navigation bar's or the rail's (`docs/DESIGN_SYSTEM.md` §5, §6): the
- * [button] while [shown], given the modifier of its container transform into search ([searchButtonTransform], in
- * [shape]; none without [search]). While search shows the app hides the button, and the button and search share their
- * bounds as one comes and the other goes: the button grows into search and search shrinks back into it, on the motion
- * scheme's springs, each fading on the effects springs. Without the transform (reduced motion) it fades in and out.
+ * Where the "New chat" button sits, beside the floating navigation bar or in the rail's header (`docs/DESIGN_SYSTEM.md`
+ * §5, §6): the [button] while [shown], given the modifier of its container transform into New chat
+ * ([newChatButtonTransform], in [shape]). The shell hides it while New chat shows, and the button and the screen share
+ * their bounds as one comes and the other goes, on the motion scheme's springs, each fading on the effects springs.
+ * Without the transform (reduced motion) it fades in and out; it fades as the user switches to another tab too.
  *
- * Hidden, the slot keeps the size the button had (per [sizeKey]), so the toolbar or the rail around it never moves.
+ * Hidden, the slot keeps the size the button had (per [sizeKey]), so the bar or the rail around it never moves.
  *
  * Only a slot that was placed takes part in the transform and in the semantics tree: `NavigationSuiteScaffold`
  * composes its primary action a second time for navigation bars and never places that copy beside a rail, and a
  * second, unplaced side of the same transform would have no bounds to grow from.
  */
 @Composable
-internal fun SearchButtonSlot(
+private fun NewChatButtonSlot(
     shown: Boolean,
-    search: GlobalSearchState?,
     shape: CornerBasedShape,
     modifier: Modifier = Modifier,
     sizeKey: Any? = null,
@@ -112,7 +152,7 @@ internal fun SearchButtonSlot(
             exit = fadeOut(motionScheme.fastEffectsSpec()),
         ) {
             ProvideNavAnimatedVisibilityScope(this) {
-                button(if (search != null && placed) Modifier.searchButtonTransform(search, shape) else Modifier)
+                button(if (placed) Modifier.newChatButtonTransform(shape) else Modifier)
             }
         }
     }
@@ -132,3 +172,20 @@ private fun Modifier.keepingSize(kept: KeptSize): Modifier =
         val height = kept.size.height.coerceIn(constraints.minHeight, constraints.maxHeight)
         layout(width, height) { placeable.place(0, 0) }
     }
+
+/**
+ * Whether New chat shows, anywhere on the back stack, also below a group or channel it is creating: the "New chat"
+ * button is away meanwhile, so only New chat's own coming and going moves it. Derived, so that only opening or leaving
+ * New chat recomposes the shell.
+ */
+@Composable
+internal fun rememberNewChatOpen(navController: NavController): State<Boolean> {
+    val currentEntry = navController.currentBackStackEntryAsState()
+    return remember(navController, currentEntry) {
+        derivedStateOf {
+            // Read for every change of the destination, which is when the back stack changes.
+            currentEntry.value
+            runCatching { navController.getBackStackEntry<NewChatRoute>() }.isSuccess
+        }
+    }
+}

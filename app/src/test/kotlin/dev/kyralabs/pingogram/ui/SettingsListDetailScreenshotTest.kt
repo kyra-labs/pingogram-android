@@ -85,7 +85,11 @@ class SettingsListDetailScreenshotTest {
                 PingogramApp(uiState = MainActivityUiState.SignedIn)
             }
         }
-        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).performClick()
+        composeRule
+            .onNode(
+                (hasText(string(R.string.nav_settings)) or hasContentDescription(string(R.string.nav_settings))) and
+                    isSelectable(),
+            ).performClick()
         await(hasText(string(SettingsR.string.settings_appearance_summary)))
         when (page) {
             Page.None -> {}

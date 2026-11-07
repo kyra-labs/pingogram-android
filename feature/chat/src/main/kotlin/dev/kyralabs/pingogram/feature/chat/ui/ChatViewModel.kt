@@ -1373,6 +1373,7 @@ class ChatViewModel internal constructor(
                 people = people,
                 now = now,
                 timeFormatter = formatter,
+                isForum = group.supergroup?.isForum == true,
             ).toHeader()
                 .let { chatSources.thread.header(it, chat) }
         val history = messages.state.history

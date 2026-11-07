@@ -1,7 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat list (ChatListScreen) -->
-    <string name="chat_list_title" translatable="false">Pingogram</string>
+    <!-- The Chats tab's title, in its header. -->
+    <string name="chat_list_title">Chats</string>
+    <!-- The status line under the title, e.g. "12 unread · 3 mentions": [chat_list_status_unread], then
+         [chat_list_status_mentions]. -->
+    <string name="chat_list_status">%1$s · %2$s</string>
+    <!-- Chats with unread messages, in the status line under the title. -->
+    <plurals name="chat_list_status_unread">
+        <item quantity="one">%d unread</item>
+        <item quantity="other">%d unread</item>
+    </plurals>
+    <!-- Chats where someone mentioned the user and they have not read it yet, in the status line under the title. -->
+    <plurals name="chat_list_status_mentions">
+        <item quantity="one">%d mention</item>
+        <item quantity="other">%d mentions</item>
+    </plurals>
+    <!-- The heading above the pinned chats, which the list shows as one group. -->
+    <string name="chat_list_pinned">Pinned</string>
+    <!-- The header's search button, for its tooltip and screen readers. -->
+    <string name="chat_list_search">Search</string>
+    <!-- The header's avatar of the signed-in user, which opens Settings, for its tooltip and screen readers. -->
+    <string name="chat_list_your_profile">Your profile</string>
     <!-- The connection pill under the title while not connected. -->
     <string name="chat_list_waiting_for_network">Waiting for network…</string>
     <string name="chat_list_connecting_to_proxy">Connecting to proxy…</string>
@@ -168,6 +188,11 @@
     <string name="search_filter_messages">Messages</string>
     <string name="search_filter_media">Media</string>
     <string name="search_filter_links">Links</string>
+    <!-- A filter chip with how many messages, photos and videos, or links match the query, for screen readers: "Messages, 42 results". -->
+    <plurals name="search_filter_count">
+        <item quantity="one">%1$s, %2$d result</item>
+        <item quantity="other">%1$s, %2$d results</item>
+    </plurals>
     <!-- Section headers. -->
     <string name="search_section_people">People</string>
     <string name="search_section_recent">Recent</string>

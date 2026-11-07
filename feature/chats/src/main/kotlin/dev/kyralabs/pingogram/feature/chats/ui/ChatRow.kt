@@ -90,6 +90,7 @@ internal fun ChatRow(
     open: Boolean,
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
+    segment: RowSegment? = null,
 ) {
     val swipes = LocalChatSwipes.current
     val start = item.rowActionFor(swipes.start)
@@ -137,6 +138,7 @@ internal fun ChatRow(
             selected = selected,
             open = open,
             dragged = dragged,
+            segment = segment,
         )
     }
 }

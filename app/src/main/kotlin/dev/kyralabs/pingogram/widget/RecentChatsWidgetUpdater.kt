@@ -6,14 +6,18 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
@@ -202,9 +206,20 @@ class RecentChatsWidgetUpdater
                     combine(chatRepository.chatList(ChatListType.Main), account.chatLock.lockedChatIds) { all, locked ->
                         if (locked.isEmpty()) all else all.filterNot { it.id in locked }
                     }
-                combine(chats, account.users.users, account.users.myUserId, loaded) { list, users, me, done ->
+                combine(
+                    chats,
+                    account.users.users,
+                    account.users.myUserId,
+                    account.groups.supergroups,
+                    loaded,
+                ) { list, users, me, supergroups, done ->
                     val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot)
-                    if (rows.isEmpty() && !done) null else Rows(rows, list.take(MAX_CHATS).map { it.photo })
+                    val shown = list.take(MAX_CHATS)
+                    if (rows.isEmpty() && !done) {
+                        null
+                    } else {
+                        Rows(rows, shown.map { it.photo }, shown.map { it.isForumIn(supergroups) })
+                    }
                 }.distinctUntilChanged()
                     .debounce(UPDATE_DELAY)
                     .mapLatest { rows -> rows?.withAvatars(account.avatars) ?: RecentChatsContent.Loading }
@@ -212,18 +227,23 @@ class RecentChatsWidgetUpdater
             }
 
         private suspend fun Rows.withAvatars(avatars: AvatarIcons): RecentChatsContent {
-            val size = (AVATAR_SIZE_DP * context.resources.displayMetrics.density).roundToInt()
+            val density = context.resources.displayMetrics.density
+            val size = (AVATAR_SIZE_DP * density).roundToInt()
+            // A forum's avatar is a rounded square (AvatarShape.RoundedSquare): the shape scale's `large` corners.
+            val forumCorner = AVATAR_FORUM_CORNER_DP * density
             return RecentChatsContent.Chats(
                 rows.mapIndexed { index, row ->
-                    row.copy(avatar = avatars.bitmap(photos[index], row.id, row.title, size))
+                    val corner = forumCorner.takeIf { forums[index] }
+                    row.copy(avatar = avatars.bitmap(photos[index], row.id, row.title, size, corner))
                 },
             )
         }
 
-        /** The widget's rows and the chats' photos, compared as a whole before avatars are drawn. */
+        /** The widget's rows, the chats' photos and which are forums, compared as a whole before avatars are drawn. */
         private data class Rows(
             val rows: List<WidgetChat>,
             val photos: List<ProfilePhoto?>,
+            val forums: List<Boolean>,
         )
 
         private enum class State { Loading, SignedOut, Locked, Chats }
@@ -240,17 +260,28 @@ class RecentChatsWidgetUpdater
 
             /** The avatars' size in the widget's rows ([WidgetTokens.avatar]), in dp. */
             const val AVATAR_SIZE_DP = 40f
+
+            /** A forum's avatar's corners: the shape scale's `large` (`MaterialTheme.shapes.large`), in dp. */
+            const val AVATAR_FORUM_CORNER_DP = 16f
         }
     }
 
-/** What the widget reads of one account: its login, chats, users, locked chats, and avatars from its files. */
+/**
+ * What the widget reads of one account: its login, chats, users, supergroups (which are forums), locked chats, and
+ * avatars from its files.
+ */
 internal data class WidgetAccount(
     val auth: AuthRepository,
     val chats: ChatRepository,
     val users: UserRepository,
+    val groups: GroupRepository,
     val chatLock: ChatLockRepository,
     val avatars: AvatarIcons,
 )
+
+/** Whether this chat is a forum, whose avatar is a rounded square. */
+private fun Chat.isForumIn(supergroups: Map<Long, Supergroup>): Boolean =
+    (type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] }?.isForum == true
 
 /** Every account on the device as the widget reads it, by slot; each account's avatars made once. */
 @Singleton
@@ -273,6 +304,7 @@ internal class WidgetAccounts
                     auth = repositories.authRepository(),
                     chats = repositories.chatRepository(),
                     users = repositories.userRepository(),
+                    groups = repositories.groupRepository(),
                     chatLock = repositories.chatLockRepository(),
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
                 )

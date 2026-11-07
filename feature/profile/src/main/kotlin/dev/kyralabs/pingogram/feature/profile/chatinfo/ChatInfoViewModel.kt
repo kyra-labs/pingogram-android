@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.ChatInfoRoute
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -480,6 +481,7 @@ class ChatInfoViewModel internal constructor(
                     info.isFake -> ProfileWarning.Fake
                     else -> null
                 },
+            avatarShape = AvatarShape.ofChat(info.isForum),
         )
     }
 

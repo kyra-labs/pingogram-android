@@ -124,6 +124,7 @@ private fun ChatAvatar(
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
         onlineRingColor = ringColor,
+        shape = item.avatarShape,
     )
 }
 
@@ -193,6 +194,7 @@ internal fun SearchMessageRow(
                 size = MaterialTheme.sizes.avatarSmall,
                 placeholderIcon = item.placeholderIcon,
                 onlineRingColor = itemColors.containerColor,
+                shape = item.avatarShape,
             )
         },
         trailingContent = {
