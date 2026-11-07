@@ -31,6 +31,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, Settings home has a search over its pages, an account card with Edit profile, your QR code
   and an account menu, and its pages in four groups with the storage used, your devices and the language beside them.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
+- With Experimental UI on, settings search also finds the pages inside Settings' pages, such as Blocked users, Passcode
+  lock, each privacy setting, Proxy or the theme, and opens them with their page behind them.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.
 - The demo's channel has a sample rich post, with two sections to open and a photo.

@@ -18,11 +18,13 @@ import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.navigation.route
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsEvent
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsSubPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Assert.assertEquals
@@ -49,6 +51,7 @@ class ExperimentalSettingsHomeTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val opened = mutableListOf<SettingsPage>()
+    private val openedSubPages = mutableListOf<SettingsSubPage>()
     private val events = mutableListOf<SettingsEvent>()
 
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
@@ -69,6 +72,7 @@ class ExperimentalSettingsHomeTest {
                         state = state,
                         onEvent = { events += it },
                         onOpenPage = { opened += it },
+                        onOpenSubPage = { openedSubPages += it },
                         experimentalUi = true,
                         summaries = SettingsPreviewData.homeSummaries,
                     )
@@ -90,7 +94,10 @@ class ExperimentalSettingsHomeTest {
         show()
         search("sticker")
 
-        composeRule.onNode(hasText(string(R.string.settings_home_stickers_emoji)) and hasClickAction()).performClick()
+        // The page comes first; the pages above it, which name it as their summary, follow.
+        composeRule
+            .onAllNodes(hasText(string(R.string.settings_home_stickers_emoji)) and hasClickAction())[0]
+            .performClick()
 
         assertEquals(listOf(SettingsPage.Stickers), opened)
     }
@@ -103,6 +110,31 @@ class ExperimentalSettingsHomeTest {
         composeRule.onNode(hasText(string(R.string.settings_my_qr_title)) and hasClickAction()).performClick()
 
         assertEquals(listOf(SettingsPage.MyQrCode), opened)
+    }
+
+    @Test
+    fun `search finds a page above a page and opens it there`() {
+        show()
+        search("blocked")
+
+        composeRule.onNode(hasText(string(R.string.settings_blocked_users)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsSubPage.BlockedUsers), openedSubPages)
+        assertEquals(emptyList<SettingsPage>(), opened)
+    }
+
+    @Test
+    fun `every page above a page has its own entry and route`() {
+        val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
+        assertEquals(SettingsSubPage.entries.toList(), entries)
+        assertEquals(
+            SettingsSubPage.entries.size,
+            SettingsSubPage.entries
+                .map { it.route }
+                .toSet()
+                .size,
+        )
+        assertEquals(SettingsSubPage.entries.size, SubPageEntries.map { it.title }.toSet().size)
     }
 
     @Test
@@ -185,7 +217,10 @@ class ExperimentalSettingsHomeTest {
     fun `search ignores case and accents and needs every word`() {
         val resources = RuntimeEnvironment.getApplication().resources
         val found = searchEntries(SearchEntries, "PRÍVACY security", resources, Locale.US)
-        assertEquals(listOf(SettingsPage.PrivacySecurity), found.map { (it.destination as HomeDestination.Page).page })
+        assertEquals(HomeDestination.Page(SettingsPage.PrivacySecurity), found.first().destination)
+        // The pages above Privacy and security, whose summary names it, follow it.
+        val above = found.drop(1).map { (it.destination as HomeDestination.SubPage).subPage.parent }.toSet()
+        assertEquals(setOf(SettingsPage.PrivacySecurity), above)
         assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "  ", resources, Locale.US))
     }
 

@@ -19,6 +19,7 @@ import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -54,6 +56,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageSelection
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRoute
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsSubPage
 import dev.kyralabs.pingogram.feature.settings.ui.settingsPageColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -69,6 +72,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Panes**: two on expanded and wider windows, one on compact and medium ones ([calculatePaneScaffoldDirective]).
  * - **Opening a page**: with two panes, a row shows its page in the detail pane, in place of the one shown, and reads
  *   as selected ([SettingsPageSelection]). With one pane, [onOpen] pushes the page's route full screen, as before.
+ * - **Search's pages above a page**: a result of settings search that is a page above a page of Settings home
+ *   ([SettingsSubPage]) opens its parent, then the page above it: pushed both with one pane, in the detail pane's back
+ *   stack with two, so back returns through the parent either way.
  * - **Pages above a page** (Exceptions, Blocked users, 2-step verification and its flows, licenses…): with two panes
  *   they open in the detail pane's own back stack, a `NavHost` of the settings pages ([settingsPages]) that starts at
  *   the page Settings home opened, with the shared axis on X; back returns through them, then closes the page.
@@ -111,6 +117,7 @@ internal fun SettingsListDetail(
     // A page shows alone in the floating navigation bar's window, like a pushed one.
     HideNavigationBar(hidden = !listVisible)
     val openPage = rememberPageOpener(navigator, scope, twoPanes, onOpen)
+    val subPages = rememberSubPageOpener(navigator, scope, twoPanes, onOpen)
     val closePage: () -> Unit =
         remember(navigator, scope) { { scope.launch { navigator.navigateBack(BACK_BEHAVIOR) } } }
     var lastPage by remember { mutableStateOf<SettingsPage?>(null) }
@@ -124,6 +131,7 @@ internal fun SettingsListDetail(
             AnimatedPane(boundsAnimationSpec = boundsSpec, modifier = Modifier.paneContainer(twoPanes, last = false)) {
                 SettingsRoute(
                     onOpenPage = openPage,
+                    onOpenSubPage = subPages.open,
                     selection = if (twoPanes) SettingsPageSelection(shownPage) else null,
                     profileSaved = profileSaved,
                     onProfileSavedShown = onProfileSavedShown,
@@ -143,6 +151,7 @@ internal fun SettingsListDetail(
                         closePage()
                     },
                     onScanQrCode = onScanQrCode,
+                    pendingSubPage = subPages.pending,
                 )
             }
         },
@@ -172,6 +181,51 @@ private fun rememberPageOpener(
     }
 }
 
+/** How Settings home opens a page above one of its pages ([open]), and the one waiting for the detail pane. */
+private class SubPageOpener(
+    val open: (SettingsSubPage) -> Unit,
+    val pending: PendingSubPage?,
+)
+
+/**
+ * Opens a page above a page of Settings home, as settings search's results do (`docs/DESIGN_SYSTEM.md` §13.9): with
+ * [twoPanes], its parent in [navigator]'s detail pane and the page above it there (waiting in saved state as
+ * [SubPageOpener.pending] until the pane pushed it); with one pane, both pushed full screen by [onOpen], the parent
+ * first, so back returns through it.
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@Composable
+private fun rememberSubPageOpener(
+    navigator: ThreePaneScaffoldNavigator<String>,
+    scope: CoroutineScope,
+    twoPanes: Boolean,
+    onOpen: (route: Any) -> Unit,
+): SubPageOpener {
+    var pendingName by rememberSaveable { mutableStateOf<String?>(null) }
+    val currentTwoPanes by rememberUpdatedState(twoPanes)
+    val currentOnOpen by rememberUpdatedState(onOpen)
+    val open: (SettingsSubPage) -> Unit =
+        remember(navigator, scope) {
+            { subPage ->
+                if (currentTwoPanes) {
+                    pendingName = subPage.name
+                    navigator.showInDetailPane(subPage.parent.name, scope)
+                } else {
+                    currentOnOpen(subPage.parent.route)
+                    currentOnOpen(subPage.route)
+                }
+            }
+        }
+    val pending = pendingName?.let(::settingsSubPage)?.let { PendingSubPage(it) { pendingName = null } }
+    return SubPageOpener(open, pending)
+}
+
+/** A page above its parent that the detail pane pushes once its parent shows there, then calls [onShown]. */
+private class PendingSubPage(
+    val subPage: SettingsSubPage,
+    val onShown: () -> Unit,
+)
+
 /** The detail pane's content: [page] ([SettingsPagePane]), each page with its own back stack, or none open. */
 @Composable
 private fun DetailContent(
@@ -180,10 +234,20 @@ private fun DetailContent(
     onClose: () -> Unit,
     onProfileSaved: () -> Unit,
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
+    pendingSubPage: PendingSubPage? = null,
 ) {
     if (page != null) {
         // Each page its own back stack and view models, gone with it.
-        key(page.name) { SettingsPagePane(page, backButton, onClose, onProfileSaved, onScanQrCode) }
+        key(page.name) {
+            SettingsPagePane(
+                page,
+                backButton,
+                onClose,
+                onProfileSaved,
+                onScanQrCode,
+                pendingSubPage?.takeIf { it.subPage.parent == page },
+            )
+        }
     } else {
         NoSettingsPageSelected()
     }
@@ -204,6 +268,7 @@ private fun SettingsPagePane(
     onClose: () -> Unit,
     onProfileSaved: () -> Unit,
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
+    pendingSubPage: PendingSubPage? = null,
 ) {
     val viewModelStoreOwner = rememberViewModelStoreOwner()
     CompositionLocalProvider(
@@ -239,6 +304,13 @@ private fun SettingsPagePane(
                 onScanQrCode = onScanQrCode,
             )
         }
+        val subPage = pendingSubPage?.subPage
+        LaunchedEffect(subPage) {
+            if (subPage != null) {
+                navController.navigate(subPage.route) { launchSingleTop = true }
+                pendingSubPage.onShown()
+            }
+        }
     }
 }
 
@@ -270,6 +342,9 @@ internal fun NoSettingsPageSelected(modifier: Modifier = Modifier) {
 
 /** The page of [name], or null for one this version does not know, e.g. from a history saved before an update. */
 private fun settingsPage(name: String): SettingsPage? = SettingsPage.entries.firstOrNull { it.name == name }
+
+/** The page above a page of [name], or null for one this version does not know. */
+private fun settingsSubPage(name: String): SettingsSubPage? = SettingsSubPage.entries.firstOrNull { it.name == name }
 
 /** Back from a page leaves the detail pane, whichever pane shows. */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)

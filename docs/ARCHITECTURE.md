@@ -198,7 +198,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
   and a channel's mute toggle; the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
   `online`, from the list it already maps); and Settings home's values (`SettingsHomeViewModel`: the active sessions, the
-  storage used and the language), a view model only the experimental home asks for.
+  storage used and the language), a view model only the experimental home asks for. Its settings search opens the
+  pages above Settings home's pages too (`SettingsSubPage`, routed by `SettingsSubPages.kt`): `SettingsListDetail` pushes
+  the parent and the page with one pane, and with two shows the parent in the detail pane and has its `NavHost` push the
+  page once (the page waiting in saved state meanwhile).
 - **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
   scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
   the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands
