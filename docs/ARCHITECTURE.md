@@ -474,10 +474,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
   sets and `feature:chats`' `ChatSwipesViewModel` hands to the chat list through `LocalChatSwipes`. While the list
   changes the folder, rows do not swipe and `Modifier.folderSwipe` (`FolderSwipe.kt`) moves the whole list with the
-  finger, in its graphics layer (`FolderSwitch.position`, read in the draw phase, so a drag recomposes nothing); past a
-  third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`), and
-  the folder's list slides in from the other side instead of fading through. The neighbouring folder's chats are not
-  loaded ahead: the list slides away and the new one in, as a tab's tap fades them.
+  finger like a pager, the folder's list beside it coming in with it (`FolderSlide.kt`: `FolderSwitch.position` and
+  `side`, read in the draw phase, so a drag recomposes no row; `FolderCompanion`, composed only while on screen); past a
+  third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`),
+  whose list takes the neighbour's place without a frame between. A tab's tap slides the same way from the tab's side
+  (`rememberShownList`), the old list as the companion. The neighbours' lists come from
+  `ChatListViewModel.neighbourLists` (`FolderNeighbourLists`: mapped by mappers of their own, only while the route
+  collects them, which it does while the swipe changes folders, and dropped once no longer beside the selected tab);
+  the view model loads the first page of the tabs beside the selected one ahead, only those.
   The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
   Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,

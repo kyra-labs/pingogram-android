@@ -29,6 +29,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.
 - Pinned chats sit together at the top of the list under "Pinned", and a button at the end of the folder tabs opens
   the folder settings. Appearance → Chat list → "Edit folders button" hides it; the tabs' menus still edit folders.
+- Chat folders slide: tapping a tab slides its chats in from that side, and with "Swipe to change folders" the next
+  folder's chats follow your finger, already loaded, instead of appearing after the swipe.
 - Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
   list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
 - The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
