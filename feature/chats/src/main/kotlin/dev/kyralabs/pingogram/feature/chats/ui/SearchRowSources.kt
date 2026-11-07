@@ -59,7 +59,13 @@ internal fun Chat.toSearchItem(sources: SearchRowSources): SearchChatItem {
         isSecret = type is ChatType.Secret,
         isMuted = isMuted,
         subtitle = if (isSavedMessages || isDeletedAccount) null else subtitle(user, supergroup, sources),
-        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
+        avatarShape =
+            AvatarShape.ofChat(
+                isForum = supergroup?.isForum == true,
+                isGroup = isGroup,
+                isChannel = isChannel,
+                isSavedMessages = isSavedMessages,
+            ),
     )
 }
 
@@ -102,7 +108,13 @@ internal fun FoundMessage.toSearchItem(
         sender = sender(sources),
         preview = preview(sources, highlight),
         date = sources.timeFormatter.format(message.date, sources.now),
-        avatarShape = AvatarShape.ofChat(isForum = supergroup?.isForum == true),
+        avatarShape =
+            AvatarShape.ofChat(
+                isForum = supergroup?.isForum == true,
+                isGroup = chat.isGroup,
+                isChannel = chat.isChannel,
+                isSavedMessages = isSavedMessages,
+            ),
     )
 }
 

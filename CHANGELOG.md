@@ -16,6 +16,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, the chat list shows folders as chips, the kind of chat before its name, what kind of message
   the last one is, and the time in color while a chat is unread; groups, channels and Saved Messages get avatars of
   their own shapes.
+- With Experimental UI on, search sets its field and filters on a rounded block, the chosen filter filled, chats ending
+  in an arrow, and the words found in messages on colored marks.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

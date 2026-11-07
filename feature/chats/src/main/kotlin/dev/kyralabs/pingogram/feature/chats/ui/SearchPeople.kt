@@ -76,6 +76,7 @@ private fun Person(
             isOnline = item.isOnline,
             placeholderIcon = item.placeholderIcon,
             onlineRingColor = rowContainerColor,
+            shape = item.avatarShape,
         )
         Text(
             text = title,
