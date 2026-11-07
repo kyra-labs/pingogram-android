@@ -123,12 +123,18 @@ internal fun MediaPage(
             MediaLayers(item, files, playback, videoSurface)
         }
         when {
-            item.isHidden -> SpoilerLabel(Modifier.align(Alignment.Center))
+            item.isHidden -> {
+                SpoilerLabel(Modifier.align(Alignment.Center))
+            }
 
-            playback?.waitsForTap == true -> PlayButton(onPlay, Modifier.align(Alignment.Center))
+            playback?.waitsForTap == true -> {
+                PlayButton(onPlay, Modifier.align(Alignment.Center))
+            }
 
             // A streamed video plays before its file is complete: the seek bar shows what came, not this.
-            playback?.showsFrame != true -> DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
+            playback?.showsFrame != true -> {
+                DownloadProgress(media.fileId, files[media.fileId], Modifier.align(Alignment.Center))
+            }
         }
     }
 }
@@ -249,21 +255,25 @@ private fun BoxScope.VideoLayers(
     }
 }
 
-/** A determinate wavy indicator of the download of [state], while it is not complete; nothing once it is or unknown. */
+/**
+ * A determinate wavy indicator of the download of [fileId], whose state is [state], while it is not complete; nothing
+ * once it is or unknown. The progress comes from [LocalFileProgress] where the screen has it.
+ */
 @Composable
 private fun DownloadProgress(
+    fileId: Int,
     state: FileState?,
     modifier: Modifier = Modifier,
 ) {
-    val progress =
-        when (state) {
-            is FileState.Downloading -> state.progress
-            is FileState.NotDownloaded -> 0f
-            is FileState.Downloaded, null -> return
-        }
+    if (state == null || state is FileState.Downloaded) return
+    val lookup = LocalFileProgress.current
+    val progress = { progressOf(fileId, state, lookup) }
     val description = stringResource(R.string.media_downloading)
-    // Screen readers hear the progress as it moves, in steps of a tenth, so they are not interrupted at every update.
-    val step = (progress * PROGRESS_STEPS).toInt().coerceIn(0, PROGRESS_STEPS)
+    // Screen readers hear the progress as it moves, in steps of a tenth, so they are not interrupted at every update;
+    // only those steps compose this again, the indicator reads the progress where it draws it.
+    val step by remember(fileId, state, lookup) {
+        derivedStateOf { (progress() * PROGRESS_STEPS).toInt().coerceIn(0, PROGRESS_STEPS) }
+    }
     val locale = LocalConfiguration.current.locales[0]
     val percent =
         remember(step, locale) {
@@ -282,7 +292,7 @@ private fun DownloadProgress(
         contentAlignment = Alignment.Center,
     ) {
         CircularWavyProgressIndicator(
-            progress = { progress },
+            progress = progress,
             modifier = Modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize),
         )
     }

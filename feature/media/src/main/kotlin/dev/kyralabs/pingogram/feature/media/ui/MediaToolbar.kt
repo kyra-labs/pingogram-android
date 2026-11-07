@@ -53,7 +53,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo that may leave Telegram ([canCopy]),
  *   "Copy".
  *
- * The button whose action waits for the item's file (More for Copy) shows the download's progress ([fileState], a
+ * The button whose action waits for the item's file (More for Copy) shows the download's progress ([file], a
  * determinate wavy indicator) instead of its icon, or a loading indicator while the file is copied into the gallery;
  * meanwhile Share, Save and Copy are disabled. Screen readers hear what each button does and that it is under way.
  */
@@ -61,7 +61,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun ViewerToolbar(
     actions: MediaActions,
     canCopy: Boolean,
-    fileState: FileState?,
+    file: ItemFile?,
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -85,7 +85,7 @@ internal fun ViewerToolbar(
                 onClick = { onEvent(MediaViewerEvent.Share) },
                 enabled = idle,
                 pending = Pending(actions.pending == MediaAction.Share, stringResource(R.string.media_share_pending)),
-                fileState = fileState,
+                file = file,
             )
             ToolbarButton(
                 icon = UiR.drawable.ic_download,
@@ -93,7 +93,7 @@ internal fun ViewerToolbar(
                 onClick = { onEvent(MediaViewerEvent.Save) },
                 enabled = idle,
                 pending = Pending(actions.pending == MediaAction.Save, stringResource(R.string.media_save_pending)),
-                fileState = fileState,
+                file = file,
             )
         }
         if (actions.canDelete) {
@@ -107,7 +107,7 @@ internal fun ViewerToolbar(
             canCopy = canCopy && actions.canSave,
             copyEnabled = idle,
             copyPending = Pending(actions.pending == MediaAction.Copy, stringResource(R.string.media_copy_pending)),
-            fileState = fileState,
+            file = file,
             onEvent = onEvent,
         )
     }
@@ -122,7 +122,7 @@ private fun MoreMenu(
     canCopy: Boolean,
     copyEnabled: Boolean,
     copyPending: Pending,
-    fileState: FileState?,
+    file: ItemFile?,
     onEvent: (MediaViewerEvent) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -132,7 +132,7 @@ private fun MoreMenu(
             label = stringResource(R.string.media_more),
             onClick = { expanded = true },
             pending = copyPending,
-            fileState = fileState,
+            file = file,
         )
         DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
             val count = if (canCopy) 2 else 1
@@ -202,7 +202,7 @@ private fun ToolbarButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     pending: Pending? = null,
-    fileState: FileState? = null,
+    file: ItemFile? = null,
 ) {
     val isPending = pending?.isPending == true
     TooltipBox(
@@ -221,7 +221,7 @@ private fun ToolbarButton(
             shapes = IconButtonDefaults.shapes(),
         ) {
             if (isPending) {
-                PendingIndicator(fileState)
+                PendingIndicator(file)
             } else {
                 Icon(painter = painterResource(icon), contentDescription = null)
             }
@@ -230,17 +230,27 @@ private fun ToolbarButton(
 }
 
 /**
- * The download of the file an action waits for, [fileState]: a determinate wavy indicator while it downloads, or a
+ * The download of the file an action waits for, [file]: a determinate wavy indicator while it downloads, or a
  * loading indicator once it is on the device (the copy into the gallery runs).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun PendingIndicator(fileState: FileState?) {
+private fun PendingIndicator(file: ItemFile?) {
     val size = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator)
-    when (fileState) {
-        is FileState.Downloading -> CircularWavyProgressIndicator(progress = { fileState.progress }, modifier = size)
-        is FileState.NotDownloaded, null -> CircularWavyProgressIndicator(progress = { 0f }, modifier = size)
-        is FileState.Downloaded -> LoadingIndicator(size)
+    val lookup = LocalFileProgress.current
+    when (val state = file?.state) {
+        // The progress is read where it is drawn (LocalFileProgress): a download's updates compose nothing.
+        is FileState.Downloading -> {
+            CircularWavyProgressIndicator(progress = { progressOf(file.id, state, lookup) }, modifier = size)
+        }
+
+        is FileState.NotDownloaded, null -> {
+            CircularWavyProgressIndicator(progress = { 0f }, modifier = size)
+        }
+
+        is FileState.Downloaded -> {
+            LoadingIndicator(size)
+        }
     }
 }
 
@@ -251,7 +261,7 @@ private fun ViewerToolbarPreview() {
         ViewerToolbar(
             actions = MediaActions(canForward = true, canSave = true, canDelete = true),
             canCopy = true,
-            fileState = null,
+            file = null,
             onEvent = {},
         )
     }
