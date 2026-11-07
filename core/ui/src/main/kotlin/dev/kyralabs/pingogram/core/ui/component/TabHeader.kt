@@ -57,7 +57,8 @@ fun TabHeader(
 ) {
     val typography = MaterialTheme.typography
     // The experimental look's titles are wider (docs/DESIGN_SYSTEM.md §13): the same sizes and line heights.
-    val wide = MaterialTheme.experimentalTypography.takeIf { LocalExperimentalUi.current }
+    val experimental = LocalExperimentalUi.current
+    val wide = MaterialTheme.experimentalTypography.takeIf { experimental }
     val expandedStyle = wide?.displaySmallWide ?: typography.displaySmallEmphasized
     val collapsedStyle = wide?.titleLargeWide ?: typography.titleLargeEmphasized
     // The bar insets its title by the compact margin itself; on wider windows it moves in with the content's.

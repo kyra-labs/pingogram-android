@@ -29,7 +29,8 @@ fun BottomFade(
 ) {
     val barInsets = LocalNavigationBarInsets.current
     val barHeight = floatingNavigationBarHeight()
-    val experimentalHeight = MaterialTheme.sizes.experimentalBottomFade.takeIf { LocalExperimentalUi.current }
+    val experimental = LocalExperimentalUi.current
+    val experimentalHeight = MaterialTheme.sizes.experimentalBottomFade.takeIf { experimental }
     Box(
         modifier
             .fillMaxWidth()

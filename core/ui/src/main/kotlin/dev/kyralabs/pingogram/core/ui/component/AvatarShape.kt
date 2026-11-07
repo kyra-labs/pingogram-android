@@ -75,7 +75,8 @@ enum class AvatarShape {
 @Composable
 fun AvatarShape.toShape(): Shape {
     if (this == AvatarShape.RoundedSquare) return MaterialTheme.shapes.large
-    val polygon = experimentalPolygon().takeIf { LocalExperimentalUi.current } ?: return CircleShape
+    val experimental = LocalExperimentalUi.current
+    val polygon = experimentalPolygon()?.takeIf { experimental } ?: return CircleShape
     return remember(polygon) { polygon.toShape() }
 }
 
@@ -88,7 +89,8 @@ fun AvatarShape.toShape(): Shape {
 @Composable
 fun AvatarShape.rememberPolygon(size: Dp): RoundedPolygon {
     if (this != AvatarShape.RoundedSquare) {
-        return experimentalPolygon().takeIf { LocalExperimentalUi.current } ?: MaterialShapes.Circle
+        val experimental = LocalExperimentalUi.current
+        return experimentalPolygon()?.takeIf { experimental } ?: MaterialShapes.Circle
     }
     val corner = MaterialTheme.shapes.large.topStart
     val density = LocalDensity.current
