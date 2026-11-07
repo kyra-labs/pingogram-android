@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
@@ -587,23 +588,7 @@ private fun BubbleText(
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
     val formatted =
         resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
-    val match = bubble.searchMatch
-    val matchContent = MaterialTheme.colorScheme.onTertiary
-    // The experimental look's chips on the user's mentions (docs/DESIGN_SYSTEM.md §13.6), over the cached text.
-    val mentions = bubble.myMentions.takeIf { LocalExperimentalUi.current && it.isNotEmpty() }
-    val mentionContent = MaterialTheme.colorScheme.onPrimary
-    val chipped =
-        if (mentions == null) {
-            formatted
-        } else {
-            remember(formatted, mentions, mentionContent) { formatted.withMentionChips(mentions, mentionContent) }
-        }
-    val text =
-        if (match == null) {
-            chipped
-        } else {
-            remember(chipped, match, matchContent) { chipped.withMatches(match, matchContent) }
-        }
+    val text = shownText(bubble, formatted)
     val customEmoji = LocalCustomEmoji.current?.takeIf { text.hasCustomEmoji() }
     val hasBlocks = text.hasTextBlocks()
     if (hasBlocks || customEmoji != null) {
