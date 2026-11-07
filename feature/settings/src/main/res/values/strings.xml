@@ -76,6 +76,14 @@
     <string name="settings_chat_appearance_summary">%1$s text · %2$s · %3$s</string>
     <string name="settings_chat_section_messages">Messages</string>
     <string name="settings_chat_section_wallpaper">Wallpaper</string>
+    <!-- Experimental UI only (docs/DESIGN_SYSTEM.md §13.6): how the bubbles of a group's people are colored. -->
+    <string name="settings_group_bubbles">Group bubbles</string>
+    <string name="settings_group_bubbles_automatic">Automatic</string>
+    <string name="settings_group_bubbles_automatic_summary">Colorful in groups of up to 50 members, tinted in bigger ones</string>
+    <string name="settings_group_bubbles_vivid">Vivid</string>
+    <string name="settings_group_bubbles_vivid_summary">Each person\'s bubbles in their color, their name above them</string>
+    <string name="settings_group_bubbles_tinted">Tinted</string>
+    <string name="settings_group_bubbles_tinted_summary">Bubbles barely tinted, names in each person\'s color</string>
     <!-- Screen readers' description of the page's sample conversation -->
     <string name="settings_chat_preview">Preview of a conversation with these settings</string>
     <!-- The sample conversation: two messages from a friend and the user's reply -->

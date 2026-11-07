@@ -4653,3 +4653,84 @@ internal val VividAvatarArgb: LongArray =
         0xFFB5C7EF,
         0xFF061B3A,
     )
+
+/**
+ * The experimental look's sender hues, eight values each: in light theme the vivid fill (tone 90), its text
+ * (10), the tinted fill (96, chroma 12 at most) and the ink (40); then the same in dark theme
+ * (80, 10, 15, 80):
+ * - Red
+ * - Orange
+ * - Violet
+ * - Green
+ * - Teal
+ * - Blue
+ * - Pink
+ * - Gold
+ */
+internal val SenderHueArgb: LongArray =
+    longArrayOf(
+        0xFFFFDAD4,
+        0xFF410100,
+        0xFFFFF0EE,
+        0xFF9E4134,
+        0xFFFFB4A8,
+        0xFF410100,
+        0xFF34211E,
+        0xFFFFB4A8,
+        0xFFFFDCC3,
+        0xFF2F1500,
+        0xFFFFF1E9,
+        0xFF875120,
+        0xFFFFB77C,
+        0xFF2F1500,
+        0xFF322216,
+        0xFFFFB77C,
+        0xFFEEDBFF,
+        0xFF28084B,
+        0xFFFBF0FF,
+        0xFF6E5193,
+        0xFFD9B9FF,
+        0xFF28084B,
+        0xFF292330,
+        0xFFD9B9FF,
+        0xFF95F8A0,
+        0xFF002108,
+        0xFFEAF7E6,
+        0xFF006E2A,
+        0xFF7ADB86,
+        0xFF002108,
+        0xFF1D291D,
+        0xFF7ADB86,
+        0xFF78F7E3,
+        0xFF00201C,
+        0xFFE5F8F2,
+        0xFF006B5F,
+        0xFF58DBC7,
+        0xFF00201C,
+        0xFF192926,
+        0xFF58DBC7,
+        0xFFCDE5FF,
+        0xFF001D32,
+        0xFFEDF4FF,
+        0xFF1B6394,
+        0xFF95CCFF,
+        0xFF001D32,
+        0xFF1D2730,
+        0xFF95CCFF,
+        0xFFFFD8E9,
+        0xFF390527,
+        0xFFFFF0F4,
+        0xFF8A496C,
+        0xFFFFAFD7,
+        0xFF390527,
+        0xFF312129,
+        0xFFFFAFD7,
+        0xFFFFDF95,
+        0xFF251A00,
+        0xFFFFF2DC,
+        0xFF765A00,
+        0xFFEDC14F,
+        0xFF251A00,
+        0xFF2C2513,
+        0xFFEDC14F,
+    )

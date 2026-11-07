@@ -59,12 +59,13 @@ internal fun ReplyQuoteBlock(
     colors: BubbleColors,
     onOpen: (() -> Unit)? = null,
 ) {
-    val accent =
-        reply.senderId?.let { MaterialTheme.colorScheme.senderNameColor(it) } ?: MaterialTheme.colorScheme.primary
+    val accent = hueNameColor(reply.senderHue, reply.senderId, colors)
     val openLabel = stringResource(R.string.chat_reply_open)
     val clickable =
         onOpen?.let { Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = it) } ?: Modifier
-    BlockCard(colors.block, clickable) {
+    // The experimental look's stripe in the replied sender's ink (docs/DESIGN_SYSTEM.md §13.6); none in the standard.
+    val stripe = accent.takeIf { LocalHueTheme.current != null && reply.sender != null }
+    BlockCard(colors.block, clickable.quoteStripe(stripe, MaterialTheme.sizes.pinnedIndicator)) {
         reply.sender?.let { sender ->
             Text(
                 text = sender.resolve(),
@@ -103,7 +104,10 @@ internal fun LinkPreviewBlock(
     preview: LinkPreviewCard,
     colors: BubbleColors,
 ) {
-    val primary = MaterialTheme.colorScheme.primary
+    // On the experimental look's vivid bubbles the bubble's own accent and text, readable on the fill (§13.6).
+    val vivid = LocalHueTheme.current.isVivid(colors)
+    val primary = if (vivid) colors.accent else MaterialTheme.colorScheme.primary
+    val titleColor = if (vivid) colors.content else MaterialTheme.colorScheme.onSurface
     BlockCard(colors.block) {
         if (preview.siteName.isNotBlank()) {
             Text(
@@ -117,7 +121,7 @@ internal fun LinkPreviewBlock(
         if (preview.title.isNotBlank()) {
             Text(
                 text = preview.title,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = titleColor,
                 maxLines = LINK_TITLE_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleSmall.userContent,

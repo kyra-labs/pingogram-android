@@ -50,6 +50,30 @@ class ThemeContrastTest {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(ThemePalette::class)
+    fun `text keeps 4,5 to 1 on every sender hue of the experimental look`(palette: ThemePalette) {
+        forEachScheme(palette) { look, scheme ->
+            val hues = pingogramColors(scheme, dark = !look.startsWith("light")).senderHues
+            assertTrue(hues.size == SenderHues.COUNT, "$look: ${hues.size} hues")
+            for (index in 0 until hues.size) {
+                val hue = hues[index]
+                val pairs =
+                    mapOf(
+                        "text on the vivid fill" to (hue.vivid.content to hue.vivid.container),
+                        "text on the tinted fill" to (hue.tinted.content to hue.tinted.container),
+                        "secondary text on the tinted fill" to (hue.tinted.secondaryContent to hue.tinted.container),
+                        "ink on the tinted fill" to (hue.ink to hue.tinted.container),
+                        "ink on surface" to (hue.ink to scheme.surface),
+                    )
+                for ((name, pair) in pairs) {
+                    val ratio = contrastRatio(pair.first, pair.second)
+                    assertTrue(ratio >= TEXT, "$palette $look hue $index $name: $ratio")
+                }
+            }
+        }
+    }
+
     private fun forEachScheme(
         palette: ThemePalette,
         check: (String, ColorScheme) -> Unit,

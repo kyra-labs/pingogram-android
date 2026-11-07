@@ -9,9 +9,11 @@ import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.PinnedPreviewData
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -60,6 +62,12 @@ class ExperimentalChatScreenshotTest(
     fun fontScale200() {
         assumeTrue(stateName == "group")
         capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
+    @Test
+    fun highContrastTinted() {
+        assumeTrue(stateName == "groupTinted")
+        capture(ScreenshotVariant.HighContrast)
     }
 
     @Test
@@ -113,8 +121,49 @@ class ExperimentalChatScreenshotTest(
                             members = members,
                         ),
                     unreadMentionCount = 2,
+                    groupMemberCount = SMALL_GROUP,
+                    content = (state.content as ChatContent.Content).withHues(),
+                    typing =
+                        TypingBubble(
+                            userId = 1,
+                            name = UiText.Plain("Grace Hopper"),
+                            photo = null,
+                            hue = 2,
+                            text = UiText.Plain("Grace is typing"),
+                        ),
                 )
             }
+
+        /** The group in a larger group's tinted bubbles, names inside in their hue's ink. */
+        private val groupTinted = group.copy(groupMemberCount = LARGE_GROUP, typing = null)
+
+        /** Incoming bubbles in their senders' hues, the first with a role, one mentioning the user. */
+        private fun ChatContent.Content.withHues(): ChatContent.Content {
+            var first = true
+            return copy(
+                items =
+                    items
+                        .map { item ->
+                            if (item !is ChatItem.Bubble || item.isOutgoing) return@map item
+                            val role = if (first) UiText.Plain("Admin") else null
+                            first = false
+                            item.copy(
+                                senderHue = SenderHues.indexOf(-1, item.senderId),
+                                senderRole = role,
+                                mentionsMe = item.reply != null,
+                                reply =
+                                    item.reply?.let {
+                                        it.copy(
+                                            senderHue = SenderHues.indexOf(-1, it.senderId ?: 0),
+                                        )
+                                    },
+                            )
+                        }.toImmutableList(),
+            )
+        }
+
+        private const val SMALL_GROUP = 12
+        private const val LARGE_GROUP = 1_248
 
         private val channel =
             ChatPreviewData.channel.let { state ->
@@ -134,7 +183,8 @@ class ExperimentalChatScreenshotTest(
                 state.copy(header = state.header?.copy(callUserId = null))
             }
 
-        val STATES = mapOf("group" to group, "channel" to channel, "privateChat" to private)
+        val STATES =
+            mapOf("group" to group, "groupTinted" to groupTinted, "channel" to channel, "privateChat" to private)
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")

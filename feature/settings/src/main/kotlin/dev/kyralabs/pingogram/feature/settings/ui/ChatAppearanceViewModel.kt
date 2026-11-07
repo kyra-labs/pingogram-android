@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -66,6 +67,9 @@ class ChatAppearanceViewModel
         fun setBubbleCorners(corners: BubbleCorners) = save { appearanceRepository.setBubbleCorners(corners) }
 
         fun setWallpaper(wallpaper: ChatWallpaper) = save { appearanceRepository.setChatWallpaper(wallpaper) }
+
+        /** Saves how the experimental look colors groups' bubbles. */
+        fun setGroupBubbles(bubbles: GroupBubbles) = save { appearanceRepository.setGroupBubbles(bubbles) }
 
         private fun save(write: suspend () -> Outcome<Unit>) {
             viewModelScope.launch {

@@ -36,6 +36,8 @@ internal data class ItemInputs(
     val timeShown: Boolean,
     val myUserId: Long?,
     val timeFormatter: ChatTimeFormatter,
+    /** The sender's role label in a group ([ChatPeople.roles]); null for anyone else. */
+    val senderRole: UiText? = null,
 )
 
 /** What kind of chat it is, as far as bubbles show: sender names and avatars in groups, no checks in channels. */
@@ -77,6 +79,7 @@ internal fun ItemSources.inputsOf(
         timeShown = message.id in messages.shownTimes,
         myUserId = myUserId,
         timeFormatter = timeFormatter,
+        senderRole = people.roles[message.sender.id],
     )
 }
 

@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -253,7 +255,13 @@ internal fun BubbleRowContent(
             )
         }
         val aligned = Modifier.alignBy { it.bubbleBottom() }
-        if (showsShare) {
+        if (resources.theme.namesAbove(bubble) && !showsShare) {
+            // The experimental look's vivid bubbles have their sender's name above them (docs/DESIGN_SYSTEM.md §13.6).
+            Column(aligned) {
+                SenderNameAbove(bubble, resources.theme, onEvent)
+                messageBubble(Modifier)
+            }
+        } else if (showsShare) {
             WithShareButton(
                 isOutgoing = bubble.isOutgoing,
                 style = resources.share,
@@ -358,16 +366,21 @@ private fun MessageBubble(
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
 ) {
-    val style = resources.theme.styleOf(bubble.isOutgoing, isSelected)
+    val style = resources.theme.styleOf(bubble.isOutgoing, isSelected, bubble.senderHue)
     val position = bubble.position
     val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes
     val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
     val bare = bubble.isEmojiOnly || (bubble.album == null && bubble.content.isBare)
     val bareShape = MaterialTheme.shapes.large
+    // The experimental look rings a message that mentions the user in `primary` (docs/DESIGN_SYSTEM.md §13.6).
+    val mentionRing = bubble.mentionsMe && resources.theme.hues.isNotEmpty()
+    val ringColor = MaterialTheme.colorScheme.primary
     val frame: @Composable (Modifier) -> Unit = { outer ->
         // The focus ring in the frame's shape: the bubble's, or around content without a bubble.
-        val modifier = outer.bubbleFocusRing(focus, if (bare) bareShape else shape)
+        val frameShape = if (bare) bareShape else shape
+        val ringed = if (mentionRing) outer.border(sizes.avatarRing, ringColor, frameShape) else outer
+        val modifier = ringed.bubbleFocusRing(focus, frameShape)
         when {
             bubble.isEmojiOnly -> {
                 EmojiBubble(bubble, style.colors, onEvent, modifier)
@@ -394,7 +407,8 @@ private fun MessageBubble(
             }
         }
     }
-    CompositionLocalProvider(LocalContentColor provides style.colors.content) {
+    val hueTheme = resources.theme.takeIf { it.hues.isNotEmpty() }
+    CompositionLocalProvider(LocalContentColor provides style.colors.content, LocalHueTheme provides hueTheme) {
         BubbleStack(
             bubble = bubble,
             // Over the bubble's bottom padding, clear of the time; below content without a bubble.
@@ -508,17 +522,27 @@ internal fun BubbleHeader(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
 ) {
-    if (bubble.showsSenderName) {
-        Text(
-            text = bubble.sender.resolve(),
-            // Its touch target reaches past the line, without moving what is around it; in the list, the bubble's own
-            // semantics offer the profile to screen readers.
-            modifier = Modifier.openProfileTarget(bubble.senderUserId, MaterialTheme.shapes.extraSmall, onEvent),
-            color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelLarge.userContent,
-        )
+    val hueTheme = LocalHueTheme.current
+    // A vivid bubble's name is above it in the experimental look (SenderNameAbove).
+    if (bubble.showsSenderName && !hueTheme.isVivid(colors)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = bubble.sender.resolve(),
+                // Its touch target reaches past the line, without moving what is around it; in the list, the bubble's
+                // own semantics offer the profile to screen readers.
+                modifier = Modifier.openProfileTarget(bubble.senderUserId, MaterialTheme.shapes.extraSmall, onEvent),
+                color = hueNameColor(bubble.senderHue, bubble.senderId, colors),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge.userContent,
+            )
+            val ink = hueTheme?.inkOf(bubble.senderHue)
+            val role = bubble.senderRole
+            if (ink != null && role != null) RolePill(role, ink, colors.container)
+        }
     }
     bubble.forwardedFrom?.let { forwarded ->
         Text(

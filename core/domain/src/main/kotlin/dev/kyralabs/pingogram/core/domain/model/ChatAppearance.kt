@@ -11,11 +11,13 @@ import kotlin.math.roundToInt
  *   steps of [TEXT_SCALE_STEP]; on top of the system's font scale.
  * @property bubbleCorners the shape scale's step for a bubble's round corners.
  * @property wallpaper what the conversation's messages sit on.
+ * @property groupBubbles how the experimental look colors the bubbles of a group's people.
  */
 data class ChatAppearance(
     val textScale: Float = DEFAULT_TEXT_SCALE,
     val bubbleCorners: BubbleCorners = BubbleCorners.ExtraLarge,
     val wallpaper: ChatWallpaper = ChatWallpaper.None,
+    val groupBubbles: GroupBubbles = GroupBubbles.Automatic,
 ) {
     companion object {
         const val DEFAULT_TEXT_SCALE = 1f
@@ -35,6 +37,32 @@ data class ChatAppearance(
         private const val PERCENT = 100f
         private const val MIN_PERCENT = 85
         private const val STEP_PERCENT = 5
+    }
+}
+
+/**
+ * How the experimental look (`docs/DESIGN_SYSTEM.md` §13.6) colors the incoming bubbles of a group, each in its
+ * sender's hue: [Vivid] fills them with it and puts the name above them; [Tinted] tints them toward it and writes the
+ * name inside in the hue's ink; [Automatic], the default, is vivid in groups of up to 50 members and tinted in larger
+ * ones, where many people write near each other.
+ */
+enum class GroupBubbles {
+    Automatic,
+    Vivid,
+    Tinted,
+    ;
+
+    /** Whether bubbles are vivid in a group of [memberCount] members (null while unknown, read as a small group). */
+    fun isVivid(memberCount: Int?): Boolean =
+        when (this) {
+            Automatic -> (memberCount ?: 0) <= SMALL_GROUP_MEMBERS
+            Vivid -> true
+            Tinted -> false
+        }
+
+    companion object {
+        /** The most members of a group whose bubbles [Automatic] fills. */
+        const val SMALL_GROUP_MEMBERS = 50
     }
 }
 

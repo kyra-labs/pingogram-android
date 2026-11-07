@@ -13,10 +13,12 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.RichPreviewData
@@ -62,6 +64,9 @@ class ChatRecompositionTest {
     /** False until the counter runs, so it sees the screen's first composition. */
     private var shown by mutableStateOf(false)
 
+    /** The experimental look (`docs/DESIGN_SYSTEM.md` §13), set before [setScreen]. */
+    private var experimental = false
+
     @Test
     fun `scrolling the messages recomposes none of the bubbles`() {
         setScreen(messages(MESSAGES))
@@ -77,6 +82,28 @@ class ChatRecompositionTest {
         val others = counter.recomposedOwn.filterNot { JUMP_BUTTON in it || it.startsWith(SCREEN_LAMBDA) }
         assertEquals(emptyList<String>(), others)
         assertTrue(counter.recomposedOwn.toString(), counter.recomposedOwn.size < SCROLL_FRAMES / RARE)
+    }
+
+    @Test
+    fun `scrolling a group in the experimental look recomposes none of the bubbles`() {
+        experimental = true
+        val group = messages(MESSAGES)
+        val items =
+            (group.content as ChatContent.Content).items.map { item ->
+                if (item is ChatItem.Bubble && !item.isOutgoing) {
+                    item.copy(senderHue = (item.id % SenderHues.COUNT).toInt(), mentionsMe = item.id % 2 == 0L)
+                } else {
+                    item
+                }
+            }
+        setScreen(group.copy(content = (group.content as ChatContent.Content).copy(items = items.toImmutableList())))
+
+        repeat(SCROLL_FRAMES) {
+            composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
+            frame()
+        }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
     }
 
     @Test
@@ -237,7 +264,10 @@ class ChatRecompositionTest {
             PingogramTheme(dynamicColor = false) {
                 if (shown) {
                     listState = rememberLazyListState()
-                    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+                    CompositionLocalProvider(
+                        LocalCustomEmoji provides customEmoji,
+                        LocalExperimentalUi provides experimental,
+                    ) {
                         ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
                     }
                 }

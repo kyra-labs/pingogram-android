@@ -15,6 +15,7 @@ import androidx.compose.ui.text.TextStyle
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 
 /**
  * How conversations look with the user's Chat appearance settings (`REQUIREMENTS.md` FR-S1, [ChatAppearance]), from
@@ -25,20 +26,25 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
  * @property bubbleShapes the bubbles' shapes with the chosen round corners in place of `extraLarge`
  *   (`docs/DESIGN_SYSTEM.md` §4); the joined corners stay `extraSmall`.
  * @property wallpaper the conversation's background, or null for none (the sheet's `surface`).
+ * @property groupBubbles how the experimental look colors groups' bubbles (`docs/DESIGN_SYSTEM.md` §13.6).
  */
 @Immutable
 class ChatStyle(
     val messageText: TextStyle,
     val bubbleShapes: MessageBubbleShapes,
     val wallpaper: Brush?,
+    val groupBubbles: GroupBubbles = GroupBubbles.Automatic,
 ) {
     override fun equals(other: Any?): Boolean =
         other is ChatStyle &&
             other.messageText == messageText &&
             other.bubbleShapes == bubbleShapes &&
-            other.wallpaper == wallpaper
+            other.wallpaper == wallpaper &&
+            other.groupBubbles == groupBubbles
 
-    override fun hashCode(): Int = (messageText.hashCode() * 31 + bubbleShapes.hashCode()) * 31 + wallpaper.hashCode()
+    override fun hashCode(): Int =
+        ((messageText.hashCode() * 31 + bubbleShapes.hashCode()) * 31 + wallpaper.hashCode()) * 31 +
+            groupBubbles.hashCode()
 }
 
 /** The chat appearance of the enclosing [PingogramTheme] (`docs/DESIGN_SYSTEM.md` §3.2, §4). */
@@ -63,6 +69,7 @@ internal fun chatStyle(
         messageText = messageText,
         bubbleShapes = MessageBubbleShapes(shapes.copy(extraLarge = appearance.bubbleCorners.shape(shapes))),
         wallpaper = appearance.wallpaper.brush(colorScheme),
+        groupBubbles = appearance.groupBubbles,
     )
 
 /** The shape scale's step these corners are. */

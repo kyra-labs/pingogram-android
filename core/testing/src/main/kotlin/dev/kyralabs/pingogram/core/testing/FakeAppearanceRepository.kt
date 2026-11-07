@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -57,6 +58,9 @@ class FakeAppearanceRepository(
 
     override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) =
         change { it.copy(chat = it.chat.copy(wallpaper = wallpaper)) }
+
+    override suspend fun setGroupBubbles(bubbles: GroupBubbles) =
+        change { it.copy(chat = it.chat.copy(groupBubbles = bubbles)) }
 
     private fun change(transform: (AppearanceSettings) -> AppearanceSettings): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
