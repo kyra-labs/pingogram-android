@@ -796,3 +796,26 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - [ ] Accessibility §9 checks pass; haptics per §5
 - [ ] Reduced motion path verified
 - [ ] Performance budget in `docs/PERFORMANCE.md` met (no jank in the screen's Macrobenchmark)
+
+## 13. Experimental UI
+
+An opt-in second look for the chat list, global search, chats, Contacts and Settings home, from the owner's design
+(`docs/adr/0035-experimental-ui.md`, owner decisions 2026-11-07). The standard look of §1–§12 stays the default and is
+unchanged while it is off. This section lists every difference from §1–§12, with its roles, shapes, type and motion;
+the rows of §1–§12 are not edited for it. Where the owner's design shows something the owner has not decided, the line
+says "Owner decision to confirm (2026-11-07)". The design's mock-ups use Roboto Flex as a stand-in font and literal
+colors and pixel sizes: each is mapped here to color roles, the shape scale, `MaterialShapes`, `spacing` and `sizes`
+tokens and the type scale (Google Sans Flex), never copied into feature code.
+
+**How it is read**: `core:ui`'s `LocalExperimentalUi` (a static composition local `MainActivity` provides before the
+first frame). A composable that looks different reads it and picks its style at the smallest scope that differs; its
+state, events, keys, content types, semantics and haptics stay those of §1–§12 unless a line below says otherwise.
+
+### 13.1 The switch
+
+| UI element | Experimental UI |
+|---|---|
+| Settings home, standard look | "Experimental UI" as a switch row (the clickable segmented list item with `Role.Switch` and a trailing check `Switch`, `ToggleOn` / `ToggleOff`), the flask (Material Symbols "science") in the group's tonal circle (`tertiary`), its title followed by a "Beta" label as the account card's ("Premium": `labelMediumEmphasized` in a full pill on `tertiaryContainer` / `onTertiaryContainer`), "New Material 3 Expressive look for chats, contacts and settings. Switch back anytime." as its summary. It opens nothing. Owner decision to confirm (2026-11-07): in a group of its own after About, before "Log out" |
+| Settings home, experimental look | The labs card under the account card (and the other accounts), full width within the window margin, `extraLarge` corners on `tertiaryContainer` / `onTertiaryContainer`, `spacing.large` padding: a `MaterialShapes.Sunny` badge (`sizes.avatarRow`, `onTertiaryContainer`) with the flask in `tertiaryContainer`; "Experimental UI" in `titleMediumEmphasized` with a "BETA" label (the account card's label, its colors inverted: `onTertiaryContainer` / `tertiaryContainer`); the summary in `bodyMedium`; a check `Switch` whose checked track is `onTertiaryContainer` and thumb `tertiaryContainer`. The whole card is one toggleable (`Role.Switch`) for touch and screen readers, `ToggleOn` / `ToggleOff` |
+| Turning it on or off | The app composes again in place in the other look (a static local that changes, as "Hide phone numbers" does): no cross-fade, no new activity. The cheaper of the two (ADR 0035); view models, scroll positions and saved state stay |
+

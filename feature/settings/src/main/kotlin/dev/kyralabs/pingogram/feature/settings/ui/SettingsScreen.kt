@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
@@ -46,8 +47,10 @@ internal fun SettingsRoute(
     profileSaved: Boolean = false,
     onProfileSavedShown: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
+    experimentalUiViewModel: ExperimentalUiViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val experimentalUi by experimentalUiViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -58,6 +61,11 @@ internal fun SettingsRoute(
         // Cleared first, so it shows once; the snackbar outlives this effect, which clearing restarts.
         currentOnProfileSavedShown()
         scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.settings_profile_saved)) }
+    }
+    LaunchedEffect(experimentalUiViewModel) {
+        experimentalUiViewModel.errors.collect { error ->
+            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
+        }
     }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -76,6 +84,8 @@ internal fun SettingsRoute(
         modifier = modifier,
         selection = selection,
         snackbarHostState = snackbarHostState,
+        experimentalUi = experimentalUi,
+        onExperimentalUiChange = experimentalUiViewModel::onCheckedChange,
     )
 }
 
@@ -90,6 +100,9 @@ internal fun SettingsRoute(
  * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
  * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
+ * "Experimental UI" ([experimentalUi], once read; `docs/adr/0035-experimental-ui.md`) is a switch row with a "Beta"
+ * label of its own group before "Log out" in the standard look, and the labs card under the account card in the
+ * experimental one ([LocalExperimentalUi]).
  */
 @Composable
 internal fun SettingsScreen(
@@ -99,7 +112,10 @@ internal fun SettingsScreen(
     modifier: Modifier = Modifier,
     selection: SettingsPageSelection? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    experimentalUi: Boolean? = null,
+    onExperimentalUiChange: (Boolean) -> Unit = {},
 ) {
+    val experimentalLook = LocalExperimentalUi.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isDemo = LocalIsDemo.current
     Scaffold(
@@ -135,7 +151,13 @@ internal fun SettingsScreen(
                     onAdd = { onEvent(SettingsEvent.AddAccount) },
                 )
             }
+            if (experimentalLook && experimentalUi != null) {
+                ExperimentalUiCard(checked = experimentalUi, onCheckedChange = onExperimentalUiChange)
+            }
             PageGroups(onOpenPage, selection)
+            if (!experimentalLook && experimentalUi != null) {
+                ExperimentalUiGroup(experimentalUi, onExperimentalUiChange)
+            }
             SettingsGroup {
                 item { shapes ->
                     LogOutItem(
