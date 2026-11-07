@@ -85,9 +85,11 @@ private val MessageTexts = ConcurrentHashMap<MessageTextKey, TextStyle>()
  * @property titleLargeWide the tabs' titles once their header collapsed.
  * @property titleMediumWide a conversation's title in its top bar.
  * @property headlineLargeCondensed the Contacts tab's section letters.
- * @property displaySmallCondensed big numerals.
+ * @property displaySmallCondensed big numerals, and a channel post's headline (§13.7).
+ * @property displayLargeCondensed a short shouted message in a group, set italic (§13.6).
  */
 @Immutable
+@Suppress("LongParameterList") // One style per role the experimental look's type plays, as Material's Typography has.
 class ExperimentalTypography internal constructor(
     val displaySmallWide: TextStyle,
     val headlineSmallWide: TextStyle,
@@ -95,6 +97,7 @@ class ExperimentalTypography internal constructor(
     val titleMediumWide: TextStyle,
     val headlineLargeCondensed: TextStyle,
     val displaySmallCondensed: TextStyle,
+    val displayLargeCondensed: TextStyle,
 )
 
 /** [ExperimentalTypography] for the "Bold text" [fontWeightAdjustment] and [contrast], built once and kept. */
@@ -115,6 +118,7 @@ fun pingogramExperimentalTypography(
             titleMediumWide = tokens.titleMedium.at(WIDE_WIDTH),
             headlineLargeCondensed = tokens.headlineLarge.at(CONDENSED_WIDTH),
             displaySmallCondensed = tokens.displaySmall.at(CONDENSED_WIDTH),
+            displayLargeCondensed = tokens.displayLarge.at(CONDENSED_WIDTH),
         )
     }
 }

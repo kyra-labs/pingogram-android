@@ -31,6 +31,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, Settings home has a search over its pages, an account card with Edit profile, your QR code
   and an account menu, and its pages in four groups with the storage used, your devices and the language beside them.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
+- With Experimental UI on, a one-word message in capitals in a group shows large and italic, and a channel post's short
+  bold first line shows as its headline.
 - With Experimental UI on, a mention of you in a group message shows as a chip in the message's text.
 - With Experimental UI on, settings search also finds the pages inside Settings' pages, such as Blocked users, Passcode
   lock, each privacy setting, Proxy or the theme, and opens them with their page behind them.

@@ -167,3 +167,34 @@ internal fun ItemInputs.showsLargeEmoji(
     content is MessageContent.Text && content.linkPreview == null && reply == null &&
         text.entities.all { it.type is TextEntityType.CustomEmoji } &&
         message.forwardInfo == null && isEmojiOnly(text.text)
+
+/**
+ * Whether the message shouts (`docs/DESIGN_SYSTEM.md` §13.6): an incoming group text of one word of at most
+ * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least one of them, without formatting, link preview,
+ * reply or forward ("LOL", "OK!"), which the experimental look shows large and italic.
+ */
+internal fun ItemInputs.isShout(
+    content: MessageContent,
+    text: FormattedText,
+): Boolean {
+    val value = text.text
+    return kind == ChatKind.Group && !message.isOutgoing && content is MessageContent.Text &&
+        content.linkPreview == null && reply == null && message.forwardInfo == null && text.entities.isEmpty() &&
+        value.length in 1..SHOUT_MAX_LENGTH && value.none { it.isWhitespace() } &&
+        value.any { it.isLetter() } && value == value.uppercase() && value != value.lowercase()
+}
+
+/**
+ * The length of a channel post's headline (§13.7): its first line where that line is at most [HEADLINE_MAX_LENGTH]
+ * characters, wholly bold, and more text follows it; 0 elsewhere.
+ */
+internal fun ItemInputs.headlineLength(text: FormattedText): Int {
+    val end = text.text.indexOf('\n')
+    val isHeadline =
+        kind == ChatKind.Channel && end in 1..HEADLINE_MAX_LENGTH && text.text.substring(end).isNotBlank() &&
+            text.entities.any { it.type == TextEntityType.Bold && it.offset <= 0 && it.offset + it.length >= end }
+    return if (isHeadline) end else 0
+}
+
+private const val SHOUT_MAX_LENGTH = 6
+private const val HEADLINE_MAX_LENGTH = 32

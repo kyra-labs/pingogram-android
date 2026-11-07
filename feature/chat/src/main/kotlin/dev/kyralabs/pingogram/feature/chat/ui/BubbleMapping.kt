@@ -98,6 +98,8 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
                 )
             },
         isEmojiOnly = showsLargeEmoji(content, text),
+        isShout = isShout(content, text),
+        headlineLength = headlineLength(text),
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },

@@ -218,8 +218,17 @@ class ExperimentalChatScreenshotTest(
                                 file(11, "app-foss-universal-debug.apk", GroupPosition.First),
                                 ChatItem.UnreadDivider(UiText.Plain("Today"), count = 4, isChannel = true),
                                 ChatPreviewData
-                                    .bubble(10, "feat(chats): chat folders slide like a pager", "2:18 PM")
-                                    .copy(isChannelPost = true, views = 12_480, hasShareButton = true),
+                                    .bubble(
+                                        10,
+                                        "$HEADLINE\nfeat(chats): chat folders slide like a pager",
+                                        "2:18 PM",
+                                        entities = listOf(TextEntity(0, HEADLINE.length, TextEntityType.Bold)),
+                                    ).copy(
+                                        isChannelPost = true,
+                                        views = 12_480,
+                                        hasShareButton = true,
+                                        headlineLength = HEADLINE.length,
+                                    ),
                                 ChatItem.DateSeparator(epochDay = 1, date = UiText.Plain("Today")),
                             ),
                         reachedStart = true,
@@ -237,6 +246,53 @@ class ExperimentalChatScreenshotTest(
             .bubble(id, caption, "2:28 PM", position = position, content = ContentPreviewData.document(name, MIME_APK))
             .copy(isChannelPost = true, views = 1, showsTime = position == GroupPosition.Last)
 
+        private const val HEADLINE = "36dea27"
+
+        /** A group where Grace and Linus shout one word each (§13.6). */
+        private val groupShouts =
+            group.copy(
+                pinnedBar = null,
+                typing = null,
+                unreadMentionCount = 0,
+                content =
+                    ChatContent.Content(
+                        items =
+                            persistentListOf(
+                                shout(23, "SHIP!", senderId = 2, name = "Linus Torvalds", GroupPosition.Single),
+                                ChatPreviewData.bubble(22, "We can ship it tonight", "9:41 PM", isOutgoing = true),
+                                shout(21, "YES", senderId = 1, name = "Grace Hopper", GroupPosition.Single),
+                                ChatPreviewData
+                                    .bubble(
+                                        20,
+                                        "Is the release ready?",
+                                        "9:40 PM",
+                                        sender = UiText.Plain("Grace Hopper"),
+                                        senderId = 1,
+                                        groupChat = true,
+                                    ).copy(senderHue = SenderHues.indexOf(-1, 1), hasAvatarColumn = true),
+                                ChatItem.DateSeparator(epochDay = 1, date = UiText.Plain("Today")),
+                            ),
+                        reachedStart = true,
+                        isLoadingOlder = false,
+                        olderError = null,
+                    ),
+            )
+
+        private fun shout(
+            id: Long,
+            text: String,
+            senderId: Long,
+            name: String,
+            position: GroupPosition,
+        ) = ChatPreviewData
+            .bubble(id, text, "9:41 PM", sender = UiText.Plain(name), senderId = senderId, groupChat = true)
+            .copy(
+                isShout = true,
+                senderHue = SenderHues.indexOf(-1, senderId),
+                hasAvatarColumn = true,
+                position = position,
+            )
+
         private const val MIME_APK = "application/vnd.android.package-archive"
 
         private val private =
@@ -250,6 +306,7 @@ class ExperimentalChatScreenshotTest(
                 "groupTinted" to groupTinted,
                 "channel" to channel,
                 "channelPosts" to channelPosts,
+                "groupShouts" to groupShouts,
                 "privateChat" to private,
             )
 

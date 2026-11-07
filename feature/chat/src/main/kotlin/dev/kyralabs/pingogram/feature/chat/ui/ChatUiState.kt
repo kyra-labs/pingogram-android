@@ -301,6 +301,10 @@ sealed interface ChatItem {
      *   older pages bring in more of the album.
      * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
      *   without other formatting, link preview, reply or forward: shown large, without a bubble.
+     * @property isShout an incoming group message that shouts ([isShout]: one word of up to six characters in capitals,
+     *   nothing else), which the experimental look shows large and italic without a bubble (§13.6).
+     * @property headlineLength the length of a channel post's first line where it is a short headline, wholly bold and
+     *   followed by more text ([headlineLength]), which the experimental look sets large (§13.7); 0 for none.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
      *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
@@ -358,6 +362,8 @@ sealed interface ChatItem {
         override val date: UiText,
         val album: MessageAlbum? = null,
         val isEmojiOnly: Boolean = false,
+        val isShout: Boolean = false,
+        val headlineLength: Int = 0,
         val showsTime: Boolean = true,
         val canResend: Boolean = false,
         val senderUserId: Long? = null,

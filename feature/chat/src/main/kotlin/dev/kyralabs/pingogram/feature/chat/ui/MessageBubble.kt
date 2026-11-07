@@ -53,6 +53,7 @@ import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.text.withMentionChips
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
+import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -374,7 +375,8 @@ private fun MessageBubble(
     val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes
     val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
-    val bare = bubble.isEmojiOnly || (bubble.album == null && bubble.content.isBare)
+    val frameKind = frameKindOf(bubble, LocalExperimentalUi.current)
+    val bare = frameKind.isBare
     val bareShape = MaterialTheme.shapes.large
     // The experimental look rings a message that mentions the user in `primary` (docs/DESIGN_SYSTEM.md §13.6).
     val mentionRing = bubble.mentionsMe && resources.theme.hues.isNotEmpty()
@@ -384,16 +386,20 @@ private fun MessageBubble(
         val frameShape = if (bare) bareShape else shape
         val ringed = if (mentionRing) outer.border(sizes.avatarRing, ringColor, frameShape) else outer
         val modifier = ringed.bubbleFocusRing(focus, frameShape)
-        when {
-            bubble.isEmojiOnly -> {
+        when (frameKind) {
+            FrameKind.Emoji -> {
                 EmojiBubble(bubble, style.colors, onEvent, modifier)
             }
 
-            bare -> {
+            FrameKind.Shout -> {
+                ShoutBubble(bubble, resources.theme, style.colors, onEvent, modifier)
+            }
+
+            FrameKind.Bare -> {
                 BareBubble(bubble, style.colors, onEvent, modifier)
             }
 
-            bubble.album != null || bubble.content.isEdgeToEdge -> {
+            FrameKind.Media -> {
                 MediaBubble(
                     bubble,
                     style,
@@ -405,7 +411,7 @@ private fun MessageBubble(
                 )
             }
 
-            else -> {
+            FrameKind.Padded -> {
                 PaddedBubble(bubble, fileState, playback, style, shape, resources, onEvent, uploads, modifier)
             }
         }

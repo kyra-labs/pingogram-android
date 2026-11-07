@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -31,8 +32,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
@@ -42,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
+import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -189,4 +197,59 @@ internal fun PostViews(
         tint = color,
     )
     Text(count, color = color, maxLines = 1, style = style)
+}
+
+/**
+ * A shouted word in the experimental look (`docs/DESIGN_SYSTEM.md` §13.6, [ChatItem.Bubble.isShout]): no bubble, the
+ * word in `displayLarge` at the condensed width, italic, in its sender's ink ([BubbleTheme.inkOf]; `onSurface` without
+ * a hue), the time and state on the surface below it as an emoji-only message has them.
+ */
+@Composable
+internal fun ShoutBubble(
+    bubble: ChatItem.Bubble,
+    theme: BubbleTheme,
+    colors: BubbleColors,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        BubbleHeader(bubble, colors, onEvent)
+        Text(
+            text = bubble.text.text,
+            color = theme.inkOf(bubble.senderHue) ?: MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.experimentalTypography.displayLargeCondensed.copy(fontStyle = FontStyle.Italic),
+        )
+        if (bubble.showsTime) SurfaceMeta(bubble)
+    }
+}
+
+/**
+ * This text with its first [length] characters as a channel post's headline (§13.7): a paragraph of its own in
+ * [style]'s font, size, weight and line height. The line break after it gives way to the paragraph's own end, which
+ * would otherwise leave an empty line under the headline; the rest as it is.
+ */
+internal fun AnnotatedString.withHeadline(
+    length: Int,
+    style: TextStyle,
+): AnnotatedString {
+    if (length !in 1 until this.length - 1 || text[length] != '\n') return this
+    val headline = subSequence(0, length)
+    val rest = subSequence(length + 1, this.length)
+    return buildAnnotatedString {
+        withStyle(ParagraphStyle(lineHeight = style.lineHeight)) {
+            withStyle(
+                SpanStyle(
+                    fontFamily = style.fontFamily,
+                    fontSize = style.fontSize,
+                    fontWeight = style.fontWeight,
+                    letterSpacing = style.letterSpacing,
+                ),
+            ) { append(headline) }
+        }
+        append(rest)
+    }
 }
