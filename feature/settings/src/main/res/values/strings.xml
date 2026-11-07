@@ -1348,4 +1348,27 @@
     <string name="settings_leave_demo_dialog_title">Leave the demo?</string>
     <string name="settings_leave_demo_dialog_text">What you did in the demo is deleted, and Pingogram goes back to its first screen.</string>
     <string name="settings_leave_demo_dialog_confirm">Leave</string>
+    <!-- Settings home in the experimental look (docs/DESIGN_SYSTEM.md §13.9). -->
+    <string name="settings_home_make_it_yours">Make it yours</string>
+    <string name="settings_home_alerts_privacy">Alerts and privacy</string>
+    <string name="settings_home_more">More</string>
+    <string name="settings_home_app">App</string>
+    <string name="settings_home_stickers_emoji">Stickers and emoji</string>
+    <string name="settings_home_devices">Devices</string>
+    <string name="settings_home_devices_summary">The sessions logged in to your account</string>
+    <!-- %1$s is a number such as "3", formatted for the language. -->
+    <plurals name="settings_home_devices_count">
+        <item quantity="one">%1$s active session</item>
+        <item quantity="other">%1$s active sessions</item>
+    </plurals>
+    <string name="settings_home_qr_code">QR code</string>
+    <string name="settings_home_edit_profile_summary">Your photo, name, username and bio</string>
+    <string name="settings_home_qr_summary">Share your profile as a QR code</string>
+    <string name="settings_home_show_phone">Show phone number</string>
+    <string name="settings_home_hide_phone">Hide phone number</string>
+    <string name="settings_home_switch_account">Switch or add account</string>
+    <string name="settings_home_search">Search settings</string>
+    <string name="settings_home_search_close">Close search</string>
+    <string name="settings_home_search_clear">Clear search</string>
+    <string name="settings_home_no_results">No settings found</string>
 </resources>

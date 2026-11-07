@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
@@ -11,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.testing.assertAccessible
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.AutoDeleteScreen
@@ -92,6 +94,20 @@ class SettingsAccessibilityChecksTest {
                 onEvent = {},
                 onOpenPage = {},
             )
+        }
+
+    @Test
+    fun experimentalSettingsHome() =
+        check {
+            CompositionLocalProvider(LocalExperimentalUi provides true) {
+                SettingsScreen(
+                    state = SettingsPreviewData.withOtherAccounts.copy(canAddAccount = true),
+                    onEvent = {},
+                    onOpenPage = {},
+                    experimentalUi = true,
+                    summaries = SettingsPreviewData.homeSummaries,
+                )
+            }
         }
 
     @Test

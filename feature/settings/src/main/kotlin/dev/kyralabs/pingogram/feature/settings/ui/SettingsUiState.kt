@@ -78,6 +78,12 @@ enum class SettingsPage {
     Language,
     About,
     PrivacySecurity,
+
+    /** Active sessions, the experimental look's "Devices" (`docs/DESIGN_SYSTEM.md` §13.9). */
+    ActiveSessions,
+
+    /** The user's QR code, from the experimental look's account card. */
+    MyQrCode,
 }
 
 /**

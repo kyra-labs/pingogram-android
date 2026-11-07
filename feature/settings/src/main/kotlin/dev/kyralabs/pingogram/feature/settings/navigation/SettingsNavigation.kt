@@ -366,6 +366,8 @@ internal val SettingsPage.route: Any
             SettingsPage.Language -> LanguageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
+            SettingsPage.ActiveSessions -> ActiveSessionsRoute
+            SettingsPage.MyQrCode -> MyQrCodeRoute
         }
 
 private val NotificationSettingsPage.route: Any
