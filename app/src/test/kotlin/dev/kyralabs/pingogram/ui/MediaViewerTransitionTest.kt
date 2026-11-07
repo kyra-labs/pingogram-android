@@ -213,7 +213,7 @@ class MediaViewerTransitionTest {
             composeRule.mainClock.advanceTimeByFrame()
             composeRule.waitForIdle()
             val after = cpu.currentThreadCpuTime
-            val bottomBar = composeRule.onAllNodes(forwardButton).fetchSemanticsNodes().isNotEmpty()
+            val bottomBar = composeRule.onAllNodes(moreButton).fetchSemanticsNodes().isNotEmpty()
             val recomposed = counter.recomposedOwn.map { it.shortName() }
             FrameRecord(index, (after - before) / NANOS_PER_MICRO, recomposed, time, bottomBar)
         }
@@ -280,8 +280,11 @@ class MediaViewerTransitionTest {
                 .any { it.label == string(ChatR.string.content_open) }
         }
 
-    /** The viewer's toolbar's Forward button: there once its bottom bar composed. */
-    private val forwardButton = hasContentDescription(string(MediaR.string.media_forward))
+    /**
+     * The viewer's toolbar's More button: there once its bottom bar composed, which always has it (Forward waits for
+     * the message's properties, which may come after the frames this watches).
+     */
+    private val moreButton = hasContentDescription(string(MediaR.string.media_more))
 
     private val viewerPage =
         SemanticsMatcher("is a viewer page") { node ->

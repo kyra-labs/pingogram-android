@@ -19,6 +19,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -95,22 +96,27 @@ internal fun MediaViewerRoute(
     val context = LocalContext.current
     val pictureInPicture =
         remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) }
-    MediaViewerScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        onBack = onBack,
-        modifier = modifier.testTag(MEDIA_VIEWER_TEST_TAG),
-        snackbarHostState = snackbarHostState,
-        // Never a secret chat's media, which only this secure window may show.
-        canPictureInPicture = pictureInPicture && !isSecretChat,
-        videoSurface = { surfaceModifier ->
-            PlayerSurface(
-                player = viewModel.surfacePlayer,
-                modifier = surfaceModifier,
-                surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
-            )
-        },
-    )
+    val progress = viewModel.downloadProgress.collectAsStateWithLifecycle()
+    // Read where each indicator draws: a download's progress composes nothing else (LocalFileProgress).
+    val fileProgress = remember(progress) { { fileId: Int -> progress.value[fileId] } }
+    CompositionLocalProvider(LocalFileProgress provides fileProgress) {
+        MediaViewerScreen(
+            state = state,
+            onEvent = viewModel::onEvent,
+            onBack = onBack,
+            modifier = modifier.testTag(MEDIA_VIEWER_TEST_TAG),
+            snackbarHostState = snackbarHostState,
+            // Never a secret chat's media, which only this secure window may show.
+            canPictureInPicture = pictureInPicture && !isSecretChat,
+            videoSurface = { surfaceModifier ->
+                PlayerSurface(
+                    player = viewModel.surfacePlayer,
+                    modifier = surfaceModifier,
+                    surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+                )
+            },
+        )
+    }
 }
 
 /**

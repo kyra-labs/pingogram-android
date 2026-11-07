@@ -21,12 +21,15 @@ import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.user
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.videoContent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -444,11 +447,36 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
                 runCurrent()
 
                 val states = viewModel.content.files
-                assertEquals(FileState.Downloading(40, 100, isActive = true), states[fullFileId(50)])
+                // Downloading, without its progress: that goes to downloadProgress.
+                assertEquals(FileState.Downloading(0, 100, isActive = true), states[fullFileId(50)])
                 assertEquals(
                     setOf(490, 491, 500, 501, 510, 511),
                     states.keys,
                 )
+            }
+
+        @Test
+        fun `a download's progress leaves the state alone and reaches only the progress`() =
+            runViewModelTest {
+                media.serve(photos(1L..100L))
+                notDownloaded(1L..100L)
+                val viewModel = viewModel(messageId = 50)
+                val progress = mutableListOf<Float?>()
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.downloadProgress.collect { progress += it[fullFileId(50)] }
+                }
+                files.setFile(fullFileId(50), FileState.Downloading(downloadedSize = 10, size = 100, isActive = true))
+                runCurrent()
+                val downloading = viewModel.state
+
+                for (downloaded in listOf(40L, 70L)) {
+                    files.setFile(fullFileId(50), FileState.Downloading(downloaded, size = 100, isActive = true))
+                    runCurrent()
+                }
+
+                // The screen composes nothing again (docs/audit/performance-review-2026-11.md, M4).
+                assertSame(downloading, viewModel.state)
+                assertEquals(listOf(null, 0.1f, 0.4f, 0.7f), progress)
             }
 
         @Test
