@@ -125,8 +125,8 @@ fun tabHeaderExpandedHeight(withSubtitle: Boolean): Dp {
 
 /**
  * The size of an action button in [TabHeader]'s actions in the experimental look: a 48 dp tonal circle
- * (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13); null in the standard look, where the button keeps its own size (a
- * 40 dp icon button in its 48 dp target).
+ * (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13); null in the standard look, where the button keeps its own
+ * size (a 40 dp icon button in its 48 dp target).
  */
 @Composable
 fun tabHeaderActionSize(): Dp? = if (LocalExperimentalUi.current) MaterialTheme.sizes.headerAction else null

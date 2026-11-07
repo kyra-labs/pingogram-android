@@ -220,6 +220,14 @@ private fun NavigationTabs(
             .padding(horizontal = MaterialTheme.spacing.small)
             .selectableGroup(),
     ) {
+        // The selected tab's pill and its content; a `primary` pill in the experimental look (§13).
+        val colors = MaterialTheme.colorScheme
+        val selectedColors =
+            if (LocalExperimentalUi.current) {
+                colors.primary to colors.onPrimary
+            } else {
+                colors.secondaryContainer to colors.onSecondaryContainer
+            }
         TopLevelDestination.entries.forEach { destination ->
             val isSelected = destination == selected
             AccountMenuAnchor(
@@ -232,6 +240,7 @@ private fun NavigationTabs(
                     destination = destination,
                     selected = isSelected,
                     showLabel = showLabels || isSelected,
+                    selectedColors = selectedColors,
                     onClick = { onSelect(destination) },
                     modifier = Modifier.fillMaxHeight().then(trigger),
                 )
@@ -241,24 +250,24 @@ private fun NavigationTabs(
 }
 
 /**
- * One tab: a pill-shaped `Role.Tab` whose icon slides in when it is selected, and whose indicator grows along one axis
- * from the tab's center on the motion scheme's fast spatial spring while it fades in on the default effects spring, as
- * Material's navigation indicator does. The indicator's width and alpha are read in the draw phase and the icon's width
- * in the layout phase ([revealHorizontally]), so none of them recomposes.
+ * One tab: a pill-shaped `Role.Tab` in [selectedColors] (pill, content) whose icon slides in when it is selected,
+ * and whose indicator grows along one axis from the tab's center on the motion scheme's fast spatial spring while it
+ * fades in on the default effects spring, as Material's navigation indicator does. The indicator's width and alpha are
+ * read in the draw phase and the icon's width in the layout phase ([revealHorizontally]), so none of them recomposes.
  */
 @Composable
 private fun NavigationTab(
     destination: TopLevelDestination,
     selected: Boolean,
     showLabel: Boolean,
+    selectedColors: Pair<Color, Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
-    val colorScheme = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     val label = stringResource(destination.label)
-    val (indicatorColor, selectedContent) = selectedTabColors()
+    val (indicatorColor, selectedContent) = selectedColors
     val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
     val indicatorWidth = animateFloatAsState(if (selected) 1f else 0f, motionScheme.fastSpatialSpec())
     val contentColor by animateColorAsState(
@@ -311,20 +320,6 @@ private fun NavigationTab(
                 maxLines = 1,
             )
         }
-    }
-}
-
-/**
- * The selected tab's pill and its content: `secondaryContainer` / `onSecondaryContainer`, or in the experimental look
- * `primary` / `onPrimary` (`docs/DESIGN_SYSTEM.md` §13).
- */
-@Composable
-private fun selectedTabColors(): Pair<Color, Color> {
-    val colors = MaterialTheme.colorScheme
-    return if (LocalExperimentalUi.current) {
-        colors.primary to colors.onPrimary
-    } else {
-        colors.secondaryContainer to colors.onSecondaryContainer
     }
 }
 
