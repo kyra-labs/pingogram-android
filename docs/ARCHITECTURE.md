@@ -771,6 +771,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Single-activity, `NavHost` in `:app`, type-safe routes with `kotlinx.serialization`.
 - Graphs: `AuthGraph`, `MainGraph` (bottom nav / navigation rail: Chats, Contacts, Settings),
   nested `ChatRoute(chatId, messageId?)`, `ProfileRoute(userId)`, etc.
+- The three tabs share one large header, `core:ui`'s `TabHeader` (owner decision 2026-11-07, `docs/DESIGN_SYSTEM.md`
+  §6): the tab's title, an optional status line (the Chats tab's), the actions and the collapse; each tab's screen
+  hands it its title and actions, Settings home also as the list pane of its list-detail. Settings pages keep the
+  medium bar (`SettingsTopBar`).
 - Adaptive: on `WindowWidthSizeClass.Expanded` the Chats tab uses `ListDetailPaneScaffold`
   (`material3-adaptive`) so list + conversation show side by side; the same `ChatScreen`
   composable is reused in the detail pane. `:app` composes it (`ChatsListDetail`, a

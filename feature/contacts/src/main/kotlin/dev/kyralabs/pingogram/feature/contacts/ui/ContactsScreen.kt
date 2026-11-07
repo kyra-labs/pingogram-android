@@ -37,6 +37,7 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +64,8 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
+import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -118,11 +122,12 @@ internal fun ContactsScreen(
         remember(onEvent, onAddContact, onEditContact, onSyncEvent) {
             ContactsCallbacks(onEvent, onAddContact, onEditContact, onSyncEvent)
         }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The top bar's container; the content sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { ContactsTopBar(onOpenMyQrCode, onScanQrCode, LocalRecentCallsLauncher.current) },
+        topBar = { ContactsTopBar(scrollBehavior, onOpenMyQrCode, onScanQrCode, LocalRecentCallsLauncher.current) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
@@ -140,27 +145,23 @@ internal fun ContactsScreen(
 }
 
 /**
- * The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's, with its
- * `FilledTonalIconButton` actions, each with its tooltip: Recent calls ([onOpenRecentCalls], where the app provides
- * it, `:feature:calls`), the user's own QR code ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode],
+ * The tabs' large header ([TabHeader], `docs/DESIGN_SYSTEM.md` §6 "Contacts list"; owner decision 2026-11-07), as the
+ * Chats tab's: "Contacts" in `displaySmallEmphasized`, collapsing with [scrollBehavior] as the list scrolls to the
+ * dense bar with the title in `titleLargeEmphasized`; no status line (owner decision to confirm, 2026-11-07). Its
+ * `FilledTonalIconButton` actions, each with its tooltip: Recent calls ([onOpenRecentCalls], where the app provides it,
+ * `:feature:calls`), the user's own QR code ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode],
  * `REQUIREMENTS.md` FR-P5).
  */
 @Composable
 private fun ContactsTopBar(
+    scrollBehavior: TopAppBarScrollBehavior,
     onOpenMyQrCode: () -> Unit,
     onScanQrCode: () -> Unit,
     onOpenRecentCalls: (() -> Unit)?,
 ) {
-    TopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.contacts_title),
-                modifier = Modifier.semantics { heading() },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleLargeEmphasized,
-            )
-        },
+    TabHeader(
+        scrollBehavior = scrollBehavior,
+        title = { style -> TabHeaderTitle(stringResource(R.string.contacts_title), style) },
         actions = {
             onOpenRecentCalls?.let {
                 TopBarAction(UiR.drawable.ic_history, stringResource(R.string.contacts_recent_calls), it)
@@ -168,15 +169,6 @@ private fun ContactsTopBar(
             TopBarAction(UiR.drawable.ic_qr_code, stringResource(R.string.contacts_my_qr_code), onOpenMyQrCode)
             TopBarAction(UiR.drawable.ic_qr_code_scanner, stringResource(R.string.contacts_scan_qr_code), onScanQrCode)
         },
-        // The bar insets its title by the compact margin itself.
-        modifier = Modifier.padding(horizontal = windowMargin() - MaterialTheme.spacing.windowMarginCompact),
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
-            ),
-        // A dense list's bar (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's.
-        expandedHeight = MaterialTheme.sizes.denseTopAppBar,
     )
 }
 
