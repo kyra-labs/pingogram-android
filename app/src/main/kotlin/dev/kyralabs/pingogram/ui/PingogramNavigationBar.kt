@@ -258,10 +258,7 @@ private fun NavigationTab(
     val colorScheme = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     val label = stringResource(destination.label)
-    // The experimental look's selected tab is a `primary` pill (docs/DESIGN_SYSTEM.md §13).
-    val experimental = LocalExperimentalUi.current
-    val indicatorColor = if (experimental) colorScheme.primary else colorScheme.secondaryContainer
-    val selectedContent = if (experimental) colorScheme.onPrimary else colorScheme.onSecondaryContainer
+    val (indicatorColor, selectedContent) = selectedTabColors()
     val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
     val indicatorWidth = animateFloatAsState(if (selected) 1f else 0f, motionScheme.fastSpatialSpec())
     val contentColor by animateColorAsState(
@@ -314,6 +311,20 @@ private fun NavigationTab(
                 maxLines = 1,
             )
         }
+    }
+}
+
+/**
+ * The selected tab's pill and its content: `secondaryContainer` / `onSecondaryContainer`, or in the experimental look
+ * `primary` / `onPrimary` (`docs/DESIGN_SYSTEM.md` §13).
+ */
+@Composable
+private fun selectedTabColors(): Pair<Color, Color> {
+    val colors = MaterialTheme.colorScheme
+    return if (LocalExperimentalUi.current) {
+        colors.primary to colors.onPrimary
+    } else {
+        colors.secondaryContainer to colors.onSecondaryContainer
     }
 }
 

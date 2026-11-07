@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +40,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *
  * In the experimental look (`LocalExperimentalUi`, §13) the title takes the wide styles of
  * `MaterialTheme.experimentalTypography` at the same sizes, and the actions are 48 dp tonal circles
- * ([tabHeaderActionModifier]).
+ * ([tabHeaderActionSize]).
  *
  * It keeps the window margin ([windowMargin]), so its title lines up with the rows' content on wide windows, and is at
  * most `contentMaxWidth` wide, centred. [title] gets the style of the row it fills; [TabHeaderTitle] is the plain one.
@@ -125,9 +124,9 @@ fun tabHeaderExpandedHeight(withSubtitle: Boolean): Dp {
 }
 
 /**
- * The size of an action button in [TabHeader]'s actions: the button's own (a 40 dp icon button in its 48 dp target), or
- * in the experimental look a 48 dp tonal circle (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13).
+ * The size of an action button in [TabHeader]'s actions in the experimental look: a 48 dp tonal circle
+ * (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13); null in the standard look, where the button keeps its own size (a
+ * 40 dp icon button in its 48 dp target).
  */
 @Composable
-fun tabHeaderActionModifier(): Modifier =
-    if (LocalExperimentalUi.current) Modifier.size(MaterialTheme.sizes.headerAction) else Modifier
+fun tabHeaderActionSize(): Dp? = if (LocalExperimentalUi.current) MaterialTheme.sizes.headerAction else null

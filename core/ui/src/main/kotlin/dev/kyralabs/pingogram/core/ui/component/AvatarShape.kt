@@ -74,11 +74,15 @@ enum class AvatarShape {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AvatarShape.toShape(): Shape {
-    if (this == AvatarShape.RoundedSquare) return MaterialTheme.shapes.large
-    val experimental = LocalExperimentalUi.current
-    val polygon = experimentalPolygon()?.takeIf { experimental } ?: return CircleShape
-    // Material's toShape remembers the shape itself.
-    return polygon.toShape()
+    val polygon = if (LocalExperimentalUi.current) experimentalPolygon() else null
+    return when {
+        this == AvatarShape.RoundedSquare -> MaterialTheme.shapes.large
+
+        // Material's toShape remembers the shape itself.
+        polygon != null -> polygon.toShape()
+
+        else -> CircleShape
+    }
 }
 
 /**
@@ -90,8 +94,8 @@ fun AvatarShape.toShape(): Shape {
 @Composable
 fun AvatarShape.rememberPolygon(size: Dp): RoundedPolygon {
     if (this != AvatarShape.RoundedSquare) {
-        val experimental = LocalExperimentalUi.current
-        return experimentalPolygon()?.takeIf { experimental } ?: MaterialShapes.Circle
+        val polygon = if (LocalExperimentalUi.current) experimentalPolygon() else null
+        return polygon ?: MaterialShapes.Circle
     }
     val corner = MaterialTheme.shapes.large.topStart
     val density = LocalDensity.current

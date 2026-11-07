@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -155,7 +156,8 @@ private fun ChatKinds() {
 
 @Composable
 private fun HeaderAction(icon: Int) {
-    Box(tabHeaderActionModifier()) {
+    val size = tabHeaderActionSize()
+    Box(if (size != null) Modifier.size(size) else Modifier) {
         FilledTonalIconButton(
             onClick = {},
             shapes = IconButtonDefaults.shapes(),
