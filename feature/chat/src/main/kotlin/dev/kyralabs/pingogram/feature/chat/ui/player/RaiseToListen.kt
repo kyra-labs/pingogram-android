@@ -44,9 +44,15 @@ internal class RaiseToListen
         private val handler = Handler(Looper.getMainLooper())
         private val stopNow = Runnable { stopListening() }
 
+        /**
+         * The settings, null until read: nothing listens before then (docs/audit/performance-review-2026-11.md, W5).
+         */
         @Volatile
-        private var current = RaiseToListenSettings()
+        private var current: RaiseToListenSettings? = null
         private var settingsJob: Job? = null
+
+        /** Voice messages play ([start] without [stop] since). */
+        private var playing = false
 
         private var listening = false
 
@@ -59,10 +65,23 @@ internal class RaiseToListen
         /** Voice messages started playing, or played on. */
         fun start() {
             handler.removeCallbacks(stopNow)
+            playing = true
             if (settingsJob == null) {
-                settingsJob = scope.launch { settings.raiseToListen.collect { current = it } }
+                settingsJob =
+                    scope.launch {
+                        settings.raiseToListen.collect {
+                            current = it
+                            // The first voice message of a process may start before the settings are read.
+                            handler.post { if (playing) listen() }
+                        }
+                    }
             }
-            if (listening || !current.enabled || !proximity.isAvailable) return
+            listen()
+        }
+
+        /** Starts the sensor if the settings are read, allow it, and the device has one. */
+        private fun listen() {
+            if (listening || current?.enabled != true || !proximity.isAvailable) return
             listening = true
             waitForFar = false
             var first = true
@@ -75,6 +94,7 @@ internal class RaiseToListen
 
         /** Voice messages stopped: lets go of the sensor and the earpiece soon, unless they start again. */
         fun stop() {
+            playing = false
             if (!listening) return
             handler.removeCallbacks(stopNow)
             handler.postDelayed(stopNow, STOP_GRACE_MILLIS)
@@ -114,7 +134,7 @@ internal class RaiseToListen
 
         private fun raised() {
             val free = !route.hasPrivateOutput() && !route.isInCall()
-            if (!current.enabled || !free || !route.toEarpiece()) return
+            if (current?.enabled != true || !free || !route.toEarpiece()) return
             atEar = true
             listener?.onEarpieceChanged(true)
             if (pausedByLowering) {
@@ -127,7 +147,7 @@ internal class RaiseToListen
             atEar = false
             route.toSpeaker()
             listener?.onEarpieceChanged(false)
-            if (current.pauseWhenLowered) {
+            if (current?.pauseWhenLowered == true) {
                 pausedByLowering = true
                 listener?.onPlayingChanged(false)
             }

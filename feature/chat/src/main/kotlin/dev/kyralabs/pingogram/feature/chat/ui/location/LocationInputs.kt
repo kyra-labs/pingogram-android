@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
@@ -26,8 +27,10 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.geoUri
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * What the attach menu's "Location" sheet works with, from the conversation's route: [state] reads the
@@ -58,7 +61,12 @@ internal fun rememberLocationInputs(
     }
     ShareLocationEffects(viewModel.effects, snackbarHostState, viewModel::onEvent)
     val context = LocalContext.current
-    val canOpenMaps = remember(context) { context.canOpenGeoLinks() }
+    // Asks the package manager off the main thread, after the sheet's first frame
+    // (docs/audit/performance-review-2026-11.md, W5); "Open in maps" shows once it knows.
+    val canOpenMaps by produceState(
+        false,
+        context,
+    ) { value = withContext(Dispatchers.IO) { context.canOpenGeoLinks() } }
     return remember(viewModel, state, canOpenMaps) { LocationInputs({ state.value }, viewModel::onEvent, canOpenMaps) }
 }
 

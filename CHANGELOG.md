@@ -62,6 +62,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Closing a photo before it finished downloading no longer leaves its bubble in the chat showing only the blurred
   preview: the download goes on, and the photo shows when it arrives.
 - After removing an account and adding another, an incoming call shows the caller's picture from the right account.
+- With raise to listen turned off, the first voice message after starting the app no longer plays at the earpiece when
+  the phone is near your face.
 - Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
   it, instead of fading in over a black screen and snapping back.
 
