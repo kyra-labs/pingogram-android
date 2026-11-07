@@ -19,7 +19,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
   there on every screen size, and your picture opens Settings; hold it to switch accounts.
 - The navigation bar shows only icons on the tabs you are not on, and "New chat" is a square button beside it on the
-  Chats tab (in the side rail on tablets). The chats fade out behind the bar instead of ending under it.
+  Chats tab (in the side rail on tablets). The chats fade out above the bar instead of ending under it.
 - Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.
 - Pinned chats sit together at the top of the list under "Pinned", and a button at the end of the folder tabs opens
   the folder settings.
