@@ -1,10 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
-import android.graphics.BitmapFactory
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,22 +19,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.decode.DataSource
 import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
+import dev.kyralabs.pingogram.core.ui.image.BlurredMinithumbnail
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -110,54 +102,31 @@ internal fun Modifier.fadingOutAs(imageAlpha: Animatable<Float, AnimationVector1
 
 /**
  * What a photo or video shows until its image is loaded, and instead of it while it is hidden (spoilers,
- * self-destructing media): the [minithumbnail] blurred, cropped to fill [displaySize], tinted by [colorFilter] as the
- * image over it is. The blur needs Android 12; before that, and without a minithumbnail, it is a tonal placeholder in
- * `surfaceContainerHighest`. The minithumbnail is decoded once per photo (it is about 40 px wide).
+ * self-destructing media): the [minithumbnail] blurred, cropped to fill its box, tinted by [colorFilter] as the image
+ * over it is; without a minithumbnail, a tonal placeholder in `surfaceContainerHighest`. Nothing is drawn while
+ * [covered] (the image over it has faded in), as core:ui's [BlurredMinithumbnail] says.
  */
 @Composable
 internal fun MinithumbnailPlaceholder(
     minithumbnail: Minithumbnail?,
-    displaySize: DpSize,
     modifier: Modifier = Modifier,
     colorFilter: ColorFilter? = null,
+    covered: () -> Boolean = NeverCovered,
 ) {
-    val bitmap =
-        if (minithumbnail != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            remember(minithumbnail) { decodeMinithumbnail(minithumbnail) }
-        } else {
-            null
-        }
-    if (bitmap == null) {
-        Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest))
-    } else {
-        Image(
-            bitmap = bitmap,
-            contentDescription = null,
-            modifier = modifier.blur(minithumbnailBlur(bitmap, displaySize), BlurredEdgeTreatment.Rectangle),
-            contentScale = ContentScale.Crop,
-            colorFilter = colorFilter,
-        )
-    }
+    BlurredMinithumbnail(
+        minithumbnail = minithumbnail,
+        fallback = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = modifier,
+        colorFilter = colorFilter,
+        covered = covered,
+    )
 }
 
-private fun decodeMinithumbnail(minithumbnail: Minithumbnail): ImageBitmap? =
-    BitmapFactory.decodeByteArray(minithumbnail.jpeg, 0, minithumbnail.jpeg.size)?.asImageBitmap()
+/** Whether the image fading in through [alpha] fully covers what is under it; read in the draw phase. */
+internal fun coveredBy(alpha: Animatable<Float, AnimationVector1D>): () -> Boolean = { alpha.value >= 1f }
 
-/** A blur of [MINITHUMBNAIL_BLUR_PIXELS] pixels of [bitmap] at the scale that crops it to [displaySize]. */
-private fun minithumbnailBlur(
-    bitmap: ImageBitmap,
-    displaySize: DpSize,
-): Dp {
-    val scale =
-        maxOf(
-            displaySize.width.value / bitmap.width.coerceAtLeast(1),
-            displaySize.height.value / bitmap.height.coerceAtLeast(1),
-        )
-    return Dp(scale * MINITHUMBNAIL_BLUR_PIXELS)
-}
-
-// Enough to hide the JPEG blocks of a 40 px image, little enough to keep its shapes.
-private const val MINITHUMBNAIL_BLUR_PIXELS = 1.5f
+/** Nothing covers the placeholder: a hidden photo, or one without a size to show. */
+internal val NeverCovered: () -> Boolean = { false }
 
 /**
  * A label drawn over media, e.g. a video's length: `labelSmall` in `onMediaOverlay` on a pill of `mediaOverlay`, so it

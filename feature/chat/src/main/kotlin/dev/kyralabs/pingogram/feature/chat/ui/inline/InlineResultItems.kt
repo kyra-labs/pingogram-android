@@ -130,7 +130,6 @@ private fun CellImage(
     Box(Modifier.aspectRatio(1f)) {
         MinithumbnailPlaceholder(
             minithumbnail,
-            DpSize(cellSize, cellSize),
             Modifier.matchParentSize().fadingOutAs(alpha),
             colorFilter,
         )

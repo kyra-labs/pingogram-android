@@ -1061,8 +1061,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the video back, and `ReturnFromPictureInPictureEffect` (in `:app`'s `PingogramNavHost`) opens the viewer again at it,
   where `MediaPlayback.startAt` takes up the position. Secret chats' media stays in the viewer's secure window.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
-  `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
-  `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
+  `FileRepository`; thumbnails/minithumbnails shown while downloading. The minithumbnail (TDLib's 40 px JPEG) is
+  decoded and blurred once at its own size, kept per minithumbnail and drawn scaled up (`core:ui`'s
+  `BlurredMinithumbnail`, used by the conversation, the media viewer and the stories viewer), never blurred with a
+  `RenderEffect`, and not drawn once the image over it has faded in (read in the draw phase). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
   (`largestImageKey`, as its placeholder), so the picture the conversation showed is there at once, sharp as it gets.
 - Animated stickers (TGS = gzipped Lottie JSON, `docs/adr/0008-lottie-for-animated-stickers.md`): `core:ui`'s
   `AnimatedStickers` (one per process, `:app`'s `AnimatedStickersModule`, handed down as `LocalAnimatedStickers`; none

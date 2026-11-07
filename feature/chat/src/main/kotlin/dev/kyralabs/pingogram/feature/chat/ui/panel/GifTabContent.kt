@@ -311,7 +311,6 @@ private fun GifCell(
             val alpha = rememberImageAlpha(picture?.id ?: 0)
             MinithumbnailPlaceholder(
                 gif.minithumbnail,
-                DpSize(cellSize, cellSize),
                 Modifier.matchParentSize().fadingOutAs(alpha),
                 colorFilter,
             )

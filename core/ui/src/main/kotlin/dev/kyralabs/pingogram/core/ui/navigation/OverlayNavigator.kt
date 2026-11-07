@@ -28,6 +28,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -225,7 +226,18 @@ private fun OverlayEntry(
     val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
     OverlayTransitionTrace(state)
     if (!gone) {
-        Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha.value }.then(TouchBlocker)) {
+        // The overlay's fade multiplies each of its draws' alpha (ModulateAlpha) instead of rendering the whole window
+        // into an offscreen buffer first in every frame of the fade, as a plain alpha layer does: its content is a
+        // scrim and what is over it, and the media a container transform shares is drawn in the transform's own overlay
+        // with its own crossfade (docs/audit/performance-review-2026-11.md, M1).
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    this.alpha = alpha.value
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }.then(TouchBlocker),
+        ) {
             CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
                 entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
             }
