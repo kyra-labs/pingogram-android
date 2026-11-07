@@ -26,6 +26,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   stripe on reply quotes, a ring around messages that mention you, and a typing bubble.
 - With Experimental UI on, channels show their posts on a warm color with their views, count unread posts on the
   divider, and give files a rounded download button.
+- With Experimental UI on, Contacts counts who is online in its header, puts Invite, My QR and Scan in a row under
+  it, shows the people online now, sets its letters large, and adds an "Add contact" button beside the navigation bar.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.

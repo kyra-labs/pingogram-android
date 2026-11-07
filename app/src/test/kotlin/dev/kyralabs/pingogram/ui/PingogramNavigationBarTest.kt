@@ -46,6 +46,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import kotlin.math.abs
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
+import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 
 /**
  * [PingogramNavigationBar]: tabs with labels where they fit, icons named by their label where they do not, and the
@@ -117,6 +118,25 @@ class PingogramNavigationBarTest {
         assertTrue("$pillCentre vs ${window.center.x}, ${newChat.right}", centred || atTheMargin)
         assertTrue("${newChat.left} > ${settings.right}", newChat.left > settings.right)
         assertTrue("${newChat.right} <= ${window.right}", newChat.right <= window.right)
+    }
+
+    @Test
+    fun `the experimental Add contact button opens Add contact while shown, and is gone otherwise`() {
+        var shown by mutableStateOf(true)
+        var clicks = 0
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                BarAddContactButton(shown = shown, onClick = { clicks++ })
+            }
+        }
+        val addContact = string(ContactsR.string.contacts_add)
+
+        composeRule.onNode(hasContentDescription(addContact) and hasClickAction()).performClick()
+        assertEquals(1, clicks)
+
+        shown = false
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(hasContentDescription(addContact)).assertCountEquals(0)
     }
 
     @Test

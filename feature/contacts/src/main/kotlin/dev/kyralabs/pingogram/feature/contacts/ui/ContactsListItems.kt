@@ -185,6 +185,26 @@ internal fun headerIndices(
         .dropLast(1)
         .toImmutableList()
 
+/** How many entries come before the first letter's header: the action rows, sync, "Online now". */
+internal fun leadingRows(
+    experimental: Boolean,
+    showsSync: Boolean,
+    showsOnline: Boolean,
+): Int {
+    val sync = if (showsSync) 1 else 0
+    return if (experimental) sync + (if (showsOnline) 1 else 0) else ACTION_ROWS + sync
+}
+
+/** A letter's header in the look [experimental] says ([ExperimentalSectionHeader], or [SectionHeader]). */
+@Composable
+internal fun LetterHeader(
+    letter: String,
+    experimental: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (experimental) ExperimentalSectionHeader(letter, modifier) else SectionHeader(letter, modifier)
+}
+
 /** A letter's header: `titleSmallEmphasized` in `primary` on the sheet's `surface`, so rows scroll under it. */
 @Composable
 internal fun SectionHeader(

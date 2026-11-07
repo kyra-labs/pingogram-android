@@ -163,6 +163,28 @@ class ContactsViewModelTest {
         }
 
     @Test
+    fun `the list counts the contacts and lists those online in its order`() =
+        runTest {
+            setContacts(
+                contact(2, "Ada", status = UserStatus.Online(NOW.epochSecond + 60)),
+                contact(3, "Bea", status = UserStatus.Recently),
+                contact(4, "Grace", status = UserStatus.Online(NOW.epochSecond + 60)),
+            )
+            val viewModel = viewModel()
+            val content = viewModel.uiState.value.content as ContactsContent.Contacts
+
+            assertEquals(3, content.count)
+            assertEquals(listOf(2L, 4L), content.online.map { it.userId })
+
+            setContacts(contact(3, "Bea", status = UserStatus.Recently))
+            runCurrent()
+
+            val after = viewModel.uiState.value.content as ContactsContent.Contacts
+            assertEquals(1, after.count)
+            assertTrue(after.online.isEmpty())
+        }
+
+    @Test
     fun `a bot says so and never shows online`() =
         runTest {
             setContacts(contact(2, "Helper", status = UserStatus.Online(NOW.epochSecond + 60), type = UserType.Bot))

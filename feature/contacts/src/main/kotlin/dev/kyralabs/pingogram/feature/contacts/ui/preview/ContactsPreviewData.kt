@@ -46,6 +46,24 @@ internal object ContactsPreviewData {
     val content =
         ContactsUiState(ContactsContent.Contacts(contactSections(contacts, Locale.US), showsIndex = false))
 
+    /** [contacts] with more of them online, for the experimental look's "Online now" row. */
+    val busy =
+        ContactsUiState(
+            ContactsContent.Contacts(
+                contactSections(
+                    contacts.mapIndexed { index, item ->
+                        if (index % 2 == 0) item.copy(isOnline = true, status = online) else item
+                    },
+                    Locale.US,
+                ),
+                showsIndex = false,
+            ),
+            sync = ContactSyncUi.Offer,
+        )
+
+    /** The people of [busy]'s "Online now" row. */
+    val onlineContacts = (busy.content as ContactsContent.Contacts).online
+
     /** Enough contacts, across the alphabet, for the fast-scroll index. */
     val long =
         ContactsUiState(

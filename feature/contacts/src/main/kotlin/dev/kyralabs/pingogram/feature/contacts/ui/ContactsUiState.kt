@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The Contacts tab (`REQUIREMENTS.md` FR-P1): what its list shows ([content]), what the search field holds ([query]),
@@ -59,14 +60,18 @@ sealed interface ContactsContent {
     /**
      * Every contact, in alphabetical [sections]; [showsIndex] whether the list is long enough for the fast-scroll index
      * of their letters. With contacts sync on, the phone's contacts not on Telegram follow under "Invite to Telegram"
-     * ([invites]).
+     * ([invites]). [count] is how many contacts there are, and [online] those online now, in the list's order (the
+     * experimental look's status line and "Online now" row, `docs/DESIGN_SYSTEM.md` §13.8).
      */
     data class Contacts(
         val sections: ImmutableList<ContactSection>,
         val showsIndex: Boolean,
         val invites: ImmutableList<InviteItem> = persistentListOf(),
+        val count: Int = sections.sumOf { it.contacts.size },
+        val online: ImmutableList<ContactItem> =
+            sections.flatMap { section -> section.contacts.filter { it.isOnline } }.toImmutableList(),
     ) : ContactsContent {
-        override fun toString() = "Contacts(${sections.size} sections, ${invites.size} invites)"
+        override fun toString() = "Contacts(${sections.size} sections, ${online.size} online, ${invites.size} invites)"
     }
 
     /** The contacts that match the search field's query, in the list's order; empty when none does. */
