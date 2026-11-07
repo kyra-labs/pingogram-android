@@ -478,6 +478,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`), and
   the folder's list slides in from the other side instead of fading through. The neighbouring folder's chats are not
   loaded ahead: the list slides away and the new one in, as a tab's tap fades them.
+  The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
+  Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then

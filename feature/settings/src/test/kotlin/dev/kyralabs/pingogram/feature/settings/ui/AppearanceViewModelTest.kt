@@ -230,4 +230,31 @@ class AppearanceViewModelTest {
             assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showStories)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
+
+    @Test
+    fun `the Edit folders button shows at first, and turning it off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
+
+            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
+
+            assertFalse(chatListSettings.settings.value.showEditFoldersButton)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
+        }
+
+    @Test
+    fun `an Edit folders button that cannot be hidden stays, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            chatListSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
+
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
+        }
 }

@@ -35,4 +35,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(swipeChangesFolder = changes)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setShowEditFoldersButton(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showEditFoldersButton = show)
+        return Outcome.Success(Unit)
+    }
 }

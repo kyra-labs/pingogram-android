@@ -76,6 +76,11 @@ sealed interface AppearanceEvent {
     data class SetShowStories(
         val show: Boolean,
     ) : AppearanceEvent
+
+    /** "Edit folders button" turned on or off. */
+    data class SetShowEditFoldersButton(
+        val show: Boolean,
+    ) : AppearanceEvent
 }
 
 /** One-off side effects of [AppearanceViewModel], handled once by its route. */
@@ -90,8 +95,9 @@ sealed interface AppearanceEffect {
  * The Appearance page (`REQUIREMENTS.md` FR-S2): the saved settings, and saving each change. The page shows what is
  * saved, which the app's theme follows too, so a change shows on the page and in the theme at once, and a change that
  * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chat list"
- * group holds whether story rings show ([ChatListSettingsRepository]), and its "Chats" group the composer's send key
- * ([ComposerSettingsRepository]) and raise to listen ([PlaybackSettingsRepository]).
+ * group holds whether story rings show and whether the folder tabs end in "Edit folders"
+ * ([ChatListSettingsRepository]), and its "Chats" group the composer's send key ([ComposerSettingsRepository]) and
+ * raise to listen ([PlaybackSettingsRepository]).
  */
 @HiltViewModel
 class AppearanceViewModel
@@ -144,6 +150,10 @@ class AppearanceViewModel
 
                         is AppearanceEvent.SetShowStories -> {
                             chatListSettingsRepository.setShowStories(event.show)
+                        }
+
+                        is AppearanceEvent.SetShowEditFoldersButton -> {
+                            chatListSettingsRepository.setShowEditFoldersButton(event.show)
                         }
                     }
                 saved.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }

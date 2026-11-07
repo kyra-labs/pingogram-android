@@ -57,7 +57,8 @@ import kotlinx.collections.immutable.ImmutableList
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null).
+ * With [onEditFolder], "Edit folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless
+ * Appearance → Chat list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
  *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
@@ -106,7 +107,7 @@ internal fun FolderTabs(
             }
             if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
         }
-        if (onEditFolder != null) {
+        if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {
             // spacing.small from the tabs' fade; at the end in line with the header's buttons: the window margin
             // less the touch target's room around the button.
             EditFoldersButton(

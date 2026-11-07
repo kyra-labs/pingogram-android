@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
@@ -57,6 +58,13 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Light, "fontScale200")
     }
 
+    /** With Appearance → Chat list → "Edit folders button" off, the folder row ends at the tabs (owner, 2026-11-07). */
+    @Test
+    fun withoutEditFoldersButton() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Light, "withoutEditFoldersButton", ChatSwipes(editFoldersButton = false))
+    }
+
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
     private fun captureAudit(variant: ScreenshotVariant) {
         assumeTrue(stateName == "content")
@@ -67,16 +75,19 @@ class ChatListScreenScreenshotTest(
     private fun capture(
         variant: ScreenshotVariant,
         name: String = variant.goldenName,
+        swipes: ChatSwipes = ChatSwipes(),
     ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                ChatListScreen(
-                    state = state,
-                    onEvent = {},
-                    summary = { ChatListPreviewData.summary },
-                    onEditFolder = {},
-                )
+                CompositionLocalProvider(LocalChatSwipes provides swipes) {
+                    ChatListScreen(
+                        state = state,
+                        onEvent = {},
+                        summary = { ChatListPreviewData.summary },
+                        onEditFolder = {},
+                    )
+                }
             }
         }
         composeRule.waitForIdle()
