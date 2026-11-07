@@ -142,8 +142,9 @@ internal class ChatsSettings(
 )
 
 /**
- * The "Chat list" group: "Show stories", whether the story rings show above the chats (they load only then), and a row
- * that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its summary.
+ * The "Chat list" group: a row that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its
+ * summary, "Show stories", whether the story rings show above the chats (they load only then), and "Edit folders
+ * button", whether the folder tabs end in "Edit folders" (owner decision 2026-11-07).
  */
 @Composable
 internal fun ChatListGroup(
@@ -167,6 +168,15 @@ internal fun ChatListGroup(
                 checked = chatList.showStories,
                 shapes = shapes,
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowStories(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_edit_folders_button),
+                summary = stringResource(R.string.settings_edit_folders_button_summary),
+                checked = chatList.showEditFoldersButton,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
             )
         }
     }

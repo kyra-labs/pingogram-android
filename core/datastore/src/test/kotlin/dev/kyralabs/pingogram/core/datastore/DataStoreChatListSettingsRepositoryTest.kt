@@ -107,6 +107,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `the folder tabs end in Edit folders until it is turned off, and turning it off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showEditFoldersButton)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowEditFoldersButton(false))
+
+            assertEquals(ChatListSettings(showEditFoldersButton = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showEditFoldersButton)
+        }
+
+    @Test
     fun `an action this version does not know reads as the default`() =
         runTest {
             val store = dataStore()

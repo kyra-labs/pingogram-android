@@ -8,6 +8,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
@@ -175,7 +177,7 @@ class AppearanceScreenTest {
 
         composeRule.onNodeWithText("120% text", substring = true).assertExists()
         composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_primary), substring = true).assertExists()
-        node(R.string.settings_chat_appearance).performClick()
+        node(R.string.settings_chat_appearance).performScrollTo().performClick()
 
         assertEquals(1, chatAppearanceOpened)
         assertTrue(events.isEmpty())
@@ -252,5 +254,18 @@ class AppearanceScreenTest {
         setScreen()
 
         switchRow(R.string.settings_amoled).assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
+    }
+
+    @Test
+    fun `the Edit folders button row is a switch, on at first, whose tap turns the button off`() {
+        setScreen()
+
+        switchRow(R.string.settings_edit_folders_button)
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
+            .assert(hasText(string(R.string.settings_edit_folders_button_summary)))
+            .performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetShowEditFoldersButton(false)), events)
     }
 }

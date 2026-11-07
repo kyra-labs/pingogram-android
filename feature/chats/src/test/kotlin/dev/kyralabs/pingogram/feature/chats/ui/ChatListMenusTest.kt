@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -74,6 +75,26 @@ class ChatListMenusTest {
     fun `All chats edits the folders, with no folder`() {
         setScreen(ChatListPreviewData.contentWithFolders, canEditFolders = true)
 
+        tab(string(R.string.chat_list_all_chats)).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.chat_list_edit_folders)).performClick()
+
+        assertEquals(listOf<Int?>(null), edited)
+    }
+
+    @Test
+    fun `the folder row ends in Edit folders, which opens the folder settings`() {
+        setScreen(ChatListPreviewData.contentWithFolders, canEditFolders = true)
+
+        composeRule.onNodeWithContentDescription(string(R.string.chat_list_edit_folders)).performClick()
+
+        assertEquals(listOf<Int?>(null), edited)
+    }
+
+    @Test
+    fun `with the Edit folders button turned off the row ends at the tabs, and their menus keep Edit folders`() {
+        setScreen(ChatListPreviewData.contentWithFolders, canEditFolders = true, editFoldersButton = false)
+
+        composeRule.onNodeWithContentDescription(string(R.string.chat_list_edit_folders)).assertDoesNotExist()
         tab(string(R.string.chat_list_all_chats)).performTouchInput { longClick() }
         composeRule.onNodeWithText(string(R.string.chat_list_edit_folders)).performClick()
 
@@ -244,14 +265,17 @@ class ChatListMenusTest {
     private fun setScreen(
         state: ChatListUiState,
         canEditFolders: Boolean = false,
+        editFoldersButton: Boolean = true,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                ChatListScreen(
-                    state = state,
-                    onEvent = ::record,
-                    onEditFolder = if (canEditFolders) ({ edited += it }) else null,
-                )
+                CompositionLocalProvider(LocalChatSwipes provides ChatSwipes(editFoldersButton = editFoldersButton)) {
+                    ChatListScreen(
+                        state = state,
+                        onEvent = ::record,
+                        onEditFolder = if (canEditFolders) ({ edited += it }) else null,
+                    )
+                }
             }
         }
     }
