@@ -6,6 +6,25 @@
     <string name="chat_open_profile">Open profile</string>
     <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
     <string name="chat_open_info">Open info</string>
+    <!-- The experimental look's top bar (docs/DESIGN_SYSTEM.md §13.5). -->
+    <string name="chat_more_options">More options</string>
+    <string name="chat_group_info">Group info</string>
+    <string name="chat_channel_info">Channel info</string>
+    <!-- A channel's notifications toggle, read with its state ("on", "off"). -->
+    <string name="chat_notifications">Notifications</string>
+    <!-- Between the member count and the online members: "1,248 members · 36 online". -->
+    <string name="chat_subtitle_separator">" · "</string>
+    <plurals name="chat_subtitle_online">
+        <item quantity="one">%d online</item>
+        <item quantity="other">%d online</item>
+    </plurals>
+    <string name="chat_jump_to_mention">Jump to mention</string>
+    <!-- On the "Jump to mention" button; not a word, so it is not translated. -->
+    <string name="chat_mention_sign" translatable="false">\@</string>
+    <plurals name="chat_unread_mentions">
+        <item quantity="one">%d unread mention</item>
+        <item quantity="other">%d unread mentions</item>
+    </plurals>
     <!-- In place of the chat's status while not connected, as the chat list's pill says it. -->
     <string name="chat_waiting_for_network">Waiting for network…</string>
     <string name="chat_connecting_to_proxy">Connecting to proxy…</string>

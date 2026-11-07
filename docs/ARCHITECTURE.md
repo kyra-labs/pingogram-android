@@ -191,7 +191,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `LocalExperimentalUi`, a static local, so turning it on or off composes the app again in place in the other look.
   Composables that look different read it and branch at the smallest scope that differs (a color, a shape, a slot);
   view models never read it, and no screen is copied. `feature:settings`' `ExperimentalUiViewModel` holds the switch:
-  a row in the standard Settings home, the labs card in the experimental one (`docs/DESIGN_SYSTEM.md` §13).
+  a row in the standard Settings home, the labs card in the experimental one (`docs/DESIGN_SYSTEM.md` §13). What only
+  the experimental look shows still comes through the view models, as data both looks could show: the conversation's
+  `ChatHeader.members` (the people who wrote last among the loaded messages) and `onlineCount` (`Chat.onlineMemberCount`,
+  `updateChatOnlineMemberCount`, kept by `TdlibChatRepository`), `ChatUiState.unreadMentionCount`, and
+  `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
+  and a channel's mute toggle.
 - **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
   scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
   the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands

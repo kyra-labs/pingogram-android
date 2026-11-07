@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -137,6 +138,7 @@ internal fun ChatBottomBar(
     onReplaceMedia: () -> Unit = {},
     onAttach: () -> Unit = {},
     onGallery: () -> Unit = {},
+    onCamera: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
     recordMode: RecordModeUiState = RecordModeUiState(),
@@ -193,7 +195,7 @@ internal fun ChatBottomBar(
                             onSend,
                             onFocusChanged,
                             focus,
-                            AttachInput(onAttach, onGallery),
+                            AttachInput(onAttach, onGallery, onCamera),
                             VoiceInput(recording, onVoiceEvent, drag, recordMode, onVideoNoteEvent),
                             panelState,
                             now,
@@ -420,6 +422,9 @@ private fun ComposerPill(
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
     val gallery = composer.bar !is ComposerBar.Edit && AttachOption.Gallery in composer.attachOptions
+    // The experimental look (`docs/DESIGN_SYSTEM.md` §13.5): the pill on surfaceContainerHigh, the attach "+" a primary
+    // circle followed by the camera, no gallery button (the attach menu's first option).
+    val experimental = LocalExperimentalUi.current
     ComposerField(
         text = text,
         onSend = onSend,
@@ -427,27 +432,14 @@ private fun ComposerPill(
         onFocusChanged = onFocusChanged,
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        leadingIcons =
-            when {
-                bot != null -> {
-                    { BotMenuButton(bot, onBotMenu) }
-                }
-
-                canAttach -> {
-                    { AttachButton(attach.onAttach) }
-                }
-
-                else -> {
-                    null
-                }
-            },
+        containerColor = MaterialTheme.colorScheme.run { if (experimental) surfaceContainerHigh else surfaceContainer },
+        leadingIcons = pillLeadingIcons(composer, experimental, canSend, attach, onBotMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
             PanelButton(panel, focusRequester)
             when {
                 bot != null && canAttach -> Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
-                gallery -> Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
+                gallery && !experimental -> Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
             }
         },
         onKeyEvent = onFieldKey,
@@ -472,10 +464,14 @@ internal class BotInput(
     val onKeyboardPress: (BotButtonPosition) -> Unit = {},
 )
 
-/** What the attach buttons open: the attach menu ([onAttach]) and the system photo picker ([onGallery]). */
-private data class AttachInput(
+/**
+ * What the attach buttons open: the attach menu ([onAttach]), the system photo picker ([onGallery]) and the camera
+ * ([onCamera], the experimental look's camera button).
+ */
+internal data class AttachInput(
     val onAttach: () -> Unit,
     val onGallery: () -> Unit,
+    val onCamera: () -> Unit = {},
 )
 
 /**

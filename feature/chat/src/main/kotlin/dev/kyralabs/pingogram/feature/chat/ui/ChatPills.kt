@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -49,16 +50,22 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun DatePill(
     text: String,
     modifier: Modifier = Modifier,
+    floating: Boolean = false,
 ) {
+    // The experimental look's floating pill: surfaceContainerHigh, its text onSurface and emphasized (§13.5).
+    val experimental = floating && LocalExperimentalUi.current
+    val colors = MaterialTheme.colorScheme
     Text(
         text = text,
         modifier =
             modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape)
-                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                .background(
+                    if (experimental) colors.surfaceContainerHigh else colors.surfaceContainerHighest,
+                    CircleShape,
+                ).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
+        color = if (experimental) colors.onSurface else colors.onSurfaceVariant,
         maxLines = 1,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.run { if (experimental) labelLargeEmphasized else labelLarge },
     )
 }
 
@@ -188,5 +195,5 @@ internal fun FloatingDatePill(
             label = "datePill",
         )
     val pillModifier = remember(modifier, alpha) { modifier.graphicsLayer { this.alpha = alpha.value } }
-    date?.let { DatePill(it.resolve(), pillModifier) }
+    date?.let { DatePill(it.resolve(), pillModifier, floating = true) }
 }

@@ -167,10 +167,18 @@ class FakeChatRepository : ChatRepository {
         isPinned: Boolean,
     ): Outcome<Unit> = unused()
 
+    /** The chats muted (true) or unmuted (false), in order. */
+    val muteCalls = mutableListOf<Pair<Long, Boolean>>()
+
+    var onSetMuted: (Long, Boolean) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
+
     override suspend fun setMuted(
         chatId: Long,
         isMuted: Boolean,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> {
+        muteCalls += chatId to isMuted
+        return onSetMuted(chatId, isMuted)
+    }
 
     override suspend fun setArchived(
         chatId: Long,

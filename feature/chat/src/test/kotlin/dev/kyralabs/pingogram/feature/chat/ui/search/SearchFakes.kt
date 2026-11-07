@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupInfo
 import dev.kyralabs.pingogram.core.domain.model.GroupMember
 import dev.kyralabs.pingogram.core.domain.model.GroupMembersPage
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import kotlinx.collections.immutable.toImmutableList
@@ -44,6 +45,20 @@ internal class FakeChatSearchRepository : ChatSearchRepository {
     ): Outcome<ChatSearchPage> {
         searches += Search(chatId, query, cursor)
         return answer(query, cursor)
+    }
+
+    /** The chats and topics whose oldest unread mention was asked for. */
+    val mentions = mutableListOf<Pair<Long, MessageTopic?>>()
+
+    /** The answer to the oldest unread mention; none by default. */
+    var mentionAnswer: suspend () -> Outcome<Long> = { Outcome.Failure(DomainError.NotFound) }
+
+    override suspend fun oldestUnreadMention(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Outcome<Long> {
+        mentions += chatId to topic
+        return mentionAnswer()
     }
 
     override suspend fun messageForDay(

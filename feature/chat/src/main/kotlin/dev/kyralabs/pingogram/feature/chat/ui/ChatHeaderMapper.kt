@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SecretChatState
@@ -12,10 +13,14 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.shortName
 import dev.kyralabs.pingogram.core.ui.text.stateText
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import java.time.Instant
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
@@ -59,9 +64,16 @@ internal fun HeaderSources.toHeader(): ChatHeader {
         secret = secretHeader(),
         opensChatInfo = chat.hasInfoPage,
         callUserId = callUserId().takeUnless { isSavedMessages },
-        avatarShape = AvatarShape.ofChat(isForum),
+        avatarShape = AvatarShape.ofChat(isForum, chat.isGroup, chat.isChannel, isSavedMessages),
+        isChannel = chat.isChannel,
+        isMuted = chat.isMuted,
+        onlineCount = groupOnlineCount(),
+        members = members(),
     )
 }
+
+/** A group's members online now; 0 for other chats. */
+private fun HeaderSources.groupOnlineCount(): Int = if (chat.isGroup) chat.onlineMemberCount else 0
 
 /**
  * The other user of a private chat with a person, not a bot, a deleted account or Telegram's service notifications;
@@ -106,6 +118,8 @@ internal class HeaderSources(
     val timeFormatter: ChatTimeFormatter,
     /** The chat is a forum, whose avatar is a rounded square. */
     val isForum: Boolean = false,
+    /** The users who sent the newest loaded messages, newest first and each once ([recentSenders]). */
+    val recentSenders: List<Long> = emptyList(),
 ) {
     /** The user of a private or secret chat; null for groups and channels, and while TDLib has not announced it. */
     val user: User? get() = chat.userId?.let(people.users::get)

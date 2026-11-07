@@ -75,6 +75,11 @@ data class Chat(
      * `updateChatHasScheduledMessages`), which `ScheduledMessageRepository` lists.
      */
     val hasScheduledMessages: Boolean = false,
+    /**
+     * Members of a group online now (td_api.tl `updateChatOnlineMemberCount`), which TDLib sends only for chats the
+     * user has open, and not right away; 0 while unknown and for other chats.
+     */
+    val onlineMemberCount: Int = 0,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }
