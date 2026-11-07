@@ -20,9 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -118,7 +120,7 @@ internal fun MediaPage(
                 .sharedMediaViewerBounds(item.messageId, enabled = !zoomed)
                 .zoomedBy(zoomState),
         ) {
-            MediaLayers(item, files, playback, videoSurface, fittedDp)
+            MediaLayers(item, files, playback, videoSurface)
         }
         when {
             item.isHidden -> SpoilerLabel(Modifier.align(Alignment.Center))
@@ -172,23 +174,22 @@ private fun Modifier.zoomedBy(zoom: ZoomState?): Modifier =
         }
     }
 
-/** What [item] shows in its fitted box of [displaySize]: the hidden spoiler's minithumbnail, or its media's layers. */
+/** What [item] shows in its fitted box: the hidden spoiler's minithumbnail, or its media's layers. */
 @Composable
 private fun BoxScope.MediaLayers(
     item: MediaItem,
     files: ImmutableMap<Int, FileState>,
     playback: VideoPlayback?,
     videoSurface: @Composable (Modifier) -> Unit,
-    displaySize: DpSize,
 ) {
     val media = item.media
     if (item.isHidden) {
-        BlurredMinithumbnail(media.minithumbnail, displaySize, Modifier.matchParentSize())
+        BlurredMinithumbnail(media.minithumbnail, Modifier.matchParentSize())
     } else {
         when (media) {
-            is ViewerMedia.Image -> PhotoLayers(media, files, displaySize)
-            is ViewerMedia.Clip -> VideoLayers(media, media.thumbnail, displaySize, playback, videoSurface)
-            is ViewerMedia.Gif -> VideoLayers(media, media.thumbnail, displaySize, playback, videoSurface)
+            is ViewerMedia.Image -> PhotoLayers(media, files)
+            is ViewerMedia.Clip -> VideoLayers(media, media.thumbnail, playback, videoSurface)
+            is ViewerMedia.Gif -> VideoLayers(media, media.thumbnail, playback, videoSurface)
         }
     }
 }
@@ -198,14 +199,28 @@ private fun BoxScope.MediaLayers(
 private fun BoxScope.PhotoLayers(
     media: ViewerMedia.Image,
     files: ImmutableMap<Int, FileState>,
-    displaySize: DpSize,
 ) {
-    BlurredMinithumbnail(media.minithumbnail, displaySize, Modifier.matchParentSize())
+    val full = rememberViewerImageAlpha(media.full.file.id)
+    // The preview shows at full opacity from the start (what the bubble decoded stands in while it loads), so what
+    // covers the minithumbnail is its having loaded, or the full size having faded in.
+    val previewShown = remember(media.full.file.id) { mutableStateOf(false) }
+    BlurredMinithumbnail(
+        media.minithumbnail,
+        Modifier.matchParentSize(),
+        covered = remember(full, previewShown) { { previewShown.value || full.value >= 1f } },
+    )
     val preview = remember(media, files) { previewSize(media, files) }
     if (preview != null) {
-        ViewerImage(preview.file.id, preview.width, preview.height, Modifier.matchParentSize(), fadeIn = false)
+        ViewerImage(
+            preview.file.id,
+            preview.width,
+            preview.height,
+            Modifier.matchParentSize(),
+            fadeIn = false,
+            onShown = { previewShown.value = true },
+        )
     }
-    ViewerImage(media.full.file.id, media.full.width, media.full.height, Modifier.matchParentSize())
+    ViewerImage(media.full.file.id, media.full.width, media.full.height, Modifier.matchParentSize(), alpha = full)
 }
 
 /**
@@ -216,15 +231,21 @@ private fun BoxScope.PhotoLayers(
 private fun BoxScope.VideoLayers(
     media: ViewerMedia,
     thumbnail: Thumbnail?,
-    displaySize: DpSize,
     playback: VideoPlayback?,
     videoSurface: @Composable (Modifier) -> Unit,
 ) {
     if (playback != null) videoSurface(Modifier.matchParentSize())
     if (playback?.showsFrame != true) {
-        BlurredMinithumbnail(media.minithumbnail, displaySize, Modifier.matchParentSize())
         val picture = thumbnail?.takeIf { it.isPicture }
-        if (picture != null) ViewerImage(picture.file.id, picture.width, picture.height, Modifier.matchParentSize())
+        val alpha = rememberViewerImageAlpha(picture?.file?.id ?: 0)
+        BlurredMinithumbnail(
+            media.minithumbnail,
+            Modifier.matchParentSize(),
+            covered = if (picture != null) remember(alpha) { coveredBy(alpha) } else NotCovered,
+        )
+        if (picture != null) {
+            ViewerImage(picture.file.id, picture.width, picture.height, Modifier.matchParentSize(), alpha = alpha)
+        }
     }
 }
 
@@ -330,3 +351,6 @@ private val Thumbnail.isPicture: Boolean
             ThumbnailFormat.Jpeg, ThumbnailFormat.Png, ThumbnailFormat.Webp, ThumbnailFormat.Gif -> true
             ThumbnailFormat.Mpeg4, ThumbnailFormat.Webm, ThumbnailFormat.Tgs -> false
         }
+
+/** Nothing covers the minithumbnail: an item without a picture to show over it. */
+private val NotCovered: () -> Boolean = { false }

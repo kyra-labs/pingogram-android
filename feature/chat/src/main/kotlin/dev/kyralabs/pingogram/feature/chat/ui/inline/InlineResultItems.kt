@@ -92,18 +92,18 @@ internal fun InlineResultCell(
                 is InlineResult.Photo -> {
                     val photo = result.photo
                     val photoSize = remember(photo, cellPx) { selectPhotoSize(photo.sizes, cellPx, cellPx) }
-                    CellImage(photoSize?.file, photo.minithumbnail, cellSize, cellPx, colorFilter)
+                    CellImage(photoSize?.file, photo.minithumbnail, cellPx, colorFilter)
                 }
 
                 is InlineResult.Animation -> {
                     val animation = result.animation
-                    CellImage(animation.thumbnail.pictureFile(), animation.minithumbnail, cellSize, cellPx, colorFilter)
+                    CellImage(animation.thumbnail.pictureFile(), animation.minithumbnail, cellPx, colorFilter)
                     MediaLabel(stringResource(UiR.string.preview_gif), label.align(Alignment.BottomStart))
                 }
 
                 is InlineResult.Video -> {
                     val video = result.video
-                    CellImage(video.thumbnail.pictureFile(), video.minithumbnail, cellSize, cellPx, colorFilter)
+                    CellImage(video.thumbnail.pictureFile(), video.minithumbnail, cellPx, colorFilter)
                     MediaLabel(mediaDurationText(video.duration), label.align(Alignment.BottomStart))
                 }
 
@@ -122,7 +122,6 @@ internal fun InlineResultCell(
 private fun CellImage(
     file: FileRef?,
     minithumbnail: Minithumbnail?,
-    cellSize: Dp,
     cellPx: Int,
     colorFilter: ColorFilter?,
 ) {
@@ -130,7 +129,6 @@ private fun CellImage(
     Box(Modifier.aspectRatio(1f)) {
         MinithumbnailPlaceholder(
             minithumbnail,
-            DpSize(cellSize, cellSize),
             Modifier.matchParentSize().fadingOutAs(alpha),
             colorFilter,
         )

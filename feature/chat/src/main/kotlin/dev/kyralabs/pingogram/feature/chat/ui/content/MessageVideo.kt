@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -170,16 +171,23 @@ internal fun VideoThumbnail(
     modifier: Modifier = Modifier,
 ) {
     val dim = MaterialTheme.pingogramColors.mediaColorFilter
+    val picture = still.thumbnail?.asPicture()?.takeUnless { hidden }
+    val alpha = rememberImageAlpha(picture?.file?.id ?: 0)
     Box(modifier) {
-        MinithumbnailPlaceholder(still.minithumbnail, displaySize, Modifier.matchParentSize(), dim)
-        val picture = still.thumbnail?.asPicture()
-        if (!hidden && picture != null) {
+        // Not drawn under the thumbnail once it has faded in, as under a photo.
+        MinithumbnailPlaceholder(
+            still.minithumbnail,
+            Modifier.matchParentSize(),
+            dim,
+            covered = if (picture != null) remember(alpha) { coveredBy(alpha) } else NeverCovered,
+        )
+        if (picture != null) {
             val density = LocalDensity.current
             TdlibImage(
                 fileId = picture.file.id,
                 widthPx = with(density) { displaySize.width.roundToPx() },
                 heightPx = with(density) { displaySize.height.roundToPx() },
-                alpha = rememberImageAlpha(picture.file.id),
+                alpha = alpha,
                 modifier = Modifier.matchParentSize(),
                 colorFilter = dim,
             )

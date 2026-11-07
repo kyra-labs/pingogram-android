@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
@@ -169,8 +170,20 @@ fun Modifier.sharedMediaBounds(
     // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the media
     // goes with the viewer, not with the conversation's own destination.
     val viewer = rememberViewerVisibility(shapes, messageId)
+    // The bubble's side is scaled to the moving bounds, cropped as the bubble crops it, rather than measured anew in
+    // every frame, and crossfades on the fast effects spring, so it leaves the compositing early on the way in and is
+    // back early on the way out; the viewer's side, measured to the bounds, is what uncrops the photo
+    // (docs/audit/performance-review-2026-11.md, M1).
     val shared =
-        containerTransformOf(SharedMediaKey(messageId), shape, FullBleedCounterpart, enabled, visibilityScope = viewer)
+        containerTransformOf(
+            SharedMediaKey(messageId),
+            shape,
+            FullBleedCounterpart,
+            enabled,
+            visibilityScope = viewer,
+            resizeMode = BubbleResizeMode,
+            fastFade = true,
+        )
     return if (shared !== this) {
         shared.then(PublishedMediaShapeElement(shapes, messageId, shape))
     } else {
@@ -269,6 +282,8 @@ private fun Modifier.containerTransformOf(
     enabled: Boolean,
     fixedLayout: Boolean = false,
     visibilityScope: AnimatedVisibilityScope? = LocalNavAnimatedVisibilityScope.current,
+    resizeMode: SharedTransitionScope.ResizeMode = RemeasureToBounds,
+    fastFade: Boolean = false,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
     val shares = enabled && !isReducedMotion()
@@ -289,10 +304,10 @@ private fun Modifier.containerTransformOf(
             this@containerTransformOf.sharedBounds(
                 sharedContentState = rememberSharedContentState(key),
                 animatedVisibilityScope = visibilityScope,
-                enter = fadeIn(motionScheme.defaultEffectsSpec()),
-                exit = fadeOut(motionScheme.defaultEffectsSpec()),
+                enter = fadeIn(if (fastFade) motionScheme.fastEffectsSpec() else motionScheme.defaultEffectsSpec()),
+                exit = fadeOut(if (fastFade) motionScheme.fastEffectsSpec() else motionScheme.defaultEffectsSpec()),
                 boundsTransform = boundsTransform,
-                resizeMode = RemeasureToBounds,
+                resizeMode = resizeMode,
                 clipInOverlayDuringTransition = clip,
             )
         }
@@ -317,6 +332,9 @@ private fun Modifier.measuredAtTarget(target: TargetConstraints): Modifier =
             placeable.place(0, 0)
         }
     }
+
+/** How a bubble's media follows the moving bounds: scaled to fill them, cropped as the bubble shows it. */
+private val BubbleResizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(ContentScale.Crop)
 
 /** Square corners, as full-bleed media has them in the media viewer: a [CornerBasedShape] the transform can morph. */
 val FullBleedShape: CornerBasedShape = RoundedCornerShape(ZeroCornerSize)

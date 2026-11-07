@@ -194,6 +194,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `TextLayoutResult` cache for bubble sizing; avoid `AnnotatedString` rebuilds on recomposition.
 - Images: Coil 3 `AsyncImage` with explicit `size`, `crossfade` via motion scheme, hardware
   bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy).
+- No blur effects on media: a placeholder's minithumbnail is blurred once on its 40 px bitmap and drawn scaled up
+  (`core:ui`'s `BlurredMinithumbnail`), and is not drawn under an image that has faded in. A `Modifier.blur` there
+  re-rendered a layer the size of the media in every frame, under every media bubble while scrolling and on both sides
+  of the media viewer's container transform (`docs/audit/performance-review-2026-11.md`, M1 and W1). Fades of a whole
+  screen use `CompositingStrategy.ModulateAlpha` rather than an offscreen layer (the overlay of the media viewer), and
+  the bubble's side of the viewer's transform is scaled to its bounds, not measured anew in every frame.
 - Stickers/animations: Lottie behind `StickerAnimationDecoder` (`docs/adr/0008-lottie-for-animated-stickers.md`)
   rendering off the main thread, with a frame cache keyed by (sticker, size) that holds each sticker's first frame
   (8 MB LRU; whole animations would take ~17 MB each) and two bitmaps per playing sticker; max 8 concurrently

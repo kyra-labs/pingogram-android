@@ -109,34 +109,38 @@ internal fun PhotoImage(
     onDownload: (fileId: Int) -> Unit = {},
     onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
+    val density = LocalDensity.current
+    val widthPx = with(density) { displaySize.width.roundToPx() }
+    val heightPx = with(density) { displaySize.height.roundToPx() }
+    val size = remember(photo.sizes, widthPx, heightPx) { selectPhotoSize(photo.sizes, widthPx, heightPx) }
+    val fileId = size?.file?.id?.takeUnless { hidden }
+    val alpha = rememberImageAlpha(fileId ?: 0)
     Box(modifier) {
-        MinithumbnailPlaceholder(photo.minithumbnail, displaySize, Modifier.matchParentSize(), colorFilter)
-        if (!hidden) {
-            val density = LocalDensity.current
-            val widthPx = with(density) { displaySize.width.roundToPx() }
-            val heightPx = with(density) { displaySize.height.roundToPx() }
-            val size = remember(photo.sizes, widthPx, heightPx) { selectPhotoSize(photo.sizes, widthPx, heightPx) }
-            if (size != null) {
-                val fileId = size.file.id
-                val alpha = rememberImageAlpha(fileId)
-                TdlibImage(
-                    fileId = fileId,
-                    widthPx = widthPx,
-                    heightPx = heightPx,
-                    alpha = alpha,
-                    modifier = Modifier.matchParentSize(),
-                    colorFilter = colorFilter,
-                    download = downloads.photos,
+        // Not drawn under the image once it has faded in: it would be covered, its pixels drawn for nothing.
+        MinithumbnailPlaceholder(
+            photo.minithumbnail,
+            Modifier.matchParentSize(),
+            colorFilter,
+            covered = if (fileId != null) remember(alpha) { coveredBy(alpha) } else NeverCovered,
+        )
+        if (fileId != null) {
+            TdlibImage(
+                fileId = fileId,
+                widthPx = widthPx,
+                heightPx = heightPx,
+                alpha = alpha,
+                modifier = Modifier.matchParentSize(),
+                colorFilter = colorFilter,
+                download = downloads.photos,
+            )
+            // Until the image shows: once it is loaded, its fade-in's target is 1.
+            if (!downloads.photos && alpha.targetValue < 1f) {
+                MediaDownloadButton(
+                    isDownloading = fileId in downloads.requested,
+                    onDownload = { onDownload(fileId) },
+                    onCancel = { onCancelDownload(fileId) },
+                    modifier = Modifier.align(Alignment.Center),
                 )
-                // Until the image shows: once it is loaded, its fade-in's target is 1.
-                if (!downloads.photos && alpha.targetValue < 1f) {
-                    MediaDownloadButton(
-                        isDownloading = fileId in downloads.requested,
-                        onDownload = { onDownload(fileId) },
-                        onCancel = { onCancelDownload(fileId) },
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
             }
         }
     }
