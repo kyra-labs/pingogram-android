@@ -46,6 +46,17 @@ import dev.kyralabs.pingogram.feature.settings.R
 // Settings home's "Experimental UI" switch (docs/adr/0035-experimental-ui.md, docs/DESIGN_SYSTEM.md §13): a row in the
 // standard look, the labs card in the experimental one.
 
+/** [ExperimentalUiItem] in a group of its own, its icon's circle `tertiary` as the "Beta" label. */
+@Composable
+internal fun ExperimentalUiGroup(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
+        item { shapes -> ExperimentalUiItem(checked = checked, shapes = shapes, onCheckedChange = onCheckedChange) }
+    }
+}
+
 /**
  * "Experimental UI" in the standard look: a switch row (as [SwitchItem]) with the flask in the group's tonal circle,
  * its title followed by a "Beta" label in `tertiaryContainer` (the account card's label), and what it does as the
@@ -122,18 +133,7 @@ internal fun ExperimentalUiCard(
         horizontalArrangement = Arrangement.spacedBy(spacing.medium),
     ) {
         CompositionLocalProvider(LocalContentColor provides colors.onTertiaryContainer) {
-            Box(
-                Modifier
-                    .size(MaterialTheme.sizes.avatarRow)
-                    .background(colors.onTertiaryContainer, MaterialShapes.Sunny.toShape()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_science),
-                    contentDescription = null,
-                    tint = colors.tertiaryContainer,
-                )
-            }
+            LabsBadge()
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.extraSmall)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -165,6 +165,25 @@ internal fun ExperimentalUiCard(
                     ),
             )
         }
+    }
+}
+
+/** The labs card's `MaterialShapes.Sunny` badge in `onTertiaryContainer`, the flask in `tertiaryContainer`. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LabsBadge() {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        Modifier
+            .size(MaterialTheme.sizes.avatarRow)
+            .background(colors.onTertiaryContainer, MaterialShapes.Sunny.toShape()),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_science),
+            contentDescription = null,
+            tint = colors.tertiaryContainer,
+        )
     }
 }
 

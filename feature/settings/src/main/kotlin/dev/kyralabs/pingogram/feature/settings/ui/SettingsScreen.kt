@@ -156,15 +156,7 @@ internal fun SettingsScreen(
             }
             PageGroups(onOpenPage, selection)
             if (!experimentalLook && experimentalUi != null) {
-                SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
-                    item { shapes ->
-                        ExperimentalUiItem(
-                            checked = experimentalUi,
-                            shapes = shapes,
-                            onCheckedChange = onExperimentalUiChange,
-                        )
-                    }
-                }
+                ExperimentalUiGroup(experimentalUi, onExperimentalUiChange)
             }
             SettingsGroup {
                 item { shapes ->
