@@ -555,6 +555,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   machine's noise, so the button stays Material's: the cost is a second control per post. Every button shares one
   painter and its colors (`ShareButtonStyle`). The conversation benchmark scrolls Saved Messages, which has none; a
   channel's scroll on the owner's phone tells whether it holds there.
+- Mention chips (2026-11-07, the experimental look, `docs/DESIGN_SYSTEM.md` §13.6): `ChatScrollCostTest`'s group of
+  2,000 messages in the experimental look, every eleventh mentioning the user, with its mention as a chip and without,
+  three alternating pairs on the shared 4-core machine: without P50 1.22–1.42 ms, P90 5.4–6.0 ms, P99 11.1–12.1 ms; with
+  P50 1.19–1.31 ms, P90 5.1–5.5 ms, P99 10.1–10.7 ms, the same within the machine's noise. A chip is a block drawn
+  behind the text from its layout, added over the cached text of the bubbles that mention the user only. Measuring it
+  found a crash on `main` (vivid bubbles with their name above them, text drawn with blocks), fixed by `WithNameAbove`
+  and kept by `VividBubbleScrollTest`.
 - Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
   ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
   P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99

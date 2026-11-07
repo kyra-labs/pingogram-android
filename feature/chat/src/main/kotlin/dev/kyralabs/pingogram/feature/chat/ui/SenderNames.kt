@@ -91,6 +91,39 @@ internal fun ItemInputs.senderHue(showsSender: Boolean): Int =
 internal fun ItemInputs.mentionsMe(text: FormattedText): Boolean =
     message.containsUnreadMention || text.mentions(myUserId)
 
+/**
+ * Where [text] mentions the user: by name (td_api.tl `textEntityTypeMentionName`) or by one of their usernames
+ * (`textEntityTypeMention`), as ranges of the text; empty in a message that does not [mentionsMe].
+ */
+internal fun ItemInputs.myMentions(
+    text: FormattedText,
+    mentionsMe: Boolean,
+): List<IntRange> {
+    if (!mentionsMe) return emptyList()
+    return text.entities.mapNotNull { entity ->
+        val start = entity.offset.coerceIn(0, text.text.length)
+        val end = (entity.offset.toLong() + entity.length).coerceIn(start.toLong(), text.text.length.toLong()).toInt()
+        val mine =
+            when (val type = entity.type) {
+                is TextEntityType.MentionName -> {
+                    type.userId == myUserId
+                }
+
+                TextEntityType.Mention -> {
+                    text.text
+                        .substring(start, end)
+                        .removePrefix("@")
+                        .lowercase() in myUsernames
+                }
+
+                else -> {
+                    false
+                }
+            }
+        (start until end).takeIf { mine && end > start }
+    }
+}
+
 /** How many saw [newest], a channel post (its views); 0 elsewhere. */
 internal fun ItemInputs.views(newest: Message): Int =
     if (kind == ChatKind.Channel) newest.interactionInfo?.viewCount ?: 0 else 0

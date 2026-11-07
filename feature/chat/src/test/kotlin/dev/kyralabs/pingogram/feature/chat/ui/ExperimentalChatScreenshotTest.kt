@@ -6,6 +6,9 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.TextEntity
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -101,6 +104,14 @@ class ExperimentalChatScreenshotTest(
     }
 
     companion object {
+        private const val MENTION_LENGTH = 4
+
+        private val MENTION =
+            FormattedText(
+                "@ada can you add him to Phone reports?",
+                persistentListOf(TextEntity(0, MENTION_LENGTH, TextEntityType.Mention)),
+            )
+
         private val members =
             persistentListOf(
                 HeaderMember(1, UiText.Plain("Grace Hopper"), null),
@@ -152,6 +163,16 @@ class ExperimentalChatScreenshotTest(
                                 senderHue = SenderHues.indexOf(-1, item.senderId),
                                 senderRole = role,
                                 mentionsMe = item.reply != null,
+                                // The mention of the user as the experimental look's chip.
+                                text = if (item.reply != null) MENTION else item.text,
+                                myMentions =
+                                    if (item.reply !=
+                                        null
+                                    ) {
+                                        persistentListOf(0 until MENTION_LENGTH)
+                                    } else {
+                                        item.myMentions
+                                    },
                                 reply =
                                     item.reply?.let {
                                         it.copy(

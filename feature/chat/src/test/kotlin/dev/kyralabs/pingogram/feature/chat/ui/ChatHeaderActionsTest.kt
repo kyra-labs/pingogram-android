@@ -128,6 +128,34 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
             assertEquals(null, grace.senderRole)
             assertTrue(grace.mentionsMe)
             assertTrue(!ada.mentionsMe)
+            assertEquals(listOf(3 until 5), grace.myMentions)
+            assertEquals(emptyList<IntRange>(), ada.myMentions)
+        }
+
+    @Test
+    fun `a mention of one of the user's usernames is theirs, another's is not`() =
+        runViewModelTest {
+            users.setUsers(user(ME).copy(usernames = persistentListOf("Me_Myself")), user(GRACE))
+            val text = "@me_myself and @someone"
+            val mention =
+                groupMessage(2, GRACE).copy(
+                    containsUnreadMention = true,
+                    content =
+                        MessageContent.Text(
+                            FormattedText(
+                                text,
+                                persistentListOf(
+                                    TextEntity(0, 10, TextEntityType.Mention),
+                                    TextEntity(15, 8, TextEntityType.Mention),
+                                ),
+                            ),
+                            linkPreview = null,
+                        ),
+                )
+            val viewModel = showing(groupChat, history(mention))
+            runCurrent()
+
+            assertEquals(listOf(0 until 10), viewModel.bubble(2).myMentions)
         }
 
     @Test

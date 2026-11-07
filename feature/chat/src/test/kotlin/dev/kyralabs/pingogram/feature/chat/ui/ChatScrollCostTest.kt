@@ -82,6 +82,11 @@ class ChatScrollCostTest {
     @Test
     fun `scroll frames with group bubbles in the standard look`() = measure(scrollingState = true, group = true)
 
+    /** The experimental look's group with its mentions of the user as chips (§13.6): against the same without them. */
+    @Test
+    fun `scroll frames with mention chips in the experimental look`() =
+        measure(scrollingState = true, group = true, experimental = true, chips = true)
+
     @Suppress("LongParameterList") // What each comparison varies.
     private fun measure(
         scrollingState: Boolean,
@@ -91,6 +96,7 @@ class ChatScrollCostTest {
         shareButtons: Boolean = channel,
         group: Boolean = false,
         experimental: Boolean = false,
+        chips: Boolean = false,
     ) {
         val state =
             ChatUiState(
@@ -102,7 +108,7 @@ class ChatScrollCostTest {
                                 bubble(id, customEmoji).let {
                                     when {
                                         channel -> it.copy(isOutgoing = false, hasShareButton = shareButtons)
-                                        group -> it.inGroup(id)
+                                        group -> it.inGroup(id, chips)
                                         else -> it
                                     }
                                 }
@@ -135,7 +141,10 @@ class ChatScrollCostTest {
             "Scroll cost (${if (scrollingState) "scrolling" else "default"} state${emojiLabel(
                 customEmoji,
                 pictures,
-            )}${if (channel) ", channel, share buttons $shareButtons" else ""}${groupLabel(group, experimental)}): " +
+            )}${if (channel) ", channel, share buttons $shareButtons" else ""}${groupLabel(
+                group,
+                experimental,
+            )}${if (chips) ", mention chips" else ""}): " +
                 "CPU per frame P50 " +
                 "${frames.percentile(50)} µs, P90 ${frames.percentile(90)} µs, P99 ${frames.percentile(99)} µs",
         )
@@ -147,7 +156,10 @@ class ChatScrollCostTest {
     ) = if (group) ", group, ${if (experimental) "experimental" else "standard"} look" else ""
 
     /** This bubble as a group's: incoming ones with sender and hue, every seventh a role, every eleventh a mention. */
-    private fun ChatItem.Bubble.inGroup(id: Int): ChatItem.Bubble =
+    private fun ChatItem.Bubble.inGroup(
+        id: Int,
+        chips: Boolean = false,
+    ): ChatItem.Bubble =
         if (isOutgoing) {
             this
         } else {
@@ -158,6 +170,8 @@ class ChatScrollCostTest {
                 senderHue = SenderHues.indexOf(-1, (id / RUN).toLong()),
                 senderRole = if (id % ROLE_EVERY == 0) UiText.Plain("Admin") else null,
                 mentionsMe = id % MENTION_EVERY == 0,
+                myMentions =
+                    if (chips && id % MENTION_EVERY == 0) persistentListOf(0 until CHIP_LENGTH) else persistentListOf(),
             )
         }
 
@@ -243,6 +257,7 @@ class ChatScrollCostTest {
         const val REACTIONS_EVERY = 5
         const val ROLE_EVERY = 7
         const val MENTION_EVERY = 11
+        const val CHIP_LENGTH = 5
         const val FRAMES = 120
         const val STEP = 40f
         const val WARMUP_RUNS = 3
