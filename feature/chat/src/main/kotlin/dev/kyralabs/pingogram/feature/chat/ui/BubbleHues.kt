@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,8 +27,11 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -41,6 +46,8 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The experimental look's group bubbles (`docs/DESIGN_SYSTEM.md` §13.6): names and reply stripes in the sender's hue,
 // role labels, and the name above a vivid bubble.
@@ -149,87 +156,6 @@ internal fun BubbleTheme.namesAbove(bubble: ChatItem.Bubble): Boolean =
     bubble.showsSenderName && vividHues && bubble.senderHue >= 0 && hues.isNotEmpty()
 
 /**
- * The experimental look's typing bubble (§13.6), over the bottom of the messages: the typer's avatar, a small bubble in
- * their hue with the typing dots, and what the top bar says beside it ("Fadi is typing"), which screen readers hear
- * there; this is decorative. It grows in and shrinks away on the default spatial spring.
- */
-@Composable
-internal fun TypingBubbleRow(
-    typing: TypingBubble?,
-    modifier: Modifier = Modifier,
-) {
-    val motion = MaterialTheme.motionScheme
-    AnimatedVisibility(
-        visible = typing != null,
-        modifier = modifier,
-        enter = expandVertically(motion.defaultSpatialSpec()) + fadeIn(motion.defaultEffectsSpec()),
-        exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
-    ) {
-        // The last typer stays while the bubble shrinks away: a plain holder, not state, as nothing recomposes on it.
-        val last = remember { arrayOfNulls<TypingBubble>(1) }
-        if (typing != null) last[0] = typing
-        val current = last[0] ?: return@AnimatedVisibility
-        val hue = MaterialTheme.pingogramColors.senderHues[current.hue]
-        val spacing = MaterialTheme.spacing
-        Row(
-            modifier = Modifier.clearAndSetSemantics {}.padding(horizontal = spacing.medium, vertical = spacing.small),
-            horizontalArrangement = Arrangement.spacedBy(spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Avatar(
-                photo = current.photo,
-                name = current.name.resolve(),
-                id = current.userId,
-                size = MaterialTheme.sizes.avatarExtraSmall,
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .background(hue.vivid.container, MaterialTheme.shapes.large)
-                        .padding(horizontal = spacing.medium, vertical = spacing.small),
-            ) {
-                TypingDots(color = hue.vivid.content, style = MaterialTheme.typography.bodyMedium)
-            }
-            Text(
-                text = current.text.resolve(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium.userContent,
-            )
-        }
-    }
-}
-
-/**
- * These paddings with room for the experimental look's typing bubble below the newest message while someone is
- * [typing] (§13.6): the avatar's height and the row's padding.
- */
-@Composable
-internal fun PaddingValues.withTypingRoom(typing: TypingBubble?): PaddingValues {
-    if (typing == null || !LocalExperimentalUi.current) return this
-    val direction = LocalLayoutDirection.current
-    val room = MaterialTheme.sizes.avatarExtraSmall + MaterialTheme.spacing.medium
-    return PaddingValues(
-        start = calculateStartPadding(direction),
-        top = calculateTopPadding(),
-        end = calculateEndPadding(direction),
-        bottom = calculateBottomPadding() + room,
-    )
-}
-
-/** The experimental look's typing bubble over the messages, above the composer ([contentPadding]'s bottom). */
-@Composable
-internal fun TypingRowSlot(
-    typing: TypingBubble?,
-    contentPadding: PaddingValues,
-    modifier: Modifier = Modifier,
-) {
-    if (!LocalExperimentalUi.current) return
-    TypingBubbleRow(typing, modifier.padding(bottom = contentPadding.calculateBottomPadding()))
-}
-
-/**
  * The conversation's [BubbleResources] for [state]: its shortcuts and downloads, a tapped mention opening what it names
  * ([ChatEvent.OpenMention]), and in the experimental look vivid or tinted group bubbles, as Chat appearance's "Group
  * bubbles" and the group's size say (§13.6).
@@ -245,4 +171,22 @@ internal fun rememberChatBubbleResources(
     return rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift, vivid) { target ->
         onEvent(ChatEvent.OpenMention(target))
     }
+}
+
+/** How many saw a channel post: the visibility symbol and the count in the language's digits; decorative. */
+@Composable
+internal fun PostViews(
+    views: Int,
+    color: Color,
+    style: TextStyle,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val count = remember(views, locale) { NumberFormat.getIntegerInstance(locale).format(views) }
+    Icon(
+        painter = painterResource(UiR.drawable.ic_visibility),
+        contentDescription = null,
+        modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+        tint = color,
+    )
+    Text(count, color = color, maxLines = 1, style = style)
 }

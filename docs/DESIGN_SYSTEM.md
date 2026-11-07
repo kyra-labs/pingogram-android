@@ -877,3 +877,12 @@ state, events, keys, content types, semantics and haptics stay those of §1–§
 | Reactions | As §4: round badges overlapping the bubble's bottom edge with a `surface` ring, which the board's pill already matches |
 | Typing | While someone types in a group, a row over the bottom of the messages, above the composer: their avatar (`avatarExtraSmall`), a small bubble on their hue's vivid fill with the typing dots (`TypingDots`, its timing), and what the top bar says ("Grace is typing", `labelMedium` `onSurfaceVariant`); the list leaves room for it below the newest message; it grows in and shrinks away on `defaultSpatialSpec`; decorative, as the top bar's title is the live region that announces it |
 | Left out (owner questions) | The board's oversized italic all-caps text for short shouted messages, the "Wave" button on join service messages, and a channel post's 48 sp styled headline (the post's own content; Pingogram renders what Telegram sends) |
+
+### 13.7 Conversation: channel posts and file albums (the owner's board "Channel")
+
+| UI element | Experimental UI |
+|---|---|
+| Channel posts | The posts of the channel the conversation is on a warm container, `secondaryContainer` / `onSecondaryContainer` (`PingogramColors.channelPostBubble`; the board's peach with the Coral theme), their links in its accent, their quotes and link previews on a block of their text over the fill, in its text color; the shapes of §4 (large corners, the joined corner small). Selected posts as §2.2. The share button as §6 |
+| Views | In a channel post's meta, before the time: the visibility symbol (`ic_visibility`, `sizes.inlineIconSmall`) and how many saw it (td_api.tl `interactionInfo.view_count`) in the language's digits ("12,480"), in the meta's color; decorative |
+| Unread divider | Two `primary` lines (`sizes.avatarRing` thick) around a `primary` / `onPrimary` pill (`labelMediumEmphasized`) counting the unread messages loaded below it: "4 unread posts" in a channel, "4 unread messages" elsewhere; a heading for screen readers, as §6 |
+| File albums | Files sent together already show as a group of bubbles joined by their small corners (§4); each file's download is a button in `MaterialShapes.Cookie9Sided` filled with the bubble's text color, the download symbol in its fill; while it downloads, the determinate wavy ring around a cancel button as §6 |

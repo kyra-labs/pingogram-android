@@ -5,11 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -111,11 +117,31 @@ internal fun MessageDocument(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DownloadButton(
     colors: BubbleColors,
     onClick: () -> Unit,
 ) {
+    if (LocalExperimentalUi.current) {
+        // The experimental look's download on a Cookie9Sided button in the bubble's text color (§13.7).
+        val shape = MaterialShapes.Cookie9Sided.toShape()
+        FilledIconButton(
+            onClick = onClick,
+            shapes = IconButtonShapes(shape = shape, pressedShape = shape),
+            colors =
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = colors.content,
+                    contentColor = colors.container,
+                ),
+        ) {
+            Icon(
+                painterResource(UiR.drawable.ic_download),
+                contentDescription = stringResource(R.string.content_download),
+            )
+        }
+        return
+    }
     IconButton(
         onClick = onClick,
         shapes = IconButtonDefaults.shapes(),

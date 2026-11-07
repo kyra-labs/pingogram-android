@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
@@ -89,3 +90,7 @@ internal fun ItemInputs.senderHue(showsSender: Boolean): Int =
 /** Whether the message mentions the user: TDLib's unread mention, or a mention by name in its [text]. */
 internal fun ItemInputs.mentionsMe(text: FormattedText): Boolean =
     message.containsUnreadMention || text.mentions(myUserId)
+
+/** How many saw [newest], a channel post (its views); 0 elsewhere. */
+internal fun ItemInputs.views(newest: Message): Int =
+    if (kind == ChatKind.Channel) newest.interactionInfo?.viewCount ?: 0 else 0

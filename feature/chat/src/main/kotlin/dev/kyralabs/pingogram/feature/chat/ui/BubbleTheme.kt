@@ -49,6 +49,7 @@ internal class BubbleTheme(
     val shapes: MessageBubbleShapes,
     val hues: List<HueStyle> = emptyList(),
     val vividHues: Boolean = true,
+    val channelPost: BubbleStyle? = null,
 ) {
     /**
      * The style of a bubble: selected, outgoing, or incoming, which in the experimental look takes its sender's [hue]
@@ -58,9 +59,11 @@ internal class BubbleTheme(
         isOutgoing: Boolean,
         isSelected: Boolean = false,
         hue: Int = -1,
+        isChannelPost: Boolean = false,
     ): BubbleStyle =
         when {
             isSelected -> selected
+            isChannelPost && channelPost != null -> channelPost
             isOutgoing -> outgoing
             hue >= 0 && hues.isNotEmpty() -> hues[hue % hues.size].let { if (vividHues) it.vivid else it.tinted }
             else -> incoming
@@ -102,7 +105,24 @@ internal fun rememberBubbleTheme(vividHues: Boolean = true): BubbleTheme {
         remember(experimental, hueColors, incomingText) {
             if (experimental) hueStyles(hueColors, incomingText) else emptyList()
         }
-    return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes, hues, vividHues) {
+    // The experimental look's channel posts on a warm container (docs/DESIGN_SYSTEM.md §13.7).
+    val postColors = MaterialTheme.pingogramColors.channelPostBubble
+    val channelPost =
+        remember(experimental, postColors, incomingText) {
+            if (experimental) bubbleStyleOf(postColors, incomingText) else null
+        }
+    return remember(
+        incoming,
+        outgoing,
+        selected,
+        incomingText,
+        outgoingText,
+        selectedText,
+        shapes,
+        hues,
+        vividHues,
+        channelPost,
+    ) {
         BubbleTheme(
             incoming = BubbleStyle(incoming, incomingText),
             outgoing = BubbleStyle(outgoing, outgoingText),
@@ -110,6 +130,7 @@ internal fun rememberBubbleTheme(vividHues: Boolean = true): BubbleTheme {
             shapes = shapes,
             hues = hues,
             vividHues = vividHues,
+            channelPost = channelPost,
         )
     }
 }
@@ -124,20 +145,23 @@ private fun hueStyles(
 ): List<HueStyle> =
     (0 until hues.size).map { index ->
         val hue = hues[index]
-
-        fun style(colors: BubbleColors) =
-            BubbleStyle(
-                colors,
-                text.copy(
-                    linkColor = colors.accent,
-                    mentionColor = colors.accent,
-                    codeBackground = colors.block,
-                    spoilerColor = colors.spoiler,
-                    quoteColor = colors.secondaryContent,
-                ),
-            )
-        HueStyle(style(hue.vivid), style(hue.tinted), hue.ink)
+        HueStyle(bubbleStyleOf(hue.vivid, text), bubbleStyleOf(hue.tinted, text), hue.ink)
     }
+
+/** A bubble style on [colors]: links and mentions in its accent, code and spoilers on its block and spoiler tones. */
+private fun bubbleStyleOf(
+    colors: BubbleColors,
+    text: FormattedTextStyles,
+) = BubbleStyle(
+    colors,
+    text.copy(
+        linkColor = colors.accent,
+        mentionColor = colors.accent,
+        codeBackground = colors.block,
+        spoilerColor = colors.spoiler,
+        quoteColor = colors.secondaryContent,
+    ),
+)
 
 /**
  * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link or a mention does

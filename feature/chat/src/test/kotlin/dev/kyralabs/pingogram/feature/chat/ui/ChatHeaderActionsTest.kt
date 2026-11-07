@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupMember
+import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -127,5 +128,28 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
             assertEquals(null, grace.senderRole)
             assertTrue(grace.mentionsMe)
             assertTrue(!ada.mentionsMe)
+        }
+
+    @Test
+    fun `a channel's posts carry their views, and the unread divider counts the unread posts`() =
+        runViewModelTest {
+            val info =
+                InteractionInfo(viewCount = 12_480, forwardCount = 0, replyCount = null, reactions = persistentListOf())
+            val posts =
+                (1L..4L).map { id ->
+                    message(id, chatId = ChatFixtures.CHANNEL_CHAT, interactionInfo = info).copy(isChannelPost = true)
+                }
+            val viewModel =
+                showing(
+                    ChatFixtures.channelChat.copy(unreadCount = 2, lastReadInboxMessageId = 2),
+                    history(*posts.toTypedArray()),
+                )
+            runCurrent()
+
+            assertEquals(12_480, viewModel.bubble(4).views)
+            assertTrue(viewModel.bubble(4).isChannelPost)
+            val divider = viewModel.items.filterIsInstance<ChatItem.UnreadDivider>().single()
+            assertEquals(2, divider.count)
+            assertTrue(divider.isChannel)
         }
 }

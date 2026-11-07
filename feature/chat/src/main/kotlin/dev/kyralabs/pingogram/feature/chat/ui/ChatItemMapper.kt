@@ -137,7 +137,10 @@ internal class ChatItemMapper {
             val item = previous[unit.key]?.takeIf { it.inputs == inputs } ?: MappedItem(inputs, inputs.toItem())
             mapped[unit.key] = item
             items += item.item
-            if (unit.oldest.id == firstUnreadId) items += ChatItem.UnreadDivider(date)
+            if (unit.oldest.id == firstUnreadId) {
+                val count = (0..index).sumOf { units[it].messages.size }
+                items += ChatItem.UnreadDivider(date, count, isChannel = sources.chat.isChannel)
+            }
             if (older == null || days[index + 1] != day) items += ChatItem.DateSeparator(day.toEpochDay(), date)
         }
         previous = mapped

@@ -41,6 +41,7 @@ data class PingogramColors(
     val mediaColorFilter: ColorFilter?,
     val vividAvatars: VividAvatarPalette = VividAvatarPalette,
     val senderHues: SenderHues,
+    val channelPostBubble: BubbleColors,
 )
 
 /**
@@ -136,7 +137,25 @@ internal fun pingogramColors(
         onMediaOverlay = if (dark) colorScheme.onSurface else colorScheme.inverseOnSurface,
         mediaColorFilter = if (dark) MediaDim else null,
         senderHues = senderHues(colorScheme, dark, green),
+        channelPostBubble = channelPostBubble(colorScheme, green),
     )
+}
+
+/**
+ * The experimental look's channel posts (`docs/DESIGN_SYSTEM.md` §13.7): `secondaryContainer` / `onSecondaryContainer`,
+ * their blocks the text over the fill at [HUE_BLOCK_ALPHA], their text too.
+ */
+private fun channelPostBubble(
+    colorScheme: ColorScheme,
+    green: Color,
+): BubbleColors {
+    val fill = colorScheme.secondaryContainer
+    val text = colorScheme.onSecondaryContainer
+    return bubbleColors(
+        colorScheme,
+        BubbleRoles(fill, text, text, text.copy(alpha = HUE_BLOCK_ALPHA).compositeOver(fill)),
+        green,
+    ).copy(blockContent = text)
 }
 
 /**

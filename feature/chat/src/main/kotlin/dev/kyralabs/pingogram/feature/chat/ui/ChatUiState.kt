@@ -328,6 +328,10 @@ sealed interface ChatItem {
      *   experimental look; null for anyone else.
      * @property mentionsMe the message mentions the user (TDLib's unread mention, or a mention by name), which the
      *   experimental look rings.
+     * @property isChannelPost a post of the channel the conversation is, which the experimental look puts on a warm
+     *   container (§13.7).
+     * @property views how many saw a channel post (td_api.tl `interactionInfo.view_count`), in the experimental look's
+     *   meta; 0 for other messages.
      */
     data class Bubble(
         val id: Long,
@@ -367,6 +371,8 @@ sealed interface ChatItem {
         val senderHue: Int = -1,
         val senderRole: UiText? = null,
         val mentionsMe: Boolean = false,
+        val isChannelPost: Boolean = false,
+        val views: Int = 0,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -404,9 +410,14 @@ sealed interface ChatItem {
         override val key: Any get() = "date:$epochDay"
     }
 
-    /** The first message that was unread when the chat was opened follows this. */
+    /**
+     * The first message that was unread when the chat was opened follows this: [count] messages from it on (as loaded),
+     * posts where [isChannel], which the experimental look's pill counts (`docs/DESIGN_SYSTEM.md` §13.7).
+     */
     data class UnreadDivider(
         override val date: UiText,
+        val count: Int = 0,
+        val isChannel: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = UNREAD_DIVIDER_KEY
     }

@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -40,6 +41,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.scheduled.repeatLabel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
+import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -114,6 +116,8 @@ private fun MetaRow(
         bubble.translation?.let { TranslationMark(it, color, style) }
         bubble.selfDestructSeconds?.let { SelfDestructTimer(it, color, style) }
         bubble.schedule?.let { ScheduleMark(it, color, style) }
+        // The experimental look's views of a channel post, after the visibility symbol (docs/DESIGN_SYSTEM.md §13.7).
+        if (bubble.views > 0 && LocalExperimentalUi.current) PostViews(bubble.views, color, style)
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
         if (bubble.schedule is BubbleSchedule.WhenOnline) {
             Text(stringResource(R.string.scheduled_meta_when_online), color = color, maxLines = 1, style = style)
