@@ -198,3 +198,25 @@ internal fun ItemInputs.headlineLength(text: FormattedText): Int {
 
 private const val SHOUT_MAX_LENGTH = 6
 private const val HEADLINE_MAX_LENGTH = 32
+
+/**
+ * Whether a group's service message [action] is someone else joining or being added, which the experimental look's
+ * "Wave" greets (§13.6); never the user's own joining.
+ */
+internal fun ItemInputs.canWave(action: ServiceAction): Boolean {
+    val joined =
+        when (action) {
+            ServiceAction.MemberJoined, ServiceAction.MemberJoinedByLink, ServiceAction.MemberJoinedByRequest -> {
+                listOf(message.sender.id)
+            }
+
+            is ServiceAction.MembersAdded -> {
+                action.userIds
+            }
+
+            else -> {
+                emptyList()
+            }
+        }
+    return kind == ChatKind.Group && joined.isNotEmpty() && myUserId !in joined
+}

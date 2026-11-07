@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import kotlinx.collections.immutable.persistentListOf
@@ -378,6 +379,34 @@ class TdlibAttachmentRepositoryTest {
             )
             assertEquals(7L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
             assertTrue(request.options.disableNotification)
+        }
+
+    @Test
+    fun `a greeting sticker is one Telegram offers, sent in reply to the join message`() =
+        runTest {
+            answerSends()
+            client.on(TdApi.GetGreetingStickers::class) {
+                TdResult.Success(TdApi.Stickers(arrayOf(TdApiFixtures.sticker(emoji = "👋"))))
+            }
+
+            val result = repository().sendGreetingSticker(CHAT, ReplyTarget(9))
+
+            assertEquals(Outcome.Success(Unit), result)
+            val request = client.sentOf<TdApi.SendMessage>().single()
+            assertEquals("👋", (request.inputMessageContent as TdApi.InputMessageSticker).emoji)
+            assertEquals(9L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+        }
+
+    @Test
+    fun `without greeting stickers nothing is sent`() =
+        runTest {
+            answerSends()
+            client.on(TdApi.GetGreetingStickers::class) { TdResult.Success(TdApi.Stickers(emptyArray())) }
+
+            val result = repository().sendGreetingSticker(CHAT, ReplyTarget(9))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), result)
+            assertEquals(emptyList<TdApi.SendMessage>(), client.sentOf<TdApi.SendMessage>())
         }
 
     @Test

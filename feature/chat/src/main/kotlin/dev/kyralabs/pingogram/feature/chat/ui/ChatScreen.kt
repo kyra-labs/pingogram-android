@@ -627,7 +627,15 @@ private fun ChatItemRow(
         }
 
         is ChatItem.Service -> {
-            ServiceMessageRow(item, modifier, canCallBack = selectedIds == null)
+            // "Wave" in the experimental look, where the user can write and nothing is being selected (§13.6).
+            val canWave =
+                item.canWave && selectedIds == null && bubbleResources.shortcuts.canReply && LocalExperimentalUi.current
+            ServiceMessageRow(
+                item,
+                modifier,
+                canCallBack = selectedIds == null,
+                onWave = if (canWave) ({ onEvent(ChatEvent.Wave(item.id)) }) else null,
+            )
         }
 
         is ChatItem.DateSeparator -> {

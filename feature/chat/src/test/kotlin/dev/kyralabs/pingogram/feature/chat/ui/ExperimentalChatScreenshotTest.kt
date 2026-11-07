@@ -248,9 +248,12 @@ class ExperimentalChatScreenshotTest(
 
         private const val HEADLINE = "36dea27"
 
-        /** A group where Grace and Linus shout one word each (§13.6). */
+        private val today = UiText.Plain("Today")
+
+        /** A group where Grace and Linus shout one word each, after Alan joined, whom the user can wave at (§13.6). */
         private val groupShouts =
             group.copy(
+                shortcuts = MessageShortcuts(canReply = true),
                 pinnedBar = null,
                 typing = null,
                 unreadMentionCount = 0,
@@ -270,6 +273,12 @@ class ExperimentalChatScreenshotTest(
                                         senderId = 1,
                                         groupChat = true,
                                     ).copy(senderHue = SenderHues.indexOf(-1, 1), hasAvatarColumn = true),
+                                ChatItem.Service(
+                                    19,
+                                    UiText.Plain("Alan Turing joined the group"),
+                                    today,
+                                    canWave = true,
+                                ),
                                 ChatItem.DateSeparator(epochDay = 1, date = UiText.Plain("Today")),
                             ),
                         reachedStart = true,

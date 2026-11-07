@@ -31,6 +31,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, Settings home has a search over its pages, an account card with Edit profile, your QR code
   and an account menu, and its pages in four groups with the storage used, your devices and the language beside them.
 - A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
+- With Experimental UI on, "Wave" on a group's join message sends the new member a greeting sticker.
 - With Experimental UI on, a one-word message in capitals in a group shows large and italic, and a channel post's short
   bold first line shows as its headline.
 - With Experimental UI on, a mention of you in a group message shows as a chip in the message's text.

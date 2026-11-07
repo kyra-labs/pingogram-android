@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -85,13 +88,16 @@ internal fun DateSeparatorRow(
  * A service message ("Alice joined the group"), centred in a pill. Long texts wrap within the width of a bubble, the
  * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped,
  * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text; so does an
- * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call.
+ * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call. Where
+ * [onWave] is given (the experimental look, someone else joined, the user can write), "Wave" ends the pill
+ * (`docs/DESIGN_SYSTEM.md` §13.6): an extra-small tonal button that sends a greeting sticker in reply.
  */
 @Composable
 internal fun ServiceMessageRow(
     item: ChatItem.Service,
     modifier: Modifier = Modifier,
     canCallBack: Boolean = true,
+    onWave: (() -> Unit)? = null,
 ) {
     val calls = LocalCallStarter.current
     val callUserId = item.callUserId?.takeIf { calls != null && canCallBack }
@@ -135,6 +141,7 @@ internal fun ServiceMessageRow(
                 // Names in it are isolated (`bidiIsolated`): it takes its language's direction, not the layout's.
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
+            if (onWave != null) WaveButton(onWave)
             if (callUserId != null || groupCallChatId != null) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_call_filled),
@@ -148,6 +155,26 @@ internal fun ServiceMessageRow(
                 )
             }
         }
+    }
+}
+
+/** "Wave", an extra-small tonal button at the end of a join message's pill, which sends a greeting sticker. */
+@Composable
+private fun WaveButton(onWave: () -> Unit) {
+    FilledTonalButton(
+        onClick = onWave,
+        modifier =
+            Modifier
+                .padding(
+                    start = MaterialTheme.spacing.small,
+                ).heightIn(ButtonDefaults.ExtraSmallContainerHeight),
+        shapes = ButtonDefaults.shapesFor(ButtonDefaults.ExtraSmallContainerHeight),
+        contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.ExtraSmallContainerHeight),
+    ) {
+        Text(
+            text = stringResource(R.string.chat_wave),
+            style = ButtonDefaults.textStyleFor(ButtonDefaults.ExtraSmallContainerHeight),
+        )
     }
 }
 

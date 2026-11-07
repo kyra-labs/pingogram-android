@@ -85,6 +85,15 @@ internal class DemoStickers : DemoArea {
                 ok(TdApi.Ok())
             }
 
+            // The experimental look's "Wave" greets with the first sample set's stickers.
+            is TdApi.GetGreetingStickers -> {
+                val first =
+                    world.data.stickerSets
+                        .firstOrNull()
+                        ?.let { set(world, it.id) }
+                ok(TdApi.Stickers(first?.stickers ?: emptyArray()))
+            }
+
             is TdApi.GetRecentStickers, is TdApi.GetFavoriteStickers -> {
                 ok(TdApi.Stickers(emptyArray()))
             }

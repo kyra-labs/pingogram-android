@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageSticker
+import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
@@ -162,6 +163,25 @@ class TdlibAttachmentRepository internal constructor(
         replyTo: ReplyTarget?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyTo?.toInputMessageReplyTo())
+
+    override suspend fun sendGreetingSticker(
+        chatId: Long,
+        replyTo: ReplyTarget,
+        options: SendOptions,
+    ): Outcome<Unit> {
+        val stickers = client.send(TdApi.GetGreetingStickers()).toOutcome()
+        val sticker =
+            (stickers as? Outcome.Success)
+                ?.value
+                ?.stickers
+                ?.mapNotNull { it.toSticker() }
+                ?.randomOrNull()
+        return when {
+            stickers is Outcome.Failure -> stickers
+            sticker == null -> Outcome.Failure(DomainError.NotFound)
+            else -> sendSticker(chatId, sticker, options, replyTo)
+        }
+    }
 
     override suspend fun sendAnimation(
         chatId: Long,

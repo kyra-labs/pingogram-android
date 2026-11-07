@@ -123,6 +123,12 @@ internal class TopicAttachmentRepository(
         replyTo: ReplyTarget?,
     ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyTo)
 
+    override suspend fun sendGreetingSticker(
+        chatId: Long,
+        replyTo: ReplyTarget,
+        options: SendOptions,
+    ) = attachments.sendGreetingSticker(chatId, replyTo, options.copy(topic = topic))
+
     override suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,

@@ -107,6 +107,17 @@ interface AttachmentRepository {
     ): Outcome<Unit>
 
     /**
+     * Sends one of Telegram's greeting stickers (td_api.tl `getGreetingStickers`, picked at random) to chat [chatId],
+     * replying as [replyTo] says: the experimental look's "Wave" on a member's join message. [DomainError.NotFound]
+     * when Telegram offers none.
+     */
+    suspend fun sendGreetingSticker(
+        chatId: Long,
+        replyTo: ReplyTarget,
+        options: SendOptions = SendOptions(),
+    ): Outcome<Unit>
+
+    /**
      * Sends GIF [animation], one TDLib knows already (a saved GIF, a GIF search's result), to chat [chatId] as
      * [options] say, replying as [replyTo] says if it is not null. Telegram then puts it first among the saved GIFs.
      */

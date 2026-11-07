@@ -1266,6 +1266,8 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.SendSticker -> attachments.sendSticker(event.sticker)
 
+            is ChatEvent.Wave -> attachments.wave(event.messageId)
+
             is ChatEvent.SendAnimation -> attachments.sendAnimation(event.animation)
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)

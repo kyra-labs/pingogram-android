@@ -37,6 +37,7 @@ internal fun ItemInputs.toItem(): ChatItem {
             callUserId = message.chatId.takeIf { content.action is ServiceAction.Call && kind == ChatKind.Private },
             callIsVideo = (content.action as? ServiceAction.Call)?.isVideo == true,
             groupCallChatId = message.chatId.takeIf { (content.action as? ServiceAction.GroupCall)?.isActive == true },
+            canWave = canWave(content.action),
         )
     } else {
         toBubble(content)
