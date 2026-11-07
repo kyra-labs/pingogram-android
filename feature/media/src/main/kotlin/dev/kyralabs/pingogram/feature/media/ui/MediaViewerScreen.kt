@@ -249,6 +249,7 @@ private fun ViewerContent(
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    OpenMediaTraceEffect(shown = state is MediaViewerUiState.Content)
     when (state) {
         MediaViewerUiState.Loading -> {
             val resources = LocalResources.current

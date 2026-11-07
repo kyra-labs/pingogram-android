@@ -399,6 +399,27 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
   its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
   under ~10% may be thermal.
+- Opening and closing media (`docs/audit/performance-review-2026-11.md`): the container transform of a photo, video
+  or GIF between its bubble and the media viewer. Four async trace sections: `openMedia` (the tap, handed over by
+  `feature:chat`'s route, until the viewer has drawn the page of that media, `MediaViewerTrace`), `overlayEnter` (the
+  frames of the transform in: the overlay's transition from the frame it starts until it settled, `OverlayTrace`),
+  `closeMedia` (back, a swipe or the back button until the viewer has left the composition) and `overlayExit` (the
+  transform out). `OpenMediaBenchmark` opens the newest photo of Saved Messages 10 times per compilation mode, with the
+  frame times and the four sections (`openMediaSumMs.median` and the others in `compare.py`'s terms; no budget yet: the
+  first run on the owner's phone sets one). It needs a photo without a caption among Saved Messages' newest messages,
+  sent by yourself. To run it alone, as `SendMessageBenchmark` above, with
+  `-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.OpenMediaBenchmark`.
+  `tools/perfetto/media-viewer.sh` (`media-viewer.ps1` in PowerShell) records one Perfetto trace
+  (`media-viewer.pbtxt`: the frames of the main thread and the RenderThread, SurfaceFlinger's frame timeline, the
+  window relayouts and binder calls) while it opens the photo on screen and presses back 10 times, and
+  `media-viewer.sql` summarizes it: each section's frames, the longest and the 90th percentile on both threads, the
+  frames SurfaceFlinger presented late, the main thread's longest slices inside the sections (relayouts, semantics,
+  Compose's phases), the RenderThread's (time waiting for the GPU is the cost of offscreen layers and blur effects) and
+  the CPU time per thread. On the JVM, `:app`'s `MediaViewerTransitionTest` steps the opening and the closing frame by
+  frame above a conversation and prints what composed in each with the main thread's CPU time per frame; with
+  `-Ppingogram.jfr` its printed times place the recording's samples, and the system property
+  `pingogram.mediaTransitionRepeats` (set through a Gradle init script's `systemProperty` on the test task) repeats
+  the opening for more of them.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds

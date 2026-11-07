@@ -19,6 +19,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -41,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.file.shareTdlibFile
 import dev.kyralabs.pingogram.core.ui.file.tdlibFileUri
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.pip.VideoPipActivity
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +76,8 @@ internal fun MediaViewerRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isSecretChat by viewModel.isSecretChat.collectAsStateWithLifecycle()
+    // The viewer is gone once its exit transition settled (docs/PERFORMANCE.md §9, "Opening and closing media").
+    DisposableEffect(Unit) { onDispose { MediaViewerTrace.endClose() } }
     // No screenshots of a secret chat's media, as in its conversation.
     SecureWindow(secure = isSecretChat)
     LifecycleStartEffect(viewModel) {
@@ -94,7 +99,7 @@ internal fun MediaViewerRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
-        modifier = modifier,
+        modifier = modifier.testTag(MEDIA_VIEWER_TEST_TAG),
         snackbarHostState = snackbarHostState,
         // Never a secret chat's media, which only this secure window may show.
         canPictureInPicture = pictureInPicture && !isSecretChat,

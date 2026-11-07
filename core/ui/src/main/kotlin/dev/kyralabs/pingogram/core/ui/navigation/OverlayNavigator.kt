@@ -43,6 +43,7 @@ import androidx.navigation.Navigator
 import androidx.navigation.NavigatorState
 import androidx.navigation.compose.LocalOwnersProvider
 import androidx.navigation.get
+import dev.kyralabs.pingogram.core.ui.trace.OverlayTrace
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -222,6 +223,7 @@ private fun OverlayEntry(
         }
     val scope = remember(transition) { OverlayVisibility(transition) }
     val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
+    OverlayTransitionTrace(state)
     if (!gone) {
         Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha.value }.then(TouchBlocker)) {
             CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
@@ -245,6 +247,25 @@ private fun OverlayEntry(
                     ?.value
                     .orEmpty()
             if (entry !in onBackStack) navigator.onTransitionComplete(entry)
+        }
+    }
+}
+
+/**
+ * [OverlayTrace]'s sections of [state]'s transitions: `overlayEnter` from the frame the overlay starts coming in until
+ * it settled, `overlayExit` from the frame it starts going out until it is gone (`docs/PERFORMANCE.md` §9). Nothing
+ * for an overlay restored visible.
+ */
+@Composable
+private fun OverlayTransitionTrace(state: MutableTransitionState<EnterExitState>) {
+    val target = state.targetState
+    val settled = state.isIdle
+    LaunchedEffect(target, settled) {
+        when {
+            target == EnterExitState.Visible && !settled -> OverlayTrace.begin(OverlayTrace.ENTER)
+            target == EnterExitState.Visible -> OverlayTrace.end(OverlayTrace.ENTER)
+            target == EnterExitState.PostExit && !settled -> OverlayTrace.begin(OverlayTrace.EXIT)
+            target == EnterExitState.PostExit -> OverlayTrace.end(OverlayTrace.EXIT)
         }
     }
 }
