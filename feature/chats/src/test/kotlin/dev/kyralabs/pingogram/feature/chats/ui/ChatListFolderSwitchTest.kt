@@ -31,8 +31,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Switching folders (FR-L3, `docs/DESIGN_SYSTEM.md` §5): Material's fade-through between the two lists, the old one
- * fading out before the new one shows, at its top; with animations off (reduced motion) the lists swap at once.
+ * Switching folders (FR-L3, `docs/DESIGN_SYSTEM.md` §5, §6 "Folder tabs"): the selected folder's list slides in at
+ * once from its tab's side while the old one leaves beside it, where it was left or at its top; with animations off
+ * (reduced motion) the lists swap at once.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -52,19 +53,22 @@ class ChatListFolderSwitchTest {
     private var state by mutableStateOf(ChatListPreviewData.contentWithFolders)
 
     @Test
-    fun `the shown list fades out before the selected folder's list replaces it`() {
+    fun `the selected folder's list slides in from its tab's side at once, and the old one leaves`() {
         setScreen()
         composeRule.waitForIdle()
         composeRule.mainClock.autoAdvance = false
 
         state = workFolder
-        advanceFrames(FEW_FRAMES)
+        advanceFrames(SLIDE_FRAMES)
 
-        assertTrue("All chats' list is still fading out", exists(SAVED_MESSAGES))
-        assertFalse(exists(ROCKET_CLUB))
+        // Work's tab is after All chats: its list comes in from the right while All chats' leaves to the left, which
+        // takes no input and is out of the semantics tree on its way.
+        val sliding = left(ROCKET_CLUB)
+        assertFalse(exists(SAVED_MESSAGES))
         composeRule.mainClock.autoAdvance = true
         composeRule.waitForIdle()
-        assertFalse(exists(SAVED_MESSAGES))
+        val resting = left(ROCKET_CLUB)
+        assertTrue("Rocket club came in from the right: $sliding, then $resting", sliding > resting)
         row(ROCKET_CLUB).assertIsDisplayed()
     }
 
@@ -105,8 +109,10 @@ class ChatListFolderSwitchTest {
             }.filterNotNull()
         composeRule.mainClock.autoAdvance = true
 
-        assertTrue("The folder's list showed", shown.isNotEmpty())
-        assertTrue("Chat 7's and chat 2's tops: $shown", shown.all { (seven, two) -> seven < two })
+        // Rows not laid out yet, in the frame that composes them, read as both at 0.
+        val placed = shown.filterNot { (seven, two) -> seven == 0f && two == 0f }
+        assertTrue("The folder's list showed", placed.isNotEmpty())
+        assertTrue("Chat 7's and chat 2's tops: $shown", placed.all { (seven, two) -> seven < two })
     }
 
     @Test
@@ -244,6 +250,8 @@ class ChatListFolderSwitchTest {
 
     private fun top(name: String) = row(name).fetchSemanticsNode().boundsInRoot.top
 
+    private fun left(name: String) = row(name).fetchSemanticsNode().boundsInRoot.left
+
     private fun ChatListUiState.chatCount() = (content as ChatListContent.Content).items.size
 
     private fun exists(name: String) = composeRule.onAllNodes(rowMatcher(name)).fetchSemanticsNodes().isNotEmpty()
@@ -255,12 +263,15 @@ class ChatListFolderSwitchTest {
         const val ROCKET_CLUB = "Rocket club"
 
         /**
-         * Three frames: enough to swap the lists without animations (the frame that sees the folder change, the one
-         * that runs the swap, the one that shows the new list), not for the fade-out on the fast effects spring.
+         * Three frames: enough to swap the lists (the frame that sees the folder change, the one that runs the swap,
+         * the one that shows the new list), not for the slide on the default spatial spring.
          */
         const val FEW_FRAMES = 3
 
-        /** Enough frames for the fade-out and the first half of the fade-in. */
+        /** Frames into the slide: the selected folder's rows are laid out, still on their way in. */
+        const val SLIDE_FRAMES = 6
+
+        /** Enough frames for most of the slide. */
         const val SWITCH_FRAMES = 30
 
         /** The Work folder, with only a chat that is not among All chats' rows. */

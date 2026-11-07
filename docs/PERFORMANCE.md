@@ -504,6 +504,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   machine's noise, so the button stays Material's: the cost is a second control per post. Every button shares one
   painter and its colors (`ShareButtonStyle`). The conversation benchmark scrolls Saved Messages, which has none; a
   channel's scroll on the owner's phone tells whether it holds there.
+- Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
+  ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
+  P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99
+  11.5–15.2 ms, mean 2.33–2.71 ms: the same within the machine's noise, as scrolling composes nothing more (the
+  neighbour composes only while a swipe or a slide shows it). `ChatListRecompositionTest` checks that a swipe recomposes
+  no row of the shown list. The neighbours' lists are mapped only while "Swipe to change folders" is on, each by a mapper
+  of its own, on the view model's dispatcher; their cost while the chats change is not measured on a phone yet.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

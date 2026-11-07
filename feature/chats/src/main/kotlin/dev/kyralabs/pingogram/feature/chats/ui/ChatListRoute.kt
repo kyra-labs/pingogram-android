@@ -139,6 +139,10 @@ private fun ChatListDestination(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val swipes by swipesViewModel.swipes.collectAsStateWithLifecycle()
+    // The folders beside the one shown, which only a swipe of the list shows: mapped only while that swipe is on.
+    val neighbourLists =
+        if (swipes.changesFolder) viewModel.neighbourLists.collectAsStateWithLifecycle() else null
+    val neighbours = remember(neighbourLists) { { neighbourLists?.value ?: FolderNeighbourLists() } }
     ChatListEffects(viewModel.effects, snackbarHostState, navigation, onEvent = viewModel::onEvent)
     CompositionLocalProvider(LocalChatSwipes provides swipes) {
         ChatListScreen(
@@ -153,6 +157,7 @@ private fun ChatListDestination(
             onEditFolder = onEditFolder,
             summary = summary,
             headerActions = headerActions,
+            neighbours = neighbours,
         )
     }
 }

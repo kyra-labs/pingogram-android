@@ -257,6 +257,14 @@ class ChatListViewModel internal constructor(
             Overlays(ids, dialog, hasLockedChats = kind == ChatListKind.Chats && locked.isNotEmpty())
         }
 
+    /** The lists of the folder tabs beside the selected one, if any; none in the archive. */
+    private val neighbourTypes: Flow<NeighbourTypes> =
+        if (kind == ChatListKind.Archive) {
+            flowOf(NeighbourTypes())
+        } else {
+            combine(selectedList, folderTabs) { list, tabs -> NeighbourTypes.of(tabs, list) }.distinctUntilChanged()
+        }
+
     val uiState: StateFlow<ChatListUiState> =
         combine(listState, connectionRepository.connectionStatus, folderTabs, archive, overlays) {
             list,
@@ -279,6 +287,44 @@ class ChatListViewModel internal constructor(
             )
         }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListUiState(kind = kind))
+
+    /**
+     * The lists of the folder tabs beside the selected one ([FolderNeighbourLists]), which a swipe of the list pulls in
+     * under the finger (owner decision 2026-11-07): mapped as the list shown is, each by a mapper of its own, while the
+     * screen collects them (it does only while "Swipe to change folders" is on), and dropped, with their rows, once
+     * their tab is no longer beside the selected one. Their first page is loaded ahead either way ([neighbourTypes]).
+     */
+    val neighbourLists: StateFlow<FolderNeighbourLists> =
+        neighbourTypes
+            .flatMapLatest { types ->
+                val neighbour: (ChatListType?) -> Flow<FolderNeighbourList?> = { type ->
+                    if (type == null) {
+                        flowOf(null)
+                    } else {
+                        val mapper = ChatListItemMapper()
+                        combine(
+                            chatRepository.chatList(type).without(lockedChatIds),
+                            rowSources,
+                            loads.map { it[type] ?: ListLoad() }.distinctUntilChanged(),
+                        ) { chats, snapshot, load ->
+                            val content = content(type, chats, snapshot, load, mapper)
+                            FolderNeighbourList((type as? ChatListType.Folder)?.id, ChatListUiState(kind, content))
+                        }
+                    }
+                }
+                combine(
+                    neighbour(types.previous),
+                    neighbour(types.next),
+                    archive,
+                    overlays,
+                ) { previous, next, archive, over ->
+                    FolderNeighbourLists(
+                        previous = previous?.onMainList(archive.row, over.hasLockedChats),
+                        next = next?.onMainList(archive.row, over.hasLockedChats),
+                    )
+                }
+            }.flowOn(dispatcher)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), FolderNeighbourLists())
 
     /**
      * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
@@ -314,6 +360,12 @@ class ChatListViewModel internal constructor(
                 isNearEnd = false
                 val load = loads.value[list]
                 if (load == null || (load.error != null && !load.isLoading)) loadPage(list)
+            }
+        }
+        // The first page of the folders beside the one shown, so a swipe or a tap shows their chats at once.
+        viewModelScope.launch {
+            neighbourTypes.collect { types ->
+                listOfNotNull(types.previous, types.next).forEach { if (loads.value[it] == null) loadPage(it) }
             }
         }
     }
@@ -525,6 +577,7 @@ class ChatListViewModel internal constructor(
         chats: List<Chat>,
         snapshot: RowSnapshot,
         load: ListLoad,
+        mapper: ChatListItemMapper = this.mapper,
     ): ChatListContent {
         val error = load.error
         return when {
@@ -589,6 +642,24 @@ class ChatListViewModel internal constructor(
         val hidden: ArchiveEntry? get() = entry.takeIf { style == ArchiveRowStyle.Hidden }
     }
 
+    /** The list of the folder tab before the selected one ([previous]) and after it ([next]); null for none. */
+    private data class NeighbourTypes(
+        val previous: ChatListType? = null,
+        val next: ChatListType? = null,
+    ) {
+        companion object {
+            fun of(
+                tabs: List<FolderTab>,
+                list: ChatListType,
+            ): NeighbourTypes {
+                val neighbours = FolderNeighbours.of(tabs, (list as? ChatListType.Folder)?.id)
+                return NeighbourTypes(neighbours.previous?.listType(), neighbours.next?.listType())
+            }
+
+            private fun FolderTarget.listType(): ChatListType = folderId?.let(ChatListType::Folder) ?: ChatListType.Main
+        }
+    }
+
     /** What shows over the rows: which of them are selected, and the delete dialog. */
     private class Overlays(
         val selectedIds: Set<Long>,
@@ -637,3 +708,10 @@ private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> 
 
 /** How many rows the list pins, from its first: TDLib orders pinned chats first. */
 private fun List<ChatListItemModel>.pinnedCount(): Int = indexOfFirst { !it.isPinned }.let { if (it < 0) size else it }
+
+/** The main list's neighbour with its [archiveRow] and locked chats row, as the main list shows them. */
+private fun FolderNeighbourList.onMainList(
+    archiveRow: ArchiveEntry?,
+    hasLockedChats: Boolean,
+): FolderNeighbourList =
+    if (folderId != null) this else copy(state = state.copy(archive = archiveRow, hasLockedChats = hasLockedChats))

@@ -82,7 +82,6 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
-import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -107,8 +106,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   ([screenContentWindowInsets]); the archive, pushed on top of the tab where the bar hides, keeps clear of the system
  *   bars only. On medium and wider windows the rows keep a comfortable width, centered.
  * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load.
- * - **Folders**: selecting another folder replaces the list with that folder's, through Material's fade-through, where
- *   the user left it, or at its top the first time ([rememberShownList]).
+ * - **Folders**: selecting another folder slides that folder's list in from the side of its tab, where the user left
+ *   it, or at its top the first time ([rememberShownList]); swiping the list, where the user chose it, pulls the
+ *   folder beside it in with the finger ([folderSwipe], its first page loaded ahead: [neighbours]).
  * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
@@ -143,6 +143,7 @@ internal fun ChatListScreen(
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     summary: () -> ChatListSummary = { ChatListSummary() },
     headerActions: ChatListHeaderActions? = null,
+    neighbours: () -> FolderNeighbourLists = { FolderNeighbourLists() },
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
@@ -167,7 +168,7 @@ internal fun ChatListScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = insets,
         ) { innerPadding ->
-            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header, stories)
+            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, neighbours, header, stories)
         }
         SelectionToolbarHost(
             selection = selection,
@@ -203,12 +204,13 @@ private fun contentWindowInsets(
 }
 
 /**
- * The list of the folder shown ([rememberShownList]) on its sheet, fading through on a folder switch ([folderSwitch]).
- * Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again whenever
- * it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and those
- * frames stop here.
+ * The list of the folder shown ([rememberShownList]) on its sheet, sliding to another folder's on a folder switch
+ * ([folderSwitch]), with the list it slides against beside it while it moves ([FolderCompanion]: [neighbours] under a
+ * swipe). Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again
+ * whenever it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and
+ * those frames stop here.
  */
-@Suppress("LongParameterList") // The state, events, list, padding, open chat, folder switch, header, stories.
+@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots.
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,
@@ -217,59 +219,43 @@ private fun ChatListBody(
     innerPadding: PaddingValues,
     openChatId: Long?,
     folderSwitch: FolderSwitch,
+    neighbours: () -> FolderNeighbourLists,
     header: @Composable () -> Unit,
     stories: (@Composable (Modifier) -> Unit)?,
 ) {
     val state = rememberShownList(uiState, listState, folderSwitch, hasStories = stories != null)
-    val animateRows = folderSwitch.animateRows
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
-        val contentPadding = sheetPadding
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
-            Box(Modifier.fillMaxWidth().padding(contentPadding.sidesOnly()), Alignment.TopCenter) { header() }
-            Box(Modifier.weight(1f).folderSwipe(uiState, folderSwitch, onEvent)) {
-                val contentModifier = Modifier.fadeThrough(folderSwitch, isRtl).fillMaxSize()
-                when (val content = state.content) {
-                    ChatListContent.Loading -> {
-                        val loading = stringResource(R.string.chat_list_loading)
-                        Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) {
-                            DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading })
-                        }
-                    }
-
-                    is ChatListContent.Empty -> {
-                        ChatListEmptyWithArchive(
-                            archive = state.archive,
-                            kind = state.kind,
-                            isFolder = content.isFolder,
-                            onEvent = onEvent,
-                            modifier = contentModifier.padding(contentPadding),
-                        ) { if (state.hasLockedChats) LockedChatsRow(enabled = true) }
-                    }
-
-                    is ChatListContent.Error -> {
-                        ChatListError(
-                            content = content,
-                            onRetry = { onEvent(ChatListEvent.Retry) },
-                            modifier = contentModifier.padding(contentPadding),
-                        )
-                    }
-
-                    is ChatListContent.Content -> {
-                        ChatList(
-                            items = content.items,
-                            pinnedCount = content.pinnedCount,
-                            state = state,
-                            stories = stories,
-                            listState = listState,
-                            contentPadding = contentPadding,
-                            openChatId = openChatId,
-                            animateRows = animateRows,
-                            onEvent = onEvent,
-                            modifier = contentModifier,
-                        )
-                    }
+            Box(Modifier.fillMaxWidth().padding(sheetPadding.sidesOnly()), Alignment.TopCenter) { header() }
+            Box(Modifier.weight(1f).folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
+                FolderListContent(
+                    state = state,
+                    listState = listState,
+                    contentPadding = sheetPadding,
+                    stories = stories,
+                    openChatId = openChatId,
+                    animateRows = folderSwitch.animateRows,
+                    onEvent = onEvent,
+                    modifier = Modifier.folderSlide(folderSwitch, isRtl).fillMaxSize(),
+                )
+                FolderCompanion(
+                    folderSwitch,
+                    neighbours,
+                    isRtl,
+                    hasStories = stories != null,
+                ) { companion, companionListState, modifier ->
+                    FolderListContent(
+                        state = companion,
+                        listState = companionListState,
+                        contentPadding = sheetPadding,
+                        stories = stories,
+                        openChatId = openChatId,
+                        animateRows = false,
+                        onEvent = {},
+                        modifier = modifier,
+                    )
                 }
             }
         }
@@ -278,209 +264,61 @@ private fun ChatListBody(
     }
 }
 
-/**
- * The fade-through between the lists of two folders (`docs/DESIGN_SYSTEM.md` §5): the list shown fades out, and the
- * selected folder's list fades in while it grows from [FADE_THROUGH_INITIAL_SCALE] ([rememberShownList]). Read in the
- * draw phase ([fadeThrough]), so the animation never recomposes.
- *
- * The rows do not animate ([animateRows]) while the selected folder's rows replace the others: the two lists have
- * nothing to animate between, and the list would otherwise slide the chats both lists have from where the old one
- * showed them, and fade the others in and out, all started in the frame that composes the new rows.
- */
-@Stable
-internal class FolderSwitch {
-    val alpha = Animatable(1f)
-    val scale = Animatable(1f)
-    var animateRows by mutableStateOf(true)
-
-    /** How far the finger moved the list toward the end, in pixels, while it swipes it ([folderSwipe]). */
-    var drag by mutableFloatStateOf(0f)
-
-    /** The list's movement toward the end after the finger let go, in pixels: sliding away, in or back. */
-    val offset = Animatable(0f)
-
-    /** Where the list is, toward the end of [drag] and [offset]; read in the draw phase. */
-    val position: Float
-        get() = drag + offset.value
-
-    /**
-     * Where the selected folder's list slides in from (an [offset]) after a swipe selected it; null for a tab's tap,
-     * which fades through. Read once by [rememberShownList].
-     */
-    var slideInFrom: Float? = null
-}
-
-/**
- * Fades each drawing of the list on its own ([CompositingStrategy.ModulateAlpha]) rather than the list as a whole in
- * an offscreen buffer the size of the screen: the rows draw opaque containers in the screen's own color, so the two
- * look the same.
- */
-private fun Modifier.fadeThrough(
-    folderSwitch: FolderSwitch,
-    isRtl: Boolean,
-): Modifier =
-    graphicsLayer {
-        alpha = folderSwitch.alpha.value
-        scaleX = folderSwitch.scale.value
-        scaleY = folderSwitch.scale.value
-        translationX = if (isRtl) -folderSwitch.position else folderSwitch.position
-        compositingStrategy = CompositingStrategy.ModulateAlpha
-    }
-
-/**
- * The state whose list shows: [state], except while another folder's list fades out after a folder was selected.
- * Material's fade-through runs in sequence, so the new list never shows over the old one: the old list fades out on
- * the motion scheme's fast effects spring, then the selected folder's list replaces it where the user left it
- * ([FolderPositions]), and fades in on the default effects spring while it grows on the default spatial spring. The
- * tabs follow the selection at once. Selecting yet another folder meanwhile carries on from where the animation is;
- * selecting the folder shown again fades it back in. With animations off (reduced motion) the lists swap without
- * fading: ending the springs at once, as Compose does then, would still blank the list for the frames between them.
- *
- * The folder shown and where each folder was left are saved, so a rotation or process death keeps them.
- */
+/** What a folder's list shows in [state]: its indicator while loading, its empty state or error, or its chats. */
+@Suppress("LongParameterList") // The state, the list's state and padding, the rings, the open chat, events.
 @Composable
-private fun rememberShownList(
+private fun FolderListContent(
     state: ChatListUiState,
     listState: LazyListState,
-    folderSwitch: FolderSwitch,
-    hasStories: Boolean,
-): ChatListUiState {
-    var shownFolderId by rememberSaveable { mutableStateOf(state.selectedFolderId) }
-    val positions = rememberSaveable(saver = FolderPositions.Saver) { FolderPositions() }
-    // The last state of the folder shown, for its list to fade out with; read only then, so updating it recomposes
-    // nothing.
-    val lastShown = remember { mutableStateOf(state) }
-    val isShown = state.selectedFolderId == shownFolderId
-    SideEffect { if (isShown) lastShown.value = state }
-    val currentState by rememberUpdatedState(state)
-    val currentHasStories by rememberUpdatedState(hasStories)
-    val motionScheme = MaterialTheme.motionScheme
-    LaunchedEffect(state.selectedFolderId) {
-        // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
-        val animated = coroutineContext[MotionDurationScale]?.scaleFactor != 0f
-        // A swipe that selected the folder: the old list slid away, and the new one slides in rather than fades.
-        val slideInFrom = folderSwitch.slideInFrom
-        folderSwitch.slideInFrom = null
-        if (state.selectedFolderId != shownFolderId) {
-            if (slideInFrom == null) {
-                if (animated) folderSwitch.alpha.animateTo(0f, motionScheme.fastEffectsSpec())
-                // A tab tapped while the list was swiped part of the way.
-                folderSwitch.offset.snapTo(0f)
-            }
-            positions.save(shownFolderId, listState)
-            folderSwitch.animateRows = false
-            shownFolderId = state.selectedFolderId
-            // Applied in the layout pass that brings the selected folder's rows, so the list does not keep the row
-            // that was first in the old list.
-            positions.restore(currentState, currentHasStories, listState)
-            when {
-                slideInFrom != null -> folderSwitch.offset.snapTo(if (animated) slideInFrom else 0f)
-                animated -> folderSwitch.scale.snapTo(FADE_THROUGH_INITIAL_SCALE)
-            }
-        }
-        coroutineScope {
-            // Rows animate again once the selected folder's rows are laid out, in the frame that composes them.
-            if (!folderSwitch.animateRows) {
-                launch {
-                    repeat(ROWS_LAYOUT_FRAMES) { withFrameNanos {} }
-                    folderSwitch.animateRows = true
-                }
-            }
-            launch { folderSwitch.offset.animateTo(0f, motionScheme.defaultSpatialSpec()) }
-            launch { folderSwitch.scale.animateTo(1f, motionScheme.defaultSpatialSpec()) }
-            folderSwitch.alpha.animateTo(1f, motionScheme.defaultEffectsSpec())
-        }
-    }
-    return if (isShown) state else lastShown.value
-}
-
-/**
- * Where the user left each folder's list (`null` for "All chats"): its first visible row and how far it is scrolled
- * past it. A row is found again by its key, wherever it moved since; one that left the list gives way to the row now at
- * its index. A folder not shown before starts at its top. Not observed: only the folder switch reads and writes it.
- */
-private class FolderPositions(
-    private val positions: MutableMap<Int?, ListPosition> = HashMap(),
+    contentPadding: PaddingValues,
+    stories: (@Composable (Modifier) -> Unit)?,
+    openChatId: Long?,
+    animateRows: Boolean,
+    onEvent: (ChatListEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    /** Keeps where [folderId]'s list, shown by [listState], is now. */
-    fun save(
-        folderId: Int?,
-        listState: LazyListState,
-    ) {
-        val index = listState.firstVisibleItemIndex
-        // Not the first of visibleItemsInfo, which may be a row drawn in the content padding behind the top bar.
-        val first = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
-        positions[folderId] = ListPosition(first.key, index, listState.firstVisibleItemScrollOffset)
-    }
-
-    /**
-     * Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass; the story rings
-     * ([hasStories]), the archive row and the "Pinned" header come first.
-     */
-    fun restore(
-        state: ChatListUiState,
-        hasStories: Boolean,
-        listState: LazyListState,
-    ) {
-        val position = positions[state.selectedFolderId]
-        if (position == null) {
-            listState.requestScrollToItem(0)
-            return
-        }
-        val content = state.content as? ChatListContent.Content
-        val items = content?.items.orEmpty()
-        val hasPinned = (content?.pinnedCount ?: 0) > 0
-        val storyRows = if (hasStories) 1 else 0
-        val headerRows = storyRows + if (state.archive != null) 1 else 0
-        val rowsAbove = headerRows + if (hasPinned) 1 else 0
-        val index =
-            when (val key = position.key) {
-                STORIES_ROW -> 0.takeIf { hasStories }
-                ARCHIVE_ROW -> storyRows.takeIf { state.archive != null }
-                PINNED_HEADER -> headerRows.takeIf { hasPinned }
-                else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
+    when (val content = state.content) {
+        ChatListContent.Loading -> {
+            val loading = stringResource(R.string.chat_list_loading)
+            Box(modifier.padding(contentPadding), contentAlignment = Alignment.Center) {
+                DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading })
             }
-        if (index != null) {
-            listState.requestScrollToItem(index, position.offset)
-        } else {
-            listState.requestScrollToItem(position.index)
         }
-    }
 
-    companion object {
-        /** Each position as four values: the folder ([NO_FOLDER] for "All chats"), the row's key, index and offset. */
-        val Saver =
-            listSaver<FolderPositions, Any>(
-                save = { saved ->
-                    saved.positions.flatMap { (folderId, position) ->
-                        listOf(folderId ?: NO_FOLDER, position.key, position.index, position.offset)
-                    }
-                },
-                restore = { values ->
-                    val positions =
-                        values.chunked(VALUES_PER_POSITION).associateTo(HashMap()) { saved ->
-                            val folderId = (saved[0] as Int).takeIf { it != NO_FOLDER }
-                            folderId to ListPosition(key = saved[1], index = saved[2] as Int, offset = saved[3] as Int)
-                        }
-                    FolderPositions(positions)
-                },
+        is ChatListContent.Empty -> {
+            ChatListEmptyWithArchive(
+                archive = state.archive,
+                kind = state.kind,
+                isFolder = content.isFolder,
+                onEvent = onEvent,
+                modifier = modifier.padding(contentPadding),
+            ) { if (state.hasLockedChats) LockedChatsRow(enabled = true) }
+        }
+
+        is ChatListContent.Error -> {
+            ChatListError(
+                content = content,
+                onRetry = { onEvent(ChatListEvent.Retry) },
+                modifier = modifier.padding(contentPadding),
             )
+        }
 
-        /** Stands for "All chats" when saved; TDLib's folder ids are positive. */
-        private const val NO_FOLDER = -1
-        private const val VALUES_PER_POSITION = 4
+        is ChatListContent.Content -> {
+            ChatList(
+                items = content.items,
+                pinnedCount = content.pinnedCount,
+                state = state,
+                stories = stories,
+                listState = listState,
+                contentPadding = contentPadding,
+                openChatId = openChatId,
+                animateRows = animateRows,
+                onEvent = onEvent,
+                modifier = modifier,
+            )
+        }
     }
 }
-
-/**
- * A list's first visible row: its [key] (a chat id, [STORIES_ROW] or [ARCHIVE_ROW]), its [index], and the [offset]
- * scrolled past it.
- */
-private class ListPosition(
-    val key: Any,
-    val index: Int,
-    val offset: Int,
-)
 
 /**
  * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]), keyed by id, each row
@@ -656,12 +494,6 @@ private fun ChatListError(
         },
     )
 }
-
-/**
- * How many frames rows do not animate for after a folder switch: enough for the frame that composes and lays out the
- * selected folder's rows, whether the switch is made during a frame (after the fade-out) or between two (without it).
- */
-private const val ROWS_LAYOUT_FRAMES = 2
 
 /** How close to its end the list asks for more chats: about a page of rows ahead of the user. */
 private const val LOAD_MORE_THRESHOLD = 20
