@@ -223,10 +223,11 @@ class MainActivity : ComponentActivity() {
                 // so the app never draws one look and then the other.
                 val experimentalUiSetting by experimentalUi.enabled.collectAsStateWithLifecycle(initialValue = null)
                 val settings = appearance
-                val phoneNumbersHidden = phoneNumbersHiddenSetting
-                val experimental = experimentalUiSetting
+                // Both on-screen settings once read: whether numbers are hidden, and the experimental look.
+                val onScreen = phoneNumbersHiddenSetting?.let { hidden -> experimentalUiSetting?.let { hidden to it } }
                 val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
-                if (settings != null && phoneNumbersHidden != null && experimental != null && lockAndLanguageKnown) {
+                if (settings != null && onScreen != null && lockAndLanguageKnown) {
+                    val (phoneNumbersHidden, experimental) = onScreen
                     SideEffect(awaitSettingsTrace::end)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
