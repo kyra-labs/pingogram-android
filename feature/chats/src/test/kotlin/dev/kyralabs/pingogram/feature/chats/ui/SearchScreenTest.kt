@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -193,14 +194,26 @@ class SearchScreenTest {
     fun `the filter chips show every filter, the chosen one selected, and choosing one sends it`() {
         setScreen(SearchPreviewData.results)
 
-        SearchFilter.entries.forEach { filter ->
-            composeRule.onNode(hasText(string(filter.label)) and hasClickAction()).assertExists()
-        }
-        composeRule.onNode(hasText(string(R.string.search_filter_all)) and hasClickAction()).assertIsSelected()
-        composeRule.onNode(hasText(string(R.string.search_filter_media)) and hasClickAction()).performClick()
+        SearchFilter.entries.forEach { filter -> composeRule.onNode(chip(filter)).assertExists() }
+        composeRule.onNode(chip(SearchFilter.All)).assertIsSelected()
+        composeRule.onNode(chip(SearchFilter.Media)).performClick()
 
         assertEquals(SearchEvent.FilterChanged(SearchFilter.Media), events.last())
     }
+
+    @Test
+    fun `a chip TDLib counted for shows its count, heard with its label as one text`() {
+        setScreen(SearchPreviewData.results)
+
+        composeRule.onNode(hasContentDescription("Messages, 128 results") and hasClickAction()).assertExists()
+        composeRule.onNode(hasContentDescription("Media, 1204 results") and hasClickAction()).assertExists()
+        composeRule.onNode(hasText(string(R.string.search_filter_links)) and hasClickAction()).assertExists()
+    }
+
+    /** The chip of [filter], by its label: its text, or the start of its description where it shows a count. */
+    private fun chip(filter: SearchFilter) =
+        (hasText(string(filter.label)) or hasContentDescription("${string(filter.label)},", substring = true)) and
+            hasClickAction()
 
     @Test
     fun `while a section searches, one progress indicator shows under the field after a moment`() {

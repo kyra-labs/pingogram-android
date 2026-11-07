@@ -11,17 +11,24 @@ import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * Everything global search shows below its search field (`REQUIREMENTS.md` FR-L6): the [filter] chosen with the chips
- * under the field, then suggestions while the query is empty, the results of the query otherwise. The query itself
- * lives in the search field.
+ * under the field, with the [counts] TDLib gave for some of them, then suggestions while the query is empty, the
+ * results of the query otherwise. The query itself lives in the search field.
+ *
+ * [counts]: about how many messages, photos and videos, or links match the query, by chip, from the searches already
+ * made for it (`docs/DESIGN_SYSTEM.md` §6 "Global search"); none for a chip not searched yet, and none at all while
+ * locked chats are hidden, whose messages TDLib's counts would include.
  */
 @Immutable
 data class SearchUiState(
     val content: SearchContent = SearchContent.Suggestions(),
     val filter: SearchFilter = SearchFilter.All,
+    val counts: ImmutableMap<SearchFilter, Int> = persistentMapOf(),
 )
 
 /**

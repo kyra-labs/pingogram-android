@@ -188,6 +188,11 @@
     <string name="search_filter_messages">Messages</string>
     <string name="search_filter_media">Media</string>
     <string name="search_filter_links">Links</string>
+    <!-- A filter chip with how many messages, photos and videos, or links match the query, for screen readers: "Messages, 42 results". -->
+    <plurals name="search_filter_count">
+        <item quantity="one">%1$s, %2$d result</item>
+        <item quantity="other">%1$s, %2$d results</item>
+    </plurals>
     <!-- Section headers. -->
     <string name="search_section_people">People</string>
     <string name="search_section_recent">Recent</string>
