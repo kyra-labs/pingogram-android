@@ -15,6 +15,9 @@ enum class ThemePalette {
     Yellow,
     Orange,
     Red,
+
+    /** The experimental look's sample accent (`docs/DESIGN_SYSTEM.md` §13): the owner's design's coral, #FF8C7A. */
+    Coral,
     Pink,
     Purple,
     Indigo,

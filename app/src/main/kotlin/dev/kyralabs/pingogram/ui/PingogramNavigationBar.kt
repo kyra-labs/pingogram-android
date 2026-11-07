@@ -51,6 +51,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
+import dev.kyralabs.pingogram.core.ui.component.floatingNavigationBarHeight
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -136,6 +138,11 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * [newChat] (the Chats tab's "New chat", [BarNewChatButton]) sits `spacing.small` beside the pill, at its end. The pill
  * stays centred in the window; only where it and the button's room would not fit side by side does it move toward the
  * start, by what is missing, on every tab alike, so switching tabs never moves it.
+ *
+ * In the experimental look (`LocalExperimentalUi`, `docs/DESIGN_SYSTEM.md` §13) the pill is
+ * `sizes.experimentalNavigationBar` (64 dp) tall, its selected tab a `primary` pill with its label, the other tabs
+ * their icons only (Owner decision to confirm (2026-11-07): the standard look shows labels where they fit), and the
+ * New chat button beside it a 64 dp rounded square.
  */
 @Composable
 internal fun PingogramNavigationBar(
@@ -147,11 +154,14 @@ internal fun PingogramNavigationBar(
 ) {
     val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
     val gap = MaterialTheme.spacing.small
-    val buttonWidth = MaterialTheme.sizes.floatingNavigationBar
+    val experimental = LocalExperimentalUi.current
+    val sizes = MaterialTheme.sizes
+    val buttonWidth = if (experimental) sizes.experimentalFab else sizes.floatingNavigationBar
     val buttonRoom = buttonWidth + gap
     BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
-        // The New chat button's room is kept on every tab, so changing tabs never switches labels and icons.
-        val showLabels = labelsFit(maxWidth - buttonRoom)
+        // The New chat button's room is kept on every tab, so changing tabs never switches labels and icons. The
+        // experimental look's other tabs show their icons only, as the owner's design draws them (§13).
+        val showLabels = !experimental && labelsFit(maxWidth - buttonRoom)
         PillAndButton(gap, buttonWidth) {
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
@@ -206,10 +216,18 @@ private fun NavigationTabs(
 ) {
     Row(
         Modifier
-            .height(MaterialTheme.sizes.floatingNavigationBar)
+            .height(floatingNavigationBarHeight())
             .padding(horizontal = MaterialTheme.spacing.small)
             .selectableGroup(),
     ) {
+        // The selected tab's pill and its content; a `primary` pill in the experimental look (§13).
+        val colors = MaterialTheme.colorScheme
+        val selectedColors =
+            if (LocalExperimentalUi.current) {
+                colors.primary to colors.onPrimary
+            } else {
+                colors.secondaryContainer to colors.onSecondaryContainer
+            }
         TopLevelDestination.entries.forEach { destination ->
             val isSelected = destination == selected
             AccountMenuAnchor(
@@ -222,6 +240,7 @@ private fun NavigationTabs(
                     destination = destination,
                     selected = isSelected,
                     showLabel = showLabels || isSelected,
+                    selectedColors = selectedColors,
                     onClick = { onSelect(destination) },
                     modifier = Modifier.fillMaxHeight().then(trigger),
                 )
@@ -231,28 +250,28 @@ private fun NavigationTabs(
 }
 
 /**
- * One tab: a pill-shaped `Role.Tab` whose icon slides in when it is selected, and whose indicator grows along one axis
- * from the tab's center on the motion scheme's fast spatial spring while it fades in on the default effects spring, as
- * Material's navigation indicator does. The indicator's width and alpha are read in the draw phase and the icon's width
- * in the layout phase ([revealHorizontally]), so none of them recomposes.
+ * One tab: a pill-shaped `Role.Tab` in [selectedColors] (pill, content) whose icon slides in when it is selected,
+ * and whose indicator grows along one axis from the tab's center on the motion scheme's fast spatial spring while it
+ * fades in on the default effects spring, as Material's navigation indicator does. The indicator's width and alpha are
+ * read in the draw phase and the icon's width in the layout phase ([revealHorizontally]), so none of them recomposes.
  */
 @Composable
 private fun NavigationTab(
     destination: TopLevelDestination,
     selected: Boolean,
     showLabel: Boolean,
+    selectedColors: Pair<Color, Color>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
-    val colorScheme = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     val label = stringResource(destination.label)
-    val indicatorColor = colorScheme.secondaryContainer
+    val (indicatorColor, selectedContent) = selectedColors
     val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
     val indicatorWidth = animateFloatAsState(if (selected) 1f else 0f, motionScheme.fastSpatialSpec())
     val contentColor by animateColorAsState(
-        targetValue = if (selected) colorScheme.onSecondaryContainer else LocalContentColor.current,
+        targetValue = if (selected) selectedContent else LocalContentColor.current,
         animationSpec = motionScheme.defaultEffectsSpec(),
     )
     // The tab takes touches over the pill's whole height (56 dp, `REQUIREMENTS.md` §6.3), its indicator and ripple

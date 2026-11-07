@@ -23,6 +23,9 @@
     <color name="splash_red_system">#FF1A1110</color>
     <color name="splash_red_system_amoled">#FF000000</color>
     <!-- The theme mode "System": dark here. -->
+    <color name="splash_coral_system">#FF1A1110</color>
+    <color name="splash_coral_system_amoled">#FF000000</color>
+    <!-- The theme mode "System": dark here. -->
     <color name="splash_pink_system">#FF191112</color>
     <color name="splash_pink_system_amoled">#FF000000</color>
     <!-- The theme mode "System": dark here. -->

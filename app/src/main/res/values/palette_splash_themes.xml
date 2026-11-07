@@ -85,6 +85,18 @@
     <style name="Theme.Pingogram.Starting.Dark.Red">
         <item name="windowSplashScreenBackground">@color/splash_red_dark</item>
     </style>
+    <style name="Theme.Pingogram.Starting.SystemCoral">
+        <item name="windowSplashScreenBackground">@color/splash_coral_system</item>
+    </style>
+    <style name="Theme.Pingogram.Starting.SystemCoralAmoled">
+        <item name="windowSplashScreenBackground">@color/splash_coral_system_amoled</item>
+    </style>
+    <style name="Theme.Pingogram.Starting.Light.Coral">
+        <item name="windowSplashScreenBackground">@color/splash_coral_light</item>
+    </style>
+    <style name="Theme.Pingogram.Starting.Dark.Coral">
+        <item name="windowSplashScreenBackground">@color/splash_coral_dark</item>
+    </style>
     <style name="Theme.Pingogram.Starting.SystemPink">
         <item name="windowSplashScreenBackground">@color/splash_pink_system</item>
     </style>

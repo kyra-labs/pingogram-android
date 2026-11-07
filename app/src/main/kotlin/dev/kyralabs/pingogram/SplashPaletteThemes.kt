@@ -78,6 +78,13 @@ private val PaletteSplashThemes: Map<ThemePalette, IntArray> =
                 R.style.Theme_Pingogram_Starting_Light_Red,
                 R.style.Theme_Pingogram_Starting_Dark_Red,
             ),
+        ThemePalette.Coral to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemCoral,
+                R.style.Theme_Pingogram_Starting_SystemCoralAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Coral,
+                R.style.Theme_Pingogram_Starting_Dark_Coral,
+            ),
         ThemePalette.Pink to
             intArrayOf(
                 R.style.Theme_Pingogram_Starting_SystemPink,

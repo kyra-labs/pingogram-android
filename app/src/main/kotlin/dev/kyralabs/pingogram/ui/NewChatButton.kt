@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
@@ -52,19 +53,22 @@ internal fun BarNewChatButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = CircleShape
+    // The experimental look's button (docs/DESIGN_SYSTEM.md §13): a 64 dp rounded square on `tertiaryContainer`.
+    val experimental = LocalExperimentalUi.current
+    val shape = if (experimental) MaterialTheme.shapes.largeIncreased else CircleShape
     val colors = MaterialTheme.colorScheme
+    val sizes = MaterialTheme.sizes
     NewChatButtonSlot(
         shown = shown,
         shape = shape,
-        modifier = modifier.size(MaterialTheme.sizes.floatingNavigationBar),
+        modifier = modifier.size(if (experimental) sizes.experimentalFab else sizes.floatingNavigationBar),
     ) { transform ->
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,
-            modifier = transform,
+            modifier = if (experimental) transform.size(sizes.experimentalFab) else transform,
             shape = shape,
-            containerColor = colors.primaryContainer,
-            contentColor = colors.onPrimaryContainer,
+            containerColor = if (experimental) colors.tertiaryContainer else colors.primaryContainer,
+            contentColor = if (experimental) colors.onTertiaryContainer else colors.onPrimaryContainer,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_edit),

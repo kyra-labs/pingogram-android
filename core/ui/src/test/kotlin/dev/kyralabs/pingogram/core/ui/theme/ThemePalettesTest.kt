@@ -130,6 +130,7 @@ class ThemePalettesTest {
                 ThemePalette.Yellow to Triple("#FFFFEB3B", "#FF685F12", "#FFD4C871"),
                 ThemePalette.Orange to Triple("#FFFF9800", "#FF855318", "#FFFDB975"),
                 ThemePalette.Red to Triple("#FFF44336", "#FF904A42", "#FFFFB4A9"),
+                ThemePalette.Coral to Triple("#FFFF8C7A", "#FF9E4134", "#FFFFB6AA"),
                 ThemePalette.Pink to Triple("#FFE91E63", "#FF8E4957", "#FFFFB2BE"),
                 ThemePalette.Purple to Triple("#FF9C27B0", "#FF7B4E7F", "#FFEBB5ED"),
                 ThemePalette.Indigo to Triple("#FF3F51B5", "#FF515B92", "#FFBAC3FF"),

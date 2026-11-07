@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.luminance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import kotlin.math.max
@@ -37,6 +38,15 @@ class ThemeContrastTest {
                 val ratio = contrastRatio(pair.first, pair.second)
                 assertTrue(ratio >= NON_TEXT, "$palette $look $name: $ratio")
             }
+        }
+    }
+
+    @Test
+    fun `text keeps 4,5 to 1 on every vivid avatar fill of the experimental look`() {
+        for (index in 0 until VividAvatarPalette.size) {
+            val colors = VividAvatarPalette[index]
+            val ratio = contrastRatio(colors.content, colors.container)
+            assertTrue(ratio >= TEXT, "vivid fill $index: $ratio")
         }
     }
 

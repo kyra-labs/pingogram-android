@@ -261,6 +261,7 @@ private fun ThemePalette.nameRes(): Int =
         ThemePalette.Yellow -> R.string.settings_color_theme_yellow
         ThemePalette.Orange -> R.string.settings_color_theme_orange
         ThemePalette.Red -> R.string.settings_color_theme_red
+        ThemePalette.Coral -> R.string.settings_color_theme_coral
         ThemePalette.Pink -> R.string.settings_color_theme_pink
         ThemePalette.Purple -> R.string.settings_color_theme_purple
         ThemePalette.Indigo -> R.string.settings_color_theme_indigo
