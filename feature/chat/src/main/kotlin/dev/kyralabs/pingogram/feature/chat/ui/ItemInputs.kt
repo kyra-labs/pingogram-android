@@ -38,6 +38,8 @@ internal data class ItemInputs(
     val timeFormatter: ChatTimeFormatter,
     /** The sender's role label in a group ([ChatPeople.roles]); null for anyone else. */
     val senderRole: UiText? = null,
+    /** The user's own usernames, lowercase and without `@`, which `@username` mentions of the user name. */
+    val myUsernames: Set<String> = emptySet(),
 )
 
 /** What kind of chat it is, as far as bubbles show: sender names and avatars in groups, no checks in channels. */
@@ -80,6 +82,12 @@ internal fun ItemSources.inputsOf(
         myUserId = myUserId,
         timeFormatter = timeFormatter,
         senderRole = people.roles[message.sender.id],
+        myUsernames =
+            myUserId
+                ?.let(users::get)
+                ?.usernames
+                .orEmpty()
+                .mapTo(HashSet()) { it.lowercase() },
     )
 }
 

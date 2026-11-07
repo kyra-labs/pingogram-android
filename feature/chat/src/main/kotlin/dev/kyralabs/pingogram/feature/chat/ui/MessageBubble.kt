@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.customEmoji
@@ -48,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.text.withMatches
+import dev.kyralabs.pingogram.core.ui.text.withMentionChips
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
@@ -566,7 +568,9 @@ internal fun BubbleHeader(
  * `MaterialTheme.chatStyle`) with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
  * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
- * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its custom emoji show
+ * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size; in the experimental
+ * look the user's mentions ([ChatItem.Bubble.myMentions]) are chips on `primary` in `onPrimary` and the emphasized
+ * weight. Its custom emoji show
  * their pictures over their fallback emoji ([customEmoji], from [LocalCustomEmoji]), drawn in the draw phase too, in
  * the text's color where they take it. Its layout is kept in [textLayout], for the bubble's layout to put the meta
  * after its last line.
@@ -585,13 +589,20 @@ private fun BubbleText(
         resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
     val match = bubble.searchMatch
     val matchContent = MaterialTheme.colorScheme.onTertiary
-    val text =
-        if (match ==
-            null
-        ) {
+    // The experimental look's chips on the user's mentions (docs/DESIGN_SYSTEM.md §13.6), over the cached text.
+    val mentions = bubble.myMentions.takeIf { LocalExperimentalUi.current && it.isNotEmpty() }
+    val mentionContent = MaterialTheme.colorScheme.onPrimary
+    val chipped =
+        if (mentions == null) {
             formatted
         } else {
-            remember(formatted, match, matchContent) { formatted.withMatches(match, matchContent) }
+            remember(formatted, mentions, mentionContent) { formatted.withMentionChips(mentions, mentionContent) }
+        }
+    val text =
+        if (match == null) {
+            chipped
+        } else {
+            remember(chipped, match, matchContent) { chipped.withMatches(match, matchContent) }
         }
     val customEmoji = LocalCustomEmoji.current?.takeIf { text.hasCustomEmoji() }
     val hasBlocks = text.hasTextBlocks()
@@ -615,6 +626,7 @@ private fun BubbleText(
                     shape = MaterialTheme.shapes.small,
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     matchColor = MaterialTheme.colorScheme.tertiary,
+                    mentionColor = MaterialTheme.colorScheme.primary,
                 )
             } else {
                 Modifier

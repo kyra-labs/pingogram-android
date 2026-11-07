@@ -328,6 +328,8 @@ sealed interface ChatItem {
      *   experimental look; null for anyone else.
      * @property mentionsMe the message mentions the user (TDLib's unread mention, or a mention by name), which the
      *   experimental look rings.
+     * @property myMentions where its text or caption mentions the user (by name or by one of their usernames), which
+     *   the experimental look draws as chips (§13.6); empty where it does not mention them.
      * @property isChannelPost a post of the channel the conversation is, which the experimental look puts on a warm
      *   container (§13.7).
      * @property views how many saw a channel post (td_api.tl `interactionInfo.view_count`), in the experimental look's
@@ -371,6 +373,7 @@ sealed interface ChatItem {
         val senderHue: Int = -1,
         val senderRole: UiText? = null,
         val mentionsMe: Boolean = false,
+        val myMentions: ImmutableList<IntRange> = persistentListOf(),
         val isChannelPost: Boolean = false,
         val views: Int = 0,
     ) : ChatItem {

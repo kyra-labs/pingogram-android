@@ -105,6 +105,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         senderHue = senderHue(showsSender),
         senderRole = senderRole.takeIf { showsSender },
         mentionsMe = mentionsMe(text),
+        myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
     )
