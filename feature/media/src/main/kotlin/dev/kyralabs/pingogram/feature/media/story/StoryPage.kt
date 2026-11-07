@@ -206,6 +206,23 @@ private fun StoryPageLayout(
     }
 }
 
+/** A photo story decoded at [widthPx] × [heightPx] over its blurred minithumbnail, which it covers once shown. */
+@Composable
+private fun StoryPhoto(
+    media: StoryMedia.Photo,
+    widthPx: Int,
+    heightPx: Int,
+    indicator: @Composable () -> Unit,
+) {
+    val alpha = rememberViewerImageAlpha(media.fileId)
+    BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize(), covered = remember(alpha) { coveredBy(alpha) })
+    if (media.isReady) {
+        ViewerImage(media.fileId, widthPx, heightPx, Modifier.fillMaxSize(), alpha = alpha)
+    } else {
+        indicator()
+    }
+}
+
 /**
  * What the story shows, filling the frame: a photo (decoded at the frame's size) or a video, each over its blurred
  * minithumbnail and with a [DelayedLoadingIndicator] until its file is on the device; for a video its thumbnail until
@@ -230,13 +247,7 @@ private fun StoryMediaContent(
             }
 
             is StoryMedia.Photo -> {
-                val alpha = rememberViewerImageAlpha(media.fileId)
-                BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize(), covered = remember(alpha) { coveredBy(alpha) })
-                if (media.isReady) {
-                    ViewerImage(media.fileId, widthPx, heightPx, Modifier.fillMaxSize(), alpha = alpha)
-                } else {
-                    indicator()
-                }
+                StoryPhoto(media, widthPx, heightPx, indicator)
             }
 
             is StoryMedia.Video -> {
