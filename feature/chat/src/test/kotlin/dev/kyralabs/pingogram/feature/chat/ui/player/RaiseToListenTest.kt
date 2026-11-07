@@ -1,12 +1,14 @@
 package dev.kyralabs.pingogram.feature.chat.ui.player
 
 import android.os.Looper
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -93,6 +95,42 @@ class RaiseToListenTest {
 
         assertTrue(events.isEmpty())
         assertFalse(route.atEarpiece)
+    }
+
+    @Test
+    fun `before its setting is read nothing listens, and turned off it never does`() {
+        val unread = MutableSharedFlow<RaiseToListenSettings>()
+        val slowSettings =
+            object : PlaybackSettingsRepository by settings {
+                override val raiseToListen = unread
+            }
+        val first = RaiseToListen(sensor, route, slowSettings, scope)
+
+        first.start()
+        assertFalse(sensor.listening)
+        unread.tryEmit(RaiseToListenSettings(enabled = false))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        // docs/audit/performance-review-2026-11.md, W5: the first voice message of a process listened at the ear.
+        assertFalse(sensor.listening)
+        first.release()
+    }
+
+    @Test
+    fun `the first voice message listens once its setting is read`() {
+        val unread = MutableSharedFlow<RaiseToListenSettings>(replay = 1)
+        val slowSettings =
+            object : PlaybackSettingsRepository by settings {
+                override val raiseToListen = unread
+            }
+        val first = RaiseToListen(sensor, route, slowSettings, scope)
+
+        first.start()
+        unread.tryEmit(RaiseToListenSettings())
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue(sensor.listening)
+        first.release()
     }
 
     @Test

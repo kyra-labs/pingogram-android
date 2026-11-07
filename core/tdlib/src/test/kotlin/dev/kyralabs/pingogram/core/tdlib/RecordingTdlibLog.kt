@@ -5,6 +5,9 @@ import java.util.Collections
 internal class RecordingTdlibLog : TdlibLog {
     val messages: MutableList<String> = Collections.synchronizedList(mutableListOf())
 
+    /** The warnings alone: what release builds log too. */
+    val warnings: MutableList<String> = Collections.synchronizedList(mutableListOf())
+
     // Evaluated like a debug build does, which also checks that no TdApi toString() (native) is called.
     override fun debug(message: () -> String) {
         messages += message()
@@ -15,5 +18,6 @@ internal class RecordingTdlibLog : TdlibLog {
         error: Throwable?,
     ) {
         messages += message
+        warnings += message
     }
 }
