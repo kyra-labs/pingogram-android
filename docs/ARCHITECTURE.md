@@ -195,6 +195,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the experimental look shows still comes through the view models, as data both looks could show: the conversation's
   `ChatHeader.members` (the people who wrote last among the loaded messages) and `onlineCount` (`Chat.onlineMemberCount`,
   `updateChatOnlineMemberCount`, kept by `TdlibChatRepository`), `ChatUiState.unreadMentionCount`, and
+  the experimental look's "Wave" on a join message (`ChatItem.Service.canWave`, `ChatEvent.Wave`, which
+  `ChatAttachments` sends as `AttachmentRepository.sendGreetingSticker`: `getGreetingStickers`, one at random, in reply),
   `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
   and a channel's mute toggle; the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
   `online`, from the list it already maps); and Settings home's values (`SettingsHomeViewModel`: the active sessions, the

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -242,5 +243,39 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
             runCurrent()
 
             assertEquals(listOf(7, 0, 0), (1L..3L).map { viewModel.bubble(it).headlineLength })
+        }
+
+    @Test
+    fun `someone else's joining can be waved at, which sends a greeting sticker in reply`() =
+        runViewModelTest {
+            users.setUsers(user(ADA), user(GRACE))
+
+            fun joined(
+                id: Long,
+                from: Long,
+                action: ServiceAction = ServiceAction.MemberJoined,
+            ) = groupMessage(id, from).copy(content = MessageContent.Service(action))
+            val viewModel =
+                showing(
+                    groupChat,
+                    history(
+                        joined(1, GRACE),
+                        joined(2, ChatFixtures.ME),
+                        joined(3, ADA, ServiceAction.MembersAdded(persistentListOf(GRACE))),
+                        joined(4, ADA, ServiceAction.MembersAdded(persistentListOf(ChatFixtures.ME))),
+                    ),
+                )
+            runCurrent()
+
+            val waves =
+                viewModel.items
+                    .filterIsInstance<ChatItem.Service>()
+                    .sortedBy { it.id }
+                    .map { it.canWave }
+            assertEquals(listOf(true, false, true, false), waves)
+
+            viewModel.onEvent(ChatEvent.Wave(1))
+            runCurrent()
+            assertEquals(listOf(1L), attachments.greeted)
         }
 }

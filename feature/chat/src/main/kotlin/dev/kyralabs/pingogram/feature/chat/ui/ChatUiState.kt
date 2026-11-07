@@ -405,6 +405,11 @@ sealed interface ChatItem {
          * tapping it opens the call, which asks before it joins.
          */
         val groupCallChatId: Long? = null,
+        /**
+         * Someone else joined the group or was added: the experimental look offers "Wave", a greeting sticker in reply
+         * (`docs/DESIGN_SYSTEM.md` §13.6).
+         */
+        val canWave: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = id
 

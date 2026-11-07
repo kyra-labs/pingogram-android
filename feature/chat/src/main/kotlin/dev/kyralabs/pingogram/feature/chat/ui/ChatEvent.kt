@@ -198,6 +198,14 @@ sealed interface ChatEvent {
         val sticker: Sticker,
     ) : ChatEvent
 
+    /**
+     * "Wave" on a member's join message in the experimental look (`docs/DESIGN_SYSTEM.md` §13.6): one of Telegram's
+     * greeting stickers goes out at once, replying to that message ([messageId]).
+     */
+    data class Wave(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */
     data class SendAnimation(
         val animation: Animation,
