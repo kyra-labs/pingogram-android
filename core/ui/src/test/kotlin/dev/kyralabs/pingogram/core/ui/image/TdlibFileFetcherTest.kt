@@ -100,7 +100,27 @@ class TdlibFileFetcherTest {
         }
 
     @Test
-    fun `fails when the download stops before completing`() =
+    fun `asks again once when someone else cancels the download before it completes`() =
+        runTest {
+            files.state.value = FileState.NotDownloaded(SIZE, canBeDownloaded = true)
+
+            val result = async { fetcher.fetch() }
+            runCurrent()
+            files.state.value = FileState.Downloading(downloadedSize = SIZE / 2, size = SIZE, isActive = true)
+            runCurrent()
+            // The media viewer closed and cancelled it, while this image still waits for the file.
+            files.state.value = FileState.Downloading(downloadedSize = SIZE / 2, size = SIZE, isActive = false)
+            runCurrent()
+
+            assertEquals(List(2) { FILE_ID to DownloadPriority.Visible }, files.downloads)
+            files.state.value = FileState.Downloading(downloadedSize = SIZE / 2, size = SIZE, isActive = true)
+            runCurrent()
+            files.state.value = FileState.Downloaded(PATH, SIZE)
+            assertEquals(PATH.toPath(), (result.await() as SourceFetchResult).source.file())
+        }
+
+    @Test
+    fun `fails when the download stops again after asking again`() =
         runTest {
             files.state.value = FileState.NotDownloaded(SIZE, canBeDownloaded = true)
 
@@ -109,8 +129,13 @@ class TdlibFileFetcherTest {
             files.state.value = FileState.Downloading(downloadedSize = 0, size = SIZE, isActive = true)
             runCurrent()
             files.state.value = FileState.NotDownloaded(SIZE, canBeDownloaded = true)
+            runCurrent()
+            files.state.value = FileState.Downloading(downloadedSize = 0, size = SIZE, isActive = true)
+            runCurrent()
+            files.state.value = FileState.NotDownloaded(SIZE, canBeDownloaded = true)
 
             assertInstanceOf(TdlibFileImageException::class.java, result.await().exceptionOrNull())
+            assertEquals(2, files.downloads.size)
         }
 
     @Test

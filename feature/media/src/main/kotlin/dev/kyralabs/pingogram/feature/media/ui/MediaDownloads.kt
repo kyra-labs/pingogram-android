@@ -16,7 +16,10 @@ import kotlinx.coroutines.launch
  *   page shows the next one at once; a neighbour that becomes the shown item moves up, and back down when it is a
  *   neighbour again;
  * - downloads it asked for of items more than [KEEP_DISTANCE] pages away are cancelled (what was downloaded stays,
- *   and the download continues from there), and so are the unfinished ones when the viewer closes ([cancelAll]);
+ *   and the download continues from there), and so are the unfinished ones when the viewer closes ([cancelAll]); but
+ *   never the file of an item that was shown: its bubble in the conversation may be waiting for the same file (a photo
+ *   whose bubble shows its largest size), and TDLib finishes it for the bubble
+ *   (`docs/audit/performance-review-2026-11.md`, M6);
  * - a file is asked for once per priority, once its state is known, and not at all once it is on the device;
  * - a video that streams as it plays ([focus]'s `streamed`) is left to its stream, which downloads from where it plays
  *   (`docs/adr/0028-streaming-media.md`): two downloads of one file would move each other's offset.
@@ -30,6 +33,9 @@ internal class MediaDownloads(
 ) {
     /** The files asked for, by id, at the priority they were last asked for at. */
     private val requested = mutableMapOf<Int, DownloadPriority>()
+
+    /** The files of the items shown so far: never cancelled, as their bubbles may wait for them. */
+    private val shown = mutableSetOf<Int>()
 
     /**
      * Downloads around the item at [currentIndex] of [fileIds] (each item's full file, in pager order), whose known
@@ -50,6 +56,7 @@ internal class MediaDownloads(
                 fileIds.getOrNull(currentIndex - 1)?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
                 fileIds.getOrNull(currentIndex + 1)?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
             }
+        fileIds.getOrNull(currentIndex)?.let(shown::add)
         for ((fileId, priority) in wanted) {
             if (fileId == streamed || requested[fileId] == priority || !states[fileId].needsDownload) continue
             requested[fileId] = priority
@@ -79,7 +86,7 @@ internal class MediaDownloads(
         scope: CoroutineScope,
     ) {
         requested.remove(fileId)
-        scope.launch { files.cancelDownload(fileId) }
+        if (fileId !in shown) scope.launch { files.cancelDownload(fileId) }
     }
 
     private companion object {

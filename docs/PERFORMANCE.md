@@ -430,6 +430,23 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `-Ppingogram.jfr` its printed times place the recording's samples, and the system property
   `pingogram.mediaTransitionRepeats` (set through a Gradle init script's `systemProperty` on the test task) repeats
   the opening for more of them.
+  - **Before and after the review's fixes, on the JVM** (2026-11-07, `MediaViewerTransitionTest`, six openings and
+    closings in one JVM, the mean of repeats 2–6 over two runs each, the shared build machine). Main thread CPU per
+    frame:
+
+    | Frame | M1 (#333) | M2 (#336) |
+    |---|---|---|
+    | Opening, frame 0 (the loading state, the view model) | 24.3 ms | 23.6 ms |
+    | Opening, frame 1 (the viewer's content) | 22.5 ms | 16.4 ms |
+    | Opening settled (the bottom bar since M2) | 4.5 ms | 13.4 ms |
+    | Closing, the frame the overlay leaves | 15.0 ms | 10.7 ms |
+    | Closing, the next frame (the entry destroyed since M2) | 4.9 ms | 8.9 ms |
+
+    M2 moves work out of the frames that start and end the transform into frames where nothing moves. M1 changed
+    drawing only (no blur layers, no placeholder under a loaded image, one fade, the bubble's side scaled), which
+    Robolectric does not do: the frames of the transform composed nothing before or after it. Neither shows ExoPlayer,
+    whose build (10–30 ms) and release left those frames with M2. The phone's numbers, from `media-viewer.ps1` and
+    `OpenMediaBenchmark` before M1 (`b4abfa18^`) and on `main`, go here once measured.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
