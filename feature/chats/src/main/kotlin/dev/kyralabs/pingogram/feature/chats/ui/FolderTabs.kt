@@ -316,7 +316,7 @@ private fun folderButtonColors(experimental: Boolean): ToggleButtonColors {
  */
 @Composable
 private fun chipShapes(): ToggleButtonShapes =
-    ToggleButtonDefaults.shapes(
+    ToggleButtonShapes(
         shape = MaterialTheme.shapes.small,
         pressedShape = MaterialTheme.shapes.extraSmall,
         checkedShape = CircleShape,
