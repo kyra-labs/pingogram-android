@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,10 +42,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -62,7 +66,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * out on the fast ones. The slide and the fade are read in the draw phase, so they never recompose or relayout.
  *
  * Hidden, it stays composed, but is neither placed (drawn, touched) nor in the semantics tree. Screens pushed above a
- * tab hide it, and composing it anew on the way back would add to the frame
+ * tab hide it, and composing it anew on the way back, its labels measured again ([labelsFit]), would add to the frame
  * that composes the tab's screen again, at the start of the back transition.
  *
  * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
@@ -123,13 +127,15 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  *
  * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
  * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
- * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens (owner decision 2026-11-06): the selected tab
- * shows its filled icon and label on a `secondaryContainer` pill, the others only their outlined icon, named for screen
- * readers by the label. With an [accountMenu], a long press on the Settings tab opens it ([AccountMenuAnchor]).
+ * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens (owner decision 2026-11-07): the selected tab
+ * shows its filled icon and label on a `secondaryContainer` pill, the others their label. Where the labels do not fit
+ * (narrow phones, large font scales: measured, never cut, [labelsFit]), the other tabs show their outlined icon
+ * instead, named for screen readers by the label. With an [accountMenu], a long press on the Settings tab opens it
+ * ([AccountMenuAnchor]).
  *
  * [newChat] (the Chats tab's "New chat", [BarNewChatButton]) sits `spacing.small` beside the pill, at its end. The pill
- * stays centred in the window, wherever the button is or is not, so switching tabs never moves it; only where the two
- * would not fit side by side does the pill move toward the start, by what is missing.
+ * stays centred in the window; only where it and the button's room would not fit side by side does it move toward the
+ * start, by what is missing, on every tab alike, so switching tabs never moves it.
  */
 @Composable
 internal fun PingogramNavigationBar(
@@ -141,20 +147,38 @@ internal fun PingogramNavigationBar(
 ) {
     val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
     val gap = MaterialTheme.spacing.small
-    Layout(
-        content = {
+    val buttonWidth = MaterialTheme.sizes.floatingNavigationBar
+    val buttonRoom = buttonWidth + gap
+    BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
+        // The New chat button's room is kept on every tab, so changing tabs never switches labels and icons.
+        val showLabels = labelsFit(maxWidth - buttonRoom)
+        PillAndButton(gap, buttonWidth) {
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
                 color = colors.toolbarContainerColor,
                 contentColor = colors.toolbarContentColor,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
-                NavigationTabs(selected, onSelect, accountMenu)
+                NavigationTabs(selected, onSelect, showLabels, accountMenu)
             }
             newChat?.invoke()
-        },
-        modifier = modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset),
-    ) { measurables, constraints ->
+        }
+    }
+}
+
+/**
+ * The pill, then the New chat button `gap` after it where there is one: the pill centred in the width, moving toward
+ * the start only by what the two would otherwise miss. The button's room ([buttonWidth]) counts on every tab, so the
+ * pill sits in the same place whether the button shows or not (owner decision to confirm, 2026-11-07: with the labels
+ * back, a 411 dp phone leaves the pill a little off centre on every tab rather than moving it on the Chats tab).
+ */
+@Composable
+private fun PillAndButton(
+    gap: Dp,
+    buttonWidth: Dp,
+    content: @Composable () -> Unit,
+) {
+    Layout(content = content) { measurables, constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val pill = measurables[0].measure(loose)
         val button = measurables.getOrNull(1)?.measure(loose)
@@ -162,7 +186,8 @@ internal fun PingogramNavigationBar(
         val width = constraints.maxWidth
         val height = maxOf(pill.height, button?.height ?: 0)
         val centred = (width - pill.width) / 2
-        val missing = if (button == null) 0 else centred + pill.width + gapPx + button.width - width
+        val room = maxOf(button?.width ?: 0, buttonWidth.roundToPx())
+        val missing = centred + pill.width + gapPx + room - width
         val pillX = (centred - missing.coerceAtLeast(0)).coerceAtLeast(0)
         layout(width, height) {
             pill.placeRelative(pillX, (height - pill.height) / 2)
@@ -176,6 +201,7 @@ internal fun PingogramNavigationBar(
 private fun NavigationTabs(
     selected: TopLevelDestination?,
     onSelect: (TopLevelDestination) -> Unit,
+    showLabels: Boolean,
     accountMenu: AccountMenuActions?,
 ) {
     Row(
@@ -195,7 +221,7 @@ private fun NavigationTabs(
                 NavigationTab(
                     destination = destination,
                     selected = isSelected,
-                    showLabel = isSelected,
+                    showLabel = showLabels || isSelected,
                     onClick = { onSelect(destination) },
                     modifier = Modifier.fillMaxHeight().then(trigger),
                 )
@@ -299,6 +325,37 @@ private fun Modifier.tabIndicator(
     }
 
 /**
+ * Whether every tab can show its label in [maxWidth], the bar's room beside the New chat button. Measured for the
+ * widest selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another
+ * tab never switches between labels and icons.
+ */
+@Composable
+private fun labelsFit(maxWidth: Dp): Boolean {
+    val textMeasurer = rememberTextMeasurer()
+    val typography = MaterialTheme.typography
+    val spacing = MaterialTheme.spacing
+    val density = LocalDensity.current
+    val labels = TopLevelDestination.entries.map { stringResource(it.label) }
+    return remember(textMeasurer, typography, spacing, density, labels, maxWidth) {
+        with(density) {
+            fun width(
+                label: String,
+                emphasized: Boolean,
+            ): Int {
+                val style = if (emphasized) typography.labelLargeEmphasized else typography.labelLarge
+                return textMeasurer.measure(label, style, maxLines = 1).size.width
+            }
+            val labelsWidth = labels.sumOf { width(it, emphasized = false) }.toDp()
+            val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
+            val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
+            val icon = ICON_SIZE + spacing.small
+            val toolbarPadding = spacing.small * 2
+            labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding <= maxWidth
+        }
+    }
+}
+
+/**
  * Shows this content at [fraction] of its width (0 hides it, values past 1 leave room after it), clipped, the fraction
  * read in the layout phase. Unlike `AnimatedVisibility`'s horizontal expand and shrink, whose intrinsic width stays
  * the content's full width, its intrinsic width is the width it takes: [HorizontalFloatingToolbar] sizes itself from
@@ -312,6 +369,9 @@ private fun Modifier.revealHorizontally(fraction: () -> Float): Modifier =
         val width = (placeable.width * fraction()).roundToInt().coerceAtLeast(0)
         layout(width, placeable.height) { placeable.placeRelative(0, 0) }
     }
+
+/** Material Symbols are 24 dp (`docs/DESIGN_SYSTEM.md` §8). */
+private val ICON_SIZE = 24.dp
 
 @PingogramPreviews
 @Composable

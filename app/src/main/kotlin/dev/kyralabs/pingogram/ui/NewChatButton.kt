@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
@@ -40,10 +41,10 @@ import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
- * `docs/DESIGN_SYSTEM.md` §6 "New chat", §6.1; owner decision 2026-11-06): a square [FloatingActionButton] as tall as
- * the pill (`sizes.floatingNavigationBar`), with the FAB's `large` corners and the filled edit symbol, in
- * `primaryContainer` / `onPrimaryContainer`, named "New chat" for screen readers. It shows while [shown] (on the Chats
- * tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
+ * `docs/DESIGN_SYSTEM.md` §6 "New chat", §6.1; owner decisions 2026-11-06 and 2026-11-07): a round
+ * [FloatingActionButton], a full circle as tall as the pill (`sizes.floatingNavigationBar`), with the filled edit
+ * symbol, in `primaryContainer` / `onPrimaryContainer`, named "New chat" for screen readers. It shows while [shown]
+ * (on the Chats tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
 internal fun BarNewChatButton(
@@ -51,7 +52,7 @@ internal fun BarNewChatButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = MaterialTheme.shapes.large
+    val shape = CircleShape
     val colors = MaterialTheme.colorScheme
     NewChatButtonSlot(
         shown = shown,
@@ -74,11 +75,11 @@ internal fun BarNewChatButton(
 }
 
 /**
- * The rail's primary action on the Chats tab: "New chat", in search's old place (owner decision 2026-11-06). The
- * collapsed rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6), both in the
- * FAB's `large` corners and `primaryContainer`. The rail's header places it at its start edge, so it brings its own
- * start padding, as in Material's rail samples. It grows into New chat and back ([NewChatButtonSlot]), and is away
- * while not [shown].
+ * The rail's primary action on the Chats tab: "New chat", in search's old place (owner decisions 2026-11-06 and
+ * 2026-11-07). The collapsed rail shows a round FAB, the expanded one an extended FAB with its label in a full pill
+ * (`docs/DESIGN_SYSTEM.md` §6), both in `primaryContainer`. The rail's header places it at its start edge, so it
+ * brings its own start padding, as in Material's rail samples. It grows into New chat and back ([NewChatButtonSlot]),
+ * and is away while not [shown].
  */
 @Composable
 internal fun RailNewChatButton(
@@ -89,7 +90,7 @@ internal fun RailNewChatButton(
     val expanded = navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded
     val icon = painterResource(UiR.drawable.ic_edit)
     val label = stringResource(ChatsR.string.new_chat)
-    val shape = MaterialTheme.shapes.large
+    val shape = CircleShape
     NewChatButtonSlot(
         shown = shown,
         shape = shape,
