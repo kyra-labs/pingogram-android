@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
@@ -328,6 +329,19 @@ class AppearanceViewModelTest {
 
             assertFalse(chatListSettings.settings.value.showChatTypeIcons)
             assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
+        }
+
+    @Test
+    fun `folder tabs show names at first, and picking icons saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(FolderTabStyle.Text, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
+
+            send(viewModel, AppearanceEvent.SetFolderTabStyle(FolderTabStyle.Icon))
+
+            assertEquals(FolderTabStyle.Icon, chatListSettings.settings.value.folderTabStyle)
+            assertEquals(FolderTabStyle.Icon, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
         }
 
     @Test

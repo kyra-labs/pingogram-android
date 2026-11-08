@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import org.junit.Assume.assumeTrue
@@ -73,6 +74,18 @@ class ChatListScreenScreenshotTest(
     fun withoutChatTypeIcons() {
         assumeTrue(stateName == "content")
         capture(ScreenshotVariant.Light, "withoutChatTypeIcons", ChatSwipes(chatTypeIcons = false))
+    }
+
+    @Test
+    fun folderTabsWithIcons() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "folderTabsWithIcons", ChatSwipes(folderTabStyle = FolderTabStyle.IconAndText))
+    }
+
+    @Test
+    fun folderTabsIconsOnly() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */

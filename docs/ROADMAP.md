@@ -155,7 +155,7 @@ What is left, item by item and with owners, is in `docs/audit/v1-readiness.md`.
 The owner's decision of 2026-11-08: these items from the Settings pages' redesign boards (`docs/DESIGN_SYSTEM.md`
 §13.10, "Not yet") come in the version after 2.0.0, each once the owner has decided how it should work.
 
-- [ ] Folder tabs' style: text, icon and text, or icon only (Appearance → Chat list)
+- [x] Folder tabs' style: text, icon and text, or icon only (Appearance → Chat list)
 - [ ] Sticker search in Settings → Stickers and emoji
 - [ ] "Suggest stickers by emoji" and "Loop animated stickers" switches
 - [ ] "Start a call" in Recent calls (`feature:calls`)

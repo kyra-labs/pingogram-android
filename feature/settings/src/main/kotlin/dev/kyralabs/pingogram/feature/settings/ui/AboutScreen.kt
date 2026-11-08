@@ -147,7 +147,7 @@ internal fun AboutScreen(
                 SettingsRow(
                     title = stringResource(R.string.settings_about_licenses),
                     shapes = shapes,
-                    icon = R.drawable.ic_library_books,
+                    icon = UiR.drawable.ic_library_books,
                     supportingContent = { Text(stringResource(R.string.settings_about_licenses_summary)) },
                     onClick = onOpenLicenses,
                     opensPage = true,

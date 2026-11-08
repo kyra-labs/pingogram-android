@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
+  folder keeps its name, and unread counts stay on the icons).
+
 ## [2.0.0] - 2026-11-08
 
 Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts and Settings, now the only look.

@@ -695,7 +695,13 @@ private fun folderTabs(
     val tabs: MutableList<FolderTab> =
         folders.mapIndexedTo(mutableListOf()) { index, folder ->
             val count = unread[index + 1]
-            FolderTab.Folder(folder.id, folder.title.text, count.unreadUnmutedCount, count.unreadCount > 0)
+            FolderTab.Folder(
+                folder.id,
+                folder.title.text,
+                count.unreadUnmutedCount,
+                count.unreadCount > 0,
+                folder.iconName,
+            )
         }
     val main = unread[0]
     tabs.add(mainPosition.coerceIn(0, folders.size), FolderTab.AllChats(main.unreadUnmutedCount, main.unreadCount > 0))

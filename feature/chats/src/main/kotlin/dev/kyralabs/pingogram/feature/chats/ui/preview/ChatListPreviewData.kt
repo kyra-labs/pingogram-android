@@ -175,9 +175,9 @@ internal object ChatListPreviewData {
     val folders =
         persistentListOf(
             FolderTab.AllChats(unreadCount = 4),
-            FolderTab.Folder(id = 1, title = "Work", unreadCount = 2),
-            FolderTab.Folder(id = 2, title = "Family", unreadCount = 0),
-            FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1),
+            FolderTab.Folder(id = 1, title = "Work", unreadCount = 2, iconName = "Work"),
+            FolderTab.Folder(id = 2, title = "Family", unreadCount = 0, iconName = "Favorite"),
+            FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1, iconName = "Channels"),
         )
 
     /** The main list: Saved Messages and Ada pinned, as one group under "Pinned", then the other chats. */
