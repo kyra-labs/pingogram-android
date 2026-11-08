@@ -139,6 +139,16 @@ data class Document(
     override fun toString() = "Document(mimeType=$mimeType, file=$file, …)"
 }
 
+/**
+ * Whether this file is a picture sent as a file (a photo sent without compression, a screenshot as a file) that the
+ * app shows itself: an image Android decodes, with a thumbnail, which gives its shape. Others open in another app.
+ */
+val Document.isViewableImage: Boolean
+    get() = mimeType.lowercase() in VIEWABLE_IMAGE_TYPES && thumbnail?.let { it.width > 0 && it.height > 0 } == true
+
+/** The image types every Android version Pingogram runs on decodes (HEIF only from Android 9: it opens elsewhere). */
+private val VIEWABLE_IMAGE_TYPES = setOf("image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/bmp")
+
 /** A point on Earth, in degrees. `toString()` leaves it out. */
 data class Location(
     val latitude: Double,

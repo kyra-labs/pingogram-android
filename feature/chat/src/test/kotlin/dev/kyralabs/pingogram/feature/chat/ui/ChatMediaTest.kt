@@ -133,6 +133,19 @@ class ChatMediaTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `a downloaded picture sent as a file opens in the media viewer`() =
+        runTest {
+            val picture = ContentPreviewData.imageDocument
+            files.setFile(picture.document.file.id, FileState.Downloaded(path = "/files/documents/IMG.jpg", size = 4))
+            val viewModel = showing(chat(), history(message(1, content = picture)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenFile(messageId = 1, fileId = picture.document.file.id))
+                assertEquals(ChatEffect.OpenMedia(1), awaitItem())
+            }
+        }
+
+    @Test
     fun `a document without a type opens without one`() =
         runTest {
             val untyped = ContentPreviewData.document("notes", "")

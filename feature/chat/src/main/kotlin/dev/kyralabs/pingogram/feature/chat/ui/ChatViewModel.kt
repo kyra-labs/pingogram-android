@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
@@ -1643,11 +1644,18 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
  * app; null for other messages and for files not on the device. Documents of chats that protect their content open
  * too: Telegram lets them be viewed, only not saved (`has_protected_content`), and Pingogram offers no saving here.
  */
-private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect.OpenFile? {
+private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect? {
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == event.messageId } as? ChatItem.Bubble
     val document = (bubble?.content as? MessageContent.Document)?.document?.takeIf { it.file.id == event.fileId }
     val path = (fileStates[event.fileId] as? FileState.Downloaded)?.path ?: return null
-    return document?.let { ChatEffect.OpenFile(path, it.mimeType.ifBlank { null }) }
+    return when {
+        document == null -> null
+
+        // A picture sent as a file opens in the app's own viewer rather than asking for another app.
+        document.isViewableImage -> ChatEffect.OpenMedia(event.messageId)
+
+        else -> ChatEffect.OpenFile(path, document.mimeType.ifBlank { null })
+    }
 }
 
 /**
