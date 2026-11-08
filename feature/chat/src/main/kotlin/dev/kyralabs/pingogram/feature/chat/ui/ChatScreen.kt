@@ -335,7 +335,6 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 Box(Modifier.weight(1f)) {
-                    // The experimental look's typing bubble, with room below the newest message while it shows.
                     ChatBody(
                         state,
                         onEvent,
@@ -344,7 +343,7 @@ private fun ChatScaffold(
                         contentPadding.withTypingRoom(state.typing),
                         nextChannel,
                     )
-                    TypingRowSlot(state.typing, contentPadding, Modifier.align(Alignment.BottomStart))
+                    MessagesBottom(state.typing, listState, contentPadding)
                     overlay()
                 }
             }
