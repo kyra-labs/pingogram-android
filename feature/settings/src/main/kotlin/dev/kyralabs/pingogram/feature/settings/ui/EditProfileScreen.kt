@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
@@ -30,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -196,6 +198,14 @@ private fun SaveAction(
     if (isSaving) {
         val saving = stringResource(R.string.settings_edit_profile_saving)
         LoadingIndicator(endPadding.semantics { contentDescription = saving })
+    } else if (LocalExperimentalUi.current) {
+        // A filled button in the experimental look (docs/DESIGN_SYSTEM.md §13.10).
+        Button(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
+            Text(
+                text = stringResource(R.string.settings_edit_profile_save),
+                style = MaterialTheme.typography.labelLargeEmphasized,
+            )
+        }
     } else {
         TextButton(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
             Text(

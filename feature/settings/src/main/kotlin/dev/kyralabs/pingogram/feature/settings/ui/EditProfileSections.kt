@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.domain.model.characterCount
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -176,6 +177,8 @@ private fun ProfileTextField(
     announcesMessage: Boolean = false,
 ) {
     val isError = message?.isError == true
+    // The experimental look's filled fields on the rows' color, underlined (docs/DESIGN_SYSTEM.md §13.10).
+    val experimental = LocalExperimentalUi.current
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -200,8 +203,8 @@ private fun ProfileTextField(
         singleLine = singleLine,
         minLines = if (singleLine) 1 else BIO_MIN_LINES,
         textStyle = LocalTextStyle.current.userContent,
-        shape = TextFieldDefaults.roundedShape,
-        colors = TextFieldDefaults.tonalColors(),
+        shape = if (experimental) TextFieldDefaults.shape else TextFieldDefaults.roundedShape,
+        colors = if (experimental) experimentalFieldColors() else TextFieldDefaults.tonalColors(),
     )
 }
 

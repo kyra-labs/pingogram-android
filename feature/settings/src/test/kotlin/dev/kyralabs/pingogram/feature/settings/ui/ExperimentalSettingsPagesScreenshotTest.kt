@@ -135,6 +135,31 @@ class ExperimentalSettingsPagesScreenshotTest {
     fun dataRtl() = composeRule.captureScreen(javaClass, "dataRtl", ScreenshotVariant.Rtl) { Experimental { Data() } }
 
     @Test
+    @Config(qualifiers = WHOLE_PAGE)
+    fun sessionsLight() =
+        composeRule.captureScreen(javaClass, "sessionsLight", ThemeMode.Light) {
+            Experimental { ActiveSessionsScreen(state = SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
+        }
+
+    @Test
+    fun sessionsDark() =
+        composeRule.captureScreen(javaClass, "sessionsDark", ThemeMode.Dark) {
+            Experimental { ActiveSessionsScreen(state = SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
+        }
+
+    @Test
+    fun editProfileLight() =
+        composeRule.captureScreen(javaClass, "editProfileLight", ThemeMode.Light) {
+            Experimental { EditProfileScreen(state = SettingsPreviewData.editProfile, onEvent = {}, onPickPhoto = {}) }
+        }
+
+    @Test
+    fun editProfileDark() =
+        composeRule.captureScreen(javaClass, "editProfileDark", ThemeMode.Dark) {
+            Experimental { EditProfileScreen(state = SettingsPreviewData.editProfile, onEvent = {}, onPickPhoto = {}) }
+        }
+
+    @Test
     fun aboutLight() =
         composeRule.captureScreen(javaClass, "aboutLight", ThemeMode.Light) {
             Experimental {

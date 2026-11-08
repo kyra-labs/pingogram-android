@@ -4,6 +4,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -92,3 +94,15 @@ internal fun settingsBadgeShape(index: Int): Shape =
     }
 
 private const val SETTINGS_BADGE_SHAPES = 4
+
+/** The experimental look's filled text fields: their container a settings row's, in every state. */
+@Composable
+internal fun experimentalFieldColors(): TextFieldColors =
+    settingsRowContainerColor().let { container ->
+        TextFieldDefaults.colors(
+            focusedContainerColor = container,
+            unfocusedContainerColor = container,
+            disabledContainerColor = container,
+            errorContainerColor = container,
+        )
+    }
