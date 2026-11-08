@@ -96,7 +96,7 @@ internal fun MessageDocument(
                 text =
                     if (state is FileState.Downloading) {
                         stringResource(
-                            R.string.content_progress_of,
+                            if (state.isActive) R.string.content_progress_of else R.string.content_progress_paused,
                             fileSizeText(state.downloadedSize),
                             fileSizeText(size),
                         )
@@ -108,12 +108,31 @@ internal fun MessageDocument(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        when {
-            upload != null -> UploadRing(upload, colors.accent, colors.track, onCancelUpload)
-            state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
-            state is FileState.Downloading -> CancelDownloadButton(state.progress, colors, onCancel)
-            else -> Unit
+        if (upload != null) {
+            UploadRing(upload, colors.accent, colors.track, onCancelUpload)
+        } else {
+            DownloadAction(state, colors, onDownload, onCancel)
         }
+    }
+}
+
+/** The file row's end while nothing uploads: a download, a pause or a resume, or nothing once downloaded. */
+@Composable
+private fun DownloadAction(
+    state: FileState,
+    colors: BubbleColors,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    when {
+        state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
+
+        state is FileState.Downloading && state.isActive -> PauseDownloadButton(state.progress, colors, onCancel)
+
+        // Stopped part of the way: TDLib keeps what came, and downloading again goes on from there.
+        state is FileState.Downloading -> ResumeDownloadButton(state.progress, colors, onDownload)
+
+        else -> Unit
     }
 }
 
@@ -152,7 +171,7 @@ private fun DownloadButton(
 }
 
 @Composable
-private fun CancelDownloadButton(
+private fun PauseDownloadButton(
     progress: Float,
     colors: BubbleColors,
     onClick: () -> Unit,
@@ -164,8 +183,29 @@ private fun CancelDownloadButton(
             colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
         ) {
             Icon(
-                painter = painterResource(UiR.drawable.ic_close),
-                contentDescription = stringResource(R.string.content_cancel_download),
+                painter = painterResource(UiR.drawable.ic_pause_filled),
+                contentDescription = stringResource(R.string.content_pause_download),
+            )
+        }
+    }
+}
+
+/** A paused download: the download symbol in a still ring that shows how much came, which goes on from there. */
+@Composable
+private fun ResumeDownloadButton(
+    progress: Float,
+    colors: BubbleColors,
+    onClick: () -> Unit,
+) {
+    DownloadRing(progress = progress, colors = colors, moving = false) {
+        IconButton(
+            onClick = onClick,
+            shapes = IconButtonDefaults.shapes(),
+            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+        ) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_download),
+                contentDescription = stringResource(R.string.content_resume_download),
             )
         }
     }

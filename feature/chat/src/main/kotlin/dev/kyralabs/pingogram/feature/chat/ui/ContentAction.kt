@@ -105,17 +105,32 @@ internal fun profileAction(bubble: ChatItem.Bubble): ContentAction? =
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }
 
-/** Open once downloaded, cancel while downloading, else download if TDLib can. */
+/** Open once downloaded, pause while downloading, resume once paused, else download if TDLib can. */
 private fun documentAction(
     messageId: Long,
     fileId: Int,
     fileState: FileState?,
 ): ContentAction? =
     when (fileState) {
-        is FileState.Downloaded -> ContentAction(OPEN, ChatEvent.OpenFile(messageId, fileId))
-        is FileState.Downloading -> ContentAction(R.string.content_cancel_download, ChatEvent.CancelDownload(fileId))
-        is FileState.NotDownloaded -> fileState.downloadAction(fileId)
-        null -> ContentAction(R.string.content_download, ChatEvent.DownloadFile(fileId))
+        is FileState.Downloaded -> {
+            ContentAction(OPEN, ChatEvent.OpenFile(messageId, fileId))
+        }
+
+        is FileState.Downloading -> {
+            if (fileState.isActive) {
+                ContentAction(R.string.content_pause_download, ChatEvent.CancelDownload(fileId))
+            } else {
+                ContentAction(R.string.content_resume_download, ChatEvent.DownloadFile(fileId))
+            }
+        }
+
+        is FileState.NotDownloaded -> {
+            fileState.downloadAction(fileId)
+        }
+
+        null -> {
+            ContentAction(R.string.content_download, ChatEvent.DownloadFile(fileId))
+        }
     }
 
 private fun FileState.NotDownloaded.downloadAction(fileId: Int): ContentAction? =

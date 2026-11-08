@@ -86,7 +86,7 @@ class ContentActionsTest {
     }
 
     @Test
-    fun `a document downloads, cancels or opens as far as it is downloaded`() {
+    fun `a document downloads, pauses, resumes or opens as far as it is downloaded`() {
         val download = ContentAction(R.string.content_download, ChatEvent.DownloadFile(documentFile))
 
         assertEquals(listOf(download), contentActions(bubble(document), null))
@@ -95,8 +95,12 @@ class ContentActionsTest {
             contentActions(bubble(document), FileState.NotDownloaded(size = 1, canBeDownloaded = true)),
         )
         assertEquals(
-            listOf(ContentAction(R.string.content_cancel_download, ChatEvent.CancelDownload(documentFile))),
+            listOf(ContentAction(R.string.content_pause_download, ChatEvent.CancelDownload(documentFile))),
             contentActions(bubble(document), FileState.Downloading(downloadedSize = 1, size = 2, isActive = true)),
+        )
+        assertEquals(
+            listOf(ContentAction(R.string.content_resume_download, ChatEvent.DownloadFile(documentFile))),
+            contentActions(bubble(document), FileState.Downloading(downloadedSize = 1, size = 2, isActive = false)),
         )
         assertEquals(
             listOf(ContentAction(R.string.content_open, ChatEvent.OpenFile(MESSAGE, documentFile))),
