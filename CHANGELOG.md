@@ -76,6 +76,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
 
 ### Fixed
+- In a chat, the jump-to-newest button's unread count no longer runs past the screen's edge when it has three digits
+  or more.
 - With Experimental UI on, scrolling a group whose colored messages show their sender's name above them no longer
   crashes on a message with code in it.
 - Swiping to another chat folder no longer stutters as the swipe lands, nor more with each swipe after it: the two

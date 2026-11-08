@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Text
@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -32,8 +33,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -43,8 +46,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The jump to the newest message (`docs/DESIGN_SYSTEM.md` §6): a `FloatingActionButton` (56 dp; Material 3 Expressive
  * no longer recommends the small FAB) in `secondaryContainer` / `onSecondaryContainer`, Material's secondary FAB style,
- * as it is not the screen's primary action. The unread count shows in a [Badge] on its corner, and screen readers hear
- * it with the label. It grows in and out on the motion scheme's fast spatial spring.
+ * as it is not the screen's primary action. The unread count shows in a [Badge] on its corner ([WithCornerBadge], which
+ * keeps it on screen at any length), and screen readers hear it with the label. It grows in and out on the motion
+ * scheme's fast spatial spring.
  */
 @Composable
 internal fun JumpToBottomButton(
@@ -62,10 +66,10 @@ internal fun JumpToBottomButton(
             if (unreadCount > 0) pluralStringResource(R.plurals.chat_unread_count, unreadCount, unreadCount) else null
         val label = stringResource(R.string.chat_jump_to_bottom)
         val resources = LocalResources.current
-        BadgedBox(
+        WithCornerBadge(
             badge = {
                 if (unreadCount > 0) {
-                    Badge { Text(unreadCountText(unreadCount)) }
+                    Badge { Text(unreadCountText(unreadCount), style = LocalTextStyle.current.numericContent) }
                 }
             },
         ) {
@@ -119,6 +123,32 @@ internal suspend fun LazyListState.scrollToNewest(spec: AnimationSpec<Float>) {
     // Backwards: towards the start of the reverse layout, the newest message.
     animateScrollBy(-(firstVisibleItemIndex * averageSize + firstVisibleItemScrollOffset).toFloat(), spec)
     scrollToItem(0)
+}
+
+/**
+ * [anchor] with [badge] on its top end corner, reaching at most `spacing.extraSmall` past the anchor's end whatever its
+ * width, its middle that far below the anchor's top, so a long count ("999+") grows toward the start rather than past
+ * the screen's edge, where Material's `BadgedBox` would put it beside a button at the window's margin. Takes the
+ * anchor's size; the badge draws outside it.
+ */
+@Composable
+internal fun WithCornerBadge(
+    badge: @Composable () -> Unit,
+    anchor: @Composable () -> Unit,
+) {
+    val overhang = MaterialTheme.spacing.extraSmall
+    Layout(contents = listOf(anchor, badge)) { (anchorMeasurables, badgeMeasurables), constraints ->
+        val anchorPlaceable = anchorMeasurables.first().measure(constraints)
+        val badgePlaceable = badgeMeasurables.firstOrNull()?.measure(Constraints())
+        layout(anchorPlaceable.width, anchorPlaceable.height) {
+            anchorPlaceable.placeRelative(0, 0)
+            badgePlaceable?.placeRelative(
+                x = anchorPlaceable.width + overhang.roundToPx() - badgePlaceable.width,
+                // Centred on a line just below the anchor's top, so a taller badge (a large font) covers no more of it.
+                y = overhang.roundToPx() - badgePlaceable.height / 2,
+            )
+        }
+    }
 }
 
 /** The count in the jump button's badge, capped at "999+" so the badge stays small. */
