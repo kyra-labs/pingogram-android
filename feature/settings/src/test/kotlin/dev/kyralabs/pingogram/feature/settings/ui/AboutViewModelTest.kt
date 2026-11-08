@@ -33,4 +33,22 @@ class AboutViewModelTest {
                 assertEquals(AboutEffect.OpenUrl("https://pingogram.kyralabs.dev/privacy/"), awaitItem())
             }
         }
+
+    @Test
+    fun `what's new opens this version's release and check for updates the latest one, in the browser`() =
+        runTest {
+            viewModel.effects.test {
+                viewModel.onEvent(AboutEvent.OpenReleaseNotes)
+                viewModel.onEvent(AboutEvent.OpenLatestRelease)
+
+                assertEquals(
+                    AboutEffect.OpenUrl("https://github.com/kyra-labs/pingogram-android/releases/tag/v1.2.3"),
+                    awaitItem(),
+                )
+                assertEquals(
+                    AboutEffect.OpenUrl("https://github.com/kyra-labs/pingogram-android/releases/latest"),
+                    awaitItem(),
+                )
+            }
+        }
 }

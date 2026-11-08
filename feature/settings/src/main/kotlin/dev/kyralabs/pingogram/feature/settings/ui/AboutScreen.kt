@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -111,7 +112,7 @@ internal fun AboutScreen(
     onSendFeedback: (() -> Unit)? = null,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
-        AboutLogo()
+        if (LocalExperimentalUi.current) AboutHero(state.versionName, onEvent) else AboutLogo()
         SettingsGroup(title = stringResource(R.string.settings_section_app)) {
             item { shapes ->
                 SettingsRow(
@@ -150,6 +151,7 @@ internal fun AboutScreen(
                     icon = R.drawable.ic_library_books,
                     supportingContent = { Text(stringResource(R.string.settings_about_licenses_summary)) },
                     onClick = onOpenLicenses,
+                    opensPage = true,
                 )
             }
             if (onOpenLinkSettings != null) openTelegramLinksItem(onOpenLinkSettings)
@@ -221,6 +223,7 @@ private fun SettingsGroupScope.sendFeedbackItem(onClick: () -> Unit) =
             icon = UiR.drawable.ic_bug_report,
             supportingContent = { Text(stringResource(R.string.settings_about_feedback_summary)) },
             onClick = onClick,
+            opensPage = true,
         )
     }
 

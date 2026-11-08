@@ -160,6 +160,20 @@ class ExperimentalSettingsPagesScreenshotTest {
         }
 
     @Test
+    fun aboutDark() =
+        composeRule.captureScreen(javaClass, "aboutDark", ThemeMode.Dark) {
+            Experimental {
+                AboutScreen(
+                    state = AboutUiState(versionName = "0.3.0"),
+                    onEvent = {},
+                    onOpenLicenses = {},
+                    onBack = {},
+                    onOpenLinkSettings = {},
+                )
+            }
+        }
+
+    @Test
     fun aboutLight() =
         composeRule.captureScreen(javaClass, "aboutLight", ThemeMode.Light) {
             Experimental {

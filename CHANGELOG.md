@@ -21,6 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   storage with the storage Pingogram uses and "Clear cache".
 - With Experimental UI on, Active sessions shows this device as a card, and Edit profile has filled fields and a
   filled Save button.
+- With Experimental UI on, About opens with Pingogram's name and version, "What's new" and "Check for updates", which
+  open the release pages on GitHub in your browser.
 - Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
   experimental look.
 - Photos sent as files show a thumbnail in the chat and, once downloaded, open in Pingogram's own viewer instead of
