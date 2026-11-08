@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -81,28 +80,26 @@ internal fun FastScrollIndex(
     }
     val description = stringResource(R.string.contacts_index)
     val colors = MaterialTheme.colorScheme
-    // The experimental look (docs/DESIGN_SYSTEM.md §13.8): the letters in a pill, the current one on a `primary` dot.
-    val experimental = LocalExperimentalUi.current
-    val pill = if (experimental) remember { PillBounds() } else null
+    // The letters in a pill, the current one on a `primary` dot (docs/DESIGN_SYSTEM.md §13.8).
+    val pill = remember { PillBounds() }
     val current by remember(listState) {
         derivedStateOf { currentSection(listState.firstVisibleItemIndex, currentHeaders) }
     }
-    // Read by the letters in the draw phase: touching or scrolling redraws them and recomposes nothing. Only the
-    // experimental look follows the section at the top.
-    val highlighted = { if (touched != NONE || !experimental) touched else current }
+    // Read by the letters in the draw phase: touching or scrolling redraws them and recomposes nothing.
+    val highlighted = { if (touched != NONE) touched else current }
     val pillColor = colors.surfaceContainer
     val pillPadding = with(LocalDensity.current) { MaterialTheme.spacing.small.toPx() }
     Layout(
         content = {
             letters.forEachIndexed { index, letter ->
-                IndexLetter(letter, index, highlighted, experimental)
+                IndexLetter(letter, index, highlighted)
             }
         },
         modifier =
             modifier
                 .fillMaxHeight()
                 .minimumInteractiveComponentSize()
-                .then(if (pill != null) Modifier.pill(pill, pillColor, pillPadding) else Modifier)
+                .pill(pill, pillColor, pillPadding)
                 .indexTouch(count = letters.size, onSection = jumpTo, onRelease = { touched = NONE })
                 .clearAndSetSemantics {
                     contentDescription = description
@@ -120,42 +117,31 @@ internal fun FastScrollIndex(
                         true
                     }
                 },
-        measurePolicy = if (pill != null) remember(pill) { indexMeasurePolicy(pill) } else IndexMeasurePolicy,
+        measurePolicy = remember(pill) { indexMeasurePolicy(pill) },
     )
 }
 
 /**
- * A letter of the index in `labelSmall`: `onSurfaceVariant`, or while [highlighted] names its [index] `primary`, in the
- * experimental look `onPrimary` on a `primary` dot. Both read [highlighted] in the draw phase.
+ * A letter of the index in `labelSmall`: `onSurfaceVariant`, or while [highlighted] names its [index] `onPrimary` on a
+ * `primary` dot. Both read [highlighted] in the draw phase.
  */
 @Composable
 private fun IndexLetter(
     letter: String,
     index: Int,
     highlighted: () -> Int,
-    experimental: Boolean,
 ) {
     val colors = MaterialTheme.colorScheme
     val dotColor = colors.primary
     BasicText(
         text = letter,
         modifier =
-            if (experimental) {
-                Modifier.drawBehind {
-                    if (highlighted() == index) drawCircle(dotColor, radius = maxOf(size.width, size.height) / 2)
-                }
-            } else {
-                Modifier
+            Modifier.drawBehind {
+                if (highlighted() == index) drawCircle(dotColor, radius = maxOf(size.width, size.height) / 2)
             },
         style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center),
         maxLines = 1,
-        color = {
-            when {
-                highlighted() != index -> colors.onSurfaceVariant
-                experimental -> colors.onPrimary
-                else -> colors.primary
-            }
-        },
+        color = { if (highlighted() == index) colors.onPrimary else colors.onSurfaceVariant },
     )
 }
 
@@ -213,16 +199,14 @@ private fun indexMeasurePolicy(pill: PillBounds? = null) =
         }
     }
 
-private val IndexMeasurePolicy = indexMeasurePolicy()
-
-/** Where the letters of the experimental index lie: written while measuring, read while drawing. */
+/** Where the letters of the index lie: written while measuring, read while drawing. */
 private class PillBounds {
     var top = 0f
     var bottom = 0f
     var width = 0
 }
 
-/** The experimental index's pill in [color] around the letters ([bounds]), [padding] beyond them, read in draw. */
+/** The index's pill in [color] around the letters ([bounds]), [padding] beyond them, read in draw. */
 private fun Modifier.pill(
     bounds: PillBounds,
     color: Color,

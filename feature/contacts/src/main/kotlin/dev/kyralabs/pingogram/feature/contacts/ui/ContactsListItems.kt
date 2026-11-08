@@ -94,44 +94,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The entries of the Contacts tab's list (ContactsList): its action rows, the contacts, the phone's contacts to invite.
-
-/** "Add contact", "Invite friends" and, unless [sync] is hidden, contacts sync's card or status row. */
-internal fun LazyListScope.actionItems(
-    sync: ContactSyncUi,
-    syncControls: ContactSyncControls,
-    callbacks: ContactsCallbacks,
-    maxWidth: Dp,
-    motionScheme: MotionScheme,
-) {
-    item(key = ADD_ROW, contentType = ACTION_ROW) {
-        ContactsActionRow(
-            icon = UiR.drawable.ic_add,
-            label = stringResource(R.string.contacts_add),
-            onClick = callbacks.onAddContact,
-            modifier = Modifier.row(this, maxWidth, motionScheme),
-        )
-    }
-    item(key = INVITE_ROW, contentType = ACTION_ROW) {
-        ContactsActionRow(
-            icon = UiR.drawable.ic_share,
-            label = stringResource(R.string.contacts_invite),
-            onClick = { callbacks.onEvent(ContactsEvent.Invite) },
-            modifier = Modifier.row(this, maxWidth, motionScheme),
-        )
-    }
-    if (sync != ContactSyncUi.Hidden) {
-        item(key = SYNC_ROW, contentType = SYNC_ROW) {
-            ContactSyncItem(
-                sync = sync,
-                controls = syncControls,
-                onSyncEvent = callbacks.onSyncEvent,
-                onDismissOffer = { callbacks.onEvent(ContactsEvent.DismissSyncOffer) },
-                modifier = Modifier.row(this, maxWidth, motionScheme),
-            )
-        }
-    }
-}
+// The entries of the Contacts tab's list (ContactsList): the contacts and the phone's contacts to invite.
 
 /** The phone's contacts not on Telegram under a sticky "Invite to Telegram" header, if there are any. */
 internal fun LazyListScope.inviteItems(
@@ -185,27 +148,16 @@ internal fun headerIndices(
         .dropLast(1)
         .toImmutableList()
 
-/** How many entries come before the first letter's header: the action rows, sync, "Online now". */
+/** How many entries come before the first letter's header: sync, "Online now". */
 internal fun leadingRows(
-    experimental: Boolean,
     showsSync: Boolean,
     showsOnline: Boolean,
-): Int {
-    val sync = if (showsSync) 1 else 0
-    return if (experimental) sync + (if (showsOnline) 1 else 0) else ACTION_ROWS + sync
-}
+): Int = (if (showsSync) 1 else 0) + (if (showsOnline) 1 else 0)
 
-/** A letter's header in the look [experimental] says ([ExperimentalSectionHeader], or [SectionHeader]). */
-@Composable
-internal fun LetterHeader(
-    letter: String,
-    experimental: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    if (experimental) ExperimentalSectionHeader(letter, modifier) else SectionHeader(letter, modifier)
-}
-
-/** A letter's header: `titleSmallEmphasized` in `primary` on the sheet's `surface`, so rows scroll under it. */
+/**
+ * The "Invite to Telegram" header: `titleSmallEmphasized` in `primary` on the sheet's `surface`, so rows scroll under
+ * it.
+ */
 @Composable
 internal fun SectionHeader(
     letter: String,
@@ -261,10 +213,6 @@ internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
 }
 
 // Keys and content types of the list's entries; a contact's key is its user id.
-internal const val ACTION_ROW = "action"
-internal const val ADD_ROW = "action:add"
-internal const val INVITE_ROW = "action:invite"
-internal const val ACTION_ROWS = 2
 internal const val SYNC_ROW = "sync"
 internal const val INVITES_HEADER = "header:invites"
 internal const val INVITE = "invite"

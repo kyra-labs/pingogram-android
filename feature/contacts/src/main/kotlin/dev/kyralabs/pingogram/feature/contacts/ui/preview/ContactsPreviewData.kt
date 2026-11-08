@@ -46,7 +46,7 @@ internal object ContactsPreviewData {
     val content =
         ContactsUiState(ContactsContent.Contacts(contactSections(contacts, Locale.US), showsIndex = false))
 
-    /** [contacts] with more of them online, for the experimental look's "Online now" row. */
+    /** [contacts] with more of them online, for the "Online now" row. */
     val busy =
         ContactsUiState(
             ContactsContent.Contacts(

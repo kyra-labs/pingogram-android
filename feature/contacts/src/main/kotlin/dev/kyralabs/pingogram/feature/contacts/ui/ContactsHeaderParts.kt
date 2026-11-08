@@ -72,8 +72,7 @@ import dev.kyralabs.pingogram.feature.contacts.ui.preview.ContactsPreviewData
 import kotlinx.collections.immutable.ImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The Contacts tab's parts in the experimental look (docs/DESIGN_SYSTEM.md §13.8). The standard look never composes
-// them.
+// The Contacts tab's header parts, "Online now" and the letters' headers (docs/DESIGN_SYSTEM.md §13.8).
 
 /**
  * The header's status line while expanded: "248 on Telegram · 12 online", the second part in `pingogramColors.online`
@@ -293,11 +292,11 @@ private fun OnlinePerson(
 }
 
 /**
- * A letter's header in the experimental look: the letter in `headlineLargeCondensed` `primary`, then a line in
+ * A letter's header: the letter in `headlineLargeCondensed` `primary`, then a line in
  * `outlineVariant` to the end, on the sheet's `surface`, so rows scroll under it.
  */
 @Composable
-internal fun ExperimentalSectionHeader(
+internal fun LetterHeader(
     letter: String,
     modifier: Modifier = Modifier,
 ) {
@@ -336,7 +335,7 @@ private fun ContactsExperimentalPreview() {
     PingogramPreview {
         Column {
             OnlineNow(ContactsPreviewData.onlineContacts, onOpen = {})
-            ExperimentalSectionHeader("A")
+            LetterHeader("A")
         }
     }
 }

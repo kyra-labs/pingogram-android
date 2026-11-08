@@ -61,7 +61,7 @@ sealed interface ContactsContent {
      * Every contact, in alphabetical [sections]; [showsIndex] whether the list is long enough for the fast-scroll index
      * of their letters. With contacts sync on, the phone's contacts not on Telegram follow under "Invite to Telegram"
      * ([invites]). [count] is how many contacts there are, and [online] those online now, in the list's order (the
-     * experimental look's status line and "Online now" row, `docs/DESIGN_SYSTEM.md` §13.8).
+     * header's status line and "Online now" row, `docs/DESIGN_SYSTEM.md` §13.8).
      */
     data class Contacts(
         val sections: ImmutableList<ContactSection>,
