@@ -18,8 +18,10 @@ import javax.inject.Inject
  * What swiping a chat row does (Appearance → Chat list → Swipe actions): toward the end ([start], from the start
  * edge) and toward the start ([end]). The defaults are read and archive, until the settings are read. With
  * [changesFolder], rows do not swipe: swiping the list shows the folder tab beside the selected one ([folderSwipe]).
- * It carries the chat list's other device setting too, as the same settings hold it: whether the folder tabs end in
- * "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default).
+ * It carries the chat list's other device settings too, as the same settings hold them: whether the folder tabs end
+ * in "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default), and whether
+ * the experimental look's rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
+ * default).
  */
 @Immutable
 data class ChatSwipes(
@@ -27,6 +29,7 @@ data class ChatSwipes(
     val end: SwipeAction = SwipeAction.Archive,
     val changesFolder: Boolean = false,
     val editFoldersButton: Boolean = true,
+    val chatTypeIcons: Boolean = true,
 )
 
 /**
@@ -44,8 +47,15 @@ class ChatSwipesViewModel
     ) : ViewModel() {
         val swipes: StateFlow<ChatSwipes> =
             repository.settings
-                .map { ChatSwipes(it.startSwipe, it.endSwipe, it.swipeChangesFolder, it.showEditFoldersButton) }
-                .distinctUntilChanged()
+                .map {
+                    ChatSwipes(
+                        start = it.startSwipe,
+                        end = it.endSwipe,
+                        changesFolder = it.swipeChangesFolder,
+                        editFoldersButton = it.showEditFoldersButton,
+                        chatTypeIcons = it.showChatTypeIcons,
+                    )
+                }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())
 
         private companion object {

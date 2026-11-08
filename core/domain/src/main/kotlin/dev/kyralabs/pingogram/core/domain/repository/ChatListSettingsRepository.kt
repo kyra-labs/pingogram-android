@@ -7,8 +7,9 @@ import kotlinx.coroutines.flow.Flow
  * How the chat list looks and acts (Appearance → Chat list), kept on this device: whether the story rings show above
  * the chats ([ChatListSettings.showStories], on by default; hiding them loads none), what swiping a row does
  * toward each side ([ChatListSettings.startSwipe], [ChatListSettings.endSwipe]), and whether swiping the list changes
- * the folder instead ([ChatListSettings.swipeChangesFolder], off by default), and whether the folder tabs end in an
- * "Edit folders" button ([ChatListSettings.showEditFoldersButton], on by default).
+ * the folder instead ([ChatListSettings.swipeChangesFolder], off by default), whether the folder tabs end in an
+ * "Edit folders" button ([ChatListSettings.showEditFoldersButton], on by default), and whether the experimental look
+ * shows the kind of chat before its name ([ChatListSettings.showChatTypeIcons], on by default).
  */
 interface ChatListSettingsRepository {
     /** The settings, then every change. Never fails: unreadable settings read as the defaults. */
@@ -28,6 +29,9 @@ interface ChatListSettingsRepository {
 
     /** Saves whether the folder tabs end in "Edit folders"; fails as [setShowStories] does. */
     suspend fun setShowEditFoldersButton(show: Boolean): Outcome<Unit>
+
+    /** Saves whether a chat's kind shows before its name; fails as [setShowStories] does. */
+    suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit>
 }
 
 /**
@@ -35,7 +39,8 @@ interface ChatListSettingsRepository {
  * ([startSwipe], from the start edge) and toward the start ([endSwipe]) does; both mirror in right-to-left layouts.
  * With [swipeChangesFolder] a horizontal swipe moves the whole list to the folder tab beside the selected one instead,
  * and rows do not swipe; [startSwipe] and [endSwipe] are kept for when it is turned off. While
- * [showEditFoldersButton] is off, the folder row ends at the tabs; their menus keep "Edit folders".
+ * [showEditFoldersButton] is off, the folder row ends at the tabs; their menus keep "Edit folders". While
+ * [showChatTypeIcons] is off, the experimental look's rows show no group or channel symbol before the chat's name.
  */
 data class ChatListSettings(
     val showStories: Boolean = true,
@@ -43,6 +48,7 @@ data class ChatListSettings(
     val endSwipe: SwipeAction = SwipeAction.Archive,
     val swipeChangesFolder: Boolean = false,
     val showEditFoldersButton: Boolean = true,
+    val showChatTypeIcons: Boolean = true,
 )
 
 /**

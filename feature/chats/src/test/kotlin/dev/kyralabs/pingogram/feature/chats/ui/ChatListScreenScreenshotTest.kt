@@ -66,6 +66,13 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Light, "withoutEditFoldersButton", ChatSwipes(editFoldersButton = false))
     }
 
+    /** With Appearance → Chat list → "Chat type icons" off, the experimental rows show no group or channel symbol. */
+    @Test
+    fun experimentalWithoutChatTypeIcons() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "experimentalWithoutChatTypeIcons", ChatSwipes(chatTypeIcons = false), true)
+    }
+
     /**
      * The experimental look (`docs/DESIGN_SYSTEM.md` §13): every state in light and dark, and the audit's other looks
      * for the list with folders.

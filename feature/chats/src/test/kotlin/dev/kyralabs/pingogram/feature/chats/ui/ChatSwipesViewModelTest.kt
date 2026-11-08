@@ -58,4 +58,15 @@ class ChatSwipesViewModelTest {
                 assertEquals(ChatSwipes(editFoldersButton = false), awaitItem())
             }
         }
+
+    @Test
+    fun `follows whether the rows show the kind of chat`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().chatTypeIcons)
+
+                settings.settings.value = ChatListSettings(showChatTypeIcons = false)
+                assertEquals(ChatSwipes(chatTypeIcons = false), awaitItem())
+            }
+        }
 }

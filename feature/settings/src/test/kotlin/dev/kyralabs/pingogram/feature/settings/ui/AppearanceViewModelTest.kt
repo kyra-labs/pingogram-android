@@ -245,6 +245,19 @@ class AppearanceViewModelTest {
         }
 
     @Test
+    fun `chat type icons show at first, and turning them off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
+
+            send(viewModel, AppearanceEvent.SetShowChatTypeIcons(false))
+
+            assertFalse(chatListSettings.settings.value.showChatTypeIcons)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
+        }
+
+    @Test
     fun `an Edit folders button that cannot be hidden stays, with a snackbar`() =
         runTest {
             repository.save(AppearanceSettings())

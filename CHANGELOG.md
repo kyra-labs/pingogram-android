@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
+  experimental look.
 - Settings has an "Experimental UI" switch, marked Beta, for trying a bolder Material 3 Expressive look for chats,
   contacts and settings. It is off by default and can be switched back anytime; with it on, Settings shows it as a
   card under your account.

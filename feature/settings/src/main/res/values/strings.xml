@@ -1298,6 +1298,8 @@
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
     <string name="settings_edit_folders_button">Edit folders button</string>
     <string name="settings_edit_folders_button_summary">Shows a button at the end of the folder tabs</string>
+    <string name="settings_chat_type_icons">Chat type icons</string>
+    <string name="settings_chat_type_icons_summary">Shows a symbol before the names of groups and channels</string>
     <!-- Settings → Appearance → Chat list → Swipe actions. -->
     <string name="settings_swipe_actions">Swipe actions</string>
     <string name="settings_swipe_actions_loading">Loading swipe actions</string>

@@ -41,6 +41,7 @@ class DataStoreChatListSettingsRepository
                         endSwipe = swipeActionOf(preferences[END_SWIPE]) ?: defaults.endSwipe,
                         swipeChangesFolder = preferences[SWIPE_CHANGES_FOLDER] ?: defaults.swipeChangesFolder,
                         showEditFoldersButton = preferences[EDIT_FOLDERS_BUTTON] ?: defaults.showEditFoldersButton,
+                        showChatTypeIcons = preferences[CHAT_TYPE_ICONS] ?: defaults.showChatTypeIcons,
                     )
                 }.distinctUntilChanged()
 
@@ -61,6 +62,8 @@ class DataStoreChatListSettingsRepository
         override suspend fun setShowEditFoldersButton(show: Boolean): Outcome<Unit> =
             save { it[EDIT_FOLDERS_BUTTON] = show }
 
+        override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> = save { it[CHAT_TYPE_ICONS] = show }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -78,3 +81,4 @@ private val START_SWIPE = stringPreferencesKey("chat_list.swipe_start")
 private val END_SWIPE = stringPreferencesKey("chat_list.swipe_end")
 private val SWIPE_CHANGES_FOLDER = booleanPreferencesKey("chat_list.swipe_changes_folder")
 private val EDIT_FOLDERS_BUTTON = booleanPreferencesKey("chat_list.edit_folders_button")
+private val CHAT_TYPE_ICONS = booleanPreferencesKey("chat_list.chat_type_icons")

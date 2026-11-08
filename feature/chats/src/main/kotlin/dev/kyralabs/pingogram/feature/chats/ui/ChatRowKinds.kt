@@ -10,8 +10,8 @@ import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 // (docs/DESIGN_SYSTEM.md §13).
 
 /**
- * A row's title: [ChatTitle] with, in the [experimental] look, the kind of chat before the name and the mute icon only
- * while nothing is unread.
+ * A row's title: [ChatTitle] with, in the [experimental] look, the kind of chat before the name (unless Appearance →
+ * Chat list → "Chat type icons" is off, [ChatSwipes.chatTypeIcons]) and the mute icon only while nothing is unread.
  */
 @Composable
 internal fun ChatRowTitle(
@@ -25,7 +25,7 @@ internal fun ChatRowTitle(
         badge = item.badge,
         isMuted = item.isMuted && !(experimental && item.isUnread),
         isUnread = item.isUnread,
-        kindIcon = item.avatarShape.kindIcon().takeIf { experimental },
+        kindIcon = item.avatarShape.kindIcon().takeIf { experimental && LocalChatSwipes.current.chatTypeIcons },
     )
 }
 
