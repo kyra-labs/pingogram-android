@@ -35,6 +35,7 @@ internal fun AccountGroup(
                     icon = UiR.drawable.ic_alternate_email,
                     supportingContent = { Text(loginEmailPattern, style = LocalTextStyle.current.numericContent) },
                     onClick = { onOpen(PrivacySecurityPage.LoginEmail) },
+                    opensPage = true,
                 )
             }
         }

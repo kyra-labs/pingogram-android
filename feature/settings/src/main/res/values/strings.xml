@@ -243,6 +243,16 @@
     <string name="settings_power_saving_card_always">Power saving is always on</string>
     <string name="settings_power_saving_card_saving">Saving power now</string>
     <string name="settings_power_saving_card_normal">Everything plays normally</string>
+    <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): the card at the top of Privacy and security -->
+    <string name="settings_privacy_checkup">Privacy checkup</string>
+    <plurals name="settings_privacy_checkup_what">
+        <item quantity="one">thing anyone on Telegram can see</item>
+        <item quantity="other">things anyone on Telegram can see</item>
+    </plurals>
+    <string name="settings_privacy_checkup_review">Review</string>
+    <string name="settings_privacy_checkup_not_now">Not now</string>
+    <!-- Experimental UI: after the storage Pingogram takes, "1.2 GB used on this device" -->
+    <string name="settings_storage_used_on_device">used on this device</string>
     <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
 
     <string name="settings_section_storage_usage">Storage usage</string>

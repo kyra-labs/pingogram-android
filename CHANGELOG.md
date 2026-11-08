@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Undo.
 - With Experimental UI on, Notifications shows one kind of chat at a time and a banner while notifications are off,
   and Power saving says at the top whether Battery Saver is on and whether it saves power now.
+- With Experimental UI on, Privacy and security opens with a privacy checkup of what anyone can see, and Data and
+  storage with the storage Pingogram uses and "Clear cache".
 - Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
   experimental look.
 - Photos sent as files show a thumbnail in the chat and, once downloaded, open in Pingogram's own viewer instead of

@@ -124,6 +124,17 @@ class ExperimentalSettingsPagesScreenshotTest {
         }
 
     @Test
+    @Config(qualifiers = WHOLE_PAGE)
+    fun dataLight() = composeRule.captureScreen(javaClass, "dataLight", ThemeMode.Light) { Experimental { Data() } }
+
+    @Test
+    @Config(qualifiers = WHOLE_PAGE)
+    fun dataDark() = composeRule.captureScreen(javaClass, "dataDark", ThemeMode.Dark) { Experimental { Data() } }
+
+    @Test
+    fun dataRtl() = composeRule.captureScreen(javaClass, "dataRtl", ScreenshotVariant.Rtl) { Experimental { Data() } }
+
+    @Test
     fun aboutLight() =
         composeRule.captureScreen(javaClass, "aboutLight", ThemeMode.Light) {
             Experimental {
@@ -203,6 +214,19 @@ private fun Appearance(settings: AppearanceSettings = AppearanceSettings()) {
         onEvent = {},
         onBack = {},
         dynamicColorAvailable = false,
+    )
+}
+
+/** Data and storage with the storage used read. */
+@Composable
+private fun Data() {
+    DataStorageScreen(
+        state = SettingsPreviewData.storageChanged,
+        onEvent = {},
+        onOpenAutoDownload = {},
+        onOpenProxies = {},
+        onOpenNetworkUsage = {},
+        onBack = {},
     )
 }
 
