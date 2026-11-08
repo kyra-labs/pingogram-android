@@ -13,10 +13,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -135,23 +137,7 @@ private fun Sessions(
 ) {
     val ttl = stringResource(R.string.settings_sessions_ttl, ttlText(sessions.inactiveSessionTtlDays))
     val hasOthers = sessions.unconfirmed.isNotEmpty() || sessions.others.isNotEmpty()
-    SettingsGroup(
-        title = stringResource(R.string.settings_section_this_device),
-        footer = if (sessions.others.isEmpty()) ttl else null,
-    ) {
-        sessions.current?.let { current ->
-            item(key = current.id) { SessionRow(current, false, it) }
-        }
-        if (hasOthers) {
-            item(key = TERMINATE_ALL) { shapes ->
-                TerminateAllItem(
-                    isTerminating = state.isTerminatingAll,
-                    shapes = shapes,
-                    onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
-                )
-            }
-        }
-    }
+    ThisDeviceGroup(state, sessions, footer = if (sessions.others.isEmpty()) ttl else null, hasOthers, onEvent)
     if (sessions.unconfirmed.isNotEmpty()) {
         SettingsGroup(
             title = stringResource(R.string.settings_section_new_logins),
@@ -246,6 +232,39 @@ private fun ActiveSessionsScreenErrorPreview() {
             onEvent = {},
             onBack = {},
         )
+    }
+}
+
+/**
+ * This device's session and "Terminate all other sessions" while there are others: in the experimental look this device
+ * is a card of its own above the group ([ThisDeviceCard], `docs/DESIGN_SYSTEM.md` §13.10).
+ */
+@Composable
+private fun ThisDeviceGroup(
+    state: ActiveSessionsUiState,
+    sessions: SessionsState.Loaded,
+    footer: String?,
+    hasOthers: Boolean,
+    onEvent: (ActiveSessionsEvent) -> Unit,
+) {
+    val experimental = LocalExperimentalUi.current
+    if (experimental) sessions.current?.let { ThisDeviceCard(it) }
+    SettingsGroup(
+        title = stringResource(R.string.settings_section_this_device).takeUnless { experimental },
+        footer = footer,
+    ) {
+        sessions.current?.takeUnless { experimental }?.let { current ->
+            item(key = current.id) { SessionRow(current, false, it) }
+        }
+        if (hasOthers) {
+            item(key = TERMINATE_ALL) { shapes ->
+                TerminateAllItem(
+                    isTerminating = state.isTerminatingAll,
+                    shapes = shapes,
+                    onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
+                )
+            }
+        }
     }
 }
 

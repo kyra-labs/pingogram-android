@@ -231,8 +231,20 @@ internal fun ttlText(days: Int): String =
         }
     }
 
+/** This device's session as the experimental look's status card: the device, its app and system, where it is. */
+@Composable
+internal fun ThisDeviceCard(session: SessionItem) {
+    SettingsStatusCard(
+        kicker = stringResource(R.string.settings_section_this_device),
+        title = session.title.resolve(),
+        summary = session.app.resolve(),
+        status = session.activity.resolve(),
+        icon = session.device.iconRes(),
+    )
+}
+
 @DrawableRes
-private fun SessionDevice.iconRes(): Int =
+internal fun SessionDevice.iconRes(): Int =
     when (this) {
         SessionDevice.Phone -> R.drawable.ic_smartphone
         SessionDevice.Tablet -> R.drawable.ic_tablet
