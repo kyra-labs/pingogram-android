@@ -81,6 +81,11 @@ sealed interface AppearanceEvent {
     data class SetShowEditFoldersButton(
         val show: Boolean,
     ) : AppearanceEvent
+
+    /** "Chat type icons" turned on or off (the experimental look). */
+    data class SetShowChatTypeIcons(
+        val show: Boolean,
+    ) : AppearanceEvent
 }
 
 /** One-off side effects of [AppearanceViewModel], handled once by its route. */
@@ -154,6 +159,10 @@ class AppearanceViewModel
 
                         is AppearanceEvent.SetShowEditFoldersButton -> {
                             chatListSettingsRepository.setShowEditFoldersButton(event.show)
+                        }
+
+                        is AppearanceEvent.SetShowChatTypeIcons -> {
+                            chatListSettingsRepository.setShowChatTypeIcons(event.show)
                         }
                     }
                 saved.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }

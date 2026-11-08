@@ -120,6 +120,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `chat type icons show until they are turned off, and turning them off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showChatTypeIcons)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowChatTypeIcons(false))
+
+            assertEquals(ChatListSettings(showChatTypeIcons = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showChatTypeIcons)
+        }
+
+    @Test
     fun `an action this version does not know reads as the default`() =
         runTest {
             val store = dataStore()

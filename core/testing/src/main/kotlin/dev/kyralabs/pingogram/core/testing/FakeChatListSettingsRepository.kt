@@ -41,4 +41,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(showEditFoldersButton = show)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showChatTypeIcons = show)
+        return Outcome.Success(Unit)
+    }
 }

@@ -506,7 +506,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   collects them, which it does while the swipe changes folders, and dropped once no longer beside the selected tab);
   the view model loads the first page of the tabs beside the selected one ahead, only those.
   The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
-  Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`.
+  Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`, and
+  whether the experimental look's rows show the kind of chat before its name (`showChatTypeIcons`, on by default),
+  which `ChatSwipes.chatTypeIcons` hands to the rows.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then

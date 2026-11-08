@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -152,6 +153,7 @@ internal fun ChatListGroup(
     onEvent: (AppearanceEvent) -> Unit,
     onOpenSwipeActions: () -> Unit,
 ) {
+    val experimental = LocalExperimentalUi.current
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
         item { shapes ->
             SettingsRow(
@@ -178,6 +180,18 @@ internal fun ChatListGroup(
                 shapes = shapes,
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
             )
+        }
+        // The experimental look's symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
+        if (experimental) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_chat_type_icons),
+                    summary = stringResource(R.string.settings_chat_type_icons_summary),
+                    checked = chatList.showChatTypeIcons,
+                    shapes = shapes,
+                    onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
+                )
+            }
         }
     }
 }
