@@ -120,12 +120,16 @@ sealed interface FolderTab {
         override val hasUnread: Boolean = unreadCount > 0,
     ) : FolderTab
 
-    /** Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji). */
+    /**
+     * Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji), and TDLib's name of its
+     * icon ([iconName], empty for none), which the tabs show where Appearance → Chat list → "Folder tabs" asks.
+     */
     data class Folder(
         val id: Int,
         val title: String,
         override val unreadCount: Int,
         override val hasUnread: Boolean = unreadCount > 0,
+        val iconName: String = "",
     ) : FolderTab {
         override fun toString() = "Folder(id=$id, unreadCount=$unreadCount, …)"
     }

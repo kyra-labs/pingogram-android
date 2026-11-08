@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The rows and the confirmation of the Active sessions page.
 
@@ -255,7 +256,7 @@ internal fun SessionDevice.iconRes(): Int =
         SessionDevice.Tablet -> R.drawable.ic_tablet
         SessionDevice.Desktop -> R.drawable.ic_computer
         SessionDevice.Browser -> R.drawable.ic_language
-        SessionDevice.GameConsole -> R.drawable.ic_sports_esports
+        SessionDevice.GameConsole -> UiR.drawable.ic_sports_esports
         SessionDevice.Unknown -> R.drawable.ic_devices
     }
 

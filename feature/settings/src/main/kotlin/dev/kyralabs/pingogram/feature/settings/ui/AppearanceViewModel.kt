@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.channels.Channel
@@ -87,6 +88,11 @@ sealed interface AppearanceEvent {
     /** "Chat type icons" turned on or off. */
     data class SetShowChatTypeIcons(
         val show: Boolean,
+    ) : AppearanceEvent
+
+    /** A "Folder tabs" style picked. */
+    data class SetFolderTabStyle(
+        val style: FolderTabStyle,
     ) : AppearanceEvent
 
     /** A color theme picked from the row of chips. */
@@ -208,6 +214,10 @@ class AppearanceViewModel
 
                 is AppearanceEvent.SetShowChatTypeIcons -> {
                     chatListSettingsRepository.setShowChatTypeIcons(event.show)
+                }
+
+                is AppearanceEvent.SetFolderTabStyle -> {
+                    chatListSettingsRepository.setFolderTabStyle(event.style)
                 }
 
                 else -> {

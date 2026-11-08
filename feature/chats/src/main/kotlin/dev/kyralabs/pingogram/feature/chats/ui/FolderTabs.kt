@@ -5,13 +5,19 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -29,6 +35,7 @@ import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -39,7 +46,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
+import dev.kyralabs.pingogram.core.ui.component.folderIconDrawable
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -238,7 +247,12 @@ private fun FolderButton(
     }
 }
 
-/** The button of a [FolderButton]: its label, and its unread count in a badge. */
+/**
+ * The button of a [FolderButton], as Appearance → Chat list → "Folder tabs" asks ([ChatSwipes.folderTabStyle]): its
+ * label, its icon before its label, or its icon alone, and its unread count in a badge. With icons alone the selected
+ * tab still shows its name, as a tab's long press opens its menu rather than a tooltip, and the others carry their
+ * count on the icon ([BadgedBox]); screen readers hear every tab's name ([FolderButton]).
+ */
 @Suppress("LongParameterList") // The tab, its label and state, and the group's shapes, colors and interactions.
 @Composable
 private fun FolderToggleButton(
@@ -251,6 +265,7 @@ private fun FolderToggleButton(
     colors: ToggleButtonColors,
     interactionSource: MutableInteractionSource,
 ) {
+    val style = LocalChatSwipes.current.folderTabStyle
     ToggleButton(
         checked = selected,
         onCheckedChange = { onSelect(tab.folderId) },
@@ -259,25 +274,70 @@ private fun FolderToggleButton(
         colors = colors,
         interactionSource = interactionSource,
     ) {
-        val typography = MaterialTheme.typography
-        Text(
-            text = label,
-            modifier = Modifier.clearAndSetSemantics {},
-            maxLines = 1,
-            style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
-        )
-        if (tab.unreadCount > 0) {
-            // On the selected button's container the badge inverts its colors to stay visible.
-            val scheme = MaterialTheme.colorScheme
-            TabBadge(
-                count = tab.unreadCount,
-                containerColor = if (selected) colors.checkedContentColor else scheme.primary,
-                contentColor = if (selected) colors.checkedContainerColor else scheme.onPrimary,
-                modifier = Modifier.padding(start = MaterialTheme.spacing.small),
+        val showsLabel = style != FolderTabStyle.Icon || selected
+        val badge = tabBadgeColors(selected, colors)
+        if (style != FolderTabStyle.Text) {
+            if (showsLabel || tab.unreadCount == 0) {
+                TabIcon(tab)
+            } else {
+                BadgedBox(badge = { TabBadge(tab.unreadCount, badge.first, badge.second) }) { TabIcon(tab) }
+            }
+        }
+        if (showsLabel) {
+            if (style != FolderTabStyle.Text) {
+                Spacer(Modifier.width(ButtonDefaults.iconSpacingFor(ToggleButtonDefaults.MinHeight)))
+            }
+            val typography = MaterialTheme.typography
+            Text(
+                text = label,
+                modifier = Modifier.clearAndSetSemantics {},
+                maxLines = 1,
+                style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
             )
+            if (tab.unreadCount > 0) {
+                TabBadge(
+                    count = tab.unreadCount,
+                    containerColor = badge.first,
+                    contentColor = badge.second,
+                    modifier = Modifier.padding(start = MaterialTheme.spacing.small),
+                )
+            }
         }
     }
 }
+
+/** The folder's symbol (`core:ui`'s `folderIconDrawable`; "All chats" takes Telegram's "All"), decorative. */
+@Composable
+private fun TabIcon(tab: FolderTab) {
+    val name =
+        when (tab) {
+            is FolderTab.AllChats -> ALL_CHATS_ICON
+            is FolderTab.Folder -> tab.iconName
+        }
+    Icon(
+        painter = painterResource(folderIconDrawable(name)),
+        contentDescription = null,
+        modifier = Modifier.size(ButtonDefaults.iconSizeFor(ToggleButtonDefaults.MinHeight)),
+    )
+}
+
+/** The badge's container and content colors: on the selected button's container the badge inverts them. */
+@Composable
+@ReadOnlyComposable
+private fun tabBadgeColors(
+    selected: Boolean,
+    colors: ToggleButtonColors,
+): Pair<Color, Color> {
+    val scheme = MaterialTheme.colorScheme
+    return if (selected) {
+        colors.checkedContentColor to colors.checkedContainerColor
+    } else {
+        scheme.primary to scheme.onPrimary
+    }
+}
+
+/** TDLib's icon name of the main list, the "All chats" tab's symbol. */
+private const val ALL_CHATS_ICON = "All"
 
 @Composable
 private fun TabBadge(

@@ -1335,6 +1335,12 @@
     <string name="settings_edit_folders_button_summary">Shows a button at the end of the folder tabs</string>
     <string name="settings_chat_type_icons">Chat type icons</string>
     <string name="settings_chat_type_icons_summary">Shows a symbol before the names of groups and channels</string>
+    <!-- Appearance → Chat list: what each folder tab above the chat list shows. -->
+    <string name="settings_folder_tabs">Folder tabs</string>
+    <string name="settings_folder_tabs_summary">What each folder tab shows. With icons only, the open folder still shows its name.</string>
+    <string name="settings_folder_tabs_text">Names</string>
+    <string name="settings_folder_tabs_icon_and_text">Icons and names</string>
+    <string name="settings_folder_tabs_icon">Icons</string>
     <!-- Settings → Appearance → Chat list → Swipe actions. -->
     <string name="settings_swipe_actions">Swipe actions</string>
     <string name="settings_swipe_actions_loading">Loading swipe actions</string>

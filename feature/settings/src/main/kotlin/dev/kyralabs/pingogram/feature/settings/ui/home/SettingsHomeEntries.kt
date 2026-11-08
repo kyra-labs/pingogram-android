@@ -65,13 +65,13 @@ internal val HomeGroups: List<HomeGroup> =
                     SettingsPage.Appearance,
                     R.string.settings_appearance,
                     R.string.settings_appearance_summary,
-                    R.drawable.ic_palette,
+                    UiR.drawable.ic_palette,
                 ),
                 page(
                     SettingsPage.ChatFolders,
                     R.string.settings_chat_folders,
                     R.string.settings_chat_folders_summary,
-                    R.drawable.ic_folder,
+                    UiR.drawable.ic_folder,
                 ),
                 page(
                     SettingsPage.Stickers,

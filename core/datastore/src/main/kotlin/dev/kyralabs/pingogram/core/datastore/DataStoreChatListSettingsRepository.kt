@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -21,8 +22,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [ChatListSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). Swipe actions are
- * stored by name; a file that cannot be read, a missing key and an unknown name read as the defaults.
+ * [ChatListSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). Swipe actions and
+ * the folder tabs' style are stored by name; a file that cannot be read, a missing key and an unknown name read as the
+ * defaults.
  */
 @Singleton
 class DataStoreChatListSettingsRepository
@@ -42,6 +44,7 @@ class DataStoreChatListSettingsRepository
                         swipeChangesFolder = preferences[SWIPE_CHANGES_FOLDER] ?: defaults.swipeChangesFolder,
                         showEditFoldersButton = preferences[EDIT_FOLDERS_BUTTON] ?: defaults.showEditFoldersButton,
                         showChatTypeIcons = preferences[CHAT_TYPE_ICONS] ?: defaults.showChatTypeIcons,
+                        folderTabStyle = folderTabStyleOf(preferences[FOLDER_TAB_STYLE]) ?: defaults.folderTabStyle,
                     )
                 }.distinctUntilChanged()
 
@@ -64,6 +67,9 @@ class DataStoreChatListSettingsRepository
 
         override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> = save { it[CHAT_TYPE_ICONS] = show }
 
+        override suspend fun setFolderTabStyle(style: FolderTabStyle): Outcome<Unit> =
+            save { it[FOLDER_TAB_STYLE] = style.name }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -75,6 +81,8 @@ class DataStoreChatListSettingsRepository
 
 private fun swipeActionOf(name: String?): SwipeAction? = SwipeAction.entries.firstOrNull { it.name == name }
 
+private fun folderTabStyleOf(name: String?): FolderTabStyle? = FolderTabStyle.entries.firstOrNull { it.name == name }
+
 // The keys in the settings file; renaming one loses what users saved under it.
 private val SHOW_STORIES = booleanPreferencesKey("chat_list.show_stories")
 private val START_SWIPE = stringPreferencesKey("chat_list.swipe_start")
@@ -82,3 +90,4 @@ private val END_SWIPE = stringPreferencesKey("chat_list.swipe_end")
 private val SWIPE_CHANGES_FOLDER = booleanPreferencesKey("chat_list.swipe_changes_folder")
 private val EDIT_FOLDERS_BUTTON = booleanPreferencesKey("chat_list.edit_folders_button")
 private val CHAT_TYPE_ICONS = booleanPreferencesKey("chat_list.chat_type_icons")
+private val FOLDER_TAB_STYLE = stringPreferencesKey("chat_list.folder_tab_style")

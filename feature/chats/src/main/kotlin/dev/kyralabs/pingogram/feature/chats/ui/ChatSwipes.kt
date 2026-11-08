@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,7 @@ import javax.inject.Inject
  * It carries the chat list's other device settings too, as the same settings hold them: whether the folder tabs end
  * in "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default), and whether
  * rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
- * default).
+ * default), and what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default).
  */
 @Immutable
 data class ChatSwipes(
@@ -30,6 +31,7 @@ data class ChatSwipes(
     val changesFolder: Boolean = false,
     val editFoldersButton: Boolean = true,
     val chatTypeIcons: Boolean = true,
+    val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
 )
 
 /**
@@ -54,6 +56,7 @@ class ChatSwipesViewModel
                         changesFolder = it.swipeChangesFolder,
                         editFoldersButton = it.showEditFoldersButton,
                         chatTypeIcons = it.showChatTypeIcons,
+                        folderTabStyle = it.folderTabStyle,
                     )
                 }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())

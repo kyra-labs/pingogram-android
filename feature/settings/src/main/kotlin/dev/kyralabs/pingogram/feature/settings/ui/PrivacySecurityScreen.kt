@@ -271,7 +271,7 @@ private fun SecuritySection(
             PageItem(
                 title = stringResource(R.string.settings_websites),
                 summary = stringResource(R.string.settings_websites_summary),
-                icon = R.drawable.ic_public,
+                icon = UiR.drawable.ic_public,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.Websites) },
             )

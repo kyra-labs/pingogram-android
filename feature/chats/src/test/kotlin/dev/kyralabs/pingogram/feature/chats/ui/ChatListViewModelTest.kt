@@ -356,9 +356,9 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
 
             assertEquals(
                 listOf(
-                    FolderTab.Folder(1, "Work", unreadCount = 2),
+                    FolderTab.Folder(1, "Work", unreadCount = 2, iconName = "Custom"),
                     FolderTab.AllChats(unreadCount = 4),
-                    FolderTab.Folder(2, "Family", unreadCount = 0),
+                    FolderTab.Folder(2, "Family", unreadCount = 0, iconName = "Custom"),
                 ),
                 viewModel().state.folderTabs,
             )

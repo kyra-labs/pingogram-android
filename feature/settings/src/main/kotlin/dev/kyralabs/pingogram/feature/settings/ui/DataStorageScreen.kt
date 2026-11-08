@@ -239,7 +239,7 @@ private fun FilesItem(
     SettingsRow(
         title = stringResource(R.string.settings_storage_files),
         shapes = shapes,
-        icon = R.drawable.ic_folder,
+        icon = UiR.drawable.ic_folder,
         supportingContent = {
             Text(
                 stringResource(

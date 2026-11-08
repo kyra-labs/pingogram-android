@@ -502,8 +502,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the view model loads the first page of the tabs beside the selected one ahead, only those.
   The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
   Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`, and
-  whether the rows show the kind of chat before its name (`showChatTypeIcons`, on by default),
-  which `ChatSwipes.chatTypeIcons` hands to the rows.
+  whether the rows show the kind of chat before its name (`showChatTypeIcons`, on by default), which
+  `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
+  names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
+  the folder editor).
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then
