@@ -253,6 +253,9 @@
     <string name="settings_privacy_checkup_not_now">Not now</string>
     <!-- Experimental UI: after the storage Pingogram takes, "1.2 GB used on this device" -->
     <string name="settings_storage_used_on_device">used on this device</string>
+    <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): About's buttons, which open this version's release notes and the latest release on GitHub in the browser -->
+    <string name="settings_about_whats_new">What\'s new</string>
+    <string name="settings_about_check_updates">Check for updates</string>
     <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
 
     <string name="settings_section_storage_usage">Storage usage</string>
