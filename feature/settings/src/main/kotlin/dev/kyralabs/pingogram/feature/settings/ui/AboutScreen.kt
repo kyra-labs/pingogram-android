@@ -111,7 +111,7 @@ internal fun AboutScreen(
     onSendFeedback: (() -> Unit)? = null,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
-        AboutHero(state.versionName, onEvent)
+        AboutHero(state.versionName, onEvent, state.showsCheckForUpdates)
         SettingsGroup(title = stringResource(R.string.settings_section_app)) {
             item { shapes ->
                 SettingsRow(

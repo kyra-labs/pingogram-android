@@ -159,6 +159,7 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 - [ ] Sticker search in Settings → Stickers and emoji
 - [ ] "Suggest stickers by emoji" and "Loop animated stickers" switches
 - [ ] "Start a call" in Recent calls (`feature:calls`)
+- [x] "Check for updates" in About hidden when an app store installed Pingogram (owner, 2026-11-08)
 
 ## Backlog (unscheduled)
 

@@ -13,6 +13,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 
+### Changed
+- About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
+  update it themselves.
+
 ## [2.0.0] - 2026-11-08
 
 Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts and Settings, now the only look.

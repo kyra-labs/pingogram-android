@@ -161,6 +161,18 @@ class SettingsPagesScreenshotTest {
         }
 
     @Test
+    fun aboutFromAppStore() =
+        composeRule.captureScreen(javaClass, "aboutFromAppStore", ThemeMode.Light) {
+            AboutScreen(
+                state = AboutUiState(versionName = "0.3.0", showsCheckForUpdates = false),
+                onEvent = {},
+                onOpenLicenses = {},
+                onBack = {},
+                onOpenLinkSettings = {},
+            )
+        }
+
+    @Test
     fun aboutLight() =
         composeRule.captureScreen(javaClass, "aboutLight", ThemeMode.Light) {
             AboutScreen(
