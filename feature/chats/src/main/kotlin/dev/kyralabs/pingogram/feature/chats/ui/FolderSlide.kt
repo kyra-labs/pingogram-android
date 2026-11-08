@@ -13,16 +13,15 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import dev.kyralabs.pingogram.core.ui.component.scrollingListState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.sign
@@ -55,15 +54,14 @@ data class FolderNeighbourLists(
  * its [side]. Read in the draw phase ([folderSlide]), so neither a drag nor a slide recomposes; only the companion
  * coming, going or changing sides composes.
  *
- * The rows do not animate ([animateRows]) while the selected folder's rows replace the others: the two lists have
- * nothing to animate between, and the list would otherwise slide the chats both lists have from where the old one
- * showed them, and fade the others in and out, all started in the frame that composes the new rows.
+ * Each folder's list keeps its own composition and list state ([FolderListStates], the screen's movable content per
+ * folder), so a switch moves the two lists between the shown place and the companion's rather than giving either
+ * list the other's rows: landing a swipe or tapping a tab composes no row of a list that already showed.
  */
 @Stable
 internal class FolderSwitch {
     /** The list's opacity, which a folder switch crossfades with reduced motion instead of sliding. */
     val alpha = Animatable(1f)
-    var animateRows by mutableStateOf(true)
 
     /** How far the finger moved the list toward the end, in pixels, while it swipes it ([folderSwipe]). */
     var drag by mutableFloatStateOf(0f)
@@ -90,9 +88,6 @@ internal class FolderSwitch {
      */
     var fixed by mutableStateOf<ChatListUiState?>(null)
 
-    /** Where [fixed]'s list was scrolled, as its first visible row and the offset past it. */
-    var fixedScroll: Pair<Int, Int> = 0 to 0
-
     /** A swipe selected the folder, whose list already shows as the companion; read once by [rememberShownList]. */
     var swiped = false
 
@@ -113,14 +108,14 @@ internal class FolderSwitch {
     }
 
     /**
-     * Puts the newly selected folder's list where it comes in from, with [outgoing], the folder's list shown before
-     * (scrolled to [scroll]), as the companion it slides against: after a swipe ([swiped]) where the companion showed
-     * it, the old list taking the companion's side; after a tap a width toward the side of its tab ([toward]: 1 the
-     * end, -1 the start); in place, without a companion, for neither (reduced motion, a tab that is gone).
+     * Puts the newly selected folder's list where it comes in from, with [outgoing], the folder's list shown before, as
+     * the companion it slides against: after a swipe ([swiped]) where the companion showed it, the old list taking the
+     * companion's side; after a tap a width toward the side of its tab ([toward]: 1 the end, -1 the start); in place,
+     * without a companion, for neither (reduced motion, a tab that is gone). It does not suspend while no slide runs
+     * (the caller stops it first), so it changes everything in one frame.
      */
     suspend fun bringIn(
         outgoing: ChatListUiState,
-        scroll: Pair<Int, Int>,
         toward: Int,
         swiped: Boolean,
     ) {
@@ -135,7 +130,6 @@ internal class FolderSwitch {
         if (companionSide == 0) {
             clearCompanion()
         } else {
-            fixedScroll = scroll
             fixed = outgoing
             side = companionSide
         }
@@ -162,32 +156,66 @@ internal fun Modifier.folderSlide(
 /**
  * The folder's list the shown one slides against ([FolderSwitch.side]): a neighbour under a swipe ([neighbours], loaded
  * ahead), the folder a swipe brought in until it is selected, or the folder sliding away after a switch. Composed only
- * while it is on screen, at the place where it was left ([FolderPositions], the top for a folder not shown yet;
- * [hasStories]: whether the list starts with the story rings), and drawn in the draw phase beside the list. [content]
- * draws it, given its state and list state and the modifier that places it; it takes no input and is hidden from
- * screen readers, which switch folders with the tabs.
+ * while it is on screen, and drawn in the draw phase beside the list. [content] draws it, given its state and the
+ * modifier that places it (its list state is its folder's, [FolderListStates]); it is hidden from screen readers, which
+ * switch folders with the tabs. Never the folder shown ([shownFolderId]), whose list cannot be in two places.
  */
 @Composable
 internal fun FolderCompanion(
     folderSwitch: FolderSwitch,
     neighbours: () -> FolderNeighbourLists,
     isRtl: Boolean,
-    hasStories: Boolean,
-    content: @Composable (state: ChatListUiState, listState: LazyListState, modifier: Modifier) -> Unit,
+    shownFolderId: Int?,
+    content: @Composable (state: ChatListUiState, modifier: Modifier) -> Unit,
 ) {
     val side = folderSwitch.side
-    if (side == 0) return
-    val fixed = folderSwitch.fixed
     val state =
-        fixed ?: neighbours().let { if (side < 0) it.previous else it.next }?.state ?: return
-    val listState =
-        remember(state.selectedFolderId, fixed != null) {
-            val (index, offset) =
-                fixed?.let { folderSwitch.fixedScroll }
-                    ?: folderSwitch.positions.scrollOf(state, hasStories)
-            LazyListState(index, offset)
+        when (side) {
+            0 -> null
+            else -> folderSwitch.fixed ?: neighbours().let { if (side < 0) it.previous else it.next }?.state
+        }?.takeIf { it.selectedFolderId != shownFolderId }
+    if (state != null) content(state, Modifier.folderSlide(folderSwitch, isRtl, side).clearAndSetSemantics {})
+}
+
+/**
+ * [FolderListStates] whose [listState], the screen's own and saved by its caller, is the list state of the folder shown
+ * first ([selectedFolderId] then, saved too), so after a rotation or process death it stays that folder's.
+ */
+@Composable
+internal fun rememberFolderListStates(
+    listState: LazyListState,
+    selectedFolderId: Int?,
+): FolderListStates {
+    val firstFolderId = rememberSaveable { mutableStateOf(selectedFolderId) }.value
+    return remember(listState) { FolderListStates(listState, firstFolderId) }
+}
+
+/**
+ * Each folder's list state (`null` for "All chats"), kept while the screen is: the folder shown first takes [first],
+ * the screen's own; another starts where [FolderPositions] says it was left (its top the first time), with the
+ * scrolling lists' cache window ([scrollingListState]). A folder's list keeps its state across switches, so it shows
+ * where the user left it, and a list that moves between the shown place and the companion's keeps scrolling as it was.
+ */
+@Stable
+internal class FolderListStates(
+    first: LazyListState,
+    firstFolderId: Int?,
+) {
+    private val states = HashMap<Int?, LazyListState>().apply { put(firstFolderId, first) }
+
+    /** The list state of [state]'s folder, made at the place [positions] keeps for it ([hasStories]: the rings row). */
+    fun of(
+        state: ChatListUiState,
+        positions: FolderPositions,
+        hasStories: Boolean,
+    ): LazyListState =
+        states.getOrPut(state.selectedFolderId) {
+            val (index, offset) = positions.scrollOf(state, hasStories)
+            scrollingListState(index, offset)
         }
-    content(state, listState, Modifier.folderSlide(folderSwitch, isRtl, side).clearAndSetSemantics {})
+
+    /** The list state of folder [folderId] if it has one yet. */
+    fun ofFolder(folderId: Int?): LazyListState? = states[folderId]
 }
 
 /**
@@ -205,9 +233,8 @@ internal fun FolderCompanion(
 @Composable
 internal fun rememberShownList(
     state: ChatListUiState,
-    listState: LazyListState,
+    listStates: FolderListStates,
     folderSwitch: FolderSwitch,
-    hasStories: Boolean,
 ): ChatListUiState {
     var shownFolderId by rememberSaveable { mutableStateOf(state.selectedFolderId) }
     val positions = rememberSaveable(saver = FolderPositions.Saver) { FolderPositions() }
@@ -217,8 +244,6 @@ internal fun rememberShownList(
     val lastShown = remember { mutableStateOf(state) }
     val isShown = state.selectedFolderId == shownFolderId
     SideEffect { if (isShown) lastShown.value = state }
-    val currentState by rememberUpdatedState(state)
-    val currentHasStories by rememberUpdatedState(hasStories)
     val motionScheme = MaterialTheme.motionScheme
     LaunchedEffect(state.selectedFolderId) {
         // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
@@ -233,23 +258,15 @@ internal fun rememberShownList(
             if (!swiped && animated && toward == 0) {
                 folderSwitch.alpha.animateTo(0f, motionScheme.fastEffectsSpec())
             }
-            positions.save(shownFolderId, listState)
-            val scroll = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-            folderSwitch.animateRows = false
+            // Kept for a rotation or process death; the folder's list state keeps it while the screen is.
+            listStates.ofFolder(shownFolderId)?.let { positions.save(shownFolderId, it) }
+            // A slide still on its way stops first: from here on nothing suspends until the lists changed places,
+            // so no frame shows one of them in the other's place.
+            folderSwitch.offset.stop()
             shownFolderId = state.selectedFolderId
-            // Applied in the layout pass that brings the selected folder's rows, so the list does not keep the row
-            // that was first in the old list.
-            positions.restore(currentState, currentHasStories, listState)
-            folderSwitch.bringIn(outgoing, scroll, toward = if (animated) toward else 0, swiped)
+            folderSwitch.bringIn(outgoing, toward = if (animated) toward else 0, swiped)
         }
         coroutineScope {
-            // Rows animate again once the selected folder's rows are laid out, in the frame that composes them.
-            if (!folderSwitch.animateRows) {
-                launch {
-                    repeat(ROWS_LAYOUT_FRAMES) { withFrameNanos {} }
-                    folderSwitch.animateRows = true
-                }
-            }
             launch { folderSwitch.alpha.animateTo(1f, motionScheme.defaultEffectsSpec()) }
             folderSwitch.offset.animateTo(0f, motionScheme.defaultSpatialSpec())
             if (folderSwitch.fixed != null) folderSwitch.clearCompanion()
@@ -291,18 +308,6 @@ internal class FolderPositions private constructor(
         // Not the first of visibleItemsInfo, which may be a row drawn in the content padding behind the top bar.
         val first = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
         positions[folderId] = ListPosition(first.key, index, listState.firstVisibleItemScrollOffset)
-    }
-
-    /**
-     * Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass ([scrollOf]).
-     */
-    fun restore(
-        state: ChatListUiState,
-        hasStories: Boolean,
-        listState: LazyListState,
-    ) {
-        val (index, offset) = scrollOf(state, hasStories)
-        listState.requestScrollToItem(index, offset)
     }
 
     /**
@@ -364,9 +369,3 @@ private class ListPosition(
     val index: Int,
     val offset: Int,
 )
-
-/**
- * How many frames rows do not animate for after a folder switch: enough for the frame that composes and lays out the
- * selected folder's rows, whether the switch is made during a frame (after the fade-out) or between two (without it).
- */
-private const val ROWS_LAYOUT_FRAMES = 2

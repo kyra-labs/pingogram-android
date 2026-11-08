@@ -569,6 +569,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   neighbour composes only while a swipe or a slide shows it). `ChatListRecompositionTest` checks that a swipe recomposes
   no row of the shown list. The neighbours' lists are mapped only while "Swipe to change folders" is on, each by a mapper
   of its own, on the view model's dispatcher; their cost while the chats change is not measured on a phone yet.
+- Landing a folder switch (2026-11-07, the owner saw a stutter as a swipe landed, and more under repeated swipes):
+  the shown list and the one beside it swapped their contents as the swipe landed, so both lists composed every
+  visible row again in that frame, and the rows' animations were turned off and on again around it, recomposing them
+  once more. Each folder's list is now movable content with its own list state (`ChatListScreen`'s `FolderLists`,
+  `FolderListStates`): landing a swipe or tapping a tab moves the two compositions between the shown place and the
+  companion's, recomposing no row (`ChatListRecompositionTest`), and a folder's list keeps its scroll position by
+  itself.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

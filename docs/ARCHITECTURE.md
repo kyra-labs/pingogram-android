@@ -498,7 +498,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `side`, read in the draw phase, so a drag recomposes no row; `FolderCompanion`, composed only while on screen); past a
   third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`),
   whose list takes the neighbour's place without a frame between. A tab's tap slides the same way from the tab's side
-  (`rememberShownList`), the old list as the companion. The neighbours' lists come from
+  (`rememberShownList`), the old list as the companion. Each folder's list is movable content with a list state of its
+  own (`FolderListStates`), so a switch moves the two lists' compositions between the shown place and the companion's
+  without composing their rows again, and each keeps where it was scrolled; a list at its top stays there when a chat
+  comes first (`KeepTopShown`). The neighbours' lists come from
   `ChatListViewModel.neighbourLists` (`FolderNeighbourLists`: mapped by mappers of their own, only while the route
   collects them, which it does while the swipe changes folders, and dropped once no longer beside the selected tab);
   the view model loads the first page of the tabs beside the selected one ahead, only those.
