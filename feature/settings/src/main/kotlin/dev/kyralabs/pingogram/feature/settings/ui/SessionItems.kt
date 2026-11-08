@@ -212,7 +212,7 @@ internal fun TerminationDialog(
     }
 }
 
-/** How long sessions may stay without activity: in years or months where that is exact, else in days. */
+/** How long sessions may stay without activity: in years, months or weeks where that is exact, else in days. */
 @Composable
 internal fun ttlText(days: Int): String =
     when {
@@ -224,6 +224,11 @@ internal fun ttlText(days: Int): String =
         days > 0 && days % DAYS_PER_MONTH == 0 -> {
             val months = days / DAYS_PER_MONTH
             pluralStringResource(R.plurals.settings_sessions_ttl_months, months, months)
+        }
+
+        days > 0 && days < DAYS_PER_MONTH && days % DAYS_PER_WEEK == 0 -> {
+            val weeks = days / DAYS_PER_WEEK
+            pluralStringResource(R.plurals.settings_sessions_ttl_weeks, weeks, weeks)
         }
 
         else -> {
@@ -254,6 +259,7 @@ internal fun SessionDevice.iconRes(): Int =
         SessionDevice.Unknown -> R.drawable.ic_devices
     }
 
-// Telegram's choices for the inactive session TTL are a week, months and a year (1, 3, 6 or 12 months of 30 days).
+// Telegram offers a week, 1, 3 or 6 months of 30 days and a year of 365 days for the inactive session TTL.
+private const val DAYS_PER_WEEK = 7
 private const val DAYS_PER_MONTH = 30
 private const val DAYS_PER_YEAR = 365

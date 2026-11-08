@@ -516,7 +516,10 @@
     <!-- Spoken by screen readers for the progress indicator while the other sessions are terminated. -->
     <string name="settings_terminating_all">Terminating all other sessions</string>
     <!-- How long sessions stay without activity. %1$s is a duration such as "6 months". -->
-    <string name="settings_sessions_ttl">Telegram terminates a session after %1$s without activity.</string>
+    <string name="settings_sessions_ttl_section">Automatically end inactive sessions</string>
+    <string name="settings_sessions_ttl_footer">Telegram ends a session after it goes unused for this long.</string>
+    <string name="settings_sessions_swipe_footer">Tap a session, or swipe it toward the start, to end it.</string>
+    <string name="settings_session_swipe_end">End session</string>
     <plurals name="settings_sessions_ttl_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
@@ -524,6 +527,10 @@
     <plurals name="settings_sessions_ttl_months">
         <item quantity="one">%1$d month</item>
         <item quantity="other">%1$d months</item>
+    </plurals>
+    <plurals name="settings_sessions_ttl_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
     </plurals>
     <plurals name="settings_sessions_ttl_years">
         <item quantity="one">%1$d year</item>

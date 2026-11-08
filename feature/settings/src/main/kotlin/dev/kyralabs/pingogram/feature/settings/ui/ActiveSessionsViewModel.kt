@@ -37,6 +37,7 @@ import javax.inject.Inject
  * - A terminated session leaves the list at once; terminating all others leaves this device alone. Telegram refuses
  *   terminations from a device that logged in recently, with error 406 ([ActiveSessionsEffect.TerminationRefused]).
  * - A confirmed login loads the list again, where it is one of the others.
+ * - A new period for ending inactive sessions shows at once and is taken back, with a snackbar, if Telegram refuses it.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; terminations in progress do not, as
  * TDLib finishes them anyway and the list loads again.
@@ -91,6 +92,10 @@ class ActiveSessionsViewModel
 
                 is ActiveSessionsEvent.ConfirmLogin -> {
                     confirmLogin(event.sessionId)
+                }
+
+                is ActiveSessionsEvent.SetInactiveSessionTtl -> {
+                    setInactiveSessionTtl(event.days)
                 }
             }
         }
@@ -152,7 +157,7 @@ class ActiveSessionsViewModel
                     }
 
                     is Outcome.Failure -> {
-                        showTerminationError(terminated.error)
+                        effectChannel.trySend(terminated.error.terminationEffect())
                     }
                 }
             }
@@ -171,7 +176,7 @@ class ActiveSessionsViewModel
                     }
 
                     is Outcome.Failure -> {
-                        showTerminationError(terminated.error)
+                        effectChannel.trySend(terminated.error.terminationEffect())
                     }
                 }
             }
@@ -198,14 +203,25 @@ class ActiveSessionsViewModel
             }
         }
 
-        private fun showTerminationError(error: DomainError) {
-            val effect =
-                if (error == DomainError.Silent) {
-                    ActiveSessionsEffect.TerminationRefused
-                } else {
-                    ActiveSessionsEffect.ShowError(error)
+        /** Shows [days] at once and sends it; a refusal brings the previous period back. */
+        private fun setInactiveSessionTtl(days: Int) {
+            val state = uiState.value
+            val previous = (state.sessions as? SessionsState.Loaded)?.inactiveSessionTtlDays ?: return
+            if (state.isSavingTtl || days == previous) return
+            mutableUiState.update { it.copy(isSavingTtl = true) }
+            updateLoaded { it.copy(inactiveSessionTtlDays = days) }
+            viewModelScope.launch {
+                val saved = sessionRepository.setInactiveSessionTtl(days)
+                mutableUiState.update { it.copy(isSavingTtl = false) }
+                if (saved is Outcome.Failure) {
+                    updateLoaded { it.copy(inactiveSessionTtlDays = previous) }
+                    if (saved.error !=
+                        DomainError.Silent
+                    ) {
+                        effectChannel.trySend(ActiveSessionsEffect.ShowError(saved.error))
+                    }
                 }
-            effectChannel.trySend(effect)
+            }
         }
 
         private fun setBusy(
@@ -235,6 +251,10 @@ class ActiveSessionsViewModel
                 ((dialog as? TerminateDialog.Session)?.title as? UiText.Plain)?.text
         }
     }
+
+/** What a refused termination shows: error 406 has no text to show ([DomainError.Silent]). */
+private fun DomainError.terminationEffect(): ActiveSessionsEffect =
+    if (this == DomainError.Silent) ActiveSessionsEffect.TerminationRefused else ActiveSessionsEffect.ShowError(this)
 
 /** The confirmation [ActiveSessionsViewModel] had open before the process died; null if none was. */
 private fun SavedStateHandle.restoredDialog(): TerminateDialog? {

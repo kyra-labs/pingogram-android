@@ -15,6 +15,7 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property dialog the termination being confirmed; null when none is.
  * @property busySessionIds the sessions being terminated or confirmed.
  * @property isTerminatingAll terminating all other sessions was confirmed and runs.
+ * @property isSavingTtl a new period for ending inactive sessions is on its way to Telegram.
  */
 @Immutable
 data class ActiveSessionsUiState(
@@ -22,6 +23,7 @@ data class ActiveSessionsUiState(
     val dialog: TerminateDialog? = null,
     val busySessionIds: ImmutableSet<Long> = persistentSetOf(),
     val isTerminatingAll: Boolean = false,
+    val isSavingTtl: Boolean = false,
 )
 
 /** The sessions while they load. */
@@ -99,6 +101,11 @@ sealed interface ActiveSessionsEvent {
     data object ConfirmTermination : ActiveSessionsEvent
 
     data object DismissTermination : ActiveSessionsEvent
+
+    /** Telegram should end sessions after [days] without activity. */
+    data class SetInactiveSessionTtl(
+        val days: Int,
+    ) : ActiveSessionsEvent
 
     /** A new login is the user's own. */
     data class ConfirmLogin(

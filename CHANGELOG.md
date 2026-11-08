@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Active sessions lets you choose when Telegram ends sessions that go unused (a week to a year), and a swipe on a
+  session ends it, after asking.
 - With Experimental UI on, every settings page takes the new look: a wide title, the row icons on colorful shapes,
   chevrons on rows that open a page, and tinted rows for actions that delete or reset.
 - With Experimental UI on, Appearance shows a live preview, the light and dark modes as cards, every color theme in
