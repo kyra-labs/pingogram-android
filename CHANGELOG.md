@@ -15,6 +15,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, Appearance shows a live preview, the light and dark modes as cards, every color theme in
   one row, the chats' text size and "Group bubbles" (Automatic, Vivid, Tinted) on the page itself, and "Reset" with
   Undo.
+- With Experimental UI on, Notifications shows one kind of chat at a time and a banner while notifications are off,
+  and Power saving says at the top whether Battery Saver is on and whether it saves power now.
 - Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
   experimental look.
 - Photos sent as files show a thumbnail in the chat and, once downloaded, open in Pingogram's own viewer instead of

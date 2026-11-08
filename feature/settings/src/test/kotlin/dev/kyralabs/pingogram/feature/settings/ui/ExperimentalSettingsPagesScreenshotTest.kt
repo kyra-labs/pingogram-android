@@ -79,6 +79,51 @@ class ExperimentalSettingsPagesScreenshotTest {
         }
 
     @Test
+    fun notificationsBlockedLight() =
+        composeRule.captureScreen(javaClass, "notificationsBlockedLight", ThemeMode.Light) {
+            Experimental {
+                NotificationSettingsScreen(
+                    state = SettingsPreviewData.notifications.copy(notificationsBlocked = true),
+                    onEvent = {},
+                    onOpen = {},
+                    onBack = {},
+                )
+            }
+        }
+
+    @Test
+    fun notificationsRtl() =
+        composeRule.captureScreen(javaClass, "notificationsRtl", ScreenshotVariant.Rtl) {
+            Experimental {
+                NotificationSettingsScreen(
+                    state = SettingsPreviewData.notifications,
+                    onEvent = {},
+                    onOpen = {},
+                    onBack = {},
+                )
+            }
+        }
+
+    @Test
+    fun powerSavingLight() =
+        composeRule.captureScreen(javaClass, "powerSavingLight", ThemeMode.Light) {
+            Experimental { PowerSavingScreen(SettingsPreviewData.powerSaving, onEvent = {}, onBack = {}) }
+        }
+
+    @Test
+    fun powerSavingOnDark() =
+        composeRule.captureScreen(javaClass, "powerSavingOnDark", ThemeMode.Dark) {
+            Experimental { PowerSavingScreen(SettingsPreviewData.powerSavingOn, onEvent = {}, onBack = {}) }
+        }
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun powerSavingFontScale200() =
+        composeRule.captureScreen(javaClass, "powerSavingFontScale200", ThemeMode.Light) {
+            Experimental { PowerSavingScreen(SettingsPreviewData.powerSavingOn, onEvent = {}, onBack = {}) }
+        }
+
+    @Test
     fun aboutLight() =
         composeRule.captureScreen(javaClass, "aboutLight", ThemeMode.Light) {
             Experimental {
