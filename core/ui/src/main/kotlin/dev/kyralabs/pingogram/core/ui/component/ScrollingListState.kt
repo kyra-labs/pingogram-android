@@ -25,6 +25,17 @@ fun rememberScrollingListState(
         initialFirstVisibleItemScrollOffset = initialFirstVisibleItemScrollOffset,
     )
 
+/**
+ * A [rememberScrollingListState] made outside composition, at [firstVisibleItemIndex] scrolled
+ * [firstVisibleItemScrollOffset] past it: for a list whose holder keeps its state, such as each chat folder's (not
+ * saved by itself).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+fun scrollingListState(
+    firstVisibleItemIndex: Int = 0,
+    firstVisibleItemScrollOffset: Int = 0,
+): LazyListState = LazyListState(ScrollingListCacheWindow, firstVisibleItemIndex, firstVisibleItemScrollOffset)
+
 /** Half a viewport ahead, one behind: [rememberScrollingListState]. */
 @OptIn(ExperimentalFoundationApi::class)
 private val ScrollingListCacheWindow =

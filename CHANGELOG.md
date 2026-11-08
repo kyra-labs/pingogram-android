@@ -78,6 +78,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - With Experimental UI on, scrolling a group whose colored messages show their sender's name above them no longer
   crashes on a message with code in it.
+- Swiping to another chat folder no longer stutters as the swipe lands, nor more with each swipe after it: the two
+  folders' lists change places without drawing their chats anew.
+- A folder's chat list no longer opens scrolled down to a chat of the folder shown before, or to the chat that was
+  first before more chats loaded above it: a list at its top stays at its top.
 - Closing a photo before it finished downloading no longer leaves its bubble in the chat showing only the blurred
   preview: the download goes on, and the photo shows when it arrives.
 - After removing an account and adding another, an incoming call shows the caller's picture from the right account.

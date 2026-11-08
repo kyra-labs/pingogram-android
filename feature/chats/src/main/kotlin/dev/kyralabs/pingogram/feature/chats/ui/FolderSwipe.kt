@@ -146,7 +146,6 @@ internal fun Modifier.folderSwipe(
                     // The neighbour stays as it is now, whatever the neighbours become once its tab is selected.
                     val lists = currentNeighbourLists()
                     folderSwitch.fixed = (if (toward > 0f) lists.previous else lists.next)?.state
-                    folderSwitch.fixedScroll = 0 to 0
                     folderSwitch.offset.animateTo(toward * width, away, initialVelocity = velocity)
                     folderSwitch.swiped = true
                     currentOnSelect(target.folderId)
