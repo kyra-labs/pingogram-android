@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.domain.repository.CallDataSaving
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -147,6 +148,11 @@ internal fun DataStorageScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
+        // The experimental look opens on the storage used (docs/DESIGN_SYSTEM.md §13.10); its group stays below.
+        val usage = state.usage
+        if (LocalExperimentalUi.current && usage is StorageUsageState.Content) {
+            StorageCard(usage.usage) { onEvent(DataStorageEvent.ClearCache) }
+        }
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload) {
                 onEvent(DataStorageEvent.ResetAutoDownload)
@@ -163,7 +169,7 @@ internal fun DataStorageScreen(
             title = stringResource(R.string.settings_section_storage_usage),
             iconTone = SettingsIconTone.Secondary,
         ) {
-            when (val usage = state.usage) {
+            when (usage) {
                 StorageUsageState.Loading -> {
                     item { shapes ->
                         SettingsSegment(shapes) {

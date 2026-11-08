@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncHost
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -156,6 +157,7 @@ internal fun PrivacySecurityScreen(
             }
 
             is PrivacySecurityUiState.Content -> {
+                if (LocalExperimentalUi.current) PrivacyCheckupCard(state, onOpen)
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
@@ -215,6 +217,7 @@ private fun PrivacySection(
                         )
                     },
                     onClick = { onOpen(PrivacySecurityPage.NewChats) },
+                    opensPage = true,
                 )
             }
         }
@@ -237,6 +240,7 @@ private fun PrivacySettingItem(
         shapes = shapes,
         supportingContent = { Text(privacySummary(rules)) },
         onClick = onClick,
+        opensPage = true,
     )
 }
 
@@ -322,6 +326,7 @@ private fun TwoStepVerificationItem(
             }
         },
         onClick = onClick,
+        opensPage = true,
     )
 }
 

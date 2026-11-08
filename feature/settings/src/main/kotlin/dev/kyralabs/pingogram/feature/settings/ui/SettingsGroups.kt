@@ -126,7 +126,8 @@ internal fun SettingsSegment(
  * list item's pressed shape on the motion scheme's fast spatial spring (the list item's own); without, it only shows.
  * Either way screen readers read it as one item. With [selected] as well (a page row of Settings home beside the open
  * page, `docs/DESIGN_SYSTEM.md` §7) it is selectable, in the list item's selected colors and shape while [selected]
- * is true.
+ * is true. With [opensPage] (a row that opens another page) it ends in a chevron in the experimental look, where it has
+ * no [trailingContent].
  */
 @Suppress("LongParameterList") // A list item's slots and states, and the icon's tone.
 @Composable
@@ -142,7 +143,11 @@ internal fun SettingsRow(
     colors: ListItemColors = settingsRowColors(),
     iconTone: SettingsIconTone? = null,
     selected: Boolean? = null,
+    opensPage: Boolean = false,
 ) {
+    // A row that opens another page ends in a chevron in the experimental look (docs/DESIGN_SYSTEM.md §13.10).
+    val trailingContent =
+        trailingContent ?: if (opensPage && LocalExperimentalUi.current) ({ PageChevron() }) else null
     val leadingContent: (@Composable () -> Unit)? =
         icon?.let {
             { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled, selected = selected == true) }
@@ -207,9 +212,9 @@ internal fun PageItem(
         shapes = shapes,
         icon = icon,
         supportingContent = { Text(summary) },
-        trailingContent = if (LocalExperimentalUi.current) ({ PageChevron() }) else null,
         onClick = onClick,
         selected = selected,
+        opensPage = true,
     )
 }
 
