@@ -9,117 +9,56 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-08
+
+Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts and Settings, now the only look.
+
 ### Added
-- Active sessions lets you choose when Telegram ends sessions that go unused (a week to a year), and a swipe on a
-  session ends it, after asking.
-- With Experimental UI on, every settings page takes the new look: a wide title, the row icons on colorful shapes,
-  chevrons on rows that open a page, and tinted rows for actions that delete or reset.
-- With Experimental UI on, Appearance shows a live preview, the light and dark modes as cards, every color theme in
-  one row, the chats' text size and "Group bubbles" (Automatic, Vivid, Tinted) on the page itself, and "Reset" with
-  Undo.
-- With Experimental UI on, Notifications shows one kind of chat at a time and a banner while notifications are off,
-  and Power saving says at the top whether Battery Saver is on and whether it saves power now.
-- With Experimental UI on, Privacy and security opens with a privacy checkup of what anyone can see, and Data and
-  storage with the storage Pingogram uses and "Clear cache".
-- With Experimental UI on, Active sessions shows this device as a card, and Edit profile has filled fields and a
-  filled Save button.
-- With Experimental UI on, About opens with Pingogram's name and version, "What's new" and "Check for updates", which
-  open the release pages on GitHub in your browser.
-- Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
-  experimental look.
-- Photos sent as files show a thumbnail in the chat and, once downloaded, open in Pingogram's own viewer instead of
-  asking for another app.
-- Settings has an "Experimental UI" switch, marked Beta, for trying a bolder Material 3 Expressive look for chats,
-  contacts and settings. It is off by default and can be switched back anytime; with it on, Settings shows it as a
-  card under your account.
-- With Experimental UI on, the chat list shows folders as chips, the kind of chat before its name, what kind of message
-  the last one is, and the time in color while a chat is unread; groups, channels and Saved Messages get avatars of
-  their own shapes.
-- With Experimental UI on, search sets its field and filters on a rounded block, the chosen filter filled, chats ending
-  in an arrow, and the words found in messages on colored marks.
-- With Experimental UI on, conversations get a centred top bar with a group's latest writers and its online members,
-  a channel's notifications toggle, a pill-shaped pinned bar, a "Jump to mention" button and a composer with attach
-  and camera buttons.
-- With Experimental UI on, group chats color each person's bubbles in their own hue, vivid in small groups and tinted
-  in big ones (Settings → Appearance → Chat appearance → Group bubbles), with role labels after names, a colored
-  stripe on reply quotes, a ring around messages that mention you, and a typing bubble.
-- With Experimental UI on, channels show their posts on a warm color with their views, count unread posts on the
-  divider, and give files a rounded download button.
-- With Experimental UI on, Contacts counts who is online in its header, puts Invite, My QR and Scan in a row under
-  it, shows the people online now, sets its letters large, and adds an "Add contact" button beside the navigation bar.
-- With Experimental UI on, Settings home has a search over its pages, an account card with Edit profile, your QR code
-  and an account menu, and its pages in four groups with the storage used, your devices and the language beside them.
-- A "Coral" color theme in Settings → Appearance → Theme, the accent of the experimental look's design.
-- With Experimental UI on, "Wave" on a group's join message sends the new member a greeting sticker.
-- With Experimental UI on, a one-word message in capitals in a group shows large and italic, and a channel post's short
-  bold first line shows as its headline.
-- With Experimental UI on, a mention of you in a group message shows as a chip in the message's text.
-- With Experimental UI on, settings search also finds the pages inside Settings' pages, such as Blocked users, Passcode
-  lock, each privacy setting, Proxy or the theme, and opens them with their page behind them.
-- With Experimental UI on, global search shows the people you write to most above its filters, narrowing them as
-  you type.
-- Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
-  conversation instead of "Unsupported message". Their photos and videos open in the media viewer.
-- The demo's channel has a sample rich post, with two sections to open and a photo.
+- Group chats color each person's messages in their own hue (Appearance → Group bubbles: Automatic, Vivid or Tinted),
+  with role labels, a ring around messages that mention you, and a typing bubble.
+- Channels show their posts on a warm color with their views, and a short bold first line as the post's headline.
+- Rich channel posts (headings, collapsible sections, photos, lists and tables) show in the chat instead of
+  "Unsupported message".
+- Conversations have a "Jump to mention" button, a group's latest writers and online members in the top bar, and a
+  channel's notifications toggle.
+- "Wave" on a group's join message sends the new member a greeting sticker.
+- Settings search finds the pages inside Settings too, such as Blocked users, Passcode lock or Proxy.
+- Global search shows the people you write to most, narrowing them as you type.
+- Contacts shows who is online now, with Invite, My QR and Scan in a row under its header.
+- Privacy and security opens with a privacy checkup; Data and storage with the storage used and "Clear cache".
+- Active sessions lets you choose when unused sessions end (a week to a year), and a swipe ends a session.
+- About opens with "What's new" and "Check for updates", which open the release pages on GitHub.
+- A "Coral" color theme, and "Chat type icons" in Appearance → Chat list.
+- Photos sent as files show a thumbnail and open in Pingogram's own viewer.
 
 ### Changed
-- The bolder Material 3 Expressive look, until now "Experimental UI", is Pingogram's look for everyone. The switch and
-  its card in Settings are gone.
-- The Contacts tab and Settings fade into the background behind the floating navigation bar, as the chat list does.
-- In a chat, older messages fade into the composer as they scroll under it, as the chat list fades behind the
-  navigation bar.
-- Opening and closing a photo or video, and scrolling a chat with photos, draw much less per frame: the blurred
-  preview under a photo is made once instead of being blurred again in every frame, and is no longer drawn under a
-  photo that has loaded. The blurred preview now shows on Android 8 to 11 too, where it was a plain grey box.
-- A video starts opening without a pause before the animation and closes without a hitch at its end. The caption and
-  the viewer's buttons fade in once the photo or video has opened.
-- The media viewer decodes a photo at most at twice the screen's size and reuses the copy the chat already shows, so
-  paging through photos no longer pushes the chat's own pictures out of memory and makes them load again on the way
-  back.
-- Leaving a chat or the stories stops the downloads they started by themselves, so they no longer use data and battery
-  after you left.
-- The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
-  the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
-  there on every screen size, and your picture opens Settings; hold it to switch accounts.
-- Contacts and Settings have the same large header as Chats, shrinking to one line as you scroll.
-- "New chat" is a round button beside the navigation bar on the Chats tab (in the side rail on tablets). The bar keeps
-  its tab names, and shows icons instead only where the names don't fit. The chats fade out above the bar instead of ending under it.
-- Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.
-- Pinned chats sit together at the top of the list under "Pinned", and a button at the end of the folder tabs opens
-  the folder settings. Appearance → Chat list → "Edit folders button" hides it; the tabs' menus still edit folders.
-- Chat folders slide: tapping a tab slides its chats in from that side, and with "Swipe to change folders" the next
-  folder's chats follow your finger, already loaded, instead of appearing after the swipe.
-- Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
-  list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
-- The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
-  paragraph; an export, all of it and its photos) instead of "Unsupported message".
-- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
-  portrait picture beside empty room.
-- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (with its navigation suite; still allowed by
-  CLAUDE.md rule 7, as no stable release has the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and
-  kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
+- Chats, Contacts and Settings have a large header that shrinks as you scroll; search opens from the Chats header,
+  and your picture opens Settings (hold it to switch accounts).
+- "New chat" sits beside the navigation bar; lists fade out above the bar, and messages fade into the composer.
+- Folders are chips that slide: the next folder's chats follow your finger, already loaded.
+- Pinned chats sit together at the top under "Pinned"; a button after the folder tabs opens the folder settings.
+- Groups, channels, forums and Saved Messages have avatars of their own shapes, and avatars without a photo have vivid
+  colors.
+- Every Settings page has the new look; Appearance has a live preview, the light and dark modes as cards, every color
+  theme in one row and "Reset".
+- Search's Messages, Media and Links chips show how many results were found.
+- Photos and videos take the bubble's full width.
+- Opening, closing and paging through photos and videos is much smoother and uses less memory, and leaving a chat
+  stops the downloads it started by itself.
+- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (allowed by CLAUDE.md rule 7: no stable release has
+  the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and kotlinx.serialization 1.12.0.
+
+### Removed
+- The "Experimental UI" switch: its look is Pingogram's look for everyone.
 
 ### Fixed
-- Tapping an app file (APK) sent in a chat starts its installation again: Android asks once to allow Pingogram to
-  install apps, then asks before each install.
-- In a chat, the jump-to-newest button's unread count no longer runs past the screen's edge when it has three digits
-  or more.
-- In the experimental look, the header's buttons (search and your picture on the chat list) no longer touch.
-- A file download you pause in a chat now says "Paused" and resumes from where it stopped when tapped again, instead
-  of looking like one still under way.
-- With Experimental UI on, scrolling a group whose colored messages show their sender's name above them no longer
-  crashes on a message with code in it.
-- Swiping to another chat folder no longer stutters as the swipe lands, nor more with each swipe after it: the two
-  folders' lists change places without drawing their chats anew.
-- A folder's chat list no longer opens scrolled down to a chat of the folder shown before, or to the chat that was
-  first before more chats loaded above it: a list at its top stays at its top.
-- Closing a photo before it finished downloading no longer leaves its bubble in the chat showing only the blurred
-  preview: the download goes on, and the photo shows when it arrives.
-- After removing an account and adding another, an incoming call shows the caller's picture from the right account.
-- With raise to listen turned off, the first voice message after starting the app no longer plays at the earpiece when
-  the phone is near your face.
-- Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
-  it, instead of fading in over a black screen and snapping back.
+- Tapping an APK sent in a chat installs it again, after Android asks.
+- A paused download says "Paused" and resumes where it stopped.
+- Swiping between folders no longer stutters, and a folder no longer opens scrolled to the wrong chat.
+- A photo closed before it finished downloading shows once it arrives.
+- An incoming call shows the caller's picture from the right account after accounts were removed and added.
+- With raise to listen off, the first voice message no longer plays at the earpiece.
+- The composer's camera button no longer shows on devices without a camera.
 
 ## [1.1.3] - 2026-11-04
 
@@ -1203,7 +1142,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...v2.0.0
 [1.1.3]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.0...v1.1.1
