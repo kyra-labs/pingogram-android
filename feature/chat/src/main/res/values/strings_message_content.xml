@@ -16,6 +16,10 @@
     <string name="content_not_played">Not played yet</string>
     <string name="content_download">Download</string>
     <string name="content_cancel_download">Cancel download</string>
+    <string name="content_pause_download">Pause download</string>
+    <string name="content_resume_download">Resume download</string>
+    <!-- A document's download the user paused: how much of it is on the device, e.g. "1.2 MB / 4.5 MB · Paused". -->
+    <string name="content_progress_paused">%1$s / %2$s · Paused</string>
     <!-- The title of the system's chooser of apps when a downloaded file has no known type. -->
     <string name="content_open_with">Open with</string>
     <!-- A snackbar after tapping a downloaded file when no app on the device opens files of its type. -->
