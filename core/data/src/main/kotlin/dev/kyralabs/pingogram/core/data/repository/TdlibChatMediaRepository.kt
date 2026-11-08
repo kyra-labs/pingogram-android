@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.model.richMediaMessages
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -53,18 +54,28 @@ class TdlibChatMediaRepository
                 is Outcome.Failure -> found
             }
 
-        /** The page of [message] alone, of the filter of its kind. */
+        /**
+         * The page of [message] alone, of the filter of its kind; a picture sent as a file ([isViewableImage]) is the
+         * whole of what the viewer shows, as no filter of TDLib's finds files among photos.
+         */
         private fun pageOf(message: Message): Outcome<ChatMediaPage> {
-            val filter = message.content.mediaFilter ?: return Outcome.Failure(DomainError.NotFound)
-            return Outcome.Success(
-                ChatMediaPage(
-                    messages = persistentListOf(message),
-                    filter = filter,
-                    reachedOldest = false,
-                    reachedNewest = false,
-                    totalCount = null,
-                ),
-            )
+            val content = message.content
+            val alone = content is MessageContent.Document && content.document.isViewableImage
+            val filter =
+                if (alone) ChatMediaFilter.PhotosAndVideos else content.mediaFilter
+            return if (filter == null) {
+                Outcome.Failure(DomainError.NotFound)
+            } else {
+                Outcome.Success(
+                    ChatMediaPage(
+                        messages = persistentListOf(message),
+                        filter = filter,
+                        reachedOldest = alone,
+                        reachedNewest = alone,
+                        totalCount = if (alone) 1 else null,
+                    ),
+                )
+            }
         }
 
         override suspend fun richMedia(

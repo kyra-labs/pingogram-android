@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
@@ -37,12 +38,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A file message without its caption (`REQUIREMENTS.md` FR-C4), padded in its bubble: an icon for its kind
- * ([documentKind]), its name (shortened in the middle, so the extension stays) and its size, and what can be done
- * with it, by [fileState]:
+ * ([documentKind]), or for a picture sent as a file its thumbnail ([DocumentThumbnail]), its name (shortened in the
+ * middle, so the extension stays) and its size, and what can be done with it, by [fileState]:
  *
  * - **Not downloaded**: a download [IconButton] ([onDownload]); none if TDLib cannot download it.
  * - **Downloading**: "1.2 MB / 4.5 MB" and a determinate wavy ring around a cancel button ([onCancel]).
- * - **Downloaded**: tapping the file opens it ([onOpen]).
+ * - **Downloaded**: tapping the file opens it ([onOpen]): a picture sent as a file in the app's media viewer, others in
+ *   another app.
  * - **Being sent** ([upload]): a wavy ring of the upload around a cancel button ([onCancelUpload]).
  *
  * @param fileState the file's state, from `FileRepository`; null while unknown, shown as not downloaded.
@@ -80,7 +82,11 @@ internal fun MessageDocument(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ContentIcon(documentKind(document).icon, colors)
+        if (document.isViewableImage) {
+            DocumentThumbnail(document)
+        } else {
+            ContentIcon(documentKind(document).icon, colors)
+        }
         Column(
             modifier = Modifier.weight(1f, fill = false),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
