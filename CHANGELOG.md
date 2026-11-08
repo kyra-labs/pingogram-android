@@ -45,6 +45,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Changed
 - The Contacts tab and Settings fade into the background behind the floating navigation bar, as the chat list does.
+- In a chat, older messages fade into the composer as they scroll under it, as the chat list fades behind the
+  navigation bar.
 - Opening and closing a photo or video, and scrolling a chat with photos, draw much less per frame: the blurred
   preview under a photo is made once instead of being blurred again in every frame, and is no longer drawn under a
   photo that has loaded. The blurred preview now shows on Android 8 to 11 too, where it was a plain grey box.
