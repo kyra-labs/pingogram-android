@@ -22,6 +22,12 @@ interface SessionRepository {
     /** Logs every session but the current one out of the account. */
     suspend fun terminateAllOthers(): Outcome<Unit>
 
+    /**
+     * Sets after how many days without activity Telegram terminates a session by itself ([days], one of Telegram's
+     * choices: 7, 30, 90, 180 or 365).
+     */
+    suspend fun setInactiveSessionTtl(days: Int): Outcome<Unit>
+
     /** Confirms the unconfirmed session [sessionId] as a login of the user's. */
     suspend fun confirm(sessionId: Long): Outcome<Unit>
 

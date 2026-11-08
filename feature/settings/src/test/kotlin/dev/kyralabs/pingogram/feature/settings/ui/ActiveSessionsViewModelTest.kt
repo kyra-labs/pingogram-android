@@ -129,6 +129,40 @@ class ActiveSessionsViewModelTest {
     private val ActiveSessionsViewModel.otherIds get() = loaded.others.map { it.id }
 
     @Test
+    fun `a new period for inactive sessions shows at once and is sent to Telegram`() =
+        runTest {
+            answerTypical()
+            client.on(TdApi.SetInactiveSessionTtl::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+
+            send(viewModel, ActiveSessionsEvent.SetInactiveSessionTtl(30))
+
+            assertEquals(30, viewModel.loaded.inactiveSessionTtlDays)
+            assertFalse(viewModel.state.isSavingTtl)
+            assertEquals(30, client.sentOf<TdApi.SetInactiveSessionTtl>().single().inactiveSessionTtlDays)
+        }
+
+    @Test
+    fun `a refused period for inactive sessions is taken back with its error`() =
+        runTest {
+            answerTypical()
+            client.on(TdApi.SetInactiveSessionTtl::class, TdResult.Failure(TdError(500, "Internal")))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ActiveSessionsEvent.SetInactiveSessionTtl(365))
+
+            assertEquals(180, viewModel.loaded.inactiveSessionTtlDays)
+            assertTrue(effects.single() is ActiveSessionsEffect.ShowError)
+        }
+
+    @Test
+    fun `the period another app set is offered among Telegram's choices`() {
+        assertEquals(listOf(7, 30, 45, 90, 180, 365), inactiveSessionTtlOptions(45))
+        assertEquals(InactiveSessionTtls, inactiveSessionTtlOptions(180))
+    }
+
+    @Test
     fun `is loading until TDLib reports the sessions`() =
         runTest {
             client.on(TdApi.GetActiveSessions::class) { CompletableDeferred<TdResult<TdApi.Sessions>>().await() }

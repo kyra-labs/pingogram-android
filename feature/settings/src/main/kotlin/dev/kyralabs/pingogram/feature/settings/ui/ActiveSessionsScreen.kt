@@ -135,9 +135,8 @@ private fun Sessions(
     sessions: SessionsState.Loaded,
     onEvent: (ActiveSessionsEvent) -> Unit,
 ) {
-    val ttl = stringResource(R.string.settings_sessions_ttl, ttlText(sessions.inactiveSessionTtlDays))
     val hasOthers = sessions.unconfirmed.isNotEmpty() || sessions.others.isNotEmpty()
-    ThisDeviceGroup(state, sessions, footer = if (sessions.others.isEmpty()) ttl else null, hasOthers, onEvent)
+    ThisDeviceGroup(state, sessions, hasOthers, onEvent)
     if (sessions.unconfirmed.isNotEmpty()) {
         SettingsGroup(
             title = stringResource(R.string.settings_section_new_logins),
@@ -160,20 +159,22 @@ private fun Sessions(
     if (sessions.others.isNotEmpty()) {
         SettingsGroup(
             title = stringResource(R.string.settings_section_other_sessions),
-            footer = ttl,
+            footer = stringResource(R.string.settings_sessions_swipe_footer),
             iconTone = SettingsIconTone.Secondary,
         ) {
             sessions.others.forEach { session ->
                 item(key = session.id) { shapes ->
-                    SessionRow(
-                        session = session,
-                        isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
-                        shapes = shapes,
-                        onClick = { onEvent(ActiveSessionsEvent.Terminate(session)) },
-                    )
+                    val busy = session.id in state.busySessionIds || state.isTerminatingAll
+                    val terminate = { onEvent(ActiveSessionsEvent.Terminate(session)) }
+                    SwipeToEndSession(enabled = !busy, shape = shapes.shape, onSwiped = terminate) {
+                        SessionRow(session = session, isBusy = busy, shapes = shapes, onClick = terminate)
+                    }
                 }
             }
         }
+    }
+    InactiveSessionsGroup(sessions.inactiveSessionTtlDays, state.isSavingTtl) {
+        onEvent(ActiveSessionsEvent.SetInactiveSessionTtl(it))
     }
 }
 
@@ -243,7 +244,6 @@ private fun ActiveSessionsScreenErrorPreview() {
 private fun ThisDeviceGroup(
     state: ActiveSessionsUiState,
     sessions: SessionsState.Loaded,
-    footer: String?,
     hasOthers: Boolean,
     onEvent: (ActiveSessionsEvent) -> Unit,
 ) {
@@ -251,7 +251,6 @@ private fun ThisDeviceGroup(
     if (experimental) sessions.current?.let { ThisDeviceCard(it) }
     SettingsGroup(
         title = stringResource(R.string.settings_section_this_device).takeUnless { experimental },
-        footer = footer,
     ) {
         sessions.current?.takeUnless { experimental }?.let { current ->
             item(key = current.id) { SessionRow(current, false, it) }

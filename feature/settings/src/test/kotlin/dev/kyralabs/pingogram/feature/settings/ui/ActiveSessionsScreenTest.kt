@@ -13,6 +13,8 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -73,6 +75,31 @@ class ActiveSessionsScreenTest {
             .performClick()
 
         assertEquals(listOf(ActiveSessionsEvent.Terminate(sessions.others.first())), events)
+    }
+
+    @Test
+    fun `swiping another session toward the start asks to terminate it`() {
+        setScreen()
+
+        composeRule
+            .onNodeWithText("MacBook Pro")
+            .performScrollTo()
+            .performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ActiveSessionsEvent.Terminate(sessions.others.first())), events)
+    }
+
+    @Test
+    fun `choosing when inactive sessions end sends it`() {
+        setScreen()
+
+        composeRule
+            .onNodeWithText(string(R.string.settings_sessions_ttl_section))
+            .performScrollTo()
+        composeRule.onNode(hasText("1 year")).performScrollTo().performClick()
+
+        assertEquals(listOf(ActiveSessionsEvent.SetInactiveSessionTtl(365)), events)
     }
 
     @Test
