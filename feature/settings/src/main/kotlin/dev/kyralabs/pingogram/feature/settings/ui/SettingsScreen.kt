@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
@@ -19,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
@@ -165,29 +169,33 @@ internal fun SettingsScreen(
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        // Without headings between them the groups sit closer, as in the account menus.
-        SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-            when {
-                experimentalLook && search.isOpen -> {
-                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
-                }
+        Box(Modifier.fillMaxSize()) {
+            // Without headings between them the groups sit closer, as in the account menus.
+            SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
+                when {
+                    experimentalLook && search.isOpen -> {
+                        SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                    }
 
-                experimentalLook -> {
-                    ExperimentalHome(
-                        state,
-                        onEvent,
-                        onOpen,
-                        selection,
-                        experimentalUi,
-                        onExperimentalUiChange,
-                        summaries,
-                    )
-                }
+                    experimentalLook -> {
+                        ExperimentalHome(
+                            state,
+                            onEvent,
+                            onOpen,
+                            selection,
+                            experimentalUi,
+                            onExperimentalUiChange,
+                            summaries,
+                        )
+                    }
 
-                else -> {
-                    StandardHome(state, onEvent, onOpenPage, selection, experimentalUi, onExperimentalUiChange)
+                    else -> {
+                        StandardHome(state, onEvent, onOpenPage, selection, experimentalUi, onExperimentalUiChange)
+                    }
                 }
             }
+            // The page's end fades into its color behind the floating navigation bar, as the Chats tab's list does.
+            BottomFade(Modifier.align(Alignment.BottomCenter), color = settingsPageColor())
         }
     }
     if (state.isLogOutDialogOpen) {
