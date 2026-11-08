@@ -6,7 +6,6 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
-import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
@@ -76,21 +75,6 @@ class ChatAppearanceScreenScreenshotTest {
     @Test
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
-
-    /** The experimental look adds "Group bubbles" (`docs/DESIGN_SYSTEM.md` §13.6), Tinted picked. */
-    @Test
-    fun experimentalGroupBubblesLight() =
-        composeRule.captureScreen(javaClass, "experimentalGroupBubblesLight", ThemeMode.Light) {
-            CompositionLocalProvider(LocalExperimentalUi provides true) {
-                ChatAppearanceScreen(
-                    state = ChatAppearanceUiState.Content(ChatAppearance(groupBubbles = GroupBubbles.Tinted)),
-                    onTextScale = {},
-                    onBubbleCorners = {},
-                    onWallpaper = {},
-                    onBack = {},
-                )
-            }
-        }
 
     @Test
     fun loadingLight() =

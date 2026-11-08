@@ -78,6 +78,16 @@
     <string name="settings_chat_section_wallpaper">Wallpaper</string>
     <!-- Experimental UI only (docs/DESIGN_SYSTEM.md §13.6): how the bubbles of a group's people are colored. -->
     <string name="settings_group_bubbles">Group bubbles</string>
+    <!-- Experimental UI's Appearance page (docs/DESIGN_SYSTEM.md §13.10): the top bar's button that puts the look's settings back to their defaults -->
+    <string name="settings_appearance_reset">Reset</string>
+    <string name="settings_appearance_reset_done">Appearance reset</string>
+    <string name="settings_appearance_reset_undo">Undo</string>
+    <!-- After the chosen color theme's name: "Coral · Wallpaper colors are off" -->
+    <string name="settings_color_theme_status">" · %1$s"</string>
+    <string name="settings_wallpaper_colors_on">Wallpaper colors are on</string>
+    <string name="settings_wallpaper_colors_off">Wallpaper colors are off</string>
+    <!-- Opens the Theme page, with every theme and its preview -->
+    <string name="settings_color_theme_all">All themes</string>
     <string name="settings_group_bubbles_automatic">Automatic</string>
     <string name="settings_group_bubbles_automatic_summary">Colorful in groups of up to 50 members, tinted in bigger ones</string>
     <string name="settings_group_bubbles_vivid">Vivid</string>

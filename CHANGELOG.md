@@ -12,6 +12,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - With Experimental UI on, every settings page takes the new look: a wide title, the row icons on colorful shapes,
   chevrons on rows that open a page, and tinted rows for actions that delete or reset.
+- With Experimental UI on, Appearance shows a live preview, the light and dark modes as cards, every color theme in
+  one row, the chats' text size and "Group bubbles" (Automatic, Vivid, Tinted) on the page itself, and "Reset" with
+  Undo.
 - Appearance → Chat list → "Chat type icons" turns off the symbols before group and channel names in the
   experimental look.
 - Photos sent as files show a thumbnail in the chat and, once downloaded, open in Pingogram's own viewer instead of

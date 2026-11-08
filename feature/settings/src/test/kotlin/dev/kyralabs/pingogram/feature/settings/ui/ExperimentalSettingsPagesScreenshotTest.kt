@@ -4,7 +4,11 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
@@ -87,6 +91,41 @@ class ExperimentalSettingsPagesScreenshotTest {
                 )
             }
         }
+
+    @Test
+    @Config(qualifiers = WHOLE_PAGE)
+    fun appearanceLight() =
+        composeRule.captureScreen(javaClass, "appearanceLight", ThemeMode.Light) { Experimental { Appearance() } }
+
+    @Test
+    @Config(qualifiers = WHOLE_PAGE)
+    fun appearanceDark() =
+        composeRule.captureScreen(javaClass, "appearanceDark", ThemeMode.Dark) {
+            Experimental { Appearance(AppearanceSettings(themeMode = ThemeMode.Dark)) }
+        }
+
+    @Test
+    fun appearanceAmoled() =
+        composeRule.captureScreen(javaClass, "appearanceAmoled", ScreenshotVariant.Amoled) {
+            Experimental { Appearance(AppearanceSettings(themeMode = ThemeMode.Dark, amoled = true)) }
+        }
+
+    @Test
+    fun appearanceHighContrast() =
+        composeRule.captureScreen(javaClass, "appearanceHighContrast", ScreenshotVariant.HighContrast) {
+            Experimental { Appearance() }
+        }
+
+    @Test
+    fun appearanceRtl() =
+        composeRule.captureScreen(javaClass, "appearanceRtl", ScreenshotVariant.Rtl) { Experimental { Appearance() } }
+
+    @Test
+    @Config(qualifiers = WHOLE_PAGE, fontScale = FONT_SCALE_200)
+    fun appearanceFontScale200() =
+        composeRule.captureScreen(javaClass, "appearanceFontScale200", ThemeMode.Light) {
+            Experimental { Appearance() }
+        }
 }
 
 @Composable
@@ -101,6 +140,24 @@ private fun Privacy() {
         onEvent = {},
         onOpen = {},
         onBack = {},
+    )
+}
+
+/** Appearance with a generated theme picked (Teal), Vivid group bubbles and the defaults otherwise. */
+@Composable
+private fun Appearance(settings: AppearanceSettings = AppearanceSettings()) {
+    AppearanceScreen(
+        state =
+            AppearanceUiState.Content(
+                settings.copy(
+                    dynamicColor = false,
+                    palette = ThemePalette.Teal,
+                    chat = ChatAppearance(groupBubbles = GroupBubbles.Vivid),
+                ),
+            ),
+        onEvent = {},
+        onBack = {},
+        dynamicColorAvailable = false,
     )
 }
 

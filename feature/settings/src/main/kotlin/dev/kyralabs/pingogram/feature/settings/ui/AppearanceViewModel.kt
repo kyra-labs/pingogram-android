@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -86,6 +88,27 @@ sealed interface AppearanceEvent {
     data class SetShowChatTypeIcons(
         val show: Boolean,
     ) : AppearanceEvent
+
+    /** A color theme picked from the experimental look's row of chips. */
+    data class SetColorTheme(
+        val option: ColorThemeOption,
+    ) : AppearanceEvent
+
+    /** The message text size set on the experimental look's slider. */
+    data class SetChatTextScale(
+        val scale: Float,
+    ) : AppearanceEvent
+
+    /** How group bubbles are colored (the experimental look, `docs/DESIGN_SYSTEM.md` §13.6). */
+    data class SetGroupBubbles(
+        val bubbles: GroupBubbles,
+    ) : AppearanceEvent
+
+    /** "Reset": the look's settings back to their defaults ([AppearanceSettings]'s). */
+    data object Reset : AppearanceEvent
+
+    /** "Undo" after a reset: the settings as they were before it. */
+    data object UndoReset : AppearanceEvent
 }
 
 /** One-off side effects of [AppearanceViewModel], handled once by its route. */
@@ -94,6 +117,9 @@ sealed interface AppearanceEffect {
     data class ShowError(
         val error: DomainError,
     ) : AppearanceEffect
+
+    /** The look's settings were reset, shown in a snackbar with "Undo". */
+    data object ResetDone : AppearanceEffect
 }
 
 /**
@@ -125,47 +151,99 @@ class AppearanceViewModel
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
         val effects: Flow<AppearanceEffect> = effectChannel.receiveAsFlow()
 
+        /** The settings before the last reset, for its "Undo"; in memory, as the snackbar does not outlive the page. */
+        private var beforeReset: AppearanceSettings? = null
+
         fun onEvent(event: AppearanceEvent) {
             viewModelScope.launch {
-                val saved =
-                    when (event) {
-                        is AppearanceEvent.SetThemeMode -> {
-                            appearanceRepository.setThemeMode(event.themeMode)
-                        }
-
-                        is AppearanceEvent.SetAmoled -> {
-                            appearanceRepository.setAmoled(event.enabled)
-                        }
-
-                        is AppearanceEvent.SetContrast -> {
-                            appearanceRepository.setContrast(event.contrast)
-                        }
-
-                        is AppearanceEvent.SetSendKeys -> {
-                            composerSettingsRepository.setSendKeys(event.keys)
-                        }
-
-                        is AppearanceEvent.SetRaiseToListen -> {
-                            playbackSettingsRepository.setRaiseToListen(event.enabled)
-                        }
-
-                        is AppearanceEvent.SetPauseWhenLowered -> {
-                            playbackSettingsRepository.setPauseWhenLowered(event.enabled)
-                        }
-
-                        is AppearanceEvent.SetShowStories -> {
-                            chatListSettingsRepository.setShowStories(event.show)
-                        }
-
-                        is AppearanceEvent.SetShowEditFoldersButton -> {
-                            chatListSettingsRepository.setShowEditFoldersButton(event.show)
-                        }
-
-                        is AppearanceEvent.SetShowChatTypeIcons -> {
-                            chatListSettingsRepository.setShowChatTypeIcons(event.show)
-                        }
-                    }
-                saved.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }
+                val saved = saveLook(event) ?: saveBehavior(event)
+                saved?.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }
             }
+        }
+
+        /** Saves an [event] that changes how the app looks, or answers null for one that does not. */
+        private suspend fun saveLook(event: AppearanceEvent): Outcome<Unit>? =
+            when (event) {
+                AppearanceEvent.Reset -> reset()
+                AppearanceEvent.UndoReset -> beforeReset?.let { apply(it) }.also { beforeReset = null }
+                is AppearanceEvent.SetThemeMode -> appearanceRepository.setThemeMode(event.themeMode)
+                is AppearanceEvent.SetAmoled -> appearanceRepository.setAmoled(event.enabled)
+                is AppearanceEvent.SetContrast -> appearanceRepository.setContrast(event.contrast)
+                is AppearanceEvent.SetChatTextScale -> appearanceRepository.setChatTextScale(event.scale)
+                is AppearanceEvent.SetGroupBubbles -> appearanceRepository.setGroupBubbles(event.bubbles)
+                is AppearanceEvent.SetColorTheme -> saveColorTheme(event.option)
+                else -> null
+            }
+
+        private suspend fun saveColorTheme(option: ColorThemeOption): Outcome<Unit> =
+            when (option) {
+                ColorThemeOption.Wallpaper -> appearanceRepository.setDynamicColor(true)
+                is ColorThemeOption.Palette -> appearanceRepository.setPalette(option.palette)
+            }
+
+        /** Saves an [event] about how chats, the composer and voice messages behave. */
+        private suspend fun saveBehavior(event: AppearanceEvent): Outcome<Unit>? =
+            when (event) {
+                is AppearanceEvent.SetSendKeys -> {
+                    composerSettingsRepository.setSendKeys(event.keys)
+                }
+
+                is AppearanceEvent.SetRaiseToListen -> {
+                    playbackSettingsRepository.setRaiseToListen(event.enabled)
+                }
+
+                is AppearanceEvent.SetPauseWhenLowered -> {
+                    playbackSettingsRepository.setPauseWhenLowered(event.enabled)
+                }
+
+                is AppearanceEvent.SetShowStories -> {
+                    chatListSettingsRepository.setShowStories(event.show)
+                }
+
+                is AppearanceEvent.SetShowEditFoldersButton -> {
+                    chatListSettingsRepository.setShowEditFoldersButton(
+                        event.show,
+                    )
+                }
+
+                is AppearanceEvent.SetShowChatTypeIcons -> {
+                    chatListSettingsRepository.setShowChatTypeIcons(event.show)
+                }
+
+                else -> {
+                    null
+                }
+            }
+
+        private suspend fun reset(): Outcome<Unit> {
+            val current = (uiState.value as? AppearanceUiState.Content)?.settings ?: return Outcome.Success(Unit)
+            val saved = apply(AppearanceSettings())
+            if (saved is Outcome.Success) {
+                beforeReset = current
+                effectChannel.trySend(AppearanceEffect.ResetDone)
+            }
+            return saved
+        }
+
+        /** Saves every setting of the look as [target] has it, stopping at the first that cannot be saved. */
+        private suspend fun apply(target: AppearanceSettings): Outcome<Unit> {
+            val writes: List<suspend () -> Outcome<Unit>> =
+                listOf(
+                    { appearanceRepository.setThemeMode(target.themeMode) },
+                    { appearanceRepository.setAmoled(target.amoled) },
+                    { appearanceRepository.setContrast(target.contrast) },
+                    // A palette turns dynamic color off; the dynamic color after it says whether it stays off.
+                    { appearanceRepository.setPalette(target.palette) },
+                    { appearanceRepository.setDynamicColor(target.dynamicColor) },
+                    { appearanceRepository.setChatTextScale(target.chat.textScale) },
+                    { appearanceRepository.setBubbleCorners(target.chat.bubbleCorners) },
+                    { appearanceRepository.setChatWallpaper(target.chat.wallpaper) },
+                    { appearanceRepository.setGroupBubbles(target.chat.groupBubbles) },
+                )
+            for (write in writes) {
+                val saved = write()
+                if (saved is Outcome.Failure) return saved
+            }
+            return Outcome.Success(Unit)
         }
     }
