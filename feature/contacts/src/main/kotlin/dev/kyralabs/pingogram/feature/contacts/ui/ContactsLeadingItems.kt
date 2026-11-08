@@ -39,14 +39,14 @@ import dev.kyralabs.pingogram.feature.contacts.R
 import kotlinx.collections.immutable.persistentListOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The experimental look's entries above the contacts and contacts sync's offer (docs/DESIGN_SYSTEM.md §13.8).
+// The entries above the contacts and contacts sync's offer (docs/DESIGN_SYSTEM.md §13.8).
 
 /**
- * The experimental look's entries above the contacts (`docs/DESIGN_SYSTEM.md` §13.8): contacts sync (its offer as
- * [ExperimentalSyncOffer], its other states as in the standard look), then "Online now" ([OnlineNow]) while someone
- * is. "Add contact" sits beside the navigation bar and "Invite" under the header instead of the action rows.
+ * The entries above the contacts (`docs/DESIGN_SYSTEM.md` §13.8): contacts sync (its offer as [SyncOffer], its other
+ * states as [ContactSyncItem]), then "Online now" ([OnlineNow]) while someone is. "Add contact" sits beside the
+ * navigation bar and "Invite" under the header.
  */
-internal fun LazyListScope.experimentalItems(
+internal fun LazyListScope.leadingItems(
     state: ContactsUiState,
     syncControls: ContactSyncControls,
     callbacks: ContactsCallbacks,
@@ -59,7 +59,7 @@ internal fun LazyListScope.experimentalItems(
         item(key = SYNC_ROW, contentType = SYNC_ROW) {
             val modifier = Modifier.row(this, maxWidth, motionScheme)
             if (sync == ContactSyncUi.Offer) {
-                ExperimentalSyncOffer(
+                SyncOffer(
                     onTurnOn = { callbacks.onSyncEvent(ContactSyncEvent.TurnOn) },
                     onDismiss = { callbacks.onEvent(ContactsEvent.DismissSyncOffer) },
                     modifier = modifier,
@@ -87,13 +87,13 @@ internal fun LazyListScope.experimentalItems(
 }
 
 /**
- * The offer of contacts sync in the experimental look: a filled `Card` on `surfaceContainerHigh` with `extraLarge`
+ * The offer of contacts sync: a filled `Card` on `surfaceContainerHigh` with `extraLarge`
  * corners, inset like the rows: the contacts icon on a `MaterialShapes.Flower` badge in `tertiaryContainer`, the title
  * in `titleSmallEmphasized` over the text in `bodyMedium` `onSurfaceVariant`, "Turn on" as a filled `Button`
  * ([onTurnOn]) and a dismiss `IconButton` ("Not now", [onDismiss]).
  */
 @Composable
-internal fun ExperimentalSyncOffer(
+internal fun SyncOffer(
     onTurnOn: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -188,6 +188,6 @@ private fun SyncOfferButtons(
 
 @PingogramPreviews
 @Composable
-private fun ExperimentalSyncOfferPreview() {
-    PingogramPreview { ExperimentalSyncOffer(onTurnOn = {}, onDismiss = {}) }
+private fun SyncOfferPreview() {
+    PingogramPreview { SyncOffer(onTurnOn = {}, onDismiss = {}) }
 }

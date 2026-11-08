@@ -202,42 +202,6 @@ private fun ContactMenu(
     }
 }
 
-/**
- * An action above the contacts ("Add contact", "Invite friends"): its Material Symbol in a `primaryContainer` circle
- * the size of the contacts' avatars, so the rows line up, and its label in the list item's `bodyLarge`.
- */
-@Composable
-internal fun ContactsActionRow(
-    @DrawableRes icon: Int,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val insets = rowInsets()
-    ListItem(
-        onClick = onClick,
-        modifier = modifier.padding(insets),
-        leadingContent = {
-            Box(
-                modifier =
-                    Modifier
-                        .size(MaterialTheme.sizes.avatarRow)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        },
-        colors = listItemColors(selected = false),
-        contentPadding = insetContentPadding(insets),
-        content = { Text(label) },
-    )
-}
-
 /** The list item's colors, or its selected colors in place of its resting ones. */
 @Composable
 private fun listItemColors(selected: Boolean): ListItemColors {
@@ -264,7 +228,6 @@ private fun listItemShapes(rounded: Boolean): ListItemShapes {
 private fun ContactRowPreview() {
     PingogramPreview {
         Column {
-            ContactsActionRow(UiR.drawable.ic_add, "Add contact", onClick = {})
             ContactsPreviewData.contacts
                 .take(
                     PREVIEW_ROWS,

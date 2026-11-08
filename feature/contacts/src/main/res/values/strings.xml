@@ -5,7 +5,6 @@
     <string name="contacts_search">Search contacts</string>
     <string name="contacts_search_clear">Clear search</string>
     <string name="contacts_add">Add contact</string>
-    <string name="contacts_invite">Invite friends</string>
     <string name="contacts_loading">Loading contacts</string>
     <string name="contacts_no_results">No contacts match your search</string>
     <string name="contacts_empty_title">No contacts yet</string>
@@ -115,8 +114,6 @@
     <!-- For screen readers; %1$s is the contact's name. -->
     <string name="contacts_invite_person">Invite %1$s to Telegram</string>
     <string name="contacts_recent_calls">Recent calls</string>
-    <string name="contacts_my_qr_code">Your QR code</string>
-    <string name="contacts_scan_qr_code">Scan QR code</string>
     <!-- The experimental look (docs/DESIGN_SYSTEM.md §13.8). -->
     <plurals name="contacts_count">
         <item quantity="one">%1$d on Telegram</item>

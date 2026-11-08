@@ -3,10 +3,8 @@ package dev.kyralabs.pingogram.feature.contacts.ui
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.testing.assertAccessible
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.contacts.ui.preview.ContactsPreviewData
 import dev.kyralabs.pingogram.feature.contacts.ui.preview.EditContactPreviewData
@@ -48,11 +46,9 @@ class ContactsAccessibilityChecksTest {
         }
 
     @Test
-    fun experimentalContacts() =
+    fun busyContacts() =
         check {
-            CompositionLocalProvider(LocalExperimentalUi provides true) {
-                ContactsScreen(state = ContactsPreviewData.busy, onEvent = {}, onAddContact = {}, onEditContact = {})
-            }
+            ContactsScreen(state = ContactsPreviewData.busy, onEvent = {}, onAddContact = {}, onEditContact = {})
         }
 
     @Test
