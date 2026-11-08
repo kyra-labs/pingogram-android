@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -177,8 +176,8 @@ internal fun scrollingToSent(
 
 /**
  * The jump-to-bottom button, while the list is away from the newest message ([showJump]) or the history does not reach
- * it yet, with [state]'s unread count; [onClick] goes there. In the experimental look "Jump to mention" above it, while
- * [state] has unread mentions, which sends [ChatEvent.JumpToMention].
+ * it yet, with [state]'s unread count; [onClick] goes there. "Jump to mention" above it, while [state] has unread
+ * mentions, which sends [ChatEvent.JumpToMention].
  */
 @Composable
 internal fun JumpButtonSlot(
@@ -188,22 +187,8 @@ internal fun JumpButtonSlot(
     onClick: () -> Unit,
     onEvent: (ChatEvent) -> Unit,
 ) {
-    val unreadCount = state.unreadCount
-    val jump =
-        @Composable {
-            JumpToBottomButton(
-                visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
-                unreadCount = unreadCount,
-                motionScheme = MaterialTheme.motionScheme,
-                onClick = onClick,
-            )
-        }
-    if (!LocalExperimentalUi.current) {
-        jump()
-        return
-    }
-    // The experimental look adds "Jump to mention" above it (`docs/DESIGN_SYSTEM.md` §13.5), so the jump button never
-    // moves as mentions come and go.
+    // "Jump to mention" above the jump button (`docs/DESIGN_SYSTEM.md` §13.5), so the jump button never moves as
+    // mentions come and go.
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -213,14 +198,18 @@ internal fun JumpButtonSlot(
             count = state.unreadMentionCount,
             onClick = { onEvent(ChatEvent.JumpToMention) },
         )
-        jump()
+        JumpToBottomButton(
+            visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
+            unreadCount = state.unreadCount,
+            motionScheme = MaterialTheme.motionScheme,
+            onClick = onClick,
+        )
     }
 }
 
 /**
- * The experimental look's "Jump to mention" (§13.5): a round `FloatingActionButton` in `primary` / `onPrimary` with
- * "@",
- * while unread messages mention the user; screen readers hear how many. It grows in and out as the jump button does.
+ * "Jump to mention" (§13.5): a round `FloatingActionButton` in `primary` / `onPrimary` with "@", while unread
+ * messages mention the user; screen readers hear how many. It grows in and out as the jump button does.
  */
 @Composable
 private fun JumpToMentionButton(

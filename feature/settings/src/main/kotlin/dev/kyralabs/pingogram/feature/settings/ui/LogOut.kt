@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.settings.R
 
 // "Log out" at the end of Settings and its confirmation (REQUIREMENTS.md FR-A8); "Leave demo" in its place while the
@@ -52,8 +51,8 @@ internal fun LogOutItem(
 
 /**
  * The colors of a destructive row in a [SettingsGroup]: its text in the error role, on its container; its icon, if
- * any, takes [SettingsIconTone.Error]. In the experimental look (`docs/DESIGN_SYSTEM.md` §13.10) the container takes a
- * tint of the error role too, so the row reads as a warning before its text is read.
+ * any, takes [SettingsIconTone.Error]. The container takes a tint of the error role too (`docs/DESIGN_SYSTEM.md`
+ * §13.10), so the row reads as a warning before its text is read.
  */
 @Composable
 internal fun destructiveItemColors(): ListItemColors {
@@ -62,19 +61,11 @@ internal fun destructiveItemColors(): ListItemColors {
     return settingsRowColors(
         contentColor = error,
         leadingContentColor = error,
-        containerColor =
-            if (LocalExperimentalUi.current) {
-                error
-                    .copy(
-                        alpha = DESTRUCTIVE_TINT,
-                    ).compositeOver(container)
-            } else {
-                container
-            },
+        containerColor = error.copy(alpha = DESTRUCTIVE_TINT).compositeOver(container),
     )
 }
 
-/** How much of the error role tints a destructive row's container in the experimental look. */
+/** How much of the error role tints a destructive row's container. */
 private const val DESTRUCTIVE_TINT = 0.12f
 
 /** The destructive confirmation ([DestructiveDialog]). */

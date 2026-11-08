@@ -38,12 +38,12 @@ sealed interface ChatEvent {
     data object ShowNewest : ChatEvent
 
     /**
-     * Show the oldest unread message that mentions the user (the experimental look's "Jump to mention",
+     * Show the oldest unread message that mentions the user (the "Jump to mention",
      * `docs/DESIGN_SYSTEM.md` §13.5); showing it reads it.
      */
     data object JumpToMention : ChatEvent
 
-    /** Mute the chat forever, or unmute it (the experimental look's channel top bar, §13.5). */
+    /** Mute the chat forever, or unmute it (the channel top bar, §13.5). */
     data class SetMuted(
         val isMuted: Boolean,
     ) : ChatEvent
@@ -199,7 +199,7 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * "Wave" on a member's join message in the experimental look (`docs/DESIGN_SYSTEM.md` §13.6): one of Telegram's
+     * "Wave" on a member's join message (`docs/DESIGN_SYSTEM.md` §13.6): one of Telegram's
      * greeting stickers goes out at once, replying to that message ([messageId]).
      */
     data class Wave(

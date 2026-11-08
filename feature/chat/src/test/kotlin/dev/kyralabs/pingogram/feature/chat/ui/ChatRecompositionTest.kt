@@ -13,7 +13,6 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -64,9 +63,6 @@ class ChatRecompositionTest {
     /** False until the counter runs, so it sees the screen's first composition. */
     private var shown by mutableStateOf(false)
 
-    /** The experimental look (`docs/DESIGN_SYSTEM.md` §13), set before [setScreen]. */
-    private var experimental = false
-
     @Test
     fun `scrolling the messages recomposes none of the bubbles`() {
         setScreen(messages(MESSAGES))
@@ -85,8 +81,7 @@ class ChatRecompositionTest {
     }
 
     @Test
-    fun `scrolling a group in the experimental look recomposes none of the bubbles`() {
-        experimental = true
+    fun `scrolling a group with sender hues recomposes none of the bubbles`() {
         val group = messages(MESSAGES)
         val items =
             (group.content as ChatContent.Content).items.map { item ->
@@ -226,7 +221,7 @@ class ChatRecompositionTest {
 
         // The list runs again (it takes the whole state), but every bubble on screen skips.
         val functions = counter.recomposedOwnFunctions
-        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTopBarKt.ChatTitle") })
+        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTitleKt.ChatTitle") })
         assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
     }
 
@@ -264,10 +259,7 @@ class ChatRecompositionTest {
             PingogramTheme(dynamicColor = false) {
                 if (shown) {
                     listState = rememberLazyListState()
-                    CompositionLocalProvider(
-                        LocalCustomEmoji provides customEmoji,
-                        LocalExperimentalUi provides experimental,
-                    ) {
+                    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
                         ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
                     }
                 }

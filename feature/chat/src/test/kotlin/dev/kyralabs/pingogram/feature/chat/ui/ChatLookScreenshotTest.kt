@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
@@ -10,7 +9,6 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
@@ -26,14 +24,14 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The conversation in the experimental look (`docs/DESIGN_SYSTEM.md` §13.5): a group's centred top bar with its cluster
+ * The conversation's look (`docs/DESIGN_SYSTEM.md` §13.5): a group's centred top bar with its cluster
  * of the people who wrote last and its online members, the pill-shaped pinned bar, "Jump to mention" and the composer
  * with its attach and camera buttons; a channel's mute toggle and menu; a private chat's call button. Every state in
  * light and dark, the group in the audit's other looks and at 200% font.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
-class ExperimentalChatScreenshotTest(
+class ChatLookScreenshotTest(
     private val stateName: String,
 ) {
     @get:Rule(order = 0)
@@ -94,9 +92,7 @@ class ExperimentalChatScreenshotTest(
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                CompositionLocalProvider(LocalExperimentalUi provides true) {
-                    ChatScreen(state = state, onEvent = {}, onBack = {}, connection = connection)
-                }
+                ChatScreen(state = state, onEvent = {}, onBack = {}, connection = connection)
             }
         }
         composeRule.waitForIdle()

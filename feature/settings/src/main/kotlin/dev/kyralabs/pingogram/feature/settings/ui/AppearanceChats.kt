@@ -32,7 +32,6 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -46,7 +45,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: [leading] rows where a look adds them (the experimental look's text size and group bubbles), the
+ * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
  * rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]), which Enter sends on a
  * hardware and on the on-screen keyboard, and raise to listen.
  */
@@ -156,7 +155,6 @@ internal fun ChatListGroup(
     onEvent: (AppearanceEvent) -> Unit,
     onOpenSwipeActions: () -> Unit,
 ) {
-    val experimental = LocalExperimentalUi.current
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
         item { shapes ->
             SettingsRow(
@@ -184,17 +182,15 @@ internal fun ChatListGroup(
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
             )
         }
-        // The experimental look's symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
-        if (experimental) {
-            item { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_chat_type_icons),
-                    summary = stringResource(R.string.settings_chat_type_icons_summary),
-                    checked = chatList.showChatTypeIcons,
-                    shapes = shapes,
-                    onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
-                )
-            }
+        // The symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_chat_type_icons),
+                summary = stringResource(R.string.settings_chat_type_icons_summary),
+                checked = chatList.showChatTypeIcons,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
+            )
         }
     }
 }

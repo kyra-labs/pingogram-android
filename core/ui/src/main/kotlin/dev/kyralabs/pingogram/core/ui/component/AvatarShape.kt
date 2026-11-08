@@ -21,11 +21,10 @@ import androidx.graphics.shapes.rectangle
  * place that shows a chat's avatar follows: the chat list, search, the forward and share sheets, the conversation's
  * title, the info page's header and the home screen widget.
  *
- * It names what the chat is, which the composable turns into a shape ([toShape], [rememberPolygon]): in the standard
- * look a circle for every chat but forums; in the experimental look (`LocalExperimentalUi`, §13) people stay circles,
- * groups take `MaterialShapes.Cookie9Sided`, channels `MaterialShapes.Cookie6Sided` and Saved Messages
+ * It names what the chat is, which the composable turns into a shape ([toShape], [rememberPolygon], §13.2): people
+ * stay circles, groups take `MaterialShapes.Cookie9Sided`, channels `MaterialShapes.Cookie6Sided` and Saved Messages
  * `MaterialShapes.Clover4Leaf` (Owner decision to confirm (2026-11-07): it differs from the 2026-11-06 decision of
- * circles for every chat), forums keeping their rounded square.
+ * circles for every chat), forums a rounded square.
  */
 @Immutable
 enum class AvatarShape {
@@ -35,21 +34,20 @@ enum class AvatarShape {
     /** Forums (supergroups with topics): a square with the shape scale's `large` corners at the avatar's size. */
     RoundedSquare,
 
-    /** Basic groups and supergroups without topics: a circle, `Cookie9Sided` in the experimental look. */
+    /** Basic groups and supergroups without topics: `Cookie9Sided`. */
     Group,
 
-    /** Channels: a circle, `Cookie6Sided` (six soft lobes) in the experimental look. */
+    /** Channels: `Cookie6Sided` (six soft lobes). */
     Channel,
 
-    /** Saved Messages: a circle, `Clover4Leaf` in the experimental look. */
+    /** Saved Messages: `Clover4Leaf`. */
     SavedMessages,
     ;
 
     companion object {
         /**
          * The shape of a chat's avatar: a rounded square for a forum ([isForum], td_api.tl `supergroup.is_forum`), and
-         * otherwise what the chat is ([isGroup], [isChannel], [isSavedMessages]), which only the experimental look
-         * shows; a circle for people and bots.
+         * otherwise what the chat is ([isGroup], [isChannel], [isSavedMessages]); a circle for people and bots.
          */
         fun ofChat(
             isForum: Boolean,
@@ -68,13 +66,13 @@ enum class AvatarShape {
 }
 
 /**
- * This avatar shape as a Compose [Shape]: `MaterialTheme.shapes.large` for a forum, [CircleShape] for every other chat
- * in the standard look, and the experimental look's `MaterialShapes` ([experimentalPolygon]).
+ * This avatar shape as a Compose [Shape]: `MaterialTheme.shapes.large` for a forum, its `MaterialShapes` polygon
+ * ([kindPolygon]) for a group, a channel or Saved Messages, [CircleShape] for people and bots.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AvatarShape.toShape(): Shape {
-    val polygon = if (LocalExperimentalUi.current) experimentalPolygon() else null
+    val polygon = kindPolygon()
     return when {
         this == AvatarShape.RoundedSquare -> MaterialTheme.shapes.large
 
@@ -87,15 +85,14 @@ fun AvatarShape.toShape(): Shape {
 
 /**
  * This avatar shape at [size] as a polygon in the unit square, for the shape morphs that start from it (the selected
- * avatar's check, the profile header's collapse): `MaterialShapes.Circle` (or the experimental look's shape), or a
+ * avatar's check, the profile header's collapse): `MaterialShapes.Circle` (or the kind of chat's shape), or a
  * square whose corners are `MaterialTheme.shapes.large`'s at [size].
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AvatarShape.rememberPolygon(size: Dp): RoundedPolygon {
     if (this != AvatarShape.RoundedSquare) {
-        val polygon = if (LocalExperimentalUi.current) experimentalPolygon() else null
-        return polygon ?: MaterialShapes.Circle
+        return kindPolygon() ?: MaterialShapes.Circle
     }
     val corner = MaterialTheme.shapes.large.topStart
     val density = LocalDensity.current
@@ -106,9 +103,9 @@ fun AvatarShape.rememberPolygon(size: Dp): RoundedPolygon {
     }
 }
 
-/** The experimental look's shape of this kind of chat (`docs/DESIGN_SYSTEM.md` §13), null where it keeps a circle. */
+/** The shape of this kind of chat (`docs/DESIGN_SYSTEM.md` §13.2), null where it keeps a circle. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-private fun AvatarShape.experimentalPolygon(): RoundedPolygon? =
+private fun AvatarShape.kindPolygon(): RoundedPolygon? =
     when (this) {
         AvatarShape.Group -> MaterialShapes.Cookie9Sided
         AvatarShape.Channel -> MaterialShapes.Cookie6Sided

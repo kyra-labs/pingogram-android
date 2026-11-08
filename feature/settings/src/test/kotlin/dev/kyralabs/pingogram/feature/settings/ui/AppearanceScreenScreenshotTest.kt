@@ -51,7 +51,6 @@ class AppearanceScreenScreenshotTest {
             "withoutDynamicColorLight",
             ThemeMode.Light,
             AppearanceUiState.Content(AppearanceSettings(themeMode = ThemeMode.Light, contrast = Contrast.High)),
-            dynamicColorAvailable = false,
         )
 
     @Test
@@ -100,7 +99,6 @@ class AppearanceScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         state: AppearanceUiState,
-        dynamicColorAvailable: Boolean = true,
         systemContrast: Contrast? = null,
         amoled: Boolean = false,
     ) = composeRule.captureScreen(javaClass, name, themeMode, amoled) {
@@ -108,7 +106,6 @@ class AppearanceScreenScreenshotTest {
             state = state,
             onEvent = {},
             onBack = {},
-            dynamicColorAvailable = dynamicColorAvailable,
             systemContrast = systemContrast,
         )
     }

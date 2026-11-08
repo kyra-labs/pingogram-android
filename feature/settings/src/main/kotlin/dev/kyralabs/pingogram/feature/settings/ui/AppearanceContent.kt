@@ -58,19 +58,18 @@ import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.persistentListOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The Appearance page in the experimental look (docs/DESIGN_SYSTEM.md §13.10, the owner's board "Appearance"): a live
-// preview, the theme modes as cards, the colors as a row of chips, and the chats' text size and group bubbles on the
-// page itself. Every row of the standard page stays, below them.
+// The Appearance page's groups (docs/DESIGN_SYSTEM.md §13.10, the owner's board "Appearance"): a live preview, the
+// theme modes as cards, the colors as a row of chips, and the chats' text size and group bubbles on the page itself.
 
 /**
- * The page's groups in the experimental look: the sample conversation ([ChatPreview]), "Light and dark" with the three
+ * The page's groups: the sample conversation ([ChatPreview]), "Light and dark" with the three
  * modes as cards ([ThemeModeCards]) and AMOLED black, "Colors" with every color theme as a chip in a row that scrolls
- * sideways ([ColorThemeRow]) and the contrast, "Chat list" as the standard page has it, and "Chats" headed by the text
- * size and the group bubbles, then its standard rows.
+ * sideways ([ColorThemeRow]) and the contrast, "Chat list", and "Chats" headed by the text size and the group bubbles,
+ * then its other rows.
  */
 @Suppress("LongParameterList") // The settings, the chats' settings, the events, the pages and what the device offers.
 @Composable
-internal fun ExperimentalAppearanceContent(
+internal fun AppearanceContent(
     settings: AppearanceSettings,
     chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
@@ -127,7 +126,7 @@ internal fun ExperimentalAppearanceContent(
     }
 }
 
-/** "Reset" at the end of the page's top bar in the experimental look: a tonal button, with Undo in its snackbar. */
+/** "Reset" at the end of the page's top bar: a tonal button, with Undo in its snackbar. */
 @Composable
 internal fun ResetAppearanceButton(onClick: () -> Unit) {
     FilledTonalButton(onClick = onClick, shapes = ButtonDefaults.shapes()) {

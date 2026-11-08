@@ -16,7 +16,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -72,50 +71,8 @@ internal fun PowerSavingScreen(
         snackbarHostState = snackbarHostState,
     ) {
         val mode = state.mode ?: return@SettingsPageScaffold
-        if (LocalExperimentalUi.current) {
-            ExperimentalPowerSavingMode(state, mode, onEvent)
-        } else {
-            PowerSavingModeGroup(state, mode, onEvent)
-        }
+        PowerSavingModeGroup(state, mode, onEvent)
         PowerSavingPartsGroup(state, onEvent)
-    }
-}
-
-/** "Turn on" as radio rows, With Battery Saver saying whether Battery Saver is on now. */
-@Composable
-private fun PowerSavingModeGroup(
-    state: PowerSavingUiState,
-    mode: PowerSavingMode,
-    onEvent: (PowerSavingEvent) -> Unit,
-) {
-    SettingsGroup(
-        title = stringResource(R.string.settings_power_saving_section_mode),
-        footer = stringResource(R.string.settings_power_saving_mode_footer),
-        rowsModifier = Modifier.selectableGroup(),
-    ) {
-        PowerSavingMode.entries.forEach { option ->
-            item(key = option) { shapes ->
-                RadioItem(
-                    label = stringResource(option.label()),
-                    selected = option == mode,
-                    enabled = true,
-                    shapes = shapes,
-                    onClick = { onEvent(PowerSavingEvent.SetMode(option)) },
-                    summary =
-                        if (option == PowerSavingMode.WithBatterySaver) {
-                            stringResource(
-                                if (state.isBatterySaverOn) {
-                                    R.string.settings_power_saving_battery_saver_on
-                                } else {
-                                    R.string.settings_power_saving_battery_saver_off
-                                },
-                            )
-                        } else {
-                            null
-                        },
-                )
-            }
-        }
     }
 }
 

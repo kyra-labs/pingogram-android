@@ -171,7 +171,7 @@ internal fun ItemInputs.showsLargeEmoji(
 /**
  * Whether the message shouts (`docs/DESIGN_SYSTEM.md` §13.6): an incoming group text of one word of at most
  * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least one of them, without formatting, link preview,
- * reply or forward ("LOL", "OK!"), which the experimental look shows large and italic.
+ * reply or forward ("LOL", "OK!"), shown large and italic.
  */
 internal fun ItemInputs.isShout(
     content: MessageContent,
@@ -200,7 +200,7 @@ private const val SHOUT_MAX_LENGTH = 6
 private const val HEADLINE_MAX_LENGTH = 32
 
 /**
- * Whether a group's service message [action] is someone else joining or being added, which the experimental look's
+ * Whether a group's service message [action] is someone else joining or being added, which the
  * "Wave" greets (§13.6); never the user's own joining.
  */
 internal fun ItemInputs.canWave(action: ServiceAction): Boolean {

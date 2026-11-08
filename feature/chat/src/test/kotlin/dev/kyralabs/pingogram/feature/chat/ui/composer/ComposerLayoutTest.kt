@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -23,7 +22,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramSizes
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
@@ -61,21 +59,18 @@ class ComposerLayoutTest {
 
     private fun setComposer(text: String = "") {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    ChatBottomBar(
-                        composer =
-                            ComposerUiState.Available(
-                                canSchedule = true,
-                                attachOptions = persistentListOf(AttachOption.Gallery),
-                            ),
-                        text = ComposerText(FormattedText(text, persistentListOf())),
-                        onSend = { sent++ },
-                        onFocusChanged = {},
-                        modifier = Modifier.testTag(BAR),
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                ChatBottomBar(
+                    composer =
+                        ComposerUiState.Available(
+                            canSchedule = true,
+                            attachOptions = persistentListOf(AttachOption.Gallery, AttachOption.Camera),
+                        ),
+                    text = ComposerText(FormattedText(text, persistentListOf())),
+                    onSend = { sent++ },
+                    onFocusChanged = {},
+                    modifier = Modifier.testTag(BAR),
+                )
             }
         }
     }
@@ -123,13 +118,13 @@ class ComposerLayoutTest {
     }
 
     @Test
-    fun `the gallery button shows only while the field is empty`() {
+    fun `the camera button shows only while the field is empty`() {
         setComposer()
-        button(R.string.composer_gallery).assertTouchTarget()
+        button(R.string.attach_camera).assertTouchTarget()
 
         composeRule.onNode(hasSetTextAction()).performTextInput("Hi")
 
-        button(R.string.composer_gallery).assertDoesNotExist()
+        button(R.string.attach_camera).assertDoesNotExist()
     }
 
     @Test

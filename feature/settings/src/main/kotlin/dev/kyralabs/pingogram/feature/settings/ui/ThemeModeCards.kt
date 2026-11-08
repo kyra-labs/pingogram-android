@@ -58,7 +58,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.persistentListOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The experimental Appearance page's theme mode cards (docs/DESIGN_SYSTEM.md §13.10): System, Light and Dark, each
+// The Appearance page's theme mode cards (docs/DESIGN_SYSTEM.md §13.10): System, Light and Dark, each
 // a sample of the app in its scheme.
 
 /**

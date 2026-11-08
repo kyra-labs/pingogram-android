@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
@@ -52,7 +51,7 @@ internal class BubbleTheme(
     val channelPost: BubbleStyle? = null,
 ) {
     /**
-     * The style of a bubble: selected, outgoing, or incoming, which in the experimental look takes its sender's [hue]
+     * The style of a bubble: selected, a channel's post, outgoing, or incoming, which takes its sender's [hue]
      * (`docs/DESIGN_SYSTEM.md` §13.6), vivid or tinted as [vividHues] says.
      */
     fun styleOf(
@@ -69,11 +68,11 @@ internal class BubbleTheme(
             else -> incoming
         }
 
-    /** The ink of a sender's [hue] for names and reply stripes (§13.6); null outside the experimental look. */
+    /** The ink of a sender's [hue] for names and reply stripes (§13.6); null without hues. */
     fun inkOf(hue: Int): Color? = if (hue >= 0 && hues.isNotEmpty()) hues[hue % hues.size].ink else null
 }
 
-/** One sender hue's bubble styles and ink in the experimental look (§13.6). */
+/** One sender hue's bubble styles and ink (§13.6). */
 @Immutable
 internal class HueStyle(
     val vivid: BubbleStyle,
@@ -82,12 +81,11 @@ internal class HueStyle(
 )
 
 /**
- * The bubbles' theme; in the experimental look with the sender hues' styles, vivid where [vividHues] (the group's size
- * and Chat appearance's "Group bubbles" decide, `GroupBubbles.isVivid`).
+ * The bubbles' theme, with the sender hues' styles, vivid where [vividHues] (the group's size and "Group bubbles" in
+ * Appearance decide, `GroupBubbles.isVivid`).
  */
 @Composable
 internal fun rememberBubbleTheme(vividHues: Boolean = true): BubbleTheme {
-    val experimental = LocalExperimentalUi.current
     val hueColors = MaterialTheme.pingogramColors.senderHues
     val bubbles = MaterialTheme.pingogramColors
     val incoming = bubbles.incomingBubble
@@ -101,16 +99,10 @@ internal fun rememberBubbleTheme(vividHues: Boolean = true): BubbleTheme {
         rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.spoiler)
     // The bubbles' shapes with the corners chosen in Chat appearance (docs/DESIGN_SYSTEM.md §4).
     val shapes = MaterialTheme.chatStyle.bubbleShapes
-    val hues =
-        remember(experimental, hueColors, incomingText) {
-            if (experimental) hueStyles(hueColors, incomingText) else emptyList()
-        }
-    // The experimental look's channel posts on a warm container (docs/DESIGN_SYSTEM.md §13.7).
+    val hues = remember(hueColors, incomingText) { hueStyles(hueColors, incomingText) }
+    // Channel posts on a warm container (docs/DESIGN_SYSTEM.md §13.7).
     val postColors = MaterialTheme.pingogramColors.channelPostBubble
-    val channelPost =
-        remember(experimental, postColors, incomingText) {
-            if (experimental) bubbleStyleOf(postColors, incomingText) else null
-        }
+    val channelPost = remember(postColors, incomingText) { bubbleStyleOf(postColors, incomingText) }
     return remember(
         incoming,
         outgoing,

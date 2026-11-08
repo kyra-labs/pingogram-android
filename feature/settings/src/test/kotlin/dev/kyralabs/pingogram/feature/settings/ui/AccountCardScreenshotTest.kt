@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.settings.ui.home.AccountCard
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -91,7 +92,7 @@ class AccountCardScreenshotTest {
                         Modifier
                             .background(settingsPageColor())
                             .padding(MaterialTheme.spacing.large),
-                    ) { AccountCard(account, onEditProfile = {}) }
+                    ) { AccountCard(account, onEditProfile = {}, onQrCode = {}, switcher = null) }
                 }
             }
         }

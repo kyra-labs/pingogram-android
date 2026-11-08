@@ -3,8 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -13,8 +11,9 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
+import dev.kyralabs.pingogram.core.ui.theme.ExperimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -24,9 +23,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The title of the settings pages' medium flexible top bar ([SettingsTopBar], `docs/DESIGN_SYSTEM.md` §3.3, audit
- * G47): `headlineMediumEmphasized` on the bar's expanded row and `titleLargeEmphasized` on its collapsed one, picked
- * from the row the bar's title slot fills, never from the bar's text styles.
+ * The title of the settings pages' top bar ([SettingsTopBar], `docs/DESIGN_SYSTEM.md` §13.10): `displaySmallWide` on
+ * the bar's expanded row and `titleLargeWide` on its collapsed one, picked from the row the bar's title slot fills,
+ * never from the bar's text styles. Compared by font family and weight, as a long title may get smaller.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -37,44 +36,41 @@ class SettingsTopBarTest {
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    private lateinit var typography: Typography
+    private lateinit var typography: ExperimentalTypography
 
     @Test
-    fun `the expanded row's title is headlineMediumEmphasized and the collapsed row's titleLargeEmphasized`() {
+    fun `the expanded row's title is displaySmallWide and the collapsed row's titleLargeWide`() {
         setPage()
 
         val styles = titleStyles()
 
-        assertTrue(styles.any { it.matches(typography.headlineMediumEmphasized) })
-        assertTrue(styles.any { it.matches(typography.titleLargeEmphasized) })
+        assertTrue(styles.any { it.matches(typography.displaySmallWide) })
+        assertTrue(styles.any { it.matches(typography.titleLargeWide) })
         assertTrue(
             styles.all {
-                it.matches(typography.headlineMediumEmphasized) ||
-                    it.matches(typography.titleLargeEmphasized)
+                it.matches(typography.displaySmallWide) ||
+                    it.matches(typography.titleLargeWide)
             },
         )
     }
 
     @Test
-    fun `scrolled up, the bar collapses to its titleLargeEmphasized row`() {
+    fun `scrolled up, the bar collapses to its titleLargeWide row`() {
         setPage()
 
         composeRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         composeRule.waitForIdle()
 
         val shown = titleStyles(shownOnly = true)
-        assertTrue("$shown", shown.isNotEmpty() && shown.all { it.matches(typography.titleLargeEmphasized) })
+        assertTrue("$shown", shown.isNotEmpty() && shown.all { it.matches(typography.titleLargeWide) })
     }
 
     private fun setPage() {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    typography = MaterialTheme.typography
-                    SettingsPageScaffold(title = TITLE, onBack = {}) {
-                        repeat(ROWS) { Text("Row $it") }
-                    }
+            PingogramTheme(dynamicColor = false) {
+                typography = MaterialTheme.experimentalTypography
+                SettingsPageScaffold(title = TITLE, onBack = {}) {
+                    repeat(ROWS) { Text("Row $it") }
                 }
             }
         }
@@ -93,7 +89,7 @@ class SettingsTopBarTest {
             }.also { assertEquals("one title per row", true, it.isNotEmpty()) }
 
     private fun TextStyle.matches(expected: TextStyle) =
-        fontSize == expected.fontSize && fontWeight == expected.fontWeight
+        fontFamily == expected.fontFamily && fontWeight == expected.fontWeight
 
     private companion object {
         const val TITLE = "Notifications"

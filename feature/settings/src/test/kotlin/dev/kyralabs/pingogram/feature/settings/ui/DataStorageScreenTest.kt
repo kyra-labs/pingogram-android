@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -13,12 +12,14 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -50,18 +51,15 @@ class DataStorageScreenTest {
 
     private fun setScreen(state: DataStorageUiState) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    DataStorageScreen(
-                        state = state,
-                        onEvent = { events += it },
-                        onOpenAutoDownload = { opened += it },
-                        onOpenProxies = {},
-                        onOpenNetworkUsage = {},
-                        onBack = { backs++ },
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                DataStorageScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onOpenAutoDownload = { opened += it },
+                    onOpenProxies = {},
+                    onOpenNetworkUsage = {},
+                    onBack = { backs++ },
+                )
             }
         }
     }
@@ -114,16 +112,22 @@ class DataStorageScreenTest {
     }
 
     @Test
-    fun `clear cache asks for confirmation`() {
+    fun `clear cache asks for confirmation, from the storage card and from the Cache group`() {
         setScreen(SettingsPreviewData.storage)
+        val clearCache = composeRule.onAllNodesWithText(string(R.string.settings_clear_cache))
 
-        composeRule
-            .onNodeWithText(string(R.string.settings_clear_cache))
+        clearCache
+            .onFirst()
+            .performScrollTo()
+            .assertHasClickAction()
+            .performClick()
+        clearCache
+            .onLast()
             .performScrollTo()
             .assertHasClickAction()
             .performClick()
 
-        assertEquals(listOf(DataStorageEvent.ClearCache), events)
+        assertEquals(listOf(DataStorageEvent.ClearCache, DataStorageEvent.ClearCache), events)
     }
 
     @Test
@@ -164,7 +168,8 @@ class DataStorageScreenTest {
     fun `clear cache is disabled with progress while clearing`() {
         setScreen(SettingsPreviewData.storage.copy(isClearingCache = true))
 
-        composeRule.onNodeWithText(string(R.string.settings_clear_cache)).assertIsNotEnabled()
+        // The Cache group's row; the storage card's button asks first too.
+        composeRule.onAllNodesWithText(string(R.string.settings_clear_cache)).onLast().assertIsNotEnabled()
         composeRule.onNode(hasContentDescription(string(R.string.settings_clearing_cache))).assertExists()
     }
 

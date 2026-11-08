@@ -99,7 +99,7 @@ internal fun SearchAction(onClick: () -> Unit) {
         val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = if (size != null) Modifier.size(size) else Modifier,
+            modifier = Modifier.size(size),
             shapes = IconButtonDefaults.shapes(),
         ) {
             Icon(painter = painterResource(UiR.drawable.ic_search), contentDescription = label)

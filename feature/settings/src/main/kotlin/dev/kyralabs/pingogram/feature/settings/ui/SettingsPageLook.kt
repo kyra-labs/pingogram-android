@@ -16,22 +16,20 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// What the experimental look changes in every settings page's shared parts (docs/DESIGN_SYSTEM.md §13.10): the top
-// bar's height, the groups' spacing, the rows' badges and the chevrons of rows that open a page.
+// Every settings page's shared look (docs/DESIGN_SYSTEM.md §13.10): the top bar's height, the groups' spacing, the
+// rows' badges and the chevrons of rows that open a page.
 
 /**
- * The bar's expanded height: Material's medium flexible bar's, or in the experimental look (`docs/DESIGN_SYSTEM.md`
- * §13.10) the collapsed row, one line of `displaySmallWide` and the room below it, in the current font scale.
+ * The bar's expanded height (`docs/DESIGN_SYSTEM.md` §13.10): the collapsed row, one line of `displaySmallWide` and the
+ * room below it, in the current font scale.
  */
 @Composable
 internal fun settingsTopBarExpandedHeight(): Dp {
-    if (!LocalExperimentalUi.current) return TopAppBarDefaults.MediumFlexibleAppBarWithoutSubtitleExpandedHeight
     val line =
         with(LocalDensity.current) {
             MaterialTheme.experimentalTypography.displaySmallWide.lineHeight
@@ -41,18 +39,15 @@ internal fun settingsTopBarExpandedHeight(): Dp {
 }
 
 /**
- * How far apart a page's groups sit: `spacing.extraLarge`, or `spacing.large` in the experimental look, whose groups
- * stand closer (`docs/DESIGN_SYSTEM.md` §13.10).
+ * How far apart a page's groups sit: `spacing.large` (`docs/DESIGN_SYSTEM.md` §13.10).
  */
 @Composable
 @ReadOnlyComposable
-internal fun settingsGroupSpacing(): Dp =
-    if (LocalExperimentalUi.current) MaterialTheme.spacing.large else MaterialTheme.spacing.extraLarge
+internal fun settingsGroupSpacing(): Dp = MaterialTheme.spacing.large
 
 /**
- * The chevron that ends a row opening another page in the experimental look (`docs/DESIGN_SYSTEM.md` §13.10): Material
- * Symbols' `chevron_right` in `onSurfaceVariant`, mirrored right to left by itself, decorative (the row's title
- * names the page).
+ * The chevron that ends a row opening another page (`docs/DESIGN_SYSTEM.md` §13.10): Material Symbols'
+ * `chevron_right` in `onSurfaceVariant`, mirrored right to left by itself, decorative (the row's title names the page).
  */
 @Composable
 internal fun PageChevron() {
@@ -64,8 +59,8 @@ internal fun PageChevron() {
 }
 
 /**
- * Where a row sits ([index]) in its group, and a [seed] that tells the group apart, which pick the experimental look's
- * badge shape and vivid color (`docs/DESIGN_SYSTEM.md` §13.10).
+ * Where a row sits ([index]) in its group, and a [seed] that tells the group apart, which pick the row's badge shape
+ * and vivid color (`docs/DESIGN_SYSTEM.md` §13.10).
  */
 internal data class SettingsRowPlace(
     val index: Int,
@@ -80,7 +75,7 @@ internal fun VividAvatarPalette.at(position: Int): Pair<Color, Color> =
     this[position % size].let { it.container to it.content }
 
 /**
- * The experimental look's row badges in turn down a group (`docs/DESIGN_SYSTEM.md` §13.10), as Settings home's:
+ * The row badges in turn down a group (`docs/DESIGN_SYSTEM.md` §13.10), as Settings home's:
  * `Cookie9Sided`, `Flower`, `Clover4Leaf`, `Sunny`.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -95,9 +90,9 @@ internal fun settingsBadgeShape(index: Int): Shape =
 
 private const val SETTINGS_BADGE_SHAPES = 4
 
-/** The experimental look's filled text fields: their container a settings row's, in every state. */
+/** The filled text fields: their container a settings row's, in every state. */
 @Composable
-internal fun experimentalFieldColors(): TextFieldColors =
+internal fun settingsFieldColors(): TextFieldColors =
     settingsRowContainerColor().let { container ->
         TextFieldDefaults.colors(
             focusedContainerColor = container,

@@ -236,7 +236,7 @@ internal fun ttlText(days: Int): String =
         }
     }
 
-/** This device's session as the experimental look's status card: the device, its app and system, where it is. */
+/** This device's session as the status card: the device, its app and system, where it is. */
 @Composable
 internal fun ThisDeviceCard(session: SessionItem) {
     SettingsStatusCard(

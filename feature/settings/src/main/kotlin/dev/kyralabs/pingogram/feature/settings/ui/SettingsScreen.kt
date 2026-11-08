@@ -23,7 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.BottomFade
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
@@ -37,8 +36,6 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.home.AccountSwitcher
-import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalAccountCard
-import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalHomeGroups
 import dev.kyralabs.pingogram.feature.settings.ui.home.HomeDestination
 import dev.kyralabs.pingogram.feature.settings.ui.home.SearchAction
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
@@ -66,14 +63,9 @@ internal fun SettingsRoute(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    // Only the experimental look's home shows these values, so only it asks TDLib for them.
-    val summaries =
-        if (LocalExperimentalUi.current) {
-            val homeViewModel: SettingsHomeViewModel = hiltViewModel()
-            homeViewModel.summaries.collectAsStateWithLifecycle().value
-        } else {
-            SettingsHomeSummaries()
-        }
+    // The home's values: active sessions, the storage used, the language.
+    val homeViewModel: SettingsHomeViewModel = hiltViewModel()
+    val summaries by homeViewModel.summaries.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -108,18 +100,16 @@ internal fun SettingsRoute(
 }
 
 /**
- * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): the tabs' large header ([TabHeader], as the Chats and
- * Contacts tabs have it) that collapses as the page scrolls, then the logged-in account's card ([AccountCard], which
- * opens Edit profile) with the device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups
- * of segmented rows ([SettingsGroup]) without headings, as their rows name them already: General (Appearance,
- * Notifications, Data and storage, Language), Privacy and security, About, and "Log out" on its own, which asks for
- * confirmation first (FR-A8).
- * In the demo ([LocalIsDemo]) the card says "Demo", the other accounts are left out, and "Leave demo" replaces "Log
- * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
+ * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §13.9): the tabs' large header ([TabHeader], as the
+ * Chats and Contacts tabs have it) with its search button, which turns it into settings search
+ * ([SettingsSearchBar], [SettingsSearchResults]); then Settings home ([SettingsHome]): the logged-in account's card,
+ * whose menu switches and adds accounts, the groups of pages with their values ([summaries]), and "Log out" on its own,
+ * which asks for confirmation first (FR-A8). In the demo ([LocalIsDemo]) the card says "Demo", no account can be
+ * switched or added, and "Leave demo" replaces "Log out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
  * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
  */
-@Suppress("LongParameterList") // The state, its events, the list-detail's selection and the experimental look's parts.
+@Suppress("LongParameterList") // The state, its events, the list-detail's selection and the home's values.
 @Composable
 internal fun SettingsScreen(
     state: SettingsUiState,
@@ -131,7 +121,6 @@ internal fun SettingsScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     summaries: SettingsHomeSummaries = SettingsHomeSummaries(),
 ) {
-    val experimentalLook = LocalExperimentalUi.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val search = rememberSettingsSearch()
     val onOpen = homeOpener(onOpenPage, onOpenSubPage)
@@ -141,13 +130,13 @@ internal fun SettingsScreen(
         containerColor = settingsPageColor(),
         // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
         topBar = {
-            if (experimentalLook && search.isOpen) {
+            if (search.isOpen) {
                 SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
             } else {
                 TabHeader(
                     scrollBehavior = scrollBehavior,
                     title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
-                    actions = { if (experimentalLook) SearchAction(onClick = search::open) },
+                    actions = { SearchAction(onClick = search::open) },
                 )
             }
         },
@@ -158,24 +147,10 @@ internal fun SettingsScreen(
         Box(Modifier.fillMaxSize()) {
             // Without headings between them the groups sit closer, as in the account menus.
             SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-                when {
-                    experimentalLook && search.isOpen -> {
-                        SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
-                    }
-
-                    experimentalLook -> {
-                        ExperimentalHome(
-                            state,
-                            onEvent,
-                            onOpen,
-                            selection,
-                            summaries,
-                        )
-                    }
-
-                    else -> {
-                        StandardHome(state, onEvent, onOpenPage, selection)
-                    }
+                if (search.isOpen) {
+                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                } else {
+                    SettingsHome(state, onEvent, onOpen, selection, summaries)
                 }
             }
             // The page's end fades into its color behind the floating navigation bar, as the Chats tab's list does.
@@ -191,7 +166,7 @@ internal fun SettingsScreen(
     }
 }
 
-/** Opens where an entry of the experimental home leads: a page, a page above one ([onOpenSubPage]), Recent calls. */
+/** Opens where an entry of the home leads: a page, a page above one ([onOpenSubPage]), Recent calls. */
 @Composable
 private fun homeOpener(
     onOpenPage: (SettingsPage) -> Unit,

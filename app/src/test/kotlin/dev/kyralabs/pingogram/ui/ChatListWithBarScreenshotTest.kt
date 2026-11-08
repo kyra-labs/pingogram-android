@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.ui
 
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -22,7 +21,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.time.AndroidTimePatterns
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -38,8 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The Chats tab as a phone shows it, with the floating navigation bar, the "New chat" button beside it and the list
- * fading out above them (`docs/DESIGN_SYSTEM.md` §6.1), the pinned chats' group at the top: light, dark and AMOLED,
- * and the same in the experimental look (§13).
+ * fading out above them (`docs/DESIGN_SYSTEM.md` §6.1, §13.2), the pinned chats' group at the top: light, dark and
+ * AMOLED.
  * The screen-level goldens of `feature:chats` have no bar, so only these show the fade over the rows. The chat list
  * runs its real view model and repositories on a [FakeTdlibClient] bound with Hilt, with enough chats to reach the
  * bar.
@@ -83,26 +81,13 @@ class ChatListWithBarScreenshotTest {
     @Test
     fun amoled() = capture(ThemeMode.Dark, amoled = true)
 
-    // The experimental look's bar, New chat button, fade and header (docs/DESIGN_SYSTEM.md §13).
-    @Test
-    fun experimentalLight() = capture(ThemeMode.Light, experimental = true)
-
-    @Test
-    fun experimentalDark() = capture(ThemeMode.Dark, experimental = true)
-
-    @Test
-    fun experimentalAmoled() = capture(ThemeMode.Dark, amoled = true, experimental = true)
-
     private fun capture(
         themeMode: ThemeMode,
         amoled: Boolean = false,
-        experimental: Boolean = false,
     ) {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled) {
-                CompositionLocalProvider(LocalExperimentalUi provides experimental) {
-                    PingogramApp(uiState = MainActivityUiState.SignedIn)
-                }
+                PingogramApp(uiState = MainActivityUiState.SignedIn)
             }
         }
         // The chat list gets its state from a background dispatcher: wait for the row the fade lies over.

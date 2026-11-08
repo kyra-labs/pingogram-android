@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
@@ -44,9 +43,9 @@ import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
- * `docs/DESIGN_SYSTEM.md` §6 "New chat", §6.1; owner decisions 2026-11-06 and 2026-11-07): a round
- * [FloatingActionButton], a full circle as tall as the pill (`sizes.floatingNavigationBar`), with the filled edit
- * symbol, in `primaryContainer` / `onPrimaryContainer`, named "New chat" for screen readers. It shows while [shown]
+ * `docs/DESIGN_SYSTEM.md` §13.2, §6.1): a 64 dp rounded square (`sizes.experimentalFab`, the shape scale's
+ * `largeIncreased`) with the filled edit symbol, on `tertiaryContainer` / `onTertiaryContainer`, named "New chat" for
+ * screen readers. It shows while [shown]
  * (on the Chats tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
@@ -55,22 +54,16 @@ internal fun BarNewChatButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The experimental look's button (docs/DESIGN_SYSTEM.md §13): a 64 dp rounded square on `tertiaryContainer`.
-    val experimental = LocalExperimentalUi.current
-    val shape = if (experimental) MaterialTheme.shapes.largeIncreased else CircleShape
+    val shape = MaterialTheme.shapes.largeIncreased
     val colors = MaterialTheme.colorScheme
-    val sizes = MaterialTheme.sizes
-    NewChatButtonSlot(
-        shown = shown,
-        shape = shape,
-        modifier = modifier.size(if (experimental) sizes.experimentalFab else sizes.floatingNavigationBar),
-    ) { transform ->
+    val size = MaterialTheme.sizes.experimentalFab
+    NewChatButtonSlot(shown = shown, shape = shape, modifier = modifier.size(size)) { transform ->
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,
-            modifier = if (experimental) transform.size(sizes.experimentalFab) else transform,
+            modifier = transform.size(size),
             shape = shape,
-            containerColor = if (experimental) colors.tertiaryContainer else colors.primaryContainer,
-            contentColor = if (experimental) colors.onTertiaryContainer else colors.onPrimaryContainer,
+            containerColor = colors.tertiaryContainer,
+            contentColor = colors.onTertiaryContainer,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_edit),
@@ -122,7 +115,7 @@ internal fun RailNewChatButton(
 
 /**
  * What sits beside the floating navigation bar for [tab]: "New chat" on the Chats tab while New chat is not open
- * ([newChatOpen]), and in the experimental look "Add contact" on the Contacts tab (`docs/DESIGN_SYSTEM.md` §13.8).
+ * ([newChatOpen]), and "Add contact" on the Contacts tab (`docs/DESIGN_SYSTEM.md` §13.8).
  */
 @Composable
 internal fun BarPrimaryActions(
@@ -133,9 +126,7 @@ internal fun BarPrimaryActions(
 ) {
     Box {
         BarNewChatButton(shown = tab == TopLevelDestination.Chats && !newChatOpen, onClick = onNewChat)
-        if (LocalExperimentalUi.current) {
-            BarAddContactButton(shown = tab == TopLevelDestination.Contacts, onClick = onNewContact)
-        }
+        BarAddContactButton(shown = tab == TopLevelDestination.Contacts, onClick = onNewContact)
     }
 }
 
@@ -154,18 +145,16 @@ internal fun RailPrimaryActions(
             shown = tab == TopLevelDestination.Chats && !newChatOpen,
             onClick = onNewChat,
         )
-        if (LocalExperimentalUi.current) {
-            RailAddContactButton(
-                navigationSuiteType = navigationSuiteType,
-                shown = tab == TopLevelDestination.Contacts,
-                onClick = onNewContact,
-            )
-        }
+        RailAddContactButton(
+            navigationSuiteType = navigationSuiteType,
+            shown = tab == TopLevelDestination.Contacts,
+            onClick = onNewContact,
+        )
     }
 }
 
 /**
- * The Contacts tab's "Add contact" in the experimental look (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to
+ * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to
  * confirm, 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp
  * rounded square on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and
  * fades in and out; [onClick] opens Add contact.
@@ -196,7 +185,7 @@ internal fun BarAddContactButton(
 }
 
 /**
- * The rail's "Add contact" on the Contacts tab in the experimental look, as [RailNewChatButton] on the Chats tab: a
+ * The rail's "Add contact" on the Contacts tab, as [RailNewChatButton] on the Chats tab: a
  * round FAB on the collapsed rail, an extended one with its label on the expanded rail. It fades in and out with
  * [shown].
  */

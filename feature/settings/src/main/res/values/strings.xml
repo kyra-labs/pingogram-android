@@ -17,12 +17,7 @@
     <string name="settings_account_demo">Demo</string>
     <string name="settings_account_premium">Premium</string>
     <!-- Below the account card: another account's row says what a tap does for screen readers. -->
-    <string name="settings_switch_account">Switch to %1$s</string>
     <string name="settings_add_account">Add account</string>
-    <plurals name="settings_account_unread_chats">
-        <item quantity="one">%1$d unread chat</item>
-        <item quantity="other">%1$d unread chats</item>
-    </plurals>
     <!-- What tapping the account's card does, spoken by screen readers ("double-tap to edit profile"). -->
     <string name="settings_edit_profile_button">Edit profile</string>
     <!-- Snackbar on Settings after the profile was saved. -->
@@ -218,8 +213,6 @@
     <string name="settings_power_saving_section_mode">Turn on</string>
     <string name="settings_power_saving_off">Off</string>
     <string name="settings_power_saving_with_battery_saver">With Battery Saver</string>
-    <string name="settings_power_saving_battery_saver_on">Battery Saver is on now</string>
-    <string name="settings_power_saving_battery_saver_off">Battery Saver is off now</string>
     <string name="settings_power_saving_always">Always</string>
     <string name="settings_power_saving_mode_footer">Power saving stops what plays by itself, so the battery lasts longer.</string>
     <string name="settings_power_saving_section_parts">While on</string>
@@ -661,7 +654,6 @@
     <string name="settings_notifications_loading">Loading notification settings</string>
     <!-- A banner at the top when Android shows none of Pingogram's notifications (permission refused, or turned off). -->
     <string name="settings_notifications_off">Notifications are off</string>
-    <string name="settings_notifications_off_summary">Pingogram can\'t tell you about new messages. Tap to turn notifications on.</string>
     <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): the banner's text and button while notifications are off -->
     <string name="settings_notifications_off_banner">Pingogram can\'t tell you about new messages.</string>
     <string name="settings_notifications_turn_on">Turn on</string>

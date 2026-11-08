@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * The values the experimental look's Settings home shows beside its rows (`docs/DESIGN_SYSTEM.md` §13.9): how many
+ * The values the Settings home shows beside its rows (`docs/DESIGN_SYSTEM.md` §13.9): how many
  * sessions are active ([sessionCount]), how much the account's files and database take ([storageBytes]), and the app's
  * language ([languageTag], null while it follows the system's). Each is null until known, and stays null when TDLib
  * could not tell; the rows then show their plain summaries.
@@ -29,9 +29,9 @@ data class SettingsHomeSummaries(
 )
 
 /**
- * Reads [SettingsHomeSummaries] for the experimental look's Settings home: the active sessions and the storage once
+ * Reads [SettingsHomeSummaries] for the Settings home: the active sessions and the storage once
  * (TDLib answers both from its memory or database; `getActiveSessions`, `getStorageStatisticsFast`), the language as
- * it changes. Only the experimental look asks for this view model, so the standard one sends nothing more.
+ * it changes.
  */
 @HiltViewModel
 class SettingsHomeViewModel

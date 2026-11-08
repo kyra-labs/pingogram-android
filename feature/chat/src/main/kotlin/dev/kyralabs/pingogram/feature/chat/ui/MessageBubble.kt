@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.customEmoji
@@ -259,7 +258,7 @@ internal fun BubbleRowContent(
         }
         val aligned = Modifier.alignBy { it.bubbleBottom() }
         if (resources.theme.namesAbove(bubble) && !showsShare) {
-            // The experimental look's vivid bubbles have their sender's name above them (docs/DESIGN_SYSTEM.md §13.6).
+            // Vivid bubbles have their sender's name above them (docs/DESIGN_SYSTEM.md §13.6).
             WithNameAbove(
                 modifier = aligned,
                 name = { SenderNameAbove(bubble, resources.theme, onEvent) },
@@ -375,10 +374,10 @@ private fun MessageBubble(
     val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes
     val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
-    val frameKind = frameKindOf(bubble, LocalExperimentalUi.current)
+    val frameKind = frameKindOf(bubble)
     val bare = frameKind.isBare
     val bareShape = MaterialTheme.shapes.large
-    // The experimental look rings a message that mentions the user in `primary` (docs/DESIGN_SYSTEM.md §13.6).
+    // A message that mentions the user is ringed in `primary` (docs/DESIGN_SYSTEM.md §13.6).
     val mentionRing = bubble.mentionsMe && resources.theme.hues.isNotEmpty()
     val ringColor = MaterialTheme.colorScheme.primary
     val frame: @Composable (Modifier) -> Unit = { outer ->
@@ -532,7 +531,7 @@ internal fun BubbleHeader(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val hueTheme = LocalHueTheme.current
-    // A vivid bubble's name is above it in the experimental look (SenderNameAbove).
+    // A vivid bubble's name is above it (SenderNameAbove).
     if (bubble.showsSenderName && !hueTheme.isVivid(colors)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -575,9 +574,8 @@ internal fun BubbleHeader(
  * `MaterialTheme.chatStyle`) with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
  * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
- * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size; in the experimental
- * look the user's mentions ([ChatItem.Bubble.myMentions]) are chips on `primary` in `onPrimary` and the emphasized
- * weight. Its custom emoji show
+ * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size; the user's mentions
+ * ([ChatItem.Bubble.myMentions]) are chips on `primary` in `onPrimary` and the emphasized weight. Its custom emoji show
  * their pictures over their fallback emoji ([customEmoji], from [LocalCustomEmoji]), drawn in the draw phase too, in
  * the text's color where they take it. Its layout is kept in [textLayout], for the bubble's layout to put the meta
  * after its last line.

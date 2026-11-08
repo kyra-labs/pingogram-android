@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -56,20 +55,19 @@ internal fun DatePill(
     modifier: Modifier = Modifier,
     floating: Boolean = false,
 ) {
-    // The experimental look's floating pill: surfaceContainerHigh, its text onSurface and emphasized (§13.5).
-    val experimental = floating && LocalExperimentalUi.current
+    // The floating pill: surfaceContainerHigh, its text onSurface and emphasized (§13.5).
     val colors = MaterialTheme.colorScheme
     Text(
         text = text,
         modifier =
             modifier
                 .background(
-                    if (experimental) colors.surfaceContainerHigh else colors.surfaceContainerHighest,
+                    if (floating) colors.surfaceContainerHigh else colors.surfaceContainerHighest,
                     CircleShape,
                 ).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
-        color = if (experimental) colors.onSurface else colors.onSurfaceVariant,
+        color = if (floating) colors.onSurface else colors.onSurfaceVariant,
         maxLines = 1,
-        style = MaterialTheme.typography.run { if (experimental) labelLargeEmphasized else labelLarge },
+        style = MaterialTheme.typography.run { if (floating) labelLargeEmphasized else labelLarge },
     )
 }
 
@@ -89,7 +87,7 @@ internal fun DateSeparatorRow(
  * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped,
  * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text; so does an
  * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call. Where
- * [onWave] is given (the experimental look, someone else joined, the user can write), "Wave" ends the pill
+ * [onWave] is given (someone else joined, the user can write), "Wave" ends the pill
  * (`docs/DESIGN_SYSTEM.md` §13.6): an extra-small tonal button that sends a greeting sticker in reply.
  */
 @Composable
@@ -179,16 +177,15 @@ private fun WaveButton(onWave: () -> Unit) {
 }
 
 /**
- * "Unread messages" between two dividers, above the first message that was unread when the chat was opened; in the
- * experimental look (`docs/DESIGN_SYSTEM.md` §13.7) `primary` lines around a `primary` pill counting them ("4 unread
- * posts").
+ * Above the first message that was unread when the chat was opened: `primary` lines around a `primary` pill counting
+ * them ("4 unread posts", `docs/DESIGN_SYSTEM.md` §13.7), or "Unread messages" between two dividers without a count.
  */
 @Composable
 internal fun UnreadDividerRow(
     modifier: Modifier = Modifier,
     item: ChatItem.UnreadDivider? = null,
 ) {
-    if (item != null && item.count > 0 && LocalExperimentalUi.current) {
+    if (item != null && item.count > 0) {
         UnreadPill(item, modifier)
         return
     }

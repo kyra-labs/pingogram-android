@@ -17,37 +17,8 @@ import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.feature.settings.R
 
-// The rows of the Notifications page: the banner of blocked notifications, the defaults of a kind of chats, "Keep
+// The rows of the Notifications page: the defaults of a kind of chats, "Keep
 // connected", and "Reset all notification settings" with its confirmation.
-
-/**
- * Android shows none of Pingogram's notifications: a row in the error container that says so first on the page, and
- * that turns them on ([onClick]: the system's dialog, or Android's notification settings).
- */
-@Composable
-internal fun NotificationsOffItem(
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    SettingsRow(
-        title = stringResource(R.string.settings_notifications_off),
-        shapes = shapes,
-        supportingContent = { Text(stringResource(R.string.settings_notifications_off_summary)) },
-        onClick = onClick,
-        colors = warningItemColors(),
-    )
-}
-
-/** The colors of a row that warns: `onErrorContainer` on `errorContainer` (`docs/DESIGN_SYSTEM.md` §2.2). */
-@Composable
-private fun warningItemColors(): ListItemColors {
-    val colors = MaterialTheme.colorScheme
-    return ListItemDefaults.segmentedColors(
-        containerColor = colors.errorContainer,
-        contentColor = colors.onErrorContainer,
-        supportingContentColor = colors.onErrorContainer,
-    )
-}
 
 /**
  * The defaults of [scope]'s chats under its name: notifications on or off, message previews, mentions (groups) and

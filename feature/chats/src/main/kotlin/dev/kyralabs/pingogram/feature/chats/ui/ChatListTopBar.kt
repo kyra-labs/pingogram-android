@@ -343,7 +343,7 @@ internal fun TopBarAction(
             onClick = onClick,
             modifier =
                 modifier
-                    .then(if (size != null) Modifier.size(size) else Modifier)
+                    .size(size)
                     .semantics { contentDescription = description?.invoke() ?: label },
             shapes = IconButtonDefaults.shapes(),
             content = icon,

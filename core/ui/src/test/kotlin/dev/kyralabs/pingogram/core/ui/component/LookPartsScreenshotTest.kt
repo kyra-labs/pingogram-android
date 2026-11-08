@@ -38,14 +38,14 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The experimental look's shared parts (`docs/DESIGN_SYSTEM.md` §13): avatars with the vivid fills and the shapes of
+ * The look's shared parts (`docs/DESIGN_SYSTEM.md` §13.2): avatars with the vivid fills and the shapes of
  * each kind of chat (a person, a group, a channel, Saved Messages, a forum, selected), the wide and condensed display
  * styles and the tabs' header actions, in light, dark, AMOLED black, high contrast, right to left and at the largest
  * font scale, and with the Coral theme. The standard look's goldens ([AvatarScreenshotTest]) are unchanged.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w411dp-h891dp-xxhdpi")
-class ExperimentalPartsScreenshotTest {
+class LookPartsScreenshotTest {
     @Test
     fun light() = capture(ThemeMode.Light)
 
@@ -84,18 +84,17 @@ class ExperimentalPartsScreenshotTest {
         // Inspection mode, as in previews: Coil shows the showcase's preview photo instead of loading from TDLib.
         CompositionLocalProvider(
             LocalInspectionMode provides true,
-            LocalExperimentalUi provides true,
             LocalLayoutDirection provides layoutDirection,
         ) {
             PingogramTheme(themeMode = themeMode, dynamicColor = false, palette = palette, amoled = amoled) {
-                Surface(color = MaterialTheme.colorScheme.background) { ExperimentalParts() }
+                Surface(color = MaterialTheme.colorScheme.background) { LookParts() }
             }
         }
     }
 }
 
 @Composable
-private fun ExperimentalParts() {
+private fun LookParts() {
     val spacing = MaterialTheme.spacing
     val type = MaterialTheme.experimentalTypography
     Column {
@@ -157,7 +156,7 @@ private fun ChatKinds() {
 @Composable
 private fun HeaderAction(icon: Int) {
     val size = tabHeaderActionSize()
-    Box(if (size != null) Modifier.size(size) else Modifier) {
+    Box(Modifier.size(size)) {
         FilledTonalIconButton(
             onClick = {},
             shapes = IconButtonDefaults.shapes(),

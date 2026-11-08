@@ -54,8 +54,8 @@ internal fun ComposerFade(
 }
 
 /**
- * What sits over the messages' bottom edge: their fade into the composer ([ComposerFade]), then the experimental look's
- * typing bubble ([TypingRowSlot]), for which the list keeps room below the newest message while it shows.
+ * What sits over the messages' bottom edge: their fade into the composer ([ComposerFade]), then the typing bubble
+ * ([TypingRowSlot]), for which the list keeps room below the newest message while it shows.
  */
 @Composable
 internal fun BoxScope.MessagesBottom(

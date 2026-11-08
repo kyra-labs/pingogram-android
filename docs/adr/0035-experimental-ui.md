@@ -61,4 +61,6 @@ The owner picked the experimental look: it is Pingogram's only look, with no swi
 (the Settings row and the labs card, `ExperimentalUiRepository` and its stored key, which is no longer read) and makes
 `LocalExperimentalUi` true everywhere, recording every golden in that look. The standard look's branches then leave
 module by module, and the local with the last of them; `docs/DESIGN_SYSTEM.md` §13 is the spec where it and §1–§12
-differ.
+differ. Done the same day: the contacts, chat list, conversation and Settings modules lost their other look, then
+`core:ui` and `:app`, and `LocalExperimentalUi` with them. A few names keep "experimental" (`experimentalTypography`,
+`sizes.experimental*`) as tokens, not as a look.

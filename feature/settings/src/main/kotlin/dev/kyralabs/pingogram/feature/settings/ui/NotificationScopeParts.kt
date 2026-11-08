@@ -28,7 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.notifications.PingogramChannel
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -41,28 +40,22 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The experimental Notifications page's parts (docs/DESIGN_SYSTEM.md §13.10): the banner while notifications are off
+// The Notifications page's parts (docs/DESIGN_SYSTEM.md §13.10): the banner while notifications are off
 // and the picker of the kind of chat whose defaults show.
 
 /**
- * While Android shows none of Pingogram's notifications: in the experimental look a banner ([SettingsBannerCard])
- * with "Turn on", in the standard look the warning row ([NotificationsOffItem]); both call [onTurnOn].
+ * While Android shows none of Pingogram's notifications: a banner ([SettingsBannerCard]) with "Turn on", which calls
+ * [onTurnOn].
  */
 @Composable
 internal fun NotificationsOff(onTurnOn: () -> Unit) {
-    if (LocalExperimentalUi.current) {
-        SettingsBannerCard(
-            icon = UiR.drawable.ic_notifications_off,
-            title = stringResource(R.string.settings_notifications_off),
-            summary = stringResource(R.string.settings_notifications_off_banner),
-            button = stringResource(R.string.settings_notifications_turn_on),
-            onClick = onTurnOn,
-        )
-    } else {
-        SettingsGroup {
-            item { shapes -> NotificationsOffItem(shapes, onClick = onTurnOn) }
-        }
-    }
+    SettingsBannerCard(
+        icon = UiR.drawable.ic_notifications_off,
+        title = stringResource(R.string.settings_notifications_off),
+        summary = stringResource(R.string.settings_notifications_off_banner),
+        button = stringResource(R.string.settings_notifications_turn_on),
+        onClick = onTurnOn,
+    )
 }
 
 /** "Show settings for": private chats, groups and channels as connected buttons, which pick the group shown below. */

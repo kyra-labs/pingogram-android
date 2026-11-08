@@ -217,7 +217,7 @@ private fun TopBarAction(
         val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = if (size != null) Modifier.size(size) else Modifier,
+            modifier = Modifier.size(size),
             shapes = IconButtonDefaults.shapes(),
         ) {
             Icon(painterResource(icon), contentDescription = label)

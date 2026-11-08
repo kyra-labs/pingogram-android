@@ -31,13 +31,13 @@ import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import java.util.Locale
 
 /**
- * Settings home's groups in the experimental look ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
+ * Settings home's groups ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
  * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their badges' shapes taking
  * `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn across the page. Recent calls is left out where the app
  * does not provide its page.
  */
 @Composable
-internal fun ExperimentalHomeGroups(
+internal fun SettingsHomeGroups(
     summaries: SettingsHomeSummaries,
     onOpen: (HomeDestination) -> Unit,
     selection: SettingsPageSelection?,

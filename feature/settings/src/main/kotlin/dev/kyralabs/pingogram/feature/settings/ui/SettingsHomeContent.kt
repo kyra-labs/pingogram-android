@@ -2,50 +2,21 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.runtime.Composable
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
+import dev.kyralabs.pingogram.feature.settings.ui.home.AccountCard
 import dev.kyralabs.pingogram.feature.settings.ui.home.AccountSwitcher
-import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalAccountCard
-import dev.kyralabs.pingogram.feature.settings.ui.home.ExperimentalHomeGroups
 import dev.kyralabs.pingogram.feature.settings.ui.home.HomeDestination
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeGroups
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
 
-// What Settings home shows in each look (SettingsScreen, docs/DESIGN_SYSTEM.md §6 and §13.9).
-
-/** The standard look's home: the account card, the other accounts, the page groups, "Log out". */
-@Composable
-internal fun StandardHome(
-    state: SettingsUiState,
-    onEvent: (SettingsEvent) -> Unit,
-    onOpenPage: (SettingsPage) -> Unit,
-    selection: SettingsPageSelection?,
-) {
-    val isDemo = LocalIsDemo.current
-    state.account?.let {
-        AccountCard(
-            account = it,
-            onEditProfile = { onOpenPage(SettingsPage.EditProfile) },
-            selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
-        )
-    }
-    // The demo's graph is no account: no switching or adding from it (docs/adr/0034).
-    if (!isDemo) {
-        OtherAccountsGroup(
-            accounts = state.otherAccounts,
-            canAdd = state.canAddAccount,
-            onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
-            onAdd = { onEvent(SettingsEvent.AddAccount) },
-        )
-    }
-    PageGroups(onOpenPage, selection)
-    LogOutGroup(state, onEvent)
-}
+// What Settings home shows (SettingsScreen, docs/DESIGN_SYSTEM.md §13.9).
 
 /**
- * The experimental look's home (`docs/DESIGN_SYSTEM.md` §13.9): the account card with its own account menu
- * ([ExperimentalAccountCard]), the groups of [ExperimentalHomeGroups], "Log out".
+ * Settings home (`docs/DESIGN_SYSTEM.md` §13.9): the account card with its own account menu ([AccountCard]), the
+ * groups of [SettingsHomeGroups], "Log out".
  */
 @Suppress("LongParameterList") // The screen's state and callbacks, passed on.
 @Composable
-internal fun ExperimentalHome(
+internal fun SettingsHome(
     state: SettingsUiState,
     onEvent: (SettingsEvent) -> Unit,
     onOpen: (HomeDestination) -> Unit,
@@ -65,14 +36,14 @@ internal fun ExperimentalHome(
             } else {
                 null
             }
-        ExperimentalAccountCard(
+        AccountCard(
             account = it,
             onEditProfile = { onOpen(HomeDestination.Page(SettingsPage.EditProfile)) },
             onQrCode = { onOpen(HomeDestination.Page(SettingsPage.MyQrCode)) },
             switcher = switcher,
         )
     }
-    ExperimentalHomeGroups(summaries, onOpen, selection)
+    SettingsHomeGroups(summaries, onOpen, selection)
     LogOutGroup(state, onEvent)
 }
 

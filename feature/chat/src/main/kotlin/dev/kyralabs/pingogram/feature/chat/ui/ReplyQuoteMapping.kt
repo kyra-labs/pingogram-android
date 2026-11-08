@@ -65,7 +65,7 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
     }
 }
 
-/** The hue of a replied sender ([ref], [id]) in a group, for the experimental look's stripe; -1 elsewhere. */
+/** The hue of a replied sender ([ref], [id]) in a group, for the stripe; -1 elsewhere. */
 private fun ItemInputs.quoteHue(
     ref: Any?,
     id: Long?,

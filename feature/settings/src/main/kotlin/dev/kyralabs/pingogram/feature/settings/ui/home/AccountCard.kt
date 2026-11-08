@@ -53,17 +53,17 @@ import dev.kyralabs.pingogram.feature.settings.ui.AccountUiModel
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The account at the top of the experimental look's Settings home (`docs/DESIGN_SYSTEM.md` §13.9): a card on
+ * The account at the top of Settings home (`docs/DESIGN_SYSTEM.md` §13.9): a card on
  * `primaryContainer` / `onPrimaryContainer` with `extraLargeIncreased` corners. The avatar
  * (`experimentalAccountAvatar`) in `MaterialShapes.Cookie9Sided` with a camera badge in `tertiaryContainer`; the
  * name in `headlineSmallWide` (a heading), the username, and the phone number masked, with an eye button that shows
  * it on this screen (while "Hide phone numbers" is on it stays masked, without the button). Then "Edit profile"
  * ([onEditProfile], a filled button in the card's inverse colors), "QR code" ([onQrCode], tonal) and, where there is
  * anything to switch to ([switcher]), a tonal icon button opening the account menu. In the demo a "Demo" label stands
- * in the phone number's place.
+ * in the phone number's place, and a Telegram Premium subscriber's card says "Premium" under the username.
  */
 @Composable
-internal fun ExperimentalAccountCard(
+internal fun AccountCard(
     account: AccountUiModel,
     onEditProfile: () -> Unit,
     onQrCode: () -> Unit,
@@ -99,6 +99,15 @@ internal fun ExperimentalAccountCard(
                         style = MaterialTheme.typography.bodyMediumEmphasized.userContent,
                     )
                 }
+                // "Premium" for Telegram Premium subscribers, a status and never an offer (REQUIREMENTS.md §1.2).
+                if (account.isPremium && !LocalIsDemo.current) {
+                    AccountLabel(
+                        text = stringResource(R.string.settings_account_premium),
+                        container = colors.tertiaryContainer,
+                        content = colors.onTertiaryContainer,
+                        modifier = Modifier.padding(vertical = spacing.extraSmall),
+                    )
+                }
                 if (LocalIsDemo.current) {
                     AccountLabel(
                         text = stringResource(R.string.settings_account_demo),
@@ -126,7 +135,7 @@ private fun CardAvatar(account: AccountUiModel) {
             name = account.name,
             id = account.userId,
             size = sizes.experimentalAccountAvatar,
-            // The group shape's Cookie9Sided in the experimental look, as the owner's board draws the account.
+            // The group shape's Cookie9Sided, as the owner's board draws the account.
             shape = AvatarShape.Group,
         )
         Icon(

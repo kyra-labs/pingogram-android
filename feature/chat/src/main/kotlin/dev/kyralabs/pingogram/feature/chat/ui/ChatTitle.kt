@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -33,26 +34,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
-import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
+import dev.kyralabs.pingogram.core.ui.transition.avatarTransform
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The conversation's top bar in the experimental look (`docs/DESIGN_SYSTEM.md` §13.5): a centred title block, a group's
-// cluster of the people who wrote last, the online members in the status, and a channel's mute toggle and menu.
+// The conversation's top bar title (`docs/DESIGN_SYSTEM.md` §13.5): a centred block, a group's cluster of the people
+// who wrote last, the online members in the status.
 
 /**
- * The experimental look's centred title: the chat's avatar, or in a group up to five people who wrote last overlapping
- * ([MemberCluster]), over the name in `titleMediumEmphasized` and the status line in `bodySmall` (a group's online
- * members after its count, in `pingogramColors.online`). One heading and button for screen readers, as [ChatTitle]:
- * it opens the profile or the info page.
+ * The centred title: the chat's avatar, or in a group up to five people who wrote last overlapping ([MemberCluster]),
+ * over the name in `titleMediumEmphasized` (after a secret chat's lock) and the status line in `bodySmall` (a group's
+ * online members after its count, in `pingogramColors.online`). One heading and button for screen readers: it opens
+ * the profile ([onOpenProfile]) or the info page ([onOpenChatInfo]), the avatar growing into it
+ * (`docs/DESIGN_SYSTEM.md` §5). While someone is doing something in the chat, or while TDLib is not connected
+ * ([connecting], whose state then replaces the status), the heading is a polite live region, so screen readers
+ * announce it ("Grace is typing…", "Connecting…"); the status is not, as "last seen" changes every minute.
  */
 @Composable
-internal fun ExperimentalChatTitle(
+internal fun ChatTitle(
     header: ChatHeader,
     @StringRes connecting: Int?,
     onOpenProfile: ((userId: Long) -> Unit)?,
@@ -88,18 +94,28 @@ internal fun ExperimentalChatTitle(
                 name = title,
                 id = header.chatId,
                 size = MaterialTheme.sizes.avatarSmall,
+                modifier =
+                    Modifier.avatarTransform(
+                        avatarTransformKey(userId.takeIf { onOpenProfile != null }, openInfo, header),
+                    ),
                 placeholderIcon = header.placeholderIcon,
                 shape = header.avatarShape,
             )
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleMediumEmphasized.userContent,
-            )
-            ExperimentalStatus(header, connecting)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (header.secret != null) SecretChatLock()
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMediumEmphasized.userContent,
+                )
+            }
+            ChatStatus(header, connecting)
         }
     }
 }
@@ -142,7 +158,7 @@ private const val CLUSTER_OVERLAP = 3
  * a group's online members after it ("1,248 members · 36 online").
  */
 @Composable
-private fun ExperimentalStatus(
+private fun ChatStatus(
     header: ChatHeader,
     @StringRes connecting: Int?,
 ) {
@@ -213,55 +229,46 @@ private fun StatusText(
     )
 }
 
-/** The experimental top bar's height: the avatar over the two lines, with room above and below. */
+/**
+ * The top bar's height, also the search field's, which takes the bar's place: the avatar over the two lines of the
+ * title, with room above and below, growing with the font scale instead of clipping them.
+ */
 @Composable
-internal fun experimentalTitleHeight(): Dp {
+internal fun titleHeight(): Dp {
     val typography = MaterialTheme.typography
     val spacing = MaterialTheme.spacing
     val lines =
         with(LocalDensity.current) {
             typography.titleMediumEmphasized.lineHeight.toDp() + typography.bodySmall.lineHeight.toDp()
         }
-    return max(titleHeight(), MaterialTheme.sizes.avatarSmall + lines + spacing.extraSmall + spacing.large)
+    return max(
+        TopAppBarDefaults.TopAppBarExpandedHeight,
+        MaterialTheme.sizes.avatarSmall + lines + spacing.extraSmall + spacing.large,
+    )
 }
 
 /**
- * The experimental look's top bar (`docs/DESIGN_SYSTEM.md` §13.5): Material's center-aligned top bar with back, the
- * centred title block ([ExperimentalChatTitle]) and the actions: [ExperimentalGroupActions] in groups and channels,
- * [ChatActions] elsewhere (the call button and the secret chat's timer as in the standard look).
+ * The lock before a secret chat's name, in `primary` like the chat list's; screen readers hear "Secret chat" in the
+ * title's heading.
  */
-@Suppress("LongParameterList") // ChatTopBar's own parameters, passed on.
 @Composable
-internal fun ExperimentalChatTopBar(
-    header: ChatHeader,
-    onBack: (() -> Unit)?,
-    modifier: Modifier,
-    onOpenProfile: ((userId: Long) -> Unit)?,
-    onSecretChatEvent: (SecretChatEvent) -> Unit,
-    onOpenChatInfo: ((chatId: Long) -> Unit)?,
-    onSearch: (() -> Unit)?,
-    topicAction: (@Composable () -> Unit)?,
-    connection: ConnectionStatus,
-    onSetMuted: (Boolean) -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    CenterAlignedTopAppBar(
-        title = { ExperimentalChatTitle(header, connection.labelRes(), onOpenProfile, onOpenChatInfo) },
-        modifier = modifier,
-        navigationIcon = { ChatNavigationIcon(selectedCount = null, onClearSelection = {}, onBack = onBack) },
-        actions = {
-            val openInfo = onOpenChatInfo.takeIf { header.opensChatInfo }
-            if (header.opensChatInfo && topicAction == null) {
-                ExperimentalGroupActions(header, onSearch, openInfo?.let { { it(header.chatId) } }, onSetMuted)
-            } else {
-                ChatActions(header, onSearch, onSecretChatEvent, topicAction)
-            }
-        },
-        expandedHeight = experimentalTitleHeight(),
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = colors.surfaceContainer,
-                scrolledContainerColor = colors.surfaceContainer,
-            ),
+private fun SecretChatLock() {
+    Icon(
+        painter = painterResource(UiR.drawable.ic_lock),
+        contentDescription = stringResource(R.string.secret_chat),
+        modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
+        tint = MaterialTheme.colorScheme.primary,
     )
 }
+
+/** The key of the title's avatar transform: into [profileUserId]'s profile, else the info page [openInfo] opens. */
+private fun avatarTransformKey(
+    profileUserId: Long?,
+    openInfo: ((chatId: Long) -> Unit)?,
+    header: ChatHeader,
+): AvatarTransformKey? =
+    when {
+        profileUserId != null -> AvatarTransformKey.profile(profileUserId)
+        openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
+        else -> null
+    }

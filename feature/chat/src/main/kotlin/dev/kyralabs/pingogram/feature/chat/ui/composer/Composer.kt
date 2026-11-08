@@ -52,7 +52,6 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -103,8 +102,8 @@ import java.time.Instant
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]; its "Replace", while editing a
  * message whose media can be replaced, goes to [onReplaceMedia]. The attach button, where the
- * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach], and the gallery
- * button at the field's end, while it is empty, the system photo picker through [onGallery]. The microphone in
+ * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach], and the camera
+ * button after it, while the field is empty, the camera app through [onCamera]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
  * [onVoiceEvent]), or round video messages once a tap switched it ([recordMode],
  * `docs/adr/0032-round-video-messages.md`; switching and flipping the camera go to [onVideoNoteEvent]). Where the
@@ -137,7 +136,6 @@ internal fun ChatBottomBar(
     onCloseBar: () -> Unit = {},
     onReplaceMedia: () -> Unit = {},
     onAttach: () -> Unit = {},
-    onGallery: () -> Unit = {},
     onCamera: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
@@ -195,7 +193,7 @@ internal fun ChatBottomBar(
                             onSend,
                             onFocusChanged,
                             focus,
-                            AttachInput(onAttach, onGallery, onCamera),
+                            AttachInput(onAttach, onCamera),
                             VoiceInput(recording, onVoiceEvent, drag, recordMode, onVideoNoteEvent),
                             panelState,
                             now,
@@ -263,13 +261,14 @@ private fun BarArea(
 /**
  * The composer (`docs/DESIGN_SYSTEM.md` §6 Composer): a 56 dp pill ([ComposerField], a
  * multi-line text field that grows to six lines and then scrolls) 8 dp from the window's sides, beside a 56 dp round
- * button, the two bottom-aligned. In the pill, the attach "+" ([AttachButton]) at the start where the chat takes
- * attachments, and the emoji button ([PanelButton]) and, while the field is empty, the gallery ([GalleryButton]) at the
- * end. The round button is the microphone ([RecordButton]) while the field is empty and, once there is something to
- * send, the send button ([SendButton], a long press for its other ways to send), growing in on the motion scheme's
- * spatial spring; while editing, a check ([SaveEditButton]) in its place, also for an emptied caption, and no attach or
- * gallery button. Formatting comes from the selection menu ([formattingItems]) and Ctrl shortcuts, a link from
- * [LinkDialog], a time from [ScheduleDialog]. Sending and saving confirm with a haptic (`HapticFeedbackType.Confirm`).
+ * button, the two bottom-aligned. In the pill, the attach "+" ([PrimaryAttachButton]) at the start where the chat
+ * takes attachments, followed while the field is empty by the camera ([CameraButton]), and the emoji button
+ * ([PanelButton]) at the end. The round button is the microphone ([RecordButton]) while the field is empty and, once
+ * there is something to send, the send button ([SendButton], a rounded square, a long press for its other ways to
+ * send), growing in on the motion scheme's spatial spring; while editing, a check ([SaveEditButton]) in its place,
+ * also for an emptied caption, and no attach or camera button. Formatting comes from the selection menu
+ * ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and saving
+ * confirm with a haptic (`HapticFeedbackType.Confirm`).
  * [focus] moves the focus to the text field. While it records, the recording bar ([RecordingBar]) takes the place of
  * the pill. Before the pill, the send-as avatar ([SendAsButton]) where the user can choose who they send as
  * ([onSendAs]). The bot button opens the bots' commands or menu ([onBotMenu]); [onFieldKey] sees the field's keys
@@ -421,10 +420,8 @@ private fun ComposerPill(
 ) {
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
-    val gallery = composer.bar !is ComposerBar.Edit && AttachOption.Gallery in composer.attachOptions
-    // The experimental look (`docs/DESIGN_SYSTEM.md` §13.5): the pill on surfaceContainerHigh, the attach "+" a primary
-    // circle followed by the camera, no gallery button (the attach menu's first option).
-    val experimental = LocalExperimentalUi.current
+    // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerHigh, the attach "+" a primary circle followed by the
+    // camera, no gallery button (the attach menu's first option).
     ComposerField(
         text = text,
         onSend = onSend,
@@ -432,15 +429,12 @@ private fun ComposerPill(
         onFocusChanged = onFocusChanged,
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
-        containerColor = MaterialTheme.colorScheme.run { if (experimental) surfaceContainerHigh else surfaceContainer },
-        leadingIcons = pillLeadingIcons(composer, experimental, canSend, attach, onBotMenu),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        leadingIcons = pillLeadingIcons(composer, canSend, attach, onBotMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
             PanelButton(panel, focusRequester)
-            when {
-                bot != null && canAttach -> Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
-                gallery && !experimental -> Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
-            }
+            if (bot != null && canAttach) Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
         },
         onKeyEvent = onFieldKey,
         hint = hint,
@@ -465,12 +459,10 @@ internal class BotInput(
 )
 
 /**
- * What the attach buttons open: the attach menu ([onAttach]), the system photo picker ([onGallery]) and the camera
- * ([onCamera], the experimental look's camera button).
+ * What the attach buttons open: the attach menu ([onAttach]) and the camera ([onCamera], the camera button).
  */
 internal data class AttachInput(
     val onAttach: () -> Unit,
-    val onGallery: () -> Unit,
     val onCamera: () -> Unit = {},
 )
 

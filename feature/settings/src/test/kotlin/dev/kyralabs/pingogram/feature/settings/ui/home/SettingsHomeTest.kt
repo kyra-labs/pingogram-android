@@ -13,7 +13,6 @@ import androidx.compose.ui.test.performTextInput
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -37,13 +36,13 @@ import org.robolectric.annotation.Config
 import java.util.Locale
 
 /**
- * Settings home in the experimental look (`docs/DESIGN_SYSTEM.md` §13.9): settings search finds pages by their titles
+ * Settings home (`docs/DESIGN_SYSTEM.md` §13.9): settings search finds pages by their titles
  * and summaries and opens them, the account card's buttons open their pages and its menu switches accounts, the phone
  * number shows on request unless "Hide phone numbers" is on, and every page of the standard home stays reachable.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
-class ExperimentalSettingsHomeTest {
+class SettingsHomeTest {
     @get:Rule(order = 0)
     val activityRegistration = ComponentActivityRegistration()
 
@@ -64,7 +63,6 @@ class ExperimentalSettingsHomeTest {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
                 CompositionLocalProvider(
-                    LocalExperimentalUi provides true,
                     LocalPhoneNumbersHidden provides phoneNumbersHidden,
                     LocalRecentCallsLauncher provides {},
                 ) {

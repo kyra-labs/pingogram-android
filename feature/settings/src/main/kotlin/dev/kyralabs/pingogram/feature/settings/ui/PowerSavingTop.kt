@@ -16,7 +16,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -27,14 +26,14 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
-// The experimental Power saving page's top (docs/DESIGN_SYSTEM.md §13.10).
+// The Power saving page's top (docs/DESIGN_SYSTEM.md §13.10).
 
 /**
- * The experimental look's top of the page (`docs/DESIGN_SYSTEM.md` §13.10): a status card saying whether Battery Saver
+ * The top of the page (`docs/DESIGN_SYSTEM.md` §13.10): a status card saying whether Battery Saver
  * is on, what the chosen mode does and whether power saving is in effect now, then "Turn on" as connected buttons.
  */
 @Composable
-internal fun ExperimentalPowerSavingMode(
+internal fun PowerSavingModeGroup(
     state: PowerSavingUiState,
     mode: PowerSavingMode,
     onEvent: (PowerSavingEvent) -> Unit,

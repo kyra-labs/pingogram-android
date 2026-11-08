@@ -21,15 +21,15 @@ import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The conversation's top bar actions in the experimental look (`docs/DESIGN_SYSTEM.md` §13.5).
+// The conversation's top bar actions in a group or channel (`docs/DESIGN_SYSTEM.md` §13.5).
 
 /**
- * The experimental look's actions for a group or channel (§13.5): a channel's mute toggle ([onSetMuted]) in search's
+ * The actions for a group or channel (§13.5): a channel's mute toggle ([onSetMuted]) in search's
  * place, then "More options", a menu with search ([onSearch]) in a channel and the info page ([onOpenInfo]); a group
  * keeps search and adds the menu. Private and secret chats, forums' topic lists and topics keep [ChatActions].
  */
 @Composable
-internal fun ExperimentalGroupActions(
+internal fun GroupActions(
     header: ChatHeader,
     onSearch: (() -> Unit)?,
     onOpenInfo: (() -> Unit)?,
