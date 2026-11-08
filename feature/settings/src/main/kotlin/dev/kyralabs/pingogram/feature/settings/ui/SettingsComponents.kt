@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -45,9 +46,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
+import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -169,7 +172,7 @@ internal fun SettingsTopBar(
             navigationIcon = navigationIcon,
             actions = actions,
             collapsedHeight = TopAppBarDefaults.MediumAppBarCollapsedHeight,
-            expandedHeight = TopAppBarDefaults.MediumFlexibleAppBarWithoutSubtitleExpandedHeight,
+            expandedHeight = settingsTopBarExpandedHeight(),
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
@@ -182,7 +185,9 @@ internal fun SettingsTopBar(
 
 /**
  * [title] on the bar's [expanded] row (`headlineMediumEmphasized`, up to two lines) or its collapsed one
- * (`titleLargeEmphasized`, one line). At a large font scale a long title gets smaller rather than cut off.
+ * (`titleLargeEmphasized`, one line). In the experimental look (§13.10) the wide styles at the tabs' sizes:
+ * `displaySmallWide` on one line, `titleLargeWide`. At a large font scale a long title gets smaller rather than cut
+ * off.
  */
 @Composable
 internal fun SettingsTopBarTitle(
@@ -190,11 +195,17 @@ internal fun SettingsTopBarTitle(
     expanded: Boolean,
 ) {
     val typography = MaterialTheme.typography
-    val style = if (expanded) typography.headlineMediumEmphasized else typography.titleLargeEmphasized
+    val wide = MaterialTheme.experimentalTypography.takeIf { LocalExperimentalUi.current }
+    val style =
+        when {
+            wide != null -> if (expanded) wide.displaySmallWide else wide.titleLargeWide
+            expanded -> typography.headlineMediumEmphasized
+            else -> typography.titleLargeEmphasized
+        }
     Text(
         text = title,
         modifier = Modifier.semantics { heading() },
-        maxLines = if (expanded) EXPANDED_TITLE_MAX_LINES else 1,
+        maxLines = if (expanded && wide == null) EXPANDED_TITLE_MAX_LINES else 1,
         overflow = TextOverflow.Ellipsis,
         autoSize = TextAutoSize.StepBased(maxFontSize = style.fontSize),
         style = style,
@@ -236,7 +247,7 @@ internal fun SettingsBody(
 internal fun SettingsContent(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
-    groupSpacing: Dp = MaterialTheme.spacing.extraLarge,
+    groupSpacing: Dp = settingsGroupSpacing(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val margin = windowMargin()

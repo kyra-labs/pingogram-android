@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -25,9 +28,14 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
+import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The groups of rows on every settings screen (docs/DESIGN_SYSTEM.md §6, "Settings rows"): Material 3 Expressive
 // segmented lists, each row its own container on `surface` (`surfaceContainer` with AMOLED black, settingsRowColors),
@@ -77,8 +85,13 @@ internal fun SettingsGroup(
         if (title != null) SettingsSectionHeader(title)
         CompositionLocalProvider(LocalSettingsIconTone provides iconTone) {
             Column(rowsModifier, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                val seed = title?.length ?: 0
                 rows.forEachIndexed { index, row ->
-                    key(row.key ?: index) { row.content(ListItemDefaults.segmentedShapes(index, rows.size)) }
+                    key(row.key ?: index) {
+                        CompositionLocalProvider(LocalSettingsRowPlace provides SettingsRowPlace(index, seed)) {
+                            row.content(ListItemDefaults.segmentedShapes(index, rows.size))
+                        }
+                    }
                 }
             }
         }
@@ -178,7 +191,7 @@ internal fun SettingsRow(
 
 /**
  * A row that opens another settings page: its [icon], [title] and [summary]; selectable with [selected] (see
- * [SettingsRow]).
+ * [SettingsRow]). In the experimental look it ends in a chevron ([PageChevron]).
  */
 @Composable
 internal fun PageItem(
@@ -194,6 +207,7 @@ internal fun PageItem(
         shapes = shapes,
         icon = icon,
         supportingContent = { Text(summary) },
+        trailingContent = if (LocalExperimentalUi.current) ({ PageChevron() }) else null,
         onClick = onClick,
         selected = selected,
     )
@@ -217,9 +231,10 @@ internal fun settingsRowColors(
     contentColor: Color = Color.Unspecified,
     leadingContentColor: Color = Color.Unspecified,
     supportingContentColor: Color = Color.Unspecified,
+    containerColor: Color = settingsRowContainerColor(),
 ): ListItemColors =
     ListItemDefaults.segmentedColors(
-        containerColor = settingsRowContainerColor(),
+        containerColor = containerColor,
         contentColor = contentColor,
         leadingContentColor = leadingContentColor,
         supportingContentColor = supportingContentColor,
@@ -254,12 +269,20 @@ internal fun SettingsItemIcon(
     selected: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
-    val (container, content) = if (selected) colors.primary to colors.onPrimary else tone.colors(colors)
+    val experimental = LocalExperimentalUi.current && tone != SettingsIconTone.Error && !selected
+    val place = LocalSettingsRowPlace.current
+    val (container, content) =
+        when {
+            selected -> colors.primary to colors.onPrimary
+            experimental -> MaterialTheme.pingogramColors.vividAvatars.at(place.index + place.seed)
+            else -> tone.colors(colors)
+        }
+    val shape = if (experimental) settingsBadgeShape(place.index) else CircleShape
     Box(
         modifier =
             Modifier
                 .size(MaterialTheme.sizes.leadingIconContainer)
-                .background(if (enabled) container else colors.onSurface.copy(alpha = DISABLED_CONTAINER), CircleShape),
+                .background(if (enabled) container else colors.onSurface.copy(alpha = DISABLED_CONTAINER), shape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
