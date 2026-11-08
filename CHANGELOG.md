@@ -79,6 +79,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - In a chat, the jump-to-newest button's unread count no longer runs past the screen's edge when it has three digits
   or more.
+- In the experimental look, the header's buttons (search and your picture on the chat list) no longer touch.
 - With Experimental UI on, scrolling a group whose colored messages show their sender's name above them no longer
   crashes on a message with code in it.
 - Swiping to another chat folder no longer stutters as the swipe lands, nor more with each swipe after it: the two

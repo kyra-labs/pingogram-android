@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.core.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,7 +42,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *
  * In the experimental look (`LocalExperimentalUi`, §13) the title takes the wide styles of
  * `MaterialTheme.experimentalTypography` at the same sizes, and the actions are 48 dp tonal circles
- * ([tabHeaderActionSize]).
+ * ([tabHeaderActionSize]), `spacing.small` apart.
  *
  * It keeps the window margin ([windowMargin]), so its title lines up with the rows' content on wide windows, and is at
  * most `contentMaxWidth` wide, centred. [title] gets the style of the row it fills; [TabHeaderTitle] is the plain one.
@@ -73,7 +75,19 @@ fun TabHeader(
                     .padding(horizontal = extraMargin),
             subtitle = subtitle,
             navigationIcon = navigationIcon,
-            actions = actions,
+            actions =
+                if (experimental) {
+                    {
+                        // The 48 dp circles have no touch target around them: they keep `spacing.small` apart.
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                            verticalAlignment = Alignment.CenterVertically,
+                            content = actions,
+                        )
+                    }
+                } else {
+                    actions
+                },
             collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
             expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null),
             colors =
