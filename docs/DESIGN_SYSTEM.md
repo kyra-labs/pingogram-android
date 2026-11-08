@@ -600,11 +600,13 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - **New chat**: on the Chats tab the round "New chat" button sits `spacing.small` beside the pill (§6 "New chat"); the
   pill sits in the same place whether it shows or not: centred, or as far toward the start as leaves the button its
   room.
-- **Fade**: on the Chats tab the list's end fades into its sheet behind the bar (owner decisions 2026-11-06 and
-  2026-11-07): a gradient from transparent to `surface` that reaches it at 70% of its height, as tall as the bar's room
+- **Fade**: on every tab the content's end fades into what it sits on behind the bar (owner decisions 2026-11-06 and
+  2026-11-07; Contacts and Settings home added at the owner's request, 2026-11-07): the Chats and Contacts tabs' lists
+  into their sheet's `surface`, Settings home into its page's color (`settingsPageColor()`). A gradient from
+  transparent to that color that reaches it at 70% of its height, as tall as the bar's room
   (`LocalNavigationBarInsets`) and the bar's height again (`sizes.floatingNavigationBar`), so the rows fade out above
-  the bar rather than under it; with AMOLED it fades to black. Drawn with `drawWithCache` over the list (`BottomFade`,
-  `feature:chats`), never a blur; it takes no touches, and without the bar (rail windows) it takes no height.
+  the bar rather than under it; with AMOLED it fades to black. Drawn with `drawWithCache` over the content
+  (`BottomFade`, `core:ui`), never a blur; it takes no touches, and without the bar (rail windows) it takes no height.
 - **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
   `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
   margin below and the same margin above), so lists end clear of the bar. The insets depend on the

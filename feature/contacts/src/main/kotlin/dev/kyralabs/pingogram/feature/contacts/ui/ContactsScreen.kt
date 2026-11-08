@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.takeOrElse
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
+import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
@@ -147,6 +148,8 @@ internal fun ContactsScreen(
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ContactsBody(state, syncControls, callbacks, listState, contentPadding)
+            // The list's end fades into the sheet behind the floating navigation bar, as the Chats tab's does.
+            BottomFade(Modifier.align(Alignment.BottomCenter))
         }
     }
     state.deleteDialog?.let { dialog ->
