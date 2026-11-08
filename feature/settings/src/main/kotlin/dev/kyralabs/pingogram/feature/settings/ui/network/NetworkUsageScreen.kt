@@ -35,7 +35,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
-import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
+import dev.kyralabs.pingogram.feature.settings.ui.destructiveItemColors
 import dev.kyralabs.pingogram.feature.settings.ui.titleRes
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -157,7 +157,7 @@ private fun UsageContent(
                 shapes = shapes,
                 onClick = { onEvent(NetworkUsageEvent.Reset) },
                 enabled = !state.isResetting,
-                colors = settingsRowColors(contentColor = MaterialTheme.colorScheme.error),
+                colors = destructiveItemColors(),
             )
         }
     }

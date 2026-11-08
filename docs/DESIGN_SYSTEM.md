@@ -914,3 +914,17 @@ state, events, keys, content types, semantics and haptics stay those of §1–§
 | Labs card | §13.1's, under the account card |
 | Groups | `titleSmallEmphasized` `primary` headers over segmented rows (Material's two-line item, at least 72 dp): "Make it yours" (Appearance, Chat folders, Stickers and emoji), "Alerts and privacy" (Notifications, Privacy and security, Data and storage with the storage the account's files take as its value), "More" (Recent calls where the app provides it, Devices with "3 active sessions", Language with the app's language as its value), and "App" (Power saving, About), then "Log out" on its own. Every page the standard Settings home opens stays reachable. Each row's icon sits on a `leadingIconContainer` badge in `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn, filled with the vivid avatar colors (§13.2); values in `labelLarge` `primary`. The values come from `SettingsHomeViewModel` (`getActiveSessions`, `getStorageStatisticsFast` once, the language as it changes), which only the experimental look asks for. Owner decision to confirm (2026-11-07): the grouping, Material's 40 dp leading badge rather than the board's 44 dp, and "App" for the rest |
 | Pages | Settings pages keep their look |
+
+### 13.10 Settings pages (the owner's boards "Settings pages · Experimental UI")
+
+Every page above Settings home draws itself from the shared parts (`SettingsPageFrame`, `SettingsGroup`, `SettingsRow`,
+`PageItem`), so the look below reaches every page, those the boards show and those they leave out; no setting goes for
+the new look. Pages the boards draw with cards of their own get them on top of this in the rows below.
+
+| UI element | Experimental UI |
+|---|---|
+| Top bar | The medium bar's back and actions; the title in `displaySmallWide` on one line (smaller rather than cut at large font scales or for long titles), collapsing to `titleLargeWide`, as the tabs' headers; the expanded bar as tall as the collapsed row, that line and `spacing.medium` below it |
+| Groups | `spacing.large` apart (the standard look's `spacing.extraLarge`), their headers and footers as §6 |
+| Row icons | On a `leadingIconContainer` badge in `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn down a group, filled with the vivid avatar colors (§13.2) in turn, the group's title setting where its colors start, as Settings home's; a destructive row's icon keeps its `errorContainer` circle, a selected row's its `primary` one |
+| Rows that open a page | End in Material Symbols' `chevron_right` in `onSurfaceVariant` (`PageChevron`), decorative, mirrored right to left |
+| Destructive rows | Their text and icon in `error` as §6, on their container with a 12% tint of `error` over it, so they read as a warning at a glance |
