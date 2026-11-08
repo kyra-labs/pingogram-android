@@ -64,6 +64,22 @@ class TdlibStickerSetRepositoryTest {
         }
 
     @Test
+    fun `searching Telegram's sets sends the words with the kind's type and maps what it finds`() =
+        runTest {
+            client.on(TdApi.SearchStickerSets::class) {
+                TdResult.Success(TdApi.StickerSets(2, arrayOf(setInfo(7), setInfo(8, installed = true))))
+            }
+
+            val found = (repository.searchSets("cats", StickerSetKind.Emoji) as Outcome.Success).value
+
+            val request = client.sentOf<TdApi.SearchStickerSets>().single()
+            assertEquals("cats", request.query)
+            assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, request.stickerType)
+            assertEquals(listOf(7L, 8L), found.map { it.id })
+            assertEquals(listOf(false, true), found.map { it.isInstalled })
+        }
+
+    @Test
     fun `reordering custom emoji sets sends their type`() =
         runTest {
             client.on(TdApi.ReorderInstalledStickerSets::class, TdResult.Success(TdApi.Ok()))

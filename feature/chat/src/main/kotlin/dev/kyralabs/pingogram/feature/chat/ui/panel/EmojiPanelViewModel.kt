@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettingsRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -49,11 +50,14 @@ import kotlinx.coroutines.launch
  *   load is asked for again when it next comes into view. Without installed sets ([StickerTab.Error], "Try again":
  *   [EmojiPanelEvent.Retry]) nothing shows; favorites or recent stickers that fail are left out.
  * - **GIFs** ([PanelGifs]): the saved GIFs, and the search through Telegram's GIF bot, as typed in this chat.
+ * - **Suggestions** ([StickerSuggestionState]): stickers for an emoji the composer holds alone, panel open or not, as
+ *   Settings → Stickers → "Suggest stickers by emoji" asks.
  * - Reading stops [STOP_TIMEOUT_MILLIS] after the screen stops collecting [uiState] (the app went to the background);
  *   loaded sets stay.
  */
 @HiltViewModel(assistedFactory = EmojiPanelViewModel.Factory::class)
 class EmojiPanelViewModel
+    @Suppress("LongParameterList") // The chat, a repository per tab, and the sticker settings the suggestions follow.
     @AssistedInject
     constructor(
         @Assisted chatId: Long,
@@ -62,6 +66,7 @@ class EmojiPanelViewModel
         private val stickers: StickerRepository,
         savedGifs: SavedGifRepository,
         inlineBots: InlineBotRepository,
+        stickerSettings: StickerSettingsRepository,
     ) : ViewModel() {
         /** Makes the panel of chat [chatId], whose GIF searches are asked as typed in it. */
         @AssistedFactory
@@ -70,6 +75,7 @@ class EmojiPanelViewModel
         }
 
         private val gifs = PanelGifs(viewModelScope, chatId, savedGifs, inlineBots)
+        private val suggestions = StickerSuggestionState(chatId, stickers, stickerSettings)
 
         private val opened = MutableStateFlow(false)
         private val attempt = MutableStateFlow(0)
@@ -80,14 +86,19 @@ class EmojiPanelViewModel
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val uiState: StateFlow<EmojiPanelUiState> =
-            opened
-                .flatMapLatest { isOpen ->
+            combine(
+                opened.flatMapLatest { isOpen ->
                     if (isOpen) {
-                        combine(emojiTab(), stickerTab(), gifs.tab(), ::EmojiPanelUiState)
+                        combine(emojiTab(), stickerTab(), gifs.tab()) { emoji, stickers, gifs ->
+                            EmojiPanelUiState(emoji, stickers, gifs)
+                        }
                     } else {
                         flowOf(EmojiPanelUiState())
                     }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), EmojiPanelUiState())
+                },
+                suggestions.stickers,
+            ) { panel, suggested -> panel.copy(suggestions = suggested) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), EmojiPanelUiState())
 
         fun onEvent(event: EmojiPanelEvent) {
             when (event) {
@@ -95,6 +106,7 @@ class EmojiPanelViewModel
                 is EmojiPanelEvent.EmojiPicked -> viewModelScope.launch { recentEmoji.addRecent(event.emoji) }
                 is EmojiPanelEvent.SetsVisible -> event.setIds.forEach(::loadSet)
                 EmojiPanelEvent.Retry -> attempt.value++
+                is EmojiPanelEvent.TextChanged -> suggestions.onTextChanged(event.text)
                 is EmojiPanelEvent.GifQueryChanged -> gifs.onQueryChanged(event.query)
                 EmojiPanelEvent.MoreGifs -> gifs.loadMore()
                 EmojiPanelEvent.RetryGifs -> gifs.retry()

@@ -37,7 +37,9 @@ import java.io.File
  *   counts as one); the others show their first frame until one stops. They play at
  *   most [MAX_FRAMES_PER_SECOND] frames per second, only while on screen and while the window has the focus, and not at
  *   all with animations off (or [animate] false, as in previews and screenshots). While [still] is true (power saving,
- *   `PowerSaving.stillStickers`), none play: each shows its first frame, and plays on once it is false again.
+ *   `PowerSaving.stillStickers`), none play: each shows its first frame, and plays on once it is false again. While
+ *   [loop] is false (Settings → Stickers → "Loop animated stickers" off), each plays once where it shows, then rests on
+ *   its first frame.
  *
  * File ids belong to one TDLib instance: [clear] after TDLib closes.
  */
@@ -49,6 +51,7 @@ class AnimatedStickers(
     maxAnimating: Int = MAX_ANIMATING,
     internal val animate: Boolean = true,
     internal val still: StateFlow<Boolean> = MutableStateFlow(false),
+    internal val loop: StateFlow<Boolean> = MutableStateFlow(true),
 ) {
     /** One permit per sticker that may play now. */
     internal val slots = Semaphore(maxAnimating)

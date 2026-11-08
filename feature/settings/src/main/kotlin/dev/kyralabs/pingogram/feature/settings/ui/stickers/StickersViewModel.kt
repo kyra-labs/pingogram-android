@@ -12,19 +12,24 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettings
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettingsRepository
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,21 +41,55 @@ import javax.inject.Inject
  *
  * A dragged order shows at once and goes to Telegram; refused, the sets return to Telegram's order with a snackbar.
  * Archiving and removing a set leave the list at once and offer to undo, which installs the set again at its place.
+ * The search field finds the user's sets on the device and Telegram's catalog ([StickerSearchState]). The stickers'
+ * page also holds the stickers' own settings ([StickerSettingsRepository]): suggestions by emoji and looping.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StickersViewModel internal constructor(
     private val kind: StickerSetKind,
     private val stickerSetRepository: StickerSetRepository,
+    private val stickerSettingsRepository: StickerSettingsRepository,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
         stickerSetRepository: StickerSetRepository,
-    ) : this(stickerSetKind(savedStateHandle.toRoute<StickersRoute>().emoji), stickerSetRepository)
+        stickerSettingsRepository: StickerSettingsRepository,
+    ) : this(
+        stickerSetKind(savedStateHandle.toRoute<StickersRoute>().emoji),
+        stickerSetRepository,
+        stickerSettingsRepository,
+        savedStateHandle,
+    )
 
     private val mutableUiState = MutableStateFlow<StickersUiState>(StickersUiState.Loading)
+
+    /** The search field's words, kept across process death. */
+    val query: StateFlow<String> = savedStateHandle.getStateFlow(KEY_QUERY, "")
+
+    private val search = StickerSearchState(kind, stickerSetRepository, query, viewModelScope)
+
+    /** The stickers' own settings, on the stickers' page only: the Emoji page shows none. */
+    private val settings: StateFlow<StickerSettings?> =
+        (if (kind == StickerSetKind.Stickers) stickerSettingsRepository.settings else flowOf(null))
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     val uiState: StateFlow<StickersUiState> = mutableUiState.asStateFlow()
+
+    /** Shows [state], with what the search found and the settings, as they are now, where it is the page's content. */
+    private fun show(state: StickersUiState) {
+        mutableUiState.value =
+            if (state is StickersUiState.Content) {
+                state.copy(
+                    search = search.results(state.installed, search.catalog.value, search.adding.value),
+                    settings = settings.value,
+                )
+            } else {
+                state
+            }
+    }
 
     private val effectChannel = Channel<StickersEffect>(Channel.BUFFERED)
     val effects: Flow<StickersEffect> = effectChannel.receiveAsFlow()
@@ -61,6 +100,12 @@ class StickersViewModel internal constructor(
     private val leaving = MutableStateFlow(emptySet<Long>())
 
     init {
+        // The search's results and the settings change apart from the sets: show them as they come.
+        viewModelScope.launch {
+            combine(search.catalog, search.adding, settings) { _, _, _ -> }.collect {
+                (mutableUiState.value as? StickersUiState.Content)?.let(::show)
+            }
+        }
         viewModelScope.launch {
             combine(
                 retries.flatMapLatest { stickerSetRepository.installedSets(kind) },
@@ -83,7 +128,7 @@ class StickersViewModel internal constructor(
             }.collectLatest { outcome ->
                 when (outcome) {
                     is Outcome.Success -> {
-                        mutableUiState.value = outcome.value
+                        show(outcome.value)
                     }
 
                     is Outcome.Failure -> {
@@ -105,6 +150,28 @@ class StickersViewModel internal constructor(
             is StickersEvent.Archive -> change(event.id, archived = true)
             is StickersEvent.Remove -> change(event.id, archived = false)
             is StickersEvent.Undo -> undo(event.id, event.previousOrder)
+            is StickersEvent.Search -> savedStateHandle[KEY_QUERY] = event.query
+            StickersEvent.RetrySearch -> search.retry()
+            is StickersEvent.AddFound -> addFound(event.id)
+            is StickersEvent.SetSuggestions -> save { stickerSettingsRepository.setSuggestions(event.suggestions) }
+            is StickersEvent.SetLoop -> save { stickerSettingsRepository.setLoop(event.loop) }
+        }
+    }
+
+    /** Saves a sticker setting; a refusal (a full disk) is a snackbar, and the setting stays as it was. */
+    private fun save(change: suspend () -> Outcome<Unit>) {
+        viewModelScope.launch {
+            val outcome = change()
+            if (outcome is Outcome.Failure) showError(outcome.error)
+        }
+    }
+
+    private fun addFound(id: Long) {
+        if (!search.startAdding(id)) return
+        viewModelScope.launch {
+            val outcome = stickerSetRepository.install(id)
+            search.doneAdding(id, installed = outcome is Outcome.Success)
+            if (outcome is Outcome.Failure) showError(outcome.error)
         }
     }
 
@@ -117,7 +184,7 @@ class StickersViewModel internal constructor(
         val content = uiState.value as? StickersUiState.Content ?: return
         val byId = content.installed.associateBy { it.id }
         if (setIds.toSet() != byId.keys || setIds == content.installed.map { it.id }) return
-        mutableUiState.value = content.copy(installed = setIds.map { byId.getValue(it) }.toImmutableList())
+        show(content.copy(installed = setIds.map { byId.getValue(it) }.toImmutableList()))
         viewModelScope.launch {
             val outcome = stickerSetRepository.reorder(setIds, kind)
             if (outcome is Outcome.Failure) {
@@ -147,7 +214,7 @@ class StickersViewModel internal constructor(
         val set = content.installed.firstOrNull { it.id == id } ?: return
         val previousOrder = content.installed.map { it.id }
         leaving.update { it + id }
-        mutableUiState.value = content.copy(installed = content.installed.filter { it.id != id }.toImmutableList())
+        show(content.copy(installed = content.installed.filter { it.id != id }.toImmutableList()))
         viewModelScope.launch {
             val outcome =
                 if (archived) stickerSetRepository.archive(id) else stickerSetRepository.remove(id)
@@ -185,6 +252,10 @@ class StickersViewModel internal constructor(
 
     private fun showError(error: DomainError) {
         if (error != DomainError.Silent) effectChannel.trySend(StickersEffect.ShowError(error))
+    }
+
+    private companion object {
+        const val KEY_QUERY = "stickers.query"
     }
 }
 

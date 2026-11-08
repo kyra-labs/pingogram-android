@@ -81,6 +81,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.panel.StickerSuggestionsInput
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
@@ -111,7 +112,9 @@ import java.time.Instant
  * The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel], showing [panel]) in the
  * keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
  * stickers are sent through [onSendSticker], its GIFs through [onSendAnimation], and what it loads goes to
- * [onPanelEvent]. In a public group or channel the user is not in, a filled "Join" button takes the composer's place
+ * [onPanelEvent]. While the field holds one emoji alone, its stickers show above the composer
+ * ([StickerSuggestionsArea], [EmojiPanelUiState.suggestions]); one tapped is sent in the emoji's place. In a public
+ * group or channel the user is not in, a filled "Join" button takes the composer's place
  * ([JoinButton], [onJoin]).
  *
  * Where the chat's bots offer commands or a menu ([bots]), their button starts the pill ([BotMenuButton]) and the
@@ -123,6 +126,7 @@ import java.time.Instant
  * [BotKeyboardEffects]), with a toggle in the pill ([BotKeyboardToggle]) and its hint in the field; not while editing,
  * nor while an inline query shows its results, which win.
  */
+@Suppress("LongMethod") // One branch per kind of composer, and the areas stacked above the field: one place to read.
 @Composable
 internal fun ChatBottomBar(
     composer: ComposerUiState,
@@ -186,6 +190,7 @@ internal fun ChatBottomBar(
                     ) {
                         CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
                         InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
+                        StickerSuggestionsInput(text, panel, onPanelEvent, onSendSticker, recording == null && usable)
                         BarArea(composer.bar, onShowBarMessage, onCloseBar, onReplaceMedia)
                         Composer(
                             composer,

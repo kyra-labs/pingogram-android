@@ -151,6 +151,18 @@ class DemoSearchAndDetailsTest {
         }
 
     @Test
+    fun `searching sticker sets finds the sample sets by title or name, and nothing for other words`() =
+        runTest {
+            val (client, _) = client()
+
+            val rings = client.ask(TdApi.SearchStickerSets(TdApi.StickerTypeRegular(), "ring")).sets.map { it.id }
+            val none = client.ask(TdApi.SearchStickerSets(TdApi.StickerTypeRegular(), "zebra")).sets
+
+            assertEquals(listOf(DemoData.SHAPES_SET), rings)
+            assertTrue(none.isEmpty())
+        }
+
+    @Test
     fun `sticker sets install, archive and reorder, kept after a restart, and their stickers can be sent`() =
         runTest {
             val (client, updates) = client()

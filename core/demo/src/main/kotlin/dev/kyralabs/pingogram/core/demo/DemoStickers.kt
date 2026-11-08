@@ -57,6 +57,33 @@ internal class DemoStickers : DemoArea {
                 set(world, function.setId)?.let(::ok) ?: notFound()
             }
 
+            // Telegram's catalog in the demo: the sample sets whose title or name has the words.
+            is TdApi.SearchStickerSets -> {
+                val query = function.query.trim()
+                val found =
+                    if (function.stickerType is TdApi.StickerTypeRegular && query.isNotEmpty()) {
+                        world.data.stickerSets.filter {
+                            it.title.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true)
+                        }
+                    } else {
+                        emptyList()
+                    }
+                ok(TdApi.StickerSets(found.size, found.mapNotNull { info(world, it.id) }.toTypedArray()))
+            }
+
+            // The composer's suggestions for an emoji: the installed sample sets' stickers for it, or every set's.
+            is TdApi.GetStickers -> {
+                ok(TdApi.Stickers(stickersFor(world, function.query, installed).toTypedArray()))
+            }
+
+            is TdApi.SearchStickers -> {
+                ok(
+                    TdApi.Stickers(
+                        stickersFor(world, function.emojis, world.data.stickerSets.map { it.id }).toTypedArray(),
+                    ),
+                )
+            }
+
             is TdApi.SearchStickerSet -> {
                 world.data.stickerSets.firstOrNull { it.name.equals(function.name, ignoreCase = true) }?.let {
                     ok(set(world, it.id)!!)
@@ -108,6 +135,17 @@ internal class DemoStickers : DemoArea {
             }
         }
     }
+
+    /** The stickers of sets [setIds] that stand for [emoji]. */
+    private fun stickersFor(
+        world: DemoWorld,
+        emoji: String,
+        setIds: List<Long>,
+    ): List<TdApi.Sticker> =
+        setIds
+            .mapNotNull { set(world, it) }
+            .flatMap { it.stickers.orEmpty().toList() }
+            .filter { emoji.isNotEmpty() && it.emoji == emoji }
 
     private fun set(
         world: DemoWorld,

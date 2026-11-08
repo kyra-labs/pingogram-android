@@ -28,6 +28,7 @@ internal class StickerKindTexts(
     @StringRes val sheetAdd: Int,
     @StringRes val sheetAdding: Int,
     @StringRes val sheetRemoving: Int,
+    @StringRes val search: Int,
     @PluralsRes val count: Int,
     /** The path of a set's link: `t.me/<linkPath>/<name>`. */
     val linkPath: String,
@@ -52,6 +53,7 @@ private val StickerTexts =
         sheetAdd = R.string.sticker_set_add,
         sheetAdding = R.string.sticker_set_adding,
         sheetRemoving = R.string.sticker_set_removing,
+        search = R.string.settings_stickers_search,
         count = R.plurals.settings_stickers_sticker_count,
         linkPath = "addstickers",
     )
@@ -75,6 +77,7 @@ private val EmojiTexts =
         sheetAdd = R.string.emoji_set_add,
         sheetAdding = R.string.emoji_set_adding,
         sheetRemoving = R.string.emoji_set_removing,
+        search = R.string.settings_emoji_search,
         count = R.plurals.settings_emoji_count,
         linkPath = "addemoji",
     )

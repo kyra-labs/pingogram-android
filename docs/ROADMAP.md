@@ -156,8 +156,8 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 §13.10, "Not yet") come in the version after 2.0.0, each once the owner has decided how it should work.
 
 - [x] Folder tabs' style: text, icon and text, or icon only (Appearance → Chat list)
-- [ ] Sticker search in Settings → Stickers and emoji
-- [ ] "Suggest stickers by emoji" and "Loop animated stickers" switches
+- [x] Sticker search in Settings → Stickers and emoji
+- [x] "Suggest stickers by emoji" and "Loop animated stickers" switches
 - [ ] "Start a call" in Recent calls (`feature:calls`)
 - [x] "Check for updates" in About hidden when an app store installed Pingogram (owner, 2026-11-08)
 

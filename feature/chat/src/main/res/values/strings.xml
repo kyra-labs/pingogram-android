@@ -696,4 +696,6 @@
     <string name="scheduled_message_gone">This message was sent or deleted</string>
     <!-- The experimental look: a button on a member's join message that sends a greeting sticker in reply. -->
     <string name="chat_wave">Wave</string>
+    <!-- Screen readers: the pane of stickers suggested above the composer for the emoji typed alone. -->
+    <string name="panel_sticker_suggestions">Sticker suggestions</string>
 </resources>

@@ -12,6 +12,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
+- Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
+- An emoji typed alone suggests its stickers above the message field: from your sets (the default), from every set,
+  or none (Settings → Stickers → "Suggest stickers by emoji").
+- Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

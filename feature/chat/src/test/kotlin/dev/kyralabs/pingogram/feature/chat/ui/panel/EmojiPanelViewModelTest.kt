@@ -9,6 +9,9 @@ import dev.kyralabs.pingogram.core.domain.model.InlineBot
 import dev.kyralabs.pingogram.core.domain.model.InlineQueryResults
 import dev.kyralabs.pingogram.core.domain.model.InlineResult
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettings
+import dev.kyralabs.pingogram.core.domain.repository.StickerSuggestions
+import dev.kyralabs.pingogram.core.testing.FakeStickerSettingsRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeInlineBotRepository
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -52,7 +56,10 @@ class EmojiPanelViewModelTest {
     private val savedGifs = FakeSavedGifRepository()
     private val inlineBots = FakeInlineBotRepository()
 
-    private fun viewModel() = EmojiPanelViewModel(CHAT_ID, catalog, recentEmoji, stickers, savedGifs, inlineBots)
+    private val stickerSettings = FakeStickerSettingsRepository()
+
+    private fun viewModel() =
+        EmojiPanelViewModel(CHAT_ID, catalog, recentEmoji, stickers, savedGifs, inlineBots, stickerSettings)
 
     private fun set(
         id: Long,
@@ -337,6 +344,58 @@ class EmojiPanelViewModelTest {
 
             assertEquals(listOf(gif(1)), savedGifs.removed)
             assertEquals(listOf(2), (viewModel.uiState.value.gifs as GifTab.Content).saved.map { it.file.id })
+        }
+
+    @Test
+    fun `one emoji alone suggests the user's stickers for it, without opening the panel, and other text none`() =
+        runTest {
+            stickers.forEmoji["👍"] = listOf(sticker(fileId = 7, setId = 1))
+            val viewModel = viewModel()
+            backgroundScope.launch { viewModel.uiState.collect {} }
+
+            viewModel.onEvent(EmojiPanelEvent.TextChanged(" 👍 "))
+            advanceTimeBy(151)
+            runCurrent()
+
+            assertEquals(
+                listOf(7),
+                viewModel.uiState.value.suggestions
+                    .map { it.file.id },
+            )
+            assertEquals(listOf("👍" to false), stickers.emojiRequests)
+
+            viewModel.onEvent(EmojiPanelEvent.TextChanged("👍 nice"))
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.suggestions
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `all sets also asks Telegram's, and off asks nothing`() =
+        runTest {
+            stickers.publicForEmoji["🎉"] = listOf(sticker(fileId = 9, setId = 5))
+            stickerSettings.settings.value = StickerSettings(suggestions = StickerSuggestions.AllSets)
+            val viewModel = viewModel()
+            backgroundScope.launch { viewModel.uiState.collect {} }
+
+            viewModel.onEvent(EmojiPanelEvent.TextChanged("🎉"))
+            advanceTimeBy(151)
+            runCurrent()
+            assertEquals(
+                listOf(9),
+                viewModel.uiState.value.suggestions
+                    .map { it.file.id },
+            )
+
+            stickerSettings.settings.value = StickerSettings(suggestions = StickerSuggestions.Off)
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.suggestions
+                    .isEmpty(),
+            )
+            assertEquals(listOf("🎉" to true), stickers.emojiRequests)
         }
 }
 

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
@@ -19,7 +20,8 @@ import javax.inject.Inject
 /**
  * [StickerRepository] on TDLib's sticker lists: `getInstalledStickerSets`, `getRecentStickers` (sent, not attached to
  * photos) and `getFavoriteStickers`, each read again on its update (`updateInstalledStickerSets`,
- * `updateRecentStickers`, `updateFavoriteStickers`), which carry only ids; and `getStickerSet` for a set's stickers.
+ * `updateRecentStickers`, `updateFavoriteStickers`), which carry only ids; `getStickerSet` for a set's stickers; and
+ * `getStickers` (the installed sets' only) with `searchStickers` (public sets) for the stickers of an emoji.
  * TDLib keeps all of them in its database and answers from it, so reading again costs little. No cache of its own:
  * the panel reads the lists only while it shows.
  */
@@ -51,7 +53,49 @@ class TdlibStickerRepository
                 set.stickers.orEmpty().mapNotNull { it.toSticker() }
             }
 
+        override suspend fun stickersForEmoji(
+            emoji: String,
+            chatId: Long,
+            allSets: Boolean,
+        ): Outcome<List<Sticker>> {
+            val mine = installedStickersFor(emoji, chatId)
+            if (!allSets || mine !is Outcome.Success) return mine
+            val public =
+                client
+                    .request(TdApi.SearchStickers(TdApi.StickerTypeRegular(), emoji, "", emptyArray(), 0, LIMIT))
+                    .map { it.toStickers() }
+                    .getOrNull()
+                    .orEmpty()
+            return Outcome.Success((mine.value + public).distinctBy { it.file.id })
+        }
+
+        /**
+         * The installed sets' stickers for [emoji]: getStickers mixes in favorite, recent and trending stickers, so
+         * only those of a set the user installed stay.
+         */
+        private suspend fun installedStickersFor(
+            emoji: String,
+            chatId: Long,
+        ): Outcome<List<Sticker>> {
+            val sets = client.request(TdApi.GetInstalledStickerSets(TdApi.StickerTypeRegular()))
+            val installed =
+                (sets as? Outcome.Success)
+                    ?.value
+                    ?.sets
+                    .orEmpty()
+                    .mapTo(HashSet()) { it.id }
+            if (sets is Outcome.Failure) return sets
+            return client
+                .request(TdApi.GetStickers(TdApi.StickerTypeRegular(), emoji, LIMIT, chatId))
+                .map { found -> found.toStickers().filter { it.setId in installed } }
+        }
+
         private fun TdApi.Stickers.toStickers(): List<Sticker> = stickers.orEmpty().mapNotNull { it.toSticker() }
+
+        private companion object {
+            /** The most stickers suggested for an emoji, from each source. */
+            const val LIMIT = 20
+        }
     }
 
 /** A sticker set as the panel and Settings → Stickers show it: its first cover stands for it. */

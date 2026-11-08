@@ -63,7 +63,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The list of Settings → Stickers (or its Emoji page): Trending and Archived, Emoji on the stickers' page, then the
 // user's sets in their order (dragged into another one by a handle or a long press), each opening its menu.
 
-/** The page's rows: its [pages], then the sets. */
+/** The page's rows: the search field, then its [pages] and the sets, or what the search found ([query]). */
 @Suppress("LongParameterList") // The page's state, its events, its pages, the menu's actions and the list's state.
 @Composable
 internal fun StickersList(
@@ -73,6 +73,7 @@ internal fun StickersList(
     actions: StickerSetActions,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    query: String = "",
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val spacing = MaterialTheme.spacing
@@ -95,7 +96,14 @@ internal fun StickersList(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
+        stickerSearchField(query, pages.texts, style, onEvent)
+        val search = state.search
+        if (search != null) {
+            stickerSearchResults(search, style, onEvent, actions.onOpen)
+            return@LazyColumn
+        }
         lists(state, style, pages)
+        state.settings?.let { stickerSettings(it, style, onEvent) }
         item(key = HEADER, contentType = HEADER) {
             SettingsSectionHeader(
                 stringResource(pages.texts.sectionYours),

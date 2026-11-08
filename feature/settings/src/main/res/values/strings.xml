@@ -1117,6 +1117,26 @@
     <string name="settings_stickers_archived_empty_title">No archived sets</string>
     <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
     <string name="settings_stickers_show">Show stickers</string>
+    <!-- Settings → Stickers (and Emoji): the search field over the user's sets and Telegram's catalog. -->
+    <string name="settings_stickers_search">Search sticker sets</string>
+    <string name="settings_emoji_search">Search emoji sets</string>
+    <string name="settings_stickers_search_yours">Your sets</string>
+    <string name="settings_stickers_search_telegram">On Telegram</string>
+    <string name="settings_stickers_search_searching">Searching Telegram</string>
+    <string name="settings_stickers_search_none">No sets found</string>
+    <string name="settings_stickers_search_retry">Try again</string>
+    <string name="settings_stickers_search_footer">Your sets are matched on this device. What you type is sent to Telegram to search its sets.</string>
+    <!-- Settings → Stickers: the stickers' own settings. -->
+    <string name="settings_stickers_section_settings">Settings</string>
+    <string name="settings_stickers_suggest">Suggest stickers by emoji</string>
+    <string name="settings_stickers_suggest_all">All sets</string>
+    <string name="settings_stickers_suggest_mine">My sets</string>
+    <string name="settings_stickers_suggest_off">Off</string>
+    <string name="settings_stickers_suggest_all_summary">An emoji typed alone shows matching stickers from your sets and from sets on Telegram</string>
+    <string name="settings_stickers_suggest_mine_summary">An emoji typed alone shows matching stickers from your sets</string>
+    <string name="settings_stickers_suggest_off_summary">No stickers are suggested for emoji</string>
+    <string name="settings_stickers_loop">Loop animated stickers</string>
+    <string name="settings_stickers_loop_summary">When off, an animated sticker plays once, then stops</string>
     <!-- Settings → Stickers → Emoji: the user's custom emoji sets, managed as the sticker sets are. -->
     <string name="settings_emoji">Emoji</string>
     <string name="settings_emoji_summary">Your custom emoji sets, trending and archived sets</string>

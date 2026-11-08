@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreDoubleTapSettingsRepositor
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreStickerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatsShownFirstRepository
@@ -20,10 +21,12 @@ import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettingsRepository
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that conversations and the chat list read: the composer's,
- * the bars', the chat list's own settings, the archive row's, and the chats the forward and share sheets show first.
+ * the bars', the chat list's own settings, the archive row's, the chats the forward and share sheets show first, and
+ * the stickers' (suggestions, looping).
  * Those of what the screen shows of the user's chats are [ChatPrivacyModule]'s.
  */
 @Module
@@ -52,4 +55,7 @@ interface ChatPreferencesModule {
 
     @Binds
     fun chatsShownFirstRepository(repository: DataStoreChatsShownFirstRepository): ChatsShownFirstRepository
+
+    @Binds
+    fun stickerSettingsRepository(repository: DataStoreStickerSettingsRepository): StickerSettingsRepository
 }

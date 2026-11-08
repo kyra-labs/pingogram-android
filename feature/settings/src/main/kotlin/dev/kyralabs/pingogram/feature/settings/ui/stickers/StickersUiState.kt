@@ -5,6 +5,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettings
+import dev.kyralabs.pingogram.core.domain.repository.StickerSuggestions
 import kotlinx.collections.immutable.ImmutableList
 
 /** What Settings → Stickers, or its Emoji page, shows (`REQUIREMENTS.md` FR-C5). */
@@ -20,13 +22,41 @@ sealed interface StickersUiState {
     /**
      * The user's installed sets ([installed]) in their order, how many sets they archived ([archivedCount]) and how
      * many trending sets they have not seen yet ([newTrendingCount]); a count is null while it loads or when it
-     * failed, as both rows open their pages anyway.
+     * failed, as both rows open their pages anyway. [settings] are the stickers' own (suggestions by emoji, looping),
+     * on the stickers' page only (null on the Emoji page and until read).
      */
     data class Content(
         val installed: ImmutableList<StickerSetItem>,
         val archivedCount: Int? = null,
         val newTrendingCount: Int? = null,
+        val search: StickerSearch? = null,
+        val settings: StickerSettings? = null,
     ) : StickersUiState
+}
+
+/**
+ * What the search field found while it holds words ([StickersUiState.Content.search], null while it is empty): the
+ * user's own sets whose title or name has them ([installed], matched on the device), then Telegram's catalog
+ * ([catalog]), without the sets already among [installed].
+ */
+@Immutable
+data class StickerSearch(
+    val installed: ImmutableList<StickerSetItem>,
+    val catalog: StickerCatalog,
+)
+
+/** Telegram's sets for the words: still [Searching], [Failed] with its error, or [Found]. */
+@Immutable
+sealed interface StickerCatalog {
+    data object Searching : StickerCatalog
+
+    data class Failed(
+        val error: DomainError,
+    ) : StickerCatalog
+
+    data class Found(
+        val sets: ImmutableList<StickerSetItem>,
+    ) : StickerCatalog
 }
 
 /**
@@ -92,6 +122,29 @@ sealed interface StickersEvent {
 
     /** Remove set [id] (its menu's "Remove", once confirmed). */
     data class Remove(
+        val id: Long,
+    ) : StickersEvent
+
+    /** The search field now holds [query]; blank shows the page again. */
+    data class Search(
+        val query: String,
+    ) : StickersEvent
+
+    /** "Suggest stickers by emoji" set to [suggestions]. */
+    data class SetSuggestions(
+        val suggestions: StickerSuggestions,
+    ) : StickersEvent
+
+    /** "Loop animated stickers" turned on or off. */
+    data class SetLoop(
+        val loop: Boolean,
+    ) : StickersEvent
+
+    /** Search Telegram's sets again after the search failed. */
+    data object RetrySearch : StickersEvent
+
+    /** Install set [id], found on Telegram ("Add"). */
+    data class AddFound(
         val id: Long,
     ) : StickersEvent
 

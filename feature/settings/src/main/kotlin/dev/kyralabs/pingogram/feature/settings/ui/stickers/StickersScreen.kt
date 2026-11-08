@@ -64,6 +64,7 @@ internal fun StickersRoute(
     viewModel: StickersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val context = LocalContext.current
@@ -109,6 +110,7 @@ internal fun StickersRoute(
         snackbarHostState = snackbarHostState,
         kind = kind,
         onOpenEmoji = onOpenEmoji,
+        query = query,
     )
 }
 
@@ -117,7 +119,8 @@ internal fun StickersRoute(
  * sticker sets in the order the sticker panel shows them, each with its cover, title and count, moved by dragging its
  * handle or after a long press (screen readers: "Move up", "Move down"); a tap opens its menu: Show stickers
  * ([onOpenSet]), Share link, Archive, Remove (asked first with an `AlertDialog`). For [kind] Emoji, the same page of
- * the user's custom emoji sets: Trending emoji and Archived emoji, then the sets.
+ * the user's custom emoji sets: Trending emoji and Archived emoji, then the sets. A search field above them finds the
+ * user's sets and Telegram's ([query], [StickerSearch]).
  */
 @Suppress("LongParameterList") // A page's state, its events, its ways out, and its hoisted states.
 @Composable
@@ -133,6 +136,7 @@ internal fun StickersScreen(
     listState: LazyListState = rememberLazyListState(),
     kind: StickerSetKind = StickerSetKind.Stickers,
     onOpenEmoji: () -> Unit = {},
+    query: String = "",
 ) {
     val texts = stickerKindTexts(kind)
     var removing by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -170,7 +174,7 @@ internal fun StickersScreen(
 
                 is StickersUiState.Content -> {
                     val pages = StickerPages(texts, onOpenList, onOpenEmoji.takeIf { kind == StickerSetKind.Stickers })
-                    StickersList(state, onEvent, pages, actions, listState, contentPadding)
+                    StickersList(state, onEvent, pages, actions, listState, contentPadding, query)
                 }
             }
         }
