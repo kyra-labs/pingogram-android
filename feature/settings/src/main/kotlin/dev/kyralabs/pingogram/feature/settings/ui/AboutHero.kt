@@ -37,13 +37,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * About's header (`docs/DESIGN_SYSTEM.md` §13.10): Pingogram's mark on a `Sunny` badge in
  * `primary`, the name in `displaySmallWide` `primary` over the version on a tonal pill (one heading for screen
  * readers), then "What's new" and "Check for updates" ([onEvent]), which open GitHub's release pages in the
- * browser; on the rows' container with `extraLarge` corners.
+ * browser, the latter only where [showsCheckForUpdates] (not when an app store installed Pingogram); on the rows'
+ * container with `extraLarge` corners.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AboutHero(
     versionName: String,
     onEvent: (AboutEvent) -> Unit,
+    showsCheckForUpdates: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
@@ -81,11 +83,13 @@ internal fun AboutHero(
                 Button(onClick = { onEvent(AboutEvent.OpenReleaseNotes) }, shapes = ButtonDefaults.shapes()) {
                     Text(stringResource(R.string.settings_about_whats_new))
                 }
-                FilledTonalButton(
-                    onClick = { onEvent(AboutEvent.OpenLatestRelease) },
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text(stringResource(R.string.settings_about_check_updates))
+                if (showsCheckForUpdates) {
+                    FilledTonalButton(
+                        onClick = { onEvent(AboutEvent.OpenLatestRelease) },
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text(stringResource(R.string.settings_about_check_updates))
+                    }
                 }
             }
         }

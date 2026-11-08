@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class AboutViewModelTest {
@@ -51,4 +53,22 @@ class AboutViewModelTest {
                 )
             }
         }
+
+    @Test
+    fun `check for updates shows for a build installed from a file or GitHub`() {
+        val fromFile = AboutViewModel(AppInfo(versionName = "1.2.3", installer = null))
+        val fromBrowser = AboutViewModel(AppInfo(versionName = "1.2.3", installer = "com.android.chrome"))
+
+        assertTrue(fromFile.uiState.value.showsCheckForUpdates)
+        assertTrue(fromBrowser.uiState.value.showsCheckForUpdates)
+    }
+
+    @Test
+    fun `check for updates hides for a build installed from Google Play, AppGallery or Galaxy Store`() {
+        for (store in listOf("com.android.vending", "com.huawei.appmarket", "com.sec.android.app.samsungapps")) {
+            val viewModel = AboutViewModel(AppInfo(versionName = "1.2.3", installer = store))
+
+            assertFalse(viewModel.uiState.value.showsCheckForUpdates, store)
+        }
+    }
 }

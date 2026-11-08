@@ -16,10 +16,13 @@ import javax.inject.Inject
  * What the About page shows (`REQUIREMENTS.md` FR-S1).
  *
  * @property versionName the app's version, e.g. `0.3.0`.
+ * @property showsCheckForUpdates whether "Check for updates" shows: not when an app store installed Pingogram
+ *   ([AppInfo.isFromAppStore]), as the store updates it and GitHub's releases would be another build.
  */
 @Immutable
 data class AboutUiState(
     val versionName: String,
+    val showsCheckForUpdates: Boolean = true,
 )
 
 /** What the user does on the About page, handled by [AboutViewModel.onEvent]. */
@@ -52,7 +55,10 @@ class AboutViewModel
     constructor(
         appInfo: AppInfo,
     ) : ViewModel() {
-        val uiState: StateFlow<AboutUiState> = MutableStateFlow(AboutUiState(appInfo.versionName)).asStateFlow()
+        val uiState: StateFlow<AboutUiState> =
+            MutableStateFlow(
+                AboutUiState(appInfo.versionName, showsCheckForUpdates = !appInfo.isFromAppStore),
+            ).asStateFlow()
 
         /** This version's release on GitHub, tagged `v` and the version. */
         private val releaseNotesUrl = "$SOURCE_CODE_URL/releases/tag/v${appInfo.versionName}"
