@@ -36,10 +36,11 @@ class HighlightedTextTest {
     fun `the highlight's spans follow the sender's label`() {
         val match = SpanStyle(color = Color.Red)
 
-        val text = highlighted("Grace:", "We read Ada", MatchHighlight.of("ada"), Color.Black, match)
+        val text = blockHighlighted("Grace:", "We read Ada", MatchHighlight.of("ada"), SpanStyle(Color.Black), match)
 
         assertEquals("Grace: We read Ada", text.text)
         val spans = text.spanStyles.filter { it.item == match }
-        assertEquals(listOf(15 to 18), spans.map { it.start to it.end })
+        // The match's color both as a span and as the block's text color (withMatches): the same range.
+        assertEquals(listOf(15 to 18), spans.map { it.start to it.end }.distinct())
     }
 }

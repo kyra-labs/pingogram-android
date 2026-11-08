@@ -53,7 +53,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.spokenList
@@ -64,21 +63,16 @@ import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The "Archived chats" row at the top of the main list (`REQUIREMENTS.md` FR-L3), which opens the archive: an archive
- * on a neutral avatar placeholder, the names of the first archived chats TDLib has loaded or else how many chats the
- * archive has, and its unread chats in a badge that is always in the muted style, as the archive mostly holds chats
- * the user put out of the way. Its title is emphasized while it has unread chats, as a chat's is
- * (`docs/DESIGN_SYSTEM.md` §3.3). It cannot be selected; in selection mode it is disabled ([enabled]).
+ * The "Archived chats" row at the top of the main list (`REQUIREMENTS.md` FR-L3), which opens the archive: Material's
+ * one-line list item, the archive symbol on a 40 dp tonal tile with `medium` corners where a chat's avatar is (so its
+ * title lines up with the chats'), and its unread chats as `bodyMedium` text at the end (`docs/DESIGN_SYSTEM.md`
+ * §13.3). Its title is emphasized while it has unread chats, as a chat's is. It cannot be selected; in selection mode
+ * it is disabled ([enabled]).
  *
- * - **Compact** ([ArchiveEntry.isCompact]): Material's one-line list item, the archive symbol where the avatar was (so
- *   its title lines up with the chats'), the title and the badge.
  * - **Its style** ([onStyle]; none: the row only opens the archive): a long press (with the list item's `LongPress`
- *   haptic) opens an expressive menu ([ArchiveRowMenu]) to make it compact or full again, or to hide it; a swipe either
+ *   haptic) opens an expressive menu ([ArchiveRowMenu]) to keep the chats' names or not, or to hide it; a swipe either
  *   way hides it ([ArchiveRowSwipe]); screen readers get the same as custom actions. While its menu is open it takes
  *   the list item's `large` selected shape in `secondaryContainer`, as a contact's row does.
- *
- * In the experimental look (`docs/DESIGN_SYSTEM.md` §13) it is always compact, its archive on a 40 dp tonal tile with
- * `medium` corners and its count as text at the end.
  *
  * For screen readers it is one node: "Archived chats, Ada, Grace and Alan, 2 unread chats".
  */
@@ -105,10 +99,6 @@ internal fun ArchiveRow(
     var menuOpen by remember { mutableStateOf(false) }
     val styles = if (enabled && onStyle != null) onStyle else null
     val restingContainer = RestingContainer(ListItemDefaults.colors().containerColor, ListItemDefaults.shapes())
-    // The experimental look's archive row is always the compact one, its symbol on a tonal tile and its count as text
-    // at the end (docs/DESIGN_SYSTEM.md §13).
-    val experimental = LocalExperimentalUi.current
-    val compact = entry.isCompact || experimental
     ArchiveRowSwipe(onHide = styles?.let { { it(ArchiveRowStyle.Hidden) } }, modifier = modifier) { dragged ->
         Box {
             ListItem(
@@ -128,11 +118,8 @@ internal fun ArchiveRow(
                 shapes = listItemShapes(rounded = menuOpen || dragged),
                 colors = listItemColors(selected = menuOpen),
                 contentPadding = insetContentPadding(insets),
-                leadingContent = { ArchiveLeading(compact, title, selected = menuOpen, tile = experimental) },
-                trailingContent = {
-                    if (entry.unreadCount > 0) ArchiveUnreadCount(entry.unreadCount, asText = experimental)
-                },
-                supportingContent = if (compact) null else ({ ArchiveSummaryText(supporting) }),
+                leadingContent = { ArchiveIcon() },
+                trailingContent = { if (entry.unreadCount > 0) ArchiveUnreadCount(entry.unreadCount) },
             ) { ArchiveTitle(title, unread = entry.unreadCount > 0) }
             if (styles != null) {
                 ArchiveRowMenu(
@@ -162,62 +149,14 @@ private class RestingContainer(
         Modifier.drawBehind { drawOutline(shapes.selectedShape.createOutline(size, layoutDirection, this), color) }
 }
 
-/** The full row's archive on the neutral avatar placeholder, or the compact row's archive symbol. */
+/** The archive's unread chats as `bodyMedium` in `onSurfaceVariant`; the row's description says them. */
 @Composable
-private fun ArchiveLeading(
-    isCompact: Boolean,
-    title: String,
-    selected: Boolean,
-    tile: Boolean = false,
-) {
-    if (isCompact) {
-        CompactArchiveIcon(tile)
-    } else {
-        Avatar(
-            photo = null,
-            name = title,
-            id = ARCHIVE_AVATAR_ID,
-            size = MaterialTheme.sizes.avatarRow,
-            placeholderIcon = UiR.drawable.ic_archive,
-            onSelection = selected,
-        )
-    }
-}
-
-/**
- * The archive's unread chats, always in the muted style, or [asText] (the experimental look) as `bodyMedium` in
- * `onSurfaceVariant`; the row's description says them.
- */
-@Composable
-private fun ArchiveUnreadCount(
-    count: Int,
-    asText: Boolean,
-) {
-    if (asText) {
-        Text(
-            text = unreadCountText(count),
-            modifier = Modifier.clearAndSetSemantics {},
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        return
-    }
-    Badge(
-        modifier = Modifier.clearAndSetSemantics {},
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-    ) { Text(unreadCountText(count)) }
-}
-
-/** The full row's second line: the names of the first archived chats, or how many there are. */
-@Composable
-private fun ArchiveSummaryText(text: String) {
+private fun ArchiveUnreadCount(count: Int) {
     Text(
-        text = text,
+        text = unreadCountText(count),
         modifier = Modifier.clearAndSetSemantics {},
-        overflow = TextOverflow.Ellipsis,
-        maxLines = 1,
-        style = MaterialTheme.typography.bodyMedium.userContent,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodyMedium,
     )
 }
 
@@ -237,22 +176,18 @@ private fun ArchiveTitle(
 }
 
 /**
- * The compact row's leading symbol: the archive in `onSurfaceVariant`, centred in the width of a chat's avatar, so the
- * row stays one line high and its title starts where the chats' titles do.
+ * The row's leading symbol: the archive in `onSurfaceVariant` on a 40 dp `surfaceContainerHighest` tile with `medium`
+ * corners, centred in the width of a chat's avatar, so the row stays one line high and its title starts where the
+ * chats' titles do.
  */
 @Composable
-private fun CompactArchiveIcon(tile: Boolean) {
+private fun ArchiveIcon() {
     val colors = MaterialTheme.colorScheme
     Box(Modifier.width(MaterialTheme.sizes.avatarRow), contentAlignment = Alignment.Center) {
-        // The experimental look's tile: 40 dp, `medium` corners, `surfaceContainerHighest` (§13).
         val tileModifier =
-            if (tile) {
-                Modifier
-                    .size(MaterialTheme.sizes.avatarSmall)
-                    .background(colors.surfaceContainerHighest, MaterialTheme.shapes.medium)
-            } else {
-                Modifier
-            }
+            Modifier
+                .size(MaterialTheme.sizes.avatarSmall)
+                .background(colors.surfaceContainerHighest, MaterialTheme.shapes.medium)
         Box(tileModifier, contentAlignment = Alignment.Center) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_archive),
@@ -308,12 +243,6 @@ private fun archiveSummary(entry: ArchiveEntry): String {
         }
     }
 }
-
-/**
- * The avatar placeholder's id: it picks the neutral `surfaceContainerHighest` color pair, the fourth of the avatar
- * colors (`docs/DESIGN_SYSTEM.md` §2.2), so the archive does not look like one of the chats.
- */
-private const val ARCHIVE_AVATAR_ID = 3L
 
 @PingogramPreviews
 @Composable

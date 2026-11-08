@@ -79,7 +79,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
@@ -136,7 +135,6 @@ internal fun SearchScreen(
     listState: LazyListState = rememberLazyListState(),
     topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
 ) {
-    val colors = SearchBarDefaults.colors()
     val keyboard = LocalSoftwareKeyboardController.current
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(textFieldState) {
@@ -145,18 +143,13 @@ internal fun SearchScreen(
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }.filter { it }.collect { keyboard?.hide() }
     }
-    val experimental = LocalExperimentalUi.current
     Scaffold(
         modifier = modifier,
         topBar = {
-            // Opaque: the results scroll under the top bar, which the Scaffold places above them. In the experimental
-            // look a surfaceContainerLow block with extraLarge bottom corners over the results' surfaceContainer
-            // (`docs/DESIGN_SYSTEM.md` §13.4).
-            val headerShape =
-                MaterialTheme.shapes.extraLarge
-                    .copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize)
-                    .takeIf { experimental }
-            val headerColor = if (experimental) MaterialTheme.colorScheme.surfaceContainerLow else colors.containerColor
+            // Opaque: the results scroll under the top bar, which the Scaffold places above them. A surfaceContainerLow
+            // block with extraLarge bottom corners over the results' surfaceContainer (`docs/DESIGN_SYSTEM.md` §13.4).
+            val headerShape = MaterialTheme.shapes.extraLarge.copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize)
+            val headerColor = MaterialTheme.colorScheme.surfaceContainerLow
             Column(Modifier.headerBackground(headerColor, headerShape, MaterialTheme.spacing.small)) {
                 SearchHeader(
                     textFieldState = textFieldState,
@@ -167,14 +160,11 @@ internal fun SearchScreen(
                     onEvent = onEvent,
                     topPeople = topPeople,
                 )
-                ResultCountDivider(
-                    state.content,
-                    if (experimental) Color.Transparent else colors.dividerColor,
-                )
+                ResultCountDivider(state.content, Color.Transparent)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = if (experimental) MaterialTheme.colorScheme.surfaceContainer else colors.containerColor,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
         SearchBody(state.content, onEvent, listState, innerPadding)
@@ -209,17 +199,16 @@ private fun SearchHeader(
             Modifier
                 .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                 .fillMaxWidth()
-        // The experimental look's pill keeps the block's margin around it (§13.4).
-        val fieldInset = if (LocalExperimentalUi.current) MaterialTheme.spacing.medium else 0.dp
+        // The pill keeps the block's margin around it (§13.4).
         SearchField(
             textFieldState = textFieldState,
-            colors = searchBarColors(LocalExperimentalUi.current),
+            colors = searchBarColors(),
             onBack = onBack,
             onClear = {
                 textFieldState.clearText()
                 onEvent(SearchEvent.ClearQuery)
             },
-            modifier = width.padding(horizontal = fieldInset).focusRequester(focusRequester),
+            modifier = width.padding(horizontal = MaterialTheme.spacing.medium).focusRequester(focusRequester),
         )
         HeaderPeople(topPeople, onEvent, width)
         SearchFilters(filter, counts, onSelect = { onEvent(SearchEvent.FilterChanged(it)) }, modifier = width)
@@ -290,9 +279,8 @@ private fun SearchFilters(
     // The chosen chip scrolls into view, e.g. Links restored after process death on a narrow phone.
     val selectedChip = remember { BringIntoViewRequester() }
     LaunchedEffect(selected) { selectedChip.bringIntoView() }
-    val experimental = LocalExperimentalUi.current
-    val chipShapes = if (experimental) experimentalChipShapes() else FilterChipDefaults.shapes()
-    val chipColors = if (experimental) experimentalChipColors() else FilterChipDefaults.filterChipColors()
+    val chipShapes = searchChipShapes()
+    val chipColors = searchChipColors()
     Row(
         modifier =
             modifier

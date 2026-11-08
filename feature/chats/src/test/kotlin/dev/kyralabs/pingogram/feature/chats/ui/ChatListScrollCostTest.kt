@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -18,7 +17,6 @@ import coil3.serviceLoaderEnabled
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImageKeyer
@@ -94,15 +92,7 @@ class ChatListScrollCostTest {
     @Test
     fun `scroll frames with Compose's default state`() = measure(scrollingState = false)
 
-    /** The experimental look (`docs/DESIGN_SYSTEM.md` §13), with the list's own state. */
-    @Test
-    fun `scroll frames with the list's own state in the experimental look`() =
-        measure(scrollingState = true, experimental = true)
-
-    private fun measure(
-        scrollingState: Boolean,
-        experimental: Boolean = false,
-    ) {
+    private fun measure(scrollingState: Boolean) {
         val items =
             (0 until ROWS)
                 .map { index ->
@@ -120,31 +110,29 @@ class ChatListScrollCostTest {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 listState = if (scrollingState) rememberScrollingListState() else rememberLazyListState()
-                CompositionLocalProvider(LocalExperimentalUi provides experimental) {
-                    ChatListScreen(
-                        state =
-                            ChatListUiState(
-                                content =
-                                    ChatListContent.Content(
-                                        items,
-                                        pinnedCount = items.indexOfFirst { !it.isPinned },
-                                    ),
-                                connection = ConnectionStatus.Ready,
-                                folderTabs = ChatListPreviewData.folders,
-                            ),
-                        onEvent = {},
-                        listState = listState,
-                        // The Chats tab's first row, as it has stories.
-                        stories = { modifier ->
-                            StoryRingsRow(
-                                rings = StoryRingsPreviewData.rings,
-                                onOpen = {},
-                                onNearEnd = {},
-                                modifier = modifier,
-                            )
-                        },
-                    )
-                }
+                ChatListScreen(
+                    state =
+                        ChatListUiState(
+                            content =
+                                ChatListContent.Content(
+                                    items,
+                                    pinnedCount = items.indexOfFirst { !it.isPinned },
+                                ),
+                            connection = ConnectionStatus.Ready,
+                            folderTabs = ChatListPreviewData.folders,
+                        ),
+                    onEvent = {},
+                    listState = listState,
+                    // The Chats tab's first row, as it has stories.
+                    stories = { modifier ->
+                        StoryRingsRow(
+                            rings = StoryRingsPreviewData.rings,
+                            onOpen = {},
+                            onNearEnd = {},
+                            modifier = modifier,
+                        )
+                    },
+                )
             }
         }
         composeRule.waitForIdle()
@@ -152,8 +140,7 @@ class ChatListScrollCostTest {
         repeat(WARMUP_RUNS) { scroll() }
         val frames = (1..MEASURED_RUNS).flatMap { scroll() }.sorted()
         println(
-            "Scroll cost (${if (scrollingState) "scrolling" else "default"} state" +
-                "${if (experimental) ", experimental look" else ""}): CPU per frame P50 " +
+            "Scroll cost (${if (scrollingState) "scrolling" else "default"} state): CPU per frame P50 " +
                 "${frames.percentile(50)} µs, P90 ${frames.percentile(90)} µs, P99 ${frames.percentile(99)} µs, " +
                 "mean ${frames.average().toLong()} µs",
         )

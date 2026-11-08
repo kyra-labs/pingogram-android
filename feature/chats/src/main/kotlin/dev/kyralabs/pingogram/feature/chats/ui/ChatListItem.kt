@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -101,13 +100,12 @@ internal fun ChatListItem(
     val leading = @Composable { ChatAvatar(item, title, selected, open) }
     val timeOnPreviewLine = timeOnPreviewLine()
     val shownPreview = if (timeOnPreviewLine) remember(preview, item.time) { preview.after(item.time) } else preview
-    // The experimental look's row (docs/DESIGN_SYSTEM.md §13): the kind of chat before its name, the mute icon only
-    // while nothing is unread, the time in `primary` while unread and not muted, the kind of message before its text.
-    val experimental = LocalExperimentalUi.current
-    val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine, highlightTime = experimental) }
-    val contentIcon = (item.preview as? ChatPreview.Message)?.contentIcon?.takeIf { experimental }
+    // The row of docs/DESIGN_SYSTEM.md §13.3: the kind of chat before its name, the mute icon only while nothing is
+    // unread, the time in `primary` while unread and not muted, the kind of message before its text.
+    val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
+    val contentIcon = (item.preview as? ChatPreview.Message)?.contentIcon
     val supporting = @Composable { ChatPreviewText(shownPreview, contentIcon) }
-    val headline = @Composable { ChatRowTitle(item, title, experimental) }
+    val headline = @Composable { ChatRowTitle(item, title) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
     if (onClick != null) {
@@ -272,7 +270,7 @@ private fun ChatAvatar(
 }
 
 /**
- * The lock of a secret chat ([isSecret]), in the experimental look the kind of chat ([kindIcon]: a group's people,
+ * The lock of a secret chat ([isSecret]), the kind of chat ([kindIcon]: a group's people,
  * a channel's megaphone), the name ([title]), its [badge], and the mute icon ([isMuted]); the name in the emphasized
  * style if [isUnread]. Also the title of a search result.
  */

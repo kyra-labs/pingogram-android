@@ -110,8 +110,7 @@ class SearchViewModel internal constructor(
     )
 
     /**
-     * The people the user writes to most, read once while the screen collects: the suggestions' and, in the
-     * experimental look, the header's ([topPeople]).
+     * The people the user writes to most, read once while the screen collects, for the header ([topPeople]).
      */
     private val topChats: Flow<List<Chat>> =
         flow { emit(searchRepository.topPeople().getOrNull().orEmpty()) }
@@ -176,9 +175,9 @@ class SearchViewModel internal constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SearchUiState())
 
     /**
-     * The top people the experimental look's header shows above the chips (`docs/DESIGN_SYSTEM.md` §13.4): all of them
+     * The top people the header shows above the chips (`docs/DESIGN_SYSTEM.md` §13.4): all of them
      * before anything is typed, then those whose name has a word starting with each word typed ([matchesWords]),
-     * mapped as search's rows; locked chats left out. Only the experimental look collects it.
+     * mapped as search's rows; locked chats left out.
      */
     val topPeople: StateFlow<ImmutableList<SearchChatItem>> =
         combine(

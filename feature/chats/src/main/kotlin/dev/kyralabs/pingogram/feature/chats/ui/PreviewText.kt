@@ -110,7 +110,7 @@ private data class PreviewParts(
 
 /**
  * One line, in `bodyMedium`, with the sender inline: Material's two-line list item, 72 dp rows of one height
- * (`docs/DESIGN_SYSTEM.md` §6–7), after the kind of message ([contentIcon], the experimental look's, §13). Screen
+ * (`docs/DESIGN_SYSTEM.md` §6–7), after the kind of message ([contentIcon], §13.3). Screen
  * readers get the row's description instead.
  */
 @Composable

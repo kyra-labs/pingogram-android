@@ -18,7 +18,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
@@ -71,22 +70,8 @@ class ChatListRecompositionTest {
     }
 
     @Test
-    fun `in the experimental look scrolling the list recomposes none of its composables either`() {
-        setScreen(connection = ConnectionStatus.Ready, experimental = true)
-
-        repeat(SCROLL_FRAMES) {
-            composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
-            frame()
-        }
-
-        assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > ROWS_ON_SCREEN)
-        assertEquals(emptyList<String>(), counter.recomposedOwn)
-        assertTrue(counter.recomposed.toString(), counter.recomposed.size < SCROLL_FRAMES / RARE)
-    }
-
-    @Test
-    fun `in the experimental look dragging the list collapses the header without recomposing it`() {
-        setScreen(connection = ConnectionStatus.Ready, experimental = true)
+    fun `dragging the list collapses the header without recomposing it`() {
+        setScreen(connection = ConnectionStatus.Ready)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
         val barBottom = list.fetchSemanticsNode().boundsInRoot.top
 
@@ -241,7 +226,6 @@ class ChatListRecompositionTest {
         connection: ConnectionStatus,
         withStories: Boolean = false,
         folderSwipe: Boolean = false,
-        experimental: Boolean = false,
     ) {
         this.connection = connection
         val items =
@@ -267,10 +251,7 @@ class ChatListRecompositionTest {
                 if (shown) {
                     holder.SaveableStateProvider(SCREEN_KEY) {
                         listState = rememberLazyListState()
-                        CompositionLocalProvider(
-                            LocalChatSwipes provides ChatSwipes(changesFolder = folderSwipe),
-                            LocalExperimentalUi provides experimental,
-                        ) {
+                        CompositionLocalProvider(LocalChatSwipes provides ChatSwipes(changesFolder = folderSwipe)) {
                             val family = selectedFolder == FAMILY
                             ChatListScreen(
                                 state =

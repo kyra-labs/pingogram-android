@@ -337,7 +337,7 @@ internal fun TopBarAction(
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
-        // The experimental look's 48 dp tonal circles (docs/DESIGN_SYSTEM.md §13).
+        // 48 dp tonal circles (docs/DESIGN_SYSTEM.md §13.2).
         val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,

@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -40,13 +39,8 @@ internal fun EditFoldersButton(
         state = rememberTooltipState(),
         modifier = modifier,
     ) {
-        // A square-ish outline in the experimental look (docs/DESIGN_SYSTEM.md §13): `medium` corners.
-        val shapes =
-            if (LocalExperimentalUi.current) {
-                IconButtonShapes(shape = MaterialTheme.shapes.medium, pressedShape = MaterialTheme.shapes.small)
-            } else {
-                IconButtonDefaults.shapes()
-            }
+        // A square-ish outline (docs/DESIGN_SYSTEM.md §13.3): `medium` corners.
+        val shapes = IconButtonShapes(shape = MaterialTheme.shapes.medium, pressedShape = MaterialTheme.shapes.small)
         OutlinedIconButton(onClick = onClick, enabled = enabled, shapes = shapes) {
             Icon(painter = painterResource(UiR.drawable.ic_tune), contentDescription = label)
         }

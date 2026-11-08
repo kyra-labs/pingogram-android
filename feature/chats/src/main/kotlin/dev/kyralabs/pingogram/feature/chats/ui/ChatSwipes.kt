@@ -20,7 +20,7 @@ import javax.inject.Inject
  * [changesFolder], rows do not swipe: swiping the list shows the folder tab beside the selected one ([folderSwipe]).
  * It carries the chat list's other device settings too, as the same settings hold them: whether the folder tabs end
  * in "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default), and whether
- * the experimental look's rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
+ * rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
  * default).
  */
 @Immutable

@@ -27,7 +27,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
@@ -36,17 +35,15 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// Global search's parts in the experimental look (`docs/DESIGN_SYSTEM.md` §13.4): the header's block and colors, the
+// Global search's parts (`docs/DESIGN_SYSTEM.md` §13.4): the header's block and colors, the
 // chips, the chat rows' chevron and the found messages' highlighted text.
 
 /**
- * The search bar's colors; in the experimental look (`docs/DESIGN_SYSTEM.md` §13.4) the field's pill on
- * `surfaceContainerHighest`, the block around it on `surfaceContainerLow`.
+ * The search bar's colors (`docs/DESIGN_SYSTEM.md` §13.4): the field's pill on `surfaceContainerHighest`, the block
+ * around it on `surfaceContainerLow`.
  */
 @Composable
-internal fun searchBarColors(experimental: Boolean): SearchBarColors {
-    val colors = SearchBarDefaults.colors()
-    if (!experimental) return colors
+internal fun searchBarColors(): SearchBarColors {
     val scheme = MaterialTheme.colorScheme
     return SearchBarDefaults.colors(
         containerColor = scheme.surfaceContainerLow,
@@ -58,18 +55,18 @@ internal fun searchBarColors(experimental: Boolean): SearchBarColors {
     )
 }
 
-/** The experimental look's chips: at rest `medium` corners, pressed `small`, selected a full pill (§13.4). */
+/** The filter chips: at rest `medium` corners, pressed `small`, selected a full pill (§13.4). */
 @Composable
-internal fun experimentalChipShapes() =
+internal fun searchChipShapes() =
     ChipShapes(
         shape = MaterialTheme.shapes.medium,
         selectedShape = CircleShape,
         pressedShape = MaterialTheme.shapes.small,
     )
 
-/** The experimental look's chips: selected on `primary` / `onPrimary`, the others outlined on nothing (§13.4). */
+/** The filter chips: selected on `primary` / `onPrimary`, the others outlined on nothing (§13.4). */
 @Composable
-internal fun experimentalChipColors(): SelectableChipColors {
+internal fun searchChipColors(): SelectableChipColors {
     val scheme = MaterialTheme.colorScheme
     return FilterChipDefaults.filterChipColors(
         labelColor = scheme.onSurfaceVariant,
@@ -79,37 +76,23 @@ internal fun experimentalChipColors(): SelectableChipColors {
     )
 }
 
-/** The header's background: the search bar's [color], or in the experimental look [color] in [shape] (§13.4). */
+/** The header's background: [color] in [shape] (§13.4), with [bottomPadding] inside it. */
 internal fun Modifier.headerBackground(
     color: Color,
-    shape: Shape?,
+    shape: Shape,
     bottomPadding: Dp,
-): Modifier = if (shape == null) background(color) else background(color, shape).padding(bottom = bottomPadding)
+): Modifier = background(color, shape).padding(bottom = bottomPadding)
 
 /**
- * A chat row's end: the button that removes a recent chat ([onRemove]), else in the experimental look a chevron
- * (`docs/DESIGN_SYSTEM.md` §13.4), decorative, as the whole row opens the chat; nothing in the standard look.
+ * A chat row's end: the button that removes a recent chat ([onRemove]), else a chevron (`docs/DESIGN_SYSTEM.md`
+ * §13.4), decorative, as the whole row opens the chat.
  */
-@Composable
 internal fun chatTrailing(
     title: String,
     onRemove: (() -> Unit)?,
-): (@Composable () -> Unit)? =
-    when {
-        onRemove != null -> {
-            { RemoveRecentButton(title, onRemove) }
-        }
+): @Composable () -> Unit = if (onRemove != null) ({ RemoveRecentButton(title, onRemove) }) else ({ ChatChevron() })
 
-        LocalExperimentalUi.current -> {
-            { ChatChevron() }
-        }
-
-        else -> {
-            null
-        }
-    }
-
-/** The experimental look's chevron at a chat row's end, mirrored right to left. */
+/** The chevron at a chat row's end, mirrored right to left. */
 @Composable
 private fun ChatChevron() {
     Icon(
@@ -120,31 +103,25 @@ private fun ChatChevron() {
 }
 
 /**
- * Two lines of a found message; in the experimental look its matches on `primaryContainer` blocks with `small` corners,
- * drawn from the text's layout ([textBlocks]), the rest in `onSurfaceVariant` (§13.4).
+ * Two lines of a found message, its matches on `primaryContainer` blocks with `small` corners, drawn from the text's
+ * layout ([textBlocks]), the rest in `onSurfaceVariant` (§13.4).
  */
 @Composable
-internal fun MessagePreview(
-    preview: AnnotatedString,
-    experimental: Boolean,
-) {
+internal fun MessagePreview(preview: AnnotatedString) {
     val blocks = remember { TextBlocksLayout() }
     Text(
         text = preview,
         modifier =
-            if (experimental) {
-                Modifier.textBlocks(
+            Modifier
+                .textBlocks(
                     layout = blocks,
                     codeColor = Color.Unspecified,
                     spoilerColor = Color.Unspecified,
                     shape = MaterialTheme.shapes.small,
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     matchColor = MaterialTheme.colorScheme.primaryContainer,
-                )
-            } else {
-                Modifier
-            }.clearAndSetSemantics {},
-        color = if (experimental) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                ).clearAndSetSemantics {},
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         overflow = TextOverflow.Ellipsis,
         maxLines = 2,
         onTextLayout = blocks.onTextLayout,
@@ -165,37 +142,29 @@ internal fun MessageDate(date: String) {
 }
 
 /**
- * A found message's text after its sender: in the experimental look its matches as `primaryContainer` blocks
- * ([blockHighlighted], §13.4), else in `primary` ([highlighted]); both in the emphasized weight.
+ * A found message's text after its sender, its matches as `primaryContainer` blocks ([blockHighlighted], §13.4), in the
+ * emphasized weight.
  */
 @Composable
 internal fun foundMessageText(
     sender: String?,
     text: String,
     highlight: MatchHighlight,
-    experimental: Boolean,
 ): AnnotatedString {
     val colors = MaterialTheme.colorScheme
     val emphasis = MaterialTheme.typography.bodyMediumEmphasized.fontWeight
-    return if (experimental) {
-        remember(sender, text, highlight, colors.onSurface, colors.onPrimaryContainer, emphasis) {
-            blockHighlighted(
-                label = sender,
-                text = text,
-                highlight = highlight,
-                labelStyle = SpanStyle(color = colors.onSurface, fontWeight = emphasis),
-                matchStyle = SpanStyle(color = colors.onPrimaryContainer, fontWeight = emphasis),
-            )
-        }
-    } else {
-        val match = SpanStyle(color = colors.primary, fontWeight = emphasis)
-        remember(sender, text, highlight, colors.onSurface, match) {
-            highlighted(sender, text, highlight, colors.onSurface, match)
-        }
+    return remember(sender, text, highlight, colors.onSurface, colors.onPrimaryContainer, emphasis) {
+        blockHighlighted(
+            label = sender,
+            text = text,
+            highlight = highlight,
+            labelStyle = SpanStyle(color = colors.onSurface, fontWeight = emphasis),
+            matchStyle = SpanStyle(color = colors.onPrimaryContainer, fontWeight = emphasis),
+        )
     }
 }
 
-/** The experimental look's first line of a found message: its chat's [title], then its [date] at the end (§13.4). */
+/** The first line of a found message: its chat's [title], then its [date] at the end (§13.4). */
 @Composable
 internal fun TitleWithDate(
     date: String,
