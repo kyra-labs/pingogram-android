@@ -108,14 +108,31 @@ internal fun MessageDocument(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        when {
-            upload != null -> UploadRing(upload, colors.accent, colors.track, onCancelUpload)
-            state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
-            state is FileState.Downloading && state.isActive -> PauseDownloadButton(state.progress, colors, onCancel)
-            // Stopped part of the way: TDLib keeps what came, and downloading again goes on from there.
-            state is FileState.Downloading -> ResumeDownloadButton(state.progress, colors, onDownload)
-            else -> Unit
+        if (upload != null) {
+            UploadRing(upload, colors.accent, colors.track, onCancelUpload)
+        } else {
+            DownloadAction(state, colors, onDownload, onCancel)
         }
+    }
+}
+
+/** The file row's end while nothing uploads: a download, a pause or a resume, or nothing once downloaded. */
+@Composable
+private fun DownloadAction(
+    state: FileState,
+    colors: BubbleColors,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    when {
+        state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
+
+        state is FileState.Downloading && state.isActive -> PauseDownloadButton(state.progress, colors, onCancel)
+
+        // Stopped part of the way: TDLib keeps what came, and downloading again goes on from there.
+        state is FileState.Downloading -> ResumeDownloadButton(state.progress, colors, onDownload)
+
+        else -> Unit
     }
 }
 

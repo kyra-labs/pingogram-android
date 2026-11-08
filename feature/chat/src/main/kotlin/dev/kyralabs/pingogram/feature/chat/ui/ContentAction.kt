@@ -112,7 +112,10 @@ private fun documentAction(
     fileState: FileState?,
 ): ContentAction? =
     when (fileState) {
-        is FileState.Downloaded -> ContentAction(OPEN, ChatEvent.OpenFile(messageId, fileId))
+        is FileState.Downloaded -> {
+            ContentAction(OPEN, ChatEvent.OpenFile(messageId, fileId))
+        }
+
         is FileState.Downloading -> {
             if (fileState.isActive) {
                 ContentAction(R.string.content_pause_download, ChatEvent.CancelDownload(fileId))
@@ -120,8 +123,14 @@ private fun documentAction(
                 ContentAction(R.string.content_resume_download, ChatEvent.DownloadFile(fileId))
             }
         }
-        is FileState.NotDownloaded -> fileState.downloadAction(fileId)
-        null -> ContentAction(R.string.content_download, ChatEvent.DownloadFile(fileId))
+
+        is FileState.NotDownloaded -> {
+            fileState.downloadAction(fileId)
+        }
+
+        null -> {
+            ContentAction(R.string.content_download, ChatEvent.DownloadFile(fileId))
+        }
     }
 
 private fun FileState.NotDownloaded.downloadAction(fileId: Int): ContentAction? =
