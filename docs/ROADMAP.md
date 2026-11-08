@@ -150,6 +150,16 @@ What is left, item by item and with owners, is in `docs/audit/v1-readiness.md`.
 - [ ] 7-day dogfood with ≥ 10 testers, crash-free ≥ 99.5%
 - [ ] Telegram API terms reviewed and signed off by the owner (`docs/API_TERMS.md`)
 
+## Next version (after `v2.0.0`)
+
+The owner's decision of 2026-11-08: these items from the Settings pages' redesign boards (`docs/DESIGN_SYSTEM.md`
+§13.10, "Not yet") come in the version after 2.0.0, each once the owner has decided how it should work.
+
+- [ ] Folder tabs' style: text, icon and text, or icon only (Appearance → Chat list)
+- [ ] Sticker search in Settings → Stickers and emoji
+- [ ] "Suggest stickers by emoji" and "Loop animated stickers" switches
+- [ ] "Start a call" in Recent calls (`feature:calls`)
+
 ## Backlog (unscheduled)
 
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
