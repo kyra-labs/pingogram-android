@@ -6,12 +6,17 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -23,14 +28,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.notifications.PingogramChannel
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Notifications page: hoists [NotificationSettingsViewModel], reads what Android allows whenever the page shows
@@ -119,7 +128,11 @@ private fun ScopeGroups(
         }
 
         is ScopeSettingsState.Content -> {
-            for (scope in NotificationScope.entries) {
+            // The experimental look shows one kind of chat at a time, picked above it (docs/DESIGN_SYSTEM.md §13.10).
+            val experimental = LocalExperimentalUi.current
+            var shown by rememberSaveable { mutableStateOf(NotificationScope.PrivateChats) }
+            if (experimental) ScopePicker(shown) { shown = it }
+            for (scope in NotificationScope.entries.filter { !experimental || it == shown }) {
                 val settings = scopes.settings[scope] ?: continue
                 ScopeGroup(
                     scope = scope,
@@ -158,13 +171,7 @@ internal fun NotificationSettingsScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
-        if (state.notificationsBlocked) {
-            SettingsGroup {
-                item { shapes ->
-                    NotificationsOffItem(shapes, onClick = { onEvent(NotificationSettingsEvent.TurnOnNotifications) })
-                }
-            }
-        }
+        if (state.notificationsBlocked) NotificationsOff { onEvent(NotificationSettingsEvent.TurnOnNotifications) }
         ScopeGroups(state, onEvent, onOpen)
         state.fromAllAccounts?.let { all ->
             AccountsGroup(

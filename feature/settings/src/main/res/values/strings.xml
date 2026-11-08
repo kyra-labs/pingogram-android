@@ -234,6 +234,15 @@
     <string name="settings_power_saving_autoplay_summary">Videos and GIFs wait for you to tap play</string>
     <string name="settings_power_saving_calls">Stop call screen animations</string>
     <string name="settings_power_saving_calls_summary">The avatar of a ringing call and the speaking rings stand still</string>
+    <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): the card at the top of Power saving -->
+    <string name="settings_power_saving_now">Right now</string>
+    <string name="settings_power_saving_card_battery_saver_on">Battery Saver is on</string>
+    <string name="settings_power_saving_card_battery_saver_off">Battery Saver is off</string>
+    <string name="settings_power_saving_card_off">Power saving is off</string>
+    <string name="settings_power_saving_card_with_battery_saver">Power saving follows Battery Saver</string>
+    <string name="settings_power_saving_card_always">Power saving is always on</string>
+    <string name="settings_power_saving_card_saving">Saving power now</string>
+    <string name="settings_power_saving_card_normal">Everything plays normally</string>
     <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
 
     <string name="settings_section_storage_usage">Storage usage</string>
@@ -638,6 +647,15 @@
     <!-- A banner at the top when Android shows none of Pingogram's notifications (permission refused, or turned off). -->
     <string name="settings_notifications_off">Notifications are off</string>
     <string name="settings_notifications_off_summary">Pingogram can\'t tell you about new messages. Tap to turn notifications on.</string>
+    <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): the banner's text and button while notifications are off -->
+    <string name="settings_notifications_off_banner">Pingogram can\'t tell you about new messages.</string>
+    <string name="settings_notifications_turn_on">Turn on</string>
+    <!-- Experimental UI: above the buttons that pick whose defaults the page shows -->
+    <string name="settings_notifications_show_for">Show settings for</string>
+    <!-- Experimental UI: the short names on those buttons, which share one row -->
+    <string name="settings_notifications_scope_private">Private</string>
+    <string name="settings_notifications_scope_groups">Groups</string>
+    <string name="settings_notifications_scope_channels">Channels</string>
     <!-- The headings of the kinds of chats with default settings of their own. -->
     <string name="settings_notifications_private_chats">Private chats</string>
     <string name="settings_notifications_groups">Groups</string>
