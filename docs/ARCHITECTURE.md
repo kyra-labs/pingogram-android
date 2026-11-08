@@ -1226,6 +1226,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
+  An app file (APK) opens in Android's package installer through the same view intent, which `REQUEST_INSTALL_PACKAGES`
+  (both flavors, owner approval 2026-11-08) lets it accept; the installer asks the user before anything installs.
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
   directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
   same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).

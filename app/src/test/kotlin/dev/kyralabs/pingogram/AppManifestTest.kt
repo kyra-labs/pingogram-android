@@ -81,6 +81,8 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
                 Manifest.permission.ACCESS_NETWORK_STATE,
+                // Installing an app file the user tapped in a chat, through Android's package installer.
+                Manifest.permission.REQUEST_INSTALL_PACKAGES,
                 // Contacts sync only, opt-in (docs/adr/0011-contacts-sync.md): read when the user turns it on, opens
                 // Contacts while it is on, or taps Sync now; never in the background.
                 Manifest.permission.READ_CONTACTS,
@@ -124,6 +126,8 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC to "",
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
+                // Installing an app file the user tapped in a chat, on every version.
+                Manifest.permission.REQUEST_INSTALL_PACKAGES to "",
                 // Contacts sync's only permission, on every version.
                 Manifest.permission.READ_CONTACTS to "",
                 // The QR code scanner's and video calls', on every version.

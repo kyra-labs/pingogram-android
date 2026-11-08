@@ -83,6 +83,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
 
 ### Fixed
+- Tapping an app file (APK) sent in a chat starts its installation again: Android asks once to allow Pingogram to
+  install apps, then asks before each install.
 - In a chat, the jump-to-newest button's unread count no longer runs past the screen's edge when it has three digits
   or more.
 - In the experimental look, the header's buttons (search and your picture on the chat list) no longer touch.

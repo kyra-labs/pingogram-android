@@ -124,6 +124,12 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Installing an app file (APK) the user tapped in a chat (approved by the owner on 2026-11-08, both flavors): the
+         file is handed to Android's package installer through the app's FileProvider, as any downloaded file is
+         opened. Without it, Android 8 and later refuse the install. Nothing installs by itself: the installer asks the
+         user to allow Pingogram to install apps the first time ("Install unknown apps"), then asks before each
+         install. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Self-managed calls need the system's Telecom; devices without it still install Pingogram and call without it. -->
     <uses-feature
         android:name="android.software.telecom"
