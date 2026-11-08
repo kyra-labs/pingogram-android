@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -84,6 +85,7 @@ internal fun SearchResultsList(
     val spacing = MaterialTheme.spacing
     val style = RowStyle(MaterialTheme.sizes.contentMaxWidth, spacing.windowMarginCompact, MaterialTheme.motionScheme)
     val layoutDirection = LocalLayoutDirection.current
+    val experimental = LocalExperimentalUi.current
     LazyColumn(
         modifier = modifier,
         state = listState,
@@ -99,7 +101,9 @@ internal fun SearchResultsList(
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         when (content) {
-            is SearchContent.Suggestions -> suggestions(content, onEvent, style)
+            // The experimental look shows the top people in the header instead (docs/DESIGN_SYSTEM.md §13.4).
+            is SearchContent.Suggestions -> suggestions(content, onEvent, style, showsPeople = !experimental)
+
             is SearchContent.Results -> results(content, onEvent, style)
         }
     }
@@ -129,8 +133,9 @@ private fun LazyListScope.suggestions(
     content: SearchContent.Suggestions,
     onEvent: (SearchEvent) -> Unit,
     style: RowStyle,
+    showsPeople: Boolean,
 ) {
-    if (content.topPeople.isNotEmpty()) {
+    if (showsPeople && content.topPeople.isNotEmpty()) {
         item(key = PEOPLE_HEADER, contentType = HEADER) {
             SectionHeader(stringResource(R.string.search_section_people), Modifier.row(this, style))
         }

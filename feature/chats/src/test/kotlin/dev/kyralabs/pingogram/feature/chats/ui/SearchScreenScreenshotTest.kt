@@ -9,6 +9,9 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -148,6 +151,8 @@ class SearchScreenScreenshotTest {
                         textFieldState = remember { TextFieldState(SearchPreviewData.queryOf(state)) },
                         onEvent = {},
                         onBack = {},
+                        // The experimental header's top people (headerPeople).
+                        topPeople = if (experimental) headerPeople(state) else persistentListOf(),
                     )
                 }
             }
@@ -158,6 +163,25 @@ class SearchScreenScreenshotTest {
         captureScreenRoboImage(goldenPath(javaClass, name))
     }
 }
+
+/**
+ * The top people the experimental header shows over [state]: all of them with the suggestions; with results, the first
+ * chat found, a person who matches the query as a top person would.
+ */
+private fun headerPeople(state: SearchUiState): ImmutableList<SearchChatItem> =
+    when (val content = state.content) {
+        is SearchContent.Suggestions -> {
+            SearchPreviewData.topPeople
+        }
+
+        is SearchContent.Results -> {
+            (content.chats as? SearchSection.Items)
+                ?.items
+                ?.take(1)
+                .orEmpty()
+                .toImmutableList()
+        }
+    }
 
 /** Longer than search's progress indicator waits before it shows, and its fade in. */
 private const val PROGRESS_DELAY_MILLIS = 1_000L

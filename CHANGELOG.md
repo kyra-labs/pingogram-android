@@ -37,6 +37,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With Experimental UI on, a mention of you in a group message shows as a chip in the message's text.
 - With Experimental UI on, settings search also finds the pages inside Settings' pages, such as Blocked users, Passcode
   lock, each privacy setting, Proxy or the theme, and opens them with their page behind them.
+- With Experimental UI on, global search shows the people you write to most above its filters, narrowing them as
+  you type.
 - Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
   conversation instead of "Unsupported message". Their photos and videos open in the media viewer.
 - The demo's channel has a sample rich post, with two sections to open and a photo.
