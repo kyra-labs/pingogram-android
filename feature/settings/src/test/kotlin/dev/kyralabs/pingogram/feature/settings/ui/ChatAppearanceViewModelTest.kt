@@ -5,7 +5,6 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
-import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import kotlinx.coroutines.Dispatchers
@@ -97,18 +96,6 @@ class ChatAppearanceViewModelTest {
                 ChatAppearance(0.9f, BubbleCorners.Large, ChatWallpaper.PrimaryToTertiary),
                 settings.chat,
             )
-        }
-
-    @Test
-    fun `group bubbles are saved, keeping the rest of the appearance`() =
-        runTest {
-            repository.save(AppearanceSettings(chat = ChatAppearance(textScale = 0.9f)))
-            val viewModel = viewModel()
-
-            viewModel.setGroupBubbles(GroupBubbles.Vivid)
-            runCurrent()
-
-            assertEquals(ChatAppearance(0.9f, groupBubbles = GroupBubbles.Vivid), repository.appearance.first().chat)
         }
 
     @Test

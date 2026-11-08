@@ -80,7 +80,7 @@ internal fun ColorThemeRoute(
  * null before Android 12, where the page offers no wallpaper colors.
  */
 @Composable
-private fun rememberWallpaperSchemes(): WallpaperSchemes? {
+internal fun rememberWallpaperSchemes(): WallpaperSchemes? {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     return remember(context, configuration) { wallpaperSchemes(context) }

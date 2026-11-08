@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -69,6 +72,18 @@ internal fun AppearanceRoute(
                 is AppearanceEffect.ShowError -> {
                     launch { snackbarHostState.showSnackbar(errorMessage(resources, effect.error, showErrorDetails)) }
                 }
+
+                AppearanceEffect.ResetDone -> {
+                    launch {
+                        val result =
+                            snackbarHostState.showSnackbar(
+                                message = resources.getString(R.string.settings_appearance_reset_done),
+                                actionLabel = resources.getString(R.string.settings_appearance_reset_undo),
+                                duration = SnackbarDuration.Long,
+                            )
+                        if (result == SnackbarResult.ActionPerformed) viewModel.onEvent(AppearanceEvent.UndoReset)
+                    }
+                }
             }
         }
     }
@@ -85,6 +100,7 @@ internal fun AppearanceRoute(
         snackbarHostState = snackbarHostState,
         dynamicColorAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
         systemContrast = systemContrastOrNull(),
+        wallpaperSchemes = if (LocalExperimentalUi.current) rememberWallpaperSchemes() else null,
     )
 }
 
@@ -114,12 +130,19 @@ internal fun AppearanceScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
+    wallpaperSchemes: WallpaperSchemes? = null,
 ) {
+    val experimental = LocalExperimentalUi.current
     SettingsPageScaffold(
         title = stringResource(R.string.settings_appearance),
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        actions = {
+            if (experimental && state is AppearanceUiState.Content) {
+                ResetAppearanceButton { onEvent(AppearanceEvent.Reset) }
+            }
+        },
     ) {
         when (state) {
             AppearanceUiState.Loading -> {
@@ -127,20 +150,34 @@ internal fun AppearanceScreen(
             }
 
             is AppearanceUiState.Content -> {
-                AppearanceSettingsContent(
-                    state.settings,
-                    ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList),
-                    onEvent,
+                val chats = ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList)
+                val pages =
                     AppearancePages(
                         onOpenColorTheme,
                         onOpenChatAppearance,
                         onOpenQuickReaction,
                         onOpenSwipeActions,
                         onOpenShownFirst,
-                    ),
-                    dynamicColorAvailable,
-                    systemContrast,
-                )
+                    )
+                if (experimental) {
+                    ExperimentalAppearanceContent(
+                        state.settings,
+                        chats,
+                        onEvent,
+                        pages,
+                        wallpaperSchemes,
+                        systemContrast,
+                    )
+                } else {
+                    AppearanceSettingsContent(
+                        state.settings,
+                        chats,
+                        onEvent,
+                        pages,
+                        dynamicColorAvailable,
+                        systemContrast,
+                    )
+                }
             }
         }
     }

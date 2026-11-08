@@ -46,8 +46,9 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: the rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]),
- * which Enter sends on a hardware and on the on-screen keyboard, and raise to listen.
+ * The "Chats" group: [leading] rows where a look adds them (the experimental look's text size and group bubbles), the
+ * rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]), which Enter sends on a
+ * hardware and on the on-screen keyboard, and raise to listen.
  */
 @Composable
 internal fun ChatsGroup(
@@ -55,8 +56,10 @@ internal fun ChatsGroup(
     chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
+    leading: SettingsGroupScope.() -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
+        leading()
         item { shapes -> ChatAppearanceItem(chat, shapes, pages.onOpenChatAppearance) }
         item { shapes ->
             SettingsRow(
