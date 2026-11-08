@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import org.junit.Assert.assertEquals
@@ -70,17 +71,20 @@ class AppearanceScreenTest {
         systemContrast: Contrast? = null,
     ) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalHapticFeedback provides haptics) {
-                    AppearanceScreen(
-                        state = AppearanceUiState.Content(settings),
-                        onEvent = { events += it },
-                        onBack = {},
-                        onOpenColorTheme = { themeOpened++ },
-                        onOpenChatAppearance = { chatAppearanceOpened++ },
-                        dynamicColorAvailable = dynamicColorAvailable,
-                        systemContrast = systemContrast,
-                    )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                        AppearanceScreen(
+                            state = AppearanceUiState.Content(settings),
+                            onEvent = { events += it },
+                            onBack = {},
+                            onOpenColorTheme = { themeOpened++ },
+                            onOpenChatAppearance = { chatAppearanceOpened++ },
+                            dynamicColorAvailable = dynamicColorAvailable,
+                            systemContrast = systemContrast,
+                        )
+                    }
                 }
             }
         }

@@ -16,11 +16,6 @@
     <!-- On the account's card instead of a phone number while the demo for app store reviewers shows (sample chats on the phone, no Telegram account). -->
     <string name="settings_account_demo">Demo</string>
     <string name="settings_account_premium">Premium</string>
-    <!-- Settings home's switch for the experimental look (docs/adr/0035-experimental-ui.md). -->
-    <string name="settings_experimental_ui">Experimental UI</string>
-    <!-- A label after "Experimental UI": the look is a test the owner may change or drop. -->
-    <string name="settings_experimental_ui_beta">Beta</string>
-    <string name="settings_experimental_ui_summary">New Material 3 Expressive look for chats, contacts and settings. Switch back anytime.</string>
     <!-- Below the account card: another account's row says what a tap does for screen readers. -->
     <string name="settings_switch_account">Switch to %1$s</string>
     <string name="settings_add_account">Add account</string>

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
@@ -62,19 +64,22 @@ class PinnedMessagesBarTest {
     private fun setScreen(initial: PinnedBar = barAt(0)) {
         var bar by mutableStateOf(initial)
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                ChatScreen(
-                    state = PinnedPreviewData.groupWithPins.copy(pinnedBar = bar),
-                    onEvent = { event ->
-                        // Only the bar's: the list reports what it shows too.
-                        if (event is PinnedEvent) events += event
-                        // As the view model does: the bar moves on to the next older pin, back to the newest.
-                        if (event == PinnedEvent.ShowCurrent) {
-                            bar = barAt((pins.size - bar.position) % pins.size)
-                        }
-                    },
-                    onBack = {},
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    ChatScreen(
+                        state = PinnedPreviewData.groupWithPins.copy(pinnedBar = bar),
+                        onEvent = { event ->
+                            // Only the bar's: the list reports what it shows too.
+                            if (event is PinnedEvent) events += event
+                            // As the view model does: the bar moves on to the next older pin, back to the newest.
+                            if (event == PinnedEvent.ShowCurrent) {
+                                bar = barAt((pins.size - bar.position) % pins.size)
+                            }
+                        },
+                        onBack = {},
+                    )
+                }
             }
         }
         composeRule.waitForIdle()

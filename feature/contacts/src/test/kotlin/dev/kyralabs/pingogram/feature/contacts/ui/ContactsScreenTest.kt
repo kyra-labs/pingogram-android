@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -24,6 +25,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncEvent
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.contacts.R
@@ -230,16 +232,19 @@ class ContactsScreenTest {
 
     private fun setScreen(state: ContactsUiState) {
         composeRule.setContent {
-            listState = rememberLazyListState()
-            PingogramTheme(dynamicColor = false) {
-                ContactsScreen(
-                    state = state,
-                    onEvent = { events += it },
-                    onAddContact = { added++ },
-                    onEditContact = { edited += it },
-                    onSyncEvent = { syncEvents += it },
-                    listState = listState,
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                listState = rememberLazyListState()
+                PingogramTheme(dynamicColor = false) {
+                    ContactsScreen(
+                        state = state,
+                        onEvent = { events += it },
+                        onAddContact = { added++ },
+                        onEditContact = { edited += it },
+                        onSyncEvent = { syncEvents += it },
+                        listState = listState,
+                    )
+                }
             }
         }
     }

@@ -20,7 +20,6 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreExperimentalUiRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
@@ -31,7 +30,6 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.ExperimentalUiRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
@@ -52,9 +50,6 @@ import javax.inject.Singleton
 interface DataStoreModule {
     @Binds
     fun appearanceRepository(repository: DataStoreAppearanceRepository): AppearanceRepository
-
-    @Binds
-    fun experimentalUiRepository(repository: DataStoreExperimentalUiRepository): ExperimentalUiRepository
 
     @Binds
     fun notificationPromptRepository(repository: DataStoreNotificationPromptRepository): NotificationPromptRepository

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
@@ -53,13 +55,16 @@ class SearchScreenTest {
         textFieldState: TextFieldState = TextFieldState(SearchPreviewData.queryOf(state)),
     ) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                SearchScreen(
-                    state = state,
-                    textFieldState = textFieldState,
-                    onEvent = { events += it },
-                    onBack = { backPressed = true },
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    SearchScreen(
+                        state = state,
+                        textFieldState = textFieldState,
+                        onEvent = { events += it },
+                        onBack = { backPressed = true },
+                    )
+                }
             }
         }
         composeRule.waitForIdle()

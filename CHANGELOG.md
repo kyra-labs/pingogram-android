@@ -63,6 +63,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The demo's channel has a sample rich post, with two sections to open and a photo.
 
 ### Changed
+- The bolder Material 3 Expressive look, until now "Experimental UI", is Pingogram's look for everyone. The switch and
+  its card in Settings are gone.
 - The Contacts tab and Settings fade into the background behind the floating navigation bar, as the chat list does.
 - In a chat, older messages fade into the composer as they scroll under it, as the chat list fades behind the
   navigation bar.

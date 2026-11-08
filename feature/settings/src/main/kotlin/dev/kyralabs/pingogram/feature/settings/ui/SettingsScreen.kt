@@ -64,10 +64,8 @@ internal fun SettingsRoute(
     profileSaved: Boolean = false,
     onProfileSavedShown: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
-    experimentalUiViewModel: ExperimentalUiViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val experimentalUi by experimentalUiViewModel.enabled.collectAsStateWithLifecycle()
     // Only the experimental look's home shows these values, so only it asks TDLib for them.
     val summaries =
         if (LocalExperimentalUi.current) {
@@ -87,11 +85,6 @@ internal fun SettingsRoute(
         currentOnProfileSavedShown()
         scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.settings_profile_saved)) }
     }
-    LaunchedEffect(experimentalUiViewModel) {
-        experimentalUiViewModel.errors.collect { error ->
-            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
-        }
-    }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -110,8 +103,6 @@ internal fun SettingsRoute(
         onOpenSubPage = onOpenSubPage,
         selection = selection,
         snackbarHostState = snackbarHostState,
-        experimentalUi = experimentalUi,
-        onExperimentalUiChange = experimentalUiViewModel::onCheckedChange,
         summaries = summaries,
     )
 }
@@ -127,9 +118,6 @@ internal fun SettingsRoute(
  * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
  * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
- * "Experimental UI" ([experimentalUi], once read; `docs/adr/0035-experimental-ui.md`) is a switch row with a "Beta"
- * label of its own group before "Log out" in the standard look, and the labs card under the account card in the
- * experimental one ([LocalExperimentalUi]).
  */
 @Suppress("LongParameterList") // The state, its events, the list-detail's selection and the experimental look's parts.
 @Composable
@@ -141,8 +129,6 @@ internal fun SettingsScreen(
     onOpenSubPage: (SettingsSubPage) -> Unit = {},
     selection: SettingsPageSelection? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    experimentalUi: Boolean? = null,
-    onExperimentalUiChange: (Boolean) -> Unit = {},
     summaries: SettingsHomeSummaries = SettingsHomeSummaries(),
 ) {
     val experimentalLook = LocalExperimentalUi.current
@@ -183,14 +169,12 @@ internal fun SettingsScreen(
                             onEvent,
                             onOpen,
                             selection,
-                            experimentalUi,
-                            onExperimentalUiChange,
                             summaries,
                         )
                     }
 
                     else -> {
-                        StandardHome(state, onEvent, onOpenPage, selection, experimentalUi, onExperimentalUiChange)
+                        StandardHome(state, onEvent, onOpenPage, selection)
                     }
                 }
             }

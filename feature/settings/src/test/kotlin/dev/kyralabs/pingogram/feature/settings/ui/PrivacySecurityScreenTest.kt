@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -37,13 +39,16 @@ class PrivacySecurityScreenTest {
 
     private fun setScreen(state: PrivacySecurityUiState = SettingsPreviewData.privacySecurity) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                PrivacySecurityScreen(
-                    state = state,
-                    onEvent = { events += it },
-                    onOpen = { pages += it },
-                    onBack = { backs++ },
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    PrivacySecurityScreen(
+                        state = state,
+                        onEvent = { events += it },
+                        onOpen = { pages += it },
+                        onBack = { backs++ },
+                    )
+                }
             }
         }
     }

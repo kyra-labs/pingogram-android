@@ -10,16 +10,13 @@ import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
 
 // What Settings home shows in each look (SettingsScreen, docs/DESIGN_SYSTEM.md §6 and §13.9).
 
-/** The standard look's home: the account card, the other accounts, the page groups, the switch row, "Log out". */
-@Suppress("LongParameterList") // The screen's state and callbacks, passed on.
+/** The standard look's home: the account card, the other accounts, the page groups, "Log out". */
 @Composable
 internal fun StandardHome(
     state: SettingsUiState,
     onEvent: (SettingsEvent) -> Unit,
     onOpenPage: (SettingsPage) -> Unit,
     selection: SettingsPageSelection?,
-    experimentalUi: Boolean?,
-    onExperimentalUiChange: (Boolean) -> Unit,
 ) {
     val isDemo = LocalIsDemo.current
     state.account?.let {
@@ -39,13 +36,12 @@ internal fun StandardHome(
         )
     }
     PageGroups(onOpenPage, selection)
-    if (experimentalUi != null) ExperimentalUiGroup(experimentalUi, onExperimentalUiChange)
     LogOutGroup(state, onEvent)
 }
 
 /**
  * The experimental look's home (`docs/DESIGN_SYSTEM.md` §13.9): the account card with its own account menu
- * ([ExperimentalAccountCard]), the labs card, the groups of [HomeGroups], "Log out".
+ * ([ExperimentalAccountCard]), the groups of [ExperimentalHomeGroups], "Log out".
  */
 @Suppress("LongParameterList") // The screen's state and callbacks, passed on.
 @Composable
@@ -54,8 +50,6 @@ internal fun ExperimentalHome(
     onEvent: (SettingsEvent) -> Unit,
     onOpen: (HomeDestination) -> Unit,
     selection: SettingsPageSelection?,
-    experimentalUi: Boolean?,
-    onExperimentalUiChange: (Boolean) -> Unit,
     summaries: SettingsHomeSummaries,
 ) {
     val isDemo = LocalIsDemo.current
@@ -78,7 +72,6 @@ internal fun ExperimentalHome(
             switcher = switcher,
         )
     }
-    if (experimentalUi != null) ExperimentalUiCard(checked = experimentalUi, onCheckedChange = onExperimentalUiChange)
     ExperimentalHomeGroups(summaries, onOpen, selection)
     LogOutGroup(state, onEvent)
 }

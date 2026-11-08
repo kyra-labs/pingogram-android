@@ -73,7 +73,6 @@ class ExperimentalSettingsHomeTest {
                         onEvent = { events += it },
                         onOpenPage = { opened += it },
                         onOpenSubPage = { openedSubPages += it },
-                        experimentalUi = true,
                         summaries = SettingsPreviewData.homeSummaries,
                     )
                 }

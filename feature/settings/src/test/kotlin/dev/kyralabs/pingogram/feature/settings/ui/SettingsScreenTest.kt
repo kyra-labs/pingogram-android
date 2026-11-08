@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -48,13 +50,16 @@ class SettingsScreenTest {
         selection: SettingsPageSelection? = null,
     ) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                SettingsScreen(
-                    state = state,
-                    onEvent = { events += it },
-                    onOpenPage = { pages += it },
-                    selection = selection,
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    SettingsScreen(
+                        state = state,
+                        onEvent = { events += it },
+                        onOpenPage = { pages += it },
+                        selection = selection,
+                    )
+                }
             }
         }
     }

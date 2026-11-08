@@ -35,12 +35,10 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
-import dev.kyralabs.pingogram.core.domain.repository.ExperimentalUiRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
@@ -153,10 +151,6 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
 
-    /** Whether the app shows its experimental look ([LocalExperimentalUi], Settings → "Experimental UI"). */
-    @Inject
-    lateinit var experimentalUi: ExperimentalUiRepository
-
     /**
      * The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). Lazy: they are
      * the shown account's, which the account registry names, so injecting them made the activity wait for the
@@ -223,15 +217,10 @@ class MainActivity : ComponentActivity() {
                 // changed after the first frame would compose the whole app again (a static composition local).
                 val phoneNumbersHiddenSetting by phoneNumberVisibility.hidden
                     .collectAsStateWithLifecycle(initialValue = null)
-                // The same for the experimental look (docs/adr/0035-experimental-ui.md): known before the first frame,
-                // so the app never draws one look and then the other.
-                val experimentalUiSetting by experimentalUi.enabled.collectAsStateWithLifecycle(initialValue = null)
                 val settings = appearance
-                // Both on-screen settings once read: whether numbers are hidden, and the experimental look.
-                val onScreen = phoneNumbersHiddenSetting?.let { hidden -> experimentalUiSetting?.let { hidden to it } }
+                val phoneNumbersHidden = phoneNumbersHiddenSetting
                 val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
-                if (settings != null && onScreen != null && lockAndLanguageKnown) {
-                    val (phoneNumbersHidden, experimental) = onScreen
+                if (settings != null && phoneNumbersHidden != null && lockAndLanguageKnown) {
                     SideEffect(awaitSettingsTrace::end)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
@@ -253,7 +242,6 @@ class MainActivity : ComponentActivity() {
                             // A chat's voice chat bar and its info page's voice chat row (feature:calls).
                             LocalVoiceChats provides calls,
                             LocalPhoneNumbersHidden provides phoneNumbersHidden,
-                            LocalExperimentalUi provides experimental,
                             LocalIsDemo provides isDemo,
                             // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
                             LocalLockedChatGate provides lockedChatGate,

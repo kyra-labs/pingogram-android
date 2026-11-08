@@ -5,8 +5,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -87,14 +87,15 @@ internal fun FastScrollIndex(
     val current by remember(listState) {
         derivedStateOf { currentSection(listState.firstVisibleItemIndex, currentHeaders) }
     }
-    // Only the experimental look reads the section at the top, so the standard one recomposes while touched only.
-    val highlighted = if (touched != NONE || !experimental) touched else current
+    // Read by the letters in the draw phase: touching or scrolling redraws them and recomposes nothing. Only the
+    // experimental look follows the section at the top.
+    val highlighted = { if (touched != NONE || !experimental) touched else current }
     val pillColor = colors.surfaceContainer
     val pillPadding = with(LocalDensity.current) { MaterialTheme.spacing.small.toPx() }
     Layout(
         content = {
             letters.forEachIndexed { index, letter ->
-                IndexLetter(letter, isHighlighted = index == highlighted, experimental = experimental)
+                IndexLetter(letter, index, highlighted, experimental)
             }
         },
         modifier =
@@ -124,28 +125,37 @@ internal fun FastScrollIndex(
 }
 
 /**
- * A letter of the index in `labelSmall`: `onSurfaceVariant`, or while highlighted `primary`, in the experimental look
- * `onPrimary` on a `primary` dot.
+ * A letter of the index in `labelSmall`: `onSurfaceVariant`, or while [highlighted] names its [index] `primary`, in the
+ * experimental look `onPrimary` on a `primary` dot. Both read [highlighted] in the draw phase.
  */
 @Composable
 private fun IndexLetter(
     letter: String,
-    isHighlighted: Boolean,
+    index: Int,
+    highlighted: () -> Int,
     experimental: Boolean,
 ) {
     val colors = MaterialTheme.colorScheme
-    Text(
+    val dotColor = colors.primary
+    BasicText(
         text = letter,
-        modifier = if (experimental && isHighlighted) Modifier.dot(colors.primary) else Modifier,
-        color =
+        modifier =
+            if (experimental) {
+                Modifier.drawBehind {
+                    if (highlighted() == index) drawCircle(dotColor, radius = maxOf(size.width, size.height) / 2)
+                }
+            } else {
+                Modifier
+            },
+        style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center),
+        maxLines = 1,
+        color = {
             when {
-                !isHighlighted -> colors.onSurfaceVariant
+                highlighted() != index -> colors.onSurfaceVariant
                 experimental -> colors.onPrimary
                 else -> colors.primary
-            },
-        textAlign = TextAlign.Center,
-        maxLines = 1,
-        style = MaterialTheme.typography.labelSmall,
+            }
+        },
     )
 }
 
@@ -227,16 +237,6 @@ private fun Modifier.pill(
             topLeft = Offset((size.width - width) / 2, bounds.top - padding),
             size = Size(width, height),
             cornerRadius = CornerRadius(width / 2),
-        )
-    }
-
-/** A circle in [color] behind a letter, as wide as the letter is tall. */
-private fun Modifier.dot(color: Color): Modifier =
-    drawBehind {
-        drawCircle(
-            color,
-            radius =
-                maxOf(size.width, size.height) / 2,
         )
     }
 
