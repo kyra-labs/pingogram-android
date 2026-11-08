@@ -41,7 +41,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 
-// The cards the experimental look puts at the top of Privacy and security and Data and storage
+// The cards at the top of Privacy and security and Data and storage
 // (docs/DESIGN_SYSTEM.md §13.10).
 
 /**

@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
@@ -119,19 +118,15 @@ internal fun composerActionShapes(): IconButtonShapes =
     )
 
 /**
- * The send button's shapes: [composerActionShapes], or in the experimental look a rounded square
- * (`IconButtonDefaults.mediumSquareShape`) beside the round microphone (`docs/DESIGN_SYSTEM.md` §13.5).
+ * The send button's shapes: a rounded square (`IconButtonDefaults.mediumSquareShape`) beside the round microphone
+ * (`docs/DESIGN_SYSTEM.md` §13.5).
  */
 @Composable
 private fun sendShapes(): IconButtonShapes =
-    if (LocalExperimentalUi.current) {
-        IconButtonDefaults.shapes(
-            shape = IconButtonDefaults.mediumSquareShape,
-            pressedShape = IconButtonDefaults.mediumPressedShape,
-        )
-    } else {
-        composerActionShapes()
-    }
+    IconButtonDefaults.shapes(
+        shape = IconButtonDefaults.mediumSquareShape,
+        pressedShape = IconButtonDefaults.mediumPressedShape,
+    )
 
 /**
  * Calls [onLongPress] when a press lasts the platform's long-press time while [enabled]; that press's later changes
@@ -175,24 +170,6 @@ internal fun AttachButton(onAttach: () -> Unit) {
         Icon(
             painter = painterResource(UiR.drawable.ic_add),
             contentDescription = stringResource(R.string.attach),
-        )
-    }
-}
-
-/**
- * The gallery button at the end of the composer's pill while the field is empty, the commonest attachment a tap away:
- * it opens the
- * system photo picker ([onGallery]) without the attach menu.
- */
-@Composable
-internal fun GalleryButton(onGallery: () -> Unit) {
-    IconButton(
-        onClick = onGallery,
-        shapes = IconButtonDefaults.shapes(),
-    ) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_image),
-            contentDescription = stringResource(R.string.composer_gallery),
         )
     }
 }

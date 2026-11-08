@@ -13,12 +13,14 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -26,10 +28,11 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.theme.themeColorScheme
 import dev.kyralabs.pingogram.feature.settings.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -65,26 +68,30 @@ class AppearanceScreenTest {
             }
         }
 
+    /** A stand-in for the wallpaper's colors, which Robolectric has none of. */
+    private val wallpaper =
+        WallpaperSchemes(
+            light = themeColorScheme(ThemePalette.Blue, dark = false, Contrast.Standard),
+            dark = themeColorScheme(ThemePalette.Blue, dark = true, Contrast.Standard),
+        )
+
     private fun setScreen(
         settings: AppearanceSettings = AppearanceSettings(),
-        dynamicColorAvailable: Boolean = true,
+        wallpaperSchemes: WallpaperSchemes? = wallpaper,
         systemContrast: Contrast? = null,
     ) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    CompositionLocalProvider(LocalHapticFeedback provides haptics) {
-                        AppearanceScreen(
-                            state = AppearanceUiState.Content(settings),
-                            onEvent = { events += it },
-                            onBack = {},
-                            onOpenColorTheme = { themeOpened++ },
-                            onOpenChatAppearance = { chatAppearanceOpened++ },
-                            dynamicColorAvailable = dynamicColorAvailable,
-                            systemContrast = systemContrast,
-                        )
-                    }
+            PingogramTheme(dynamicColor = false) {
+                CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                    AppearanceScreen(
+                        state = AppearanceUiState.Content(settings),
+                        onEvent = { events += it },
+                        onBack = {},
+                        onOpenColorTheme = { themeOpened++ },
+                        onOpenChatAppearance = { chatAppearanceOpened++ },
+                        wallpaperSchemes = wallpaperSchemes,
+                        systemContrast = systemContrast,
+                    )
                 }
             }
         }
@@ -102,6 +109,11 @@ class AppearanceScreenTest {
         @StringRes id: Int,
     ) = composeRule.onNodeWithText(string(id), useUnmergedTree = false)
 
+    /** A color theme's chip, named [name] for screen readers. */
+    private fun chip(
+        @StringRes name: Int,
+    ) = composeRule.onNodeWithContentDescription(string(name))
+
     /** The row of a switch: the node with the switch's role and [title]. */
     private fun switchRow(
         @StringRes title: Int,
@@ -110,48 +122,32 @@ class AppearanceScreenTest {
     )
 
     @Test
-    fun `shows the saved theme checked`() {
+    fun `shows the saved theme mode selected`() {
         setScreen(AppearanceSettings(themeMode = ThemeMode.Dark))
 
-        node(R.string.settings_theme_dark).assertIsOn()
-        node(R.string.settings_theme_system).assertIsOff()
+        node(R.string.settings_theme_dark).assertIsSelected()
+        node(R.string.settings_theme_system).assertIsNotSelected()
     }
 
     @Test
-    fun `the choices are a connected button group side by side where their labels fit`() {
+    fun `the theme modes are cards side by side, which screen readers hear as radio buttons`() {
         setScreen()
 
         val system = node(R.string.settings_theme_system).getUnclippedBoundsInRoot()
         val light = node(R.string.settings_theme_light).getUnclippedBoundsInRoot()
         assertEquals(system.top, light.top)
-    }
-
-    @Test
-    fun `screen readers hear the connected buttons as radio buttons`() {
-        setScreen()
-
         node(R.string.settings_theme_light)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
     }
 
     @Test
-    fun `choosing another theme saves it with a segment tick`() {
+    fun `choosing another theme mode saves it with a segment tick`() {
         setScreen()
 
         node(R.string.settings_theme_light).performClick()
 
         assertEquals(listOf(AppearanceEvent.SetThemeMode(ThemeMode.Light)), events)
         assertEquals(listOf(HapticFeedbackType.SegmentTick), performedHaptics)
-    }
-
-    @Test
-    fun `choosing the selected theme again changes nothing`() {
-        setScreen()
-
-        node(R.string.settings_theme_system).performClick()
-
-        assertTrue(events.isEmpty())
-        assertTrue(performedHaptics.isEmpty())
     }
 
     @Test
@@ -165,42 +161,64 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `the Theme row names the theme and opens the Theme page`() {
+    fun `a color theme's chip picks it, and All themes opens the Theme page`() {
         setScreen(AppearanceSettings(dynamicColor = false, palette = ThemePalette.Teal))
 
-        node(R.string.settings_color_theme_teal).assertExists()
-        node(R.string.settings_color_theme).performClick()
+        chip(R.string.settings_color_theme_teal).assertIsSelected()
+        chip(R.string.settings_color_theme_purple).performScrollTo().performClick()
+        node(R.string.settings_color_theme_all).performClick()
 
+        assertEquals(
+            listOf(AppearanceEvent.SetColorTheme(ColorThemeOption.Palette(ThemePalette.Purple))),
+            events,
+        )
         assertEquals(1, themeOpened)
-        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `with dynamic color the wallpaper's colors are the chosen chip`() {
+        setScreen(AppearanceSettings(dynamicColor = true, palette = ThemePalette.Teal))
+
+        chip(R.string.settings_color_theme_wallpaper).assertIsSelected()
+        chip(R.string.settings_color_theme_teal).assertIsNotSelected()
+    }
+
+    @Test
+    fun `below Android 12 the generated theme is chosen and no wallpaper chip shows`() {
+        setScreen(AppearanceSettings(dynamicColor = true), wallpaperSchemes = null)
+
+        chip(R.string.settings_color_theme_pingogram).assertIsSelected()
+        chip(R.string.settings_color_theme_wallpaper).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Reset at the top bar's end resets the look`() {
+        setScreen()
+
+        node(R.string.settings_appearance_reset).performClick()
+
+        assertEquals(listOf(AppearanceEvent.Reset), events)
+    }
+
+    @Test
+    fun `group bubbles are chosen on the page`() {
+        setScreen()
+
+        node(R.string.settings_group_bubbles_tinted).performScrollTo().performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetGroupBubbles(GroupBubbles.Tinted)), events)
     }
 
     @Test
     fun `the Chat appearance row sums up the chat settings and opens their page`() {
         setScreen(AppearanceSettings(chat = ChatAppearance(textScale = 1.2f, wallpaper = ChatWallpaper.Primary)))
 
-        composeRule.onNodeWithText("120% text", substring = true).assertExists()
+        composeRule.onNodeWithText("120% text", substring = true).performScrollTo().assertExists()
         composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_primary), substring = true).assertExists()
         node(R.string.settings_chat_appearance).performScrollTo().performClick()
 
         assertEquals(1, chatAppearanceOpened)
         assertTrue(events.isEmpty())
-    }
-
-    @Test
-    fun `with dynamic color the Theme row names the wallpaper's colors`() {
-        setScreen(AppearanceSettings(dynamicColor = true, palette = ThemePalette.Teal))
-
-        node(R.string.settings_color_theme_wallpaper).assertExists()
-        node(R.string.settings_color_theme_teal).assertDoesNotExist()
-    }
-
-    @Test
-    fun `below Android 12 the Theme row names the generated theme, as there are no wallpaper colors`() {
-        setScreen(AppearanceSettings(dynamicColor = true), dynamicColorAvailable = false)
-
-        node(R.string.settings_color_theme_pingogram).assertExists()
-        node(R.string.settings_color_theme_wallpaper).assertDoesNotExist()
     }
 
     @Test
@@ -239,18 +257,17 @@ class AppearanceScreenTest {
 
     @Test
     @Config(fontScale = FONT_SCALE_200)
-    fun `at a font scale where the buttons are too narrow the choices are radio buttons that work alike`() {
+    fun `at a font scale where the contrast's buttons are too narrow they are radio buttons that work alike`() {
         setScreen()
 
         // One below the other rather than side by side.
-        val system = node(R.string.settings_theme_system).getUnclippedBoundsInRoot()
-        val light = node(R.string.settings_theme_light).getUnclippedBoundsInRoot()
-        assertTrue(light.top >= system.bottom)
-        node(R.string.settings_theme_system).assertIsSelected()
+        val standard = node(R.string.settings_contrast_standard).performScrollTo().getUnclippedBoundsInRoot()
+        val medium = node(R.string.settings_contrast_medium).getUnclippedBoundsInRoot()
+        assertTrue(medium.top >= standard.bottom)
         node(R.string.settings_contrast_standard).assertIsSelected()
-        node(R.string.settings_theme_dark).performClick()
+        node(R.string.settings_contrast_high).performScrollTo().performClick()
 
-        assertEquals(listOf(AppearanceEvent.SetThemeMode(ThemeMode.Dark)), events)
+        assertEquals(listOf(AppearanceEvent.SetContrast(Contrast.High)), events)
     }
 
     @Test

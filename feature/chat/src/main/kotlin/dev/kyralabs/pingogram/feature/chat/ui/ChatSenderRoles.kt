@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.onStart
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
- * The role labels of a group's people (`docs/DESIGN_SYSTEM.md` §13.6, the experimental look's labels after a sender's
+ * The role labels of a group's people (`docs/DESIGN_SYSTEM.md` §13.6, the labels after a sender's
  * name), for [ChatViewModel]: the owner and the administrators of [chat] while it is a group, asked for once per
  * conversation ([GroupInfoRepository.members], [MemberFilter.Administrators]); "Owner", "Admin" or the member's own
  * tag, by user or chat id. Nothing is asked per message, and none for other chats; a failure shows no labels.

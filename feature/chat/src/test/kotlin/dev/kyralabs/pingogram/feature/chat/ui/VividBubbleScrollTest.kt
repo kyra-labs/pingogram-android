@@ -2,11 +2,9 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -22,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * A group in the experimental look (`docs/DESIGN_SYSTEM.md` §13.6) scrolls through its vivid bubbles, the first of each
+ * A group (`docs/DESIGN_SYSTEM.md` §13.6) scrolls through its vivid bubbles, the first of each
  * sender's run with its name above it, and some texts drawn with blocks (inline code, as mention chips are): the row
  * reads where each such bubble ends, which must not make Compose place the bubble's text while the row is measured
  * (it threw "LayoutNode not found in RectList" there, in the conversation's prefetching list state).
@@ -55,9 +53,7 @@ class VividBubbleScrollTest {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 listState = rememberScrollingListState()
-                CompositionLocalProvider(LocalExperimentalUi provides true) {
-                    ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
-                }
+                ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
             }
         }
         composeRule.waitForIdle()

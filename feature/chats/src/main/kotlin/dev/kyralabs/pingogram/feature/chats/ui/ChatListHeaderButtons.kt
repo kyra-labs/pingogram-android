@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.LocalNavAnimatedVisibilityScope
@@ -85,23 +84,17 @@ internal fun HeaderAccountButton(
             tooltip = { PlainTooltip { Text(label) } },
             state = rememberTooltipState(),
         ) {
-            // The experimental look's avatar (docs/DESIGN_SYSTEM.md §13): a 48 dp square with `large` corners on
-            // `primary`, the placeholder colors of a selected row.
-            val experimental = LocalExperimentalUi.current
-            val sizes = MaterialTheme.sizes
-            val avatarSize = if (experimental) sizes.headerAction else sizes.avatarExtraSmall
+            // The avatar (docs/DESIGN_SYSTEM.md §13.3): a 48 dp square with `large` corners on `primary`, the
+            // placeholder colors of a selected row.
+            val avatarSize = MaterialTheme.sizes.headerAction
             IconButton(
                 onClick = { actions?.openAccount?.invoke() },
-                modifier =
-                    menuModifier
-                        .then(if (experimental) Modifier.size(avatarSize) else Modifier)
-                        .semantics { contentDescription = label },
+                modifier = menuModifier.size(avatarSize).semantics { contentDescription = label },
                 shapes =
-                    if (experimental) {
-                        IconButtonShapes(shape = MaterialTheme.shapes.large, pressedShape = MaterialTheme.shapes.medium)
-                    } else {
-                        IconButtonDefaults.shapes()
-                    },
+                    IconButtonShapes(
+                        shape = MaterialTheme.shapes.large,
+                        pressedShape = MaterialTheme.shapes.medium,
+                    ),
             ) {
                 val shown = account
                 if (shown != null) {
@@ -110,8 +103,8 @@ internal fun HeaderAccountButton(
                         name = shown.name.resolve(),
                         id = shown.id,
                         size = avatarSize,
-                        shape = if (experimental) AvatarShape.RoundedSquare else AvatarShape.Circle,
-                        onSelection = experimental,
+                        shape = AvatarShape.RoundedSquare,
+                        onSelection = true,
                     )
                 } else {
                     Icon(

@@ -8,7 +8,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
-// The people of a group's cluster in the experimental top bar (`docs/DESIGN_SYSTEM.md` §13.5): who wrote last among
+// The people of a group's cluster in the top bar (`docs/DESIGN_SYSTEM.md` §13.5): who wrote last among
 // the messages loaded, asking TDLib for nothing.
 
 /**
@@ -27,7 +27,7 @@ internal fun HeaderSources.members(): ImmutableList<HeaderMember> =
             .toImmutableList()
     }
 
-/** The most people the experimental top bar's cluster shows (`docs/DESIGN_SYSTEM.md` §13.5). */
+/** The most people the top bar's cluster shows (`docs/DESIGN_SYSTEM.md` §13.5). */
 private const val HEADER_MEMBERS = 5
 
 /** The users who sent [messages] (newest first, as `ChatHistory` holds them), each once, at most [limit]. */
@@ -46,7 +46,7 @@ internal fun recentSenders(
 private const val RECENT_SENDERS_SCANNED = 8
 
 /**
- * The first user doing something in a group (`SenderAction`), as the experimental look's typing bubble shows them,
+ * The first user doing something in a group (`SenderAction`), as the typing bubble shows them,
  * with what [header]'s subtitle says; null while nobody is, or TDLib has not announced who.
  */
 internal fun typingBubble(

@@ -13,7 +13,7 @@ import java.text.Normalizer
 import java.util.Locale
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The one registry of Settings home's entries in the experimental look (docs/DESIGN_SYSTEM.md §13.9): its groups and
+// The one registry of Settings home's entries (docs/DESIGN_SYSTEM.md §13.9): its groups and
 // what settings search finds.
 
 /** Where an entry of Settings home leads: a settings page, or Recent calls, a page of another feature. */
@@ -52,7 +52,7 @@ internal fun page(
 ) = HomeEntry(HomeDestination.Page(page), title, summary, icon)
 
 /**
- * Settings home's groups in the experimental look. Every page the standard Settings home opens is in one of them:
+ * Settings home's groups. Every page Settings home opens is in one of them:
  * "Make it yours", "Alerts and privacy", "More", and "App" for the rest. Owner decision to confirm (2026-11-07): the
  * grouping.
  */

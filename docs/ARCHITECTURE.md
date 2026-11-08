@@ -186,19 +186,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
 - **Pingogram's look** (FR-S2a, `docs/adr/0035-experimental-ui.md`): first an opt-in "Experimental UI", the only look
-  since the owner's decision of 2026-11-08, without a switch. Until the other look's code is gone, module by module,
-  `core:ui`'s `LocalExperimentalUi` is true everywhere (its default); composables that still branch on it take the
-  experimental side, and view models never read it (`docs/DESIGN_SYSTEM.md` §13). What only
-  the experimental look shows still comes through the view models, as data both looks could show: the conversation's
+  since the owner's decision of 2026-11-08, without a switch or a composition local: the other look's code is gone
+  (`docs/DESIGN_SYSTEM.md` §13). What it shows comes through the view models as data: the conversation's
   `ChatHeader.members` (the people who wrote last among the loaded messages) and `onlineCount` (`Chat.onlineMemberCount`,
   `updateChatOnlineMemberCount`, kept by `TdlibChatRepository`), `ChatUiState.unreadMentionCount`, and
-  the experimental look's "Wave" on a join message (`ChatItem.Service.canWave`, `ChatEvent.Wave`, which
+  "Wave" on a join message (`ChatItem.Service.canWave`, `ChatEvent.Wave`, which
   `ChatAttachments` sends as `AttachmentRepository.sendGreetingSticker`: `getGreetingStickers`, one at random, in reply),
   `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
   and a channel's mute toggle; global search's top people narrowed to the words typed (`SearchViewModel.topPeople`,
-  read once and shared with the suggestions, collected only by the experimental header); the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
+  read once and shared with the suggestions, collected by search's header); the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
   `online`, from the list it already maps); and Settings home's values (`SettingsHomeViewModel`: the active sessions, the
-  storage used and the language), a view model only the experimental home asks for. Its settings search opens the
+  storage used and the language), which Settings home asks for. Its settings search opens the
   pages above Settings home's pages too (`SettingsSubPage`, routed by `SettingsSubPages.kt`): `SettingsListDetail` pushes
   the parent and the page with one pane, and with two shows the parent in the detail pane and has its `NavHost` push the
   page once (the page waiting in saved state meanwhile).
@@ -504,7 +502,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the view model loads the first page of the tabs beside the selected one ahead, only those.
   The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
   Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`, and
-  whether the experimental look's rows show the kind of chat before its name (`showChatTypeIcons`, on by default),
+  whether the rows show the kind of chat before its name (`showChatTypeIcons`, on by default),
   which `ChatSwipes.chatTypeIcons` hands to the rows.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection

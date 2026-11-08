@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -126,8 +125,7 @@ internal fun SettingsSegment(
  * list item's pressed shape on the motion scheme's fast spatial spring (the list item's own); without, it only shows.
  * Either way screen readers read it as one item. With [selected] as well (a page row of Settings home beside the open
  * page, `docs/DESIGN_SYSTEM.md` §7) it is selectable, in the list item's selected colors and shape while [selected]
- * is true. With [opensPage] (a row that opens another page) it ends in a chevron in the experimental look, where it has
- * no [trailingContent].
+ * is true. With [opensPage] (a row that opens another page) it ends in a chevron where it has no [trailingContent].
  */
 @Suppress("LongParameterList") // A list item's slots and states, and the icon's tone.
 @Composable
@@ -145,9 +143,8 @@ internal fun SettingsRow(
     selected: Boolean? = null,
     opensPage: Boolean = false,
 ) {
-    // A row that opens another page ends in a chevron in the experimental look (docs/DESIGN_SYSTEM.md §13.10).
-    val trailingContent =
-        trailingContent ?: if (opensPage && LocalExperimentalUi.current) ({ PageChevron() }) else null
+    // A row that opens another page ends in a chevron (docs/DESIGN_SYSTEM.md §13.10).
+    val trailingContent = trailingContent ?: if (opensPage) ({ PageChevron() }) else null
     val leadingContent: (@Composable () -> Unit)? =
         icon?.let {
             { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled, selected = selected == true) }
@@ -196,7 +193,7 @@ internal fun SettingsRow(
 
 /**
  * A row that opens another settings page: its [icon], [title] and [summary]; selectable with [selected] (see
- * [SettingsRow]). In the experimental look it ends in a chevron ([PageChevron]).
+ * [SettingsRow]). It ends in a chevron ([PageChevron]).
  */
 @Composable
 internal fun PageItem(
@@ -274,15 +271,16 @@ internal fun SettingsItemIcon(
     selected: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
-    val experimental = LocalExperimentalUi.current && tone != SettingsIconTone.Error && !selected
+    // A vivid badge shape (docs/DESIGN_SYSTEM.md §13.10), but for a destructive row's and a selected row's circle.
+    val vivid = tone != SettingsIconTone.Error && !selected
     val place = LocalSettingsRowPlace.current
     val (container, content) =
         when {
             selected -> colors.primary to colors.onPrimary
-            experimental -> MaterialTheme.pingogramColors.vividAvatars.at(place.index + place.seed)
+            vivid -> MaterialTheme.pingogramColors.vividAvatars.at(place.index + place.seed)
             else -> tone.colors(colors)
         }
-    val shape = if (experimental) settingsBadgeShape(place.index) else CircleShape
+    val shape = if (vivid) settingsBadgeShape(place.index) else CircleShape
     Box(
         modifier =
             Modifier

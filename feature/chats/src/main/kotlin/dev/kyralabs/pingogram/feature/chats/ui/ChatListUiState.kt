@@ -225,8 +225,8 @@ sealed interface ChatPreview {
     /**
      * The last message: [text], after [sender] in groups ("You", or the sender's first name); none in private chats,
      * channels, and for anonymous senders and service messages.
-     * [contentIcon] is what kind of message it is, which the experimental look shows before it (`docs/DESIGN_SYSTEM.md`
-     * §13): a photo, video, GIF, voice message, song, file, place, poll or link; null for a plain text.
+     * [contentIcon] is what kind of message it is, shown before it (`docs/DESIGN_SYSTEM.md` §13.3): a photo, video,
+     * GIF, voice message, song, file, place, poll or link; null for a plain text.
      */
     data class Message(
         val sender: UiText?,

@@ -71,7 +71,7 @@ internal val MessageOrigin.id: Long?
         }
 
 /**
- * The experimental look's hue of a sender (`SenderHues.indexOf`, `docs/DESIGN_SYSTEM.md` §13.6): from a looked-up
+ * The hue of a sender (`SenderHues.indexOf`, `docs/DESIGN_SYSTEM.md` §13.6): from a looked-up
  * user's Telegram accent color ([ref]), else from the user or chat [id].
  */
 internal fun senderHueOf(

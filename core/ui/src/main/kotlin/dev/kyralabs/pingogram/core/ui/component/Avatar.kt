@@ -120,15 +120,10 @@ fun Avatar(
     // From 0 while the photo loads to 1 once it shows; starts over for another photo.
     val photoAlpha = if (fileId != null) remember(fileId) { Animatable(0f) } else null
     val colors = MaterialTheme.colorScheme
-    // The experimental look's vivid fills (docs/DESIGN_SYSTEM.md §13) in place of the four container pairs.
-    val vivid = LocalExperimentalUi.current
+    // The vivid fills (docs/DESIGN_SYSTEM.md §13.2); on a selected row the selected placeholder colors.
     val placeholderColors =
-        remember(colors, id, onSelection, vivid) {
-            when {
-                onSelection -> colors.avatarPlaceholderColorsOnSelection()
-                vivid -> VividAvatarPalette.of(id)
-                else -> colors.avatarPlaceholderColors(id)
-            }
+        remember(colors, id, onSelection) {
+            if (onSelection) colors.avatarPlaceholderColorsOnSelection() else VividAvatarPalette.of(id)
         }
     // The check's painter is built once the avatar is first selected: most never are, and a list would build one for
     // each row it brings into view. Kept from then on, for the morph back.

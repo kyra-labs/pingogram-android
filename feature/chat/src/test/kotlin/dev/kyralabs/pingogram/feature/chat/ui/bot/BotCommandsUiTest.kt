@@ -108,7 +108,7 @@ class BotCommandsUiTest {
 
         assertEquals(1, menus)
         composeRule.onNodeWithContentDescription(string(R.string.attach)).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(string(R.string.composer_gallery)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(string(R.string.attach_camera)).assertDoesNotExist()
     }
 
     @Test

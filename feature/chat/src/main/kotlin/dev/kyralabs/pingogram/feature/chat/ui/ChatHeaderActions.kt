@@ -8,7 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * What the experimental look's top bar and jump buttons ask for (`docs/DESIGN_SYSTEM.md` §13.5), for [ChatViewModel]:
+ * What the top bar and jump buttons ask for (`docs/DESIGN_SYSTEM.md` §13.5), for [ChatViewModel]:
  * "Jump to mention" shows the oldest unread message that mentions the user ([findMention],
  * `ChatSearchRepository.oldestUnreadMention`; one request per tap, a tap while one runs ignored), which [onShow] shows
  * in the list as a reply quote's jump does; the channel's mute toggle mutes or unmutes the chat

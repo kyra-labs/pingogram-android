@@ -34,7 +34,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * About's header in the experimental look (`docs/DESIGN_SYSTEM.md` §13.10): Pingogram's mark on a `Sunny` badge in
+ * About's header (`docs/DESIGN_SYSTEM.md` §13.10): Pingogram's mark on a `Sunny` badge in
  * `primary`, the name in `displaySmallWide` `primary` over the version on a tonal pill (one heading for screen
  * readers), then "What's new" and "Check for updates" ([onEvent]), which open GitHub's release pages in the
  * browser; on the rows' container with `extraLarge` corners.

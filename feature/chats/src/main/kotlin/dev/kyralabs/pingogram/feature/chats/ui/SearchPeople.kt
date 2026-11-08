@@ -26,7 +26,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -100,9 +99,8 @@ private fun Person(
 }
 
 /**
- * The experimental look's top people in the search header, above the chips (`docs/DESIGN_SYSTEM.md` §13.4): the
- * [people] the view model narrowed to the query, growing in and shrinking away on the motion scheme's springs as
- * matches come and go; nothing in the standard look, whose suggestions list them.
+ * The top people in the search header, above the chips (`docs/DESIGN_SYSTEM.md` §13.4): the [people] the view model
+ * narrowed to the query, growing in and shrinking away on the motion scheme's springs as matches come and go.
  */
 @Composable
 internal fun HeaderPeople(
@@ -110,7 +108,6 @@ internal fun HeaderPeople(
     onEvent: (SearchEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!LocalExperimentalUi.current) return
     val motionScheme = MaterialTheme.motionScheme
     // The last people shown stay while the row shrinks away: kept, not state, so keeping them recomposes nothing.
     val last = remember { LastPeople(people) }
@@ -133,7 +130,7 @@ private class LastPeople(
 
 /**
  * Whether this name has a word starting with each word of [query], ignoring case; true for a blank query. How the
- * experimental look's header narrows the top people as the user types (§13.4).
+ * header narrows the top people as the user types (§13.4).
  */
 internal fun String.matchesWords(
     query: String,

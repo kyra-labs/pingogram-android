@@ -26,7 +26,6 @@ import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -148,29 +147,16 @@ private fun DownloadButton(
     colors: BubbleColors,
     onClick: () -> Unit,
 ) {
-    if (LocalExperimentalUi.current) {
-        // The experimental look's download on a Cookie9Sided button in the bubble's text color (§13.7).
-        val shape = MaterialShapes.Cookie9Sided.toShape()
-        FilledIconButton(
-            onClick = onClick,
-            shapes = IconButtonShapes(shape = shape, pressedShape = shape),
-            colors =
-                IconButtonDefaults.filledIconButtonColors(
-                    containerColor = colors.content,
-                    contentColor = colors.container,
-                ),
-        ) {
-            Icon(
-                painterResource(UiR.drawable.ic_download),
-                contentDescription = stringResource(R.string.content_download),
-            )
-        }
-        return
-    }
-    IconButton(
+    // The download on a Cookie9Sided button in the bubble's text color (§13.7).
+    val shape = MaterialShapes.Cookie9Sided.toShape()
+    FilledIconButton(
         onClick = onClick,
-        shapes = IconButtonDefaults.shapes(),
-        colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+        shapes = IconButtonShapes(shape = shape, pressedShape = shape),
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = colors.content,
+                contentColor = colors.container,
+            ),
     ) {
         Icon(painterResource(UiR.drawable.ic_download), contentDescription = stringResource(R.string.content_download))
     }

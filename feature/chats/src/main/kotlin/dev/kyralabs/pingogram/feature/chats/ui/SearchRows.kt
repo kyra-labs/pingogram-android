@@ -41,7 +41,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
@@ -177,8 +176,7 @@ internal fun SearchMessageRow(
     val chatTitle = item.chatTitle.resolve()
     val sender = item.sender?.let { stringResource(R.string.chat_list_sender, it.resolve()) }
     val text = item.preview.resolve()
-    val experimental = LocalExperimentalUi.current
-    val preview = foundMessageText(sender, text, highlight, experimental)
+    val preview = foundMessageText(sender, text, highlight)
     val resources = LocalResources.current
     val itemColors = ListItemDefaults.segmentedColors()
     SegmentedListItem(
@@ -200,14 +198,12 @@ internal fun SearchMessageRow(
                 shape = item.avatarShape,
             )
         },
-        trailingContent = if (experimental) null else ({ MessageDate(item.date) }),
-        supportingContent = { MessagePreview(preview, experimental) },
+        supportingContent = { MessagePreview(preview) },
         colors = itemColors,
         content = {
-            val title = @Composable {
+            TitleWithDate(item.date) {
                 ChatTitle(chatTitle, isSecret = false, badge = item.badge, isMuted = false, isUnread = false)
             }
-            if (experimental) TitleWithDate(item.date, title) else title()
         },
     )
 }

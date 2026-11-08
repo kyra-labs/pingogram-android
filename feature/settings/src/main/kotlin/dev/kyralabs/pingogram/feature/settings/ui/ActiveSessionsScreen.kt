@@ -13,7 +13,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -237,8 +236,8 @@ private fun ActiveSessionsScreenErrorPreview() {
 }
 
 /**
- * This device's session and "Terminate all other sessions" while there are others: in the experimental look this device
- * is a card of its own above the group ([ThisDeviceCard], `docs/DESIGN_SYSTEM.md` §13.10).
+ * This device's session and "Terminate all other sessions" while there are others: this device is a card of its own
+ * above the group ([ThisDeviceCard], `docs/DESIGN_SYSTEM.md` §13.10).
  */
 @Composable
 private fun ThisDeviceGroup(
@@ -247,22 +246,15 @@ private fun ThisDeviceGroup(
     hasOthers: Boolean,
     onEvent: (ActiveSessionsEvent) -> Unit,
 ) {
-    val experimental = LocalExperimentalUi.current
-    if (experimental) sessions.current?.let { ThisDeviceCard(it) }
-    SettingsGroup(
-        title = stringResource(R.string.settings_section_this_device).takeUnless { experimental },
-    ) {
-        sessions.current?.takeUnless { experimental }?.let { current ->
-            item(key = current.id) { SessionRow(current, false, it) }
-        }
-        if (hasOthers) {
-            item(key = TERMINATE_ALL) { shapes ->
-                TerminateAllItem(
-                    isTerminating = state.isTerminatingAll,
-                    shapes = shapes,
-                    onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
-                )
-            }
+    sessions.current?.let { ThisDeviceCard(it) }
+    if (!hasOthers) return
+    SettingsGroup {
+        item(key = TERMINATE_ALL) { shapes ->
+            TerminateAllItem(
+                isTerminating = state.isTerminatingAll,
+                shapes = shapes,
+                onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
+            )
         }
     }
 }

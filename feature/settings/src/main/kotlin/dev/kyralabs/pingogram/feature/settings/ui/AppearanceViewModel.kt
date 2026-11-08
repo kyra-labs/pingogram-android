@@ -84,22 +84,22 @@ sealed interface AppearanceEvent {
         val show: Boolean,
     ) : AppearanceEvent
 
-    /** "Chat type icons" turned on or off (the experimental look). */
+    /** "Chat type icons" turned on or off. */
     data class SetShowChatTypeIcons(
         val show: Boolean,
     ) : AppearanceEvent
 
-    /** A color theme picked from the experimental look's row of chips. */
+    /** A color theme picked from the row of chips. */
     data class SetColorTheme(
         val option: ColorThemeOption,
     ) : AppearanceEvent
 
-    /** The message text size set on the experimental look's slider. */
+    /** The message text size set on the slider. */
     data class SetChatTextScale(
         val scale: Float,
     ) : AppearanceEvent
 
-    /** How group bubbles are colored (the experimental look, `docs/DESIGN_SYSTEM.md` §13.6). */
+    /** How group bubbles are colored (`docs/DESIGN_SYSTEM.md` §13.6). */
     data class SetGroupBubbles(
         val bubbles: GroupBubbles,
     ) : AppearanceEvent

@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 
-// The experimental look's cards at the top of some settings pages (docs/DESIGN_SYSTEM.md §13.10): a status card on
+// The cards at the top of some settings pages (docs/DESIGN_SYSTEM.md §13.10): a status card on
 // `primaryContainer` (what is going on now) and a banner on `errorContainer` (something to fix, with its button).
 
 /**

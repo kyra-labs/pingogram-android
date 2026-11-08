@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -20,7 +19,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -50,16 +48,13 @@ class SettingsScreenTest {
         selection: SettingsPageSelection? = null,
     ) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    SettingsScreen(
-                        state = state,
-                        onEvent = { events += it },
-                        onOpenPage = { pages += it },
-                        selection = selection,
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                SettingsScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onOpenPage = { pages += it },
+                    selection = selection,
+                )
             }
         }
     }
@@ -73,50 +68,31 @@ class SettingsScreenTest {
     ) = composeRule.onNodeWithText(string(id)).performScrollTo()
 
     @Test
-    fun `shows the account`() {
+    fun `shows the account, its phone number masked until asked`() {
         setScreen()
 
         composeRule.onNodeWithText("Ada Lovelace").assertExists()
-        composeRule.onNodeWithText("+44 7911 123456").assertExists()
         composeRule.onNodeWithText("@ada").assertExists()
+        composeRule.onNodeWithText("+44 7911 123456").assertDoesNotExist()
     }
 
-    /** Nodes whose click screen readers announce as "edit profile". */
-    private fun editsProfile() =
-        SemanticsMatcher("clicks to edit the profile") { node ->
-            node.config.getOrElseNullable(SemanticsActions.OnClick) { null }?.label ==
-                string(R.string.settings_edit_profile_button)
-        }
-
     @Test
-    fun `beside edit profile, the account's card reads as selected and the page rows as not`() {
-        setScreen(selection = SettingsPageSelection(SettingsPage.EditProfile))
+    fun `beside a page its row reads as selected, the others not`() {
+        setScreen(selection = SettingsPageSelection(SettingsPage.Appearance))
 
-        composeRule.onNode(hasText("Ada Lovelace", substring = true) and isSelectable()).assertIsSelected()
+        composeRule.onNode(hasText(string(R.string.settings_appearance)) and isSelectable()).assertIsSelected()
         composeRule
-            .onNode(hasText(string(R.string.settings_appearance)) and isSelectable())
+            .onNode(hasText(string(R.string.settings_notifications)) and isSelectable())
+            .performScrollTo()
             .assertIsNotSelected()
     }
 
     @Test
-    fun `tapping the account's card opens edit profile`() {
+    fun `the card's Edit profile button opens edit profile`() {
         setScreen()
 
-        composeRule.onNodeWithText("Ada Lovelace").assertHasClickAction().performClick()
+        composeRule.onNodeWithText(string(R.string.settings_edit_profile_button)).performClick()
 
-        assertEquals(listOf(SettingsPage.EditProfile), pages)
-    }
-
-    @Test
-    fun `screen readers hear the card as one item that edits the profile`() {
-        setScreen()
-
-        // The name, the phone number and the username in one node, whose click says what it does and does it.
-        composeRule
-            .onNode(hasText("Ada Lovelace") and hasText("+44 7911 123456") and hasText("@ada") and editsProfile())
-            .performSemanticsAction(SemanticsActions.OnClick)
-
-        composeRule.onAllNodes(editsProfile()).assertCountEquals(1)
         assertEquals(listOf(SettingsPage.EditProfile), pages)
     }
 
@@ -124,7 +100,7 @@ class SettingsScreenTest {
     fun `without an account there is no profile to edit`() {
         setScreen(SettingsUiState())
 
-        composeRule.onAllNodes(editsProfile()).assertCountEquals(0)
+        composeRule.onAllNodesWithText(string(R.string.settings_edit_profile_button)).assertCountEquals(0)
     }
 
     @Test

@@ -79,15 +79,15 @@ enum class SettingsPage {
     About,
     PrivacySecurity,
 
-    /** Active sessions, the experimental look's "Devices" (`docs/DESIGN_SYSTEM.md` §13.9). */
+    /** Active sessions, the "Devices" (`docs/DESIGN_SYSTEM.md` §13.9). */
     ActiveSessions,
 
-    /** The user's QR code, from the experimental look's account card. */
+    /** The user's QR code, from the account card. */
     MyQrCode,
 }
 
 /**
- * The pages above a page of Settings home ([parent]) that the experimental look's settings search opens directly
+ * The pages above a page of Settings home ([parent]) that the settings search opens directly
  * (`docs/DESIGN_SYSTEM.md` §13.9), with [parent] below them on the back stack, so back returns through it.
  */
 enum class SettingsSubPage(

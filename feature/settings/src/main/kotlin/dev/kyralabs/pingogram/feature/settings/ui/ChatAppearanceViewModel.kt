@@ -67,7 +67,7 @@ class ChatAppearanceViewModel
 
         fun setWallpaper(wallpaper: ChatWallpaper) = save { appearanceRepository.setChatWallpaper(wallpaper) }
 
-        /** Saves how the experimental look colors groups' bubbles. */
+        /** Saves how groups' bubbles are colored. */
 
         private fun save(write: suspend () -> Outcome<Unit>) {
             viewModelScope.launch {

@@ -31,7 +31,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -198,16 +197,9 @@ private fun SaveAction(
     if (isSaving) {
         val saving = stringResource(R.string.settings_edit_profile_saving)
         LoadingIndicator(endPadding.semantics { contentDescription = saving })
-    } else if (LocalExperimentalUi.current) {
-        // A filled button in the experimental look (docs/DESIGN_SYSTEM.md §13.10).
-        Button(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
-            Text(
-                text = stringResource(R.string.settings_edit_profile_save),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
-        }
     } else {
-        TextButton(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
+        // A filled button (docs/DESIGN_SYSTEM.md §13.10).
+        Button(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
             Text(
                 text = stringResource(R.string.settings_edit_profile_save),
                 style = MaterialTheme.typography.labelLargeEmphasized,

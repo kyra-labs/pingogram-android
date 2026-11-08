@@ -43,7 +43,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -57,11 +56,11 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The experimental look's group bubbles (`docs/DESIGN_SYSTEM.md` §13.6): names and reply stripes in the sender's hue,
+// Group bubbles (`docs/DESIGN_SYSTEM.md` §13.6): names and reply stripes in the sender's hue,
 // role labels, and the name above a vivid bubble.
 
 /**
- * The list's bubble theme while it has sender hues (the experimental look, §13.6), for the parts of a bubble that take
+ * The list's bubble theme while it has sender hues (§13.6), for the parts of a bubble that take
  * them; null otherwise. The same instance for every bubble of the list, so providing it around each bubble invalidates
  * nothing as rows are reused while scrolling.
  */
@@ -73,7 +72,7 @@ internal fun BubbleTheme?.isVivid(colors: BubbleColors): Boolean =
 
 /**
  * The color of a sender's name or reply quote: on a vivid bubble ([colors]) its text color, readable on the fill, else
- * the sender [hue]'s ink in the experimental look, else the standard look's role by the sender's [id].
+ * the sender [hue]'s ink, else a role by the sender's [id] where there are no hues.
  */
 @Composable
 internal fun hueNameColor(
@@ -91,7 +90,7 @@ internal fun hueNameColor(
     }
 }
 
-/** The stripe at the start of a reply quote in the experimental look (§13.6): [width] wide in [color]. */
+/** The stripe at the start of a reply quote (§13.6): [width] wide in [color]. */
 internal fun Modifier.quoteStripe(
     color: Color?,
     width: Dp,
@@ -132,7 +131,7 @@ internal fun RolePill(
 }
 
 /**
- * The name above a vivid bubble in the experimental look (§13.6): the sender's name in their hue's ink, then their
+ * The name above a vivid bubble (§13.6): the sender's name in their hue's ink, then their
  * role; opening their profile as the name inside a bubble does.
  */
 @Composable
@@ -159,14 +158,14 @@ internal fun SenderNameAbove(
     }
 }
 
-/** Whether [bubble]'s name goes above it: a vivid bubble's first of a group in the experimental look (§13.6). */
+/** Whether [bubble]'s name goes above it: a vivid bubble's first of a group (§13.6). */
 internal fun BubbleTheme.namesAbove(bubble: ChatItem.Bubble): Boolean =
     bubble.showsSenderName && vividHues && bubble.senderHue >= 0 && hues.isNotEmpty()
 
 /**
  * The conversation's [BubbleResources] for [state]: its shortcuts and downloads, a tapped mention opening what it names
- * ([ChatEvent.OpenMention]), and in the experimental look vivid or tinted group bubbles, as Chat appearance's "Group
- * bubbles" and the group's size say (§13.6).
+ * ([ChatEvent.OpenMention]), and vivid or tinted group bubbles, as Appearance's "Group bubbles" and the group's size
+ * say (§13.6).
  */
 @Composable
 internal fun rememberChatBubbleResources(
@@ -200,7 +199,7 @@ internal fun PostViews(
 }
 
 /**
- * A shouted word in the experimental look (`docs/DESIGN_SYSTEM.md` §13.6, [ChatItem.Bubble.isShout]): no bubble, the
+ * A shouted word (`docs/DESIGN_SYSTEM.md` §13.6, [ChatItem.Bubble.isShout]): no bubble, the
  * word in `displayLarge` at the condensed width, italic, in its sender's ink ([BubbleTheme.inkOf]; `onSurface` without
  * a hue), the time and state on the surface below it as an emoji-only message has them.
  */

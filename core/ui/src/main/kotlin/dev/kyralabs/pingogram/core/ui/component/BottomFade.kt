@@ -16,9 +16,9 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 /**
  * A list's end fading into its sheet behind the floating navigation bar (`docs/DESIGN_SYSTEM.md` §6.1; owner decisions
  * 2026-11-06 and 2026-11-07): a gradient from transparent to [color] (the sheet's, `surface` by default), which it
- * reaches at [SOLID_FROM] of its height, so the rows fade out above the bar rather than under it. It is as tall as the
- * bar's room at the bottom ([LocalNavigationBarInsets]) and the bar's height again; in the experimental look (§13) it
- * is `sizes.experimentalBottomFade` above the system navigation bar, as the owner's design draws it. Without the bar
+ * reaches at [SOLID_FROM] of its height, so the rows fade out above the bar rather than under it. It is
+ * `sizes.experimentalBottomFade` tall above the system navigation bar, as the owner's design draws it (§13.2), while
+ * the bar is there ([LocalNavigationBarInsets]). Without the bar
  * (rail windows) it takes no height. Its height is worked out in the layout phase and its brush built once per size in
  * the draw phase (`drawWithCache`), never a blur. It takes no touches: the rows under it stay reachable.
  */
@@ -29,28 +29,19 @@ fun BottomFade(
 ) {
     val barInsets = LocalNavigationBarInsets.current
     val barHeight = floatingNavigationBarHeight()
-    val experimental = LocalExperimentalUi.current
-    val experimentalHeight = MaterialTheme.sizes.experimentalBottomFade.takeIf { experimental }
+    val fadeHeight = MaterialTheme.sizes.experimentalBottomFade
     Box(
         modifier
             .fillMaxWidth()
             .layout { measurable, constraints ->
                 val barRoom = barInsets.getBottom(this)
+                // The bar's room is the system navigation bar, the bar and its margins.
                 val height =
-                    when {
-                        barRoom == 0 -> {
-                            0
-                        }
-
-                        // The bar's room is the system navigation bar, the bar and its margins.
-                        experimentalHeight != null -> {
-                            val bar = barHeight + FloatingToolbarDefaults.ScreenOffset * 2
-                            barRoom - bar.roundToPx() + experimentalHeight.roundToPx()
-                        }
-
-                        else -> {
-                            barRoom + barHeight.roundToPx()
-                        }
+                    if (barRoom == 0) {
+                        0
+                    } else {
+                        val bar = barHeight + FloatingToolbarDefaults.ScreenOffset * 2
+                        barRoom - bar.roundToPx() + fadeHeight.roundToPx()
                     }
                 val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth, height))
                 layout(placeable.width, placeable.height) { placeable.place(0, 0) }

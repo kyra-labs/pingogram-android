@@ -8,7 +8,6 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

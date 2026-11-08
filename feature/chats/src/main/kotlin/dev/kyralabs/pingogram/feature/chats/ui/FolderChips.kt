@@ -7,29 +7,24 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
 
-// The folder tabs' colors and the experimental look's chip shapes (FolderTabs, docs/DESIGN_SYSTEM.md §13).
+// The folder tabs' colors and chip shapes (FolderTabs, docs/DESIGN_SYSTEM.md §13.3).
 
 /**
  * The tabs' colors: unchecked on `surfaceContainerHighest` (the bar is `surfaceContainer`, the default unchecked
- * container, so the next step of the ladder keeps the tabs apart); in the experimental look (§13) the selected chip on
- * `primary` / `onPrimary` too.
+ * container, so the next step of the ladder keeps the tabs apart), the selected chip on `primary` / `onPrimary`.
  */
 @Composable
-internal fun folderButtonColors(experimental: Boolean): ToggleButtonColors {
+internal fun folderButtonColors(): ToggleButtonColors {
     val scheme = MaterialTheme.colorScheme
-    return if (experimental) {
-        ToggleButtonDefaults.colors(
-            containerColor = scheme.surfaceContainerHighest,
-            checkedContainerColor = scheme.primary,
-            checkedContentColor = scheme.onPrimary,
-        )
-    } else {
-        ToggleButtonDefaults.colors(containerColor = scheme.surfaceContainerHighest)
-    }
+    return ToggleButtonDefaults.colors(
+        containerColor = scheme.surfaceContainerHighest,
+        checkedContainerColor = scheme.primary,
+        checkedContentColor = scheme.onPrimary,
+    )
 }
 
 /**
- * The experimental look's folder chips (`docs/DESIGN_SYSTEM.md` §13): apart rather than connected, at rest with the
+ * The folder chips (`docs/DESIGN_SYSTEM.md` §13.3): apart rather than connected, at rest with the
  * shape scale's `small` corners, the selected one a full pill, morphing on press.
  */
 @Composable

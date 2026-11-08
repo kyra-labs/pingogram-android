@@ -4,7 +4,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.text.withMentionChips
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
@@ -25,24 +24,21 @@ internal enum class FrameKind(
 }
 
 /**
- * How [bubble] is framed: 1 to 3 emoji, a shouted word in the [experimental] look (docs/DESIGN_SYSTEM.md §13.6), bare
- * content, media, or padded content.
+ * How [bubble] is framed: 1 to 3 emoji, a shouted word (docs/DESIGN_SYSTEM.md §13.6), bare content, media, or padded
+ * content.
  */
-internal fun frameKindOf(
-    bubble: ChatItem.Bubble,
-    experimental: Boolean,
-): FrameKind =
+internal fun frameKindOf(bubble: ChatItem.Bubble): FrameKind =
     when {
         bubble.isEmojiOnly -> FrameKind.Emoji
-        bubble.isShout && experimental -> FrameKind.Shout
+        bubble.isShout -> FrameKind.Shout
         bubble.album == null && bubble.content.isBare -> FrameKind.Bare
         bubble.album != null || bubble.content.isEdgeToEdge -> FrameKind.Media
         else -> FrameKind.Padded
     }
 
 /**
- * [formatted] as [bubble] shows it: the user's mentions as chips and a channel post's headline in the experimental
- * look, and the words the search in the chat marks, each over the cached text and kept per input.
+ * [formatted] as [bubble] shows it: the user's mentions as chips and a channel post's headline, and the words the
+ * search in the chat marks, each over the cached text and kept per input.
  */
 @Composable
 internal fun shownText(
@@ -51,8 +47,8 @@ internal fun shownText(
 ): AnnotatedString {
     val match = bubble.searchMatch
     val matchContent = MaterialTheme.colorScheme.onTertiary
-    // The experimental look's chips on the user's mentions (docs/DESIGN_SYSTEM.md §13.6), over the cached text.
-    val mentions = bubble.myMentions.takeIf { LocalExperimentalUi.current && it.isNotEmpty() }
+    // The chips on the user's mentions (docs/DESIGN_SYSTEM.md §13.6), over the cached text.
+    val mentions = bubble.myMentions.takeIf { it.isNotEmpty() }
     val mentionContent = MaterialTheme.colorScheme.onPrimary
     val chipped =
         if (mentions == null) {
@@ -66,9 +62,9 @@ internal fun shownText(
         } else {
             remember(chipped, match, matchContent) { chipped.withMatches(match, matchContent) }
         }
-    // The experimental look's headline of a channel post (docs/DESIGN_SYSTEM.md §13.7), last: it takes out the line
+    // The headline of a channel post (docs/DESIGN_SYSTEM.md §13.7), last: it takes out the line
     // break after the headline, which would move the ranges the chips and the matches mark.
-    val headline = bubble.headlineLength.takeIf { LocalExperimentalUi.current && it > 0 }
+    val headline = bubble.headlineLength.takeIf { it > 0 }
     val headlineStyle = MaterialTheme.experimentalTypography.displaySmallCondensed
     return if (headline == null) {
         matched

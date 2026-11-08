@@ -28,7 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.notifications.PingogramChannel
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -128,11 +127,10 @@ private fun ScopeGroups(
         }
 
         is ScopeSettingsState.Content -> {
-            // The experimental look shows one kind of chat at a time, picked above it (docs/DESIGN_SYSTEM.md §13.10).
-            val experimental = LocalExperimentalUi.current
+            // One kind of chat at a time, picked above it (docs/DESIGN_SYSTEM.md §13.10).
             var shown by rememberSaveable { mutableStateOf(NotificationScope.PrivateChats) }
-            if (experimental) ScopePicker(shown) { shown = it }
-            for (scope in NotificationScope.entries.filter { !experimental || it == shown }) {
+            ScopePicker(shown) { shown = it }
+            for (scope in NotificationScope.entries.filter { it == shown }) {
                 val settings = scopes.settings[scope] ?: continue
                 ScopeGroup(
                     scope = scope,

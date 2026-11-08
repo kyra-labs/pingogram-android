@@ -63,7 +63,7 @@ internal fun ReplyQuoteBlock(
     val openLabel = stringResource(R.string.chat_reply_open)
     val clickable =
         onOpen?.let { Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = it) } ?: Modifier
-    // The experimental look's stripe in the replied sender's ink (docs/DESIGN_SYSTEM.md §13.6); none in the standard.
+    // The stripe in the replied sender's ink (docs/DESIGN_SYSTEM.md §13.6).
     val stripe = accent.takeIf { LocalHueTheme.current != null && reply.sender != null }
     BlockCard(colors.block, clickable.quoteStripe(stripe, MaterialTheme.sizes.pinnedIndicator)) {
         reply.sender?.let { sender ->
@@ -104,7 +104,7 @@ internal fun LinkPreviewBlock(
     preview: LinkPreviewCard,
     colors: BubbleColors,
 ) {
-    // On the experimental look's vivid bubbles the bubble's own accent and text, readable on the fill (§13.6).
+    // On the vivid bubbles the bubble's own accent and text, readable on the fill (§13.6).
     val vivid = LocalHueTheme.current.isVivid(colors)
     val primary = if (vivid) colors.accent else MaterialTheme.colorScheme.primary
     val titleColor = if (vivid) colors.content else MaterialTheme.colorScheme.onSurface

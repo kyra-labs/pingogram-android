@@ -283,7 +283,7 @@ internal class ChatAttachments(
         scope.launch { report(repository.sendSticker(chatId, sticker, options, replyTo), options, replyTo) }
     }
 
-    /** Sends a greeting sticker in reply to member join message [messageId] ("Wave", the experimental look). */
+    /** Sends a greeting sticker in reply to member join message [messageId] ("Wave"). */
     fun wave(messageId: Long) {
         val replyTo = ReplyTarget(messageId)
         val options = SendOptions()

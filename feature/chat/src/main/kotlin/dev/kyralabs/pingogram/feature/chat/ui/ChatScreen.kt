@@ -44,7 +44,6 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.VoiceChatBarSlot
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
@@ -71,6 +70,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.withoutCameraUnless
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
@@ -97,6 +97,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
@@ -250,6 +251,7 @@ internal fun ChatScreen(
                     commandSuggestions = commandSuggestions,
                     inlineResults = inlineResults,
                     botReply = botReply,
+                    hasCamera = attach.hasCamera,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
@@ -299,7 +301,7 @@ private fun ChatScaffold(
                 SearchTopBarSlot(
                     searching = search != null && selection == null,
                     query = searchQuery,
-                    height = if (LocalExperimentalUi.current) experimentalTitleHeight() else titleHeight(),
+                    height = titleHeight(),
                     onClose = { onEvent(ChatSearchEvent.Close) },
                 ) {
                     ChatTopBar(
@@ -376,8 +378,11 @@ private fun ChatScreenBottomBar(
     commandSuggestions: CommandSuggestions?,
     inlineResults: InlineBotUiState?,
     botReply: BotReplyUiState,
+    hasCamera: Boolean,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
+    // The composer's camera button only where the device has a camera, as the attach menu's.
+    val composer = remember(state.composer, hasCamera) { state.composer.withoutCameraUnless(hasCamera) }
     val bots = rememberBotInput(commandSuggestions, botReply, onEvent, onSent)
     val inline = rememberInlineInput(inlineResults, state.composer, onEvent, onSent)
     // Not while selecting: selection mode shows over search, and back leaves it first.
@@ -390,7 +395,7 @@ private fun ChatScreenBottomBar(
         SearchBottomBarSlot(search, onEvent, { searchBack.value }) {
             val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
             ChatBottomBar(
-                composer = state.composer,
+                composer = composer,
                 text = composerText,
                 onSend = { options ->
                     onEvent(ChatEvent.Send(options))
@@ -402,7 +407,6 @@ private fun ChatScreenBottomBar(
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
                 onReplaceMedia = { onEvent(ReplyEvent.ReplaceMedia) },
                 onAttach = { onAttach(null) },
-                onGallery = { onAttach(AttachOption.Gallery) },
                 onCamera = { onAttach(AttachOption.Camera) },
                 recording = recording,
                 onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
@@ -626,9 +630,9 @@ private fun ChatItemRow(
         }
 
         is ChatItem.Service -> {
-            // "Wave" in the experimental look, where the user can write and nothing is being selected (§13.6).
+            // "Wave", where the user can write and nothing is being selected (§13.6).
             val canWave =
-                item.canWave && selectedIds == null && bubbleResources.shortcuts.canReply && LocalExperimentalUi.current
+                item.canWave && selectedIds == null && bubbleResources.shortcuts.canReply
             ServiceMessageRow(
                 item,
                 modifier,

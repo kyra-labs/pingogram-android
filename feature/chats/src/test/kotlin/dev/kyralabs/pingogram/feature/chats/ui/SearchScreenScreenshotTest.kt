@@ -2,15 +2,12 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +19,7 @@ import org.robolectric.annotation.Config
  * Global search's states (`REQUIREMENTS.md` FR-L6): the suggestions, the hint, results in segmented groups with the
  * query's words highlighted, a section still searching (the progress indicator under the chips), sections that failed,
  * a query that found nothing, and the Media filter without a query; in light and dark on a compact phone, and on an
- * expanded window, where the field, the chips and the list keep a comfortable width; and the experimental look.
+ * expanded window, where the field, the chips and the list keep a comfortable width (`docs/DESIGN_SYSTEM.md` §13.4).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -87,74 +84,25 @@ class SearchScreenScreenshotTest {
     @Test
     fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ScreenshotVariant.Light)
 
-    // The experimental look (`docs/DESIGN_SYSTEM.md` §13.4): the suggestions and the results in light and dark, the
-    // results in the audit's other looks, and searching, the Media filter and an expanded window.
-
-    @Test
-    fun experimentalSuggestionsLight() =
-        capture("experimentalSuggestionsLight", SearchPreviewData.suggestions, ScreenshotVariant.Light, true)
-
-    @Test
-    fun experimentalSuggestionsDark() =
-        capture("experimentalSuggestionsDark", SearchPreviewData.suggestions, ScreenshotVariant.Dark, true)
-
-    @Test
-    fun experimentalResultsLight() =
-        capture("experimentalResultsLight", SearchPreviewData.results, ScreenshotVariant.Light, true)
-
-    @Test
-    fun experimentalResultsDark() =
-        capture("experimentalResultsDark", SearchPreviewData.results, ScreenshotVariant.Dark, true)
-
-    @Test
-    fun experimentalResultsAmoled() =
-        capture("experimentalResultsAmoled", SearchPreviewData.results, ScreenshotVariant.Amoled, true)
-
-    @Test
-    fun experimentalResultsHighContrast() =
-        capture("experimentalResultsHighContrast", SearchPreviewData.results, ScreenshotVariant.HighContrast, true)
-
-    @Test
-    fun experimentalResultsRtl() =
-        capture("experimentalResultsRtl", SearchPreviewData.results, ScreenshotVariant.Rtl, true)
-
     @Test
     @Config(fontScale = FONT_SCALE_200)
-    fun experimentalResultsFontScale200() =
-        capture("experimentalResultsFontScale200", SearchPreviewData.results, ScreenshotVariant.Light, true)
-
-    @Test
-    @Config(qualifiers = EXPANDED)
-    fun experimentalResultsExpanded() =
-        capture("experimentalResultsExpanded", SearchPreviewData.results, ScreenshotVariant.Light, true)
-
-    @Test
-    fun experimentalSearchingLight() =
-        capture("experimentalSearchingLight", SearchPreviewData.loading, ScreenshotVariant.Light, true)
-
-    @Test
-    fun experimentalMediaLight() =
-        capture("experimentalMediaLight", SearchPreviewData.media, ScreenshotVariant.Light, true)
+    fun resultsFontScale200() = capture("resultsFontScale200", SearchPreviewData.results, ScreenshotVariant.Light)
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         name: String,
         state: SearchUiState,
         variant: ScreenshotVariant,
-        experimental: Boolean = false,
     ) {
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                CompositionLocalProvider(LocalExperimentalUi provides experimental) {
-                    SearchScreen(
-                        state = state,
-                        textFieldState = remember { TextFieldState(SearchPreviewData.queryOf(state)) },
-                        onEvent = {},
-                        onBack = {},
-                        // The experimental header's top people (headerPeople).
-                        topPeople = if (experimental) headerPeople(state) else persistentListOf(),
-                    )
-                }
+                SearchScreen(
+                    state = state,
+                    textFieldState = remember { TextFieldState(SearchPreviewData.queryOf(state)) },
+                    onEvent = {},
+                    onBack = {},
+                    topPeople = headerPeople(state),
+                )
             }
         }
         // Past the progress indicator's delay, so a search still running shows it.
@@ -165,7 +113,7 @@ class SearchScreenScreenshotTest {
 }
 
 /**
- * The top people the experimental header shows over [state]: all of them with the suggestions; with results, the first
+ * The top people the header shows over [state]: all of them with the suggestions; with results, the first
  * chat found, a person who matches the query as a top person would.
  */
 private fun headerPeople(state: SearchUiState): ImmutableList<SearchChatItem> =

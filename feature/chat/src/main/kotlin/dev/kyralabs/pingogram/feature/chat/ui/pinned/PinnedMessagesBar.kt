@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -103,14 +102,13 @@ internal fun PinnedMessagesBar(
     val listLabel = stringResource(R.string.pinned_list)
     val closeLabel = stringResource(if (bar.canUnpin) R.string.pinned_unpin else R.string.pinned_hide)
     val position = animateFloatAsState(bar.position.toFloat(), MaterialTheme.motionScheme.defaultSpatialSpec())
-    // The experimental look's pill: full corners, at least as tall as the composer's (§13.5).
-    val experimental = LocalExperimentalUi.current
+    // A pill: full corners, at least as tall as the composer's (§13.5).
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = if (experimental) MaterialTheme.sizes.composerField else 0.dp)
-                .clip(if (experimental) CircleShape else MaterialTheme.shapes.large)
+                .heightIn(min = MaterialTheme.sizes.composerField)
+                .clip(CircleShape)
                 .background(colors.surfaceContainerHigh)
                 .clickable(onClickLabel = showLabel, role = Role.Button) { currentOnEvent(PinnedEvent.ShowCurrent) }
                 .semantics {
@@ -154,16 +152,6 @@ private fun PinnedButtons(
     closeLabel: String,
     onEvent: (ChatEvent) -> Unit,
 ) {
-    val experimental = LocalExperimentalUi.current
-    if (bar.count > 1 && !experimental) {
-        IconButton(
-            onClick = { onEvent(PinnedEvent.OpenList) },
-            modifier = Modifier.semantics { hideFromAccessibility() },
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            Icon(painterResource(UiR.drawable.ic_format_list_bulleted), contentDescription = listLabel)
-        }
-    }
     IconButton(
         onClick = { onEvent(PinnedEvent.Close) },
         modifier = Modifier.semantics { hideFromAccessibility() },
@@ -172,8 +160,8 @@ private fun PinnedButtons(
         val icon = if (bar.canUnpin) UiR.drawable.ic_keep_off else UiR.drawable.ic_close
         Icon(painterResource(icon), contentDescription = closeLabel)
     }
-    // The experimental look's list button closes the pill, a `primary` circle (§13.5).
-    if (bar.count > 1 && experimental) {
+    // The list button closes the pill, a `primary` circle (§13.5).
+    if (bar.count > 1) {
         FilledIconButton(
             onClick = { onEvent(PinnedEvent.OpenList) },
             modifier = Modifier.semantics { hideFromAccessibility() },
@@ -241,13 +229,11 @@ private data class Shown(
 /** "Pinned message", or "Pinned message 2 of 5" where there are several, counted from the oldest. */
 @Composable
 private fun pinnedLabel(bar: PinnedBar): String {
-    // The experimental look's shorter label, "Pinned · 6 of 6" (§13.5).
-    val experimental = LocalExperimentalUi.current
-    return when {
-        bar.count > 1 && experimental -> stringResource(R.string.pinned_short_of, bar.position + 1, bar.count)
-        bar.count > 1 -> stringResource(R.string.pinned_message_of, bar.position + 1, bar.count)
-        experimental -> stringResource(R.string.pinned_short)
-        else -> stringResource(R.string.pinned_message)
+    // "Pinned · 6 of 6" (§13.5).
+    return if (bar.count > 1) {
+        stringResource(R.string.pinned_short_of, bar.position + 1, bar.count)
+    } else {
+        stringResource(R.string.pinned_short)
     }
 }
 

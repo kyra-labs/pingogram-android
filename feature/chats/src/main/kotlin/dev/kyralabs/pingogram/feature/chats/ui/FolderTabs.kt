@@ -11,10 +11,8 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
@@ -41,7 +39,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -53,14 +50,13 @@ import kotlinx.collections.immutable.ImmutableList
 
 /**
  * The folder tabs above the chat list (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6): "All chats" and the
- * user's folders, each with the number of its unread unmuted chats. Up to [MAX_CONNECTED_TABS] tabs are a connected
- * [ButtonGroup] of [ToggleButton]s that scrolls sideways when it does not fit; more are a [PrimaryScrollableTabRow].
+ * user's folders, each with the number of its unread unmuted chats: [ToggleButton] chips apart in a [ButtonGroup]
+ * that scrolls sideways, whatever their number (`docs/DESIGN_SYSTEM.md` §13.3).
  *
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * In the experimental look (`docs/DESIGN_SYSTEM.md` §13) they are chips apart in their scroll, whatever their number:
- * the selected one a `primary` pill with its count in an inverted badge, the others `small`-cornered on
+ * The selected chip is a `primary` pill with its count in an inverted badge, the others `small`-cornered on
  * `surfaceContainerHighest` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
  * folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless Appearance → Chat list
  * turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
@@ -105,12 +101,7 @@ internal fun FolderTabs(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.weight(1f).folderTabMenuContainer(menu)) {
-            // The experimental look's chips hold any number of folders in their scroll (docs/DESIGN_SYSTEM.md §13).
-            if (tabs.size > MAX_CONNECTED_TABS && !LocalExperimentalUi.current) {
-                FolderTabRow(tabs, selectedFolderId, onSelect, margin, tabMenu)
-            } else {
-                FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
-            }
+            FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
             if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
         }
         if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {
@@ -130,9 +121,9 @@ internal fun FolderTabs(
 }
 
 /**
- * The tabs as a connected [ButtonGroup] with Material 3 Expressive's press physics: a pressed button grows and
- * squeezes its neighbours (`animateWidth`, on the motion scheme's fast spatial spring), and the connected shapes morph
- * on press and to a pill when checked ([connectedShapes]). The selected folder's label is `labelLargeEmphasized`, the
+ * The tabs as a [ButtonGroup] of chips with Material 3 Expressive's press physics: a pressed button grows and
+ * squeezes its neighbours (`animateWidth`, on the motion scheme's fast spatial spring), and the chips' shapes morph
+ * on press and to a pill when checked ([chipShapes]). The selected folder's label is `labelLargeEmphasized`, the
  * others `labelLarge`.
  *
  * In a horizontal scroll the group is measured with an unbounded width, so every button fits: its overflow menu,
@@ -153,8 +144,7 @@ private fun FolderButtonGroup(
     tabMenu: TabMenu,
 ) {
     val enabled = tabMenu.enabled
-    val experimental = LocalExperimentalUi.current
-    val colors = folderButtonColors(experimental)
+    val colors = folderButtonColors()
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
     val scroll =
@@ -170,10 +160,7 @@ private fun FolderButtonGroup(
                 .selectableGroup()
                 // A 48 dp row: the buttons' touch targets, 4 dp above and below their 40 dp containers.
                 .padding(horizontal = margin),
-        horizontalArrangement =
-            Arrangement.spacedBy(
-                if (experimental) MaterialTheme.spacing.small else ButtonGroupDefaults.ConnectedSpaceBetween,
-            ),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEachIndexed { index, tab ->
@@ -188,7 +175,7 @@ private fun FolderButtonGroup(
                         selected = selected,
                         onSelect = onSelect,
                         enabled = enabled,
-                        shapes = if (experimental) chipShapes() else connectedShapes(index, tabs.lastIndex),
+                        shapes = chipShapes(),
                         colors = colors,
                         interactionSource = interactionSource,
                         modifier =
@@ -293,63 +280,6 @@ private fun FolderToggleButton(
 }
 
 @Composable
-private fun connectedShapes(
-    index: Int,
-    lastIndex: Int,
-): ToggleButtonShapes =
-    when (index) {
-        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-        lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-    }
-
-/** For more tabs than a button group holds well: Material's scrollable tabs, with the same labels and badges. */
-@Composable
-private fun FolderTabRow(
-    tabs: ImmutableList<FolderTab>,
-    selectedFolderId: Int?,
-    onSelect: (Int?) -> Unit,
-    margin: Dp,
-    tabMenu: TabMenu,
-) {
-    val enabled = tabMenu.enabled
-    val selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }.coerceAtLeast(0)
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selectedIndex,
-        containerColor = Color.Transparent,
-        edgePadding = margin,
-    ) {
-        tabs.forEachIndexed { index, tab ->
-            val description = tabDescription(tab)
-            Tab(
-                selected = index == selectedIndex,
-                onClick = { onSelect(tab.folderId) },
-                modifier = Modifier.tabMenu(tabMenu, tab, index).semantics { contentDescription = description },
-                enabled = enabled,
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .clearAndSetSemantics {}
-                            .padding(vertical = MaterialTheme.spacing.medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(text = tab.label(), maxLines = 1, style = MaterialTheme.typography.titleSmall)
-                    if (tab.unreadCount > 0) {
-                        TabBadge(
-                            count = tab.unreadCount,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(start = MaterialTheme.spacing.small),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun TabBadge(
     count: Int,
     containerColor: Color,
@@ -382,9 +312,6 @@ private fun tabDescription(tab: FolderTab): String {
     val unread = LocalResources.current.getQuantityString(R.plurals.chat_list_a11y_unread_chats, count, count)
     return stringResource(R.string.chat_list_a11y_tab, label, unread)
 }
-
-/** More tabs than this are a tab row: a connected button group gets crowded with more (`docs/DESIGN_SYSTEM.md` §6). */
-private const val MAX_CONNECTED_TABS = 6
 
 @PingogramPreviews
 @Composable

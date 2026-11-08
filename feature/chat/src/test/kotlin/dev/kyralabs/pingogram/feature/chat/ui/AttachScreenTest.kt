@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -16,7 +15,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
@@ -58,16 +56,13 @@ class AttachScreenTest {
         poll: PollEditor = PollEditor(),
     ) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    ChatScreen(
-                        state = state,
-                        onEvent = { events += it },
-                        onBack = {},
-                        attach = AttachInputs({ picked += it }, hasCamera, caption, poll),
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                ChatScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onBack = {},
+                    attach = AttachInputs({ picked += it }, hasCamera, caption, poll),
+                )
             }
         }
         composeRule.waitForIdle()

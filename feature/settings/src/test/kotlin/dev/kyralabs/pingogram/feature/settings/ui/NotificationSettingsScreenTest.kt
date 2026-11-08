@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -16,7 +15,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -47,16 +45,13 @@ class NotificationSettingsScreenTest {
 
     private fun setScreen(state: NotificationSettingsUiState = SettingsPreviewData.notifications) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    NotificationSettingsScreen(
-                        state = state,
-                        onEvent = { events += it },
-                        onOpen = { opened += it },
-                        onBack = {},
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                NotificationSettingsScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onOpen = { opened += it },
+                    onBack = {},
+                )
             }
         }
     }
@@ -72,51 +67,69 @@ class NotificationSettingsScreenTest {
         hasText(string(title)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch),
     )
 
+    /** Shows the defaults of [scope] through the "Show settings for" picker. */
+    private fun show(
+        @StringRes scope: Int,
+    ) {
+        composeRule.onNodeWithText(string(scope)).performScrollTo().performClick()
+    }
+
     @Test
     fun `the switches show the defaults and send their change`() {
         setScreen()
 
         // Private chats on, groups muted.
         switchRows(R.string.settings_notifications_notify)[0].assertIsOn()
-        switchRows(R.string.settings_notifications_notify)[1].performScrollTo().assertIsOff().performClick()
         switchRows(R.string.settings_notifications_preview)[0].performScrollTo().performClick()
+        show(R.string.settings_notifications_scope_groups)
+        switchRows(R.string.settings_notifications_notify)[0].performScrollTo().assertIsOff().performClick()
 
         val groups =
             ScopeNotificationSettings(isMuted = true, showPreview = true, pinnedMessages = true, mentions = true)
         assertEquals(
             listOf(
-                NotificationSettingsEvent.ChangeScope(NotificationScope.GroupChats, groups.copy(isMuted = false)),
                 NotificationSettingsEvent.ChangeScope(
                     NotificationScope.PrivateChats,
                     groups.copy(isMuted = false, showPreview = false),
                 ),
+                NotificationSettingsEvent.ChangeScope(NotificationScope.GroupChats, groups.copy(isMuted = false)),
             ),
             events,
         )
     }
 
     @Test
+    fun `one kind of chat shows at a time, picked above them`() {
+        setScreen()
+
+        assertEquals(1, switchRows(R.string.settings_notifications_notify).fetchSemanticsNodes().size)
+        show(R.string.settings_notifications_scope_channels)
+        assertEquals(1, switchRows(R.string.settings_notifications_notify).fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun `mentions show for groups only, pinned messages for groups and channels`() {
         setScreen()
 
+        assertEquals(0, switchRows(R.string.settings_notifications_mentions).fetchSemanticsNodes().size)
+        assertEquals(0, switchRows(R.string.settings_notifications_pinned).fetchSemanticsNodes().size)
+        show(R.string.settings_notifications_scope_groups)
         assertEquals(1, switchRows(R.string.settings_notifications_mentions).fetchSemanticsNodes().size)
-        assertEquals(2, switchRows(R.string.settings_notifications_pinned).fetchSemanticsNodes().size)
+        assertEquals(1, switchRows(R.string.settings_notifications_pinned).fetchSemanticsNodes().size)
+        show(R.string.settings_notifications_scope_channels)
+        assertEquals(0, switchRows(R.string.settings_notifications_mentions).fetchSemanticsNodes().size)
+        assertEquals(1, switchRows(R.string.settings_notifications_pinned).fetchSemanticsNodes().size)
     }
 
     @Test
     fun `sound and exceptions open the scope's channel and its exceptions`() {
         setScreen()
 
+        show(R.string.settings_notifications_scope_channels)
+        composeRule.onNodeWithText(string(R.string.settings_notifications_sound)).performScrollTo().performClick()
+        show(R.string.settings_notifications_scope_groups)
         composeRule
-            .onAllNodesWithText(
-                string(R.string.settings_notifications_sound),
-            )[2]
-            .performScrollTo()
-            .performClick()
-        composeRule
-            .onAllNodesWithText(
-                string(R.string.settings_notifications_exceptions),
-            )[1]
+            .onNodeWithText(string(R.string.settings_notifications_exceptions))
             .performScrollTo()
             .performClick()
 
@@ -128,7 +141,7 @@ class NotificationSettingsScreenTest {
     fun `the banner of blocked notifications turns them on`() {
         setScreen(SettingsPreviewData.notificationsBlocked)
 
-        composeRule.onNodeWithText(string(R.string.settings_notifications_off)).performClick()
+        composeRule.onNodeWithText(string(R.string.settings_notifications_turn_on)).performClick()
 
         assertEquals(listOf(NotificationSettingsEvent.TurnOnNotifications), events)
     }

@@ -36,7 +36,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -49,10 +48,10 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The experimental look's typing bubble (`docs/DESIGN_SYSTEM.md` §13.6).
+// The typing bubble (`docs/DESIGN_SYSTEM.md` §13.6).
 
 /**
- * The experimental look's typing bubble (§13.6), over the bottom of the messages: the typer's avatar, a small bubble in
+ * The typing bubble (§13.6), over the bottom of the messages: the typer's avatar, a small bubble in
  * their hue with the typing dots, and what the top bar says beside it ("Fadi is typing"), which screen readers hear
  * there; this is decorative. It grows in and shrinks away on the default spatial spring.
  */
@@ -105,12 +104,12 @@ internal fun TypingBubbleRow(
 }
 
 /**
- * These paddings with room for the experimental look's typing bubble below the newest message while someone is
+ * These paddings with room for the typing bubble below the newest message while someone is
  * [typing] (§13.6): the avatar's height and the row's padding.
  */
 @Composable
 internal fun PaddingValues.withTypingRoom(typing: TypingBubble?): PaddingValues {
-    if (typing == null || !LocalExperimentalUi.current) return this
+    if (typing == null) return this
     val direction = LocalLayoutDirection.current
     val room = MaterialTheme.sizes.avatarExtraSmall + MaterialTheme.spacing.medium
     return PaddingValues(
@@ -121,13 +120,12 @@ internal fun PaddingValues.withTypingRoom(typing: TypingBubble?): PaddingValues 
     )
 }
 
-/** The experimental look's typing bubble over the messages, above the composer ([contentPadding]'s bottom). */
+/** The typing bubble over the messages, above the composer ([contentPadding]'s bottom). */
 @Composable
 internal fun TypingRowSlot(
     typing: TypingBubble?,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    if (!LocalExperimentalUi.current) return
     TypingBubbleRow(typing, modifier.padding(bottom = contentPadding.calculateBottomPadding()))
 }

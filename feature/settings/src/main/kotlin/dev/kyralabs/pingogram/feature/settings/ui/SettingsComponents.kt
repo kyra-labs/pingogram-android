@@ -46,7 +46,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -184,36 +183,26 @@ internal fun SettingsTopBar(
 }
 
 /**
- * [title] on the bar's [expanded] row (`headlineMediumEmphasized`, up to two lines) or its collapsed one
- * (`titleLargeEmphasized`, one line). In the experimental look (§13.10) the wide styles at the tabs' sizes:
- * `displaySmallWide` on one line, `titleLargeWide`. At a large font scale a long title gets smaller rather than cut
- * off.
+ * [title] on the bar's [expanded] row or its collapsed one,
+ * in the wide styles at the tabs' sizes (`docs/DESIGN_SYSTEM.md` §13.10): `displaySmallWide` on one line,
+ * `titleLargeWide` collapsed. At a large font scale a long title gets smaller rather than cut off.
  */
 @Composable
 internal fun SettingsTopBarTitle(
     title: String,
     expanded: Boolean,
 ) {
-    val typography = MaterialTheme.typography
-    val wide = MaterialTheme.experimentalTypography.takeIf { LocalExperimentalUi.current }
-    val style =
-        when {
-            wide != null -> if (expanded) wide.displaySmallWide else wide.titleLargeWide
-            expanded -> typography.headlineMediumEmphasized
-            else -> typography.titleLargeEmphasized
-        }
+    val wide = MaterialTheme.experimentalTypography
+    val style = if (expanded) wide.displaySmallWide else wide.titleLargeWide
     Text(
         text = title,
         modifier = Modifier.semantics { heading() },
-        maxLines = if (expanded && wide == null) EXPANDED_TITLE_MAX_LINES else 1,
+        maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         autoSize = TextAutoSize.StepBased(maxFontSize = style.fontSize),
         style = style,
     )
 }
-
-/** The lines a title may take on the bar's expanded row, as Material's flexible bars wrap it. */
-private const val EXPANDED_TITLE_MAX_LINES = 2
 
 /**
  * The body of a settings screen below its top bar, on the page's color: it starts below the bar, so what scrolls in

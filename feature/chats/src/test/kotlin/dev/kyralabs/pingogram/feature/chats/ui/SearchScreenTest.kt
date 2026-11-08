@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -16,15 +15,17 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -53,18 +54,17 @@ class SearchScreenTest {
     private fun setScreen(
         state: SearchUiState,
         textFieldState: TextFieldState = TextFieldState(SearchPreviewData.queryOf(state)),
+        topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
     ) {
         composeRule.setContent {
-            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
-            CompositionLocalProvider(LocalExperimentalUi provides false) {
-                PingogramTheme(dynamicColor = false) {
-                    SearchScreen(
-                        state = state,
-                        textFieldState = textFieldState,
-                        onEvent = { events += it },
-                        onBack = { backPressed = true },
-                    )
-                }
+            PingogramTheme(dynamicColor = false) {
+                SearchScreen(
+                    state = state,
+                    textFieldState = textFieldState,
+                    onEvent = { events += it },
+                    onBack = { backPressed = true },
+                    topPeople = topPeople,
+                )
             }
         }
         composeRule.waitForIdle()
@@ -172,9 +172,9 @@ class SearchScreenTest {
 
     @Test
     fun `a person in the top row opens the chat with them`() {
-        setScreen(SearchPreviewData.suggestions)
+        setScreen(SearchPreviewData.suggestions, topPeople = SearchPreviewData.topPeople)
 
-        composeRule.onNodeWithContentDescription("Grace Hopper, Online").performClick()
+        composeRule.onAllNodesWithContentDescription("Grace Hopper", substring = true).onFirst().performClick()
 
         assertEquals(listOf(SearchEvent.OpenChat(8)), events.filterNot { it is SearchEvent.QueryChanged })
     }

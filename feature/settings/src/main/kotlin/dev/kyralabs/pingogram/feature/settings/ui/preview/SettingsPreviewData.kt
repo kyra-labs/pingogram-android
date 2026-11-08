@@ -117,7 +117,7 @@ internal object SettingsPreviewData {
     /** Settings home on a device with three accounts, at the limit, so without "Add account". */
     val withOtherAccounts = content.copy(otherAccounts = otherAccounts)
 
-    /** What the experimental look's home shows beside its rows: three sessions, 1.2 GB, English. */
+    /** What the home shows beside its rows: three sessions, 1.2 GB, English. */
     val homeSummaries =
         SettingsHomeSummaries(sessionCount = 3, storageBytes = 1_288_490_189L, languageTag = "en")
 

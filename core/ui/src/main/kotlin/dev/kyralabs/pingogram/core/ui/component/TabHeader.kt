@@ -34,15 +34,13 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  * which [scrollBehavior] (`exitUntilCollapsedScrollBehavior`) collapses as the content scrolls, in the layout and draw
  * phases.
  *
- * - **Expanded**: the [title] in `displaySmallEmphasized`, and under it the [subtitle] where there is one (the Chats
- *   tab's status line), the bar as tall as both at the current font scale ([tabHeaderExpandedHeight]).
- * - **Collapsed**: the dense bar's height (`sizes.denseTopAppBar`, §7) with the [title] in `titleLargeEmphasized`; the
+ * - **Expanded**: the [title] in `displaySmallWide` (`MaterialTheme.experimentalTypography`, §13.2), and under it
+ *   the [subtitle] where there is one (the Chats tab's status line), the bar as tall as both at the current font
+ *   scale ([tabHeaderExpandedHeight]).
+ * - **Collapsed**: the dense bar's height (`sizes.denseTopAppBar`, §7) with the [title] in `titleLargeWide`; the
  *   [subtitle] gets `expanded = false` to say what it shows there, if anything.
- * - [navigationIcon] at the start (selection mode's close) and [actions] at the end.
- *
- * In the experimental look (`LocalExperimentalUi`, §13) the title takes the wide styles of
- * `MaterialTheme.experimentalTypography` at the same sizes, and the actions are 48 dp tonal circles
- * ([tabHeaderActionSize]), `spacing.small` apart.
+ * - [navigationIcon] at the start (selection mode's close) and [actions] at the end: 48 dp tonal circles
+ *   ([tabHeaderActionSize]), `spacing.small` apart.
  *
  * It keeps the window margin ([windowMargin]), so its title lines up with the rows' content on wide windows, and is at
  * most `contentMaxWidth` wide, centred. [title] gets the style of the row it fills; [TabHeaderTitle] is the plain one.
@@ -56,12 +54,10 @@ fun TabHeader(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    val typography = MaterialTheme.typography
-    // The experimental look's titles are wider (docs/DESIGN_SYSTEM.md §13): the same sizes and line heights.
-    val experimental = LocalExperimentalUi.current
-    val wide = MaterialTheme.experimentalTypography.takeIf { experimental }
-    val expandedStyle = wide?.displaySmallWide ?: typography.displaySmallEmphasized
-    val collapsedStyle = wide?.titleLargeWide ?: typography.titleLargeEmphasized
+    // The wide titles (docs/DESIGN_SYSTEM.md §13.2): the type scale's sizes and line heights.
+    val wide = MaterialTheme.experimentalTypography
+    val expandedStyle = wide.displaySmallWide
+    val collapsedStyle = wide.titleLargeWide
     // The bar insets its title by the compact margin itself; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -75,19 +71,14 @@ fun TabHeader(
                     .padding(horizontal = extraMargin),
             subtitle = subtitle,
             navigationIcon = navigationIcon,
-            actions =
-                if (experimental) {
-                    {
-                        // The 48 dp circles have no touch target around them: they keep `spacing.small` apart.
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                            verticalAlignment = Alignment.CenterVertically,
-                            content = actions,
-                        )
-                    }
-                } else {
-                    actions
-                },
+            actions = {
+                // The 48 dp circles have no touch target around them: they keep `spacing.small` apart.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions,
+                )
+            },
             collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
             expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null),
             colors =
@@ -121,7 +112,7 @@ fun TabHeaderTitle(
 }
 
 /**
- * [TabHeader]'s expanded height: the collapsed row, then the title's line in `displaySmallEmphasized`, then
+ * [TabHeader]'s expanded height: the collapsed row, then the title's line in `displaySmall`'s line height, then
  * [withSubtitle] a line as tall as `labelLarge`'s (the Chats tab's status line, or the connection pill in its place),
  * and the room below them, in the current font scale.
  */
@@ -138,9 +129,8 @@ fun tabHeaderExpandedHeight(withSubtitle: Boolean): Dp {
 }
 
 /**
- * The size of an action button in [TabHeader]'s actions in the experimental look: a 48 dp tonal circle
- * (`sizes.headerAction`, `docs/DESIGN_SYSTEM.md` §13); null in the standard look, where the button keeps its own
- * size (a 40 dp icon button in its 48 dp target).
+ * The size of an action button in [TabHeader]'s actions: a 48 dp tonal circle (`sizes.headerAction`,
+ * `docs/DESIGN_SYSTEM.md` §13.2).
  */
 @Composable
-fun tabHeaderActionSize(): Dp? = if (LocalExperimentalUi.current) MaterialTheme.sizes.headerAction else null
+fun tabHeaderActionSize(): Dp = MaterialTheme.sizes.headerAction

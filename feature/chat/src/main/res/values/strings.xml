@@ -134,7 +134,6 @@
     <string name="composer_send">Send</string>
     <string name="composer_send_silently">Send without sound</string>
     <!-- The button at the end of the empty message field that opens the system photo picker. -->
-    <string name="composer_gallery">Send photos or videos</string>
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->
     <string name="composer_restricted">You can\'t send messages in this chat</string>
