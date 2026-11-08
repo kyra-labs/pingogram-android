@@ -104,7 +104,6 @@ class SettingsAccessibilityChecksTest {
                     state = SettingsPreviewData.withOtherAccounts.copy(canAddAccount = true),
                     onEvent = {},
                     onOpenPage = {},
-                    experimentalUi = true,
                     summaries = SettingsPreviewData.homeSummaries,
                 )
             }

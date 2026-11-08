@@ -799,27 +799,25 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - [ ] Reduced motion path verified
 - [ ] Performance budget in `docs/PERFORMANCE.md` met (no jank in the screen's Macrobenchmark)
 
-## 13. Experimental UI
+## 13. Pingogram's look
 
-An opt-in second look for the chat list, global search, chats, Contacts and Settings home, from the owner's design
-(`docs/adr/0035-experimental-ui.md`, owner decisions 2026-11-07). The standard look of §1–§12 stays the default and is
-unchanged while it is off. This section lists every difference from §1–§12, with its roles, shapes, type and motion;
-the rows of §1–§12 are not edited for it. Where the owner's design shows something the owner has not decided, the line
-says "Owner decision to confirm (2026-11-07)". The design's mock-ups use Roboto Flex as a stand-in font and literal
-colors and pixel sizes: each is mapped here to color roles, the shape scale, `MaterialShapes`, `spacing` and `sizes`
-tokens and the type scale (Google Sans Flex), never copied into feature code.
+The look from the owner's design (`docs/adr/0035-experimental-ui.md`, owner decisions 2026-11-07), first an opt-in
+"Experimental UI" and Pingogram's only look since the owner's decision of 2026-11-08: the switch is gone, and where a
+line of §1–§12 and a line of this section differ, this section wins. The rows of §1–§12 are not edited for it yet; the
+other look's code leaves module by module, and these docs follow it. Where the owner's design shows something the owner
+has not decided, the line says "Owner decision to confirm (2026-11-07)". The design's mock-ups use Roboto Flex as a
+stand-in font and literal colors and pixel sizes: each is mapped here to color roles, the shape scale,
+`MaterialShapes`, `spacing` and `sizes` tokens and the type scale (Google Sans Flex), never copied into feature code.
 
-**How it is read**: `core:ui`'s `LocalExperimentalUi` (a static composition local `MainActivity` provides before the
-first frame). A composable that looks different reads it and picks its style at the smallest scope that differs; its
-state, events, keys, content types, semantics and haptics stay those of §1–§12 unless a line below says otherwise.
+**How it is read**: until the other look's code is gone, `core:ui`'s `LocalExperimentalUi` is true everywhere (its
+default; `MainActivity` no longer provides it). Its state, events, keys, content types, semantics and haptics stay
+those of §1–§12 unless a line below says otherwise.
 
-### 13.1 The switch
+### 13.1 No switch
 
-| UI element | Experimental UI |
+| UI element | Pingogram's look |
 |---|---|
-| Settings home, standard look | "Experimental UI" as a switch row (the clickable segmented list item with `Role.Switch` and a trailing check `Switch`, `ToggleOn` / `ToggleOff`), the flask (Material Symbols "science") in the group's tonal circle (`tertiary`), its title followed by a "Beta" label as the account card's ("Premium": `labelMediumEmphasized` in a full pill on `tertiaryContainer` / `onTertiaryContainer`), "New Material 3 Expressive look for chats, contacts and settings. Switch back anytime." as its summary. It opens nothing. Owner decision to confirm (2026-11-07): in a group of its own after About, before "Log out" |
-| Settings home, experimental look | The labs card under the account card (and the other accounts), full width within the window margin, `extraLarge` corners on `tertiaryContainer` / `onTertiaryContainer`, `spacing.large` padding: a `MaterialShapes.Sunny` badge (`sizes.avatarRow`, `onTertiaryContainer`) with the flask in `tertiaryContainer`; "Experimental UI" in `titleMediumEmphasized` with a "BETA" label (the account card's label, its colors inverted: `onTertiaryContainer` / `tertiaryContainer`); the summary in `bodyMedium`; a check `Switch` whose checked track is `onTertiaryContainer` and thumb `tertiaryContainer`. The whole card is one toggleable (`Role.Switch`) for touch and screen readers, `ToggleOn` / `ToggleOff` |
-| Turning it on or off | The app composes again in place in the other look (a static local that changes, as "Hide phone numbers" does): no cross-fade, no new activity. The cheaper of the two (ADR 0035); view models, scroll positions and saved state stay |
+| Settings home | No "Experimental UI" row or labs card (owner, 2026-11-08). The setting an earlier version kept (`appearance.experimental_ui`) is no longer read |
 
 ### 13.2 Shared parts (`core:ui`)
 
@@ -911,7 +909,6 @@ state, events, keys, content types, semantics and haptics stay those of §1–§
 | Header | §13.2's tab header: "Settings" in `displaySmallWide`, its one action a 48 dp tonal circle, search |
 | Settings search | The search button turns the header into the search bar's `InputField` in its pill on `surfaceContainerHighest` (the page is the bar's own `surfaceContainerHigh`), at most `contentMaxWidth` inside the window margin: back ("Close search") at its start, a clear button while it holds text, "Search settings", the focus when the button opened it (not after a rotation). The page then lists what one registry of Settings home's entries (`SettingsHomeEntries.kt`: every group's entries, Edit profile and the user's QR code) holds in its titles and summaries, every word of the query, ignoring case and accents, as the home's rows in one group; "No settings found" in `bodyLarge` `onSurfaceVariant` (a polite live region). Search also finds the pages above them (`SettingsSearchEntries.kt`, one per `SettingsSubPage`: Theme, Chat appearance, Double-tap to react, Swipe actions, Chats shown first, trending and archived stickers, Emoji, reaction notifications, automatic download per network, Proxy, Network usage, the licenses, each privacy setting, Who can message me, Blocked users, Websites, Two-step verification, Passcode lock, Locked chats, Auto-delete messages and Delete account), each with its own title, its parent page's title as its summary and its parent's icon, so a word of the parent ("privacy") finds them too, after the parent. A tap opens the page; a page above another opens with its parent below it, pushed both on one pane, in the detail pane's own back stack on two, so back returns through the parent. Back and system back close search, which forgets the query. Owner decision to confirm (2026-11-07): the parent's title as the summary of these results, and which pages are listed (pages that need a chat, a person or a link to open, such as a folder's editor or a proxy's form, are not) |
 | Account card | A card on `primaryContainer` / `onPrimaryContainer` with `extraLargeIncreased` corners, `spacing.large` inside: the avatar (`sizes.experimentalAccountAvatar`, 76 dp) in `MaterialShapes.Cookie9Sided` with a decorative camera badge (`avatarBadge`) in `tertiaryContainer`; the name in `headlineSmallWide` (two lines, a heading), "@username" in `bodyMediumEmphasized`, and the phone number masked (`maskPhoneNumber`) with an eye `IconButton` ("Show phone number" / "Hide phone number") that shows it on this screen; while "Hide phone numbers" is on it stays masked, without the button. The demo shows its "Demo" label there. Then "Edit profile" (a filled `Button` in the card's inverse colors, `labelLargeEmphasized`) and "QR code" (`FilledTonalButton`) sharing the row, and, where the device has other accounts or can add one (not in the demo), a `FilledTonalIconButton` ("Switch or add account") opening an expressive `DropdownMenuPopup`: the other accounts (avatar, name, their unread chats in a `primary` `Badge`), then "Add account" in a second group. The other accounts' group below the card is left out, as the menu holds it |
-| Labs card | §13.1's, under the account card |
 | Groups | `titleSmallEmphasized` `primary` headers over segmented rows (Material's two-line item, at least 72 dp): "Make it yours" (Appearance, Chat folders, Stickers and emoji), "Alerts and privacy" (Notifications, Privacy and security, Data and storage with the storage the account's files take as its value), "More" (Recent calls where the app provides it, Devices with "3 active sessions", Language with the app's language as its value), and "App" (Power saving, About), then "Log out" on its own. Every page the standard Settings home opens stays reachable. Each row's icon sits on a `leadingIconContainer` badge in `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn, filled with the vivid avatar colors (§13.2); values in `labelLarge` `primary`. The values come from `SettingsHomeViewModel` (`getActiveSessions`, `getStorageStatisticsFast` once, the language as it changes), which only the experimental look asks for. Owner decision to confirm (2026-11-07): the grouping, Material's 40 dp leading badge rather than the board's 44 dp, and "App" for the rest |
 | Pages | Settings pages keep their look |
 

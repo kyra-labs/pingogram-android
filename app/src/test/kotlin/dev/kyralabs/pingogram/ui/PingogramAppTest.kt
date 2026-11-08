@@ -524,11 +524,11 @@ class PingogramAppTest {
             tdlib.emit(TdApiFixtures.updateUser(me))
             tdlib.emit(TdApiFixtures.myIdOption(42))
         }
-        // The account's card, which opens Edit profile.
-        val account = hasText("Ada Lovelace") and hasClickAction()
-        awaitNode(account)
+        // The account's card, whose "Edit profile" button opens Edit profile.
+        awaitNode(hasText("Ada Lovelace"))
+        val editProfile = hasText(string(SettingsR.string.settings_edit_profile_button)) and hasClickAction()
 
-        composeRule.onNode(account).performScrollTo().performClick()
+        composeRule.onNode(editProfile).performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<EditProfileRoute>() == true)

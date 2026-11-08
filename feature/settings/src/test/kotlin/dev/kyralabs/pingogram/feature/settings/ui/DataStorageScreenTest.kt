@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -48,15 +50,18 @@ class DataStorageScreenTest {
 
     private fun setScreen(state: DataStorageUiState) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                DataStorageScreen(
-                    state = state,
-                    onEvent = { events += it },
-                    onOpenAutoDownload = { opened += it },
-                    onOpenProxies = {},
-                    onOpenNetworkUsage = {},
-                    onBack = { backs++ },
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    DataStorageScreen(
+                        state = state,
+                        onEvent = { events += it },
+                        onOpenAutoDownload = { opened += it },
+                        onOpenProxies = {},
+                        onOpenNetworkUsage = {},
+                        onBack = { backs++ },
+                    )
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -66,10 +68,13 @@ class SettingsTopBarTest {
 
     private fun setPage() {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                typography = MaterialTheme.typography
-                SettingsPageScaffold(title = TITLE, onBack = {}) {
-                    repeat(ROWS) { Text("Row $it") }
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    typography = MaterialTheme.typography
+                    SettingsPageScaffold(title = TITLE, onBack = {}) {
+                        repeat(ROWS) { Text("Row $it") }
+                    }
                 }
             }
         }

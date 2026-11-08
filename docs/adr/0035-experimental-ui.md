@@ -1,6 +1,7 @@
 # 0035 · Experimental UI
 
-Date: 2026-11-07 · Status: accepted by the owner on 2026-11-07 (the brief of that day). Points marked "Owner decision to
+Date: 2026-11-07 · Status: accepted by the owner on 2026-11-07 (the brief of that day); the switch was retired on
+2026-11-08, when the owner made the experimental look Pingogram's only look (see "Retired" below). Points marked "Owner decision to
 confirm (2026-11-07)" here and in `docs/DESIGN_SYSTEM.md` §13 are Pingogram's reading where the owner's design shows
 something the owner has not decided.
 
@@ -49,7 +50,15 @@ An **opt-in switch**, "Experimental UI", off by default, and **one UI with style
   contrast, right to left and 200% font beside the standard ones, which do not change.
 - **Performance**: the branch is one read of a static local per composable that differs; the chat list and the
   conversation keep their recomposition and scroll-cost tests in both looks.
-- **Retiring it**: once the owner picks one look, the switch, the local and the losing look's branches are deleted in
-  one pull request, and this ADR is marked superseded.
+- **Retiring it**: once the owner picks one look, the switch, the local and the losing look's branches are deleted,
+  and this ADR records it.
 - **Not a theme**: the experimental look uses the user's color theme roles; a "Coral" basic color theme shows the
   design as drawn (a separate, owner-confirmed choice in `docs/DESIGN_SYSTEM.md` §13).
+
+## Retired (2026-11-08)
+
+The owner picked the experimental look: it is Pingogram's only look, with no switch. One pull request removes the switch
+(the Settings row and the labs card, `ExperimentalUiRepository` and its stored key, which is no longer read) and makes
+`LocalExperimentalUi` true everywhere, recording every golden in that look. The standard look's branches then leave
+module by module, and the local with the last of them; `docs/DESIGN_SYSTEM.md` §13 is the spec where it and §1–§12
+differ.

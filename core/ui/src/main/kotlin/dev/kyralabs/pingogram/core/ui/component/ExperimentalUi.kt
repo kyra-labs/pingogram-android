@@ -4,10 +4,8 @@ import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
- * Whether the app shows its experimental look (Settings → "Experimental UI", `docs/adr/0035-experimental-ui.md`,
- * `docs/DESIGN_SYSTEM.md` §13): one UI with style variants, never a copy of a screen. `MainActivity` reads the setting
- * with the Appearance settings, before the first frame, and provides it once per activity, so the app never draws one
- * look and then the other. A static local: turning it on or off composes the app again in place, keeping its screens'
- * state, as the rare change it is. False in previews and tests unless they provide it.
+ * Whether the app shows the look of `docs/DESIGN_SYSTEM.md` §13, which is Pingogram's only look since the owner's
+ * decision of 2026-11-08 (`docs/adr/0035-experimental-ui.md`): true everywhere. The other look's code goes module by
+ * module, and this local with it.
  */
-val LocalExperimentalUi: ProvidableCompositionLocal<Boolean> = staticCompositionLocalOf { false }
+val LocalExperimentalUi: ProvidableCompositionLocal<Boolean> = staticCompositionLocalOf { true }

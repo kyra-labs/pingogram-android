@@ -21,10 +21,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Settings home's "Experimental UI" (`docs/adr/0035-experimental-ui.md`) in both looks: the standard look's switch row
- * with its "Beta" label, off, on the page's color; and Settings home in the experimental look with the labs card under
- * the account card. Light, dark, AMOLED black, high contrast, right to left and at the largest font scale. The standard
- * Settings home's goldens ([SettingsScreenScreenshotTest]) are unchanged: their state has the setting not yet read.
+ * Settings home in Pingogram's look (`docs/DESIGN_SYSTEM.md` §13.9): light, dark, AMOLED black, high contrast, right to
+ * left, at the largest font scale and as a whole page.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -34,26 +32,6 @@ class ExperimentalUiScreenshotTest {
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
-
-    @Test
-    fun rowLight() = composeRule.captureScreen(javaClass, "rowLight", ThemeMode.Light) { Row() }
-
-    @Test
-    fun rowDark() = composeRule.captureScreen(javaClass, "rowDark", ThemeMode.Dark) { Row() }
-
-    @Test
-    fun rowAmoled() = composeRule.captureScreen(javaClass, "rowAmoled", ScreenshotVariant.Amoled) { Row() }
-
-    @Test
-    fun rowHighContrast() =
-        composeRule.captureScreen(javaClass, "rowHighContrast", ScreenshotVariant.HighContrast) { Row() }
-
-    @Test
-    fun rowRtl() = composeRule.captureScreen(javaClass, "rowRtl", ScreenshotVariant.Rtl) { Row() }
-
-    @Test
-    @Config(fontScale = FONT_SCALE_200)
-    fun rowFontScale200() = composeRule.captureScreen(javaClass, "rowFontScale200", ThemeMode.Light) { Row() }
 
     @Test
     fun experimentalLight() =
@@ -97,22 +75,7 @@ class ExperimentalUiScreenshotTest {
         }
 }
 
-/** The standard look's row in a group of its own, as Settings home shows it. */
-@Composable
-private fun Row() {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(settingsPageColor())
-            .padding(MaterialTheme.spacing.large),
-    ) {
-        SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
-            item { shapes -> ExperimentalUiItem(checked = false, shapes = shapes, onCheckedChange = {}) }
-        }
-    }
-}
-
-/** Settings home in the experimental look, the labs card on, with the values beside its rows. */
+/** Settings home in the experimental look, with the values beside its rows. */
 @Composable
 private fun ExperimentalHome(state: SettingsUiState = SettingsPreviewData.content) {
     CompositionLocalProvider(LocalExperimentalUi provides true) {
@@ -120,7 +83,6 @@ private fun ExperimentalHome(state: SettingsUiState = SettingsPreviewData.conten
             state = state,
             onEvent = {},
             onOpenPage = {},
-            experimentalUi = true,
             summaries = SettingsPreviewData.homeSummaries,
         )
     }

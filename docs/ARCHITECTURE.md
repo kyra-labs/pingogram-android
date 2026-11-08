@@ -185,13 +185,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
-- **Experimental UI** (FR-S2a, `docs/adr/0035-experimental-ui.md`): an opt-in second look, one UI with style variants.
-  `core:domain`'s `ExperimentalUiRepository` (`DataStoreExperimentalUiRepository`, the settings file, off by default)
-  is read by `MainActivity` with the Appearance settings before the first frame and provided as `core:ui`'s
-  `LocalExperimentalUi`, a static local, so turning it on or off composes the app again in place in the other look.
-  Composables that look different read it and branch at the smallest scope that differs (a color, a shape, a slot);
-  view models never read it, and no screen is copied. `feature:settings`' `ExperimentalUiViewModel` holds the switch:
-  a row in the standard Settings home, the labs card in the experimental one (`docs/DESIGN_SYSTEM.md` §13). What only
+- **Pingogram's look** (FR-S2a, `docs/adr/0035-experimental-ui.md`): first an opt-in "Experimental UI", the only look
+  since the owner's decision of 2026-11-08, without a switch. Until the other look's code is gone, module by module,
+  `core:ui`'s `LocalExperimentalUi` is true everywhere (its default); composables that still branch on it take the
+  experimental side, and view models never read it (`docs/DESIGN_SYSTEM.md` §13). What only
   the experimental look shows still comes through the view models, as data both looks could show: the conversation's
   `ChatHeader.members` (the people who wrote last among the loaded messages) and `onlineCount` (`Chat.onlineMemberCount`,
   `updateChatOnlineMemberCount`, kept by `TdlibChatRepository`), `ChatUiState.unreadMentionCount`, and

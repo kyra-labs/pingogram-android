@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.ui.component.LocalExperimentalUi
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -45,13 +47,16 @@ class NotificationSettingsScreenTest {
 
     private fun setScreen(state: NotificationSettingsUiState = SettingsPreviewData.notifications) {
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                NotificationSettingsScreen(
-                    state = state,
-                    onEvent = { events += it },
-                    onOpen = { opened += it },
-                    onBack = {},
-                )
+            // The other look, until its code leaves this module (docs/adr/0035-experimental-ui.md).
+            CompositionLocalProvider(LocalExperimentalUi provides false) {
+                PingogramTheme(dynamicColor = false) {
+                    NotificationSettingsScreen(
+                        state = state,
+                        onEvent = { events += it },
+                        onOpen = { opened += it },
+                        onBack = {},
+                    )
+                }
             }
         }
     }

@@ -65,12 +65,13 @@ class PingogramNavigationBarTest {
     private val selections = mutableListOf<TopLevelDestination>()
 
     @Test
-    fun `every tab shows its label on a phone`() {
+    fun `the selected tab shows its label, the others their icons named by their labels`() {
         setBar(selected = TopLevelDestination.Chats)
 
         composeRule.onNode(hasText(string(R.string.nav_chats)) and isSelectable()).assertIsSelected()
-        composeRule.onNode(hasText(string(R.string.nav_contacts)) and isSelectable()).assertIsNotSelected()
-        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsNotSelected()
+        iconTab(R.string.nav_contacts).assertIsNotSelected()
+        iconTab(R.string.nav_settings).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
     }
 
     @Test
