@@ -121,7 +121,7 @@ class InvitePeopleViewModelTest {
 
 private fun InvitePeopleUiState.Content.ids() = candidates.map { it.userId }
 
-private class FakeContacts : ContactRepository {
+internal class FakeContacts : ContactRepository {
     val users = MutableStateFlow<Outcome<ImmutableList<User>>>(Outcome.Success(persistentListOf()))
 
     override fun contacts(): Flow<Outcome<ImmutableList<User>>> = users

@@ -211,6 +211,34 @@ class GroupCallViewModelTest {
             assertTrue((viewModel.uiState.value as GroupCallUiState.InCall).isConference)
         }
 
+    private fun newGroupCallHandle() =
+        SavedStateHandle(mapOf(GroupCallActivity.EXTRA_ACTION to GroupCallActivity.ACTION_START_CONFERENCE))
+
+    @Test
+    fun `a new group call starts a conference call muted, without asking, and shows it`() =
+        runTest(dispatcher) {
+            repository.calls.value += CONFERENCE_CALL_ID to groupCall()
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_START_CONFERENCE, newGroupCallHandle())
+            runCurrent()
+
+            assertTrue(conferences.creates.single().isMuted)
+            assertTrue(conferences.joins.isEmpty())
+            assertTrue((viewModel.uiState.value as GroupCallUiState.InCall).isConference)
+        }
+
+    @Test
+    fun `a new group call during a one-to-one call says so, then closes`() =
+        runTest(dispatcher) {
+            line.take(Any())
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_START_CONFERENCE, newGroupCallHandle())
+            runCurrent()
+
+            assertTrue(conferences.creates.isEmpty())
+            assertEquals(true, (viewModel.uiState.value as? GroupCallUiState.Unavailable)?.isBusy)
+            advanceTimeBy(2_500)
+            assertEquals(GroupCallUiState.Closed, viewModel.uiState.value)
+        }
+
     @Test
     fun `not now on a conference call's link joins nothing and closes the screen, also after a restart`() =
         runTest(dispatcher) {

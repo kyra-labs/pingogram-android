@@ -16,6 +16,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - An emoji typed alone suggests its stickers above the message field: from your sets (the default), from every set,
   or none (Settings → Stickers → "Suggest stickers by emoji").
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
+- Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
+  people to it.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

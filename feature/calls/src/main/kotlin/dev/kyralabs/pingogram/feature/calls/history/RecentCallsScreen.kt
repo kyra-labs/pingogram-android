@@ -19,6 +19,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -48,6 +49,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
@@ -71,7 +74,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * [TopAppBar] with back on `surfaceContainer`, the content on a [ContentSheet]: "All" and "Missed" as [FilterChip]s,
  * then the calls by day under `titleSmallEmphasized` headers ([RecentCallRow]). A tap calls back the way the call went;
  * a long press offers to delete the call from the history. The next page loads [LOAD_MORE_DISTANCE] rows from the
- * end. Loading is a [DelayedLoadingIndicator]; no calls and a failure are [EmptyState]s.
+ * end. Loading is a [DelayedLoadingIndicator]; no calls and a failure are [EmptyState]s. "Start a call"
+ * ([onStartCall]) floats at the bottom end.
  */
 @Composable
 internal fun RecentCallsScreen(
@@ -79,6 +83,7 @@ internal fun RecentCallsScreen(
     onEvent: (RecentCallsEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onStartCall: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -87,11 +92,33 @@ internal fun RecentCallsScreen(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = { RecentCallsTopBar(onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = { StartCallButton(listState, onStartCall) },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             RecentCallsBody(state, onEvent, listState, contentPadding)
         }
     }
+}
+
+/**
+ * "Start a call": an [ExtendedFloatingActionButton] in `primaryContainer` with the call symbol, its label shown while
+ * the list is at its top and folding into the round button once it scrolls (on the motion scheme's springs).
+ */
+@Composable
+private fun StartCallButton(
+    listState: LazyListState,
+    onClick: () -> Unit,
+) {
+    val atTop by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    val label = stringResource(R.string.recent_calls_start)
+    ExtendedFloatingActionButton(
+        // Named on the button, so screen readers hear it collapsed too, and once.
+        text = { Text(label, Modifier.clearAndSetSemantics {}) },
+        icon = { Icon(painterResource(UiR.drawable.ic_call_filled), contentDescription = null) },
+        onClick = onClick,
+        modifier = Modifier.semantics { contentDescription = label },
+        expanded = atTop,
+    )
 }
 
 /** The small top bar: back and "Recent calls", its title at the window margin, as the archive's. */
@@ -138,7 +165,13 @@ private fun RecentCallsBody(
 ) {
     Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
         Filters(state.filter, onSelect = { onEvent(RecentCallsEvent.SelectFilter(it)) })
-        val bottom = PaddingValues(bottom = contentPadding.calculateBottomPadding())
+        // Room under the last row for the "Start a call" button, so it never covers a call.
+        val bottom =
+            PaddingValues(
+                bottom =
+                    contentPadding.calculateBottomPadding() + MaterialTheme.sizes.fabSmall +
+                        MaterialTheme.spacing.large,
+            )
         when (val content = state.content) {
             RecentCallsContent.Loading -> DelayedLoadingIndicator(Modifier.fillMaxSize().padding(bottom))
             RecentCallsContent.Empty -> NoCalls(state.filter, Modifier.padding(bottom))

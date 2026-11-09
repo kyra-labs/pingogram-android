@@ -158,7 +158,7 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 - [x] Folder tabs' style: text, icon and text, or icon only (Appearance → Chat list)
 - [x] Sticker search in Settings → Stickers and emoji
 - [x] "Suggest stickers by emoji" and "Loop animated stickers" switches
-- [ ] "Start a call" in Recent calls (`feature:calls`)
+- [x] "Start a call" in Recent calls (`feature:calls`): a contact's voice or video call, or a new group call
 - [x] "Check for updates" in About hidden when an app store installed Pingogram (owner, 2026-11-08)
 
 ## Backlog (unscheduled)

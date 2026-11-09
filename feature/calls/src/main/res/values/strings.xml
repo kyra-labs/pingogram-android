@@ -129,6 +129,15 @@
     <string name="recent_calls_row_menu">More options</string>
     <string name="recent_calls_delete">Delete from call history</string>
     <string name="recent_calls_deleted">Call deleted from your history</string>
+    <string name="recent_calls_start">Start a call</string>
+    <string name="start_call_title">Start a call</string>
+    <string name="start_call_new_group">New group call</string>
+    <string name="start_call_new_group_text">Start a call and invite people to it</string>
+    <string name="start_call_voice">Voice call</string>
+    <string name="start_call_video">Video call</string>
+    <string name="start_call_voice_person">Voice call %1$s</string>
+    <string name="start_call_video_person">Video call %1$s</string>
+    <string name="start_call_no_contacts">No contacts to call</string>
     <!-- How long an answered call lasted, for screen readers: "lasted 4:05". -->
     <string name="recent_calls_duration">lasted %1$s</string>
     <!-- Rate this call (docs/DESIGN_SYSTEM.md §6 "Call rating"), over the ended call when Telegram asks for it. -->
