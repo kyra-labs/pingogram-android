@@ -174,7 +174,7 @@ Run the screenshot and fastlane scripts first after re-recording goldens.
 | Image | Galaxy Store | AppGallery | File |
 |---|---|---|---|
 | Icon | PNG, 512 × 512, at most 1,024 KB | PNG, WebP or JPG, 216 × 216 or 512 × 512, at most 2 MB, no rounded corners or padding | `galaxy/icon.png`, `appgallery/icon.png`: 512 × 512, full bleed on white, no alpha |
-| Screenshots | 4–8, JPG or PNG, 320–3,840 px a side, at most 2:1 | 3–8, 450 × 800 (9:16) or 800 × 450, 320–3,840 px a side | `*/screenshots/1.png`…`8.png`: 666 × 1184 (9:16), the light phone set in `tools/fastlane/images.sh`'s order (welcome, chats, chat, reactions, composer, search, settings, appearance) |
+| Screenshots | 4–8, JPG or PNG, 320–3,840 px a side, at most 2:1 | 3–8, 450 × 800 (9:16) or 800 × 450, 320–3,840 px a side | `*/screenshots/1.png`…`8.png`: 666 × 1184 (9:16), the light phone set in `tools/fastlane/images.sh`'s order (welcome, chats, chat, channel, contacts, search, settings, appearance) |
 | Banner | cover image 1200 × 675, at most 1,024 KB; asked only for some categories and countries (Games) | introduction and promotional images: **Unconfirmed** for Android apps; the Connect API lists an "introduction image" upload without its size | `galaxy/cover.png`: 1200 × 675, the logo on the brand's background, as the feature graphic |
 | Video | a YouTube link only (optional) | optional: 1–3 MP4 or MOV, 1280 × 720 or 720 × 1280, 15 s to 2 min | none yet |
 

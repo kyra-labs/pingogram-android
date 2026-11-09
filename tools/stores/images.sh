@@ -24,7 +24,7 @@ mkdir -p "$out/galaxy/screenshots" "$out/appgallery/screenshots"
 
 # Screenshots: exactly 9:16, light, in the order a store shows them (as tools/fastlane/images.sh orders them).
 python3 "$root/tools/play/screenshots.py" --exact "$root/docs/screenshots" "$work/shots" >/dev/null
-shots=(welcome chats chat reactions composer search settings appearance)
+shots=(welcome chats chat channel contacts search settings appearance)
 for i in "${!shots[@]}"; do
   for store in galaxy appgallery; do
     cp "$work/shots/${shots[$i]}-light.png" "$out/$store/screenshots/$((i + 1)).png"
