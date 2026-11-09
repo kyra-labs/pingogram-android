@@ -10,13 +10,16 @@ package dev.kyralabs.pingogram.feature.chat.ui
 internal const val MAX_LARGE_EMOJI = 3
 
 /**
- * Whether [text] is 1 to [MAX_LARGE_EMOJI] emoji and nothing else but whitespace between them: no letters, digits,
- * punctuation or other symbols. A flag, a keycap, a family or a skin-toned emoji counts as one.
+ * Whether [text] is 1 to [max] emoji and nothing else but whitespace between them: no letters, digits, punctuation or
+ * other symbols. A flag, a keycap, a family or a skin-toned emoji counts as one.
  */
-internal fun isEmojiOnly(text: String): Boolean {
+internal fun isEmojiOnly(
+    text: String,
+    max: Int = MAX_LARGE_EMOJI,
+): Boolean {
     var count = 0
     var index = 0
-    while (index < text.length && count <= MAX_LARGE_EMOJI) {
+    while (index < text.length && count <= max) {
         val codePoint = text.codePointAt(index)
         if (Character.isWhitespace(codePoint)) {
             index += Character.charCount(codePoint)
@@ -26,7 +29,7 @@ internal fun isEmojiOnly(text: String): Boolean {
             count = if (end == null) NOT_EMOJI else count + 1
         }
     }
-    return count in 1..MAX_LARGE_EMOJI
+    return count in 1..max
 }
 
 /** Where the emoji that starts at [start] ends; null if no emoji starts there. */

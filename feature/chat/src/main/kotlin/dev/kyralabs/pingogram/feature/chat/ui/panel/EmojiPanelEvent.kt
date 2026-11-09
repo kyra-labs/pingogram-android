@@ -17,6 +17,11 @@ sealed interface EmojiPanelEvent {
         val setIds: List<Long>,
     ) : EmojiPanelEvent
 
+    /** The composer's text is now [text]: one emoji alone suggests its stickers ([EmojiPanelUiState.suggestions]). */
+    data class TextChanged(
+        val text: String,
+    ) : EmojiPanelEvent
+
     /** "Try again" after the stickers could not be loaded. */
     data object Retry : EmojiPanelEvent
 

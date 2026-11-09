@@ -85,12 +85,16 @@ internal fun PickerDone(
     }
 }
 
-/** The search bar's input field on its container, with [placeholder] and a clear button while there is text. */
+/**
+ * The search bar's input field on its container, with [placeholder] and a clear button while there is text, inset
+ * [horizontalPadding] from the sides (a picker's rows' inset by default).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PickerSearchField(
     query: String,
     placeholder: String,
+    horizontalPadding: Dp = MaterialTheme.spacing.large,
     onQueryChange: (String) -> Unit,
 ) {
     val text = rememberTextFieldState(query)
@@ -101,7 +105,7 @@ internal fun PickerSearchField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = MaterialTheme.spacing.large)
+                .padding(horizontal = horizontalPadding)
                 .padding(bottom = MaterialTheme.spacing.small),
         shape = SearchBarDefaults.inputFieldShape,
         color = SearchBarDefaults.colors().containerColor,

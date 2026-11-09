@@ -276,7 +276,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`changeStickerSet`), reorders the installed ones (`reorderInstalledStickerSets`), marks trending sets seen
   (`viewTrendingStickerSets`) and finds a set by its link's name (`searchStickerSet`). `feature:settings`' Stickers page
   (`StickersRoute`, `StickersViewModel`: a dragged order shown at once and taken back when Telegram refuses it, an
-  archived or removed set gone at once with "Undo", which installs it again at its place) opens Trending stickers and
+  archived or removed set gone at once with "Undo", which installs it again at its place; its search, `StickerSearchState`:
+  the user's sets matched on the device and Telegram's catalog through `StickerSetRepository.searchSets`, the words in
+  saved state; and the stickers' own settings, `core:domain`'s `StickerSettingsRepository`,
+  `DataStoreStickerSettingsRepository`: suggestions by emoji, which `feature:chat`'s `EmojiPanelViewModel` follows
+  (`StickerSuggestionState`, `StickerRepository.stickersForEmoji`), and looping, which `:app` hands to
+  `AnimatedStickers.loop`) opens Trending stickers and
   Archived stickers (`StickerSetListRoute(archived)`, `StickerSetListViewModel`: "Add" per set, the trending sets shown
   marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then;
   animated TGS ones through the app's `AnimatedStickers` where asked). A set's sheet (`StickerSetRoute(setId, name)`, a

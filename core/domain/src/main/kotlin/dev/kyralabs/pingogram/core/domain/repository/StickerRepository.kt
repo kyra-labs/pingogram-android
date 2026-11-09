@@ -27,4 +27,14 @@ interface StickerRepository {
 
     /** The stickers of set [setId], in its order; stickers in formats this TDLib does not know are left out. */
     suspend fun stickerSet(setId: Long): Outcome<List<Sticker>>
+
+    /**
+     * Stickers for [emoji], to suggest while the composer of chat [chatId] holds it alone: those of the user's
+     * installed sets, and with [allSets] those of public sets on Telegram after them, without repeats.
+     */
+    suspend fun stickersForEmoji(
+        emoji: String,
+        chatId: Long,
+        allSets: Boolean,
+    ): Outcome<List<Sticker>>
 }

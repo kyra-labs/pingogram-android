@@ -1,17 +1,23 @@
 package dev.kyralabs.pingogram.feature.settings.ui.stickers
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
+import dev.kyralabs.pingogram.core.domain.repository.StickerSettings
+import dev.kyralabs.pingogram.core.domain.repository.StickerSuggestions
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeStickerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -27,6 +33,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class StickersViewModelTest {
     private val client = FakeTdlibClient()
+    private val stickerSettings = FakeStickerSettingsRepository()
 
     /** The installed sets TDLib answers with, by id, in this order. */
     private var installed = listOf(1L, 2L, 3L)
@@ -81,7 +88,7 @@ class StickersViewModelTest {
     }
 
     private fun TestScope.viewModel(kind: StickerSetKind = StickerSetKind.Stickers): StickersViewModel {
-        val viewModel = StickersViewModel(kind, TdlibStickerSetRepository(client))
+        val viewModel = StickersViewModel(kind, TdlibStickerSetRepository(client), stickerSettings, SavedStateHandle())
         runCurrent()
         return viewModel
     }
@@ -294,4 +301,107 @@ class StickersViewModelTest {
         assertEquals(listOf(5L, 1L, 2L, 3L), restoredOrder(2, listOf(1, 2, 3), listOf(5, 1, 3)))
         assertNull(restoredOrder(1, listOf(1, 2), listOf(1, 2)))
     }
+
+    @Test
+    fun `words search Telegram after a pause, the user's sets matched on the device and left out of Telegram's`() =
+        runTest {
+            client.on(TdApi.SearchStickerSets::class) {
+                TdResult.Success(TdApi.StickerSets(2, arrayOf(setInfo(2, installed = true), setInfo(30))))
+            }
+            val viewModel = viewModel()
+
+            viewModel.onEvent(StickersEvent.Search("set 2"))
+            runCurrent()
+            assertEquals(StickerCatalog.Searching, viewModel.content().search?.catalog)
+            assertEquals(emptyList<TdApi.SearchStickerSets>(), client.sentOf<TdApi.SearchStickerSets>())
+
+            advanceTimeBy(301)
+            runCurrent()
+
+            val search = viewModel.content().search!!
+            assertEquals(listOf(2L), search.installed.map { it.id })
+            assertEquals(listOf(30L), (search.catalog as StickerCatalog.Found).sets.map { it.id })
+            assertEquals("set 2", client.sentOf<TdApi.SearchStickerSets>().single().query)
+        }
+
+    @Test
+    fun `newer words cancel the search still waiting, and clearing the field shows the page again`() =
+        runTest {
+            client.on(TdApi.SearchStickerSets::class) { TdResult.Success(TdApi.StickerSets(0, emptyArray())) }
+            val viewModel = viewModel()
+
+            viewModel.onEvent(StickersEvent.Search("ca"))
+            runCurrent()
+            advanceTimeBy(100)
+            viewModel.onEvent(StickersEvent.Search("cats"))
+            advanceTimeBy(301)
+            runCurrent()
+
+            assertEquals(listOf("cats"), client.sentOf<TdApi.SearchStickerSets>().map { it.query })
+
+            viewModel.onEvent(StickersEvent.Search(""))
+            runCurrent()
+            assertNull(viewModel.content().search)
+        }
+
+    @Test
+    fun `adding a found set installs it and shows it added`() =
+        runTest {
+            client.on(TdApi.SearchStickerSets::class) {
+                TdResult.Success(TdApi.StickerSets(1, arrayOf(setInfo(30))))
+            }
+            val viewModel = viewModel()
+            viewModel.onEvent(StickersEvent.Search("rings"))
+            advanceTimeBy(301)
+            runCurrent()
+
+            viewModel.onEvent(StickersEvent.AddFound(30))
+            runCurrent()
+
+            val change = client.sentOf<TdApi.ChangeStickerSet>().single()
+            assertEquals(30L, change.setId)
+            val found = (viewModel.content().search!!.catalog as StickerCatalog.Found).sets.single()
+            assertEquals(true, found.isInstalled)
+            assertEquals(false, found.isBusy)
+        }
+
+    @Test
+    fun `a failed search says why, and Try again searches again`() =
+        runTest {
+            var fail = true
+            client.on(TdApi.SearchStickerSets::class) {
+                if (fail) {
+                    TdResult.Failure(TdError(500, "Internal"))
+                } else {
+                    TdResult.Success(TdApi.StickerSets(0, emptyArray()))
+                }
+            }
+            val viewModel = viewModel()
+            viewModel.onEvent(StickersEvent.Search("rings"))
+            advanceTimeBy(301)
+            runCurrent()
+            assertInstanceOf(StickerCatalog.Failed::class.java, viewModel.content().search!!.catalog)
+
+            fail = false
+            viewModel.onEvent(StickersEvent.RetrySearch)
+            advanceTimeBy(301)
+            runCurrent()
+
+            assertEquals(StickerCatalog.Found(persistentListOf()), viewModel.content().search!!.catalog)
+            assertEquals(2, client.sentOf<TdApi.SearchStickerSets>().size)
+        }
+
+    @Test
+    fun `the stickers' page shows the sticker settings and saves them, the Emoji page shows none`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(StickerSettings(), viewModel.content().settings)
+
+            viewModel.onEvent(StickersEvent.SetSuggestions(StickerSuggestions.AllSets))
+            viewModel.onEvent(StickersEvent.SetLoop(false))
+            runCurrent()
+
+            assertEquals(StickerSettings(StickerSuggestions.AllSets, loop = false), viewModel.content().settings)
+            assertNull(viewModel(StickerSetKind.Emoji).content().settings)
+        }
 }

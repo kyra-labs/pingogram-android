@@ -17,10 +17,12 @@ import javax.inject.Inject
  * [StickerSetRepository] on TDLib: `getInstalledStickerSets`, `getArchivedStickerSets` and `getTrendingStickerSets` of
  * the kind's `StickerType` (regular or custom emoji) read again on its `updateInstalledStickerSets` (installing and
  * archiving move sets between the lists) and `updateTrendingStickerSets`; `getStickerSet` again on `updateStickerSet`
- * of that set and on any installed sets changing; `searchStickerSet` for a link's set; `changeStickerSet`,
+ * of that set and on any installed sets changing; `searchStickerSets` for Telegram's catalog, `searchStickerSet` for a
+ * link's set; `changeStickerSet`,
  * `reorderInstalledStickerSets` and `viewTrendingStickerSets` for the changes. TDLib keeps all of it in its database,
  * so no cache of its own.
  */
+@Suppress("TooManyFunctions") // One function per member of StickerSetRepository, which Settings → Stickers shares.
 @AccountScoped
 class TdlibStickerSetRepository
     @Inject
@@ -56,6 +58,14 @@ class TdlibStickerSetRepository
                 },
             ) {
                 client.request(TdApi.GetStickerSet(setId)).map { it.toDetails() }
+            }
+
+        override suspend fun searchSets(
+            query: String,
+            kind: StickerSetKind,
+        ): Outcome<List<StickerSetSummary>> =
+            client.request(TdApi.SearchStickerSets(kind.toStickerType(), query)).map { result ->
+                result.sets.orEmpty().map { it.toStickerSetSummary() }
             }
 
         override suspend fun findSet(name: String): Outcome<Long> =
