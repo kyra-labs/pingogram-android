@@ -1516,7 +1516,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `history/`, a destination of `:app`'s `NavHost`) lists them by day with the people from `UserRepository`, keeps the
   filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call; a conference
   call's row joins it while it goes on (`GroupCallActivity.openInvitation`, which asks first) and otherwise says it
-  has ended. Settings home
+  has ended. Its "Start a call" opens `StartCallSheet` (`StartCallViewModel`: the contacts of `ContactRepository`,
+  people only, filtered on the device, the query in its saved state, video calls offered where `CameraAccess` finds a
+  camera), whose rows call through `LocalCallStarter` and whose "New group call" opens `GroupCallActivity` with
+  `ACTION_START_CONFERENCE`: `GroupCallManager.startConference` without a one-to-one call to continue takes a free line
+  (`CallLine.take`), creates the conference call muted and shows it, where "Add people" invites. Settings home
   and the Contacts tab open it through `core:ui`'s `LocalRecentCallsLauncher`, which `PingogramApp` provides, as
   "Send feedback" is opened.
 

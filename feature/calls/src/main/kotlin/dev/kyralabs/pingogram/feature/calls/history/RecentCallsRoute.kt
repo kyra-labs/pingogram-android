@@ -4,7 +4,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -19,7 +22,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Recent calls: hoists [RecentCallsViewModel], calls back through the app's call starter ([LocalCallStarter], which
- * opens the call screen) and shows the result of deleting in a snackbar. [onBack] leaves the page.
+ * opens the call screen) and shows the result of deleting in a snackbar. "Start a call" opens [StartCallSheet], whose
+ * contact is called the same way, or whose "New group call" opens the voice chat's screen on a new conference call.
+ * [onBack] leaves the page.
  */
 @Composable
 internal fun RecentCallsRoute(
@@ -63,11 +68,36 @@ internal fun RecentCallsRoute(
             }
         }
     }
+    var startingCall by rememberSaveable { mutableStateOf(false) }
     RecentCallsScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
         modifier = modifier,
+        onStartCall = { startingCall = true },
         snackbarHostState = snackbarHostState,
+    )
+    if (startingCall) StartCallHost(onClose = { startingCall = false })
+}
+
+/** "Start a call": calls the contact chosen through the app's call starter, or starts a new group call. */
+@Composable
+private fun StartCallHost(onClose: () -> Unit) {
+    val calls = LocalCallStarter.current
+    val context = LocalContext.current
+    StartCallSheet(
+        onChoose = { choice ->
+            onClose()
+            when (choice) {
+                is StartCallChoice.Person -> {
+                    if (choice.isVideo) calls?.videoCall(choice.userId) else calls?.call(choice.userId)
+                }
+
+                StartCallChoice.GroupCall -> {
+                    GroupCallActivity.startGroupCall(context)
+                }
+            }
+        },
+        onDismiss = onClose,
     )
 }

@@ -158,17 +158,18 @@ class GroupCallManager
         }
 
         /**
-         * Starts a new conference call that one-to-one call [from] becomes (`docs/adr/0025-conference-calls.md`),
-         * taking its line over, and joins it [muted]: the call's link once TDLib announced it, which the one-to-one
-         * call is discarded with so that the other person joins too. A failure ends it with the reason.
+         * Starts a new conference call (`docs/adr/0025-conference-calls.md`) and joins it [muted]: the call's link once
+         * TDLib announced it. With [from], the one-to-one call it becomes, whose line it takes over and which is
+         * discarded with the link so that the other person joins too; without, Recent calls' "New group call", on a
+         * free line. A failure ends it with the reason; a busy line fails before anything starts.
          */
         suspend fun startConference(
-            from: Any,
+            from: Any?,
             muted: Boolean,
         ): Outcome<String> {
             val call =
                 mutex.withLock {
-                    if (live != null || !line.handOver(from, this)) return Outcome.Failure(DomainError.NotFound)
+                    if (live != null || !takeLine(from)) return Outcome.Failure(DomainError.NotFound)
                     Live(chatId = 0, groupCallId = 0, joinAs = null, scope = callScope(), startsConference = true)
                         .also {
                             it.muted = muted

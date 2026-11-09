@@ -294,7 +294,9 @@ class GroupCallViewModel
         }
 
         private suspend fun takeAction() {
-            val joins = action in JOIN_ACTIONS && (startChatId != null || startConference != null)
+            val joins =
+                action == GroupCallActivity.ACTION_START_CONFERENCE ||
+                    (action in JOIN_ACTIONS && (startChatId != null || startConference != null))
             if (savedStateHandle.get<Boolean>(KEY_DONE) == true || !joins) return
             when {
                 startConference != null && savedStateHandle.get<Boolean>(KEY_CONFIRMED) != true -> {
@@ -332,6 +334,10 @@ class GroupCallViewModel
                         manager.joinConference(conference)
                     }
 
+                    action == GroupCallActivity.ACTION_START_CONFERENCE -> {
+                        startNewConference()
+                    }
+
                     chatId == null -> {
                         return
                     }
@@ -351,6 +357,16 @@ class GroupCallViewModel
                 unavailable.value = null
             }
         }
+
+        /**
+         * Starts a new conference call: joining once it started, whose screen then says if it failed; busy when it
+         * could not start, as the line holds another call (a voice chat the user is in shows instead).
+         */
+        private suspend fun startNewConference(): JoinResult =
+            when (manager.startConference(from = null, muted = true)) {
+                is Outcome.Success -> JoinResult.Joining
+                is Outcome.Failure -> if (manager.call.value == null) JoinResult.Busy else JoinResult.Joining
+            }
 
         /** The chat (as [chat]), and whether a conference call's link waits for "Join". */
         private fun shownChat(): Flow<Pair<GroupCallChat?, Boolean>> = combine(chat(), confirming, ::Pair)
