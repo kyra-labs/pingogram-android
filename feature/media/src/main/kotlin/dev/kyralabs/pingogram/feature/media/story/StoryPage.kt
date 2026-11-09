@@ -85,7 +85,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -102,6 +101,8 @@ import dev.kyralabs.pingogram.feature.media.ui.BlurredMinithumbnail
 import dev.kyralabs.pingogram.feature.media.ui.ExpandableCaption
 import dev.kyralabs.pingogram.feature.media.ui.ViewerError
 import dev.kyralabs.pingogram.feature.media.ui.ViewerImage
+import dev.kyralabs.pingogram.feature.media.ui.coveredBy
+import dev.kyralabs.pingogram.feature.media.ui.rememberViewerImageAlpha
 import java.util.Locale
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -205,6 +206,23 @@ private fun StoryPageLayout(
     }
 }
 
+/** A photo story decoded at [widthPx] × [heightPx] over its blurred minithumbnail, which it covers once shown. */
+@Composable
+private fun StoryPhoto(
+    media: StoryMedia.Photo,
+    widthPx: Int,
+    heightPx: Int,
+    indicator: @Composable () -> Unit,
+) {
+    val alpha = rememberViewerImageAlpha(media.fileId)
+    BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize(), covered = remember(alpha) { coveredBy(alpha) })
+    if (media.isReady) {
+        ViewerImage(media.fileId, widthPx, heightPx, Modifier.fillMaxSize(), alpha = alpha)
+    } else {
+        indicator()
+    }
+}
+
 /**
  * What the story shows, filling the frame: a photo (decoded at the frame's size) or a video, each over its blurred
  * minithumbnail and with a [DelayedLoadingIndicator] until its file is on the device; for a video its thumbnail until
@@ -221,7 +239,6 @@ private fun StoryMediaContent(
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val widthPx = constraints.maxWidth
         val heightPx = constraints.maxHeight
-        val displaySize = DpSize(maxWidth, maxHeight)
         val loading = stringResource(R.string.story_viewer_loading)
         val indicator = @Composable { DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading }) }
         when (media) {
@@ -230,16 +247,12 @@ private fun StoryMediaContent(
             }
 
             is StoryMedia.Photo -> {
-                BlurredMinithumbnail(media.minithumbnail, displaySize, Modifier.fillMaxSize())
-                if (media.isReady) {
-                    ViewerImage(media.fileId, widthPx, heightPx, Modifier.fillMaxSize())
-                } else {
-                    indicator()
-                }
+                StoryPhoto(media, widthPx, heightPx, indicator)
             }
 
             is StoryMedia.Video -> {
-                BlurredMinithumbnail(media.minithumbnail, displaySize, Modifier.fillMaxSize())
+                // Under the surface only until its first frame, which covers it.
+                if (!media.showsFrame) BlurredMinithumbnail(media.minithumbnail, Modifier.fillMaxSize())
                 if (media.isReady) videoSurface(Modifier.fillMaxSize())
                 if (!media.showsFrame && media.thumbnailFileId != null) {
                     ViewerImage(media.thumbnailFileId, widthPx, heightPx, Modifier.fillMaxSize())

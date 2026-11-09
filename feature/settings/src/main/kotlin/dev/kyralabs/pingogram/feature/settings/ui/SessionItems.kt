@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The rows and the confirmation of the Active sessions page.
 
@@ -212,7 +213,7 @@ internal fun TerminationDialog(
     }
 }
 
-/** How long sessions may stay without activity: in years or months where that is exact, else in days. */
+/** How long sessions may stay without activity: in years, months or weeks where that is exact, else in days. */
 @Composable
 internal fun ttlText(days: Int): String =
     when {
@@ -226,22 +227,40 @@ internal fun ttlText(days: Int): String =
             pluralStringResource(R.plurals.settings_sessions_ttl_months, months, months)
         }
 
+        days > 0 && days < DAYS_PER_MONTH && days % DAYS_PER_WEEK == 0 -> {
+            val weeks = days / DAYS_PER_WEEK
+            pluralStringResource(R.plurals.settings_sessions_ttl_weeks, weeks, weeks)
+        }
+
         else -> {
             pluralStringResource(R.plurals.settings_sessions_ttl_days, days, days)
         }
     }
 
+/** This device's session as the status card: the device, its app and system, where it is. */
+@Composable
+internal fun ThisDeviceCard(session: SessionItem) {
+    SettingsStatusCard(
+        kicker = stringResource(R.string.settings_section_this_device),
+        title = session.title.resolve(),
+        summary = session.app.resolve(),
+        status = session.activity.resolve(),
+        icon = session.device.iconRes(),
+    )
+}
+
 @DrawableRes
-private fun SessionDevice.iconRes(): Int =
+internal fun SessionDevice.iconRes(): Int =
     when (this) {
         SessionDevice.Phone -> R.drawable.ic_smartphone
         SessionDevice.Tablet -> R.drawable.ic_tablet
         SessionDevice.Desktop -> R.drawable.ic_computer
         SessionDevice.Browser -> R.drawable.ic_language
-        SessionDevice.GameConsole -> R.drawable.ic_sports_esports
+        SessionDevice.GameConsole -> UiR.drawable.ic_sports_esports
         SessionDevice.Unknown -> R.drawable.ic_devices
     }
 
-// Telegram's choices for the inactive session TTL are a week, months and a year (1, 3, 6 or 12 months of 30 days).
+// Telegram offers a week, 1, 3 or 6 months of 30 days and a year of 365 days for the inactive session TTL.
+private const val DAYS_PER_WEEK = 7
 private const val DAYS_PER_MONTH = 30
 private const val DAYS_PER_YEAR = 365

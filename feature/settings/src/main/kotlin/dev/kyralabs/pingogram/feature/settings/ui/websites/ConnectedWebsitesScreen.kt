@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.destructiveItemColors
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import kotlinx.coroutines.launch
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Websites page: hoists [ConnectedWebsitesViewModel], loads the websites again whenever the page shows, and shows
@@ -190,7 +191,7 @@ private fun WebsiteRow(
 ) {
     SegmentedListItem(
         shapes = shapes,
-        leadingContent = { SettingsItemIcon(R.drawable.ic_public) },
+        leadingContent = { SettingsItemIcon(UiR.drawable.ic_public) },
         trailingContent = {
             if (isBusy) {
                 val disconnecting = stringResource(R.string.settings_website_disconnecting, website.domain)
@@ -255,7 +256,7 @@ private fun DisconnectConfirmation(
                 )
             }
         }
-    DestructiveDialog(icon = R.drawable.ic_public, texts = texts, onConfirm = onConfirm, onDismiss = onDismiss)
+    DestructiveDialog(icon = UiR.drawable.ic_public, texts = texts, onConfirm = onConfirm, onDismiss = onDismiss)
 }
 
 private const val DISCONNECT_ALL = "disconnectAll"

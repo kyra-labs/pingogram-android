@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Badge
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -139,6 +140,37 @@ private fun CallAction(
                 painter = painterResource(UiR.drawable.ic_call_filled),
                 contentDescription = stringResource(R.string.chat_call),
             )
+        }
+    }
+}
+
+/**
+ * The top bar's navigation icon: close in selection mode ([selectedCount] not null, [onClearSelection]), else back
+ * ([onBack]); nothing without back, in the detail pane beside the chat list.
+ */
+@Composable
+internal fun ChatNavigationIcon(
+    selectedCount: Int?,
+    onClearSelection: () -> Unit,
+    onBack: (() -> Unit)?,
+) {
+    when {
+        selectedCount != null -> {
+            IconButton(onClick = onClearSelection, shapes = IconButtonDefaults.shapes()) {
+                Icon(
+                    painter = painterResource(UiR.drawable.ic_close),
+                    contentDescription = stringResource(R.string.selection_clear),
+                )
+            }
+        }
+
+        onBack != null -> {
+            IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
+                Icon(
+                    painter = painterResource(UiR.drawable.ic_arrow_back),
+                    contentDescription = stringResource(R.string.chat_back),
+                )
+            }
         }
     }
 }

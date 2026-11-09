@@ -37,6 +37,7 @@ internal fun ItemInputs.toItem(): ChatItem {
             callUserId = message.chatId.takeIf { content.action is ServiceAction.Call && kind == ChatKind.Private },
             callIsVideo = (content.action as? ServiceAction.Call)?.isVideo == true,
             groupCallChatId = message.chatId.takeIf { (content.action as? ServiceAction.GroupCall)?.isActive == true },
+            canWave = canWave(content.action),
         )
     } else {
         toBubble(content)
@@ -98,10 +99,18 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
                 )
             },
         isEmojiOnly = showsLargeEmoji(content, text),
+        isShout = isShout(content, text),
+        headlineLength = headlineLength(text),
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
         hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
+        senderHue = senderHue(showsSender),
+        senderRole = senderRole.takeIf { showsSender },
+        mentionsMe = mentionsMe(text),
+        myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
+        isChannelPost = kind == ChatKind.Channel,
+        views = views(newest),
     )
 }
 

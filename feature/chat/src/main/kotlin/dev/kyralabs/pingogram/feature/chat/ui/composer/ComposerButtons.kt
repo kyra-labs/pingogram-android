@@ -3,10 +3,12 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -30,6 +32,8 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The buttons of the composer: sending, with its menu of other ways to send, saving an edit, and those in the pill.
@@ -87,7 +91,7 @@ internal fun SendButton(
                             )
                     },
             enabled = enabled,
-            shapes = composerActionShapes(),
+            shapes = sendShapes(),
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
@@ -110,6 +114,17 @@ internal fun SendButton(
 internal fun composerActionShapes(): IconButtonShapes =
     IconButtonDefaults.shapes(
         shape = IconButtonDefaults.mediumRoundShape,
+        pressedShape = IconButtonDefaults.mediumPressedShape,
+    )
+
+/**
+ * The send button's shapes: a rounded square (`IconButtonDefaults.mediumSquareShape`) beside the round microphone
+ * (`docs/DESIGN_SYSTEM.md` §13.5).
+ */
+@Composable
+private fun sendShapes(): IconButtonShapes =
+    IconButtonDefaults.shapes(
+        shape = IconButtonDefaults.mediumSquareShape,
         pressedShape = IconButtonDefaults.mediumPressedShape,
     )
 
@@ -155,24 +170,6 @@ internal fun AttachButton(onAttach: () -> Unit) {
         Icon(
             painter = painterResource(UiR.drawable.ic_add),
             contentDescription = stringResource(R.string.attach),
-        )
-    }
-}
-
-/**
- * The gallery button at the end of the composer's pill while the field is empty, the commonest attachment a tap away:
- * it opens the
- * system photo picker ([onGallery]) without the attach menu.
- */
-@Composable
-internal fun GalleryButton(onGallery: () -> Unit) {
-    IconButton(
-        onClick = onGallery,
-        shapes = IconButtonDefaults.shapes(),
-    ) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_image),
-            contentDescription = stringResource(R.string.composer_gallery),
         )
     }
 }

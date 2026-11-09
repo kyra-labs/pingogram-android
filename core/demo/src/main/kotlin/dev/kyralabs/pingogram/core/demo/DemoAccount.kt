@@ -21,6 +21,7 @@ internal class DemoAccount : DemoArea {
     private val websites = mutableListOf<TdApi.ConnectedWebsite>()
     private val profilePhotos = mutableListOf<TdApi.ChatPhoto>()
     private var readDate = TdApi.ReadDatePrivacySettings(true)
+    private var inactiveSessionDays = INACTIVE_SESSION_DAYS
     private var newChats = TdApi.NewChatPrivacySettings(true, 0)
     private var storyRead = false
     private var storyReaction: TdApi.ReactionType? = null
@@ -138,7 +139,11 @@ internal class DemoAccount : DemoArea {
             }
 
             is TdApi.GetActiveSessions -> {
-                ok(TdApi.Sessions(sessions.toTypedArray(), INACTIVE_SESSION_DAYS))
+                ok(TdApi.Sessions(sessions.toTypedArray(), inactiveSessionDays))
+            }
+
+            is TdApi.SetInactiveSessionTtl -> {
+                okChanged(emptyList()).also { inactiveSessionDays = function.inactiveSessionTtlDays }
             }
 
             is TdApi.TerminateSession -> {

@@ -29,6 +29,7 @@ internal fun paletteColorScheme(
             ThemePalette.Yellow -> yellowArgb(index)
             ThemePalette.Orange -> orangeArgb(index)
             ThemePalette.Red -> redArgb(index)
+            ThemePalette.Coral -> coralArgb(index)
             ThemePalette.Pink -> pinkArgb(index)
             ThemePalette.Purple -> purpleArgb(index)
             ThemePalette.Indigo -> indigoArgb(index)
@@ -49,6 +50,7 @@ internal fun paletteSeed(palette: ThemePalette): Color =
         ThemePalette.Yellow -> Color(0xFFFFEB3B)
         ThemePalette.Orange -> Color(0xFFFF9800)
         ThemePalette.Red -> Color(0xFFF44336)
+        ThemePalette.Coral -> Color(0xFFFF8C7A)
         ThemePalette.Pink -> Color(0xFFE91E63)
         ThemePalette.Purple -> Color(0xFF9C27B0)
         ThemePalette.Indigo -> Color(0xFF3F51B5)
@@ -2685,6 +2687,328 @@ private fun redArgb(index: Int): IntArray =
         }
     }
 
+/** Coral: #FF8C7A, SchemeContent. */
+private fun coralArgb(index: Int): IntArray =
+    when (index) {
+        0 -> {
+            intArrayOf(
+                0xFF9E4134.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFF8C7A.toInt(),
+                0xFF762419.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF83524A.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFDBDB2.toInt(),
+                0xFF794942.toInt(),
+                0xFF6B5F00.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFC0AD30.toInt(),
+                0xFF494000.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF231918.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF231918.toInt(),
+                0xFFF9DCD7.toInt(),
+                0xFF56423F.toInt(),
+                0xFF9E4134.toInt(),
+                0xFF392E2C.toInt(),
+                0xFFFFEDEA.toInt(),
+                0xFFBA1A1A.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFDAD6.toInt(),
+                0xFF93000A.toInt(),
+                0xFF89726E.toInt(),
+                0xFFDCC0BC.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFFFDEAE7.toInt(),
+                0xFFF7E4E1.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFFFFF0EE.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFE8D6D3.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF410100.toInt(),
+                0xFF7E2A1F.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFF7B7AD.toInt(),
+                0xFF33110C.toInt(),
+                0xFF673B33.toInt(),
+                0xFFF9E462.toInt(),
+                0xFFDCC749.toInt(),
+                0xFF201C00.toInt(),
+                0xFF514700.toInt(),
+            )
+        }
+
+        1 -> {
+            intArrayOf(
+                0xFF681A10.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFB04F41.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF542B24.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF936057.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF3E3600.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF7B6D00.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF231918.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF180F0E.toInt(),
+                0xFFF9DCD7.toInt(),
+                0xFF44322F.toInt(),
+                0xFF9E4134.toInt(),
+                0xFF392E2C.toInt(),
+                0xFFFFEDEA.toInt(),
+                0xFF740006.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFCF2C27.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF624E4A.toInt(),
+                0xFF7E6864.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFFF7E4E1.toInt(),
+                0xFFEBD9D6.toInt(),
+                0xFFE0CECB.toInt(),
+                0xFFFFF0EE.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFD4C3C0.toInt(),
+                0xFFB04F41.toInt(),
+                0xFF91382B.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF936057.toInt(),
+                0xFF784841.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF7B6D00.toInt(),
+                0xFF605500.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+            )
+        }
+
+        2 -> {
+            intArrayOf(
+                0xFF5A0F07.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF822D21.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF48211B.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF6A3D36.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF332C00.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF534900.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF231918.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFF000000.toInt(),
+                0xFFF9DCD7.toInt(),
+                0xFF000000.toInt(),
+                0xFF9E4134.toInt(),
+                0xFF392E2C.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF600004.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF98000A.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF392825.toInt(),
+                0xFF584541.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFF8F6.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFFE3D0CD.toInt(),
+                0xFFD4C3C0.toInt(),
+                0xFFFFEDEA.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFC6B5B2.toInt(),
+                0xFF822D21.toInt(),
+                0xFF63160D.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF6A3D36.toInt(),
+                0xFF502721.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF534900.toInt(),
+                0xFF3A3300.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt(),
+            )
+        }
+
+        3 -> {
+            intArrayOf(
+                0xFFFFB6AA.toInt(),
+                0xFF60140B.toInt(),
+                0xFFFF8C7A.toInt(),
+                0xFF762419.toInt(),
+                0xFF9E4134.toInt(),
+                0xFFF7B7AD.toInt(),
+                0xFF4D251F.toInt(),
+                0xFF6A3D36.toInt(),
+                0xFFE7A99F.toInt(),
+                0xFFDDC94A.toInt(),
+                0xFF383100.toInt(),
+                0xFFC0AD30.toInt(),
+                0xFF494000.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF56423F.toInt(),
+                0xFFDCC0BC.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF392E2C.toInt(),
+                0xFFFFB4AB.toInt(),
+                0xFF690005.toInt(),
+                0xFF93000A.toInt(),
+                0xFFFFDAD6.toInt(),
+                0xFFA48B87.toInt(),
+                0xFF56423F.toInt(),
+                0xFF000000.toInt(),
+                0xFF423735.toInt(),
+                0xFF271D1C.toInt(),
+                0xFF322826.toInt(),
+                0xFF3D3230.toInt(),
+                0xFF231918.toInt(),
+                0xFF150C0B.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF410100.toInt(),
+                0xFF7E2A1F.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFF7B7AD.toInt(),
+                0xFF33110C.toInt(),
+                0xFF673B33.toInt(),
+                0xFFF9E462.toInt(),
+                0xFFDCC749.toInt(),
+                0xFF201C00.toInt(),
+                0xFF514700.toInt(),
+            )
+        }
+
+        4 -> {
+            intArrayOf(
+                0xFFFFD2CB.toInt(),
+                0xFF500803.toInt(),
+                0xFFFF8C7A.toInt(),
+                0xFF4B0401.toInt(),
+                0xFF802B20.toInt(),
+                0xFFFFD2CB.toInt(),
+                0xFF401A15.toInt(),
+                0xFFBB8379.toInt(),
+                0xFF000000.toInt(),
+                0xFFF3DD5C.toInt(),
+                0xFF2C2600.toInt(),
+                0xFFC0AD30.toInt(),
+                0xFF272200.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF56423F.toInt(),
+                0xFFF3D6D1.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF322826.toInt(),
+                0xFFFFD2CC.toInt(),
+                0xFF540003.toInt(),
+                0xFFFF5449.toInt(),
+                0xFF000000.toInt(),
+                0xFFC7ACA8.toInt(),
+                0xFFA38B87.toInt(),
+                0xFF000000.toInt(),
+                0xFF4E4240.toInt(),
+                0xFF302524.toInt(),
+                0xFF3B302E.toInt(),
+                0xFF473B39.toInt(),
+                0xFF251B1A.toInt(),
+                0xFF0D0605.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF2D0000.toInt(),
+                0xFF681A10.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFF7B7AD.toInt(),
+                0xFF260704.toInt(),
+                0xFF542B24.toInt(),
+                0xFFF9E462.toInt(),
+                0xFFDCC749.toInt(),
+                0xFF151100.toInt(),
+                0xFF3E3600.toInt(),
+            )
+        }
+
+        else -> {
+            intArrayOf(
+                0xFFFFECE9.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFAEA1.toInt(),
+                0xFF220000.toInt(),
+                0xFF802B20.toInt(),
+                0xFFFFECE9.toInt(),
+                0xFF000000.toInt(),
+                0xFFF3B3A9.toInt(),
+                0xFF1E0301.toInt(),
+                0xFFFFF1A9.toInt(),
+                0xFF000000.toInt(),
+                0xFFD8C445.toInt(),
+                0xFF0E0B00.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFF56423F.toInt(),
+                0xFFFFFFFF.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFFF1DEDB.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFECE9.toInt(),
+                0xFF000000.toInt(),
+                0xFFFFAEA4.toInt(),
+                0xFF220001.toInt(),
+                0xFFFFECE9.toInt(),
+                0xFFD8BCB8.toInt(),
+                0xFF000000.toInt(),
+                0xFF5A4D4B.toInt(),
+                0xFF392E2C.toInt(),
+                0xFF443937.toInt(),
+                0xFF504442.toInt(),
+                0xFF271D1C.toInt(),
+                0xFF000000.toInt(),
+                0xFF1A1110.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFFFB4A8.toInt(),
+                0xFF000000.toInt(),
+                0xFF2D0000.toInt(),
+                0xFFFFDAD4.toInt(),
+                0xFFF7B7AD.toInt(),
+                0xFF000000.toInt(),
+                0xFF260704.toInt(),
+                0xFFF9E462.toInt(),
+                0xFFDCC749.toInt(),
+                0xFF000000.toInt(),
+                0xFF151100.toInt(),
+            )
+        }
+    }
+
 /** Pink: #E91E63, SchemeTonalSpot. */
 private fun pinkArgb(index: Int): IntArray =
     when (index) {
@@ -4300,3 +4624,113 @@ internal val OnlineLight: Color = Color(0xFF006E1C)
 
 /** #4CAF50 at tone 80, before harmonization with the dark scheme's primary. */
 internal val OnlineDark: Color = Color(0xFF78DC77)
+
+/**
+ * The experimental look's vivid avatar fills, the same in both themes, as fill and text in turn, the text at tone
+ * 10:
+ * - Orange, tone 80
+ * - Red, tone 70
+ * - Teal, tone 82
+ * - Blue, tone 79
+ * - Lilac, tone 79
+ * - Gold, tone 86
+ * - Slate, tone 80
+ */
+internal val VividAvatarArgb: LongArray =
+    longArrayOf(
+        0xFFFFB77C,
+        0xFF2F1500,
+        0xFFFD8B79,
+        0xFF410100,
+        0xFF5EE0CC,
+        0xFF00201C,
+        0xFF8FC9FF,
+        0xFF001D32,
+        0xFFD7B5FF,
+        0xFF28084B,
+        0xFFFFD25E,
+        0xFF251A00,
+        0xFFB5C7EF,
+        0xFF061B3A,
+    )
+
+/**
+ * The experimental look's sender hues, eight values each: in light theme the vivid fill (tone 90), its text
+ * (10), the tinted fill (96, chroma 12 at most) and the ink (40); then the same in dark theme
+ * (80, 10, 15, 80):
+ * - Red
+ * - Orange
+ * - Violet
+ * - Green
+ * - Teal
+ * - Blue
+ * - Pink
+ * - Gold
+ */
+internal val SenderHueArgb: LongArray =
+    longArrayOf(
+        0xFFFFDAD4,
+        0xFF410100,
+        0xFFFFF0EE,
+        0xFF9E4134,
+        0xFFFFB4A8,
+        0xFF410100,
+        0xFF34211E,
+        0xFFFFB4A8,
+        0xFFFFDCC3,
+        0xFF2F1500,
+        0xFFFFF1E9,
+        0xFF875120,
+        0xFFFFB77C,
+        0xFF2F1500,
+        0xFF322216,
+        0xFFFFB77C,
+        0xFFEEDBFF,
+        0xFF28084B,
+        0xFFFBF0FF,
+        0xFF6E5193,
+        0xFFD9B9FF,
+        0xFF28084B,
+        0xFF292330,
+        0xFFD9B9FF,
+        0xFF95F8A0,
+        0xFF002108,
+        0xFFEAF7E6,
+        0xFF006E2A,
+        0xFF7ADB86,
+        0xFF002108,
+        0xFF1D291D,
+        0xFF7ADB86,
+        0xFF78F7E3,
+        0xFF00201C,
+        0xFFE5F8F2,
+        0xFF006B5F,
+        0xFF58DBC7,
+        0xFF00201C,
+        0xFF192926,
+        0xFF58DBC7,
+        0xFFCDE5FF,
+        0xFF001D32,
+        0xFFEDF4FF,
+        0xFF1B6394,
+        0xFF95CCFF,
+        0xFF001D32,
+        0xFF1D2730,
+        0xFF95CCFF,
+        0xFFFFD8E9,
+        0xFF390527,
+        0xFFFFF0F4,
+        0xFF8A496C,
+        0xFFFFAFD7,
+        0xFF390527,
+        0xFF312129,
+        0xFFFFAFD7,
+        0xFFFFDF95,
+        0xFF251A00,
+        0xFFFFF2DC,
+        0xFF765A00,
+        0xFFEDC14F,
+        0xFF251A00,
+        0xFF2C2513,
+        0xFFEDC14F,
+    )

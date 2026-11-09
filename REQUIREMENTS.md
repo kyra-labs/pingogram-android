@@ -174,6 +174,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
   (standard/medium/high per M3).
+- FR-S2a Must: Pingogram's look (`docs/DESIGN_SYSTEM.md` §13, `docs/adr/0035-experimental-ui.md`): first an opt-in
+  "Experimental UI" (owner decision 2026-11-07), the app's only look since the owner's decision of 2026-11-08, with no
+  switch.
 
 ### 5.6 Notifications & background [M3]
 

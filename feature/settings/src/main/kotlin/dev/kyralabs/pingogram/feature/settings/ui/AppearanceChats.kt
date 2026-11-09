@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -41,12 +44,14 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.systemContrastOrNull
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: the rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]),
- * which Enter sends on a hardware and on the on-screen keyboard, and raise to listen.
+ * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
+ * rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]), which Enter sends on a
+ * hardware and on the on-screen keyboard, and raise to listen.
  */
 @Composable
 internal fun ChatsGroup(
@@ -54,8 +59,10 @@ internal fun ChatsGroup(
     chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
+    leading: SettingsGroupScope.() -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
+        leading()
         item { shapes -> ChatAppearanceItem(chat, shapes, pages.onOpenChatAppearance) }
         item { shapes ->
             SettingsRow(
@@ -142,8 +149,10 @@ internal class ChatsSettings(
 )
 
 /**
- * The "Chat list" group: "Show stories", whether the story rings show above the chats (they load only then), and a row
- * that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its summary.
+ * The "Chat list" group: a row that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its
+ * summary, "Show stories", whether the story rings show above the chats (they load only then), "Edit folders
+ * button", whether the folder tabs end in "Edit folders" (owner decision 2026-11-07), "Chat type icons", and "Folder
+ * tabs", what each tab shows (owner decision 2026-11-08).
  */
 @Composable
 internal fun ChatListGroup(
@@ -169,8 +178,76 @@ internal fun ChatListGroup(
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowStories(it)) },
             )
         }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_edit_folders_button),
+                summary = stringResource(R.string.settings_edit_folders_button_summary),
+                checked = chatList.showEditFoldersButton,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
+            )
+        }
+        // The symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_chat_type_icons),
+                summary = stringResource(R.string.settings_chat_type_icons_summary),
+                checked = chatList.showChatTypeIcons,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
+            )
+        }
+        item { shapes ->
+            FolderTabStyleItem(
+                style = chatList.folderTabStyle,
+                shapes = shapes,
+                onSelect = { onEvent(AppearanceEvent.SetFolderTabStyle(it)) },
+            )
+        }
     }
 }
+
+/**
+ * "Folder tabs": what each folder tab above the chat list shows, its name, its icon and name, or its icon alone, as
+ * [ChoiceRow]'s connected buttons in a segment of their own, as the contrast's.
+ */
+@Composable
+private fun FolderTabStyleItem(
+    style: FolderTabStyle,
+    shapes: ListItemShapes,
+    onSelect: (FolderTabStyle) -> Unit,
+) {
+    SettingsSegment(shapes) {
+        SegmentedListItem(
+            shapes = ListItemDefaults.shapes(),
+            supportingContent = { Text(stringResource(R.string.settings_folder_tabs_summary)) },
+            colors = nestedItemColors(),
+        ) {
+            Text(stringResource(R.string.settings_folder_tabs))
+        }
+        ChoiceRow(
+            options = FolderTabStyles,
+            selected = style,
+            label = { stringResource(it.labelRes()) },
+            onSelect = onSelect,
+            contentPadding =
+                PaddingValues(
+                    start = MaterialTheme.spacing.large,
+                    end = MaterialTheme.spacing.large,
+                    bottom = MaterialTheme.spacing.large,
+                ),
+        )
+    }
+}
+
+private val FolderTabStyles = FolderTabStyle.entries.toImmutableList()
+
+private fun FolderTabStyle.labelRes(): Int =
+    when (this) {
+        FolderTabStyle.Text -> R.string.settings_folder_tabs_text
+        FolderTabStyle.IconAndText -> R.string.settings_folder_tabs_icon_and_text
+        FolderTabStyle.Icon -> R.string.settings_folder_tabs_icon
+    }
 
 /** "Right: Read · Left: Archive", the sides as the layout's direction puts them. */
 @Composable

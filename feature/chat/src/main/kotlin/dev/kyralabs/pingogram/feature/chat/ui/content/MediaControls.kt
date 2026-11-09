@@ -71,13 +71,15 @@ internal fun PlayPauseButton(
 
 /**
  * A download's [progress] (0–1) as a determinate [CircularWavyProgressIndicator] in the bubble's accent on its
- * [BubbleColors.track], around [content], typically an icon button.
+ * [BubbleColors.track], around [content], typically an icon button; its wave flat while the download is not [moving]
+ * (paused), so a stopped download never looks like one under way.
  */
 @Composable
 internal fun DownloadRing(
     progress: Float,
     colors: BubbleColors,
     modifier: Modifier = Modifier,
+    moving: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     Box(modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize), contentAlignment = Alignment.Center) {
@@ -86,6 +88,7 @@ internal fun DownloadRing(
             modifier = Modifier.matchParentSize(),
             color = colors.accent,
             trackColor = colors.track,
+            amplitude = if (moving) WavyProgressIndicatorDefaults.indicatorAmplitude else STILL,
         )
         content()
     }
@@ -144,3 +147,6 @@ internal fun playbackTimeText(
     } else {
         mediaDurationText(duration)
     }
+
+/** A ring's wave at no height: a flat ring. */
+private val STILL: (Float) -> Float = { 0f }

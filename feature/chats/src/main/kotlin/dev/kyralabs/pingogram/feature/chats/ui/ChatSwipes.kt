@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,12 +19,19 @@ import javax.inject.Inject
  * What swiping a chat row does (Appearance → Chat list → Swipe actions): toward the end ([start], from the start
  * edge) and toward the start ([end]). The defaults are read and archive, until the settings are read. With
  * [changesFolder], rows do not swipe: swiping the list shows the folder tab beside the selected one ([folderSwipe]).
+ * It carries the chat list's other device settings too, as the same settings hold them: whether the folder tabs end
+ * in "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default), and whether
+ * rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
+ * default), and what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default).
  */
 @Immutable
 data class ChatSwipes(
     val start: SwipeAction = SwipeAction.Read,
     val end: SwipeAction = SwipeAction.Archive,
     val changesFolder: Boolean = false,
+    val editFoldersButton: Boolean = true,
+    val chatTypeIcons: Boolean = true,
+    val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
 )
 
 /**
@@ -41,8 +49,16 @@ class ChatSwipesViewModel
     ) : ViewModel() {
         val swipes: StateFlow<ChatSwipes> =
             repository.settings
-                .map { ChatSwipes(it.startSwipe, it.endSwipe, it.swipeChangesFolder) }
-                .distinctUntilChanged()
+                .map {
+                    ChatSwipes(
+                        start = it.startSwipe,
+                        end = it.endSwipe,
+                        changesFolder = it.swipeChangesFolder,
+                        editFoldersButton = it.showEditFoldersButton,
+                        chatTypeIcons = it.showChatTypeIcons,
+                        folderTabStyle = it.folderTabStyle,
+                    )
+                }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())
 
         private companion object {

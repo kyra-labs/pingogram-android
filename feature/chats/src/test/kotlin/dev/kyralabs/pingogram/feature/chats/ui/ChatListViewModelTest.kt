@@ -262,10 +262,10 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
         }
 
     @Test
-    fun `another folder's pages wait for its own end to come near`() =
+    fun `another folder's pages wait for its own end to come near, after its first page loaded ahead`() =
         runTest {
             chats.folderList.value = persistentListOf(folder(1))
-            chats.answerLoads(ok)
+            chats.answerLoads(ok, ok)
             chats.setChats(ChatListType.Main, chat(id = 2))
             val viewModel = viewModel()
             send(viewModel, nearEnd)
@@ -273,8 +273,9 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
 
             send(viewModel, ChatListEvent.SelectFolder(1))
 
+            // The folder beside "All chats" loads its first page ahead, and nothing more until its end comes near.
             assertEquals(
-                listOf(ChatListType.Main to 20, ChatListType.Main to PAGE, ChatListType.Folder(1) to 20),
+                listOf(ChatListType.Main to 20, ChatListType.Folder(1) to 20, ChatListType.Main to PAGE),
                 chats.loadRequests,
             )
         }
@@ -355,9 +356,9 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
 
             assertEquals(
                 listOf(
-                    FolderTab.Folder(1, "Work", unreadCount = 2),
+                    FolderTab.Folder(1, "Work", unreadCount = 2, iconName = "Custom"),
                     FolderTab.AllChats(unreadCount = 4),
-                    FolderTab.Folder(2, "Family", unreadCount = 0),
+                    FolderTab.Folder(2, "Family", unreadCount = 0, iconName = "Custom"),
                 ),
                 viewModel().state.folderTabs,
             )

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -23,6 +24,8 @@ import androidx.compose.ui.test.performTextInput
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,6 +54,7 @@ class SearchScreenTest {
     private fun setScreen(
         state: SearchUiState,
         textFieldState: TextFieldState = TextFieldState(SearchPreviewData.queryOf(state)),
+        topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -59,6 +63,7 @@ class SearchScreenTest {
                     textFieldState = textFieldState,
                     onEvent = { events += it },
                     onBack = { backPressed = true },
+                    topPeople = topPeople,
                 )
             }
         }
@@ -167,9 +172,9 @@ class SearchScreenTest {
 
     @Test
     fun `a person in the top row opens the chat with them`() {
-        setScreen(SearchPreviewData.suggestions)
+        setScreen(SearchPreviewData.suggestions, topPeople = SearchPreviewData.topPeople)
 
-        composeRule.onNodeWithContentDescription("Grace Hopper, Online").performClick()
+        composeRule.onAllNodesWithContentDescription("Grace Hopper", substring = true).onFirst().performClick()
 
         assertEquals(listOf(SearchEvent.OpenChat(8)), events.filterNot { it is SearchEvent.QueryChanged })
     }

@@ -110,6 +110,12 @@ import androidx.compose.ui.unit.dp
  *   starts: half its 4 dp handle and the 6 dp gap beside it, where the media viewer's seek bar draws what is buffered.
  * @property chartHeight the plot of a statistics chart, without its labels.
  * @property chartLine the width of a statistics chart's lines.
+ * @property experimentalNavigationBar the experimental look's floating navigation bar (`docs/DESIGN_SYSTEM.md` §13): a
+ *   taller pill than [floatingNavigationBar], as the owner's design draws it.
+ * @property experimentalFab the experimental look's "New chat" button beside that bar, a rounded square as tall.
+ * @property experimentalBottomFade the experimental look's fade at the end of a tab's list, under the bar.
+ * @property headerAction the experimental look's tonal circular action buttons in a tab's large header.
+ * @property experimentalAccountAvatar the account's avatar on the experimental look's account card in Settings.
  */
 @Immutable
 data class PingogramSizes(
@@ -176,6 +182,11 @@ data class PingogramSizes(
     val sliderInactiveTrackInset: Dp = 8.dp,
     val chartHeight: Dp = 192.dp,
     val chartLine: Dp = 2.dp,
+    val experimentalNavigationBar: Dp = 64.dp,
+    val experimentalFab: Dp = 64.dp,
+    val experimentalBottomFade: Dp = 132.dp,
+    val experimentalAccountAvatar: Dp = 76.dp,
+    val headerAction: Dp = 48.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

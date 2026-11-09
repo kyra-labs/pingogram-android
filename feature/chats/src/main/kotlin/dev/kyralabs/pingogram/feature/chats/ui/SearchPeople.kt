@@ -1,5 +1,10 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +31,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
+import java.util.Locale
 
 // The top people of search's suggestions (SearchResults.kt), above the recent chats.
 
@@ -76,6 +83,7 @@ private fun Person(
             isOnline = item.isOnline,
             placeholderIcon = item.placeholderIcon,
             onlineRingColor = rowContainerColor,
+            shape = item.avatarShape,
         )
         Text(
             text = title,
@@ -89,3 +97,48 @@ private fun Person(
         )
     }
 }
+
+/**
+ * The top people in the search header, above the chips (`docs/DESIGN_SYSTEM.md` §13.4): the [people] the view model
+ * narrowed to the query, growing in and shrinking away on the motion scheme's springs as matches come and go.
+ */
+@Composable
+internal fun HeaderPeople(
+    people: ImmutableList<SearchChatItem>,
+    onEvent: (SearchEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    // The last people shown stay while the row shrinks away: kept, not state, so keeping them recomposes nothing.
+    val last = remember { LastPeople(people) }
+    if (people.isNotEmpty()) last.people = people
+    val shown = last.people
+    AnimatedVisibility(
+        visible = people.isNotEmpty(),
+        modifier = modifier,
+        enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
+        exit = shrinkVertically(motionScheme.defaultSpatialSpec()) + fadeOut(motionScheme.defaultEffectsSpec()),
+    ) {
+        TopPeople(shown, { onEvent(SearchEvent.OpenChat(it)) })
+    }
+}
+
+/** The people [HeaderPeople] showed last. */
+private class LastPeople(
+    var people: ImmutableList<SearchChatItem>,
+)
+
+/**
+ * Whether this name has a word starting with each word of [query], ignoring case; true for a blank query. How the
+ * header narrows the top people as the user types (§13.4).
+ */
+internal fun String.matchesWords(
+    query: String,
+    locale: Locale,
+): Boolean {
+    val typed = query.lowercase(locale).split(WHITESPACE).filter { it.isNotEmpty() }
+    val words = lowercase(locale).split(WHITESPACE)
+    return typed.all { word -> words.any { it.startsWith(word) } }
+}
+
+private val WHITESPACE = Regex("\\s+")

@@ -38,6 +38,17 @@ sealed interface ChatEvent {
     data object ShowNewest : ChatEvent
 
     /**
+     * Show the oldest unread message that mentions the user (the "Jump to mention",
+     * `docs/DESIGN_SYSTEM.md` §13.5); showing it reads it.
+     */
+    data object JumpToMention : ChatEvent
+
+    /** Mute the chat forever, or unmute it (the channel top bar, §13.5). */
+    data class SetMuted(
+        val isMuted: Boolean,
+    ) : ChatEvent
+
+    /**
      * The messages the list shows now, wholly or in part, by id (every item of an album); reported whenever that
      * changes, and empty when the list leaves the screen. They go to TDLib as viewed, which reads them.
      */
@@ -185,6 +196,14 @@ sealed interface ChatEvent {
     /** A sticker tapped in the composer's sticker panel: [sticker] is sent at once, with the composer's reply. */
     data class SendSticker(
         val sticker: Sticker,
+    ) : ChatEvent
+
+    /**
+     * "Wave" on a member's join message (`docs/DESIGN_SYSTEM.md` §13.6): one of Telegram's
+     * greeting stickers goes out at once, replying to that message ([messageId]).
+     */
+    data class Wave(
+        val messageId: Long,
     ) : ChatEvent
 
     /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */

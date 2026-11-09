@@ -10,32 +10,69 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- Rich messages that channels post, with headings, collapsible sections, photos, lists and tables, show in the
-  conversation instead of "Unsupported message". Their photos and videos open in the media viewer.
-- The demo's channel has a sample rich post, with two sections to open and a photo.
+- Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
+  folder keeps its name, and unread counts stay on the icons).
+- Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
+- An emoji typed alone suggests its stickers above the message field: from your sets (the default), from every set,
+  or none (Settings → Stickers → "Suggest stickers by emoji").
+- Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
+- Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
+  people to it.
 
 ### Changed
-- The Chats tab has a large header: "Chats", with how many chats are unread and how many mention you under it, and
-  the search button and your picture beside it. Scrolling the chats shrinks it to one line. Search now opens from
-  there on every screen size, and your picture opens Settings; hold it to switch accounts.
-- The navigation bar shows only icons on the tabs you are not on, and "New chat" is a square button beside it on the
-  Chats tab (in the side rail on tablets). The chats fade out behind the bar instead of ending under it.
-- Search's Messages, Media and Links chips show how many results Telegram counted for the query once searched.
-- Pinned chats sit together at the top of the list under "Pinned", and a button at the end of the folder tabs opens
-  the folder settings.
-- Forums (groups with topics) show their picture as a rounded square, so they stand out from other groups: in the chat
-  list, search, the forward and share sheets, the chat's top bar, its info page and the home screen widget.
-- The chat list, notifications, reply quotes and chat exports show a rich message's text (its title or first
-  paragraph; an export, all of it and its photos) instead of "Unsupported message".
-- Photos and videos in a chat take the bubble's full width, cropped in height where needed, instead of showing a narrow
-  portrait picture beside empty room.
-- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (with its navigation suite; still allowed by
-  CLAUDE.md rule 7, as no stable release has the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and
-  kotlinx.serialization 1.12.0. Tests run on JUnit 6.1.3.
+- About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
+  update it themselves.
+
+## [2.0.0] - 2026-11-08
+
+Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts and Settings, now the only look.
+
+### Added
+- Group chats color each person's messages in their own hue (Appearance → Group bubbles: Automatic, Vivid or Tinted),
+  with role labels, a ring around messages that mention you, and a typing bubble.
+- Channels show their posts on a warm color with their views, and a short bold first line as the post's headline.
+- Rich channel posts (headings, collapsible sections, photos, lists and tables) show in the chat instead of
+  "Unsupported message".
+- Conversations have a "Jump to mention" button, a group's latest writers and online members in the top bar, and a
+  channel's notifications toggle.
+- "Wave" on a group's join message sends the new member a greeting sticker.
+- Settings search finds the pages inside Settings too, such as Blocked users, Passcode lock or Proxy.
+- Global search shows the people you write to most, narrowing them as you type.
+- Contacts shows who is online now, with Invite, My QR and Scan in a row under its header.
+- Privacy and security opens with a privacy checkup; Data and storage with the storage used and "Clear cache".
+- Active sessions lets you choose when unused sessions end (a week to a year), and a swipe ends a session.
+- About opens with "What's new" and "Check for updates", which open the release pages on GitHub.
+- A "Coral" color theme, and "Chat type icons" in Appearance → Chat list.
+- Photos sent as files show a thumbnail and open in Pingogram's own viewer.
+
+### Changed
+- Chats, Contacts and Settings have a large header that shrinks as you scroll; search opens from the Chats header,
+  and your picture opens Settings (hold it to switch accounts).
+- "New chat" sits beside the navigation bar; lists fade out above the bar, and messages fade into the composer.
+- Folders are chips that slide: the next folder's chats follow your finger, already loaded.
+- Pinned chats sit together at the top under "Pinned"; a button after the folder tabs opens the folder settings.
+- Groups, channels, forums and Saved Messages have avatars of their own shapes, and avatars without a photo have vivid
+  colors.
+- Every Settings page has the new look; Appearance has a live preview, the light and dark modes as cards, every color
+  theme in one row and "Reset".
+- Search's Messages, Media and Links chips show how many results were found.
+- Photos and videos take the bubble's full width.
+- Opening, closing and paging through photos and videos is much smoother and uses less memory, and leaving a chat
+  stops the downloads it started by itself.
+- Libraries updated: Material 3 to the pre-release `1.5.0-beta02` (allowed by CLAUDE.md rule 7: no stable release has
+  the Expressive components), AndroidX Core 1.19.1, DataStore 1.3.0 and kotlinx.serialization 1.12.0.
+
+### Removed
+- The "Experimental UI" switch: its look is Pingogram's look for everyone.
 
 ### Fixed
-- Opening and closing a photo or video in a chat no longer stutters: it grows out of its bubble and shrinks back into
-  it, instead of fading in over a black screen and snapping back.
+- Tapping an APK sent in a chat installs it again, after Android asks.
+- A paused download says "Paused" and resumes where it stopped.
+- Swiping between folders no longer stutters, and a folder no longer opens scrolled to the wrong chat.
+- A photo closed before it finished downloading shows once it arrives.
+- An incoming call shows the caller's picture from the right account after accounts were removed and added.
+- With raise to listen off, the first voice message no longer plays at the earpiece.
+- The composer's camera button no longer shows on devices without a camera.
 
 ## [1.1.3] - 2026-11-04
 
@@ -1119,7 +1156,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...v2.0.0
 [1.1.3]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.0...v1.1.1

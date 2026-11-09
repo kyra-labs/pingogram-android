@@ -67,6 +67,8 @@ class ChatAppearanceViewModel
 
         fun setWallpaper(wallpaper: ChatWallpaper) = save { appearanceRepository.setChatWallpaper(wallpaper) }
 
+        /** Saves how groups' bubbles are colored. */
+
         private fun save(write: suspend () -> Outcome<Unit>) {
             viewModelScope.launch {
                 write().onFailure { effectChannel.trySend(ChatAppearanceEffect.ShowError(it)) }

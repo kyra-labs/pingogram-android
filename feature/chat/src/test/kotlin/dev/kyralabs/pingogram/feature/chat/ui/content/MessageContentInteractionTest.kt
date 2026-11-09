@@ -85,10 +85,10 @@ class MessageContentInteractionTest {
     }
 
     @Test
-    fun `a download can be cancelled`() {
+    fun `a download can be paused`() {
         setContent { DocumentUnderTest(FileState.Downloading(downloadedSize = 1, size = 4, isActive = true)) }
 
-        composeRule.onNodeWithContentDescription("Cancel download").performClick()
+        composeRule.onNodeWithContentDescription("Pause download").performClick()
 
         assertEquals(listOf("cancel"), calls)
     }

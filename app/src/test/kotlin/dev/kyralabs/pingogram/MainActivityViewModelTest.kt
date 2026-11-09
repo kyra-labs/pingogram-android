@@ -69,7 +69,7 @@ class MainActivityViewModelTest {
             appLock,
             passcodes,
             timeSource,
-            chatLock,
+            lazyOf(chatLock),
         ).also { runCurrent() }
 
     private suspend fun TestScope.tdlib(state: TdApi.AuthorizationState) {
@@ -326,6 +326,30 @@ class MainActivityViewModelTest {
         }
 
     @Test
+    fun `asks for the locked chats only once the app leaves the screen, not while it starts`() =
+        runTest {
+            var asked = 0
+            val viewModel =
+                MainActivityViewModel(
+                    TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+                    appearance,
+                    appLock,
+                    passcodes,
+                    timeSource,
+                    lazy {
+                        asked++
+                        chatLock
+                    },
+                ).also { runCurrent() }
+
+            // docs/audit/performance-review-2026-11.md, W2: they are the shown account's, which the registry names.
+            assertEquals(0, asked)
+            viewModel.onAppHidden()
+            viewModel.onAppShown()
+            assertEquals(1, asked)
+        }
+
+    @Test
     fun `hides the content from recent apps only with a passcode and the setting on`() =
         runTest {
             val viewModel = viewModel()
@@ -352,7 +376,7 @@ class MainActivityViewModelTest {
                     appLock,
                     withoutPasscode,
                     timeSource,
-                    chatLock,
+                    lazyOf(chatLock),
                 ).also { runCurrent() }
 
             assertFalse(viewModel.hideContent.value)

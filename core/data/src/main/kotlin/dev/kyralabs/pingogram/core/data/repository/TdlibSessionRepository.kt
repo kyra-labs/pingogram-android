@@ -13,7 +13,8 @@ import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 
 /**
- * [SessionRepository] on TDLib's `getActiveSessions`, `terminateSession`, `terminateAllOtherSessions`, `confirmSession`
+ * [SessionRepository] on TDLib's `getActiveSessions`, `terminateSession`, `terminateAllOtherSessions`,
+ * `setInactiveSessionTtl`, `confirmSession`
  * and `confirmQrCodeAuthentication`, each a request to Telegram. TDLib sorts the sessions
  * (td/telegram/AccountManager.cpp), and keeps terminations it has not sent yet in its database, sending them once it
  * can.
@@ -32,6 +33,9 @@ class TdlibSessionRepository
 
         override suspend fun terminateAllOthers(): Outcome<Unit> =
             client.request(TdApi.TerminateAllOtherSessions()).map {}
+
+        override suspend fun setInactiveSessionTtl(days: Int): Outcome<Unit> =
+            client.request(TdApi.SetInactiveSessionTtl(days)).map {}
 
         override suspend fun confirm(sessionId: Long): Outcome<Unit> =
             client.request(TdApi.ConfirmSession(sessionId)).map {}

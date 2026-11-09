@@ -53,6 +53,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.StorageUsageState
 import dev.kyralabs.pingogram.feature.settings.ui.TwoStepVerificationSummary
 import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
 import dev.kyralabs.pingogram.feature.settings.ui.reflowLicenseText
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.PendingPasswordReset
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
@@ -115,6 +116,10 @@ internal object SettingsPreviewData {
 
     /** Settings home on a device with three accounts, at the limit, so without "Add account". */
     val withOtherAccounts = content.copy(otherAccounts = otherAccounts)
+
+    /** What the home shows beside its rows: three sessions, 1.2 GB, English. */
+    val homeSummaries =
+        SettingsHomeSummaries(sessionCount = 3, storageBytes = 1_288_490_189L, languageTag = "en")
 
     val storage =
         DataStorageUiState(

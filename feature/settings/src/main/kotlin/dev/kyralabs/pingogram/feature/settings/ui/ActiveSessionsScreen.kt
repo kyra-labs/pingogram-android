@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -133,25 +134,8 @@ private fun Sessions(
     sessions: SessionsState.Loaded,
     onEvent: (ActiveSessionsEvent) -> Unit,
 ) {
-    val ttl = stringResource(R.string.settings_sessions_ttl, ttlText(sessions.inactiveSessionTtlDays))
     val hasOthers = sessions.unconfirmed.isNotEmpty() || sessions.others.isNotEmpty()
-    SettingsGroup(
-        title = stringResource(R.string.settings_section_this_device),
-        footer = if (sessions.others.isEmpty()) ttl else null,
-    ) {
-        sessions.current?.let { current ->
-            item(key = current.id) { SessionRow(current, false, it) }
-        }
-        if (hasOthers) {
-            item(key = TERMINATE_ALL) { shapes ->
-                TerminateAllItem(
-                    isTerminating = state.isTerminatingAll,
-                    shapes = shapes,
-                    onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
-                )
-            }
-        }
-    }
+    ThisDeviceGroup(state, sessions, hasOthers, onEvent)
     if (sessions.unconfirmed.isNotEmpty()) {
         SettingsGroup(
             title = stringResource(R.string.settings_section_new_logins),
@@ -174,20 +158,22 @@ private fun Sessions(
     if (sessions.others.isNotEmpty()) {
         SettingsGroup(
             title = stringResource(R.string.settings_section_other_sessions),
-            footer = ttl,
+            footer = stringResource(R.string.settings_sessions_swipe_footer),
             iconTone = SettingsIconTone.Secondary,
         ) {
             sessions.others.forEach { session ->
                 item(key = session.id) { shapes ->
-                    SessionRow(
-                        session = session,
-                        isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
-                        shapes = shapes,
-                        onClick = { onEvent(ActiveSessionsEvent.Terminate(session)) },
-                    )
+                    val busy = session.id in state.busySessionIds || state.isTerminatingAll
+                    val terminate = { onEvent(ActiveSessionsEvent.Terminate(session)) }
+                    SwipeToEndSession(enabled = !busy, shape = shapes.shape, onSwiped = terminate) {
+                        SessionRow(session = session, isBusy = busy, shapes = shapes, onClick = terminate)
+                    }
                 }
             }
         }
+    }
+    InactiveSessionsGroup(sessions.inactiveSessionTtlDays, state.isSavingTtl) {
+        onEvent(ActiveSessionsEvent.SetInactiveSessionTtl(it))
     }
 }
 
@@ -246,6 +232,30 @@ private fun ActiveSessionsScreenErrorPreview() {
             onEvent = {},
             onBack = {},
         )
+    }
+}
+
+/**
+ * This device's session and "Terminate all other sessions" while there are others: this device is a card of its own
+ * above the group ([ThisDeviceCard], `docs/DESIGN_SYSTEM.md` §13.10).
+ */
+@Composable
+private fun ThisDeviceGroup(
+    state: ActiveSessionsUiState,
+    sessions: SessionsState.Loaded,
+    hasOthers: Boolean,
+    onEvent: (ActiveSessionsEvent) -> Unit,
+) {
+    sessions.current?.let { ThisDeviceCard(it) }
+    if (!hasOthers) return
+    SettingsGroup {
+        item(key = TERMINATE_ALL) { shapes ->
+            TerminateAllItem(
+                isTerminating = state.isTerminatingAll,
+                shapes = shapes,
+                onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
+            )
+        }
     }
 }
 

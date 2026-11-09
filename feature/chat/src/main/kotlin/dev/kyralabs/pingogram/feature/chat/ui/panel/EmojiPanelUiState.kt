@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * What the composer's emoji and sticker panel shows (`REQUIREMENTS.md` FR-C5): its [emoji] tab, its [stickers] tab and
@@ -16,6 +17,8 @@ data class EmojiPanelUiState(
     val emoji: EmojiTab = EmojiTab.Loading,
     val stickers: StickerTab = StickerTab.Loading,
     val gifs: GifTab = GifTab.Loading,
+    /** Stickers for the one emoji the composer holds alone, shown above it; empty for none. */
+    val suggestions: ImmutableList<Sticker> = persistentListOf(),
 )
 
 /** The emoji tab. */

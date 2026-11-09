@@ -38,22 +38,25 @@ class MainActivityViewModel internal constructor(
     private val appLockRepository: AppLockRepository,
     passcodeRepository: PasscodeRepository,
     timeSource: TimeSource,
-    private val chatLock: ChatLockRepository,
+    private val chatLock: Lazy<ChatLockRepository>,
 ) : ViewModel() {
+    // The locked chats are the shown account's, which the account registry names; asked for when the app first leaves
+    // the screen, not while the activity is made, so its creation never waits for the registry's file
+    // (docs/audit/performance-review-2026-11.md, W2).
     @Inject
     constructor(
         authRepository: AuthRepository,
         appearanceRepository: AppearanceRepository,
         appLockRepository: AppLockRepository,
         passcodeRepository: PasscodeRepository,
-        chatLock: ChatLockRepository,
+        chatLock: dagger.Lazy<ChatLockRepository>,
     ) : this(
         authRepository,
         appearanceRepository,
         appLockRepository,
         passcodeRepository,
         TimeSource.Monotonic,
-        chatLock,
+        lazy { chatLock.get() },
     )
 
     private val createdAt = timeSource.markNow()
@@ -158,13 +161,13 @@ class MainActivityViewModel internal constructor(
      */
     fun onAppHidden() {
         appLockRepository.onAppHidden()
-        chatLock.onAppHidden()
+        chatLock.value.onAppHidden()
     }
 
     /** The app is on screen again: it locks if it was away for the auto-lock delay, the locked chats after a while. */
     fun onAppShown() {
         appLockRepository.onAppShown()
-        chatLock.onAppShown()
+        chatLock.value.onAppShown()
     }
 
     /**

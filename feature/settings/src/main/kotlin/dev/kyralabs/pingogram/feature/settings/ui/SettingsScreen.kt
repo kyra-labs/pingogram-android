@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
@@ -19,7 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
+import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
+import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -28,24 +35,37 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.home.AccountSwitcher
+import dev.kyralabs.pingogram.feature.settings.ui.home.HomeDestination
+import dev.kyralabs.pingogram.feature.settings.ui.home.SearchAction
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeViewModel
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchBar
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchResults
+import dev.kyralabs.pingogram.feature.settings.ui.home.rememberSettingsSearch
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 
 /**
  * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
- * page it opens. [profileSaved] says that Edit profile just saved the profile, shown in a snackbar once:
- * [onProfileSavedShown] clears it. Beside a page on an expanded window, [selection] says which page is open.
+ * page it opens; a result of settings search that is a page above one of them, [onOpenSubPage]. [profileSaved] says
+ * that Edit profile just saved the profile, shown in a snackbar once: [onProfileSavedShown] clears it. Beside a page
+ * on an expanded window, [selection] says which page is open.
  */
 @Composable
 internal fun SettingsRoute(
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSubPage: (SettingsSubPage) -> Unit = {},
     selection: SettingsPageSelection? = null,
     profileSaved: Boolean = false,
     onProfileSavedShown: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // The home's values: active sessions, the storage used, the language.
+    val homeViewModel: SettingsHomeViewModel = hiltViewModel()
+    val summaries by homeViewModel.summaries.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -72,79 +92,93 @@ internal fun SettingsRoute(
         onEvent = viewModel::onEvent,
         onOpenPage = onOpenPage,
         modifier = modifier,
+        onOpenSubPage = onOpenSubPage,
         selection = selection,
         snackbarHostState = snackbarHostState,
+        summaries = summaries,
     )
 }
 
 /**
- * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a medium flexible top bar ([SettingsTopBar]) that
- * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile) with the
- * device's other accounts and "Add account" below it ([OtherAccountsGroup]), and groups of segmented rows
- * ([SettingsGroup]) without headings, as their rows name them already: General (Appearance, Notifications, Data and
- * storage, Language), Privacy and security, About, and "Log out" on its own, which asks for confirmation first (FR-A8).
- * In the demo ([LocalIsDemo]) the card says "Demo", the other accounts are left out, and "Leave demo" replaces "Log
- * out" (`docs/adr/0034-demo-mode-for-store-review.md`).
+ * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §13.9): the tabs' large header ([TabHeader], as the
+ * Chats and Contacts tabs have it) with its search button, which turns it into settings search
+ * ([SettingsSearchBar], [SettingsSearchResults]); then Settings home ([SettingsHome]): the logged-in account's card,
+ * whose menu switches and adds accounts, the groups of pages with their values ([summaries]), and "Log out" on its own,
+ * which asks for confirmation first (FR-A8). In the demo ([LocalIsDemo]) the card says "Demo", no account can be
+ * switched or added, and "Leave demo" replaces "Log out" (`docs/adr/0034-demo-mode-for-store-review.md`).
  * The page draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]). As the list of
  * a list-detail layout, its page rows are selectable, and the [selection]'s open page reads as selected.
  */
+@Suppress("LongParameterList") // The state, its events, the list-detail's selection and the home's values.
 @Composable
 internal fun SettingsScreen(
     state: SettingsUiState,
     onEvent: (SettingsEvent) -> Unit,
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSubPage: (SettingsSubPage) -> Unit = {},
     selection: SettingsPageSelection? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    summaries: SettingsHomeSummaries = SettingsHomeSummaries(),
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val isDemo = LocalIsDemo.current
+    val search = rememberSettingsSearch()
+    val onOpen = homeOpener(onOpenPage, onOpenSubPage)
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
-        topBar = { SettingsTopBar(title = stringResource(R.string.settings_title), scrollBehavior = scrollBehavior) },
+        // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
+        topBar = {
+            if (search.isOpen) {
+                SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
+            } else {
+                TabHeader(
+                    scrollBehavior = scrollBehavior,
+                    title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
+                    actions = { SearchAction(onClick = search::open) },
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        // Without headings between them the groups sit closer, as in the account menus.
-        SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-            state.account?.let {
-                AccountCard(
-                    account = it,
-                    onEditProfile = { onOpenPage(SettingsPage.EditProfile) },
-                    selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
-                )
-            }
-            // The demo's graph is no account: no switching or adding from it (docs/adr/0034).
-            if (!isDemo) {
-                OtherAccountsGroup(
-                    accounts = state.otherAccounts,
-                    canAdd = state.canAddAccount,
-                    onSwitch = { onEvent(SettingsEvent.SwitchAccount(it)) },
-                    onAdd = { onEvent(SettingsEvent.AddAccount) },
-                )
-            }
-            PageGroups(onOpenPage, selection)
-            SettingsGroup {
-                item { shapes ->
-                    LogOutItem(
-                        isLoggingOut = state.isLoggingOut,
-                        shapes = shapes,
-                        onClick = { onEvent(SettingsEvent.LogOut) },
-                        isDemo = isDemo,
-                    )
+        Box(Modifier.fillMaxSize()) {
+            // Without headings between them the groups sit closer, as in the account menus.
+            SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
+                if (search.isOpen) {
+                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                } else {
+                    SettingsHome(state, onEvent, onOpen, selection, summaries)
                 }
             }
+            // The page's end fades into its color behind the floating navigation bar, as the Chats tab's list does.
+            BottomFade(Modifier.align(Alignment.BottomCenter), color = settingsPageColor())
         }
     }
     if (state.isLogOutDialogOpen) {
         LogOutDialog(
             onConfirm = { onEvent(SettingsEvent.ConfirmLogOut) },
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
-            isDemo = isDemo,
+            isDemo = LocalIsDemo.current,
         )
+    }
+}
+
+/** Opens where an entry of the home leads: a page, a page above one ([onOpenSubPage]), Recent calls. */
+@Composable
+private fun homeOpener(
+    onOpenPage: (SettingsPage) -> Unit,
+    onOpenSubPage: (SettingsSubPage) -> Unit,
+): (HomeDestination) -> Unit {
+    val onOpenRecentCalls = LocalRecentCallsLauncher.current
+    return { destination ->
+        when (destination) {
+            is HomeDestination.Page -> onOpenPage(destination.page)
+            HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
+            is HomeDestination.SubPage -> onOpenSubPage(destination.subPage)
+        }
     }
 }
 

@@ -78,6 +78,53 @@ enum class SettingsPage {
     Language,
     About,
     PrivacySecurity,
+
+    /** Active sessions, the "Devices" (`docs/DESIGN_SYSTEM.md` §13.9). */
+    ActiveSessions,
+
+    /** The user's QR code, from the account card. */
+    MyQrCode,
+}
+
+/**
+ * The pages above a page of Settings home ([parent]) that the settings search opens directly
+ * (`docs/DESIGN_SYSTEM.md` §13.9), with [parent] below them on the back stack, so back returns through it.
+ */
+enum class SettingsSubPage(
+    val parent: SettingsPage,
+) {
+    ColorTheme(SettingsPage.Appearance),
+    ChatAppearance(SettingsPage.Appearance),
+    DoubleTapReaction(SettingsPage.Appearance),
+    SwipeActions(SettingsPage.Appearance),
+    ChatsShownFirst(SettingsPage.Appearance),
+    TrendingStickers(SettingsPage.Stickers),
+    ArchivedStickers(SettingsPage.Stickers),
+    CustomEmoji(SettingsPage.Stickers),
+    ReactionNotifications(SettingsPage.Notifications),
+    AutoDownloadMobile(SettingsPage.DataStorage),
+    AutoDownloadWiFi(SettingsPage.DataStorage),
+    AutoDownloadRoaming(SettingsPage.DataStorage),
+    Proxies(SettingsPage.DataStorage),
+    NetworkUsage(SettingsPage.DataStorage),
+    Licenses(SettingsPage.About),
+    LastSeen(SettingsPage.PrivacySecurity),
+    PhoneNumberPrivacy(SettingsPage.PrivacySecurity),
+    ProfilePhotoPrivacy(SettingsPage.PrivacySecurity),
+    BioPrivacy(SettingsPage.PrivacySecurity),
+    BirthdayPrivacy(SettingsPage.PrivacySecurity),
+    ForwardedMessagesPrivacy(SettingsPage.PrivacySecurity),
+    CallsPrivacy(SettingsPage.PrivacySecurity),
+    InvitationsPrivacy(SettingsPage.PrivacySecurity),
+    VoiceMessagesPrivacy(SettingsPage.PrivacySecurity),
+    NewChats(SettingsPage.PrivacySecurity),
+    BlockedUsers(SettingsPage.PrivacySecurity),
+    Websites(SettingsPage.PrivacySecurity),
+    TwoStepVerification(SettingsPage.PrivacySecurity),
+    PasscodeLock(SettingsPage.PrivacySecurity),
+    LockedChats(SettingsPage.PrivacySecurity),
+    AutoDelete(SettingsPage.PrivacySecurity),
+    DeleteAccount(SettingsPage.PrivacySecurity),
 }
 
 /**

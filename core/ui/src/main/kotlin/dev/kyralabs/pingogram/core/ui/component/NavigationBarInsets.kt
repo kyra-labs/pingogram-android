@@ -40,10 +40,16 @@ fun floatingToolbarInsets(): WindowInsets = floatingInsets(FloatingToolbarDefaul
 
 /**
  * The bottom the floating navigation bar takes (`docs/DESIGN_SYSTEM.md` §6.1), as [floatingToolbarInsets] for its
- * `sizes.floatingNavigationBar`-tall pill, lower than Material's floating toolbar.
+ * pill ([floatingNavigationBarHeight]), lower than Material's floating toolbar in the standard look.
  */
 @Composable
-fun floatingNavigationBarInsets(): WindowInsets = floatingInsets(MaterialTheme.sizes.floatingNavigationBar)
+fun floatingNavigationBarInsets(): WindowInsets = floatingInsets(floatingNavigationBarHeight())
+
+/**
+ * The floating navigation bar's height: `sizes.experimentalNavigationBar` (64 dp, `docs/DESIGN_SYSTEM.md` §13.2).
+ */
+@Composable
+fun floatingNavigationBarHeight(): Dp = MaterialTheme.sizes.experimentalNavigationBar
 
 /**
  * The system navigation bar, something [height] tall at `FloatingToolbarDefaults.ScreenOffset` above it, and as much

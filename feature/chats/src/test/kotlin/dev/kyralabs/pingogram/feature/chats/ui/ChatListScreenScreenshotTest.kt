@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import org.junit.Assume.assumeTrue
@@ -16,8 +18,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of every chat list state on a compact phone (`docs/TESTING.md`), light and dark: chats with and without
  * folder tabs, rows in all their looks, the archive row, selection mode with its toolbar, the connection pill, loading,
- * empty and error; the archive with chats and empty; the delete dialogs. Brand colors, so goldens do not depend on a
- * wallpaper.
+ * empty and error; the archive with chats and empty; the delete dialogs (`docs/DESIGN_SYSTEM.md` §13.3). Brand
+ * colors, so goldens do not depend on a wallpaper.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -49,12 +51,41 @@ class ChatListScreenScreenshotTest(
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
-    /** At 200% font scale (`REQUIREMENTS.md` §6.3): the selection's bars and the connection pill grow, never clip. */
+    /**
+     * At 200% font scale (`REQUIREMENTS.md` §6.3): the selection's bars, the connection pill, the folder tabs and the
+     * archive row grow, never clip.
+     */
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName == "selecting" || stateName == "connecting")
+        assumeTrue(stateName in setOf("selecting", "connecting", "contentWithFolders", "archiveRow"))
         capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
+    /** With Appearance → Chat list → "Edit folders button" off, the folder row ends at the tabs (owner, 2026-11-07). */
+    @Test
+    fun withoutEditFoldersButton() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Light, "withoutEditFoldersButton", ChatSwipes(editFoldersButton = false))
+    }
+
+    /** With Appearance → Chat list → "Chat type icons" off, the rows show no group or channel symbol. */
+    @Test
+    fun withoutChatTypeIcons() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "withoutChatTypeIcons", ChatSwipes(chatTypeIcons = false))
+    }
+
+    @Test
+    fun folderTabsWithIcons() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "folderTabsWithIcons", ChatSwipes(folderTabStyle = FolderTabStyle.IconAndText))
+    }
+
+    @Test
+    fun folderTabsIconsOnly() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
@@ -67,16 +98,19 @@ class ChatListScreenScreenshotTest(
     private fun capture(
         variant: ScreenshotVariant,
         name: String = variant.goldenName,
+        swipes: ChatSwipes = ChatSwipes(),
     ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                ChatListScreen(
-                    state = state,
-                    onEvent = {},
-                    summary = { ChatListPreviewData.summary },
-                    onEditFolder = {},
-                )
+                CompositionLocalProvider(LocalChatSwipes provides swipes) {
+                    ChatListScreen(
+                        state = state,
+                        onEvent = {},
+                        summary = { ChatListPreviewData.summary },
+                        onEditFolder = {},
+                    )
+                }
             }
         }
         composeRule.waitForIdle()

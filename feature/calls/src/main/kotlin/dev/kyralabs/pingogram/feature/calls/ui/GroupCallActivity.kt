@@ -326,6 +326,9 @@ class GroupCallActivity : ComponentActivity() {
          */
         const val ACTION_JOIN_INVITATION = "dev.kyralabs.pingogram.calls.JOIN_INVITATION"
 
+        /** Starts a new conference call with no one else in it yet, and joins it: Recent calls' "New group call". */
+        const val ACTION_START_CONFERENCE = "dev.kyralabs.pingogram.calls.START_CONFERENCE"
+
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
         fun open(
             context: Context,
@@ -353,6 +356,11 @@ class GroupCallActivity : ComponentActivity() {
                     .putExtra(EXTRA_INVITATION_CHAT_ID, chatId)
                     .putExtra(EXTRA_INVITATION_MESSAGE_ID, messageId),
             )
+        }
+
+        /** Starts a new conference call, joins it and shows it, where the user adds people. */
+        fun startGroupCall(context: Context) {
+            context.startActivity(intent(context, ACTION_START_CONFERENCE))
         }
 
         /** Joins the conference call of [link] and shows it. */

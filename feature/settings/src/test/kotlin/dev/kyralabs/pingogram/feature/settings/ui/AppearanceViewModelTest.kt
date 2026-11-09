@@ -2,9 +2,13 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
@@ -85,6 +89,76 @@ class AppearanceViewModelTest {
                 AppearanceUiState.Content(AppearanceSettings(themeMode = ThemeMode.Dark, amoled = true)),
                 viewModel.state,
             )
+        }
+
+    @Test
+    fun `a color theme, the text size and the group bubbles picked on the page are saved and shown`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+
+            send(viewModel, AppearanceEvent.SetColorTheme(ColorThemeOption.Palette(ThemePalette.Teal)))
+            send(viewModel, AppearanceEvent.SetChatTextScale(1.1f))
+            send(viewModel, AppearanceEvent.SetGroupBubbles(GroupBubbles.Vivid))
+
+            val settings = (viewModel.state as AppearanceUiState.Content).settings
+            assertEquals(ThemePalette.Teal, settings.palette)
+            assertEquals(false, settings.dynamicColor)
+            assertEquals(ChatAppearance(textScale = 1.1f, groupBubbles = GroupBubbles.Vivid), settings.chat)
+        }
+
+    @Test
+    fun `picking the wallpaper's colors turns dynamic color back on, keeping the theme`() =
+        runTest {
+            repository.save(AppearanceSettings(dynamicColor = false, palette = ThemePalette.Pink))
+            val viewModel = viewModel()
+
+            send(viewModel, AppearanceEvent.SetColorTheme(ColorThemeOption.Wallpaper))
+
+            val settings = (viewModel.state as AppearanceUiState.Content).settings
+            assertEquals(true, settings.dynamicColor)
+            assertEquals(ThemePalette.Pink, settings.palette)
+        }
+
+    @Test
+    fun `reset puts the look back to its defaults, says so, and undo brings it back`() =
+        runTest {
+            val custom =
+                AppearanceSettings(
+                    themeMode = ThemeMode.Dark,
+                    dynamicColor = false,
+                    palette = ThemePalette.Teal,
+                    contrast = Contrast.High,
+                    amoled = true,
+                    chat = ChatAppearance(textScale = 1.2f, groupBubbles = GroupBubbles.Tinted),
+                )
+            repository.save(custom)
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.Reset)
+
+            assertEquals(AppearanceUiState.Content(AppearanceSettings()), viewModel.state)
+            assertEquals(listOf<AppearanceEffect>(AppearanceEffect.ResetDone), effects)
+
+            send(viewModel, AppearanceEvent.UndoReset)
+
+            assertEquals(AppearanceUiState.Content(custom), viewModel.state)
+        }
+
+    @Test
+    fun `a reset that cannot be saved shows the error and offers no undo`() =
+        runTest {
+            repository.save(AppearanceSettings(themeMode = ThemeMode.Dark))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            val error = DomainError.Unknown(0, "disk full")
+            repository.failure = error
+
+            send(viewModel, AppearanceEvent.Reset)
+
+            assertEquals(listOf<AppearanceEffect>(AppearanceEffect.ShowError(error)), effects)
+            assertEquals(AppearanceUiState.Content(AppearanceSettings(themeMode = ThemeMode.Dark)), viewModel.state)
         }
 
     @Test
@@ -228,6 +302,59 @@ class AppearanceViewModelTest {
             send(viewModel, AppearanceEvent.SetShowStories(false))
 
             assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showStories)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
+        }
+
+    @Test
+    fun `the Edit folders button shows at first, and turning it off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
+
+            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
+
+            assertFalse(chatListSettings.settings.value.showEditFoldersButton)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
+        }
+
+    @Test
+    fun `chat type icons show at first, and turning them off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
+
+            send(viewModel, AppearanceEvent.SetShowChatTypeIcons(false))
+
+            assertFalse(chatListSettings.settings.value.showChatTypeIcons)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
+        }
+
+    @Test
+    fun `folder tabs show names at first, and picking icons saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(FolderTabStyle.Text, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
+
+            send(viewModel, AppearanceEvent.SetFolderTabStyle(FolderTabStyle.Icon))
+
+            assertEquals(FolderTabStyle.Icon, chatListSettings.settings.value.folderTabStyle)
+            assertEquals(FolderTabStyle.Icon, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
+        }
+
+    @Test
+    fun `an Edit folders button that cannot be hidden stays, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            chatListSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
+
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }

@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 
@@ -67,6 +68,12 @@ data class ChatUiState(
     val header: ChatHeader? = null,
     val content: ChatContent = ChatContent.Loading,
     val unreadCount: Int = 0,
+    /** Unread messages that mention the user, for the "Jump to mention" (§13.5). */
+    val unreadMentionCount: Int = 0,
+    /** The group's member count, which decides the automatic group bubbles (§13.6); null else. */
+    val groupMemberCount: Int? = null,
+    /** Who is typing in a group, for the typing bubble (§13.6); null while nobody is. */
+    val typing: TypingBubble? = null,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
     val composer: ComposerUiState = ComposerUiState.Hidden,
@@ -125,7 +132,12 @@ data class MessagePlayback(
  *   chats.
  * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
  *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
- * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
+ * @property avatarShape the avatar's shape: what the chat is ([AvatarShape.ofChat]), which the composable shows.
+ * @property isChannel the chat is a channel, whose top bar has a mute toggle (`docs/DESIGN_SYSTEM.md` §13.5).
+ * @property isMuted the chat is muted.
+ * @property onlineCount the members of a group online now, as TDLib last said for the open chat; 0 while unknown.
+ * @property members up to five people who wrote last in a group, of the messages loaded, for the top bar's cluster;
+ *   empty for other chats.
  */
 @Immutable
 data class ChatHeader(
@@ -139,8 +151,22 @@ data class ChatHeader(
     val opensChatInfo: Boolean = false,
     val callUserId: Long? = null,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val isChannel: Boolean = false,
+    val isMuted: Boolean = false,
+    val onlineCount: Int = 0,
+    val members: ImmutableList<HeaderMember> = persistentListOf(),
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
+}
+
+/** One of the people of a group's cluster in the top bar: their avatar's id, name and photo. */
+@Immutable
+data class HeaderMember(
+    val userId: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+) {
+    override fun toString() = "HeaderMember(userId=$userId, …)"
 }
 
 /** The second line of the top bar. */
@@ -274,6 +300,10 @@ sealed interface ChatItem {
      *   older pages bring in more of the album.
      * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
      *   without other formatting, link preview, reply or forward: shown large, without a bubble.
+     * @property isShout an incoming group message that shouts ([isShout]: one word of up to six characters in capitals,
+     *   nothing else), shown large and italic without a bubble (§13.6).
+     * @property headlineLength the length of a channel post's first line where it is a short headline, wholly bold and
+     *   followed by more text ([headlineLength]), set large (§13.7); 0 for none.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
      *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
@@ -295,6 +325,16 @@ sealed interface ChatItem {
      *   scheduled messages, [time] then being its send time; null for messages of the history.
      * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
      *   forwards it, where the chat lets messages be forwarded ([showsShareButton]).
+     * @property senderHue the sender's hue (`SenderHues.indexOf`, `docs/DESIGN_SYSTEM.md` §13.6): incoming messages in
+     *   group chats; -1 for others.
+     * @property senderRole the sender's role in the group ("Owner", "Admin", their tag), after their name;
+     *   null for anyone else.
+     * @property mentionsMe the message mentions the user (TDLib's unread mention, or a mention by name), ringed.
+     * @property myMentions where its text or caption mentions the user (by name or by one of their usernames), drawn
+     *   as chips (§13.6); empty where it does not mention them.
+     * @property isChannelPost a post of the channel the conversation is, put on a warm container (§13.7).
+     * @property views how many saw a channel post (td_api.tl `interactionInfo.view_count`), in its meta; 0 for other
+     *   messages.
      */
     data class Bubble(
         val id: Long,
@@ -319,6 +359,8 @@ sealed interface ChatItem {
         override val date: UiText,
         val album: MessageAlbum? = null,
         val isEmojiOnly: Boolean = false,
+        val isShout: Boolean = false,
+        val headlineLength: Int = 0,
         val showsTime: Boolean = true,
         val canResend: Boolean = false,
         val senderUserId: Long? = null,
@@ -331,6 +373,12 @@ sealed interface ChatItem {
         val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
+        val senderHue: Int = -1,
+        val senderRole: UiText? = null,
+        val mentionsMe: Boolean = false,
+        val myMentions: ImmutableList<IntRange> = persistentListOf(),
+        val isChannelPost: Boolean = false,
+        val views: Int = 0,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -354,6 +402,11 @@ sealed interface ChatItem {
          * tapping it opens the call, which asks before it joins.
          */
         val groupCallChatId: Long? = null,
+        /**
+         * Someone else joined the group or was added: "Wave" is offered, a greeting sticker in reply
+         * (`docs/DESIGN_SYSTEM.md` §13.6).
+         */
+        val canWave: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = id
 
@@ -368,9 +421,14 @@ sealed interface ChatItem {
         override val key: Any get() = "date:$epochDay"
     }
 
-    /** The first message that was unread when the chat was opened follows this. */
+    /**
+     * The first message that was unread when the chat was opened follows this: [count] messages from it on (as loaded),
+     * posts where [isChannel], which the pill counts (`docs/DESIGN_SYSTEM.md` §13.7).
+     */
     data class UnreadDivider(
         override val date: UiText,
+        val count: Int = 0,
+        val isChannel: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = UNREAD_DIVIDER_KEY
     }
@@ -450,6 +508,7 @@ enum class OutgoingStatus {
  *
  * @property messageId the replied message of this chat, which tapping the quote shows ([ChatEvent.OpenReply]); null
  *   for a story or a message of another chat, which it does not open.
+ * @property senderHue the replied sender's hue, whose ink the stripe takes (§13.6); -1 for none.
  */
 @Immutable
 data class ReplyQuote(
@@ -458,6 +517,7 @@ data class ReplyQuote(
     val text: UiText,
     val messageId: Long? = null,
     val isQuote: Boolean = false,
+    val senderHue: Int = -1,
 ) {
     override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, isQuote=$isQuote, …)"
 }
@@ -505,4 +565,19 @@ sealed interface ReactionLabel {
 
     /** The paid star reaction of channels. */
     data object Paid : ReactionLabel
+}
+
+/**
+ * Someone typing in a group (the first of TDLib's chat actions by a user, `docs/DESIGN_SYSTEM.md` §13.6): their avatar,
+ * their [hue] for the small bubble with the typing dots, and what the top bar says ("Fadi is typing"), [text].
+ */
+@Immutable
+data class TypingBubble(
+    val userId: Long,
+    val name: UiText,
+    val photo: ProfilePhoto?,
+    val hue: Int,
+    val text: UiText,
+) {
+    override fun toString() = "TypingBubble(userId=$userId, …)"
 }

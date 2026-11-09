@@ -99,7 +99,9 @@ internal fun SearchResultsList(
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         when (content) {
+            // The header shows the top people (docs/DESIGN_SYSTEM.md §13.4).
             is SearchContent.Suggestions -> suggestions(content, onEvent, style)
+
             is SearchContent.Results -> results(content, onEvent, style)
         }
     }
@@ -130,19 +132,6 @@ private fun LazyListScope.suggestions(
     onEvent: (SearchEvent) -> Unit,
     style: RowStyle,
 ) {
-    if (content.topPeople.isNotEmpty()) {
-        item(key = PEOPLE_HEADER, contentType = HEADER) {
-            SectionHeader(stringResource(R.string.search_section_people), Modifier.row(this, style))
-        }
-        item(key = PEOPLE, contentType = PEOPLE) {
-            // Edge to edge, so the people scroll out under the window's sides.
-            TopPeople(
-                content.topPeople,
-                { onEvent(SearchEvent.OpenChat(it)) },
-                Modifier.row(this, style, inset = false),
-            )
-        }
-    }
     if (content.recents.isNotEmpty()) {
         item(key = RECENT_HEADER, contentType = HEADER) {
             SectionHeader(stringResource(R.string.search_section_recent), Modifier.row(this, style)) {
@@ -400,8 +389,6 @@ private const val ERROR = "error"
 private const val MORE_ERROR = "moreError"
 private const val CHAT_ROW = "chat"
 private const val MESSAGE_ROW = "message"
-private const val PEOPLE = "people"
-private const val PEOPLE_HEADER = "people:header"
 private const val RECENT = "recent"
 private const val RECENT_HEADER = "recent:header"
 private const val CHATS = "chats"

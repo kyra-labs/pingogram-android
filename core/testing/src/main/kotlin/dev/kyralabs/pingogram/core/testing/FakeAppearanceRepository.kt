@@ -7,9 +7,11 @@ import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,7 +23,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 class FakeAppearanceRepository(
     initial: AppearanceSettings? = null,
 ) : AppearanceRepository {
-    private val saved = MutableSharedFlow<AppearanceSettings>(replay = 1)
+    // The latest settings win, as in the settings file: several writes in a row never wait for a collector.
+    private val saved = MutableSharedFlow<AppearanceSettings>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private var current = initial ?: AppearanceSettings()
 
     /** What the setters fail with; null saves. */
@@ -57,6 +60,9 @@ class FakeAppearanceRepository(
 
     override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) =
         change { it.copy(chat = it.chat.copy(wallpaper = wallpaper)) }
+
+    override suspend fun setGroupBubbles(bubbles: GroupBubbles) =
+        change { it.copy(chat = it.chat.copy(groupBubbles = bubbles)) }
 
     private fun change(transform: (AppearanceSettings) -> AppearanceSettings): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }

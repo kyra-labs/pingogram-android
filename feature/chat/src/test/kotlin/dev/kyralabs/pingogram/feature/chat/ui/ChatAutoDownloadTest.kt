@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -57,6 +58,25 @@ class ChatAutoDownloadTest : ChatViewModelHarness() {
                 ).sorted(),
                 downloads(),
             )
+        }
+
+    @Test
+    fun `leaving the chat stops the downloads it started by itself, not the ones the user asked for`() =
+        runViewModelTest {
+            val chatFiles = ChatFiles(files, backgroundScope) {}
+            val downloads = ChatAutoDownloads(files, chatFiles, flowOf(everything), backgroundScope)
+            downloads.start()
+            downloads.setVisible(listOf(voice, document))
+            runCurrent()
+            downloads.download(documentFile)
+            runCurrent()
+            files.calls.clear()
+
+            downloads.cancelStarted(backgroundScope)
+            runCurrent()
+
+            // docs/audit/performance-review-2026-11.md, W3.
+            assertEquals(listOf("cancel:$voiceFile"), files.calls)
         }
 
     @Test

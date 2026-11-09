@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.ui.component
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,7 +16,8 @@ import dev.kyralabs.pingogram.core.ui.R
 /**
  * Material's [Switch] with a check in its thumb while on and none while off, as Material recommends and Android 16's
  * Settings shows (`docs/DESIGN_SYSTEM.md` §6, "Settings rows"). Usually in a row that toggles it, with
- * [onCheckedChange] null, so the row alone takes the click and screen readers hear the row as the switch.
+ * [onCheckedChange] null, so the row alone takes the click and screen readers hear the row as the switch. [colors]
+ * replace Material's where the switch sits on a container of its own (the experimental look's labs card).
  */
 @Composable
 fun CheckSwitch(
@@ -23,6 +25,7 @@ fun CheckSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
+    colors: SwitchColors = SwitchDefaults.colors(),
 ) {
     Switch(
         checked = checked,
@@ -41,6 +44,7 @@ fun CheckSwitch(
                 null
             },
         enabled = enabled,
+        colors = colors,
     )
 }
 

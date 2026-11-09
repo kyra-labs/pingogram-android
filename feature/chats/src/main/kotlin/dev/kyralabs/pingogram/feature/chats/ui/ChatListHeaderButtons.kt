@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.LocalNavAnimatedVisibilityScope
@@ -82,10 +84,17 @@ internal fun HeaderAccountButton(
             tooltip = { PlainTooltip { Text(label) } },
             state = rememberTooltipState(),
         ) {
+            // The avatar (docs/DESIGN_SYSTEM.md §13.3): a 48 dp square with `large` corners on `primary`, the
+            // placeholder colors of a selected row.
+            val avatarSize = MaterialTheme.sizes.headerAction
             IconButton(
                 onClick = { actions?.openAccount?.invoke() },
-                modifier = menuModifier.semantics { contentDescription = label },
-                shapes = IconButtonDefaults.shapes(),
+                modifier = menuModifier.size(avatarSize).semantics { contentDescription = label },
+                shapes =
+                    IconButtonShapes(
+                        shape = MaterialTheme.shapes.large,
+                        pressedShape = MaterialTheme.shapes.medium,
+                    ),
             ) {
                 val shown = account
                 if (shown != null) {
@@ -93,7 +102,9 @@ internal fun HeaderAccountButton(
                         photo = shown.photo,
                         name = shown.name.resolve(),
                         id = shown.id,
-                        size = MaterialTheme.sizes.avatarExtraSmall,
+                        size = avatarSize,
+                        shape = AvatarShape.RoundedSquare,
+                        onSelection = true,
                     )
                 } else {
                     Icon(

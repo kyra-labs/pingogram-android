@@ -25,6 +25,7 @@ internal fun TdApi.User.toUser(): User {
         isSupport = isSupport,
         type = type.toUserType(),
         haveAccess = haveAccess,
+        accentColorId = accentColorId,
     )
 }
 

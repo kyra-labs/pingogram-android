@@ -147,6 +147,11 @@ internal fun DataStorageScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
+        // The page opens on the storage used (docs/DESIGN_SYSTEM.md §13.10); its group stays below.
+        val usage = state.usage
+        if (usage is StorageUsageState.Content) {
+            StorageCard(usage.usage) { onEvent(DataStorageEvent.ClearCache) }
+        }
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload) {
                 onEvent(DataStorageEvent.ResetAutoDownload)
@@ -163,7 +168,7 @@ internal fun DataStorageScreen(
             title = stringResource(R.string.settings_section_storage_usage),
             iconTone = SettingsIconTone.Secondary,
         ) {
-            when (val usage = state.usage) {
+            when (usage) {
                 StorageUsageState.Loading -> {
                     item { shapes ->
                         SettingsSegment(shapes) {
@@ -234,7 +239,7 @@ private fun FilesItem(
     SettingsRow(
         title = stringResource(R.string.settings_storage_files),
         shapes = shapes,
-        icon = R.drawable.ic_folder,
+        icon = UiR.drawable.ic_folder,
         supportingContent = {
             Text(
                 stringResource(

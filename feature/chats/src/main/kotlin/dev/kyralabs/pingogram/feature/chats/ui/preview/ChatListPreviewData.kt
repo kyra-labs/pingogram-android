@@ -73,7 +73,8 @@ internal object ChatListPreviewData {
     private fun message(
         text: String,
         sender: UiText? = null,
-    ) = ChatPreview.Message(sender?.bidiIsolated(), UiText.Plain(text))
+        contentIcon: Int? = null,
+    ) = ChatPreview.Message(sender?.bidiIsolated(), UiText.Plain(text), contentIcon)
 
     private val you = UiText.resource(R.string.preview_sender_you)
 
@@ -89,6 +90,7 @@ internal object ChatListPreviewData {
             ).copy(
                 title = UiText.resource(R.string.chat_saved_messages),
                 placeholderIcon = R.drawable.ic_bookmark_filled,
+                avatarShape = AvatarShape.SavedMessages,
             ),
             row(
                 id = 2,
@@ -102,9 +104,15 @@ internal object ChatListPreviewData {
             row(
                 id = 3,
                 title = "Analytical Engine Club",
-                preview = message("The new punch cards arrived, come and see them tonight!", UiText.Plain("Charles")),
+                preview =
+                    message(
+                        "The new punch cards arrived, come and see them tonight!",
+                        UiText.Plain("Charles"),
+                        R.drawable.ic_image,
+                    ),
                 time = "9:12 AM",
                 unreadCount = 12,
+                avatarShape = AvatarShape.Group,
             ).copy(hasUnreadMention = true),
             row(
                 id = 4,
@@ -115,11 +123,12 @@ internal object ChatListPreviewData {
             row(
                 id = 5,
                 title = "Orbital Mechanics Weekly",
-                preview = message("Issue 42: transfer orbits explained"),
+                preview = message("Issue 42: transfer orbits explained", contentIcon = R.drawable.ic_description),
                 time = "Mon",
                 unreadCount = 1_204,
                 isMuted = true,
                 badge = TitleBadge.Verified,
+                avatarShape = AvatarShape.Channel,
             ),
             row(
                 id = 6,
@@ -138,9 +147,10 @@ internal object ChatListPreviewData {
             row(
                 id = 8,
                 title = "Free Crypto Giveaway",
-                preview = message("Send 1 coin, get 2 back!"),
+                preview = message("Send 1 coin, get 2 back!", contentIcon = R.drawable.ic_link),
                 time = "Mar 17",
                 badge = TitleBadge.Scam,
+                avatarShape = AvatarShape.Channel,
             ),
             row(
                 id = 9,
@@ -165,9 +175,9 @@ internal object ChatListPreviewData {
     val folders =
         persistentListOf(
             FolderTab.AllChats(unreadCount = 4),
-            FolderTab.Folder(id = 1, title = "Work", unreadCount = 2),
-            FolderTab.Folder(id = 2, title = "Family", unreadCount = 0),
-            FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1),
+            FolderTab.Folder(id = 1, title = "Work", unreadCount = 2, iconName = "Work"),
+            FolderTab.Folder(id = 2, title = "Family", unreadCount = 0, iconName = "Favorite"),
+            FolderTab.Folder(id = 3, title = "Channels", unreadCount = 1, iconName = "Channels"),
         )
 
     /** The main list: Saved Messages and Ada pinned, as one group under "Pinned", then the other chats. */

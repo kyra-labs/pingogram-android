@@ -156,6 +156,7 @@ internal fun PrivacySecurityScreen(
             }
 
             is PrivacySecurityUiState.Content -> {
+                PrivacyCheckupCard(state, onOpen)
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
@@ -215,6 +216,7 @@ private fun PrivacySection(
                         )
                     },
                     onClick = { onOpen(PrivacySecurityPage.NewChats) },
+                    opensPage = true,
                 )
             }
         }
@@ -237,6 +239,7 @@ private fun PrivacySettingItem(
         shapes = shapes,
         supportingContent = { Text(privacySummary(rules)) },
         onClick = onClick,
+        opensPage = true,
     )
 }
 
@@ -268,7 +271,7 @@ private fun SecuritySection(
             PageItem(
                 title = stringResource(R.string.settings_websites),
                 summary = stringResource(R.string.settings_websites_summary),
-                icon = R.drawable.ic_public,
+                icon = UiR.drawable.ic_public,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
@@ -322,6 +325,7 @@ private fun TwoStepVerificationItem(
             }
         },
         onClick = onClick,
+        opensPage = true,
     )
 }
 

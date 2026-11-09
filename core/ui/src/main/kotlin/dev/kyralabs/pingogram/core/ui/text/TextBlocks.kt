@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 
 /** The tag of the string annotations over the blocks [textBlocks] draws; their values are [TextBlock]'s. */
@@ -35,6 +36,12 @@ object TextBlock {
 
     /** A search's match in the text: a rounded block per line it covers, behind text in the block's content color. */
     const val MATCH = "match"
+
+    /**
+     * A mention of the user, as a chip (`docs/DESIGN_SYSTEM.md` §13.6, the experimental look): a rounded block per line
+     * it covers, behind text in the block's content color.
+     */
+    const val MENTION = "mention"
 }
 
 /**
@@ -52,7 +59,8 @@ class TextBlocksLayout {
  * Draws the blocks of a text built with `toAnnotatedString(drawsBlocks = true)` behind it (`docs/DESIGN_SYSTEM.md`
  * §4), from its [layout]: inline code on [codeColor] in [shape], a rounded background per line it covers; a code block
  * on [codeColor], one shape around all of its lines; hidden spoilers as [spoilerColor] shapes per line; and a search's
- * matches ([TextBlock.MATCH]) as [matchColor] shapes per line, none without one. Each block reaches [horizontalPadding]
+ * matches ([TextBlock.MATCH]) as [matchColor] shapes per line, none without one, and mentions of the user
+ * ([TextBlock.MENTION]) as [mentionColor] shapes per line, none without one. Each block reaches [horizontalPadding]
  * past its text at both ends, so the glyphs do not touch its round corners.
  *
  * The shapes are computed once per layout, and drawn in the draw phase; text without blocks draws nothing.
@@ -64,6 +72,7 @@ fun Modifier.textBlocks(
     shape: Shape,
     horizontalPadding: Dp,
     matchColor: Color = Color.Unspecified,
+    mentionColor: Color = Color.Unspecified,
 ): Modifier =
     drawWithCache {
         val blocks = layout.result?.blocks(horizontalPadding.toPx()).orEmpty()
@@ -74,6 +83,7 @@ fun Modifier.textBlocks(
                     when (block.kind) {
                         TextBlock.SPOILER -> spoilerColor
                         TextBlock.MATCH -> matchColor
+                        TextBlock.MENTION -> mentionColor
                         else -> codeColor
                     }
                 if (color.isSpecified) {
@@ -106,6 +116,36 @@ fun AnnotatedString.withMatches(
         matches.forEach { match ->
             addStringAnnotation(TEXT_BLOCK_TAG, TextBlock.MATCH, match.first, match.last + 1)
             addStyle(SpanStyle(color = contentColor), match.first, match.last + 1)
+        }
+        toAnnotatedString()
+    }
+}
+
+/**
+ * This text with [ranges], the user's mentions, as [TextBlock.MENTION] chips for [textBlocks] to draw (the experimental
+ * look, `docs/DESIGN_SYSTEM.md` §13.6), their text in [contentColor] and the style's heaviest weight, which keeps their
+ * advance widths close; a range within a hidden spoiler stays hidden, and one past the text is left out.
+ */
+fun AnnotatedString.withMentionChips(
+    ranges: List<IntRange>,
+    contentColor: Color,
+): AnnotatedString {
+    val spoilers =
+        getStringAnnotations(TEXT_BLOCK_TAG, 0, length).filter { it.item == TextBlock.SPOILER }.map {
+            it.start until it.end
+        }
+    val chips =
+        ranges.filter { range ->
+            range.first >= 0 &&
+                range.last < length &&
+                !range.isEmpty() &&
+                spoilers.none { spoiler -> range.first <= spoiler.last && spoiler.first <= range.last }
+        }
+    if (chips.isEmpty()) return this
+    return AnnotatedString.Builder(this).run {
+        chips.forEach { range ->
+            addStringAnnotation(TEXT_BLOCK_TAG, TextBlock.MENTION, range.first, range.last + 1)
+            addStyle(SpanStyle(color = contentColor, fontWeight = FontWeight.Bold), range.first, range.last + 1)
         }
         toAnnotatedString()
     }

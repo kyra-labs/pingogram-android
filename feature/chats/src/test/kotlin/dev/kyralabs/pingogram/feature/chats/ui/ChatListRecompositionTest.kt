@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
@@ -65,6 +67,24 @@ class ChatListRecompositionTest {
         assertEquals(emptyList<String>(), counter.recomposedOwn)
         // Now and then the lazy list's machinery recomposes a text of a row it brings in (a reused or prefetched one).
         assertTrue(counter.recomposed.toString(), counter.recomposed.size < SCROLL_FRAMES / RARE)
+    }
+
+    @Test
+    fun `dragging the list collapses the header without recomposing it`() {
+        setScreen(connection = ConnectionStatus.Ready)
+        val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+        val barBottom = list.fetchSemanticsNode().boundsInRoot.top
+
+        list.performTouchInput { down(center) }
+        repeat(COLLAPSE_DRAG_FRAMES) {
+            list.performTouchInput { moveBy(Offset(0f, -DRAG_STEP)) }
+            frame()
+        }
+        list.performTouchInput { up() }
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertTrue(list.fetchSemanticsNode().boundsInRoot.top < barBottom)
+        assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
     }
 
     @Test
@@ -153,9 +173,45 @@ class ChatListRecompositionTest {
         assertNotEquals(emptyList<String>(), counter.recomposedOwn)
     }
 
+    @Test
+    fun `swiping the list to the next folder recomposes no row of the shown list, only the neighbour coming in`() {
+        setScreen(connection = ConnectionStatus.Ready, folderSwipe = true)
+        val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+
+        composeRule.mainClock.autoAdvance = true
+        list.performTouchInput {
+            swipeLeft(startX = centerX, endX = centerX - width * SIDE_DRAG, durationMillis = SIDE_DRAG_MILLIS)
+        }
+        composeRule.waitForIdle()
+
+        // Only the neighbour's own slot runs again as it comes in and goes; the list's rows never.
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filterNot { FOLDER_SLIDE in it })
+        assertTrue(counter.recomposedOwn.toString(), counter.recomposedOwn.any { FOLDER_SLIDE in it })
+    }
+
+    @Test
+    fun `a swipe that lands on the next folder recomposes no row of either list`() {
+        setScreen(connection = ConnectionStatus.Ready, folderSwipe = true)
+        val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+
+        composeRule.mainClock.autoAdvance = true
+        list.performTouchInput {
+            swipeLeft(startX = centerX, endX = centerX - width * LANDING_DRAG, durationMillis = SIDE_DRAG_MILLIS)
+        }
+        composeRule.waitForIdle()
+
+        // Family is selected; its list, which came in as the neighbour, and Work's, now beside it, changed places.
+        assertEquals(FAMILY, selectedFolder)
+        val rows = counter.recomposedOwn.filter { ROW in it }
+        assertEquals(emptyList<String>(), rows)
+    }
+
     private var connection by mutableStateOf(ConnectionStatus.Ready)
 
     private var summary by mutableStateOf(ChatListPreviewData.summary)
+
+    /** The folder selected, which a swipe's [ChatListEvent.SelectFolder] changes, as the view model does. */
+    private var selectedFolder by mutableStateOf<Int?>(null)
 
     private var rings by mutableStateOf(StoryRingsPreviewData.rings)
 
@@ -169,6 +225,7 @@ class ChatListRecompositionTest {
     private fun setScreen(
         connection: ConnectionStatus,
         withStories: Boolean = false,
+        folderSwipe: Boolean = false,
     ) {
         this.connection = connection
         val items =
@@ -179,6 +236,10 @@ class ChatListRecompositionTest {
                 }.toImmutableList()
         // The leading pinned chats as one group, as the view model gives them.
         val content = ChatListContent.Content(items, pinnedCount = items.indexOfFirst { !it.isPinned })
+        // Family, beside Work: other chats, as the view model gives a neighbour.
+        val familyItems = items.map { it.copy(id = it.id + ROWS) }.toImmutableList()
+        val familyContent = ChatListContent.Content(familyItems, 0)
+        selectedFolder = WORK.takeIf { folderSwipe }
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val holder = rememberSaveableStateHolder()
@@ -190,19 +251,24 @@ class ChatListRecompositionTest {
                 if (shown) {
                     holder.SaveableStateProvider(SCREEN_KEY) {
                         listState = rememberLazyListState()
-                        ChatListScreen(
-                            state =
-                                ChatListUiState(
-                                    content = content,
-                                    connection = this.connection,
-                                    folderTabs = ChatListPreviewData.folders,
-                                ),
-                            onEvent = {},
-                            listState = listState,
-                            stories = stories.takeIf { withStories },
-                            // Read by the header alone, as the route hands it over.
-                            summary = { summary },
-                        )
+                        CompositionLocalProvider(LocalChatSwipes provides ChatSwipes(changesFolder = folderSwipe)) {
+                            val family = selectedFolder == FAMILY
+                            ChatListScreen(
+                                state =
+                                    ChatListUiState(
+                                        content = if (family) familyContent else content,
+                                        connection = this.connection,
+                                        folderTabs = ChatListPreviewData.folders,
+                                        selectedFolderId = selectedFolder,
+                                    ),
+                                onEvent = { if (it is ChatListEvent.SelectFolder) selectedFolder = it.folderId },
+                                listState = listState,
+                                stories = stories.takeIf { withStories },
+                                // Read by the header alone, as the route hands it over.
+                                summary = { summary },
+                                neighbours = { neighboursOf(selectedFolder, content, familyContent) },
+                            )
+                        }
                     }
                 }
             }
@@ -212,6 +278,22 @@ class ChatListRecompositionTest {
         repeat(SETTLE_FRAMES) { frame() }
         counter.start()
     }
+
+    /** Family after Work, as the view model gives them: each beside the other, with its own chats. */
+    private fun neighboursOf(
+        selected: Int?,
+        work: ChatListContent,
+        family: ChatListContent,
+    ) = when (selected) {
+        WORK -> FolderNeighbourLists(next = FolderNeighbourList(FAMILY, folderState(FAMILY, family)))
+        FAMILY -> FolderNeighbourLists(previous = FolderNeighbourList(WORK, folderState(WORK, work)))
+        else -> FolderNeighbourLists()
+    }
+
+    private fun folderState(
+        folderId: Int,
+        content: ChatListContent,
+    ) = ChatListUiState(content = content, folderTabs = ChatListPreviewData.folders, selectedFolderId = folderId)
 
     private fun frame() {
         composeRule.mainClock.advanceTimeByFrame()
@@ -235,6 +317,18 @@ class ChatListRecompositionTest {
         const val DRAG_STEP = 10f
 
         const val SETTLE_FRAMES = 60
+
+        /** Part of the width, slowly: the neighbour shows, short of the third that would select it. */
+        const val SIDE_DRAG = 0.15f
+        const val SIDE_DRAG_MILLIS = 400L
+
+        /** Past the third of the width that selects the folder beside. */
+        const val LANDING_DRAG = 0.6f
+        const val ROW = "ChatRow"
+
+        const val WORK = 1
+        const val FAMILY = 2
+        const val FOLDER_SLIDE = "FolderSlideKt"
         const val SCREEN_KEY = "chats"
         const val CHAT_LIST_TEST_TAG = "chat_list"
         const val STORY_RINGS = "StoryRingsKt"

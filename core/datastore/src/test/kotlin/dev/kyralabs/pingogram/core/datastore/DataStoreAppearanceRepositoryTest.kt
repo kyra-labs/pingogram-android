@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import kotlinx.coroutines.CoroutineScope
@@ -146,11 +147,15 @@ class DataStoreAppearanceRepositoryTest {
             first.setChatTextScale(1.2f)
             first.setBubbleCorners(BubbleCorners.Large)
             first.setChatWallpaper(ChatWallpaper.SecondaryToPrimary)
+            first.setGroupBubbles(GroupBubbles.Tinted)
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
             val restarted = repository().appearance.first()
 
-            assertEquals(ChatAppearance(1.2f, BubbleCorners.Large, ChatWallpaper.SecondaryToPrimary), restarted.chat)
+            assertEquals(
+                ChatAppearance(1.2f, BubbleCorners.Large, ChatWallpaper.SecondaryToPrimary, GroupBubbles.Tinted),
+                restarted.chat,
+            )
         }
 
     @Test
@@ -188,6 +193,7 @@ class DataStoreAppearanceRepositoryTest {
                 it[stringPreferencesKey("appearance.palette")] = "Chartreuse"
                 it[stringPreferencesKey("appearance.chat.bubble_corners")] = "Square"
                 it[stringPreferencesKey("appearance.chat.wallpaper")] = "Photo"
+                it[stringPreferencesKey("appearance.chat.group_bubbles")] = "Rainbow"
             }
 
             assertEquals(AppearanceSettings(), repository(dataStore).appearance.first())

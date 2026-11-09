@@ -24,8 +24,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
+import androidx.compose.material3.ChipShapes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -41,6 +44,7 @@ import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SearchBarColors
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -58,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalResources
@@ -70,6 +75,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -81,7 +88,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewStates
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -124,8 +133,8 @@ internal fun SearchScreen(
     focusRequester: FocusRequester = remember { FocusRequester() },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
 ) {
-    val colors = SearchBarDefaults.colors()
     val keyboard = LocalSoftwareKeyboardController.current
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(textFieldState) {
@@ -137,8 +146,11 @@ internal fun SearchScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            // Opaque: the results scroll under the top bar, which the Scaffold places above them.
-            Column(Modifier.background(colors.containerColor)) {
+            // Opaque: the results scroll under the top bar, which the Scaffold places above them. A surfaceContainerLow
+            // block with extraLarge bottom corners over the results' surfaceContainer (`docs/DESIGN_SYSTEM.md` §13.4).
+            val headerShape = MaterialTheme.shapes.extraLarge.copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize)
+            val headerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            Column(Modifier.headerBackground(headerColor, headerShape, MaterialTheme.spacing.small)) {
                 SearchHeader(
                     textFieldState = textFieldState,
                     filter = state.filter,
@@ -146,12 +158,13 @@ internal fun SearchScreen(
                     focusRequester = focusRequester,
                     onBack = onBack,
                     onEvent = onEvent,
+                    topPeople = topPeople,
                 )
-                ResultCountDivider(state.content, colors.dividerColor)
+                ResultCountDivider(state.content, Color.Transparent)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = colors.containerColor,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
         SearchBody(state.content, onEvent, listState, innerPadding)
@@ -171,6 +184,7 @@ private fun SearchHeader(
     focusRequester: FocusRequester,
     onBack: () -> Unit,
     onEvent: (SearchEvent) -> Unit,
+    topPeople: ImmutableList<SearchChatItem> = persistentListOf(),
 ) {
     Column(
         modifier =
@@ -185,16 +199,18 @@ private fun SearchHeader(
             Modifier
                 .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                 .fillMaxWidth()
+        // The pill keeps the block's margin around it (§13.4).
         SearchField(
             textFieldState = textFieldState,
-            colors = SearchBarDefaults.colors(),
+            colors = searchBarColors(),
             onBack = onBack,
             onClear = {
                 textFieldState.clearText()
                 onEvent(SearchEvent.ClearQuery)
             },
-            modifier = width.focusRequester(focusRequester),
+            modifier = width.padding(horizontal = MaterialTheme.spacing.medium).focusRequester(focusRequester),
         )
+        HeaderPeople(topPeople, onEvent, width)
         SearchFilters(filter, counts, onSelect = { onEvent(SearchEvent.FilterChanged(it)) }, modifier = width)
     }
 }
@@ -263,6 +279,8 @@ private fun SearchFilters(
     // The chosen chip scrolls into view, e.g. Links restored after process death on a narrow phone.
     val selectedChip = remember { BringIntoViewRequester() }
     LaunchedEffect(selected) { selectedChip.bringIntoView() }
+    val chipShapes = searchChipShapes()
+    val chipColors = searchChipColors()
     Row(
         modifier =
             modifier
@@ -275,7 +293,8 @@ private fun SearchFilters(
                 selected = filter == selected,
                 onClick = { onSelect(filter) },
                 label = { ChipLabel(stringResource(filter.label), counts[filter]) },
-                shapes = FilterChipDefaults.shapes(),
+                shapes = chipShapes,
+                colors = chipColors,
                 modifier = if (filter == selected) Modifier.bringIntoViewRequester(selectedChip) else Modifier,
             )
         }

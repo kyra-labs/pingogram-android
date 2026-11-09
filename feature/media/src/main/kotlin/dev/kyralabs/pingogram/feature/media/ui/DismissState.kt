@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
+import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -63,6 +64,8 @@ internal class DismissState {
     fun dismiss(onDismiss: () -> Unit) {
         if (isDismissed) return
         isDismissed = true
+        // The route ends the section once the viewer has left the composition (docs/PERFORMANCE.md §9).
+        MediaViewerTrace.beginClose()
         onDismiss()
     }
 

@@ -1,12 +1,16 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.shortName
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 
 // How the items name the users and chats they refer to, from what ItemInputs looked up.
 
@@ -65,3 +69,61 @@ internal val MessageOrigin.id: Long?
             is MessageOrigin.Chat -> chatId
             is MessageOrigin.Channel -> chatId
         }
+
+/**
+ * The hue of a sender (`SenderHues.indexOf`, `docs/DESIGN_SYSTEM.md` §13.6): from a looked-up
+ * user's Telegram accent color ([ref]), else from the user or chat [id].
+ */
+internal fun senderHueOf(
+    ref: Any?,
+    id: Long,
+): Int = SenderHues.indexOf((ref as? User)?.accentColorId ?: -1, id)
+
+/** Whether this text mentions user [userId] by name (td_api.tl `textEntityTypeMentionName`). */
+internal fun FormattedText.mentions(userId: Long?): Boolean =
+    userId != null && entities.any { (it.type as? TextEntityType.MentionName)?.userId == userId }
+
+/** The sender's hue where the bubble [showsSender] (incoming in a group), else -1. */
+internal fun ItemInputs.senderHue(showsSender: Boolean): Int =
+    if (showsSender) senderHueOf(sender, message.sender.id) else -1
+
+/** Whether the message mentions the user: TDLib's unread mention, or a mention by name in its [text]. */
+internal fun ItemInputs.mentionsMe(text: FormattedText): Boolean =
+    message.containsUnreadMention || text.mentions(myUserId)
+
+/**
+ * Where [text] mentions the user: by name (td_api.tl `textEntityTypeMentionName`) or by one of their usernames
+ * (`textEntityTypeMention`), as ranges of the text; empty in a message that does not [mentionsMe].
+ */
+internal fun ItemInputs.myMentions(
+    text: FormattedText,
+    mentionsMe: Boolean,
+): List<IntRange> {
+    if (!mentionsMe) return emptyList()
+    return text.entities.mapNotNull { entity ->
+        val start = entity.offset.coerceIn(0, text.text.length)
+        val end = (entity.offset.toLong() + entity.length).coerceIn(start.toLong(), text.text.length.toLong()).toInt()
+        val mine =
+            when (val type = entity.type) {
+                is TextEntityType.MentionName -> {
+                    type.userId == myUserId
+                }
+
+                TextEntityType.Mention -> {
+                    text.text
+                        .substring(start, end)
+                        .removePrefix("@")
+                        .lowercase() in myUsernames
+                }
+
+                else -> {
+                    false
+                }
+            }
+        (start until end).takeIf { mine && end > start }
+    }
+}
+
+/** How many saw [newest], a channel post (its views); 0 elsewhere. */
+internal fun ItemInputs.views(newest: Message): Int =
+    if (kind == ChatKind.Channel) newest.interactionInfo?.viewCount ?: 0 else 0

@@ -328,7 +328,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
         }
 
     @Test
-    fun `a forum's avatar is a rounded square, every other chat's a circle`() =
+    fun `a forum's avatar is a rounded square, groups are named as groups, people's are circles`() =
         runTest {
             groups.supergroupMap.value =
                 persistentMapOf(
@@ -346,7 +346,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             val viewModel = viewModel()
 
             assertEquals(
-                listOf(AvatarShape.Circle, AvatarShape.RoundedSquare, AvatarShape.Circle, AvatarShape.Circle),
+                listOf(AvatarShape.Circle, AvatarShape.RoundedSquare, AvatarShape.Group, AvatarShape.Group),
                 viewModel.items.map { it.avatarShape },
             )
         }

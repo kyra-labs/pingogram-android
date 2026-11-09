@@ -338,6 +338,31 @@ internal fun Modifier.openProfileTarget(
 }
 
 /**
+ * A vivid bubble ([bubble]) with its sender's [name] above it (`docs/DESIGN_SYSTEM.md` §13.6), both from the start,
+ * telling the row where the bubble ends ([BubbleBottom]) itself: below the name, the bubble's own bottom. A `Column`
+ * would merge the line from its children, which makes Compose place them while the row is still being measured, and
+ * a bubble's text drawn with blocks (code, chips) then fails to place there.
+ */
+@Composable
+internal fun WithNameAbove(
+    modifier: Modifier,
+    name: @Composable () -> Unit,
+    bubble: @Composable () -> Unit,
+) {
+    Layout(contents = listOf(name, bubble), modifier = modifier) { (nameMeasurables, bubbleMeasurables), constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val namePlaceable = nameMeasurables.first().measure(loose)
+        val bubblePlaceable = bubbleMeasurables.first().measure(loose)
+        val width = max(namePlaceable.width, bubblePlaceable.width)
+        val height = namePlaceable.height + bubblePlaceable.height
+        layout(width, height, mapOf(BubbleBottom to namePlaceable.height + bubblePlaceable.bubbleBottom())) {
+            namePlaceable.placeRelative(0, 0)
+            bubblePlaceable.placeRelative(0, namePlaceable.height)
+        }
+    }
+}
+
+/**
  * The bottom of a message's bubble above its reaction badges ([WithReactionBadges]) and its label ([WithFooter]), which
  * the sender's avatar and the share button ([WithShareButton]) line up with.
  */

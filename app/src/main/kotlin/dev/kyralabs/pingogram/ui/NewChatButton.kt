@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
@@ -35,15 +36,17 @@ import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatButtonTransform
+import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
+import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
- * `docs/DESIGN_SYSTEM.md` §6 "New chat", §6.1; owner decision 2026-11-06): a square [FloatingActionButton] as tall as
- * the pill (`sizes.floatingNavigationBar`), with the FAB's `large` corners and the filled edit symbol, in
- * `primaryContainer` / `onPrimaryContainer`, named "New chat" for screen readers. It shows while [shown] (on the Chats
- * tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
+ * `docs/DESIGN_SYSTEM.md` §13.2, §6.1): a 64 dp rounded square (`sizes.experimentalFab`, the shape scale's
+ * `largeIncreased`) with the filled edit symbol, on `tertiaryContainer` / `onTertiaryContainer`, named "New chat" for
+ * screen readers. It shows while [shown]
+ * (on the Chats tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
 internal fun BarNewChatButton(
@@ -51,19 +54,16 @@ internal fun BarNewChatButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = MaterialTheme.shapes.large
+    val shape = MaterialTheme.shapes.largeIncreased
     val colors = MaterialTheme.colorScheme
-    NewChatButtonSlot(
-        shown = shown,
-        shape = shape,
-        modifier = modifier.size(MaterialTheme.sizes.floatingNavigationBar),
-    ) { transform ->
+    val size = MaterialTheme.sizes.experimentalFab
+    NewChatButtonSlot(shown = shown, shape = shape, modifier = modifier.size(size)) { transform ->
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,
-            modifier = transform,
+            modifier = transform.size(size),
             shape = shape,
-            containerColor = colors.primaryContainer,
-            contentColor = colors.onPrimaryContainer,
+            containerColor = colors.tertiaryContainer,
+            contentColor = colors.onTertiaryContainer,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_edit),
@@ -74,11 +74,11 @@ internal fun BarNewChatButton(
 }
 
 /**
- * The rail's primary action on the Chats tab: "New chat", in search's old place (owner decision 2026-11-06). The
- * collapsed rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6), both in the
- * FAB's `large` corners and `primaryContainer`. The rail's header places it at its start edge, so it brings its own
- * start padding, as in Material's rail samples. It grows into New chat and back ([NewChatButtonSlot]), and is away
- * while not [shown].
+ * The rail's primary action on the Chats tab: "New chat", in search's old place (owner decisions 2026-11-06 and
+ * 2026-11-07). The collapsed rail shows a round FAB, the expanded one an extended FAB with its label in a full pill
+ * (`docs/DESIGN_SYSTEM.md` §6), both in `primaryContainer`. The rail's header places it at its start edge, so it
+ * brings its own start padding, as in Material's rail samples. It grows into New chat and back ([NewChatButtonSlot]),
+ * and is away while not [shown].
  */
 @Composable
 internal fun RailNewChatButton(
@@ -89,7 +89,7 @@ internal fun RailNewChatButton(
     val expanded = navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded
     val icon = painterResource(UiR.drawable.ic_edit)
     val label = stringResource(ChatsR.string.new_chat)
-    val shape = MaterialTheme.shapes.large
+    val shape = CircleShape
     NewChatButtonSlot(
         shown = shown,
         shape = shape,
@@ -110,6 +110,124 @@ internal fun RailNewChatButton(
                 Icon(painter = icon, contentDescription = label)
             }
         }
+    }
+}
+
+/**
+ * What sits beside the floating navigation bar for [tab]: "New chat" on the Chats tab while New chat is not open
+ * ([newChatOpen]), and "Add contact" on the Contacts tab (`docs/DESIGN_SYSTEM.md` §13.8).
+ */
+@Composable
+internal fun BarPrimaryActions(
+    tab: TopLevelDestination?,
+    newChatOpen: Boolean,
+    onNewChat: () -> Unit,
+    onNewContact: () -> Unit,
+) {
+    Box {
+        BarNewChatButton(shown = tab == TopLevelDestination.Chats && !newChatOpen, onClick = onNewChat)
+        BarAddContactButton(shown = tab == TopLevelDestination.Contacts, onClick = onNewContact)
+    }
+}
+
+/** The rail header's counterpart of [BarPrimaryActions]. */
+@Composable
+internal fun RailPrimaryActions(
+    navigationSuiteType: NavigationSuiteType,
+    tab: TopLevelDestination?,
+    newChatOpen: Boolean,
+    onNewChat: () -> Unit,
+    onNewContact: () -> Unit,
+) {
+    Box {
+        RailNewChatButton(
+            navigationSuiteType = navigationSuiteType,
+            shown = tab == TopLevelDestination.Chats && !newChatOpen,
+            onClick = onNewChat,
+        )
+        RailAddContactButton(
+            navigationSuiteType = navigationSuiteType,
+            shown = tab == TopLevelDestination.Contacts,
+            onClick = onNewContact,
+        )
+    }
+}
+
+/**
+ * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to
+ * confirm, 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp
+ * rounded square on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and
+ * fades in and out; [onClick] opens Add contact.
+ */
+@Composable
+internal fun BarAddContactButton(
+    shown: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val size = MaterialTheme.sizes.experimentalFab
+    val shape = MaterialTheme.shapes.largeIncreased
+    FadingButton(shown, modifier.size(size)) {
+        FloatingToolbarDefaults.StandardFloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.size(size),
+            shape = shape,
+            containerColor = colors.tertiaryContainer,
+            contentColor = colors.onTertiaryContainer,
+        ) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_person_add),
+                contentDescription = stringResource(ContactsR.string.contacts_add),
+            )
+        }
+    }
+}
+
+/**
+ * The rail's "Add contact" on the Contacts tab, as [RailNewChatButton] on the Chats tab: a
+ * round FAB on the collapsed rail, an extended one with its label on the expanded rail. It fades in and out with
+ * [shown].
+ */
+@Composable
+internal fun RailAddContactButton(
+    navigationSuiteType: NavigationSuiteType,
+    shown: Boolean,
+    onClick: () -> Unit,
+) {
+    val icon = painterResource(UiR.drawable.ic_person_add)
+    val label = stringResource(ContactsR.string.contacts_add)
+    FadingButton(shown, Modifier.padding(start = RAIL_HEADER_START_PADDING)) {
+        if (navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded) {
+            ExtendedFloatingActionButton(
+                onClick = onClick,
+                icon = { Icon(painter = icon, contentDescription = null) },
+                text = { Text(label) },
+                shape = CircleShape,
+            )
+        } else {
+            FloatingActionButton(onClick = onClick, shape = CircleShape) {
+                Icon(painter = icon, contentDescription = label)
+            }
+        }
+    }
+}
+
+/** [button] while [shown], fading in and out on the effects springs. */
+@Composable
+private fun FadingButton(
+    shown: Boolean,
+    modifier: Modifier = Modifier,
+    button: @Composable () -> Unit,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedVisibility(
+        visible = shown,
+        modifier = modifier,
+        enter = fadeIn(motionScheme.fastEffectsSpec()),
+        exit = fadeOut(motionScheme.fastEffectsSpec()),
+    ) {
+        button()
     }
 }
 

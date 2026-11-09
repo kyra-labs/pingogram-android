@@ -212,7 +212,7 @@ private fun StickerSetList(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun AvailableSetRow(
+internal fun AvailableSetRow(
     set: StickerSetItem,
     shapes: ListItemShapes,
     onAdd: () -> Unit,

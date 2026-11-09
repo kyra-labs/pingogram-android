@@ -46,6 +46,12 @@ class ContactsAccessibilityChecksTest {
         }
 
     @Test
+    fun busyContacts() =
+        check {
+            ContactsScreen(state = ContactsPreviewData.busy, onEvent = {}, onAddContact = {}, onEditContact = {})
+        }
+
+    @Test
     fun newContact() = check { NewContactScreen(state = NewContactPreviewData.phoneNumber, onEvent = {}, onBack = {}) }
 
     @Test

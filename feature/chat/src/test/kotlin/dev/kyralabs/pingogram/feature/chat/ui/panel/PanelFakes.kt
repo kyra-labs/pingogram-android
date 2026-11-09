@@ -81,6 +81,23 @@ internal class FakeStickerRepository : StickerRepository {
         setRequests += setId
         return setContents[setId] ?: Outcome.Failure(DomainError.NotFound)
     }
+
+    /** The stickers each emoji has, from the user's sets and from Telegram's ([publicForEmoji]). */
+    val forEmoji = mutableMapOf<String, List<Sticker>>()
+    val publicForEmoji = mutableMapOf<String, List<Sticker>>()
+
+    /** Every emoji asked for, with whether all sets were. */
+    val emojiRequests = mutableListOf<Pair<String, Boolean>>()
+
+    override suspend fun stickersForEmoji(
+        emoji: String,
+        chatId: Long,
+        allSets: Boolean,
+    ): Outcome<List<Sticker>> {
+        emojiRequests += emoji to allSets
+        val mine = forEmoji[emoji].orEmpty()
+        return Outcome.Success(if (allSets) mine + publicForEmoji[emoji].orEmpty() else mine)
+    }
 }
 
 /**

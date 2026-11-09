@@ -40,6 +40,9 @@ internal class StickerPlayer(
     private var next = 0
     private var frame = 0
 
+    /** It went through its last frame since it started showing: with looping off, it stops there. */
+    private var played = false
+
     /**
      * Plays for as long as the caller runs: whenever the window has the focus and what shows the frames is on screen
      * (drawn after [requestDraw]), holding one of the [AnimatedStickers.slots] while it plays.
@@ -50,8 +53,15 @@ internal class StickerPlayer(
     ) {
         while (true) {
             awaitOnScreen(windowInfo, requestDraw)
-            stickers.slots.withPermit { playWhile { windowInfo.isWindowFocused && !stickers.still.value } }
-            if (stickers.still.value) showFirstFrame()
+            stickers.slots.withPermit {
+                playWhile { windowInfo.isWindowFocused && !stickers.still.value && (stickers.loop.value || !played) }
+            }
+            if (stickers.still.value || (played && !stickers.loop.value)) {
+                showFirstFrame()
+                // Played once with looping off: it rests until looping is turned on again.
+                if (!stickers.still.value) stickers.loop.first { it }
+                played = false
+            }
         }
     }
 
@@ -83,6 +93,7 @@ internal class StickerPlayer(
     private suspend fun playWhile(condition: () -> Boolean) {
         while (condition()) {
             val start = TimeSource.Monotonic.markNow()
+            if (frame + step >= animation.frameCount) played = true
             frame = (frame + step) % animation.frameCount
             val index = next
             withContext(stickers.renderDispatcher) {

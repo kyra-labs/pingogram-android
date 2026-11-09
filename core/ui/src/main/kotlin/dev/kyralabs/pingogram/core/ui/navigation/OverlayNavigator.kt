@@ -28,6 +28,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -43,6 +44,7 @@ import androidx.navigation.Navigator
 import androidx.navigation.NavigatorState
 import androidx.navigation.compose.LocalOwnersProvider
 import androidx.navigation.get
+import dev.kyralabs.pingogram.core.ui.trace.OverlayTrace
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -222,8 +224,20 @@ private fun OverlayEntry(
         }
     val scope = remember(transition) { OverlayVisibility(transition) }
     val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
+    OverlayTransitionTrace(state)
     if (!gone) {
-        Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha.value }.then(TouchBlocker)) {
+        // The overlay's fade multiplies each of its draws' alpha (ModulateAlpha) instead of rendering the whole window
+        // into an offscreen buffer first in every frame of the fade, as a plain alpha layer does: its content is a
+        // scrim and what is over it, and the media a container transform shares is drawn in the transform's own overlay
+        // with its own crossfade (docs/audit/performance-review-2026-11.md, M1).
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    this.alpha = alpha.value
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }.then(TouchBlocker),
+        ) {
             CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
                 entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
             }
@@ -231,10 +245,7 @@ private fun OverlayEntry(
     }
     val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
     if (settled) {
-        LaunchedEffect(visible) {
-            navigator.onTransitionComplete(entry)
-            if (!visible) saveableStateHolder.removeState(entry.id)
-        }
+        LaunchedEffect(visible) { completeTransition(navigator, entry, visible, saveableStateHolder) }
     }
     DisposableEffect(entry) {
         // Left before its transition ended (e.g. the whole back stack replaced): Navigation still hears of it.
@@ -245,6 +256,45 @@ private fun OverlayEntry(
                     ?.value
                     .orEmpty()
             if (entry !in onBackStack) navigator.onTransitionComplete(entry)
+        }
+    }
+}
+
+/**
+ * Tells Navigation that [entry]'s transition ended. Once it is gone (not [visible]), its content left the composition
+ * in this frame, and Navigation destroys the entry (clearing its view models) in the next one, so the frame that
+ * uncovers the screen below does not do both (docs/audit/performance-review-2026-11.md, M2); its saved state goes too.
+ */
+private suspend fun completeTransition(
+    navigator: OverlayNavigator,
+    entry: NavBackStackEntry,
+    visible: Boolean,
+    saveableStateHolder: SaveableStateHolder,
+) {
+    if (visible) {
+        navigator.onTransitionComplete(entry)
+    } else {
+        withFrameNanos {}
+        navigator.onTransitionComplete(entry)
+        saveableStateHolder.removeState(entry.id)
+    }
+}
+
+/**
+ * [OverlayTrace]'s sections of [state]'s transitions: `overlayEnter` from the frame the overlay starts coming in until
+ * it settled, `overlayExit` from the frame it starts going out until it is gone (`docs/PERFORMANCE.md` §9). Nothing
+ * for an overlay restored visible.
+ */
+@Composable
+private fun OverlayTransitionTrace(state: MutableTransitionState<EnterExitState>) {
+    val target = state.targetState
+    val settled = state.isIdle
+    LaunchedEffect(target, settled) {
+        when {
+            target == EnterExitState.Visible && !settled -> OverlayTrace.begin(OverlayTrace.ENTER)
+            target == EnterExitState.Visible -> OverlayTrace.end(OverlayTrace.ENTER)
+            target == EnterExitState.PostExit && !settled -> OverlayTrace.begin(OverlayTrace.EXIT)
+            target == EnterExitState.PostExit -> OverlayTrace.end(OverlayTrace.EXIT)
         }
     }
 }

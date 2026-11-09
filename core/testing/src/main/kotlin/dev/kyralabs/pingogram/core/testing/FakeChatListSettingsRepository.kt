@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -33,6 +34,24 @@ class FakeChatListSettingsRepository(
     override suspend fun setSwipeChangesFolder(changes: Boolean): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
         settings.value = settings.value.copy(swipeChangesFolder = changes)
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun setShowEditFoldersButton(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showEditFoldersButton = show)
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showChatTypeIcons = show)
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun setFolderTabStyle(style: FolderTabStyle): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(folderTabStyle = style)
         return Outcome.Success(Unit)
     }
 }

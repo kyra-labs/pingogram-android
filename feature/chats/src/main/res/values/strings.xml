@@ -194,7 +194,6 @@
         <item quantity="other">%1$s, %2$d results</item>
     </plurals>
     <!-- Section headers. -->
-    <string name="search_section_people">People</string>
     <string name="search_section_recent">Recent</string>
     <string name="search_section_chats">Chats</string>
     <string name="search_section_contacts">Contacts</string>

@@ -5,11 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -31,12 +37,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A file message without its caption (`REQUIREMENTS.md` FR-C4), padded in its bubble: an icon for its kind
- * ([documentKind]), its name (shortened in the middle, so the extension stays) and its size, and what can be done
- * with it, by [fileState]:
+ * ([documentKind]), or for a picture sent as a file its thumbnail ([DocumentThumbnail]), its name (shortened in the
+ * middle, so the extension stays) and its size, and what can be done with it, by [fileState]:
  *
  * - **Not downloaded**: a download [IconButton] ([onDownload]); none if TDLib cannot download it.
  * - **Downloading**: "1.2 MB / 4.5 MB" and a determinate wavy ring around a cancel button ([onCancel]).
- * - **Downloaded**: tapping the file opens it ([onOpen]).
+ * - **Downloaded**: tapping the file opens it ([onOpen]): a picture sent as a file in the app's media viewer, others in
+ *   another app.
  * - **Being sent** ([upload]): a wavy ring of the upload around a cancel button ([onCancelUpload]).
  *
  * @param fileState the file's state, from `FileRepository`; null while unknown, shown as not downloaded.
@@ -74,7 +81,11 @@ internal fun MessageDocument(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ContentIcon(documentKind(document).icon, colors)
+        if (document.isViewableImage) {
+            DocumentThumbnail(document)
+        } else {
+            ContentIcon(documentKind(document).icon, colors)
+        }
         Column(
             modifier = Modifier.weight(1f, fill = false),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
@@ -90,7 +101,7 @@ internal fun MessageDocument(
                 text =
                     if (state is FileState.Downloading) {
                         stringResource(
-                            R.string.content_progress_of,
+                            if (state.isActive) R.string.content_progress_of else R.string.content_progress_paused,
                             fileSizeText(state.downloadedSize),
                             fileSizeText(size),
                         )
@@ -102,31 +113,57 @@ internal fun MessageDocument(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        when {
-            upload != null -> UploadRing(upload, colors.accent, colors.track, onCancelUpload)
-            state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
-            state is FileState.Downloading -> CancelDownloadButton(state.progress, colors, onCancel)
-            else -> Unit
+        if (upload != null) {
+            UploadRing(upload, colors.accent, colors.track, onCancelUpload)
+        } else {
+            DownloadAction(state, colors, onDownload, onCancel)
         }
     }
 }
 
+/** The file row's end while nothing uploads: a download, a pause or a resume, or nothing once downloaded. */
+@Composable
+private fun DownloadAction(
+    state: FileState,
+    colors: BubbleColors,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    when {
+        state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
+
+        state is FileState.Downloading && state.isActive -> PauseDownloadButton(state.progress, colors, onCancel)
+
+        // Stopped part of the way: TDLib keeps what came, and downloading again goes on from there.
+        state is FileState.Downloading -> ResumeDownloadButton(state.progress, colors, onDownload)
+
+        else -> Unit
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DownloadButton(
     colors: BubbleColors,
     onClick: () -> Unit,
 ) {
-    IconButton(
+    // The download on a Cookie9Sided button in the bubble's text color (§13.7).
+    val shape = MaterialShapes.Cookie9Sided.toShape()
+    FilledIconButton(
         onClick = onClick,
-        shapes = IconButtonDefaults.shapes(),
-        colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+        shapes = IconButtonShapes(shape = shape, pressedShape = shape),
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = colors.content,
+                contentColor = colors.container,
+            ),
     ) {
         Icon(painterResource(UiR.drawable.ic_download), contentDescription = stringResource(R.string.content_download))
     }
 }
 
 @Composable
-private fun CancelDownloadButton(
+private fun PauseDownloadButton(
     progress: Float,
     colors: BubbleColors,
     onClick: () -> Unit,
@@ -138,8 +175,29 @@ private fun CancelDownloadButton(
             colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
         ) {
             Icon(
-                painter = painterResource(UiR.drawable.ic_close),
-                contentDescription = stringResource(R.string.content_cancel_download),
+                painter = painterResource(UiR.drawable.ic_pause_filled),
+                contentDescription = stringResource(R.string.content_pause_download),
+            )
+        }
+    }
+}
+
+/** A paused download: the download symbol in a still ring that shows how much came, which goes on from there. */
+@Composable
+private fun ResumeDownloadButton(
+    progress: Float,
+    colors: BubbleColors,
+    onClick: () -> Unit,
+) {
+    DownloadRing(progress = progress, colors = colors, moving = false) {
+        IconButton(
+            onClick = onClick,
+            shapes = IconButtonDefaults.shapes(),
+            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+        ) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_download),
+                contentDescription = stringResource(R.string.content_resume_download),
             )
         }
     }

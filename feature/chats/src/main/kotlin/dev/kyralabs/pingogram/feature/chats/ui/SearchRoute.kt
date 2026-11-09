@@ -35,6 +35,8 @@ internal fun SearchRoute(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // The header shows the top people (docs/DESIGN_SYSTEM.md §13.4).
+    val topPeople by viewModel.topPeople.collectAsStateWithLifecycle()
     val textFieldState = rememberTextFieldState()
     val focusRequester = remember { FocusRequester() }
     var focusedOnEntry by rememberSaveable { mutableStateOf(false) }
@@ -78,5 +80,6 @@ internal fun SearchRoute(
         modifier = modifier,
         focusRequester = focusRequester,
         snackbarHostState = snackbarHostState,
+        topPeople = topPeople,
     )
 }

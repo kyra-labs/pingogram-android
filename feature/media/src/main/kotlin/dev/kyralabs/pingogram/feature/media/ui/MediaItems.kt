@@ -1,12 +1,15 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
@@ -36,7 +39,10 @@ internal fun Message.toMediaItem(
     return MediaItem(id, media, sender, date, content.caption, isHidden = content.hasSpoiler && !revealed)
 }
 
-/** What the viewer shows of a photo, video or GIF; null for other content and for self-destructing media. */
+/**
+ * What the viewer shows of a photo, video or GIF, or of a picture sent as a file ([isViewableImage]: its file as the
+ * photo's one size, [documentImageSize]); null for other content and for self-destructing media.
+ */
 internal fun MessageContent.toViewerMedia(): ViewerMedia? =
     when (this) {
         is MessageContent.Photo -> {
@@ -51,10 +57,38 @@ internal fun MessageContent.toViewerMedia(): ViewerMedia? =
             ViewerMedia.Gif(animation).takeUnless { isSecret }
         }
 
+        is MessageContent.Document -> {
+            document.takeIf { it.isViewableImage }?.let { image ->
+                val full = documentImageSize(image)
+                ViewerMedia.Image(Photo(persistentListOf(full), image.minithumbnail), full)
+            }
+        }
+
         else -> {
             null
         }
     }
+
+/**
+ * The one size of a picture sent as a file: its file, in the shape of its thumbnail (TDLib gives a file no size of its
+ * own), as large as the viewer ever decodes ([DOCUMENT_IMAGE_SIDE] on its longer side, which the window then caps).
+ */
+private fun documentImageSize(document: Document): PhotoSize {
+    val thumbnail = checkNotNull(document.thumbnail)
+    val longest = maxOf(thumbnail.width, thumbnail.height)
+    return PhotoSize(
+        type = DOCUMENT_SIZE_TYPE,
+        width = thumbnail.width * DOCUMENT_IMAGE_SIDE / longest,
+        height = thumbnail.height * DOCUMENT_IMAGE_SIDE / longest,
+        file = document.file,
+    )
+}
+
+/** The longer side a picture sent as a file is taken to have, in pixels: more than a window's with zoom room. */
+private const val DOCUMENT_IMAGE_SIDE = 8192
+
+/** Not one of Telegram's size letters: the document's own file. */
+private const val DOCUMENT_SIZE_TYPE = "d"
 
 /**
  * The files the viewer follows for this media: its full file, and a photo's other sizes, the largest of which on the
@@ -73,6 +107,7 @@ private val MessageContent.caption: FormattedText
             is MessageContent.Photo -> caption
             is MessageContent.Video -> caption
             is MessageContent.Animation -> caption
+            is MessageContent.Document -> caption
             else -> FormattedText("", persistentListOf())
         }
 

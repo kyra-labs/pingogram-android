@@ -10,6 +10,7 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -103,6 +104,60 @@ class DataStoreChatListSettingsRepositoryTest {
             assertEquals(
                 ChatListSettings(startSwipe = SwipeAction.Pin, endSwipe = SwipeAction.Mute, swipeChangesFolder = true),
                 repository.settings.first(),
+            )
+        }
+
+    @Test
+    fun `the folder tabs end in Edit folders until it is turned off, and turning it off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showEditFoldersButton)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowEditFoldersButton(false))
+
+            assertEquals(ChatListSettings(showEditFoldersButton = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showEditFoldersButton)
+        }
+
+    @Test
+    fun `chat type icons show until they are turned off, and turning them off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showChatTypeIcons)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowChatTypeIcons(false))
+
+            assertEquals(ChatListSettings(showChatTypeIcons = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showChatTypeIcons)
+        }
+
+    @Test
+    fun `folder tabs show their names until another style is picked, and the pick is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertEquals(FolderTabStyle.Text, repository.settings.first().folderTabStyle)
+
+            assertEquals(Outcome.Success(Unit), repository.setFolderTabStyle(FolderTabStyle.Icon))
+
+            assertEquals(ChatListSettings(folderTabStyle = FolderTabStyle.Icon), repository.settings.first())
+            assertEquals(
+                FolderTabStyle.Icon,
+                DataStoreChatListSettingsRepository(store).settings.first().folderTabStyle,
+            )
+        }
+
+    @Test
+    fun `a folder tab style this version does not know reads as names`() =
+        runTest {
+            val store = dataStore()
+            store.edit { it[stringPreferencesKey("chat_list.folder_tab_style")] = "Hologram" }
+
+            assertEquals(
+                FolderTabStyle.Text,
+                DataStoreChatListSettingsRepository(store).settings.first().folderTabStyle,
             )
         }
 

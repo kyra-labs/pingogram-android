@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -50,14 +51,22 @@ internal fun LogOutItem(
 
 /**
  * The colors of a destructive row in a [SettingsGroup]: its text in the error role, on its container; its icon, if
- * any, takes [SettingsIconTone.Error].
+ * any, takes [SettingsIconTone.Error]. The container takes a tint of the error role too (`docs/DESIGN_SYSTEM.md`
+ * §13.10), so the row reads as a warning before its text is read.
  */
 @Composable
-internal fun destructiveItemColors(): ListItemColors =
-    settingsRowColors(
-        contentColor = MaterialTheme.colorScheme.error,
-        leadingContentColor = MaterialTheme.colorScheme.error,
+internal fun destructiveItemColors(): ListItemColors {
+    val error = MaterialTheme.colorScheme.error
+    val container = settingsRowContainerColor()
+    return settingsRowColors(
+        contentColor = error,
+        leadingContentColor = error,
+        containerColor = error.copy(alpha = DESTRUCTIVE_TINT).compositeOver(container),
     )
+}
+
+/** How much of the error role tints a destructive row's container. */
+private const val DESTRUCTIVE_TINT = 0.12f
 
 /** The destructive confirmation ([DestructiveDialog]). */
 @Composable

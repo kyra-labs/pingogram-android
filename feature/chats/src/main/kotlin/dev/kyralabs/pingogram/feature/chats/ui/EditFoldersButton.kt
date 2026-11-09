@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -37,7 +39,9 @@ internal fun EditFoldersButton(
         state = rememberTooltipState(),
         modifier = modifier,
     ) {
-        OutlinedIconButton(onClick = onClick, enabled = enabled, shapes = IconButtonDefaults.shapes()) {
+        // A square-ish outline (docs/DESIGN_SYSTEM.md §13.3): `medium` corners.
+        val shapes = IconButtonShapes(shape = MaterialTheme.shapes.medium, pressedShape = MaterialTheme.shapes.small)
+        OutlinedIconButton(onClick = onClick, enabled = enabled, shapes = shapes) {
             Icon(painter = painterResource(UiR.drawable.ic_tune), contentDescription = label)
         }
     }

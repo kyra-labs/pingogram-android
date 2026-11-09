@@ -277,6 +277,16 @@ class MediaViewerViewModel internal constructor(
         }
 
     /**
+     * The download progress of the shown item's and its neighbours' files, by file id: kept out of [uiState], whose
+     * file states say only whether each downloads ([LocalFileProgress]).
+     */
+    val downloadProgress: StateFlow<ImmutableMap<Int, Float>> =
+        files
+            .map(::progressOf)
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf())
+
+    /**
      * The media is a secret chat's (`REQUIREMENTS.md` FR-E1): the screen keeps the window secure while it shows it, as
      * the conversation does. False until the chat is known.
      */
@@ -288,7 +298,7 @@ class MediaViewerViewModel internal constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
     val uiState: StateFlow<MediaViewerUiState> =
-        combine(listing, files, playback.state, actions, ::uiStateOf)
+        combine(listing, files.map(::withoutProgress).distinctUntilChanged(), playback.state, actions, ::uiStateOf)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), MediaViewerUiState.Loading)
 
     init {

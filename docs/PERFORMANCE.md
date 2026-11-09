@@ -148,7 +148,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
   Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
   messages on screen auto-download (`ChatAutoDownloads`, prefetch priority, once per file per screen), never the whole
-  history; a started download is not cancelled when the network or the screen changes, as the viewer may show it.
+  history; a started download is not cancelled when the network or the screen changes, as the viewer may show it,
+  but those still on their way stop when the conversation closes (`ChatAutoDownloads.cancelStarted`), as do the
+  stories viewer's (`docs/audit/performance-review-2026-11.md`, W3).
 - Storage: `optimizeStorage` once a week per account (owner decision 2026-10-27), and "Clear cache" in Data and storage
   as it is, with `getStorageStatisticsFast`. The weekly clean-up (`core:notifications`' `StorageOptimizationWorker`,
   `StorageRepository.optimizeStorage`):
@@ -194,6 +196,16 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `TextLayoutResult` cache for bubble sizing; avoid `AnnotatedString` rebuilds on recomposition.
 - Images: Coil 3 `AsyncImage` with explicit `size`, `crossfade` via motion scheme, hardware
   bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy).
+- The media viewer's first and last frames (`docs/audit/performance-review-2026-11.md`, M2): the video player is built
+  off the main thread and freed a second after the viewer closes, its bottom bar (caption, toolbar and tooltips)
+  composes once the opening transform settled, and the overlay's entry is destroyed (its view models cleared) a frame
+  after its content left the composition. `MediaViewerTransitionTest` checks the bottom bar's timing.
+- No blur effects on media: a placeholder's minithumbnail is blurred once on its 40 px bitmap and drawn scaled up
+  (`core:ui`'s `BlurredMinithumbnail`), and is not drawn under an image that has faded in. A `Modifier.blur` there
+  re-rendered a layer the size of the media in every frame, under every media bubble while scrolling and on both sides
+  of the media viewer's container transform (`docs/audit/performance-review-2026-11.md`, M1 and W1). Fades of a whole
+  screen use `CompositingStrategy.ModulateAlpha` rather than an offscreen layer (the overlay of the media viewer), and
+  the bubble's side of the viewer's transform is scaled to its bounds, not measured anew in every frame.
 - Stickers/animations: Lottie behind `StickerAnimationDecoder` (`docs/adr/0008-lottie-for-animated-stickers.md`)
   rendering off the main thread, with a frame cache keyed by (sticker, size) that holds each sticker's first frame
   (8 MB LRU; whole animations would take ~17 MB each) and two bitmaps per playing sticker; max 8 concurrently
@@ -399,6 +411,76 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
   its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
   under ~10% may be thermal.
+- Opening and closing media (`docs/audit/performance-review-2026-11.md`): the container transform of a photo, video
+  or GIF between its bubble and the media viewer. Four async trace sections: `openMedia` (the tap, handed over by
+  `feature:chat`'s route, until the viewer has drawn the page of that media, `MediaViewerTrace`), `overlayEnter` (the
+  frames of the transform in: the overlay's transition from the frame it starts until it settled, `OverlayTrace`),
+  `closeMedia` (back, a swipe or the back button until the viewer has left the composition) and `overlayExit` (the
+  transform out). `OpenMediaBenchmark` opens the newest photo of Saved Messages 10 times per compilation mode, with the
+  frame times and the four sections (`openMediaSumMs.median` and the others in `compare.py`'s terms; no budget yet: the
+  first run on the owner's phone sets one). It needs a photo without a caption among Saved Messages' newest messages,
+  sent by yourself. To run it alone, as `SendMessageBenchmark` above, with
+  `-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.OpenMediaBenchmark`.
+  `tools/perfetto/media-viewer.sh` (`media-viewer.ps1` in PowerShell) records one Perfetto trace
+  (`media-viewer.pbtxt`: the frames of the main thread and the RenderThread, SurfaceFlinger's frame timeline, the
+  window relayouts and binder calls) while it opens the photo on screen and presses back 10 times, and
+  `media-viewer.sql` summarizes it: each section's frames, the longest and the 90th percentile on both threads, the
+  frames SurfaceFlinger presented late, the main thread's longest slices inside the sections (relayouts, semantics,
+  Compose's phases), the RenderThread's (time waiting for the GPU is the cost of offscreen layers and blur effects) and
+  the CPU time per thread. On the JVM, `:app`'s `MediaViewerTransitionTest` steps the opening and the closing frame by
+  frame above a conversation and prints what composed in each with the main thread's CPU time per frame; with
+  `-Ppingogram.jfr` its printed times place the recording's samples, and the system property
+  `pingogram.mediaTransitionRepeats` (set through a Gradle init script's `systemProperty` on the test task) repeats
+  the opening for more of them.
+  - **Before and after the review's fixes, on the JVM** (2026-11-07, `MediaViewerTransitionTest`, six openings and
+    closings in one JVM, the mean of repeats 2–6 over two runs each, the shared build machine). Main thread CPU per
+    frame:
+
+    | Frame | M1 (#333) | M2 (#336) |
+    |---|---|---|
+    | Opening, frame 0 (the loading state, the view model) | 24.3 ms | 23.6 ms |
+    | Opening, frame 1 (the viewer's content) | 22.5 ms | 16.4 ms |
+    | Opening settled (the bottom bar since M2) | 4.5 ms | 13.4 ms |
+    | Closing, the frame the overlay leaves | 15.0 ms | 10.7 ms |
+    | Closing, the next frame (the entry destroyed since M2) | 4.9 ms | 8.9 ms |
+
+    M2 moves work out of the frames that start and end the transform into frames where nothing moves. M1 changed
+    drawing only (no blur layers, no placeholder under a loaded image, one fade, the bubble's side scaled), which
+    Robolectric does not do: the frames of the transform composed nothing before or after it. Neither shows ExoPlayer,
+    whose build (10–30 ms) and release left those frames with M2.
+  - **Before and after on the owner's phone** (2026-11-07, Galaxy S24 Ultra SM-S928B, Android 17, 120 Hz,
+    `benchmarkRelease`; before: `b4abfa18^`, the review's build; after: `main` with M1, M2 and M6). Microsoft Phone
+    Link's screen mirroring ran as an accessibility service in both, so Compose worked out its semantics in every
+    frame (about 16 ms over each closing), and the frame timeline marked nearly every frame late in both ("Buffer
+    Stuffing"): compare the two, not each against the display's 8.3 ms. `OpenMediaBenchmark`, 10 iterations per
+    compilation mode, the profile's first:
+
+    | Metric | Before | After |
+    |---|---|---|
+    | `frameDurationCpuMs` P50 / P90 / P95 / P99 | 8.6 / 36.3 / 66.7 / 231.3 ms | 7.3 / 25.7 / 35.7 / 51.1 ms |
+    | `frameOverrunMs` P50 / P90 / P95 / P99 | 4.0 / 47.2 / 98.6 / 273.8 ms | 2.3 / 30.7 / 43.3 / 113.1 ms |
+    | Frames drawn per opening and closing (median) | 108 | 133.5 |
+    | `openMediaSumMs` (median) | 43.0 ms | 40.6 ms |
+    | Without the profile: `frameDurationCpuMs` P90 / P99 | 34.9 / 207.6 ms | 23.9 / 99.9 ms |
+
+    The journey presses back as soon as the page shows, before the way in settles, so `overlayEnter` never ends there
+    and has no count; `closeMedia` (about 816 ms) is the exit spring's length, not work. `media-viewer.ps1`, 10
+    openings and closings, each waiting for the way in to settle; the main thread's frames per transform, from
+    `summary.txt`:
+
+    | Transform | Before | After |
+    |---|---|---|
+    | In: frames drawn (of about 97 in 813 ms) | 11–76 | 81–92 |
+    | In: longest frame | 47–284 ms | 14–110 ms (8 of 10 under 33 ms) |
+    | In: 90th percentile | 4.9–81.2 ms | 4.9–9.6 ms |
+    | Out: frames drawn | 63–81 | 76–94 |
+    | Out: longest frame | 48–207 ms | 16–158 ms (9 of 10 under 26 ms) |
+
+    One opening before took 2.0 s instead of 0.8 s. The CPU of `Dispatchers.Default` (Coil's decodes, the view
+    models) during the ways in fell from 12.8 s to 4.3 s over the 10; what remains is mostly the full photo's decode,
+    which M5 caps. The RenderThread still spends about 5 ms on each frame of the way out ("Drawing", "flush
+    commands", "dequeueBuffer"). `media-viewer.sql` counted no RenderThread draws on this phone, which names them
+    with their vsync id ("DrawFrames 162342341"); it matches those now.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
@@ -473,6 +555,27 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   machine's noise, so the button stays Material's: the cost is a second control per post. Every button shares one
   painter and its colors (`ShareButtonStyle`). The conversation benchmark scrolls Saved Messages, which has none; a
   channel's scroll on the owner's phone tells whether it holds there.
+- Mention chips (2026-11-07, the experimental look, `docs/DESIGN_SYSTEM.md` §13.6): `ChatScrollCostTest`'s group of
+  2,000 messages in the experimental look, every eleventh mentioning the user, with its mention as a chip and without,
+  three alternating pairs on the shared 4-core machine: without P50 1.22–1.42 ms, P90 5.4–6.0 ms, P99 11.1–12.1 ms; with
+  P50 1.19–1.31 ms, P90 5.1–5.5 ms, P99 10.1–10.7 ms, the same within the machine's noise. A chip is a block drawn
+  behind the text from its layout, added over the cached text of the bubbles that mention the user only. Measuring it
+  found a crash on `main` (vivid bubbles with their name above them, text drawn with blocks), fixed by `WithNameAbove`
+  and kept by `VividBubbleScrollTest`.
+- Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
+  ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
+  P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99
+  11.5–15.2 ms, mean 2.33–2.71 ms: the same within the machine's noise, as scrolling composes nothing more (the
+  neighbour composes only while a swipe or a slide shows it). `ChatListRecompositionTest` checks that a swipe recomposes
+  no row of the shown list. The neighbours' lists are mapped only while "Swipe to change folders" is on, each by a mapper
+  of its own, on the view model's dispatcher; their cost while the chats change is not measured on a phone yet.
+- Landing a folder switch (2026-11-07, the owner saw a stutter as a swipe landed, and more under repeated swipes):
+  the shown list and the one beside it swapped their contents as the swipe landed, so both lists composed every
+  visible row again in that frame, and the rows' animations were turned off and on again around it, recomposing them
+  once more. Each folder's list is now movable content with its own list state (`ChatListScreen`'s `FolderLists`,
+  `FolderListStates`): landing a swipe or tapping a tab moves the two compositions between the shown place and the
+  companion's, recomposing no row (`ChatListRecompositionTest`), and a folder's list keeps its scroll position by
+  itself.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

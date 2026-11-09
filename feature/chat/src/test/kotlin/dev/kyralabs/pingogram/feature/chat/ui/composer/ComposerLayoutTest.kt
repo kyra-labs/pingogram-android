@@ -64,7 +64,7 @@ class ComposerLayoutTest {
                     composer =
                         ComposerUiState.Available(
                             canSchedule = true,
-                            attachOptions = persistentListOf(AttachOption.Gallery),
+                            attachOptions = persistentListOf(AttachOption.Gallery, AttachOption.Camera),
                         ),
                     text = ComposerText(FormattedText(text, persistentListOf())),
                     onSend = { sent++ },
@@ -118,13 +118,13 @@ class ComposerLayoutTest {
     }
 
     @Test
-    fun `the gallery button shows only while the field is empty`() {
+    fun `the camera button shows only while the field is empty`() {
         setComposer()
-        button(R.string.composer_gallery).assertTouchTarget()
+        button(R.string.attach_camera).assertTouchTarget()
 
         composeRule.onNode(hasSetTextAction()).performTextInput("Hi")
 
-        button(R.string.composer_gallery).assertDoesNotExist()
+        button(R.string.attach_camera).assertDoesNotExist()
     }
 
     @Test

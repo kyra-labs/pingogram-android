@@ -7,6 +7,8 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +19,7 @@ import org.robolectric.annotation.Config
  * Global search's states (`REQUIREMENTS.md` FR-L6): the suggestions, the hint, results in segmented groups with the
  * query's words highlighted, a section still searching (the progress indicator under the chips), sections that failed,
  * a query that found nothing, and the Media filter without a query; in light and dark on a compact phone, and on an
- * expanded window, where the field, the chips and the list keep a comfortable width.
+ * expanded window, where the field, the chips and the list keep a comfortable width (`docs/DESIGN_SYSTEM.md` §13.4).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -82,6 +84,10 @@ class SearchScreenScreenshotTest {
     @Test
     fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ScreenshotVariant.Light)
 
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun resultsFontScale200() = capture("resultsFontScale200", SearchPreviewData.results, ScreenshotVariant.Light)
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         name: String,
@@ -95,6 +101,7 @@ class SearchScreenScreenshotTest {
                     textFieldState = remember { TextFieldState(SearchPreviewData.queryOf(state)) },
                     onEvent = {},
                     onBack = {},
+                    topPeople = headerPeople(state),
                 )
             }
         }
@@ -104,6 +111,25 @@ class SearchScreenScreenshotTest {
         captureScreenRoboImage(goldenPath(javaClass, name))
     }
 }
+
+/**
+ * The top people the header shows over [state]: all of them with the suggestions; with results, the first
+ * chat found, a person who matches the query as a top person would.
+ */
+private fun headerPeople(state: SearchUiState): ImmutableList<SearchChatItem> =
+    when (val content = state.content) {
+        is SearchContent.Suggestions -> {
+            SearchPreviewData.topPeople
+        }
+
+        is SearchContent.Results -> {
+            (content.chats as? SearchSection.Items)
+                ?.items
+                ?.take(1)
+                .orEmpty()
+                .toImmutableList()
+        }
+    }
 
 /** Longer than search's progress indicator waits before it shows, and its fade in. */
 private const val PROGRESS_DELAY_MILLIS = 1_000L

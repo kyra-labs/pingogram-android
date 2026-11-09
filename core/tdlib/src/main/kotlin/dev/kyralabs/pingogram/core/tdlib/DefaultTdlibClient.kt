@@ -183,7 +183,9 @@ class DefaultTdlibClient internal constructor(
             parametersProvider.discardDatabase()
             sendParameters()
         } else {
-            log.warn("SetTdlibParameters failed: ${error.code} ${error.message}")
+            // The code only in release builds' log, as for every request (warnOnFailure).
+            log.warn("SetTdlibParameters failed: ${error.code}")
+            log.debug { "SetTdlibParameters failed: ${error.message}" }
         }
     }
 
@@ -248,5 +250,10 @@ private fun <T> TdResult<T>.warnOnFailure(
     log: TdlibLog,
     what: String,
 ) {
-    if (this is TdResult.Failure) log.warn("$what failed: ${error.code} ${error.message}")
+    if (this is TdResult.Failure) {
+        // TDLib's message can echo what was sent ("Can't parse entities: …"): only the code reaches the release log,
+        // the message only debug builds' (docs/audit/performance-review-2026-11.md, W5).
+        log.warn("$what failed: ${error.code}")
+        log.debug { "$what failed: ${error.message}" }
+    }
 }

@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
@@ -381,6 +382,8 @@ private fun handOver(
         }
 
         is ChatEffect.OpenMedia -> {
+            // The viewer ends the section once it has drawn the media's page (docs/PERFORMANCE.md §9).
+            MediaViewerTrace.beginOpen()
             onOpenMedia(effect.messageId)
             ""
         }

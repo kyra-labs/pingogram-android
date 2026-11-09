@@ -129,6 +129,21 @@ class FakeAttachmentRepository : AttachmentRepository {
         return onSendLocation(location)
     }
 
+    /** The messages greeted with [sendGreetingSticker], in order. */
+    val greeted = mutableListOf<Long>()
+
+    /** What [sendGreetingSticker] answers. */
+    var greetingResult: Outcome<Unit> = Outcome.Success(Unit)
+
+    override suspend fun sendGreetingSticker(
+        chatId: Long,
+        replyTo: ReplyTarget,
+        options: SendOptions,
+    ): Outcome<Unit> {
+        greeted += replyTo.messageId
+        return greetingResult
+    }
+
     override suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,

@@ -209,6 +209,15 @@ class TdlibSessionRepositoryTest {
         }
 
     @Test
+    fun `sets after how many days inactive sessions end`() =
+        runTest {
+            client.on(TdApi.SetInactiveSessionTtl::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(Unit), repository.setInactiveSessionTtl(90))
+            assertEquals(90, client.sentOf<TdApi.SetInactiveSessionTtl>().single().inactiveSessionTtlDays)
+        }
+
+    @Test
     fun `terminates all other sessions`() =
         runTest {
             client.on(TdApi.TerminateAllOtherSessions::class, TdResult.Success(TdApi.Ok()))

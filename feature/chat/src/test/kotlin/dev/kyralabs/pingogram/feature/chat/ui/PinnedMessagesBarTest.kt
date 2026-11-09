@@ -83,18 +83,18 @@ class PinnedMessagesBarTest {
     @Test
     fun `taps cycle through the pinned messages, newest last, back to the newest`() {
         setScreen()
-        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").assertExists()
+        composeRule.onNodeWithText("Pinned · 3\u00A0of\u00A03").assertExists()
 
-        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").performClick()
+        composeRule.onNodeWithText("Pinned · 3\u00A0of\u00A03").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Pinned message 2\u00A0of\u00A03").assertExists()
+        composeRule.onNodeWithText("Pinned · 2\u00A0of\u00A03").assertExists()
         composeRule.onNodeWithText("Ada: Middle").assertExists()
 
-        composeRule.onNodeWithText("Pinned message 2\u00A0of\u00A03").performClick()
-        composeRule.onNodeWithText("Pinned message 1\u00A0of\u00A03").performClick()
+        composeRule.onNodeWithText("Pinned · 2\u00A0of\u00A03").performClick()
+        composeRule.onNodeWithText("Pinned · 1\u00A0of\u00A03").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").assertExists()
+        composeRule.onNodeWithText("Pinned · 3\u00A0of\u00A03").assertExists()
         assertEquals(List(3) { PinnedEvent.ShowCurrent }, events)
     }
 
@@ -118,7 +118,7 @@ class PinnedMessagesBarTest {
                 useUnmergedTree = true,
             ).assertCountEquals(0)
         composeRule.onNodeWithContentDescription("Unpin message").performClick()
-        composeRule.onNodeWithText("Pinned message").assertExists()
+        composeRule.onNodeWithText("Pinned").assertExists()
 
         assertEquals(listOf(PinnedEvent.Close), events)
     }
@@ -128,7 +128,7 @@ class PinnedMessagesBarTest {
         setScreen()
         composeRule.onAllNodes(hasContentDescription("Hide pinned messages")).assertCountEquals(1)
         composeRule.onNodeWithContentDescription("Hide pinned messages").assert(isHiddenFromAccessibility())
-        val bar = composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03")
+        val bar = composeRule.onNodeWithText("Pinned · 3\u00A0of\u00A03")
 
         val actions =
             bar

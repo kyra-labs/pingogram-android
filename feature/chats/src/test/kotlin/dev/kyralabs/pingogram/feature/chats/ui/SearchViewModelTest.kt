@@ -240,6 +240,40 @@ class SearchViewModelTest {
         }
 
     @Test
+    fun `the header's top people narrow to the words typed, locked chats left out`() =
+        runTest {
+            search.topPeople =
+                listOf(chat(4, title = "Ada Lovelace"), chat(5, title = "Grace Hopper"), chat(6, title = "Alan Kay"))
+            chatLock.lock(setOf(6L))
+            val viewModel = viewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.topPeople.collect {} }
+            runCurrent()
+
+            assertEquals(listOf(4L, 5L), viewModel.topPeople.value.map { it.id })
+
+            viewModel.onEvent(SearchEvent.QueryChanged("hop"))
+            runCurrent()
+            assertEquals(listOf(5L), viewModel.topPeople.value.map { it.id })
+
+            viewModel.onEvent(SearchEvent.QueryChanged("love ada"))
+            runCurrent()
+            assertEquals(listOf(4L), viewModel.topPeople.value.map { it.id })
+
+            viewModel.onEvent(SearchEvent.QueryChanged("zebra"))
+            runCurrent()
+            assertEquals(emptyList<Long>(), viewModel.topPeople.value.map { it.id })
+        }
+
+    @Test
+    fun `a name matches when each word typed starts one of its words`() {
+        assertTrue("Ada Lovelace".matchesWords("", Locale.US))
+        assertTrue("Ada Lovelace".matchesWords("LOVE", Locale.US))
+        assertTrue("Ada Lovelace".matchesWords("lov ad", Locale.US))
+        assertFalse("Ada Lovelace".matchesWords("velace", Locale.US))
+        assertFalse("Ada Lovelace".matchesWords("ada grace", Locale.US))
+    }
+
+    @Test
     fun `without top people or recent chats there is nothing to suggest`() =
         runTest {
             assertTrue(viewModel().suggestions.isEmpty)

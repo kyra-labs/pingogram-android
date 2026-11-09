@@ -10,6 +10,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -29,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
+import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
@@ -139,6 +141,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -352,6 +355,7 @@ class ChatViewModel internal constructor(
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
+    private val cleanupScope: CoroutineScope? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -392,6 +396,7 @@ class ChatViewModel internal constructor(
         pollRepository: PollRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
         targetPreferences: TargetPreferences,
+        @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -436,6 +441,7 @@ class ChatViewModel internal constructor(
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
         targetPreferences = targetPreferences,
+        cleanupScope = applicationScope,
     )
 
     /**
@@ -1016,7 +1022,13 @@ class ChatViewModel internal constructor(
         }
 
     private val people: Flow<ChatPeople> =
-        combine(userRepository.users, userRepository.myUserId, referencedChats, ::ChatPeople)
+        combine(
+            userRepository.users,
+            userRepository.myUserId,
+            referencedChats,
+            senderRoles(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, searchRepositories.members),
+            ::ChatPeople,
+        )
 
     private val pinned =
         thread.pinnedMessages(
@@ -1040,6 +1052,16 @@ class ChatViewModel internal constructor(
                 val formatter = timeFormatter()
                 formatter.nextText(schedule, clock.now().atZone(formatter.zone).toLocalDate(), user = null)
             },
+        )
+
+    private val headerActions =
+        ChatHeaderActions(
+            chatId = chatId,
+            findMention = { searchRepositories.search.oldestUnreadMention(chatId, topic) },
+            chats = chatRepository,
+            scope = viewModelScope,
+            onShow = window::showMessage,
+            onEffect = { effectChannel.trySend(it) },
         )
 
     private val search =
@@ -1121,6 +1143,9 @@ class ChatViewModel internal constructor(
         addCloseable { playback.release() }
         addCloseable { attachments.release() }
         addCloseable { recorder.release() }
+        // Leaving the chat stops the automatic downloads still on their way (docs/audit/performance-review-2026-11.md,
+        // W3): they would hold the connection the next chat needs. What came stays; the media viewer asks for its own.
+        addCloseable { cleanupScope?.let(autoDownloads::cancelStarted) }
         // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
         // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
         viewModelScope.launch(Dispatchers.Main) {
@@ -1148,6 +1173,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.NearOldestChanged -> window.onNearOldestChanged(event.isNearOldest)
             is ChatEvent.NearNewestChanged -> window.onNearNewestChanged(event.isNearNewest)
             ChatEvent.ShowNewest -> window.showNewest()
+            ChatEvent.JumpToMention -> headerActions.jumpToMention()
+            is ChatEvent.SetMuted -> headerActions.setMuted(event.isMuted)
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
             is ChatEvent.OpenThread -> thread.open(event.messageId)
@@ -1239,6 +1266,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.SendLocation -> attachments.sendLocation(event.location, event.options)
 
             is ChatEvent.SendSticker -> attachments.sendSticker(event.sticker)
+
+            is ChatEvent.Wave -> attachments.wave(event.messageId)
 
             is ChatEvent.SendAnimation -> attachments.sendAnimation(event.animation)
 
@@ -1374,6 +1403,7 @@ class ChatViewModel internal constructor(
                 now = now,
                 timeFormatter = formatter,
                 isForum = group.supergroup?.isForum == true,
+                recentSenders = if (chat.isGroup) recentSenders(messages.state.history.messages) else emptyList(),
             ).toHeader()
                 .let { chatSources.thread.header(it, chat) }
         val history = messages.state.history
@@ -1388,6 +1418,9 @@ class ChatViewModel internal constructor(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
+            unreadMentionCount = chat.unreadMentionCount,
+            groupMemberCount = group.memberCount.takeIf { chat.isGroup },
+            typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
             composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
@@ -1611,11 +1644,18 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
  * app; null for other messages and for files not on the device. Documents of chats that protect their content open
  * too: Telegram lets them be viewed, only not saved (`has_protected_content`), and Pingogram offers no saving here.
  */
-private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect.OpenFile? {
+private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect? {
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == event.messageId } as? ChatItem.Bubble
     val document = (bubble?.content as? MessageContent.Document)?.document?.takeIf { it.file.id == event.fileId }
     val path = (fileStates[event.fileId] as? FileState.Downloaded)?.path ?: return null
-    return document?.let { ChatEffect.OpenFile(path, it.mimeType.ifBlank { null }) }
+    return when {
+        document == null -> null
+
+        // A picture sent as a file opens in the app's own viewer rather than asking for another app.
+        document.isViewableImage -> ChatEffect.OpenMedia(event.messageId)
+
+        else -> ChatEffect.OpenFile(path, document.mimeType.ifBlank { null })
+    }
 }
 
 /**

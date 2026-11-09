@@ -10,10 +10,13 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.document
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageDocument
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messagePhoto
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageVideo
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.thumbnail
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateDeleteMessages
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -134,6 +137,28 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1))
             add(2, messageText())
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 2))
+        }
+
+    @Test
+    fun `a picture sent as a file opens as a page of its own, both ends reached`() =
+        runTest {
+            serveMedia(photoIds = listOf(1))
+            add(2, messageDocument(document(fileName = "photo.jpg", mimeType = "image/jpeg", thumbnail = thumbnail())))
+
+            val page = repository.opened(CHAT, 2).page()
+
+            assertEquals(listOf(2L), page.ids())
+            assertTrue(page.reachedOldest && page.reachedNewest)
+            assertEquals(1, page.totalCount)
+        }
+
+    @Test
+    fun `another file is not found`() =
+        runTest {
+            serveMedia(photoIds = listOf(1))
+            add(2, messageDocument())
 
             assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 2))
         }

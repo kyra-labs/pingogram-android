@@ -18,9 +18,11 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
@@ -84,15 +86,13 @@ class ContactsScreenTest {
     }
 
     @Test
-    fun `a contact opens its chat, and the actions above add and invite`() {
+    fun `a contact opens its chat, and the header's Invite invites`() {
         setScreen(ContactsPreviewData.content)
 
         composeRule.onNode(hasContentDescription("Grace Hopper", substring = true) and hasClickAction()).performClick()
-        composeRule.onNodeWithText(string(R.string.contacts_add)).performClick()
-        composeRule.onNodeWithText(string(R.string.contacts_invite)).performClick()
+        composeRule.onNodeWithText(string(R.string.contacts_action_invite)).performClick()
 
         assertEquals(listOf(ContactsEvent.OpenChat(4), ContactsEvent.Invite), events)
-        assertEquals(1, added)
     }
 
     @Test
@@ -198,7 +198,7 @@ class ContactsScreenTest {
         setScreen(ContactsPreviewData.syncOffer)
 
         composeRule.onNodeWithText(string(R.string.contacts_sync_turn_on)).performClick()
-        composeRule.onNodeWithText(string(R.string.contacts_sync_not_now)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.contacts_sync_not_now)).performClick()
 
         assertEquals(listOf<ContactSyncEvent>(ContactSyncEvent.TurnOn), syncEvents)
         assertEquals(listOf<ContactsEvent>(ContactsEvent.DismissSyncOffer), events)
@@ -209,10 +209,9 @@ class ContactsScreenTest {
         setScreen(ContactsPreviewData.syncOn)
 
         composeRule.onNodeWithText(string(R.string.contacts_sync_now)).performClick()
-        composeRule
-            .onNodeWithContentDescription(string(R.string.contacts_invite_person, "Lin Example"))
-            .performScrollTo()
-            .performClick()
+        val invite = hasContentDescription(string(R.string.contacts_invite_person, "Lin Example"))
+        composeRule.onNodeWithTag(CONTACTS_LIST_TEST_TAG).performScrollToNode(invite)
+        composeRule.onNode(invite).performClick()
 
         assertEquals(listOf<ContactSyncEvent>(ContactSyncEvent.SyncNow), syncEvents)
         assertEquals(listOf<ContactsEvent>(ContactsEvent.InvitePhoneContact("+15550100")), events)
@@ -244,8 +243,8 @@ class ContactsScreenTest {
         }
     }
 
-    /** The list index of section [section]'s header in the long list: two actions, then 3 entries per section. */
-    private fun headerOf(section: Int) = 2 + section * 3
+    /** The list index of section [section]'s header in the long list: 3 entries per section, nothing before them. */
+    private fun headerOf(section: Int) = section * 3
 
     private fun string(
         @StringRes id: Int,

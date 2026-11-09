@@ -120,12 +120,16 @@ sealed interface FolderTab {
         override val hasUnread: Boolean = unreadCount > 0,
     ) : FolderTab
 
-    /** Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji). */
+    /**
+     * Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji), and TDLib's name of its
+     * icon ([iconName], empty for none), which the tabs show where Appearance → Chat list → "Folder tabs" asks.
+     */
     data class Folder(
         val id: Int,
         val title: String,
         override val unreadCount: Int,
         override val hasUnread: Boolean = unreadCount > 0,
+        val iconName: String = "",
     ) : FolderTab {
         override fun toString() = "Folder(id=$id, unreadCount=$unreadCount, …)"
     }
@@ -225,10 +229,13 @@ sealed interface ChatPreview {
     /**
      * The last message: [text], after [sender] in groups ("You", or the sender's first name); none in private chats,
      * channels, and for anonymous senders and service messages.
+     * [contentIcon] is what kind of message it is, shown before it (`docs/DESIGN_SYSTEM.md` §13.3): a photo, video,
+     * GIF, voice message, song, file, place, poll or link; null for a plain text.
      */
     data class Message(
         val sender: UiText?,
         val text: UiText,
+        @param:DrawableRes val contentIcon: Int? = null,
     ) : ChatPreview
 
     /**

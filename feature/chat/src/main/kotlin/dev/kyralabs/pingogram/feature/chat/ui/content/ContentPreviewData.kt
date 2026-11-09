@@ -209,6 +209,26 @@ internal object ContentPreviewData {
         caption = FormattedText.Empty,
     )
 
+    /** A photo sent as a file, with the thumbnail TDLib keeps for it. */
+    val imageDocument =
+        document("IMG_2041.jpg", "image/jpeg").let { content ->
+            content.copy(
+                document =
+                    content.document.copy(
+                        thumbnail =
+                            Thumbnail(
+                                ThumbnailFormat.Jpeg,
+                                IMAGE_THUMBNAIL_WIDTH,
+                                IMAGE_THUMBNAIL_HEIGHT,
+                                FileRef(
+                                    IMAGE_THUMBNAIL_FILE_ID,
+                                    IMAGE_THUMBNAIL_BYTES,
+                                ),
+                            ),
+                    ),
+            )
+        }
+
     fun location(livePeriod: Int) = MessageContent.Location(Location(BERLIN_LATITUDE, BERLIN_LONGITUDE), livePeriod)
 
     val venue =
@@ -369,6 +389,10 @@ private const val AUDIO_FILE_ID = 700
 private const val AUDIO_SECONDS = 302
 private const val AUDIO_BYTES = 7_300_000L
 private const val DOCUMENT_FILE_ID = 800
+private const val IMAGE_THUMBNAIL_FILE_ID = 801
+private const val IMAGE_THUMBNAIL_BYTES = 9_000L
+private const val IMAGE_THUMBNAIL_WIDTH = 320
+private const val IMAGE_THUMBNAIL_HEIGHT = 240
 private const val DOCUMENT_BYTES = 4_520_000L
 private const val BERLIN_LATITUDE = 52.516275
 private const val BERLIN_LONGITUDE = 13.377704

@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -49,16 +53,21 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun DatePill(
     text: String,
     modifier: Modifier = Modifier,
+    floating: Boolean = false,
 ) {
+    // The floating pill: surfaceContainerHigh, its text onSurface and emphasized (§13.5).
+    val colors = MaterialTheme.colorScheme
     Text(
         text = text,
         modifier =
             modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape)
-                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                .background(
+                    if (floating) colors.surfaceContainerHigh else colors.surfaceContainerHighest,
+                    CircleShape,
+                ).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
+        color = if (floating) colors.onSurface else colors.onSurfaceVariant,
         maxLines = 1,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.run { if (floating) labelLargeEmphasized else labelLarge },
     )
 }
 
@@ -77,13 +86,16 @@ internal fun DateSeparatorRow(
  * A service message ("Alice joined the group"), centred in a pill. Long texts wrap within the width of a bubble, the
  * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped,
  * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text; so does an
- * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call.
+ * invitation to a conference call that goes on ([ChatItem.Service.groupCallChatId]), which opens the call. Where
+ * [onWave] is given (someone else joined, the user can write), "Wave" ends the pill
+ * (`docs/DESIGN_SYSTEM.md` §13.6): an extra-small tonal button that sends a greeting sticker in reply.
  */
 @Composable
 internal fun ServiceMessageRow(
     item: ChatItem.Service,
     modifier: Modifier = Modifier,
     canCallBack: Boolean = true,
+    onWave: (() -> Unit)? = null,
 ) {
     val calls = LocalCallStarter.current
     val callUserId = item.callUserId?.takeIf { calls != null && canCallBack }
@@ -127,6 +139,7 @@ internal fun ServiceMessageRow(
                 // Names in it are isolated (`bidiIsolated`): it takes its language's direction, not the layout's.
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
+            if (onWave != null) WaveButton(onWave)
             if (callUserId != null || groupCallChatId != null) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_call_filled),
@@ -143,9 +156,39 @@ internal fun ServiceMessageRow(
     }
 }
 
-/** "Unread messages" between two dividers, above the first message that was unread when the chat was opened. */
+/** "Wave", an extra-small tonal button at the end of a join message's pill, which sends a greeting sticker. */
 @Composable
-internal fun UnreadDividerRow(modifier: Modifier = Modifier) {
+private fun WaveButton(onWave: () -> Unit) {
+    FilledTonalButton(
+        onClick = onWave,
+        modifier =
+            Modifier
+                .padding(
+                    start = MaterialTheme.spacing.small,
+                ).heightIn(ButtonDefaults.ExtraSmallContainerHeight),
+        shapes = ButtonDefaults.shapesFor(ButtonDefaults.ExtraSmallContainerHeight),
+        contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.ExtraSmallContainerHeight),
+    ) {
+        Text(
+            text = stringResource(R.string.chat_wave),
+            style = ButtonDefaults.textStyleFor(ButtonDefaults.ExtraSmallContainerHeight),
+        )
+    }
+}
+
+/**
+ * Above the first message that was unread when the chat was opened: `primary` lines around a `primary` pill counting
+ * them ("4 unread posts", `docs/DESIGN_SYSTEM.md` §13.7), or "Unread messages" between two dividers without a count.
+ */
+@Composable
+internal fun UnreadDividerRow(
+    modifier: Modifier = Modifier,
+    item: ChatItem.UnreadDivider? = null,
+) {
+    if (item != null && item.count > 0) {
+        UnreadPill(item, modifier)
+        return
+    }
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
@@ -188,5 +231,33 @@ internal fun FloatingDatePill(
             label = "datePill",
         )
     val pillModifier = remember(modifier, alpha) { modifier.graphicsLayer { this.alpha = alpha.value } }
-    date?.let { DatePill(it.resolve(), pillModifier) }
+    date?.let { DatePill(it.resolve(), pillModifier, floating = true) }
+}
+
+@Composable
+private fun UnreadPill(
+    item: ChatItem.UnreadDivider,
+    modifier: Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val spacing = MaterialTheme.spacing
+    val plural = if (item.isChannel) R.plurals.chat_unread_posts_divider else R.plurals.chat_unread_messages_divider
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(Modifier.weight(1f), thickness = MaterialTheme.sizes.avatarRing, color = colors.primary)
+        Text(
+            text = pluralStringResource(plural, item.count, item.count),
+            modifier =
+                Modifier
+                    .semantics { heading() }
+                    .background(colors.primary, CircleShape)
+                    .padding(horizontal = spacing.medium, vertical = spacing.extraSmall),
+            color = colors.onPrimary,
+            style = MaterialTheme.typography.labelMediumEmphasized,
+        )
+        HorizontalDivider(Modifier.weight(1f), thickness = MaterialTheme.sizes.avatarRing, color = colors.primary)
+    }
 }

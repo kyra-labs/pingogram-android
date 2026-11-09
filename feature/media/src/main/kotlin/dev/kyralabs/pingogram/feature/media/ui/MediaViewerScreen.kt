@@ -125,7 +125,7 @@ internal fun MediaViewerScreen(
                 },
                 bottomBar = {
                     if (content != null) {
-                        Chrome(visible = chrome.visible, dismiss, height) {
+                        Chrome(visible = chrome.visible, dismiss, height, afterEnter = true) {
                             ViewerBottomBar(
                                 content.current,
                                 content.playback,
@@ -174,8 +174,8 @@ private fun actionsOf(
     onEvent: (MediaViewerEvent) -> Unit,
 ): @Composable () -> Unit {
     val media = content.current.media
-    val fileState = content.files[media.fileId]
-    return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, fileState, onEvent) }
+    val file = ItemFile(media.fileId, content.files[media.fileId])
+    return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, file, onEvent) }
 }
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
@@ -249,6 +249,7 @@ private fun ViewerContent(
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    OpenMediaTraceEffect(shown = state is MediaViewerUiState.Content)
     when (state) {
         MediaViewerUiState.Loading -> {
             val resources = LocalResources.current
@@ -282,8 +283,11 @@ private fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
+    afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    // The bottom bar waits for the way in to end (rememberEnterSettled); the top bar shows from the start.
+    if (afterEnter && !rememberEnterSettled()) return
     val motionScheme = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = visible,

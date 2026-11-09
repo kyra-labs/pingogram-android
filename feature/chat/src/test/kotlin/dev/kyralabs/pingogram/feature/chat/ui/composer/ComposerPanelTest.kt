@@ -73,6 +73,9 @@ class ComposerPanelTest {
         return text
     }
 
+    /** The panel's events but the field's text, which the composer hands over for sticker suggestions. */
+    private val panelEvents get() = events.filterNot { it is EmojiPanelEvent.TextChanged }
+
     private fun openPanel() {
         composeRule.onNodeWithContentDescription(string(R.string.panel_open)).performClick()
         composeRule.waitForIdle()
@@ -85,7 +88,7 @@ class ComposerPanelTest {
         openPanel()
 
         assertTrue(panel.isOpen)
-        assertEquals(listOf(EmojiPanelEvent.Opened), events)
+        assertEquals(listOf(EmojiPanelEvent.Opened), panelEvents)
         composeRule.onNodeWithContentDescription(string(R.string.panel_keyboard)).assertExists()
     }
 
@@ -99,8 +102,10 @@ class ComposerPanelTest {
         composeRule.onNodeWithContentDescription(string(R.string.panel_backspace)).performClick()
 
         assertEquals("😃", typed)
-        assertEquals(EmojiPanelEvent.EmojiPicked("😃"), events.last())
+        assertEquals(EmojiPanelEvent.EmojiPicked("😃"), panelEvents.last())
         assertEquals("", text.content.text)
+        // The emoji alone in the field reaches the panel for its sticker suggestions.
+        assertTrue(EmojiPanelEvent.TextChanged("😃") in events)
     }
 
     @Test

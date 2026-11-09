@@ -16,10 +16,13 @@ import javax.inject.Inject
  * What the About page shows (`REQUIREMENTS.md` FR-S1).
  *
  * @property versionName the app's version, e.g. `0.3.0`.
+ * @property showsCheckForUpdates whether "Check for updates" shows: not when an app store installed Pingogram
+ *   ([AppInfo.isFromAppStore]), as the store updates it and GitHub's releases would be another build.
  */
 @Immutable
 data class AboutUiState(
     val versionName: String,
+    val showsCheckForUpdates: Boolean = true,
 )
 
 /** What the user does on the About page, handled by [AboutViewModel.onEvent]. */
@@ -29,6 +32,12 @@ sealed interface AboutEvent {
 
     /** The privacy policy row was tapped. */
     data object OpenPrivacyPolicy : AboutEvent
+
+    /** "What's new": this version's release notes on GitHub, in the browser. */
+    data object OpenReleaseNotes : AboutEvent
+
+    /** "Check for updates": the latest release on GitHub, in the browser; the app asks no server itself. */
+    data object OpenLatestRelease : AboutEvent
 }
 
 /** One-off side effects of [AboutViewModel], handled once by its route. */
@@ -46,7 +55,13 @@ class AboutViewModel
     constructor(
         appInfo: AppInfo,
     ) : ViewModel() {
-        val uiState: StateFlow<AboutUiState> = MutableStateFlow(AboutUiState(appInfo.versionName)).asStateFlow()
+        val uiState: StateFlow<AboutUiState> =
+            MutableStateFlow(
+                AboutUiState(appInfo.versionName, showsCheckForUpdates = !appInfo.isFromAppStore),
+            ).asStateFlow()
+
+        /** This version's release on GitHub, tagged `v` and the version. */
+        private val releaseNotesUrl = "$SOURCE_CODE_URL/releases/tag/v${appInfo.versionName}"
 
         private val effectChannel = Channel<AboutEffect>(Channel.BUFFERED)
         val effects: Flow<AboutEffect> = effectChannel.receiveAsFlow()
@@ -55,6 +70,8 @@ class AboutViewModel
             when (event) {
                 AboutEvent.OpenSourceCode -> effectChannel.trySend(AboutEffect.OpenUrl(SOURCE_CODE_URL))
                 AboutEvent.OpenPrivacyPolicy -> effectChannel.trySend(AboutEffect.OpenUrl(PRIVACY_POLICY_URL))
+                AboutEvent.OpenReleaseNotes -> effectChannel.trySend(AboutEffect.OpenUrl(releaseNotesUrl))
+                AboutEvent.OpenLatestRelease -> effectChannel.trySend(AboutEffect.OpenUrl(LATEST_RELEASE_URL))
             }
         }
 
@@ -67,5 +84,8 @@ class AboutViewModel
              * same URL as Play Console's). Not Telegram's, which the Welcome screen links as what signing in accepts.
              */
             const val PRIVACY_POLICY_URL = "https://pingogram.kyralabs.dev/privacy/"
+
+            /** The newest release on GitHub, where the APKs are (`docs/RELEASE.md`). */
+            const val LATEST_RELEASE_URL = "$SOURCE_CODE_URL/releases/latest"
         }
     }

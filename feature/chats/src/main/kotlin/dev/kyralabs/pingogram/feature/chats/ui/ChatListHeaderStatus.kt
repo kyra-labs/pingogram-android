@@ -25,21 +25,6 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 
 /**
- * The header's expanded height: the collapsed row, then the title's line in `displaySmallEmphasized` and the status
- * line, as tall as the connection pill that takes its place, and the room below them, in the current font scale.
- */
-@Composable
-internal fun headerExpandedHeight(): Dp {
-    val typography = MaterialTheme.typography
-    val spacing = MaterialTheme.spacing
-    val lines =
-        with(LocalDensity.current) {
-            typography.displaySmallEmphasized.lineHeight.toDp() + typography.labelLarge.lineHeight.toDp()
-        }
-    return MaterialTheme.sizes.denseTopAppBar + lines + spacing.extraSmall * 2 + spacing.medium
-}
-
-/**
  * Under the title: on the [expanded] row the connection pill while not connected, else the status line while
  * something is unread; on the collapsed row only the connection's state, in one line. [summary] is read here alone.
  */

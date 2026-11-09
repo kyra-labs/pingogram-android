@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -35,6 +36,7 @@ internal object SearchPreviewData {
         isOnline: Boolean = false,
         badge: TitleBadge? = null,
         isMuted: Boolean = false,
+        shape: AvatarShape = AvatarShape.Circle,
     ) = SearchChatItem(
         id = id,
         title = UiText.Plain(title),
@@ -45,6 +47,7 @@ internal object SearchPreviewData {
         isSecret = false,
         isMuted = isMuted,
         subtitle = subtitle,
+        avatarShape = shape,
     )
 
     private fun username(name: String) = UiText.resource(R.string.search_username, name)
@@ -63,6 +66,7 @@ internal object SearchPreviewData {
         date: String,
         sender: String? = null,
         badge: TitleBadge? = null,
+        shape: AvatarShape = AvatarShape.Circle,
     ) = SearchMessageItem(
         chatId = chatId,
         messageId = messageId,
@@ -73,18 +77,27 @@ internal object SearchPreviewData {
         sender = sender?.let { UiText.Plain(it).bidiIsolated() },
         preview = preview,
         date = date,
+        avatarShape = shape,
     )
 
     val chats =
         persistentListOf(
             chat(2, "Ada Lovelace", username("ada"), isOnline = true),
-            chat(-100_3, "Ada's Book Club", members(1_204, "1,204"), isMuted = true),
+            chat(-100_3, "Ada's Book Club", members(1_204, "1,204"), isMuted = true, shape = AvatarShape.Group),
         )
 
     private val contacts = persistentListOf(chat(4, "Adam Sedgwick", username("sedgwick")))
 
     private val global =
-        persistentListOf(chat(-100_5, "Ada Developers", username("adadevs"), badge = TitleBadge.Verified))
+        persistentListOf(
+            chat(
+                -100_5,
+                "Ada Developers",
+                username("adadevs"),
+                badge = TitleBadge.Verified,
+                shape = AvatarShape.Channel,
+            ),
+        )
 
     val messages =
         persistentListOf(
@@ -102,6 +115,7 @@ internal object SearchPreviewData {
                 preview = UiText.Plain("…next month we read the letters Ada wrote to Babbage about the engine"),
                 date = "Mon",
                 sender = "Grace",
+                shape = AvatarShape.Group,
             ),
             message(
                 chatId = -100_7,
@@ -115,6 +129,7 @@ internal object SearchPreviewData {
                     ),
                 date = "Mar 17",
                 badge = TitleBadge.Verified,
+                shape = AvatarShape.Channel,
             ),
         )
 
@@ -122,10 +137,16 @@ internal object SearchPreviewData {
         persistentListOf(
             chats.first(),
             chat(6, "Charles Babbage"),
-            chat(-100_7, "Analytical Society", username("analytical"), badge = TitleBadge.Verified),
+            chat(
+                -100_7,
+                "Analytical Society",
+                username("analytical"),
+                badge = TitleBadge.Verified,
+                shape = AvatarShape.Channel,
+            ),
         )
 
-    private val topPeople =
+    val topPeople =
         persistentListOf(
             chat(8, "Grace Hopper", isOnline = true),
             chat(6, "Charles Babbage"),

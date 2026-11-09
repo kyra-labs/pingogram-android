@@ -3,7 +3,10 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,9 +56,10 @@ class PrivacySecurityScreenTest {
         @StringRes id: Int,
     ) = RuntimeEnvironment.getApplication().getString(id)
 
+    /** The row titled [id]: the privacy checkup's tags name some settings too, but do nothing when tapped. */
     private fun node(
         @StringRes id: Int,
-    ) = composeRule.onNodeWithText(string(id)).performScrollTo()
+    ) = composeRule.onAllNodes(hasText(string(id)) and hasClickAction()).onFirst().performScrollTo()
 
     @Test
     fun `each privacy setting shows its choice and opens its page`() {
@@ -64,6 +69,18 @@ class PrivacySecurityScreenTest {
         PrivacySetting.entries.forEach { node(it.titleRes()).assertHasClickAction().performClick() }
 
         assertEquals(PrivacySetting.entries.map { PrivacySecurityPage.Setting(it) }, pages)
+    }
+
+    @Test
+    fun `the privacy checkup reviews the first setting open to everybody, and Not now hides it`() {
+        setScreen()
+
+        composeRule.onNodeWithText(string(R.string.settings_privacy_checkup_review)).performClick()
+        composeRule.onNodeWithText(string(R.string.settings_privacy_checkup_not_now)).performClick()
+
+        assertEquals(1, pages.size)
+        assertTrue(pages.single() is PrivacySecurityPage.Setting)
+        composeRule.onNodeWithText(string(R.string.settings_privacy_checkup_review)).assertDoesNotExist()
     }
 
     @Test

@@ -81,7 +81,7 @@ private fun AutoDownloadNetwork.iconRes(): Int =
     when (this) {
         AutoDownloadNetwork.Mobile -> R.drawable.ic_signal_cellular_alt
         AutoDownloadNetwork.WiFi -> R.drawable.ic_wifi
-        AutoDownloadNetwork.Roaming -> R.drawable.ic_public
+        AutoDownloadNetwork.Roaming -> UiR.drawable.ic_public
     }
 
 /**

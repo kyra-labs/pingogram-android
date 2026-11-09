@@ -3,8 +3,11 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import android.content.res.Resources
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,6 +36,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,8 +44,10 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
+import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
+import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -72,7 +78,7 @@ internal fun SearchChatRow(
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },
         leadingContent = { ChatAvatar(item, title, containerColor) },
-        trailingContent = onRemove?.let { remove -> { RemoveRecentButton(title, remove) } },
+        trailingContent = chatTrailing(title, onRemove),
         supportingContent = subtitle?.let { text -> { ChatSubtitle(text) } },
         colors = rowColors(),
         content = { ChatTitle(title, item.isSecret, item.badge, item.isMuted, isUnread = false) },
@@ -102,7 +108,7 @@ internal fun SearchChatSegment(
         shapes = shapes,
         modifier = modifier.semantics { contentDescription = description },
         leadingContent = { ChatAvatar(item, title, colors.containerColor) },
-        trailingContent = onRemove?.let { remove -> { RemoveRecentButton(title, remove) } },
+        trailingContent = chatTrailing(title, onRemove),
         supportingContent = subtitle?.let { text -> { ChatSubtitle(text) } },
         colors = colors,
         content = { ChatTitle(title, item.isSecret, item.badge, item.isMuted, isUnread = false) },
@@ -130,7 +136,7 @@ private fun ChatAvatar(
 
 /** The button that takes the recent chat [title] out of the recent chats. */
 @Composable
-private fun RemoveRecentButton(
+internal fun RemoveRecentButton(
     title: String,
     onRemove: () -> Unit,
 ) {
@@ -170,12 +176,7 @@ internal fun SearchMessageRow(
     val chatTitle = item.chatTitle.resolve()
     val sender = item.sender?.let { stringResource(R.string.chat_list_sender, it.resolve()) }
     val text = item.preview.resolve()
-    val colors = MaterialTheme.colorScheme
-    val match = SpanStyle(color = colors.primary, fontWeight = MaterialTheme.typography.bodyMediumEmphasized.fontWeight)
-    val preview =
-        remember(sender, text, highlight, colors.onSurface, match) {
-            highlighted(sender, text, highlight, colors.onSurface, match)
-        }
+    val preview = foundMessageText(sender, text, highlight)
     val resources = LocalResources.current
     val itemColors = ListItemDefaults.segmentedColors()
     SegmentedListItem(
@@ -197,26 +198,13 @@ internal fun SearchMessageRow(
                 shape = item.avatarShape,
             )
         },
-        trailingContent = {
-            Text(
-                text = item.date,
-                modifier = Modifier.clearAndSetSemantics {},
-                color = colors.onSurfaceVariant,
-                maxLines = 1,
-                style = MaterialTheme.typography.labelSmall.userContent,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = preview,
-                modifier = Modifier.clearAndSetSemantics {},
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2,
-                style = MaterialTheme.typography.bodyMedium.userContent,
-            )
-        },
+        supportingContent = { MessagePreview(preview) },
         colors = itemColors,
-        content = { ChatTitle(chatTitle, isSecret = false, badge = item.badge, isMuted = false, isUnread = false) },
+        content = {
+            TitleWithDate(item.date) {
+                ChatTitle(chatTitle, isSecret = false, badge = item.badge, isMuted = false, isUnread = false)
+            }
+        },
     )
 }
 

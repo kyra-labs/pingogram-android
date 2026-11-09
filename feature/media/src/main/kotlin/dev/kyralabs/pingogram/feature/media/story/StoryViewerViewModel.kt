@@ -303,6 +303,11 @@ class StoryViewerViewModel internal constructor(
 
     override fun onCleared() {
         timeline.release()
+        // The stories' downloads stop with the viewer; what came stays, and TDLib goes on from there next time
+        // (docs/audit/performance-review-2026-11.md, W3). A finished one is not affected.
+        val files = requestedFiles.toList()
+        requestedFiles.clear()
+        if (files.isNotEmpty()) applicationScope.launch { files.forEach { fileRepository.cancelDownload(it) } }
         opened?.let { story -> applicationScope.launch { storyRepository.closeStory(story.chatId, story.storyId) } }
         opened = null
     }

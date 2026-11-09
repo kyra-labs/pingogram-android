@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
@@ -197,7 +198,8 @@ private fun SaveAction(
         val saving = stringResource(R.string.settings_edit_profile_saving)
         LoadingIndicator(endPadding.semantics { contentDescription = saving })
     } else {
-        TextButton(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
+        // A filled button (docs/DESIGN_SYSTEM.md §13.10).
+        Button(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = endPadding, enabled = enabled) {
             Text(
                 text = stringResource(R.string.settings_edit_profile_save),
                 style = MaterialTheme.typography.labelLargeEmphasized,

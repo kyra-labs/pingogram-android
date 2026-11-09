@@ -47,4 +47,26 @@ class ChatSwipesViewModelTest {
                 assertEquals(ChatSwipes(changesFolder = true), awaitItem())
             }
         }
+
+    @Test
+    fun `follows whether the folder tabs end in Edit folders`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().editFoldersButton)
+
+                settings.settings.value = ChatListSettings(showEditFoldersButton = false)
+                assertEquals(ChatSwipes(editFoldersButton = false), awaitItem())
+            }
+        }
+
+    @Test
+    fun `follows whether the rows show the kind of chat`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().chatTypeIcons)
+
+                settings.settings.value = ChatListSettings(showChatTypeIcons = false)
+                assertEquals(ChatSwipes(chatTypeIcons = false), awaitItem())
+            }
+        }
 }

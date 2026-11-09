@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -107,6 +109,13 @@ class SearchViewModel internal constructor(
         Locale::getDefault,
     )
 
+    /**
+     * The people the user writes to most, read once while the screen collects, for the header ([topPeople]).
+     */
+    private val topChats: Flow<List<Chat>> =
+        flow { emit(searchRepository.topPeople().getOrNull().orEmpty()) }
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
+
     /** What the results of the current query are asked to do; dropped while none are searched. */
     private val commands = MutableSharedFlow<Command>(extraBufferCapacity = COMMAND_BUFFER)
 
@@ -165,6 +174,23 @@ class SearchViewModel internal constructor(
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SearchUiState())
 
+    /**
+     * The top people the header shows above the chips (`docs/DESIGN_SYSTEM.md` §13.4): all of them
+     * before anything is typed, then those whose name has a word starting with each word typed ([matchesWords]),
+     * mapped as search's rows; locked chats left out.
+     */
+    val topPeople: StateFlow<ImmutableList<SearchChatItem>> =
+        combine(
+            topChats,
+            savedStateHandle.getStateFlow(KEY_QUERY, ""),
+            people,
+            chatLock.hiddenChatIds.filterNotNull(),
+        ) { chats, query, sources, hidden ->
+            val locale = locale()
+            chats.filter { it.id !in hidden && it.title.matchesWords(query, locale) }.toItems(sources)
+        }.flowOn(dispatcher)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentListOf())
+
     fun onEvent(event: SearchEvent) {
         when (event) {
             is SearchEvent.QueryChanged -> savedStateHandle[KEY_QUERY] = event.query
@@ -199,9 +225,8 @@ class SearchViewModel internal constructor(
 
     /** The top people, read once, and the recent chats, read again whenever they changed. */
     private fun suggestions(): Flow<SearchState> {
-        val topPeople = flow { emit(searchRepository.topPeople().getOrNull().orEmpty()) }
         val recents = recentsVersion.mapLatest { searchRepository.recentChats().getOrNull().orEmpty() }
-        return combine(topPeople, recents) { top, recent -> SearchState.Suggestions(top, recent, isLoading = false) }
+        return combine(topChats, recents) { top, recent -> SearchState.Suggestions(top, recent, isLoading = false) }
             .onStart { emit(SearchState.Suggestions()) }
     }
 

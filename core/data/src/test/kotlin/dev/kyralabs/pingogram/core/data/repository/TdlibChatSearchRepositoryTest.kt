@@ -54,6 +54,27 @@ class TdlibChatSearchRepositoryTest {
         }
 
     @Test
+    fun `the oldest unread mention is the last of the newest ones`() =
+        runTest {
+            client.on(TdApi.SearchChatMessages::class, found(9, 7, 5))
+
+            assertEquals(Outcome.Success(5L), repository.oldestUnreadMention(CHAT, MessageTopic.Thread(3)))
+            val sent = client.sentOf<TdApi.SearchChatMessages>().single()
+            assertTrue(sent.filter is TdApi.SearchMessagesFilterUnreadMention)
+            assertEquals("", sent.query)
+            assertEquals(100, sent.limit)
+            assertTrue(sent.topicId != null)
+        }
+
+    @Test
+    fun `no unread mention is not found`() =
+        runTest {
+            client.on(TdApi.SearchChatMessages::class, found())
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.oldestUnreadMention(CHAT))
+        }
+
+    @Test
     fun `the next page starts where the last one ended, and the last page has none after it`() =
         runTest {
             client.on(TdApi.SearchChatMessages::class, found(4, 2))

@@ -70,6 +70,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.withoutCameraUnless
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
@@ -96,6 +97,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
@@ -215,10 +217,7 @@ internal fun ChatScreen(
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = scrollingToSent(content, scrollToNewest)
-    val bubbleResources =
-        rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift) { target ->
-            onEvent(ChatEvent.OpenMention(target))
-        }
+    val bubbleResources = rememberChatBubbleResources(state, jumpState, lift, onEvent)
     val lifted = liftedBubble(state, lift)
     Box(modifier.conversationKeys(state, searching = search != null, onEvent)) {
         ChatScaffold(
@@ -252,10 +251,11 @@ internal fun ChatScreen(
                     commandSuggestions = commandSuggestions,
                     inlineResults = inlineResults,
                     botReply = botReply,
+                    hasCamera = attach.hasCamera,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
-            jumpButton = { JumpButtonSlot(content, showJump, state.unreadCount, scrollToNewest) },
+            jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
             // Over the messages, above the composer, while a video message records.
             overlay = { RoundVideoPreview(recording, videoNotePreview) },
@@ -315,6 +315,7 @@ private fun ChatScaffold(
                         onSearch = { onEvent(ChatSearchEvent.Open) },
                         topicAction = topicAction,
                         connection = connection,
+                        onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
                     )
                 }
                 // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
@@ -336,7 +337,15 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 Box(Modifier.weight(1f)) {
-                    ChatBody(state, onEvent, listState, bubbleResources, contentPadding, nextChannel)
+                    ChatBody(
+                        state,
+                        onEvent,
+                        listState,
+                        bubbleResources,
+                        contentPadding.withTypingRoom(state.typing),
+                        nextChannel,
+                    )
+                    MessagesBottom(state.typing, listState, contentPadding)
                     overlay()
                 }
             }
@@ -369,8 +378,11 @@ private fun ChatScreenBottomBar(
     commandSuggestions: CommandSuggestions?,
     inlineResults: InlineBotUiState?,
     botReply: BotReplyUiState,
+    hasCamera: Boolean,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
+    // The composer's camera button only where the device has a camera, as the attach menu's.
+    val composer = remember(state.composer, hasCamera) { state.composer.withoutCameraUnless(hasCamera) }
     val bots = rememberBotInput(commandSuggestions, botReply, onEvent, onSent)
     val inline = rememberInlineInput(inlineResults, state.composer, onEvent, onSent)
     // Not while selecting: selection mode shows over search, and back leaves it first.
@@ -383,7 +395,7 @@ private fun ChatScreenBottomBar(
         SearchBottomBarSlot(search, onEvent, { searchBack.value }) {
             val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
             ChatBottomBar(
-                composer = state.composer,
+                composer = composer,
                 text = composerText,
                 onSend = { options ->
                     onEvent(ChatEvent.Send(options))
@@ -395,7 +407,7 @@ private fun ChatScreenBottomBar(
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
                 onReplaceMedia = { onEvent(ReplyEvent.ReplaceMedia) },
                 onAttach = { onAttach(null) },
-                onGallery = { onAttach(AttachOption.Gallery) },
+                onCamera = { onAttach(AttachOption.Camera) },
                 recording = recording,
                 onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
                 recordMode = recordMode,
@@ -618,7 +630,15 @@ private fun ChatItemRow(
         }
 
         is ChatItem.Service -> {
-            ServiceMessageRow(item, modifier, canCallBack = selectedIds == null)
+            // "Wave", where the user can write and nothing is being selected (§13.6).
+            val canWave =
+                item.canWave && selectedIds == null && bubbleResources.shortcuts.canReply
+            ServiceMessageRow(
+                item,
+                modifier,
+                canCallBack = selectedIds == null,
+                onWave = if (canWave) ({ onEvent(ChatEvent.Wave(item.id)) }) else null,
+            )
         }
 
         is ChatItem.DateSeparator -> {
@@ -626,7 +646,7 @@ private fun ChatItemRow(
         }
 
         is ChatItem.UnreadDivider -> {
-            UnreadDividerRow(modifier)
+            UnreadDividerRow(modifier, item)
         }
 
         is ChatItem.Sponsored -> {

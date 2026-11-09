@@ -170,6 +170,7 @@ internal val ContentSamples: List<ContentSample> =
         },
         documentSample("documentNotDownloaded", FileState.NotDownloaded(size = 0, canBeDownloaded = true)),
         documentSample("documentDownloading", downloading(DOWNLOADED_FRACTION)),
+        documentSample("documentPaused", downloading(DOWNLOADED_FRACTION, active = false)),
         documentSample("documentDownloaded", FileState.Downloaded(path = "", size = 0)),
         ContentSample("location", SampleBubbles.Both) { colors, outgoing ->
             val livePeriod = if (outgoing) MessageContent.Location.LIVE_PERIOD_FOREVER else 0
@@ -266,12 +267,14 @@ private fun documentSample(
     )
 }
 
-private fun downloading(fraction: Float) =
-    FileState.Downloading(
-        downloadedSize = (SAMPLE_FILE_BYTES * fraction).toLong(),
-        size = SAMPLE_FILE_BYTES,
-        isActive = true,
-    )
+private fun downloading(
+    fraction: Float,
+    active: Boolean = true,
+) = FileState.Downloading(
+    downloadedSize = (SAMPLE_FILE_BYTES * fraction).toLong(),
+    size = SAMPLE_FILE_BYTES,
+    isActive = active,
+)
 
 /**
  * Images for previews and screenshot tests, which Coil takes from `LocalAsyncImagePreviewHandler` in inspection mode

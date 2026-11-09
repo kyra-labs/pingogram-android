@@ -6,6 +6,34 @@
     <string name="chat_open_profile">Open profile</string>
     <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
     <string name="chat_open_info">Open info</string>
+    <!-- The experimental look's top bar (docs/DESIGN_SYSTEM.md §13.5). -->
+    <string name="chat_more_options">More options</string>
+    <string name="chat_group_info">Group info</string>
+    <string name="chat_channel_info">Channel info</string>
+    <!-- A channel's notifications toggle, read with its state ("on", "off"). -->
+    <string name="chat_notifications">Notifications</string>
+    <!-- Between the member count and the online members: "1,248 members · 36 online". -->
+    <string name="chat_subtitle_separator">" · "</string>
+    <plurals name="chat_subtitle_online">
+        <item quantity="one">%d online</item>
+        <item quantity="other">%d online</item>
+    </plurals>
+    <string name="chat_jump_to_mention">Jump to mention</string>
+    <!-- The experimental look's unread divider (docs/DESIGN_SYSTEM.md §13.7). -->
+    <plurals name="chat_unread_posts_divider">
+        <item quantity="one">%d unread post</item>
+        <item quantity="other">%d unread posts</item>
+    </plurals>
+    <plurals name="chat_unread_messages_divider">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+    <!-- On the "Jump to mention" button; not a word, so it is not translated. -->
+    <string name="chat_mention_sign" translatable="false">\@</string>
+    <plurals name="chat_unread_mentions">
+        <item quantity="one">%d unread mention</item>
+        <item quantity="other">%d unread mentions</item>
+    </plurals>
     <!-- In place of the chat's status while not connected, as the chat list's pill says it. -->
     <string name="chat_waiting_for_network">Waiting for network…</string>
     <string name="chat_connecting_to_proxy">Connecting to proxy…</string>
@@ -106,7 +134,6 @@
     <string name="composer_send">Send</string>
     <string name="composer_send_silently">Send without sound</string>
     <!-- The button at the end of the empty message field that opens the system photo picker. -->
-    <string name="composer_gallery">Send photos or videos</string>
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->
     <string name="composer_restricted">You can\'t send messages in this chat</string>
@@ -667,4 +694,8 @@
     <string name="scheduled_rescheduled">Message rescheduled for %1$s</string>
     <!-- Snackbar for an action on a message that was sent or deleted meanwhile. -->
     <string name="scheduled_message_gone">This message was sent or deleted</string>
+    <!-- The experimental look: a button on a member's join message that sends a greeting sticker in reply. -->
+    <string name="chat_wave">Wave</string>
+    <!-- Screen readers: the pane of stickers suggested above the composer for the emoji typed alone. -->
+    <string name="panel_sticker_suggestions">Sticker suggestions</string>
 </resources>

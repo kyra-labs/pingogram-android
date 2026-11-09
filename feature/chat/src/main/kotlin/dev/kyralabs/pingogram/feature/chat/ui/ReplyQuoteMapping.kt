@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -27,7 +28,14 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
             val you = UiText.resource(R.string.preview_sender_you)
             val sender = if (replied.isOutgoing) you else fullNameOf(reply.repliedSender)
             val text = replyTo.quote?.let(::previewOf) ?: messagePreviewText(replied, myUserId, ::shortNameOf)
-            ReplyQuote(sender, replied.sender.id, text, opens, isQuote = replyTo.quote != null)
+            ReplyQuote(
+                sender,
+                replied.sender.id,
+                text,
+                opens,
+                isQuote = replyTo.quote != null,
+                senderHue = quoteHue(reply.repliedSender, replied.sender.id),
+            )
         }
 
         origin != null -> {
@@ -35,7 +43,14 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
                 replyTo.quote?.let(::previewOf)
                     ?: replyTo.content?.let(::contentKindText)
                     ?: UiText.resource(ChatR.string.chat_reply_message)
-            ReplyQuote(originName(origin, reply.origin), origin.id, text, opens, isQuote = replyTo.quote != null)
+            ReplyQuote(
+                originName(origin, reply.origin),
+                origin.id,
+                text,
+                opens,
+                isQuote = replyTo.quote != null,
+                senderHue = quoteHue(reply.origin, origin.id),
+            )
         }
 
         else -> {
@@ -49,3 +64,9 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
         }
     }
 }
+
+/** The hue of a replied sender ([ref], [id]) in a group, for the stripe; -1 elsewhere. */
+private fun ItemInputs.quoteHue(
+    ref: Any?,
+    id: Long?,
+): Int = if (kind == ChatKind.Group && id != null) senderHueOf(ref, id) else -1

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -31,8 +32,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Switching folders (FR-L3, `docs/DESIGN_SYSTEM.md` §5): Material's fade-through between the two lists, the old one
- * fading out before the new one shows, at its top; with animations off (reduced motion) the lists swap at once.
+ * Switching folders (FR-L3, `docs/DESIGN_SYSTEM.md` §5, §6 "Folder tabs"): the selected folder's list slides in at
+ * once from its tab's side while the old one leaves beside it, where it was left or at its top; with animations off
+ * (reduced motion) the lists swap at once.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -52,19 +54,22 @@ class ChatListFolderSwitchTest {
     private var state by mutableStateOf(ChatListPreviewData.contentWithFolders)
 
     @Test
-    fun `the shown list fades out before the selected folder's list replaces it`() {
+    fun `the selected folder's list slides in from its tab's side at once, and the old one leaves`() {
         setScreen()
         composeRule.waitForIdle()
         composeRule.mainClock.autoAdvance = false
 
         state = workFolder
-        advanceFrames(FEW_FRAMES)
+        advanceFrames(SLIDE_FRAMES)
 
-        assertTrue("All chats' list is still fading out", exists(SAVED_MESSAGES))
-        assertFalse(exists(ROCKET_CLUB))
+        // Work's tab is after All chats: its list comes in from the right while All chats' leaves to the left, which
+        // takes no input and is out of the semantics tree on its way.
+        val sliding = left(ROCKET_CLUB)
+        assertFalse(exists(SAVED_MESSAGES))
         composeRule.mainClock.autoAdvance = true
         composeRule.waitForIdle()
-        assertFalse(exists(SAVED_MESSAGES))
+        val resting = left(ROCKET_CLUB)
+        assertTrue("Rocket club came in from the right: $sliding, then $resting", sliding > resting)
         row(ROCKET_CLUB).assertIsDisplayed()
     }
 
@@ -95,9 +100,8 @@ class ChatListFolderSwitchTest {
         val shown =
             List(SWITCH_FRAMES) {
                 advanceFrames(1)
-                if (listState.layoutInfo.totalItemsCount <
-                    allChats.chatCount()
-                ) {
+                // Once the folder's own list has its rows.
+                if ((listStates.ofFolder(1)?.layoutInfo?.totalItemsCount ?: 0) > 0) {
                     top("Chat 7") to top("Chat 2")
                 } else {
                     null
@@ -105,8 +109,10 @@ class ChatListFolderSwitchTest {
             }.filterNotNull()
         composeRule.mainClock.autoAdvance = true
 
-        assertTrue("The folder's list showed", shown.isNotEmpty())
-        assertTrue("Chat 7's and chat 2's tops: $shown", shown.all { (seven, two) -> seven < two })
+        // Rows not laid out yet, in the frame that composes them, read as both at 0.
+        val placed = shown.filterNot { (seven, two) -> seven == 0f && two == 0f }
+        assertTrue("The folder's list showed", placed.isNotEmpty())
+        assertTrue("Chat 7's and chat 2's tops: $shown", placed.all { (seven, two) -> seven < two })
     }
 
     @Test
@@ -119,7 +125,7 @@ class ChatListFolderSwitchTest {
         state = workFolder.copy(selectedFolderId = 2, content = ChatListContent.Content(manyRows))
         composeRule.waitForIdle()
 
-        assertEquals(0, listState.firstVisibleItemIndex)
+        assertEquals(0, shown().firstVisibleItemIndex)
         composeRule.onAllNodes(rowMatcher(SAVED_MESSAGES))[0].assertIsDisplayed()
     }
 
@@ -133,12 +139,12 @@ class ChatListFolderSwitchTest {
 
         state = folder(1, numberedRows(8..20))
         composeRule.waitForIdle()
-        assertEquals("Work starts at its top", 0, listState.firstVisibleItemIndex)
+        assertEquals("Work starts at its top", 0, shown().firstVisibleItemIndex)
         state = allChats
         composeRule.waitForIdle()
 
-        assertEquals(5, listState.firstVisibleItemIndex)
-        assertEquals(6L, firstVisibleKey(listState))
+        assertEquals(5, shown().firstVisibleItemIndex)
+        assertEquals(6L, firstVisibleKey(shown()))
     }
 
     @Test
@@ -151,15 +157,15 @@ class ChatListFolderSwitchTest {
         composeRule.onNode(hasScrollToIndexAction()).performScrollToIndex(6)
         // The clock is stepped by hand here: the scroll lands in the next frame.
         composeRule.mainClock.advanceTimeByFrame()
-        assertEquals(6L, firstVisibleKey(listState))
+        assertEquals(6L, firstVisibleKey(shown()))
 
         state = folder(1, numberedRows(8..20))
         composeRule.waitForIdle()
         state = pinned
         composeRule.waitForIdle()
 
-        assertEquals(6, listState.firstVisibleItemIndex)
-        assertEquals(6L, firstVisibleKey(listState))
+        assertEquals(6, shown().firstVisibleItemIndex)
+        assertEquals(6L, firstVisibleKey(shown()))
     }
 
     @Test
@@ -173,11 +179,11 @@ class ChatListFolderSwitchTest {
 
         state = allChats
         composeRule.waitForIdle()
-        assertEquals("All chats was left at its top", 0, listState.firstVisibleItemIndex)
+        assertEquals("All chats was left at its top", 0, shown().firstVisibleItemIndex)
         state = folder(1, numberedRows(1..30))
         composeRule.waitForIdle()
 
-        assertEquals(12, listState.firstVisibleItemIndex)
+        assertEquals(12, shown().firstVisibleItemIndex)
     }
 
     @Test
@@ -196,8 +202,24 @@ class ChatListFolderSwitchTest {
             )
         composeRule.waitForIdle()
 
-        assertEquals(0, listState.firstVisibleItemIndex)
-        assertEquals(6L, firstVisibleKey(listState))
+        assertEquals(0, shown().firstVisibleItemIndex)
+        assertEquals(6L, firstVisibleKey(shown()))
+    }
+
+    @Test
+    fun `a list at its top stays at its top when chats load above its first one`() {
+        state = folder(1, numberedRows(8..20))
+        setScreen()
+        composeRule.waitForIdle()
+
+        // All chats first shows the chats TDLib had loaded through the folder, then all of them, chat 1 first.
+        state = allChats.copy(content = ChatListContent.Content(numberedRows(8..20)))
+        composeRule.waitForIdle()
+        state = allChats
+        composeRule.waitForIdle()
+
+        assertEquals(0, shown().firstVisibleItemIndex)
+        assertEquals(1L, firstVisibleKey(shown()))
     }
 
     @Test
@@ -233,18 +255,26 @@ class ChatListFolderSwitchTest {
             composeRule.waitForIdle()
         }
 
+    /** Each folder's list state, the first one [setScreen]'s; the shown folder's is [shown]. */
+    private lateinit var listStates: FolderListStates
+
     private fun setScreen(listState: LazyListState? = null) =
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                ChatListScreen(state = state, onEvent = {}, listState = listState ?: rememberLazyListState())
+                val first = listState ?: rememberLazyListState()
+                listStates = remember { FolderListStates(first, state.selectedFolderId) }
+                ChatListScreen(state = state, onEvent = {}, listState = first, listStates = listStates)
             }
         }
+
+    /** The list state of the folder selected now. */
+    private fun shown(): LazyListState = listStates.ofFolder(state.selectedFolderId)!!
 
     private fun row(name: String): SemanticsNodeInteraction = composeRule.onNode(rowMatcher(name))
 
     private fun top(name: String) = row(name).fetchSemanticsNode().boundsInRoot.top
 
-    private fun ChatListUiState.chatCount() = (content as ChatListContent.Content).items.size
+    private fun left(name: String) = row(name).fetchSemanticsNode().boundsInRoot.left
 
     private fun exists(name: String) = composeRule.onAllNodes(rowMatcher(name)).fetchSemanticsNodes().isNotEmpty()
 
@@ -255,12 +285,15 @@ class ChatListFolderSwitchTest {
         const val ROCKET_CLUB = "Rocket club"
 
         /**
-         * Three frames: enough to swap the lists without animations (the frame that sees the folder change, the one
-         * that runs the swap, the one that shows the new list), not for the fade-out on the fast effects spring.
+         * Three frames: enough to swap the lists (the frame that sees the folder change, the one that runs the swap,
+         * the one that shows the new list), not for the slide on the default spatial spring.
          */
         const val FEW_FRAMES = 3
 
-        /** Enough frames for the fade-out and the first half of the fade-in. */
+        /** Frames into the slide: the selected folder's rows are laid out, still on their way in. */
+        const val SLIDE_FRAMES = 6
+
+        /** Enough frames for most of the slide. */
         const val SWITCH_FRAMES = 30
 
         /** The Work folder, with only a chat that is not among All chats' rows. */

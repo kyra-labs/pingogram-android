@@ -15,6 +15,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -150,9 +151,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
 
-    /** The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). */
+    /**
+     * The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). Lazy: they are
+     * the shown account's, which the account registry names, so injecting them made the activity wait for the
+     * registry's file on a cold start (docs/audit/performance-review-2026-11.md, W2); asked for once the app composes.
+     */
     @Inject
-    lateinit var chatLock: ChatLockRepository
+    lateinit var chatLock: dagger.Lazy<ChatLockRepository>
 
     /** The device's accounts: a switch opens the app again for the other one ([AccountRestart]). */
     @Inject
@@ -221,7 +226,7 @@ class MainActivity : ComponentActivity() {
                     val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
                     val locked = lock == LockState.Locked
                     val secureRequests = remember { SecureWindowRequests() }
-                    val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
+                    val lockedChatGate = remember { lockedChatGate(chatLock.get().hiddenChatIds) }
                     // The app opens again when the demo turns on or off (AccountRestart): read once per activity.
                     val isDemo = remember { accounts.isDemo.value }
                     SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
@@ -282,13 +287,21 @@ class MainActivity : ComponentActivity() {
     ) {
         val recentsScreenshots = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         val secure = locked || requests.isRequested || (hideContent && !recentsScreenshots)
+        // Each change of the window's flags is a relayout (docs/audit/performance-review-2026-11.md, M3): set them
+        // only when they differ from what the window has.
         SideEffect {
-            if (secure) {
+            val isSecure = window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0
+            if (secure && !isSecure) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-            } else {
+            } else if (!secure && isSecure) {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
-            if (recentsScreenshots) setRecentsScreenshotEnabled(!hideContent)
+        }
+        if (recentsScreenshots) {
+            DisposableEffect(hideContent) {
+                setRecentsScreenshotEnabled(!hideContent)
+                onDispose {}
+            }
         }
     }
 

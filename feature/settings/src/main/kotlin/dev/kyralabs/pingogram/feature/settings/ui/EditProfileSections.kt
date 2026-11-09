@@ -176,6 +176,7 @@ private fun ProfileTextField(
     announcesMessage: Boolean = false,
 ) {
     val isError = message?.isError == true
+    // Filled fields on the rows' color, underlined (docs/DESIGN_SYSTEM.md §13.10).
     TextField(
         value = value,
         onValueChange = onValueChange,
@@ -200,8 +201,8 @@ private fun ProfileTextField(
         singleLine = singleLine,
         minLines = if (singleLine) 1 else BIO_MIN_LINES,
         textStyle = LocalTextStyle.current.userContent,
-        shape = TextFieldDefaults.roundedShape,
-        colors = TextFieldDefaults.tonalColors(),
+        shape = TextFieldDefaults.shape,
+        colors = settingsFieldColors(),
     )
 }
 

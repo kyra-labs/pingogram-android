@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -71,6 +72,63 @@ private data class MessageTextKey(
 )
 
 private val MessageTexts = ConcurrentHashMap<MessageTextKey, TextStyle>()
+
+/**
+ * The experimental look's display styles (`docs/DESIGN_SYSTEM.md` §13; Owner decision to confirm (2026-11-07): §3 sets
+ * `wdth` 100 for every style): emphasized Material styles in Google Sans Flex at a wider width ([WIDE_WIDTH], the
+ * owner's design's 110–115% stretch) for big titles, and a condensed one ([CONDENSED_WIDTH], the design's 75–80%) for
+ * big letters and numerals, each with `opsz` equal to its size. Built once per adjustment and grade like
+ * [pingogramTypography], and only read by the experimental look (`MaterialTheme.experimentalTypography`).
+ *
+ * @property displaySmallWide the tabs' large titles ("Chats", "Contacts", "Settings").
+ * @property headlineSmallWide the account card's name on Settings home.
+ * @property titleLargeWide the tabs' titles once their header collapsed.
+ * @property titleMediumWide a conversation's title in its top bar.
+ * @property headlineLargeCondensed the Contacts tab's section letters.
+ * @property displaySmallCondensed big numerals, and a channel post's headline (§13.7).
+ * @property displayLargeCondensed a short shouted message in a group, set italic (§13.6).
+ */
+@Immutable
+@Suppress("LongParameterList") // One style per role the experimental look's type plays, as Material's Typography has.
+class ExperimentalTypography internal constructor(
+    val displaySmallWide: TextStyle,
+    val headlineSmallWide: TextStyle,
+    val titleLargeWide: TextStyle,
+    val titleMediumWide: TextStyle,
+    val headlineLargeCondensed: TextStyle,
+    val displaySmallCondensed: TextStyle,
+    val displayLargeCondensed: TextStyle,
+)
+
+/** [ExperimentalTypography] for the "Bold text" [fontWeightAdjustment] and [contrast], built once and kept. */
+fun pingogramExperimentalTypography(
+    fontWeightAdjustment: Int = 0,
+    contrast: Contrast = Contrast.Standard,
+): ExperimentalTypography {
+    val key = TypographyKey(fontWeightAdjustment, grade = if (contrast == Contrast.High) HIGH_CONTRAST_GRADE else GRADE)
+    return ExperimentalTypographies.computeIfAbsent(key) { (adjustment, grade) ->
+        val tokens = Typography()
+
+        fun TextStyle.at(width: Float) =
+            withGoogleSansFlex(NoTracking, null, adjustment, grade, emphasized = true, width = width)
+        ExperimentalTypography(
+            displaySmallWide = tokens.displaySmall.at(WIDE_WIDTH),
+            headlineSmallWide = tokens.headlineSmall.at(WIDE_WIDTH),
+            titleLargeWide = tokens.titleLarge.at(WIDE_WIDTH),
+            titleMediumWide = tokens.titleMedium.at(WIDE_WIDTH),
+            headlineLargeCondensed = tokens.headlineLarge.at(CONDENSED_WIDTH),
+            displaySmallCondensed = tokens.displaySmall.at(CONDENSED_WIDTH),
+            displayLargeCondensed = tokens.displayLarge.at(CONDENSED_WIDTH),
+        )
+    }
+}
+
+private val ExperimentalTypographies = ConcurrentHashMap<TypographyKey, ExperimentalTypography>()
+
+// The experimental look's widths (§13): the design's stretched titles and condensed letters, within the bundled
+// file's wdth range of 25..151.
+private const val WIDE_WIDTH = 115f
+private const val CONDENSED_WIDTH = 80f
 
 /** What a [Typography] is built from: the "Bold text" adjustment and the grade. */
 private data class TypographyKey(
@@ -178,6 +236,7 @@ private fun TextStyle.withGoogleSansFlex(
     fontWeightAdjustment: Int,
     grade: Int,
     emphasized: Boolean,
+    width: Float = NORMAL_WIDTH,
 ): TextStyle {
     val baseWeight = checkNotNull(fontWeight) { "Material 3 tokens set every weight" }.weight
     val emphasizedWeight = baseWeight + EMPHASIS_WEIGHT
@@ -187,6 +246,7 @@ private fun TextStyle.withGoogleSansFlex(
             opticalSize = fontSize.value,
             round = if (emphasized) EMPHASIS_ROUND else 0f,
             grade = grade,
+            width = width,
         )
     // A bold span in a regular style resolves to the emphasized weight instead of a synthesized bold.
     val weights = if (emphasized) listOf(weight) else listOf(weight, emphasizedWeight)
@@ -220,6 +280,7 @@ private class FontInstance(
     val opticalSize: Float,
     val round: Float,
     val grade: Int,
+    val width: Float = NORMAL_WIDTH,
 ) {
     /** The font at `wght` [weight], registered in its family at [registeredWeight] (see [pingogramTypography]). */
     fun font(
@@ -237,7 +298,7 @@ private class FontInstance(
                     FontVariation.Setting("opsz", opticalSize),
                     FontVariation.Setting("ROND", round),
                     FontVariation.grade(grade),
-                    FontVariation.width(NORMAL_WIDTH),
+                    FontVariation.width(width),
                     FontVariation.slant(if (italic) ITALIC_SLANT else 0f),
                 ),
         )

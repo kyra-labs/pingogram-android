@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -37,13 +38,17 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,13 +62,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.takeOrElse
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
+import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
+import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
+import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncControls
@@ -118,16 +127,24 @@ internal fun ContactsScreen(
         remember(onEvent, onAddContact, onEditContact, onSyncEvent) {
             ContactsCallbacks(onEvent, onAddContact, onEditContact, onSyncEvent)
         }
+    val searchFocus = callbacks.searchFocus
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The top bar's container; the content sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { ContactsTopBar(onOpenMyQrCode, onScanQrCode, LocalRecentCallsLauncher.current) },
+        topBar = {
+            ContactsTopBar(state.content, scrollBehavior, searchFocus, onOpenMyQrCode, onScanQrCode) {
+                onEvent(ContactsEvent.Invite)
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ContactsBody(state, syncControls, callbacks, listState, contentPadding)
+            // The list's end fades into the sheet behind the floating navigation bar, as the Chats tab's does.
+            BottomFade(Modifier.align(Alignment.BottomCenter))
         }
     }
     state.deleteDialog?.let { dialog ->
@@ -140,47 +157,51 @@ internal fun ContactsScreen(
 }
 
 /**
- * The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's, with its
- * `FilledTonalIconButton` actions, each with its tooltip: Recent calls ([onOpenRecentCalls], where the app provides
- * it, `:feature:calls`), the user's own QR code ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode],
- * `REQUIREMENTS.md` FR-P5).
+ * The tabs' large header (`docs/DESIGN_SYSTEM.md` §13.8): "Contacts" over "248 on Telegram · 12 online"
+ * ([ContactsStatusLine]) while there are contacts, then search (where the search field shows, [searchFocus]) and
+ * Recent calls as 48 dp tonal circles, and below it Invite, My QR and Scan ([ContactActionGroup]) in place of the QR
+ * buttons. Owner decision to confirm (2026-11-07): Recent calls stays in the header rather than joining the group.
  */
+@Suppress("LongParameterList") // The header's parts and its actions.
 @Composable
 private fun ContactsTopBar(
+    content: ContactsContent,
+    scrollBehavior: TopAppBarScrollBehavior,
+    searchFocus: FocusRequester,
     onOpenMyQrCode: () -> Unit,
     onScanQrCode: () -> Unit,
-    onOpenRecentCalls: (() -> Unit)?,
+    onInvite: () -> Unit,
 ) {
-    TopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.contacts_title),
-                modifier = Modifier.semantics { heading() },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleLargeEmphasized,
-            )
-        },
-        actions = {
-            onOpenRecentCalls?.let {
-                TopBarAction(UiR.drawable.ic_history, stringResource(R.string.contacts_recent_calls), it)
-            }
-            TopBarAction(UiR.drawable.ic_qr_code, stringResource(R.string.contacts_my_qr_code), onOpenMyQrCode)
-            TopBarAction(UiR.drawable.ic_qr_code_scanner, stringResource(R.string.contacts_scan_qr_code), onScanQrCode)
-        },
-        // The bar insets its title by the compact margin itself.
-        modifier = Modifier.padding(horizontal = windowMargin() - MaterialTheme.spacing.windowMarginCompact),
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
-            ),
-        // A dense list's bar (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's.
-        expandedHeight = MaterialTheme.sizes.denseTopAppBar,
-    )
+    val contacts = content as? ContactsContent.Contacts
+    val searchable = content is ContactsContent.Contacts || content is ContactsContent.Results
+    val onOpenRecentCalls = LocalRecentCallsLauncher.current
+    Column {
+        TabHeader(
+            scrollBehavior = scrollBehavior,
+            title = { style -> TabHeaderTitle(stringResource(R.string.contacts_title), style) },
+            subtitle =
+                contacts?.let {
+                    { expanded -> if (expanded) ContactsStatusLine(it.count, it.online.size) }
+                },
+            actions = {
+                if (searchable) {
+                    TopBarAction(UiR.drawable.ic_search, stringResource(R.string.contacts_search)) {
+                        searchFocus.requestFocus()
+                    }
+                }
+                onOpenRecentCalls?.let {
+                    TopBarAction(UiR.drawable.ic_history, stringResource(R.string.contacts_recent_calls), it)
+                }
+            },
+        )
+        ContactActionGroup(scrollBehavior.state, onInvite, onOpenMyQrCode, onScanQrCode)
+    }
 }
 
-/** An action of the top bar: a `FilledTonalIconButton` with [icon], named [label], with a plain tooltip. */
+/**
+ * An action of the top bar: a `FilledTonalIconButton` with [icon], named [label], with a plain tooltip, a 48 dp tonal
+ * circle.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopBarAction(
@@ -193,7 +214,12 @@ private fun TopBarAction(
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
-        FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+        val size = tabHeaderActionSize()
+        FilledTonalIconButton(
+            onClick = onClick,
+            modifier = Modifier.size(size),
+            shapes = IconButtonDefaults.shapes(),
+        ) {
             Icon(painterResource(icon), contentDescription = label)
         }
     }
@@ -237,7 +263,8 @@ private fun ContactsBody(
                             .padding(contentPadding.sidesOnly())
                             .padding(top = MaterialTheme.spacing.small)
                             .padding(horizontal = windowMargin())
-                            .widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+                            .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
+                            .focusRequester(callbacks.searchFocus),
                 )
                 Box(Modifier.weight(1f)) {
                     ContactsList(state, syncControls, callbacks, listState, contentPadding)
@@ -283,10 +310,10 @@ private fun ContactsList(
     ) {
         when (content) {
             is ContactsContent.Contacts -> {
-                actionItems(state.sync, syncControls, callbacks, maxWidth, motionScheme)
+                leadingItems(state, syncControls, callbacks, maxWidth, motionScheme)
                 content.sections.forEach { section ->
                     stickyHeader(key = "$HEADER:${section.letter}", contentType = HEADER) {
-                        SectionHeader(section.letter, Modifier.widthIn(max = maxWidth).fillMaxWidth())
+                        LetterHeader(section.letter, Modifier.widthIn(max = maxWidth).fillMaxWidth())
                     }
                     contactItems(section.contacts, onEvent, onEditContact, maxWidth, motionScheme)
                 }
@@ -310,7 +337,7 @@ private fun ContactsList(
     }
     if (showsIndex) {
         val letters = remember(content.sections) { content.sections.map { it.letter }.toImmutableList() }
-        val leading = ACTION_ROWS + if (showsSync) 1 else 0
+        val leading = leadingRows(showsSync, content.online.isNotEmpty())
         val headers = remember(content.sections, leading) { headerIndices(content.sections, leading) }
         Box(Modifier.fillMaxSize().padding(listPadding), contentAlignment = Alignment.CenterEnd) {
             FastScrollIndex(letters = letters, headerIndices = headers, listState = listState)
@@ -325,7 +352,10 @@ internal class ContactsCallbacks(
     val onAddContact: () -> Unit,
     val onEditContact: (userId: Long) -> Unit,
     val onSyncEvent: (ContactSyncEvent) -> Unit,
-)
+) {
+    /** The search field, which the header's search button focuses. */
+    val searchFocus = FocusRequester()
+}
 
 /** The test tag of the contacts list, for UI and recomposition tests. */
 internal const val CONTACTS_LIST_TEST_TAG = "contacts:list"

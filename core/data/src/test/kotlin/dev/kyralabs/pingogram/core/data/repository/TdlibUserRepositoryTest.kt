@@ -132,9 +132,8 @@ class TdlibUserRepositoryTest {
                 awaitItem()
 
                 // A field Pingogram does not keep, the same status again, and an option.
-                client.emit(
-                    updateUser(user(id = 1, status = TdApi.UserStatusRecently(false)).apply { accentColorId = 3 }),
-                )
+                val same = user(id = 1, status = TdApi.UserStatusRecently(false)).apply { profileAccentColorId = 3 }
+                client.emit(updateUser(same))
                 client.emit(updateUserStatus(userId = 1, status = TdApi.UserStatusRecently(false)))
                 client.emit(myIdOption(1))
 

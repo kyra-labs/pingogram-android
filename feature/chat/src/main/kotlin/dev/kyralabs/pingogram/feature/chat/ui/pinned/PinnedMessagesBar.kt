@@ -19,7 +19,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -98,11 +102,13 @@ internal fun PinnedMessagesBar(
     val listLabel = stringResource(R.string.pinned_list)
     val closeLabel = stringResource(if (bar.canUnpin) R.string.pinned_unpin else R.string.pinned_hide)
     val position = animateFloatAsState(bar.position.toFloat(), MaterialTheme.motionScheme.defaultSpatialSpec())
+    // A pill: full corners, at least as tall as the composer's (§13.5).
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
+                .heightIn(min = MaterialTheme.sizes.composerField)
+                .clip(CircleShape)
                 .background(colors.surfaceContainerHigh)
                 .clickable(onClickLabel = showLabel, role = Role.Button) { currentOnEvent(PinnedEvent.ShowCurrent) }
                 .semantics {
@@ -146,15 +152,6 @@ private fun PinnedButtons(
     closeLabel: String,
     onEvent: (ChatEvent) -> Unit,
 ) {
-    if (bar.count > 1) {
-        IconButton(
-            onClick = { onEvent(PinnedEvent.OpenList) },
-            modifier = Modifier.semantics { hideFromAccessibility() },
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            Icon(painterResource(UiR.drawable.ic_format_list_bulleted), contentDescription = listLabel)
-        }
-    }
     IconButton(
         onClick = { onEvent(PinnedEvent.Close) },
         modifier = Modifier.semantics { hideFromAccessibility() },
@@ -162,6 +159,16 @@ private fun PinnedButtons(
     ) {
         val icon = if (bar.canUnpin) UiR.drawable.ic_keep_off else UiR.drawable.ic_close
         Icon(painterResource(icon), contentDescription = closeLabel)
+    }
+    // The list button closes the pill, a `primary` circle (§13.5).
+    if (bar.count > 1) {
+        FilledIconButton(
+            onClick = { onEvent(PinnedEvent.OpenList) },
+            modifier = Modifier.semantics { hideFromAccessibility() },
+            shapes = IconButtonDefaults.shapes(),
+        ) {
+            Icon(painterResource(UiR.drawable.ic_format_list_bulleted), contentDescription = listLabel)
+        }
     }
 }
 
@@ -221,12 +228,14 @@ private data class Shown(
 
 /** "Pinned message", or "Pinned message 2 of 5" where there are several, counted from the oldest. */
 @Composable
-private fun pinnedLabel(bar: PinnedBar): String =
-    if (bar.count > 1) {
-        stringResource(R.string.pinned_message_of, bar.position + 1, bar.count)
+private fun pinnedLabel(bar: PinnedBar): String {
+    // "Pinned · 6 of 6" (§13.5).
+    return if (bar.count > 1) {
+        stringResource(R.string.pinned_short_of, bar.position + 1, bar.count)
     } else {
-        stringResource(R.string.pinned_message)
+        stringResource(R.string.pinned_short)
     }
+}
 
 /**
  * Draws a segment per pinned message (at most [MAX_SEGMENTS]) along the start of this element, [width] wide and [gap]

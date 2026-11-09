@@ -185,6 +185,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
+- **Pingogram's look** (FR-S2a, `docs/adr/0035-experimental-ui.md`): first an opt-in "Experimental UI", the only look
+  since the owner's decision of 2026-11-08, without a switch or a composition local: the other look's code is gone
+  (`docs/DESIGN_SYSTEM.md` §13). What it shows comes through the view models as data: the conversation's
+  `ChatHeader.members` (the people who wrote last among the loaded messages) and `onlineCount` (`Chat.onlineMemberCount`,
+  `updateChatOnlineMemberCount`, kept by `TdlibChatRepository`), `ChatUiState.unreadMentionCount`, and
+  "Wave" on a join message (`ChatItem.Service.canWave`, `ChatEvent.Wave`, which
+  `ChatAttachments` sends as `AttachmentRepository.sendGreetingSticker`: `getGreetingStickers`, one at random, in reply),
+  `ChatHeaderActions` (a part of `ChatViewModel`) for "Jump to mention" (`ChatSearchRepository.oldestUnreadMention`)
+  and a channel's mute toggle; global search's top people narrowed to the words typed (`SearchViewModel.topPeople`,
+  read once and shared with the suggestions, collected by search's header); the Contacts tab's count and the contacts online now (`ContactsContent.Contacts.count` and
+  `online`, from the list it already maps); and Settings home's values (`SettingsHomeViewModel`: the active sessions, the
+  storage used and the language), which Settings home asks for. Its settings search opens the
+  pages above Settings home's pages too (`SettingsSubPage`, routed by `SettingsSubPages.kt`): `SettingsListDetail` pushes
+  the parent and the page with one pane, and with two shows the parent in the detail pane and has its `NavHost` push the
+  page once (the page waiting in saved state meanwhile).
 - **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
   scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
   the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands
@@ -261,7 +276,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`changeStickerSet`), reorders the installed ones (`reorderInstalledStickerSets`), marks trending sets seen
   (`viewTrendingStickerSets`) and finds a set by its link's name (`searchStickerSet`). `feature:settings`' Stickers page
   (`StickersRoute`, `StickersViewModel`: a dragged order shown at once and taken back when Telegram refuses it, an
-  archived or removed set gone at once with "Undo", which installs it again at its place) opens Trending stickers and
+  archived or removed set gone at once with "Undo", which installs it again at its place; its search, `StickerSearchState`:
+  the user's sets matched on the device and Telegram's catalog through `StickerSetRepository.searchSets`, the words in
+  saved state; and the stickers' own settings, `core:domain`'s `StickerSettingsRepository`,
+  `DataStoreStickerSettingsRepository`: suggestions by emoji, which `feature:chat`'s `EmojiPanelViewModel` follows
+  (`StickerSuggestionState`, `StickerRepository.stickersForEmoji`), and looping, which `:app` hands to
+  `AnimatedStickers.loop`) opens Trending stickers and
   Archived stickers (`StickerSetListRoute(archived)`, `StickerSetListViewModel`: "Add" per set, the trending sets shown
   marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then;
   animated TGS ones through the app's `AnimatedStickers` where asked). A set's sheet (`StickerSetRoute(setId, name)`, a
@@ -474,10 +494,23 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
   sets and `feature:chats`' `ChatSwipesViewModel` hands to the chat list through `LocalChatSwipes`. While the list
   changes the folder, rows do not swipe and `Modifier.folderSwipe` (`FolderSwipe.kt`) moves the whole list with the
-  finger, in its graphics layer (`FolderSwitch.position`, read in the draw phase, so a drag recomposes nothing); past a
-  third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`), and
-  the folder's list slides in from the other side instead of fading through. The neighbouring folder's chats are not
-  loaded ahead: the list slides away and the new one in, as a tab's tap fades them.
+  finger like a pager, the folder's list beside it coming in with it (`FolderSlide.kt`: `FolderSwitch.position` and
+  `side`, read in the draw phase, so a drag recomposes no row; `FolderCompanion`, composed only while on screen); past a
+  third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`),
+  whose list takes the neighbour's place without a frame between. A tab's tap slides the same way from the tab's side
+  (`rememberShownList`), the old list as the companion. Each folder's list is movable content with a list state of its
+  own (`FolderListStates`), so a switch moves the two lists' compositions between the shown place and the companion's
+  without composing their rows again, and each keeps where it was scrolled; a list at its top stays there when a chat
+  comes first (`KeepTopShown`). The neighbours' lists come from
+  `ChatListViewModel.neighbourLists` (`FolderNeighbourLists`: mapped by mappers of their own, only while the route
+  collects them, which it does while the swipe changes folders, and dropped once no longer beside the selected tab);
+  the view model loads the first page of the tabs beside the selected one ahead, only those.
+  The same settings keep whether the folder tabs end in "Edit folders" (`showEditFoldersButton`, on by default), which
+  Appearance → Chat list sets (`AppearanceViewModel`) and `ChatSwipes.editFoldersButton` hands to `FolderTabs`, and
+  whether the rows show the kind of chat before its name (`showChatTypeIcons`, on by default), which
+  `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
+  names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
+  the folder editor).
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then
@@ -771,6 +804,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Single-activity, `NavHost` in `:app`, type-safe routes with `kotlinx.serialization`.
 - Graphs: `AuthGraph`, `MainGraph` (bottom nav / navigation rail: Chats, Contacts, Settings),
   nested `ChatRoute(chatId, messageId?)`, `ProfileRoute(userId)`, etc.
+- The three tabs share one large header, `core:ui`'s `TabHeader` (owner decision 2026-11-07, `docs/DESIGN_SYSTEM.md`
+  §6): the tab's title, an optional status line (the Chats tab's), the actions and the collapse; each tab's screen
+  hands it its title and actions, Settings home also as the list pane of its list-detail. Settings pages keep the
+  medium bar (`SettingsTopBar`).
 - Adaptive: on `WindowWidthSizeClass.Expanded` the Chats tab uses `ListDetailPaneScaffold`
   (`material3-adaptive`) so list + conversation show side by side; the same `ChatScreen`
   composable is reused in the detail pane. `:app` composes it (`ChatsListDetail`, a
@@ -1025,6 +1062,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  The viewers' video player (`ExoVideoPlayer`) belongs to the main looper, as Media3's views need: it is built on a
+  thread of its own (`setLooper` with the main looper), what is asked of it meanwhile applied once it is there, its
+  `surfacePlayer` snapshot state so the surface attaches as it arrives; `release()` stops it at once and frees it a
+  second later on the main looper, past the viewer's exit transition.
   A voice message holds a transient audio focus of its own (`SpeechFocus`, `AUDIOFOCUS_GAIN_TRANSIENT`, paused rather
   than ducked), so another app's music pauses for it and plays on after; music keeps ExoPlayer's permanent focus.
   Calls without Telecom take the focus as a call (`AudioManagerCall`), so a playing voice message or video pauses.
@@ -1061,8 +1102,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the video back, and `ReturnFromPictureInPictureEffect` (in `:app`'s `PingogramNavHost`) opens the viewer again at it,
   where `MediaPlayback.startAt` takes up the position. Secret chats' media stays in the viewer's secure window.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
-  `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
-  `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
+  `FileRepository`; thumbnails/minithumbnails shown while downloading. The minithumbnail (TDLib's 40 px JPEG) is
+  decoded and blurred once at its own size, kept per minithumbnail and drawn scaled up (`core:ui`'s
+  `BlurredMinithumbnail`, used by the conversation, the media viewer and the stories viewer), never blurred with a
+  `RenderEffect`, and not drawn once the image over it has faded in (read in the draw phase). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
   (`largestImageKey`, as its placeholder), so the picture the conversation showed is there at once, sharp as it gets.
 - Animated stickers (TGS = gzipped Lottie JSON, `docs/adr/0008-lottie-for-animated-stickers.md`): `core:ui`'s
   `AnimatedStickers` (one per process, `:app`'s `AnimatedStickersModule`, handed down as `LocalAnimatedStickers`; none
@@ -1185,6 +1228,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
+  An app file (APK) opens in Android's package installer through the same view intent, which `REQUEST_INSTALL_PACKAGES`
+  (both flavors, owner approval 2026-11-08) lets it accept; the installer asks the user before anything installs.
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
   directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
   same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
@@ -1471,7 +1516,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `history/`, a destination of `:app`'s `NavHost`) lists them by day with the people from `UserRepository`, keeps the
   filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call; a conference
   call's row joins it while it goes on (`GroupCallActivity.openInvitation`, which asks first) and otherwise says it
-  has ended. Settings home
+  has ended. Its "Start a call" opens `StartCallSheet` (`StartCallViewModel`: the contacts of `ContactRepository`,
+  people only, filtered on the device, the query in its saved state, video calls offered where `CameraAccess` finds a
+  camera), whose rows call through `LocalCallStarter` and whose "New group call" opens `GroupCallActivity` with
+  `ACTION_START_CONFERENCE`: `GroupCallManager.startConference` without a one-to-one call to continue takes a free line
+  (`CallLine.take`), creates the conference call muted and shows it, where "Add people" invites. Settings home
   and the Contacts tab open it through `core:ui`'s `LocalRecentCallsLauncher`, which `PingogramApp` provides, as
   "Send feedback" is opened.
 

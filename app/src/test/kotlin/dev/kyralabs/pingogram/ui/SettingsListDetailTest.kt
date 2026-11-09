@@ -105,7 +105,7 @@ class SettingsListDetailTest {
 
         awaitText(SettingsR.string.settings_about_source_code)
         assertOnlySettingsTab()
-        text(SettingsR.string.settings_appearance_summary).assertIsDisplayed()
+        text(SettingsR.string.settings_home_make_it_yours).assertExists()
         assertNoBackButton()
         composeRule.onAllNodes(hasText(string(SettingsR.string.settings_no_page_selected_title))).assertCountEquals(0)
     }
@@ -148,7 +148,7 @@ class SettingsListDetailTest {
 
         awaitNode(hasScrollToKeyAction())
         assertOnlySettingsTab()
-        text(SettingsR.string.settings_appearance_summary).assertIsDisplayed()
+        text(SettingsR.string.settings_home_make_it_yours).assertExists()
         composeRule.onNode(hasContentDescription(string(SettingsR.string.settings_back))).assertIsDisplayed()
         pressBack()
         awaitText(SettingsR.string.settings_about_source_code)
@@ -190,11 +190,11 @@ class SettingsListDetailTest {
         restorationTester.emulateSavedInstanceStateRestore()
 
         awaitText(SettingsR.string.settings_about_source_code)
-        composeRule.onAllNodes(hasText(string(SettingsR.string.settings_appearance_summary))).assertCountEquals(0)
+        composeRule.onAllNodes(hasText(string(SettingsR.string.settings_home_make_it_yours))).assertCountEquals(0)
         assertOnlySettingsTab()
         composeRule.onNode(hasContentDescription(string(SettingsR.string.settings_back))).performClick()
         composeRule.waitForIdle()
-        awaitText(SettingsR.string.settings_appearance_summary)
+        awaitText(SettingsR.string.settings_home_app)
         tab(R.string.nav_settings).assertIsSelected()
     }
 
@@ -204,7 +204,7 @@ class SettingsListDetailTest {
         setApp()
         openSettings()
 
-        text(SettingsR.string.settings_about).performClick()
+        row(SettingsR.string.settings_about).performClick()
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
@@ -230,7 +230,7 @@ class SettingsListDetailTest {
     private fun openSettings() {
         tab(R.string.nav_settings).performClick()
         composeRule.waitForIdle()
-        awaitText(SettingsR.string.settings_appearance_summary)
+        awaitText(SettingsR.string.settings_home_make_it_yours)
     }
 
     /** The Settings tab shows: nothing was pushed above it. */

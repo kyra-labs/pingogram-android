@@ -111,7 +111,7 @@ internal fun AboutScreen(
     onSendFeedback: (() -> Unit)? = null,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
-        AboutLogo()
+        AboutHero(state.versionName, onEvent, state.showsCheckForUpdates)
         SettingsGroup(title = stringResource(R.string.settings_section_app)) {
             item { shapes ->
                 SettingsRow(
@@ -147,9 +147,10 @@ internal fun AboutScreen(
                 SettingsRow(
                     title = stringResource(R.string.settings_about_licenses),
                     shapes = shapes,
-                    icon = R.drawable.ic_library_books,
+                    icon = UiR.drawable.ic_library_books,
                     supportingContent = { Text(stringResource(R.string.settings_about_licenses_summary)) },
                     onClick = onOpenLicenses,
+                    opensPage = true,
                 )
             }
             if (onOpenLinkSettings != null) openTelegramLinksItem(onOpenLinkSettings)
@@ -162,22 +163,6 @@ internal fun AboutScreen(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-}
-
-/** Pingogram's logo in the theme's `primary`, centred above the page's rows. */
-@Composable
-private fun AboutLogo() {
-    Image(
-        painter = painterResource(UiR.drawable.logo_pingogram),
-        // The app's name, which the logo spells; the row below names the app again with its version.
-        contentDescription = stringResource(R.string.settings_about_app_name),
-        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = MaterialTheme.spacing.extraLarge)
-                .wrapContentWidth(),
-    )
 }
 
 /** "Privacy policy", which opens Pingogram's own privacy policy in the browser ([onClick]). */
@@ -221,6 +206,7 @@ private fun SettingsGroupScope.sendFeedbackItem(onClick: () -> Unit) =
             icon = UiR.drawable.ic_bug_report,
             supportingContent = { Text(stringResource(R.string.settings_about_feedback_summary)) },
             onClick = onClick,
+            opensPage = true,
         )
     }
 

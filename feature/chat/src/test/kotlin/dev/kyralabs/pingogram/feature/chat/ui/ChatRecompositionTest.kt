@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.RichPreviewData
@@ -77,6 +78,27 @@ class ChatRecompositionTest {
         val others = counter.recomposedOwn.filterNot { JUMP_BUTTON in it || it.startsWith(SCREEN_LAMBDA) }
         assertEquals(emptyList<String>(), others)
         assertTrue(counter.recomposedOwn.toString(), counter.recomposedOwn.size < SCROLL_FRAMES / RARE)
+    }
+
+    @Test
+    fun `scrolling a group with sender hues recomposes none of the bubbles`() {
+        val group = messages(MESSAGES)
+        val items =
+            (group.content as ChatContent.Content).items.map { item ->
+                if (item is ChatItem.Bubble && !item.isOutgoing) {
+                    item.copy(senderHue = (item.id % SenderHues.COUNT).toInt(), mentionsMe = item.id % 2 == 0L)
+                } else {
+                    item
+                }
+            }
+        setScreen(group.copy(content = (group.content as ChatContent.Content).copy(items = items.toImmutableList())))
+
+        repeat(SCROLL_FRAMES) {
+            composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
+            frame()
+        }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
     }
 
     @Test
@@ -199,7 +221,7 @@ class ChatRecompositionTest {
 
         // The list runs again (it takes the whole state), but every bubble on screen skips.
         val functions = counter.recomposedOwnFunctions
-        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTopBarKt.ChatTitle") })
+        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTitleKt.ChatTitle") })
         assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
     }
 

@@ -33,7 +33,6 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +58,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.TabHeader
+import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -111,9 +112,9 @@ internal fun ChatListScreenTopBar(
 
 /**
  * The Chats tab's header (`docs/DESIGN_SYSTEM.md` §2.2, §3.3, §6 "Chat list top bar"; owner decision 2026-11-06), on
- * the screen's `surfaceContainer` above the list's sheet: Material's large flexible top bar built from its parts
- * ([TwoRowsTopAppBar], as the settings pages build the medium one), which [scrollBehavior] collapses as the list
- * scrolls, in the layout phase. The folder tabs stay below it, collapsed or not.
+ * the screen's `surfaceContainer` above the list's sheet: the tabs' large header ([TabHeader], `core:ui`, shared with
+ * Contacts and Settings), which [scrollBehavior] collapses as the list scrolls, in the layout phase. The folder tabs
+ * stay below it, collapsed or not.
  *
  * - **Expanded**: "Chats" in `displaySmallEmphasized`, and under it the status line ([StatusLine]: "12 unread · 3
  *   mentions" from [summary], read here alone, so a count changing recomposes nothing else), or while not connected
@@ -151,17 +152,15 @@ internal fun ChatListTopBar(
         ConnectedAnnouncement(connection, Modifier.matchParentSize())
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-            TwoRowsTopAppBar(
-                title = { expanded ->
-                    val typography = MaterialTheme.typography
+            TabHeader(
+                scrollBehavior = scrollBehavior,
+                title = { style ->
                     SelectionTitle(
                         title = stringResource(R.string.chat_list_title),
                         selectedCount = selectedCount,
-                        style = if (expanded) typography.displaySmallEmphasized else typography.titleLargeEmphasized,
+                        style = style,
                     )
                 },
-                // The bar insets its title by the compact margin itself.
-                modifier = Modifier.padding(horizontal = margin - MaterialTheme.spacing.windowMarginCompact),
                 subtitle = { expanded ->
                     if (selectedCount == null) HeaderSubtitle(connection, summary, expanded)
                 },
@@ -173,14 +172,6 @@ internal fun ChatListTopBar(
                         HeaderAccountButton(summary, actions)
                     }
                 },
-                collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
-                expandedHeight = headerExpandedHeight(),
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
-                scrollBehavior = scrollBehavior,
             )
             if (state.folderTabs.isNotEmpty()) {
                 FolderTabs(
@@ -346,9 +337,14 @@ internal fun TopBarAction(
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState(),
     ) {
+        // 48 dp tonal circles (docs/DESIGN_SYSTEM.md §13.2).
+        val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = modifier.semantics { contentDescription = description?.invoke() ?: label },
+            modifier =
+                modifier
+                    .size(size)
+                    .semantics { contentDescription = description?.invoke() ?: label },
             shapes = IconButtonDefaults.shapes(),
             content = icon,
         )

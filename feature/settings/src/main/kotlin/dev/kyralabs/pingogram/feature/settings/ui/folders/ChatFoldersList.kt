@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
 import dev.kyralabs.pingogram.core.ui.component.ListReorderState
 import dev.kyralabs.pingogram.core.ui.component.dragAfterLongPress
 import dev.kyralabs.pingogram.core.ui.component.dragHandle
+import dev.kyralabs.pingogram.core.ui.component.folderIconDrawable
 import dev.kyralabs.pingogram.core.ui.component.rememberListReorderState
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -329,7 +330,7 @@ internal val ChatFolderIncludedType.icon: Int
             ChatFolderIncludedType.Contacts -> UiR.drawable.ic_contacts
             ChatFolderIncludedType.NonContacts -> UiR.drawable.ic_person_filled
             ChatFolderIncludedType.Groups -> UiR.drawable.ic_chat
-            ChatFolderIncludedType.Channels -> R.drawable.ic_public
+            ChatFolderIncludedType.Channels -> UiR.drawable.ic_public
             ChatFolderIncludedType.Bots -> UiR.drawable.ic_tag
         }
 

@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -69,12 +70,26 @@ class ChatScrollCostTest {
     fun `scroll frames with channel posts without share buttons`() =
         measure(scrollingState = true, channel = true, shareButtons = false)
 
+    /**
+     * A group's messages (`docs/DESIGN_SYSTEM.md` §13.6): incoming ones in their senders' vivid hues, every seventh
+     * with a role, every eleventh mentioning the user.
+     */
+    @Test
+    fun `scroll frames with group bubbles`() = measure(scrollingState = true, group = true)
+
+    /** The same group with its mentions of the user as chips (§13.6): against the same without them. */
+    @Test
+    fun `scroll frames with mention chips`() = measure(scrollingState = true, group = true, chips = true)
+
+    @Suppress("LongParameterList") // What each comparison varies.
     private fun measure(
         scrollingState: Boolean,
         customEmoji: Boolean = false,
         pictures: Boolean = customEmoji,
         channel: Boolean = false,
         shareButtons: Boolean = channel,
+        group: Boolean = false,
+        chips: Boolean = false,
     ) {
         val state =
             ChatUiState(
@@ -84,7 +99,11 @@ class ChatScrollCostTest {
                         (MESSAGES downTo 1)
                             .map { id ->
                                 bubble(id, customEmoji).let {
-                                    if (channel) it.copy(isOutgoing = false, hasShareButton = shareButtons) else it
+                                    when {
+                                        channel -> it.copy(isOutgoing = false, hasShareButton = shareButtons)
+                                        group -> it.inGroup(id, chips)
+                                        else -> it
+                                    }
                                 }
                             }.toImmutableList(),
                         reachedStart = true,
@@ -112,11 +131,32 @@ class ChatScrollCostTest {
             "Scroll cost (${if (scrollingState) "scrolling" else "default"} state${emojiLabel(
                 customEmoji,
                 pictures,
-            )}${if (channel) ", channel, share buttons $shareButtons" else ""}): " +
+            )}${if (channel) ", channel, share buttons $shareButtons" else ""}${if (group) ", group" else ""}" +
+                "${if (chips) ", mention chips" else ""}): " +
                 "CPU per frame P50 " +
                 "${frames.percentile(50)} µs, P90 ${frames.percentile(90)} µs, P99 ${frames.percentile(99)} µs",
         )
     }
+
+    /** This bubble as a group's: incoming ones with sender and hue, every seventh a role, every eleventh a mention. */
+    private fun ChatItem.Bubble.inGroup(
+        id: Int,
+        chips: Boolean = false,
+    ): ChatItem.Bubble =
+        if (isOutgoing) {
+            this
+        } else {
+            copy(
+                showsSenderName = !position.joinsPrevious,
+                hasAvatarColumn = true,
+                senderId = (id / RUN).toLong(),
+                senderHue = SenderHues.indexOf(-1, (id / RUN).toLong()),
+                senderRole = if (id % ROLE_EVERY == 0) UiText.Plain("Admin") else null,
+                mentionsMe = id % MENTION_EVERY == 0,
+                myMentions =
+                    if (chips && id % MENTION_EVERY == 0) persistentListOf(0 until CHIP_LENGTH) else persistentListOf(),
+            )
+        }
 
     private fun emojiLabel(
         customEmoji: Boolean,
@@ -198,6 +238,9 @@ class ChatScrollCostTest {
         const val LONG_EVERY = 4
         const val REPLY_EVERY = 7
         const val REACTIONS_EVERY = 5
+        const val ROLE_EVERY = 7
+        const val MENTION_EVERY = 11
+        const val CHIP_LENGTH = 5
         const val FRAMES = 120
         const val STEP = 40f
         const val WARMUP_RUNS = 3
