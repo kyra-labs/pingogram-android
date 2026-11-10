@@ -19,7 +19,7 @@ import kotlinx.collections.immutable.toImmutableList
  */
 internal object PaidPostSamples {
     const val CHANNEL = -1_000_000_000_100L
-    const val OTHER_CHANNEL = -1_000_000_000_200L
+    const val OTHER_CHANNEL = -1_000_000_000_400L
     const val WINNER_RAVI = 71L
     const val WINNER_MEERA = 72L
     const val WINNER_JONAS = 73L

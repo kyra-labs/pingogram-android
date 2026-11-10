@@ -47,26 +47,40 @@ class PaidMediaScreenTest {
     fun `a locked post takes no tap and says why for screen readers`() {
         setScreen(PaidMediaPreviewData.posts)
 
-        val note = string(R.string.paid_media_note)
-        val locked = composeRule.onNode(hasContentDescription(note, substring = true)).fetchSemanticsNode()
+        val stars =
+            RuntimeEnvironment.getApplication().resources.getQuantityString(
+                R.plurals.paid_media_stars,
+                25,
+                "25",
+            )
+        val photos = RuntimeEnvironment.getApplication().resources.getQuantityString(R.plurals.paid_media_photos, 3, 3)
+        val locked = string(R.string.paid_media_locked_description, photos, stars)
+        val bubble =
+            composeRule
+                .onNode(
+                    hasContentDescription(string(R.string.paid_media_note), substring = true),
+                ).fetchSemanticsNode()
         val description =
-            locked.config
+            bubble.config
                 .getOrNull(SemanticsProperties.ContentDescription)
                 ?.joinToString()
                 .orEmpty()
+        composeRule
+            .onNode(
+                hasContentDescription(locked),
+                useUnmergedTree = true,
+            ).assertHasNoClickAction()
+            .performClick()
 
-        assertTrue(
-            description,
-            description.contains(string(R.string.paid_media_locked_description, "3 photos", "25 Telegram Stars")),
-        )
-        composeRule.onNodeWithText(note).assertHasNoClickAction()
+        assertTrue(description, description.contains(locked))
+        assertTrue(events.filterIsInstance<ChatEvent.OpenMedia>().isEmpty())
     }
 
     @Test
     fun `Update Pingogram opens the releases page`() {
         setScreen(PaidMediaPreviewData.unsupported(showsUpdateLink = true))
 
-        composeRule.onNodeWithText(string(R.string.content_update_app)).performClick()
+        composeRule.onNodeWithText(string(R.string.content_update_app), useUnmergedTree = true).performClick()
 
         assertEquals(listOf<ChatEvent>(ChatEvent.OpenUpdatePage), events.filterIsInstance<ChatEvent.OpenUpdatePage>())
     }
@@ -75,8 +89,13 @@ class PaidMediaScreenTest {
     fun `a store build shows no update link`() {
         setScreen(PaidMediaPreviewData.unsupported(showsUpdateLink = false))
 
-        assertTrue(composeRule.onAllNodes(hasText(string(R.string.content_update_app))).fetchSemanticsNodes().isEmpty())
-        composeRule.onNodeWithText(string(R.string.content_unsupported_body)).assertExists()
+        assertTrue(
+            composeRule
+                .onAllNodes(hasText(string(R.string.content_update_app)), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        composeRule.onNodeWithText(string(R.string.content_unsupported_body), useUnmergedTree = true).assertExists()
     }
 
     @Test

@@ -9,9 +9,9 @@ import dev.kyralabs.pingogram.core.domain.model.GiveawayInfo
 import dev.kyralabs.pingogram.core.domain.model.GiveawayParticipantStatus
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
@@ -45,7 +45,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
 
     private val channel =
         chat(
-            id = CHANNEL_CHAT,
+            id = CHANNEL,
             type = ChatType.Supergroup(SUPERGROUP_ID, isChannel = true),
             title = "Android Devs Weekly",
         )
@@ -63,18 +63,18 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
         )
         chats.setChats(channel)
         messages.setHistory(
-            CHANNEL_CHAT,
+            CHANNEL,
             history(
                 message(
                     WINNERS_MESSAGE,
-                    CHANNEL_CHAT,
-                    MessageSender.Chat(CHANNEL_CHAT),
+                    CHANNEL,
+                    MessageSender.Chat(CHANNEL),
                     content = PaidPostSamples.giveawayWinners(),
                 ),
-                message(MESSAGE, CHANNEL_CHAT, MessageSender.Chat(CHANNEL_CHAT), content = content),
+                message(MESSAGE, CHANNEL, MessageSender.Chat(CHANNEL), content = content),
             ),
         )
-        val viewModel = viewModel(CHANNEL_CHAT, handle = handle, appInfo = appInfo)
+        val viewModel = viewModel(CHANNEL, handle = handle, appInfo = appInfo)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.collect { effects += it } }
         runCurrent()
         return viewModel
@@ -88,8 +88,11 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
             val giveaway = viewModel.bubble(MESSAGE).giveaway
             val winners = viewModel.bubble(WINNERS_MESSAGE).giveaway
 
-            assertEquals(listOf(CHANNEL_CHAT, PaidPostSamples.OTHER_CHANNEL), giveaway?.channels?.map { it.id })
-            assertEquals(UiText.Plain("Android Devs Weekly"), giveaway!!.channels[0].name)
+            assertEquals(listOf(CHANNEL, PaidPostSamples.OTHER_CHANNEL), giveaway?.channels?.map { it.id })
+            assertEquals(
+                listOf(UiText.Plain("Android Devs Weekly"), res(R.string.giveaway_channel_unknown)),
+                giveaway!!.channels.map { it.name },
+            )
             assertEquals(
                 listOf(
                     PaidPostSamples.WINNER_RAVI,
@@ -121,7 +124,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
             runCurrent()
 
             assertEquals(GiveawayInfoState.Loading, loading)
-            assertEquals(listOf(CHANNEL_CHAT to MESSAGE), giveaways.requests)
+            assertEquals(listOf(CHANNEL to MESSAGE), giveaways.requests)
             assertEquals(GiveawayInfoState.Loaded(info), viewModel.giveawayInfoSheet.value?.state)
             assertEquals(PaidPostSamples.WINNERS, viewModel.giveawayInfoSheet.value?.winnerCount)
         }
@@ -147,7 +150,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
     fun `the administrator's chat is named`() =
         runViewModelTest {
             giveaways.onInfo = {
-                Outcome.Success(GiveawayInfo.Ongoing(1L, GiveawayParticipantStatus.Administrator(CHANNEL_CHAT), false))
+                Outcome.Success(GiveawayInfo.Ongoing(1L, GiveawayParticipantStatus.Administrator(CHANNEL), false))
             }
             val viewModel = conversation()
 
@@ -167,7 +170,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
             send(viewModel, GiveawayEvent.OpenInfo(MESSAGE), GiveawayEvent.DismissInfo)
             assertNull(viewModel.giveawayInfoSheet.value)
 
-            send(viewModel, GiveawayEvent.OpenInfo(99))
+            send(viewModel, GiveawayEvent.OpenInfo(99L shl 20))
             assertNull(viewModel.giveawayInfoSheet.value)
             assertEquals(listOf(ChatEffect.ActionUnavailable), effects)
         }
@@ -198,56 +201,46 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
     @Test
     fun `a paid post's media open in the viewer once paid for, never while locked`() =
         runViewModelTest {
-            val viewModel = conversation(content = PaidPostSamples.paidMedia(unlocked = true))
+            val mediaId = richMediaId(MESSAGE, 1)
+            val unlocked = conversation(content = PaidPostSamples.paidMedia(unlocked = true))
+            assertTrue((unlocked.bubble(MESSAGE).content as MessageContent.PaidMedia).isUnlocked)
+            send(unlocked, ChatEvent.OpenMedia(mediaId))
+            assertEquals(listOf<ChatEffect>(ChatEffect.OpenMedia(mediaId)), effects)
+            clear(unlocked)
+
             val locked = conversation(content = PaidPostSamples.paidMedia(unlocked = false))
+            send(locked, ChatEvent.OpenMedia(mediaId))
 
-            val media = viewModel.bubble(MESSAGE).content as MessageContent.PaidMedia
-            assertTrue(media.isUnlocked)
-            send(
-                viewModel,
-                ChatEvent.OpenMedia(
-                    dev.kyralabs.pingogram.core.domain.model
-                        .richMediaId(MESSAGE, 1),
-                ),
-            )
-            send(
-                locked,
-                ChatEvent.OpenMedia(
-                    dev.kyralabs.pingogram.core.domain.model
-                        .richMediaId(MESSAGE, 1),
-                ),
-            )
-
-            assertEquals(
-                listOf<ChatEffect>(
-                    ChatEffect.OpenMedia(
-                        dev.kyralabs.pingogram.core.domain.model
-                            .richMediaId(MESSAGE, 1),
-                    ),
-                ),
-                effects,
-            )
+            assertEquals(listOf<ChatEffect>(ChatEffect.OpenMedia(mediaId)), effects)
         }
 
     @Test
-    fun `Update Pingogram opens the latest release, and store builds leave the link out`() =
+    fun `Update Pingogram opens the latest release`() =
         runViewModelTest {
             val viewModel = conversation(content = MessageContent.Unsupported)
+
+            send(viewModel, ChatEvent.OpenUpdatePage)
+
+            assertTrue(viewModel.uiState.value.showsUpdateLink)
+            assertEquals(listOf(ChatEffect.OpenUrl(ChatViewModel.LATEST_RELEASE_URL)), effects)
+        }
+
+    @Test
+    fun `store builds leave the update link out`() =
+        runViewModelTest {
             val store =
                 conversation(
                     content = MessageContent.Unsupported,
                     appInfo = AppInfo("1.0", installer = "com.android.vending"),
                 )
 
-            send(viewModel, ChatEvent.OpenUpdatePage)
-
-            assertTrue(viewModel.uiState.value.showsUpdateLink)
             assertFalse(store.uiState.value.showsUpdateLink)
-            assertEquals(listOf(ChatEffect.OpenUrl(ChatViewModel.LATEST_RELEASE_URL)), effects)
         }
 
     private companion object {
-        const val MESSAGE = 10L
-        const val WINNERS_MESSAGE = 11L
+        const val CHANNEL = PaidPostSamples.CHANNEL
+        // Telegram's message ids are multiples of 2^20, which a paid post's media ids rely on (richMediaId).
+        const val MESSAGE = 10L shl 20
+        const val WINNERS_MESSAGE = 11L shl 20
     }
 }
