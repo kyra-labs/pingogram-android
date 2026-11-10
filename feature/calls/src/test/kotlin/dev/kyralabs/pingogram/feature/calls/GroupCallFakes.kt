@@ -2,12 +2,15 @@ package dev.kyralabs.pingogram.feature.calls
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
+import dev.kyralabs.pingogram.core.domain.model.GroupCallComment
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.GroupCallStream
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
+import dev.kyralabs.pingogram.core.domain.repository.GroupCallComments
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -34,6 +37,12 @@ data class MuteRequest(
     val isMuted: Boolean,
 )
 
+data class CommentDeletion(
+    val ids: List<Int>,
+    val sender: MessageSender?,
+    val reportSpam: Boolean,
+)
+
 data class SegmentRequest(
     val timeOffset: Long,
     val scale: Int,
@@ -57,6 +66,16 @@ class FakeGroupCallRepository : GroupCallRepository {
     val videoToggles = mutableListOf<Boolean>()
     val segments = mutableListOf<SegmentRequest>()
     var segment: StreamSegment = StreamSegment.Data(byteArrayOf(7))
+    val comments = MutableStateFlow(GroupCallComments())
+    val sentComments = mutableListOf<String>()
+    var commentResult: Outcome<Unit> = Outcome.Success(Unit)
+    val commentDeletions = mutableListOf<CommentDeletion>()
+    val commentToggles = mutableListOf<Boolean>()
+
+    fun comment(comment: GroupCallComment) {
+        val current = comments.value
+        comments.value = GroupCallComments((current.items + comment).toImmutableList(), current.received + 1)
+    }
 
     fun participant(participant: GroupCallParticipant) {
         participants.value = participants.value + (participant.participant to participant)
@@ -148,6 +167,42 @@ class FakeGroupCallRepository : GroupCallRepository {
         return Outcome.Success(Unit)
     }
 
+    override fun comments(id: Int): Flow<GroupCallComments> = comments
+
+    override suspend fun sendComment(
+        id: Int,
+        text: FormattedText,
+    ): Outcome<Unit> {
+        sentComments += text.text
+        return commentResult
+    }
+
+    override suspend fun deleteComments(
+        id: Int,
+        commentIds: List<Int>,
+        reportSpam: Boolean,
+    ): Outcome<Unit> {
+        commentDeletions += CommentDeletion(commentIds, null, reportSpam)
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun deleteCommentsBy(
+        id: Int,
+        sender: MessageSender,
+        reportSpam: Boolean,
+    ): Outcome<Unit> {
+        commentDeletions += CommentDeletion(emptyList(), sender, reportSpam)
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun setCommentsAllowed(
+        id: Int,
+        allowed: Boolean,
+    ): Outcome<Unit> {
+        commentToggles += allowed
+        return Outcome.Success(Unit)
+    }
+
     override suspend fun streams(id: Int): Outcome<ImmutableList<GroupCallStream>> =
         Outcome.Success(persistentListOf(GroupCallStream(0, 0, 8000), GroupCallStream(2, 0, 9000)))
 
@@ -171,6 +226,8 @@ fun groupCall(
     isActive: Boolean = true,
     canBeManaged: Boolean = false,
     canEnableVideo: Boolean = true,
+    canComment: Boolean = false,
+    canToggleComments: Boolean = false,
 ) = GroupCall(
     id = 5,
     title = "",
@@ -186,4 +243,8 @@ fun groupCall(
     muteNewParticipants = false,
     duration = 0,
     canEnableVideo = canEnableVideo,
+    areCommentsAllowed = canComment,
+    canComment = canComment,
+    canToggleComments = canToggleComments,
+    canDeleteComments = canToggleComments,
 )
