@@ -127,20 +127,32 @@ internal object PollPreviewData {
             )
 
     /**
-     * What polls show since 2026 (boards 4a, 4b): a poll that closes in two hours with its description, an answer
-     * that links somewhere and its results hidden until the end; a quiz with two correct answers, one of them found;
-     * and a poll whose field for a new answer is open.
+     * What polls show since 2026 (boards 4a, 4b): a poll whose field for a new answer is open, below the user's poll
+     * that closes in two hours with its description, an answer that links somewhere and its results hidden until the
+     * end.
      */
-    val extras: ChatUiState
+    val closing: ChatUiState
         get() =
             ChatUiState(
                 composer = ChatPreviewData.canWrite,
                 header = header,
                 content =
                     content(
-                        poll(4, booksPoll(), sender = "Ada", senderId = ADA).copy(pollAdding = PollAdding.Open),
-                        poll(3, twoAnswerQuiz(), sender = "Linus Torvalds", senderId = LINUS),
+                        poll(3, booksPoll(), sender = "Ada", senderId = ADA).copy(pollAdding = PollAdding.Open),
                         poll(2, lunchPoll(), isOutgoing = true).copy(pollClosesIn = TWO_HOURS),
+                        ChatItem.DateSeparator(epochDay = 1, date = today),
+                    ),
+            )
+
+    /** A quiz with two correct answers, one of them found, with its score and explanation (board 4b). */
+    val quizScore: ChatUiState
+        get() =
+            ChatUiState(
+                composer = ChatPreviewData.canWrite,
+                header = header,
+                content =
+                    content(
+                        poll(2, twoAnswerQuiz(), sender = "Linus Torvalds", senderId = LINUS),
                         ChatItem.DateSeparator(epochDay = 1, date = today),
                     ),
             )

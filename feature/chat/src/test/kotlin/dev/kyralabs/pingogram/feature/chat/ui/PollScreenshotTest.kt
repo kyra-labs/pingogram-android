@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
  * scale. A group's conversation with polls to vote in (one tap; answers checked before "Vote"), with results (a public
  * poll with "View votes", a quiz answered wrong with its explanation), and in other states (a vote on its way, a poll
  * only members may vote in, a closed poll; one closing in two hours with its description, a link and its results
- * hidden, a quiz with two correct answers and the field for a new answer); the voters' sheet loaded, loading and failed; the question before a poll
+ * hidden below the field for a new answer; a quiz with two correct answers and its score); the voters' sheet loaded, loading and failed; the question before a poll
  * is stopped. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -76,8 +76,12 @@ class PollScreenshotTest(
                         ChatScreen(state = PollPreviewData.states, onEvent = {}, onBack = {})
                     }
 
-                    "extras" -> {
-                        ChatScreen(state = PollPreviewData.extras, onEvent = {}, onBack = {})
+                    "closing" -> {
+                        ChatScreen(state = PollPreviewData.closing, onEvent = {}, onBack = {})
+                    }
+
+                    "quizScore" -> {
+                        ChatScreen(state = PollPreviewData.quizScore, onEvent = {}, onBack = {})
                     }
 
                     "voters" -> {
