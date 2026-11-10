@@ -161,7 +161,9 @@ internal fun memberIdsOf(content: MessageContent): List<Long> =
 
         // Who ticked each task, for the avatars at their ends.
         is MessageContent.Checklist -> {
-            content.list.tasks.mapNotNull { (it.completedBy as? MessageSender.User)?.userId }.distinct()
+            content.list.tasks
+                .mapNotNull { (it.completedBy as? MessageSender.User)?.userId }
+                .distinct()
         }
 
         else -> {

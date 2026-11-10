@@ -21,7 +21,6 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.content.ChecklistAction
-import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageChecklist
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChecklistPreviewData
 import kotlinx.collections.immutable.persistentSetOf
@@ -79,7 +78,7 @@ class ChecklistScreenTest {
 
     @Test
     fun `a tap on a task ticks it with a toggle haptic, and on a done task unticks it`() {
-        setChecklist(ContentPreviewData.checklist(done = 1))
+        setChecklist(ChecklistPreviewData.checklist(done = 1))
 
         composeRule.onNodeWithText("Update Play Store screenshots").performClick()
         composeRule.onNodeWithText("Freeze strings for translation").performClick()
@@ -90,18 +89,24 @@ class ChecklistScreenTest {
 
     @Test
     fun `a checklist the user may not tick takes no tap, and offers no Add task`() {
-        setChecklist(ContentPreviewData.checklist(canMark = false, canAdd = false))
+        setChecklist(ChecklistPreviewData.checklist(canMark = false, canAdd = false))
 
         composeRule.onNodeWithText("Write the changelog").assertHasNoClickAction()
         composeRule.onNodeWithText("Write the changelog").performClick()
 
         assertTrue(actions.isEmpty())
-        assertTrue(composeRule.onAllNodes(hasTextIgnoringCase(string(R.string.checklist_add_task))).fetchSemanticsNodes().isEmpty())
+        assertTrue(
+            composeRule
+                .onAllNodes(
+                    hasTextIgnoringCase(string(R.string.checklist_add_task)),
+                ).fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     @Test
     fun `a task whose change is on its way takes no tap`() {
-        setChecklist(ContentPreviewData.checklist(), ui = ChecklistUi(pending = persistentSetOf(3)))
+        setChecklist(ChecklistPreviewData.checklist(), ui = ChecklistUi(pending = persistentSetOf(3)))
 
         composeRule.onNodeWithText("Run the TDLib upgrade tests").performClick()
 
@@ -110,7 +115,7 @@ class ChecklistScreenTest {
 
     @Test
     fun `Add task opens the field`() {
-        setChecklist(ContentPreviewData.checklist())
+        setChecklist(ChecklistPreviewData.checklist())
 
         composeRule.onNodeWithText(string(R.string.checklist_add_task)).performClick()
 
@@ -119,7 +124,7 @@ class ChecklistScreenTest {
 
     @Test
     fun `the field's check sends the text, and its close puts the field away`() {
-        setChecklist(ContentPreviewData.checklist(), ui = ChecklistUi(isAddingTask = true))
+        setChecklist(ChecklistPreviewData.checklist(), ui = ChecklistUi(isAddingTask = true))
 
         composeRule.onNodeWithText(string(R.string.checklist_new_task)).performTextInput("Order chai")
         composeRule.onNodeWithContentDescription(string(R.string.checklist_add)).performClick()
@@ -136,16 +141,28 @@ class ChecklistScreenTest {
             composeRule
                 .onNode(hasContentDescription("Pingogram 1.2 release", substring = true))
                 .fetchSemanticsNode()
-        val description = bubble.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString().orEmpty()
+        val description =
+            bubble.config
+                .getOrNull(SemanticsProperties.ContentDescription)
+                ?.joinToString()
+                .orEmpty()
         val custom = bubble.config.getOrNull(SemanticsActions.CustomActions).orEmpty()
         val mark = custom.first { it.label == string(R.string.checklist_mark_done, "Run the TDLib upgrade tests") }
         mark.action()
 
         assertTrue(description, description.contains(string(R.string.checklist_kicker)))
         assertTrue(description, description.contains(string(R.string.checklist_progress, 2, 5)))
-        assertTrue(description, description.contains("Freeze strings for translation, " + string(R.string.checklist_task_done_by, "Ada Lovelace")))
+        assertTrue(
+            description,
+            description.contains(
+                "Freeze strings for translation, " + string(R.string.checklist_task_done_by, "Ada Lovelace"),
+            ),
+        )
         assertTrue(custom.any { it.label == string(R.string.checklist_add_task) })
-        assertEquals(listOf<ChatEvent>(ChecklistEvent.MarkTask(2, taskId = 3, done = true)), events.filterIsInstance<ChecklistEvent>())
+        assertEquals(
+            listOf<ChatEvent>(ChecklistEvent.MarkTask(2, taskId = 3, done = true)),
+            events.filterIsInstance<ChecklistEvent>(),
+        )
     }
 
     @Test

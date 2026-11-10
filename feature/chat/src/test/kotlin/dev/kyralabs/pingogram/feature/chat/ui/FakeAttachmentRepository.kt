@@ -55,11 +55,9 @@ class FakeAttachmentRepository : AttachmentRepository {
 
     val sentPolls = mutableListOf<SentPoll>()
 
-
     /** Every [sendChecklist] call. */
 
     val sentChecklists = mutableListOf<SentChecklist>()
-
 
     var onSendChecklist: suspend (NewChecklist) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }

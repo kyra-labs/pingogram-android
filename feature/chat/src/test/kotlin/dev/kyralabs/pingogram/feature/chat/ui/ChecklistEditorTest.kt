@@ -21,7 +21,12 @@ class ChecklistEditorTest {
         editor.addTask()
 
         assertEquals(
-            NewChecklist("Release", persistentListOf("Freeze strings"), othersCanAddTasks = false, othersCanMarkTasksAsDone = true),
+            NewChecklist(
+                "Release",
+                persistentListOf("Freeze strings"),
+                othersCanAddTasks = false,
+                othersCanMarkTasksAsDone = true,
+            ),
             editor.checklist(),
         )
     }

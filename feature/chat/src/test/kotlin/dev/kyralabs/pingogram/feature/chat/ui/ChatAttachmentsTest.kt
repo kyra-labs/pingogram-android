@@ -140,7 +140,11 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
 
                 // Each chat is checked while it is the only one the fake knows.
                 val privateOptions = showing(chat(), history()).options
-                val secretOptions = showing(chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)), history()).options
+                val secretOptions =
+                    showing(
+                        chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)),
+                        history(),
+                    ).options
 
                 assertEquals(AttachOption.entries - AttachOption.Poll, privateOptions)
                 assertTrue(AttachOption.Checklist !in secretOptions)

@@ -56,12 +56,6 @@ class ChatChecklistsTest : ChatViewModelHarness() {
         return viewModel
     }
 
-    /** The checklist shows [list] now, as `updateMessageContent` makes it. */
-    private fun TestScope.update(list: Checklist) {
-        messages.setHistory(GROUP_CHAT, history(checklistMessage(list)))
-        runCurrent()
-    }
-
     private fun checklistMessage(list: Checklist) =
         message(MESSAGE, GROUP_CHAT, MessageSender.User(ADA), content = MessageContent.Checklist(list))
 
@@ -181,7 +175,11 @@ class ChatChecklistsTest : ChatViewModelHarness() {
                 val viewModel = conversation(checklist())
                 send(viewModel, ChecklistEvent.OpenAddTask(MESSAGE))
 
-                val restored = conversation(checklist(), handle = SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
+                val restored =
+                    conversation(
+                        checklist(),
+                        handle = SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }),
+                    )
 
                 assertEquals(true, restored.bubble(MESSAGE).checklist?.isAddingTask)
             }
@@ -230,7 +228,13 @@ class ChatChecklistsTest : ChatViewModelHarness() {
                 send(viewModel, ChecklistEvent.OpenAddTask(MESSAGE), ChecklistEvent.DismissAddTask(MESSAGE))
 
                 assertEquals(false, viewModel.bubble(MESSAGE).checklist?.isAddingTask)
-                assertNull(viewModel.bubble(MESSAGE).checklist?.pending?.firstOrNull())
+                assertNull(
+                    viewModel
+                        .bubble(MESSAGE)
+                        .checklist
+                        ?.pending
+                        ?.firstOrNull(),
+                )
             }
     }
 

@@ -467,7 +467,10 @@ class TdlibAttachmentRepositoryTest {
             val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessageChecklist
             assertEquals("Release", sent.checklist.title.text)
             assertEquals(listOf(1 to "Tag", 2 to "Post"), sent.checklist.tasks.map { it.id to it.text.text })
-            assertEquals(listOf(true, false), listOf(sent.checklist.othersCanAddTasks, sent.checklist.othersCanMarkTasksAsDone))
+            assertEquals(
+                listOf(true, false),
+                listOf(sent.checklist.othersCanAddTasks, sent.checklist.othersCanMarkTasksAsDone),
+            )
         }
 
     @Test

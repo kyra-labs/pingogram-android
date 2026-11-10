@@ -83,7 +83,12 @@ class ChecklistScreenshotTest(
                                         ChecklistEditor(
                                             ChecklistDraft(
                                                 title = "Pingogram 1.2 release",
-                                                tasks = listOf("Freeze strings for translation", "Write the changelog", ""),
+                                                tasks =
+                                                    listOf(
+                                                        "Freeze strings for translation",
+                                                        "Write the changelog",
+                                                        "",
+                                                    ),
                                             ),
                                         )
                                     },

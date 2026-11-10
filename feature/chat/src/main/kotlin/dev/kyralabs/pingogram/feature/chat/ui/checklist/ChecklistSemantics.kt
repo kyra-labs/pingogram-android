@@ -24,8 +24,14 @@ internal fun checklistDescription(
         list.tasks.map { task ->
             val state =
                 when {
-                    task.id in ui.pending -> resources.getString(R.string.checklist_task_sending)
-                    !task.isDone -> resources.getString(R.string.checklist_task_not_done)
+                    task.id in ui.pending -> {
+                        resources.getString(R.string.checklist_task_sending)
+                    }
+
+                    !task.isDone -> {
+                        resources.getString(R.string.checklist_task_not_done)
+                    }
+
                     else -> {
                         ui.completers[task.id]?.let { completer ->
                             resources.getString(R.string.checklist_task_done_by, completer.name.resolve(resources))

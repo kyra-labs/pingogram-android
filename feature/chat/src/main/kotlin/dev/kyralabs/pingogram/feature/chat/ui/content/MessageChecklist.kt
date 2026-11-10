@@ -146,6 +146,7 @@ private fun ChecklistKicker(colors: BubbleColors) {
  * One task: its round check (ticked in the bubble's accent, empty with an outline, or its progress), its text (struck
  * through and dimmed once done) and the avatar of who ticked it.
  */
+@Suppress("LongParameterList") // The task, whether it takes a tap and is being changed, who ticked it, the colors.
 @Composable
 private fun TaskRow(
     task: ChecklistTask,
@@ -287,7 +288,11 @@ private fun AddTaskButton(
     FilledTonalButton(
         onClick = onClick,
         shapes = ButtonDefaults.shapes(),
-        colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.block, contentColor = colors.blockContent),
+        colors =
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = colors.block,
+                contentColor = colors.blockContent,
+            ),
     ) {
         Icon(
             painter = painterResource(UiR.drawable.ic_add),

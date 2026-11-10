@@ -21,7 +21,12 @@ class ChecklistMappersTest {
             TdApi.Checklist(
                 TdApi.FormattedText("Release", emptyArray()),
                 arrayOf(
-                    TdApi.ChecklistTask(1, TdApi.FormattedText("Tag", emptyArray()), TdApi.MessageSenderUser(42), 1_700_000_000),
+                    TdApi.ChecklistTask(
+                        1,
+                        TdApi.FormattedText("Tag", emptyArray()),
+                        TdApi.MessageSenderUser(42),
+                        1_700_000_000,
+                    ),
                     TdApi.ChecklistTask(2, TdApi.FormattedText("Post", emptyArray()), null, 0),
                 ),
                 true,
@@ -38,7 +43,12 @@ class ChecklistMappersTest {
                     title = FormattedText("Release", persistentListOf()),
                     tasks =
                         persistentListOf(
-                            ChecklistTask(1, FormattedText("Tag", persistentListOf()), MessageSender.User(42), 1_700_000_000),
+                            ChecklistTask(
+                                1,
+                                FormattedText("Tag", persistentListOf()),
+                                MessageSender.User(42),
+                                1_700_000_000,
+                            ),
                             ChecklistTask(2, FormattedText("Post", persistentListOf()), null, 0),
                         ),
                     othersCanAddTasks = true,

@@ -21,10 +21,10 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -105,7 +105,8 @@ internal class ChatChecklists(
     ) {
         val list = checklistOf(messageId)
         val task = text.trim().take(NewChecklist.MAX_TASK_LENGTH)
-        if (list == null || !list.canAddTasks || list.tasks.size >= NewChecklist.MAX_TASKS || task.isEmpty()) {
+        val canAdd = list != null && list.canAddTasks && list.tasks.size < NewChecklist.MAX_TASKS
+        if (list == null || !canAdd || task.isEmpty()) {
             onEffect(ChatEffect.ActionUnavailable)
             return
         }

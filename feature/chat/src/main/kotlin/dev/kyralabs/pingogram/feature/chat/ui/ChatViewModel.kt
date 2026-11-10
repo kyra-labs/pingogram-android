@@ -39,13 +39,13 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
-import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -79,6 +79,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChatChecklists
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.withChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -97,9 +100,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
-import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChatChecklists
-import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
-import dev.kyralabs.pingogram.feature.chat.ui.checklist.withChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
@@ -1313,8 +1313,11 @@ class ChatViewModel internal constructor(
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
+
             ChatEvent.OpenChecklist -> attachments.openChecklist()
+
             ChatEvent.DismissChecklist -> attachments.dismissChecklist()
+
             is ChatEvent.SendChecklist -> attachments.sendChecklist(event.options)
 
             is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
@@ -1470,14 +1473,8 @@ class ChatViewModel internal constructor(
                         isReplacement = preview.replacing != null,
                     )
                 },
-            poll =
-                PollSheet(chat.isChannel, canSchedule).takeIf {
-                    canWrite && overlays.pollOpen && AttachOption.Poll in options
-                },
-            checklistForm =
-                ChecklistSheet(canSchedule).takeIf {
-                    canWrite && overlays.checklistOpen && AttachOption.Checklist in options
-                },
+            poll = overlays.pollSheet(chat, canWrite, canSchedule, options),
+            checklistForm = overlays.checklistSheet(canWrite, canSchedule, options),
         )
     }
 
@@ -1586,6 +1583,26 @@ private class Overlays(
     val checklistOpen: Boolean,
 ) {
     val mode: ComposerMode get() = composerTargets.mode
+
+    /** The poll form while it is open, where the user may write and the chat takes polls. */
+    fun pollSheet(
+        chat: Chat,
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: Set<AttachOption>,
+    ): PollSheet? =
+        PollSheet(chat.isChannel, canSchedule).takeIf { canWrite && pollOpen && AttachOption.Poll in options }
+
+    /** The checklist form while it is open, where the user may write and the chat takes checklists. */
+    fun checklistSheet(
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: Set<AttachOption>,
+    ): ChecklistSheet? =
+        ChecklistSheet(canSchedule).takeIf {
+            canWrite && checklistOpen &&
+                AttachOption.Checklist in options
+        }
 
     fun bar(
         chat: Chat,

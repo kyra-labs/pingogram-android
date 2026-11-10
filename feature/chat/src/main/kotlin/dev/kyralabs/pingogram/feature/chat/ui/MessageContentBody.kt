@@ -15,9 +15,9 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
-import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.content.ChecklistAction
+import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaUploadProgress
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimatedEmoji
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimation
@@ -245,6 +245,7 @@ private fun FileContent(
  * [PollEvent]s), checklists ([ChatItem.Bubble.checklist], their taps as [ChecklistEvent]s) and the rest, padded in the
  * bubble; nothing for text, which the bubble shows.
  */
+@Suppress("CyclomaticComplexMethod") // One branch per kind of content the padded bubble shows: one place to read.
 @Composable
 private fun InfoContent(
     bubble: ChatItem.Bubble,

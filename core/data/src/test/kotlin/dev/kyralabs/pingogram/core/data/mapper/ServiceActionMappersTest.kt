@@ -35,7 +35,10 @@ class ServiceActionMappersTest {
                 TdApi.MessageContactRegistered(),
                 TdApi.MessageCustomServiceAction("Something happened"),
                 TdApi.MessageChecklistTasksDone(9, intArrayOf(1, 2), intArrayOf(3)),
-                TdApi.MessageChecklistTasksAdded(9, arrayOf(TdApi.ChecklistTask(4, TdApi.FormattedText("Post", emptyArray()), null, 0))),
+                TdApi.MessageChecklistTasksAdded(
+                    9,
+                    arrayOf(TdApi.ChecklistTask(4, TdApi.FormattedText("Post", emptyArray()), null, 0)),
+                ),
             ).map { it.action() }
 
         assertEquals(
