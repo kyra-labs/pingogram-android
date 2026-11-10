@@ -1,28 +1,37 @@
 package dev.kyralabs.pingogram.feature.chat.ui.giveaway
 
 import android.content.res.Resources
+import android.icu.text.DateFormat
 import android.icu.text.ListFormatter
+import android.icu.util.TimeZone
 import dev.kyralabs.pingogram.core.domain.model.GiveawayPrize
 import dev.kyralabs.pingogram.feature.chat.R
 import java.text.NumberFormat
-import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+import java.util.Date
 import java.util.Locale
 
 // How giveaways are worded, for the bubbles, the details sheet and screen readers alike.
 
-/** [epochSeconds] (Unix time) as a date and time in [locale]'s medium date and short time, in [zone]. */
+/**
+ * [epochSeconds] (Unix time) as a date and time in [zone]: the platform's best pattern for the abbreviated month, the
+ * day, the year and the time in [locale]'s clock, from ICU's data rather than the JDK's, so it reads the same on every
+ * device and build machine.
+ */
 internal fun giveawayDateText(
     epochSeconds: Long,
     locale: Locale,
     zone: ZoneId = ZoneId.systemDefault(),
-): String =
-    DateTimeFormatter
-        .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-        .withLocale(locale)
-        .format(Instant.ofEpochSecond(epochSeconds).atZone(zone))
+): String {
+    val format = DateFormat.getInstanceForSkeleton(DATE_TIME_SKELETON, locale)
+    format.timeZone = TimeZone.getTimeZone(zone.id)
+    return format.format(Date(epochSeconds * MILLIS_PER_SECOND))
+}
+
+/** The year, the abbreviated month and the day, and the hour in the locale's clock with its minutes. */
+private const val DATE_TIME_SKELETON = "yMMMdjm"
+
+private const val MILLIS_PER_SECOND = 1_000L
 
 /** The names of the countries of ISO 3166-1 alpha-2 [codes], as one list in [locale] ("Germany, India and Peru"). */
 internal fun countriesText(
