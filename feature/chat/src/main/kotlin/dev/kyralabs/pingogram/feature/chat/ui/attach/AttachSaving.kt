@@ -114,7 +114,6 @@ private const val THUMBNAIL_HEIGHT = 8
 private const val FILE_NAME = 3
 private const val MIME_TYPE = 4
 
-
 /** The kind of the open preview ([AttachmentKind.name]), for process death; null for none. */
 internal const val KEY_PREVIEW_KIND = "chat.attachKind"
 
@@ -123,4 +122,3 @@ internal const val KEY_PREVIEW_ITEMS = "chat.attachItems"
 
 /** The file the camera app was asked to write a photo into, while it is open; for process death. */
 internal const val KEY_CAMERA_FILE = "chat.cameraFile"
-

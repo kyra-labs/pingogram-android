@@ -47,7 +47,10 @@ class ChatPollsV2Test : ChatViewModelHarness() {
     ): ChatViewModel {
         users.setUsers(user(ME, firstName = "Me"), user(ADA, firstName = "Ada"))
         chats.setChats(groupChat)
-        messages.setHistory(GROUP_CHAT, history(message(MESSAGE, GROUP_CHAT, MessageSender.User(ADA), content = content)))
+        messages.setHistory(
+            GROUP_CHAT,
+            history(message(MESSAGE, GROUP_CHAT, MessageSender.User(ADA), content = content)),
+        )
         val viewModel = viewModel(GROUP_CHAT, handle = handle)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.collect { effects += it } }
         runCurrent()

@@ -18,7 +18,8 @@ import org.robolectric.annotation.Config
  * the audit asks for (§12): light, dark, true black, high contrast, right to left, a medium window and 200% font
  * scale. A group's conversation with polls to vote in (one tap; answers checked before "Vote"), with results (a public
  * poll with "View votes", a quiz answered wrong with its explanation), and in other states (a vote on its way, a poll
- * only members may vote in, a closed poll); the voters' sheet loaded, loading and failed; the question before a poll
+ * only members may vote in, a closed poll; one closing in two hours with its description, a link and its results
+ * hidden, a quiz with two correct answers and the field for a new answer); the voters' sheet loaded, loading and failed; the question before a poll
  * is stopped. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -75,6 +76,10 @@ class PollScreenshotTest(
                         ChatScreen(state = PollPreviewData.states, onEvent = {}, onBack = {})
                     }
 
+                    "extras" -> {
+                        ChatScreen(state = PollPreviewData.extras, onEvent = {}, onBack = {})
+                    }
+
                     "voters" -> {
                         ChatScreen(state = PollPreviewData.results, onEvent = {}, onBack = {})
                         PollVotersBottomSheet(PollPreviewData.voters, onEvent = {})
@@ -107,6 +112,15 @@ class PollScreenshotTest(
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun states(): List<Array<Any>> =
-            listOf("voting", "results", "states", "voters", "votersLoading", "votersFailed", "stop").map { arrayOf(it) }
+            listOf(
+                "voting",
+                "results",
+                "states",
+                "extras",
+                "voters",
+                "votersLoading",
+                "votersFailed",
+                "stop",
+            ).map { arrayOf(it) }
     }
 }

@@ -35,8 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -149,8 +149,9 @@ private fun PollResult(
                 text = stringResource(R.string.content_poll_percentage, option.votePercentage),
                 color = colors.content,
                 maxLines = 1,
-                style = (if (emphasized) typography.labelLargeEmphasized else typography.labelLarge)
-                    .copy(fontFeatureSettings = "tnum"),
+                style =
+                    (if (emphasized) typography.labelLargeEmphasized else typography.labelLarge)
+                        .copy(fontFeatureSettings = "tnum"),
             )
         }
         Spacer(

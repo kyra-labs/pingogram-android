@@ -2,8 +2,8 @@ package dev.kyralabs.pingogram.feature.chat.ui.preview
 
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
-import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollClosing
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollDraft
@@ -94,7 +94,13 @@ internal object AttachPreviewData {
     val bookPoll =
         PollDraft(
             question = "Which book should we read in December?",
-            options = listOf("Tomorrow and Tomorrow and Tomorrow", "The Ministry for the Future", "Piranesi", "Klara and the Sun"),
+            options =
+                listOf(
+                    "Tomorrow and Tomorrow and Tomorrow",
+                    "The Ministry for the Future",
+                    "Piranesi",
+                    "Klara and the Sun",
+                ),
             links = listOf(null, "https://www.goodreads.com/book/show/50998056", null, null),
             description = "We meet on Dec 14 at Matteo. Reviews are linked where I found them.",
             photo = Attachment.Photo("/cache/uploads/c/poll.jpg", 1_258_291, 1280, 853),

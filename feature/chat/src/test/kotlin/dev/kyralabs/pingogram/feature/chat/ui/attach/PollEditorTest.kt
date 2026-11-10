@@ -103,7 +103,10 @@ class PollEditorTest {
         editor.removeOption(editor.options[1].key)
 
         assertEquals(persistentListOf(0, 1), poll.correctOptionIndexes)
-        assertEquals(listOf<Any>(false, false, "defer isn't one"), listOf(poll.allowsMultipleAnswers, poll.allowsRevoting, poll.explanation))
+        assertEquals(
+            listOf<Any>(false, false, "defer isn't one"),
+            listOf(poll.allowsMultipleAnswers, poll.allowsRevoting, poll.explanation),
+        )
         assertEquals(listOf(editor.options[0].key), editor.correctOptions)
     }
 
@@ -167,7 +170,10 @@ class PollEditorTest {
 
         val poll = editor.poll()!!
 
-        assertEquals(listOf<Any?>(photo, "On Dec 14", true, true, false), listOf(poll.photo, poll.description, poll.hidesResults, poll.shufflesOptions, poll.allowsRevoting))
+        assertEquals(
+            listOf<Any?>(photo, "On Dec 14", true, true, false),
+            listOf(poll.photo, poll.description, poll.hidesResults, poll.shufflesOptions, poll.allowsRevoting),
+        )
     }
 
     @Test
@@ -179,7 +185,14 @@ class PollEditorTest {
         editor.closing = PollClosing.Hour
 
         assertEquals(
-            PollDraft("2 + 2?", listOf("3", "4"), links = listOf("", null), isQuiz = true, correctOptionIndexes = listOf(1), closing = PollClosing.Hour),
+            PollDraft(
+                "2 + 2?",
+                listOf("3", "4"),
+                links = listOf("", null),
+                isQuiz = true,
+                correctOptionIndexes = listOf(1),
+                closing = PollClosing.Hour,
+            ),
             editor.draft,
         )
         assertEquals(editor.draft, PollEditor(editor.draft).draft)

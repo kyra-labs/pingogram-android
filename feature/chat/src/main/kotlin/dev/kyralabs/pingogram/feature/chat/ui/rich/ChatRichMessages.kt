@@ -175,6 +175,6 @@ internal fun ChatUiState.richMediaToOpen(id: Long): ChatEffect.OpenMedia? {
     val rich = (shownContent as? MessageContent.RichMessage)?.message
     val shown =
         rich?.media()?.any { richMediaId(messageId, it.index) == id } == true ||
-            (shownContent as? MessageContent.Poll)?.mediaContent() != null && id == richMediaId(messageId, 0)
+            ((shownContent as? MessageContent.Poll)?.mediaContent() != null && id == richMediaId(messageId, 0))
     return if (shown) ChatEffect.OpenMedia(id) else null
 }

@@ -178,7 +178,7 @@ private fun ClosingButtons(
                     text = stringResource(choice.label),
                     maxLines = 1,
                     style =
-                        if (checked) MaterialTheme.typography.labelLargeEmphasized else MaterialTheme.typography.labelLarge,
+                        with(MaterialTheme.typography) { if (checked) labelLargeEmphasized else labelLarge },
                 )
             }
         }

@@ -11,10 +11,10 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.maxLength
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -68,7 +68,9 @@ internal fun LazyListScope.pollOptionItems(
         FormSectionHeader(
             title = stringResource(R.string.poll_options),
             note =
-                stringResource(R.string.poll_choose_correct).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
+                stringResource(
+                    R.string.poll_choose_correct,
+                ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
             trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
         )
     }

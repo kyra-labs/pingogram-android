@@ -103,9 +103,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
+import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
-import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement

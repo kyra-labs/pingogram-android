@@ -27,8 +27,8 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessagePoll
-import dev.kyralabs.pingogram.feature.chat.ui.content.PollUi
 import dev.kyralabs.pingogram.feature.chat.ui.content.PollAction
+import dev.kyralabs.pingogram.feature.chat.ui.content.PollUi
 import dev.kyralabs.pingogram.feature.chat.ui.poll.POLL_VOTERS_TEST_TAG
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVoterSection
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersBottomSheet

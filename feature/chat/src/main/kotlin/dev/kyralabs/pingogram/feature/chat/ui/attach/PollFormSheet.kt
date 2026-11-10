@@ -236,7 +236,12 @@ private fun PollFormFilledPreview() {
         Column {
             PollForm(
                 sheet = PollSheet(),
-                editor = remember { PollEditor(AttachPreviewData.bookPoll).apply { limits = AttachPreviewData.limits } },
+                editor =
+                    remember {
+                        PollEditor(
+                            AttachPreviewData.bookPoll,
+                        ).apply { limits = AttachPreviewData.limits }
+                    },
                 canSend = true,
                 actions = PollFormActions(),
             )

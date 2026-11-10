@@ -100,7 +100,14 @@ private fun PickedPhoto(
 ) {
     val context = LocalPlatformContext.current
     val side = with(LocalDensity.current) { MaterialTheme.sizes.contentIcon.roundToPx() }
-    val request = remember(photo.path, side) { ImageRequest.Builder(context).data(File(photo.path)).size(side).build() }
+    val request =
+        remember(photo.path, side) {
+            ImageRequest
+                .Builder(context)
+                .data(File(photo.path))
+                .size(side)
+                .build()
+        }
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),

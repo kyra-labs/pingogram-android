@@ -103,7 +103,13 @@ internal fun PollPhoto(
         is PollMedia.Video -> {
             val still = media.video.still()
             val size =
-                mediaDisplaySize(still.width, still.height, sizes.mediaMaxWidth, sizes.mediaMaxHeight, sizes.mediaMinSize)
+                mediaDisplaySize(
+                    still.width,
+                    still.height,
+                    sizes.mediaMaxWidth,
+                    sizes.mediaMaxHeight,
+                    sizes.mediaMinSize,
+                )
             Box(frame.fillMaxWidth().height(size.height)) {
                 VideoThumbnail(still, size, false, Modifier.matchParentSize())
                 PlayBadge(Modifier.align(Alignment.Center))
@@ -134,7 +140,11 @@ internal fun PollHeader(
             color = colors.accent,
             style = MaterialTheme.typography.labelMediumEmphasized,
         )
-        Text(text = poll.question.text, color = colors.content, style = MaterialTheme.typography.titleMedium.userContent)
+        Text(
+            text = poll.question.text,
+            color = colors.content,
+            style = MaterialTheme.typography.titleMedium.userContent,
+        )
         if (description.text.isNotEmpty()) {
             val styles = rememberFormattedTextStyles(codeBackground = colors.container, spoilerColor = colors.spoiler)
             val text = remember(description, styles) { description.toAnnotatedString(styles, spoilersRevealed = true) }

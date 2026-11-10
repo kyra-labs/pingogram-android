@@ -13,9 +13,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.PollEvent
 import dev.kyralabs.pingogram.feature.chat.ui.PollOptionEvent
 import dev.kyralabs.pingogram.feature.chat.ui.content.PollMark
-import dev.kyralabs.pingogram.feature.chat.ui.content.pollExplanation
 import dev.kyralabs.pingogram.feature.chat.ui.content.label
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollEndsText
+import dev.kyralabs.pingogram.feature.chat.ui.content.pollExplanation
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollKicker
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollMark
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollRestriction
@@ -44,7 +44,11 @@ internal fun pollDescription(
             val parts =
                 buildList {
                     add(option.text.text)
-                    (option.media as? PollMedia.Link)?.let { add(resources.getString(R.string.poll_link_named, it.label())) }
+                    (option.media as? PollMedia.Link)?.let {
+                        add(
+                            resources.getString(R.string.poll_link_named, it.label()),
+                        )
+                    }
                     quizTag(option, poll)?.let { add(resources.getString(it)) }
                     if (poll.showsResults) {
                         add(

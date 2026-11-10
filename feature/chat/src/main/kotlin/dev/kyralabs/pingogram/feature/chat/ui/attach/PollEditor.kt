@@ -157,7 +157,11 @@ class PollEditor(
         forceAnonymous: Boolean = false,
         now: Long = 0,
     ): NewPoll? {
-        val question = question.text.toString().trim().take(NewPoll.MAX_QUESTION_LENGTH)
+        val question =
+            question.text
+                .toString()
+                .trim()
+                .take(NewPoll.MAX_QUESTION_LENGTH)
         val filled = fields.filter { it.normalized.isNotEmpty() }
         val correct = filled.indices.filter { filled[it].key in correctKeys }
         val closes = closesAt(now)
@@ -177,7 +181,15 @@ class PollEditor(
             correctOptionIndexes = (if (isQuiz) correct else emptyList()).toImmutableList(),
             description = description.text.toString().trim(),
             photo = photo,
-            explanation = if (isQuiz) explanation.text.toString().trim().take(NewPoll.MAX_EXPLANATION_LENGTH) else "",
+            explanation =
+                if (isQuiz) {
+                    explanation.text
+                        .toString()
+                        .trim()
+                        .take(NewPoll.MAX_EXPLANATION_LENGTH)
+                } else {
+                    ""
+                },
             allowsRevoting = !isQuiz && allowsRevoting,
             hidesResults = hidesResults,
             shufflesOptions = shufflesOptions,
@@ -284,8 +296,17 @@ class PollOptionField(
 
     internal fun toNewOption() =
         NewPollOption(
-            text = text.text.toString().trim().take(NewPoll.MAX_OPTION_LENGTH),
-            link = link?.text?.toString()?.trim()?.takeIf { it.isNotEmpty() },
+            text =
+                text.text
+                    .toString()
+                    .trim()
+                    .take(NewPoll.MAX_OPTION_LENGTH),
+            link =
+                link
+                    ?.text
+                    ?.toString()
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() },
         )
 }
 
