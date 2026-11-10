@@ -40,7 +40,7 @@ internal object PaidPostSamples {
                                 minithumbnail,
                                 width,
                                 height,
-                                firstFileId = FIRST_FILE_ID + index * 3,
+                                firstFileId = FIRST_FILE_ID + index * FILES_PER_PHOTO,
                             ).photo,
                     )
                 } else {
@@ -55,7 +55,7 @@ internal object PaidPostSamples {
         )
     }
 
-    /** Three subscriptions to Telegram Premium for three months, among two channels' subscribers, picked in December. */
+    /** Three subscriptions to Telegram Premium for three months, among two channels' subscribers. */
     fun giveaway(
         onlyNewMembers: Boolean = false,
         countryCodes: List<String> = emptyList(),
@@ -120,4 +120,5 @@ internal object PaidPostSamples {
     private const val LANDSCAPE = 1280
     private const val PORTRAIT = 960
     private const val FIRST_FILE_ID = 700
+    private const val FILES_PER_PHOTO = 3
 }

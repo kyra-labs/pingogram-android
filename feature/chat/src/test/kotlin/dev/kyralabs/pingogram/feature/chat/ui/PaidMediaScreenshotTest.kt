@@ -17,7 +17,7 @@ import org.robolectric.annotation.Config
  * cannot show with "Update Pingogram" and, as a store build shows it, without. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@Config(qualifiers = COMPACT)
+@Config(qualifiers = COMPACT_TALL)
 class PaidMediaScreenshotTest(
     private val stateName: String,
 ) {

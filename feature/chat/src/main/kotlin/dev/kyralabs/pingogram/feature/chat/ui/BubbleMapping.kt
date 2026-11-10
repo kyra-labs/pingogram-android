@@ -75,7 +75,15 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel = contentLabel(content),
+        contentLabel =
+            when {
+                album.isNotEmpty() -> albumLabel(album)
+
+                // Rich messages' blocks, paid posts and giveaways say what they are in their own description.
+                content.describesItself -> null
+
+                else -> contentKindText(content)
+            },
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
@@ -105,17 +113,6 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         giveaway = giveawayUi(content),
     )
 }
-
-/**
- * What screen readers hear the content is: the album's count, or the kind of media; nothing for text and for content
- * whose own description says what it is (rich messages' blocks, paid posts, giveaways).
- */
-private fun ItemInputs.contentLabel(content: MessageContent): UiText? =
-    when {
-        album.isNotEmpty() -> albumLabel(album)
-        content.describesItself -> null
-        else -> contentKindText(content)
-    }
 
 private val MessageContent.describesItself: Boolean
     get() =

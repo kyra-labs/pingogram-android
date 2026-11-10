@@ -239,6 +239,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
 
     private companion object {
         const val CHANNEL = PaidPostSamples.CHANNEL
+
         // Telegram's message ids are multiples of 2^20, which a paid post's media ids rely on (richMediaId).
         const val MESSAGE = 10L shl 20
         const val WINNERS_MESSAGE = 11L shl 20

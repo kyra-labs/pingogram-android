@@ -97,3 +97,11 @@ private fun ItemInputs.winnerAvatars(content: MessageContent.GiveawayWinners): I
                 placeholderIcon = if (user == null || user.isDeleted) UiR.drawable.ic_person_filled else null,
             )
         }.toImmutableList()
+
+/** The chats the content names and shows: a giveaway's participating channels, the boosted chat first. */
+internal fun chatIdsOf(content: MessageContent): List<Long> =
+    when (content) {
+        is MessageContent.Giveaway -> content.parameters.chatIds
+        is MessageContent.GiveawayWinners -> listOf(content.boostedChatId)
+        else -> emptyList()
+    }

@@ -82,58 +82,71 @@ internal fun GiveawayInfoContent(
         )
         Text(
             text =
-                remember(
-                    sheet.prize,
-                    sheet.winnerCount,
-                    locale,
-                ) { resources.prizeLine(sheet.prize, sheet.winnerCount, locale) },
+                remember(sheet.prize, sheet.winnerCount, locale) {
+                    resources.prizeLine(sheet.prize, sheet.winnerCount, locale)
+                },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
-        when (val state = sheet.state) {
-            GiveawayInfoState.Loading -> {
-                Box(Modifier.fillMaxWidth().padding(spacing.large), contentAlignment = Alignment.Center) {
-                    DelayedLoadingIndicator()
-                }
-            }
-
-            is GiveawayInfoState.Loaded -> {
-                val lines = remember(state, locale) { resources.infoLines(state, locale) }
-                lines.forEach { line ->
-                    Text(text = line, style = MaterialTheme.typography.bodyLarge.userContent)
-                }
-            }
-
-            is GiveawayInfoState.Failed -> {
-                Text(
-                    text = stringResource(R.string.giveaway_info_error),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = errorText(state.error),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
+        InfoState(sheet.state)
         Text(
             text = stringResource(R.string.giveaway_info_note),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
-        ) {
-            if (sheet.state is GiveawayInfoState.Failed) {
-                TextButton(onClick = { onEvent(GiveawayEvent.RetryInfo) }, shapes = ButtonDefaults.shapes()) {
-                    Text(stringResource(R.string.giveaway_info_retry))
-                }
+        SheetButtons(failed = sheet.state is GiveawayInfoState.Failed, onEvent = onEvent)
+    }
+}
+
+/** A [DelayedLoadingIndicator] while it loads, what TDLib knows, or why it failed. */
+@Composable
+private fun InfoState(state: GiveawayInfoState) {
+    val resources = LocalResources.current
+    val locale = LocalConfiguration.current.locales[0]
+    when (state) {
+        GiveawayInfoState.Loading -> {
+            Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large), contentAlignment = Alignment.Center) {
+                DelayedLoadingIndicator()
             }
-            TextButton(onClick = { onEvent(GiveawayEvent.DismissInfo) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.giveaway_info_close), textAlign = TextAlign.Center)
+        }
+
+        is GiveawayInfoState.Loaded -> {
+            val lines = remember(state, locale) { resources.infoLines(state, locale) }
+            lines.forEach { line -> Text(text = line, style = MaterialTheme.typography.bodyLarge.userContent) }
+        }
+
+        is GiveawayInfoState.Failed -> {
+            Text(
+                text = stringResource(R.string.giveaway_info_error),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = errorText(state.error),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+/** "Try again" after a failure, and "Close", at the end. */
+@Composable
+private fun SheetButtons(
+    failed: Boolean,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small, Alignment.End),
+    ) {
+        if (failed) {
+            TextButton(onClick = { onEvent(GiveawayEvent.RetryInfo) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.giveaway_info_retry))
             }
+        }
+        TextButton(onClick = { onEvent(GiveawayEvent.DismissInfo) }, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.giveaway_info_close), textAlign = TextAlign.Center)
         }
     }
 }
@@ -160,75 +173,67 @@ private fun android.content.res.Resources.infoLines(
     locale: Locale,
 ): List<String> =
     when (val info = state.info) {
-        is GiveawayInfo.Ongoing -> {
-            listOfNotNull(
-                if (info.isEnded) {
-                    getString(R.string.giveaway_info_ended)
-                } else {
-                    null
-                },
-                when (val status = info.status) {
-                    GiveawayParticipantStatus.Eligible -> {
-                        getString(R.string.giveaway_info_eligible)
-                    }
-
-                    GiveawayParticipantStatus.Participating -> {
-                        getString(R.string.giveaway_info_participating)
-                    }
-
-                    is GiveawayParticipantStatus.AlreadyWasMember -> {
-                        getString(R.string.giveaway_info_was_member, giveawayDateText(status.joinedChatDate, locale))
-                    }
-
-                    is GiveawayParticipantStatus.Administrator -> {
-                        getString(
-                            R.string.giveaway_info_admin,
-                            state.chatTitle ?: getString(R.string.giveaway_channel_unknown),
-                        )
-                    }
-
-                    is GiveawayParticipantStatus.DisallowedCountry -> {
-                        getString(R.string.giveaway_info_country, countriesText(listOf(status.userCountryCode), locale))
-                    }
-                },
-            )
-        }
-
-        is GiveawayInfo.Completed -> {
-            listOfNotNull(
-                getString(
-                    R.string.giveaway_info_completed_date,
-                    giveawayDateText(info.actualWinnersSelectionDate, locale),
-                ),
-                when {
-                    info.wasRefunded -> {
-                        getString(R.string.giveaway_refunded)
-                    }
-
-                    info.isWinner && info.wonStarCount > 0 -> {
-                        getString(R.string.giveaway_info_won_stars, giveawayNumber(info.wonStarCount, locale))
-                    }
-
-                    info.isWinner -> {
-                        getString(R.string.giveaway_info_won_premium, info.giftCode)
-                    }
-
-                    else -> {
-                        getString(R.string.giveaway_info_lost)
-                    }
-                },
-                if (!info.wasRefunded && info.winnerCount > 0) {
-                    getQuantityString(
-                        R.plurals.giveaway_info_activated,
-                        info.winnerCount,
-                        info.activationCount,
-                        info.winnerCount,
-                    )
-                } else {
-                    null
-                },
-            )
-        }
+        is GiveawayInfo.Ongoing -> ongoingLines(info, state.chatTitle, locale)
+        is GiveawayInfo.Completed -> completedLines(info, locale)
     }
+
+/** Whether the draw is over, and whether the user takes part or why not. */
+private fun android.content.res.Resources.ongoingLines(
+    info: GiveawayInfo.Ongoing,
+    chatTitle: String?,
+    locale: Locale,
+): List<String> =
+    listOfNotNull(
+        getString(R.string.giveaway_info_ended).takeIf { info.isEnded },
+        when (val status = info.status) {
+            GiveawayParticipantStatus.Eligible -> {
+                getString(R.string.giveaway_info_eligible)
+            }
+
+            GiveawayParticipantStatus.Participating -> {
+                getString(R.string.giveaway_info_participating)
+            }
+
+            is GiveawayParticipantStatus.AlreadyWasMember -> {
+                getString(R.string.giveaway_info_was_member, giveawayDateText(status.joinedChatDate, locale))
+            }
+
+            is GiveawayParticipantStatus.Administrator -> {
+                getString(R.string.giveaway_info_admin, chatTitle ?: getString(R.string.giveaway_channel_unknown))
+            }
+
+            is GiveawayParticipantStatus.DisallowedCountry -> {
+                getString(R.string.giveaway_info_country, countriesText(listOf(status.userCountryCode), locale))
+            }
+        },
+    )
+
+/** When the winners were picked, whether the user won, and how many took their prize. */
+private fun android.content.res.Resources.completedLines(
+    info: GiveawayInfo.Completed,
+    locale: Locale,
+): List<String> =
+    listOfNotNull(
+        getString(R.string.giveaway_info_completed_date, giveawayDateText(info.actualWinnersSelectionDate, locale)),
+        when {
+            info.wasRefunded -> {
+                getString(R.string.giveaway_refunded)
+            }
+
+            info.isWinner && info.wonStarCount > 0 -> {
+                getString(R.string.giveaway_info_won_stars, giveawayNumber(info.wonStarCount, locale))
+            }
+
+            info.isWinner -> {
+                getString(R.string.giveaway_info_won_premium, info.giftCode)
+            }
+
+            else -> {
+                getString(R.string.giveaway_info_lost)
+            }
+        },
+        getQuantityString(R.plurals.giveaway_info_activated, info.winnerCount, info.activationCount, info.winnerCount)
+            .takeIf { !info.wasRefunded && info.winnerCount > 0 },
+    )
 
 internal const val GIVEAWAY_INFO_TEST_TAG = "giveaway_info"

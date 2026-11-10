@@ -82,7 +82,7 @@ sealed interface GiveawayInfo {
         val winnerCount: Int,
         /** How many winners took their prize already. */
         val activationCount: Int,
-        /** The user's gift code for Telegram Premium, if they won it; empty otherwise. Pingogram shows it, never applies it. */
+        /** The user's gift code for Telegram Premium, if they won it; empty otherwise. Shown, never applied. */
         val giftCode: String,
         /** The Telegram Stars the user won, if any. */
         val wonStarCount: Long,

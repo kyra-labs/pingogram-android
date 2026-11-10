@@ -70,8 +70,6 @@
     <string name="giveaway_open_winner">Open the profile of %1$s</string>
     <!-- The details sheet. -->
     <string name="giveaway_info_title">About this giveaway</string>
-    <!-- %1$s is a date and time. -->
-    <string name="giveaway_info_ongoing_date">Winners are picked on %1$s.</string>
     <string name="giveaway_info_ended">The draw is over. Telegram is picking the winners.</string>
     <string name="giveaway_info_eligible">Join the participating channels to take part.</string>
     <string name="giveaway_info_participating">You\'re taking part.</string>

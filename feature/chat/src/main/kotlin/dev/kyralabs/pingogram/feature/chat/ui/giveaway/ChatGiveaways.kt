@@ -5,7 +5,6 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.GiveawayInfo
 import dev.kyralabs.pingogram.core.domain.model.GiveawayParticipantStatus
-import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
@@ -14,8 +13,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.GiveawayEvent
 import dev.kyralabs.pingogram.feature.chat.ui.findById
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -32,12 +31,12 @@ import kotlinx.coroutines.withTimeoutOrNull
  * info loaded again. Runs in [scope], the view model's, which cancels a load with it; the sheet's state is kept out of
  * `ChatUiState`, like the poll voters'.
  */
+@Suppress("LongParameterList") // What giveaways reach, as the other parts of ChatViewModel.
 internal class ChatGiveaways(
     private val chatId: Long,
     private val repository: GiveawayRepository,
     private val chats: ChatRepository,
-    private val messageOf: (messageId: Long) -> Message?,
-    private val history: Flow<ChatHistory>,
+    private val history: SharedFlow<ChatHistory>,
     private val savedState: SavedStateHandle,
     private val scope: CoroutineScope,
     private val onEffect: (ChatEffect) -> Unit,
@@ -70,8 +69,13 @@ internal class ChatGiveaways(
     }
 
     private fun openInfo(messageId: Long) {
+        val message =
+            history.replayCache
+                .firstOrNull()
+                ?.messages
+                ?.findById(messageId)
         val sheet =
-            when (val content = messageOf(messageId)?.content) {
+            when (val content = message?.content) {
                 is MessageContent.Giveaway -> GiveawayInfoSheet(messageId, content.prize, content.winnerCount)
                 is MessageContent.GiveawayWinners -> GiveawayInfoSheet(messageId, content.prize, content.winnerCount)
                 else -> null

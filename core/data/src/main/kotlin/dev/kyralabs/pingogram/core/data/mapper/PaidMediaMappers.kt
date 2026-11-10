@@ -22,3 +22,15 @@ internal fun TdApi.PaidMedia.toPaidMediaItem(): PaidMediaItem =
         is TdApi.PaidMediaVideo -> PaidMediaItem.Video(video.toVideo(), cover?.toPhoto(), startTimestamp)
         else -> PaidMediaItem.Unsupported
     }
+
+/**
+ * Paid posts and giveaways; null for any other content, and for a giveaway whose prize is of a kind a newer TDLib
+ * added, which cannot be worded and stays unsupported.
+ */
+internal fun TdApi.MessageContent.toOfferContent(): MessageContent? =
+    when (this) {
+        is TdApi.MessagePaidMedia -> toPaidMedia()
+        is TdApi.MessageGiveaway -> toGiveaway()
+        is TdApi.MessageGiveawayWinners -> toGiveawayWinners()
+        else -> null
+    }

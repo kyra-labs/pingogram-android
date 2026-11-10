@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import dev.kyralabs.pingogram.core.domain.model.GiveawayParameters
 import dev.kyralabs.pingogram.core.domain.model.GiveawayPrize
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
@@ -55,22 +56,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.toPluralCount
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.winnersWonText
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** What a tap in a giveaway's bubble asks for; the bubble turns it into the event of its message. */
-internal sealed interface GiveawayAction {
-    /** "Learn more": the details sheet. */
-    data object LearnMore : GiveawayAction
-
-    /** A participating channel's chip. */
-    data class OpenChat(
-        val chatId: Long,
-    ) : GiveawayAction
-
-    /** A winner's tile. */
-    data class OpenWinner(
-        val userId: Long,
-    ) : GiveawayAction
-}
-
 /**
  * A giveaway a channel runs (`REQUIREMENTS.md` FR-C4, the owner's board 3; `docs/DESIGN_SYSTEM.md` §6 "Giveaways"),
  * padded in the bubble, `mediaMaxWidth` wide: the prize card (`tertiaryContainer`: "GIVEAWAY PRIZE", "3 ×" in the
@@ -86,8 +71,6 @@ internal fun MessageGiveaway(
     ui: GiveawayUi = GiveawayUi(),
     onAction: (GiveawayAction) -> Unit = {},
 ) {
-    val parameters = content.parameters
-    val locale = LocalConfiguration.current.locales[0]
     Column(
         modifier = modifier.width(MaterialTheme.sizes.mediaMaxWidth),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
@@ -106,155 +89,61 @@ internal fun MessageGiveaway(
                 }
             }
         }
-        Column(
-            modifier = Modifier.semantics(mergeDescendants = true) {},
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-        ) {
-            SectionLabel(R.string.giveaway_winners_date, colors)
-            Text(
-                text =
-                    remember(parameters.winnersSelectionDate, locale) {
-                        giveawayDateText(parameters.winnersSelectionDate, locale)
-                    },
-                color = colors.content,
-                style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
-            )
-            val channels = parameters.chatIds.size
-            val who = if (parameters.onlyNewMembers) R.plurals.giveaway_who_new else R.plurals.giveaway_who_all
-            Text(
-                text = pluralStringResource(who, channels),
-                color = colors.secondaryContent,
-                style = MaterialTheme.typography.bodySmall,
-            )
-            if (parameters.countryCodes.isNotEmpty()) {
-                val countries =
-                    remember(parameters.countryCodes, locale) { countriesText(parameters.countryCodes, locale) }
-                Text(
-                    text = stringResource(R.string.giveaway_countries, countries),
-                    color = colors.secondaryContent,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            if (parameters.prizeDescription.isNotBlank()) {
-                Text(
-                    text = stringResource(R.string.giveaway_also, parameters.prizeDescription),
-                    color = colors.content,
-                    style = MaterialTheme.typography.bodyMedium.userContent,
-                )
-            }
-        }
+        DrawDetails(content.parameters, colors)
         LearnMoreButton(colors, onClick = { onAction(GiveawayAction.LearnMore) })
     }
 }
 
-/**
- * The winners of a giveaway (`docs/DESIGN_SYSTEM.md` §6 "Giveaways"), padded in the bubble: a trophy badge in the
- * bubble's accent, "Giveaway winners" over "3 people won Telegram Premium for 3 months", the winners as tiles (avatar
- * and name, three to a row) that open their profiles, what nobody claimed, and "Learn more".
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class) // MaterialShapes
+/** When the winners are picked, who takes part, from which countries, and what else the channel gives away. */
 @Composable
-internal fun MessageGiveawayWinners(
-    content: MessageContent.GiveawayWinners,
-    modifier: Modifier = Modifier,
-    colors: BubbleColors = MaterialTheme.pingogramColors.incomingBubble,
-    ui: GiveawayUi = GiveawayUi(),
-    onAction: (GiveawayAction) -> Unit = {},
+private fun DrawDetails(
+    parameters: GiveawayParameters,
+    colors: BubbleColors,
 ) {
-    val resources = LocalResources.current
     val locale = LocalConfiguration.current.locales[0]
     Column(
-        modifier = modifier.width(MaterialTheme.sizes.mediaMaxWidth),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
     ) {
-        Row(
-            modifier = Modifier.semantics(mergeDescendants = true) {},
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(MaterialTheme.sizes.avatarSmall)
-                        .background(colors.accent, MaterialShapes.Cookie9Sided.toShape()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_emoji_events),
-                    contentDescription = null,
-                    modifier = Modifier.size(MaterialTheme.sizes.avatarBadge),
-                    tint = colors.onAccent,
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
-                Text(
-                    text = stringResource(R.string.giveaway_winners_title),
-                    color = colors.content,
-                    style = MaterialTheme.typography.titleMediumEmphasized,
-                )
-                Text(
-                    text =
-                        remember(
-                            content,
-                            locale,
-                        ) { resources.winnersWonText(content.winnerCount, content.prize, locale) },
-                    color = colors.secondaryContent,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+        SectionLabel(R.string.giveaway_winners_date, colors)
+        Text(
+            text =
+                remember(parameters.winnersSelectionDate, locale) {
+                    giveawayDateText(parameters.winnersSelectionDate, locale)
+                },
+            color = colors.content,
+            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+        )
+        val who = if (parameters.onlyNewMembers) R.plurals.giveaway_who_new else R.plurals.giveaway_who_all
+        SecondaryLine(pluralStringResource(who, parameters.chatIds.size), colors)
+        if (parameters.countryCodes.isNotEmpty()) {
+            val countries = remember(parameters.countryCodes, locale) { countriesText(parameters.countryCodes, locale) }
+            SecondaryLine(stringResource(R.string.giveaway_countries, countries), colors)
         }
-        when {
-            content.wasRefunded -> {
-                SecondaryNote(R.string.giveaway_refunded, colors)
-            }
-
-            ui.winners.isEmpty() -> {
-                SecondaryNote(R.string.giveaway_winners_private, colors)
-            }
-
-            else -> {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                    maxItemsInEachRow = WINNERS_PER_ROW,
-                ) {
-                    ui.winners.forEach { winner ->
-                        WinnerTile(
-                            winner = winner,
-                            colors = colors,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onAction(GiveawayAction.OpenWinner(winner.id)) },
-                        )
-                    }
-                }
-            }
-        }
-        if (content.unclaimedPrizeCount > 0) {
+        if (parameters.prizeDescription.isNotBlank()) {
             Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.giveaway_unclaimed,
-                        content.unclaimedPrizeCount,
-                        content.unclaimedPrizeCount,
-                    ),
-                color = colors.secondaryContent,
-                style = MaterialTheme.typography.bodySmall,
+                text = stringResource(R.string.giveaway_also, parameters.prizeDescription),
+                color = colors.content,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
         }
-        LearnMoreButton(colors, onClick = { onAction(GiveawayAction.LearnMore) })
     }
+}
+
+@Composable
+internal fun SecondaryLine(
+    text: String,
+    colors: BubbleColors,
+) {
+    Text(text = text, color = colors.secondaryContent, style = MaterialTheme.typography.bodySmall)
 }
 
 /** The prize on a gold card: the gift badge, "GIVEAWAY PRIZE", the count large beside the prize, and for how long. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class) // MaterialShapes
 @Composable
 private fun PrizeCard(
     prize: GiveawayPrize,
     winnerCount: Int,
 ) {
-    val locale = LocalConfiguration.current.locales[0]
-    val onCard = MaterialTheme.colorScheme.onTertiaryContainer
     Row(
         modifier =
             Modifier
@@ -265,78 +154,82 @@ private fun PrizeCard(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(MaterialTheme.sizes.headlineBadge)
-                    .background(MaterialTheme.colorScheme.tertiary, MaterialShapes.Sunny.toShape()),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(UiR.drawable.ic_redeem),
-                contentDescription = null,
-                modifier = Modifier.size(MaterialTheme.sizes.avatarExtraSmall),
-                tint = MaterialTheme.colorScheme.onTertiary,
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
-            Text(
-                text = stringResource(R.string.giveaway_prize_kicker).uppercase(locale),
-                color = onCard,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                Text(
-                    text =
-                        when (prize) {
-                            is GiveawayPrize.Premium -> {
-                                stringResource(R.string.giveaway_prize_times, winnerCount)
-                            }
+        PrizeBadge()
+        PrizeTexts(prize, winnerCount)
+    }
+}
 
-                            is GiveawayPrize.Stars -> {
-                                remember(
-                                    prize,
-                                    locale,
-                                ) { giveawayNumber(prize.starCount, locale) }
-                            }
-                        },
-                    color = onCard,
-                    style =
-                        MaterialTheme.experimentalTypography.displaySmallCondensed.copy(
-                            fontFeatureSettings = "tnum",
-                        ),
-                )
-                Text(
-                    text =
-                        stringResource(
-                            when (prize) {
-                                is GiveawayPrize.Premium -> R.string.giveaway_prize_premium
-                                is GiveawayPrize.Stars -> R.string.giveaway_prize_stars
-                            },
-                        ),
-                    modifier = Modifier.padding(bottom = MaterialTheme.spacing.extraSmall),
-                    color = onCard,
-                    style = MaterialTheme.typography.titleSmallEmphasized,
-                )
+/** The gift symbol on a `Sunny` badge in `tertiary`. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class) // MaterialShapes
+@Composable
+private fun PrizeBadge() {
+    Box(
+        modifier =
+            Modifier
+                .size(MaterialTheme.sizes.headlineBadge)
+                .background(MaterialTheme.colorScheme.tertiary, MaterialShapes.Sunny.toShape()),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_redeem),
+            contentDescription = null,
+            modifier = Modifier.size(MaterialTheme.sizes.avatarExtraSmall),
+            tint = MaterialTheme.colorScheme.onTertiary,
+        )
+    }
+}
+
+/** "GIVEAWAY PRIZE", "3 ×" beside "Telegram Premium" (or the Telegram Stars), and "for 3 months". */
+@Composable
+private fun PrizeTexts(
+    prize: GiveawayPrize,
+    winnerCount: Int,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val onCard = MaterialTheme.colorScheme.onTertiaryContainer
+    val amount =
+        when (prize) {
+            is GiveawayPrize.Premium -> stringResource(R.string.giveaway_prize_times, winnerCount)
+            is GiveawayPrize.Stars -> remember(prize, locale) { giveawayNumber(prize.starCount, locale) }
+        }
+    val name =
+        when (prize) {
+            is GiveawayPrize.Premium -> R.string.giveaway_prize_premium
+            is GiveawayPrize.Stars -> R.string.giveaway_prize_stars
+        }
+    val detail =
+        when (prize) {
+            is GiveawayPrize.Premium -> {
+                pluralStringResource(R.plurals.giveaway_premium_months, prize.monthCount, prize.monthCount)
             }
-            Text(
-                text =
-                    when (prize) {
-                        is GiveawayPrize.Premium -> {
-                            pluralStringResource(R.plurals.giveaway_premium_months, prize.monthCount, prize.monthCount)
-                        }
 
-                        is GiveawayPrize.Stars -> {
-                            pluralStringResource(R.plurals.giveaway_stars_among, winnerCount, winnerCount)
-                        }
-                    },
+            is GiveawayPrize.Stars -> {
+                pluralStringResource(R.plurals.giveaway_stars_among, winnerCount, winnerCount)
+            }
+        }
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
+        Text(
+            text = stringResource(R.string.giveaway_prize_kicker).uppercase(locale),
+            color = onCard,
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                text = amount,
                 color = onCard,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.experimentalTypography.displaySmallCondensed.copy(fontFeatureSettings = "tnum"),
+            )
+            Text(
+                text = stringResource(name),
+                modifier = Modifier.padding(bottom = MaterialTheme.spacing.extraSmall),
+                color = onCard,
+                style = MaterialTheme.typography.titleSmallEmphasized,
             )
         }
+        Text(text = detail, color = onCard, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -351,7 +244,12 @@ private fun ChannelChip(
     AssistChip(
         onClick = onClick,
         label = {
-            Text(text = name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LocalTextStyleUserContent())
+            Text(
+                text = name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge.userContent,
+            )
         },
         leadingIcon = {
             Avatar(
@@ -369,45 +267,6 @@ private fun ChannelChip(
 }
 
 @Composable
-private fun LocalTextStyleUserContent() = MaterialTheme.typography.labelLarge.userContent
-
-/** A winner: avatar over name on a tile in the bubble's block color, which opens their profile. */
-@Composable
-private fun WinnerTile(
-    winner: SenderAvatar,
-    colors: BubbleColors,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val name = winner.name.resolve()
-    val label = stringResource(R.string.giveaway_open_winner, name)
-    Column(
-        modifier =
-            modifier
-                .background(colors.block, MaterialTheme.shapes.large)
-                .clickable(onClickLabel = label, onClick = onClick)
-                .padding(MaterialTheme.spacing.small),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-    ) {
-        Avatar(
-            photo = winner.photo,
-            name = name,
-            id = winner.id,
-            size = MaterialTheme.sizes.avatarRow,
-            placeholderIcon = winner.placeholderIcon,
-        )
-        Text(
-            text = name,
-            color = colors.blockContent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelLarge.userContent,
-        )
-    }
-}
-
-@Composable
 private fun SectionLabel(
     text: Int,
     colors: BubbleColors,
@@ -416,15 +275,7 @@ private fun SectionLabel(
 }
 
 @Composable
-private fun SecondaryNote(
-    text: Int,
-    colors: BubbleColors,
-) {
-    Text(text = stringResource(text), color = colors.secondaryContent, style = MaterialTheme.typography.bodyMedium)
-}
-
-@Composable
-private fun LearnMoreButton(
+internal fun LearnMoreButton(
     colors: BubbleColors,
     onClick: () -> Unit,
 ) {
@@ -442,15 +293,12 @@ private fun LearnMoreButton(
     }
 }
 
-private const val WINNERS_PER_ROW = 3
-
 @Preview
 @Composable
 private fun MessageGiveawayPreview() {
     PingogramTheme(dynamicColor = false) {
         Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
             MessageGiveaway(PaidPostSamples.giveaway(), ui = PaidPostSamples.giveawayUi())
-            MessageGiveawayWinners(PaidPostSamples.giveawayWinners(), ui = PaidPostSamples.giveawayUi())
         }
     }
 }

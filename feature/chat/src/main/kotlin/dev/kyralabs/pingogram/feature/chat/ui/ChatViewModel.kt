@@ -922,12 +922,6 @@ class ChatViewModel internal constructor(
             chatId = chatId,
             repository = giveawayRepository,
             chats = chatRepository,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
             history = history,
             savedState = savedStateHandle,
             scope = viewModelScope,

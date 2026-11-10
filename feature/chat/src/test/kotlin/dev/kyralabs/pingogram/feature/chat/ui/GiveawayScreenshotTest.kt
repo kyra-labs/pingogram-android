@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
  * loaded once over (the user won), loading and failed. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@Config(qualifiers = COMPACT)
+@Config(qualifiers = COMPACT_TALL)
 class GiveawayScreenshotTest(
     private val stateName: String,
 ) {

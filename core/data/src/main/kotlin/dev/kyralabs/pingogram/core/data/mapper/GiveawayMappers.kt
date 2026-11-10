@@ -10,7 +10,7 @@ import org.drinkless.tdlib.TdApi
 
 // Giveaways (td_api.tl messageGiveaway, messageGiveawayWinners, giveawayInfo); dates are Unix time in seconds.
 
-/** A giveaway a channel runs; null for a prize of a kind a newer TDLib added, which [toMessageContent] keeps unsupported. */
+/** A giveaway a channel runs; null for a prize of a kind a newer TDLib added, which stays unsupported. */
 internal fun TdApi.MessageGiveaway.toGiveaway(): MessageContent.Giveaway? =
     MessageContent.Giveaway(
         parameters = parameters.toGiveawayParameters(),

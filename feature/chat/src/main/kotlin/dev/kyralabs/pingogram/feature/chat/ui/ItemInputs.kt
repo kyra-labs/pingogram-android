@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 
 /**
  * Everything one item is made from: the message and its place, what it refers to (its sender, the members a service
@@ -172,14 +173,6 @@ internal fun memberIdsOf(content: MessageContent): List<Long> =
         else -> {
             emptyList()
         }
-    }
-
-/** The chats the content names and shows: a giveaway's participating channels, the boosted chat first. */
-internal fun chatIdsOf(content: MessageContent): List<Long> =
-    when (content) {
-        is MessageContent.Giveaway -> content.parameters.chatIds
-        is MessageContent.GiveawayWinners -> listOf(content.boostedChatId)
-        else -> emptyList()
     }
 
 /**
