@@ -106,6 +106,18 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `a contact without a birthday offers to suggest one, in a picker titled so`() {
+        setScreen(state = ProfilePreviewData.withBirthdaySuggestion)
+        val action = string(R.string.profile_birthday_suggest_action)
+
+        scrollTo(action)
+        composeRule.onNode(hasText(action) and hasClickAction()).performClick()
+
+        composeRule.onNodeWithText(string(R.string.profile_birthday_suggest_confirm)).assertIsDisplayed()
+        assertEquals(emptyList<ProfileEvent>(), events)
+    }
+
+    @Test
     fun `no note row on a profile without one`() {
         setScreen()
 

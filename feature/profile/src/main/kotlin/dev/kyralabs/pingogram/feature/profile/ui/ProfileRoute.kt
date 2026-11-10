@@ -144,18 +144,12 @@ internal fun ProfileEffects(
                         ""
                     }
 
-                    is ProfileEffect.BlockChanged -> {
-                        val name = effect.name.resolve(resources).bidiIsolated()
-                        val text = if (effect.blocked) R.string.profile_blocked else R.string.profile_unblocked
-                        resources.getString(text, name).bidiIsolated()
-                    }
-
-                    ProfileEffect.Reported -> {
-                        resources.getString(R.string.profile_reported)
-                    }
-
-                    ProfileEffect.ReportNeedsMessages -> {
-                        resources.getString(R.string.profile_report_needs_messages)
+                    is ProfileEffect.BlockChanged,
+                    is ProfileEffect.BirthdaySuggested,
+                    ProfileEffect.Reported,
+                    ProfileEffect.ReportNeedsMessages,
+                    -> {
+                        resources.notice(effect)
                     }
                 }
             if (message.isNotEmpty()) {
@@ -166,6 +160,31 @@ internal fun ProfileEffects(
         }
     }
 }
+
+/** What a snackbar says after blocking, suggesting a birthday or reporting; empty for the other effects. */
+private fun Resources.notice(effect: ProfileEffect): String =
+    when (effect) {
+        is ProfileEffect.BlockChanged -> {
+            val name = effect.name.resolve(this).bidiIsolated()
+            getString(if (effect.blocked) R.string.profile_blocked else R.string.profile_unblocked, name).bidiIsolated()
+        }
+
+        is ProfileEffect.BirthdaySuggested -> {
+            getString(R.string.profile_birthday_suggested, effect.name.bidiIsolated()).bidiIsolated()
+        }
+
+        ProfileEffect.Reported -> {
+            getString(R.string.profile_reported)
+        }
+
+        ProfileEffect.ReportNeedsMessages -> {
+            getString(R.string.profile_report_needs_messages)
+        }
+
+        else -> {
+            ""
+        }
+    }
 
 /** What a snackbar says after copying, before Android 13. */
 private fun Resources.copied(what: CopiedText): String =
