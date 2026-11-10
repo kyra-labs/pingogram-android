@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
@@ -27,6 +31,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +63,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import kotlinx.coroutines.flow.drop
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -144,9 +153,13 @@ private fun NoteField(
     val resources = LocalResources.current
     val showDetails = isDebuggable()
     val error = editor.error?.let { errorMessage(resources, it, showDetails) }
+    val text = rememberTextFieldState(editor.text)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(text) {
+        snapshotFlow { text.text.toString() }.drop(1).collect { currentOnEvent(ProfileEvent.NoteChanged(it)) }
+    }
     TextField(
-        value = editor.text,
-        onValueChange = { onEvent(ProfileEvent.NoteChanged(it)) },
+        state = text,
         modifier = Modifier.fillMaxWidth(),
         enabled = !editor.isSaving,
         textStyle = MaterialTheme.typography.bodyLarge.userContent,
@@ -154,9 +167,20 @@ private fun NoteField(
         supportingText = { NoteSupport(error, editor.length) },
         isError = error != null,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        minLines = NOTE_MIN_LINES,
-        maxLines = NOTE_MAX_LINES,
+        inputTransformation = NoteLength,
+        lineLimits = TextFieldLineLimits.MultiLine(NOTE_MIN_LINES, NOTE_MAX_LINES),
     )
+}
+
+/** Keeps the note within [ProfileLimits.NOTE_LENGTH_MAX] characters (code points, as Telegram counts them). */
+private object NoteLength : InputTransformation {
+    override fun TextFieldBuffer.transformInput() {
+        val typed = asCharSequence()
+        val max = ProfileLimits.NOTE_LENGTH_MAX
+        if (Character.codePointCount(typed, 0, typed.length) > max) {
+            replace(Character.offsetByCodePoints(typed, 0, max), length, "")
+        }
+    }
 }
 
 /** Why the save failed, if it did, at the start; the counter at the end. */
