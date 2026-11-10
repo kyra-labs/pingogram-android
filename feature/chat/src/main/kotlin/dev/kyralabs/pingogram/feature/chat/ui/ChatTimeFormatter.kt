@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.DateTimeFormat
+import dev.kyralabs.pingogram.core.domain.model.DateTimePrecision
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -11,6 +14,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The times of the conversation (`REQUIREMENTS.md` FR-C1, FR-C8, §6.4) in [zone] and [locale], with the platform's
@@ -29,7 +33,7 @@ internal class ChatTimeFormatter(
     val zone: ZoneId,
     val locale: Locale,
     val is24HourClock: Boolean,
-    patterns: TimePatterns,
+    private val patterns: TimePatterns,
 ) {
     private val time =
         patterns.formatter(if (is24HourClock) "Hm" else "hm") { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
@@ -107,6 +111,67 @@ internal class ChatTimeFormatter(
         }
     }
 
+    /** The formatters of date entities by their skeleton, made as texts need them. */
+    private val dateTimeFormatters = ConcurrentHashMap<String, DateTimeFormatter>()
+
+    /**
+     * A date in a message ([TextEntityType.DateTime]) as its reader should see it, as of [now]: in [zone] and
+     * [locale], with as much of the date and the time as its [DateTimeFormat] asks for, or relative to now ("in 3
+     * days") where the platform words that; null where the format shows nothing, or none is given, which keeps the
+     * text as its sender wrote it.
+     */
+    fun dateTimeText(
+        entity: TextEntityType.DateTime,
+        now: Instant,
+    ): String? =
+        when (val format = entity.format) {
+            null -> {
+                null
+            }
+
+            DateTimeFormat.Relative -> {
+                patterns.relativeTime(entity.unixTime - now.epochSecond, locale) ?: fullDateTime(entity.unixTime)
+            }
+
+            is DateTimeFormat.Absolute -> {
+                skeletonOf(format)?.let { skeleton -> formatterOf(skeleton).format(zoned(entity.unixTime)) }
+            }
+        }
+
+    /** [epochSeconds] (Unix time) with its weekday, date and time, as the date sheet shows it. */
+    fun fullDateTime(epochSeconds: Long): String =
+        formatterOf(FULL_DATE_TIME + clockSkeleton()).format(zoned(epochSeconds))
+
+    private fun zoned(epochSeconds: Long) = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+
+    private fun clockSkeleton(seconds: Boolean = false): String =
+        (if (is24HourClock) "Hm" else "hm") + if (seconds) "s" else ""
+
+    /** The skeleton of [format]'s parts; null where it shows neither the date nor the time. */
+    private fun skeletonOf(format: DateTimeFormat.Absolute): String? {
+        val weekday = if (format.showDayOfWeek) "EEEE" else ""
+        val date =
+            when (format.date) {
+                DateTimePrecision.None -> weekday
+                DateTimePrecision.Short -> "yMd" + (if (format.showDayOfWeek) "EEE" else "")
+                DateTimePrecision.Long -> "yMMMMd$weekday"
+            }
+        val time =
+            when (format.time) {
+                DateTimePrecision.None -> ""
+                DateTimePrecision.Short -> clockSkeleton()
+                DateTimePrecision.Long -> clockSkeleton(seconds = true)
+            }
+        return (date + time).ifEmpty { null }
+    }
+
+    private fun formatterOf(skeleton: String): DateTimeFormatter =
+        dateTimeFormatters.getOrPut(skeleton) {
+            patterns.formatter(
+                skeleton,
+            ) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT) }
+        }
+
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(
         zone: ZoneId,
@@ -124,6 +189,11 @@ internal class ChatTimeFormatter(
         } catch (_: IllegalArgumentException) {
             fallback().withLocale(locale)
         }
+
+    private companion object {
+        /** The weekday, the month in full, the day and the year, before the time of day. */
+        const val FULL_DATE_TIME = "yMMMMEEEEd"
+    }
 }
 
 /** A moment as [ChatTimeFormatter.dayAndTime] words it: its [time] of day, after its day. */
