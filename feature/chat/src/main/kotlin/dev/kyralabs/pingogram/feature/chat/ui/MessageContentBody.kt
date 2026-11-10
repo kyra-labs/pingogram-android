@@ -325,24 +325,8 @@ private fun InfoContent(
             MessageExpired(content, modifier, colors)
         }
 
-        is MessageContent.Giveaway -> {
-            MessageGiveaway(
-                content = content,
-                modifier = modifier,
-                colors = colors,
-                ui = bubble.giveaway ?: GiveawayUi(),
-                onAction = { action -> onEvent(action.eventFor(bubble.id)) },
-            )
-        }
-
-        is MessageContent.GiveawayWinners -> {
-            MessageGiveawayWinners(
-                content = content,
-                modifier = modifier,
-                colors = colors,
-                ui = bubble.giveaway ?: GiveawayUi(),
-                onAction = { action -> onEvent(action.eventFor(bubble.id)) },
-            )
+        is MessageContent.Giveaway, is MessageContent.GiveawayWinners -> {
+            GiveawayContent(content, bubble, colors, onEvent, modifier)
         }
 
         MessageContent.Unsupported -> {
@@ -352,6 +336,24 @@ private fun InfoContent(
         else -> {
             Unit
         }
+    }
+}
+
+/** A giveaway or its winners ([content]), their taps as [GiveawayEvent]s and [ChatEvent]s. */
+@Composable
+private fun GiveawayContent(
+    content: MessageContent,
+    bubble: ChatItem.Bubble,
+    colors: BubbleColors,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier,
+) {
+    val ui = bubble.giveaway ?: GiveawayUi()
+    val onAction = { action: GiveawayAction -> onEvent(action.eventFor(bubble.id)) }
+    when (content) {
+        is MessageContent.Giveaway -> MessageGiveaway(content, modifier, colors, ui, onAction)
+        is MessageContent.GiveawayWinners -> MessageGiveawayWinners(content, modifier, colors, ui, onAction)
+        else -> Unit
     }
 }
 
