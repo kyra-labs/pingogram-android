@@ -29,8 +29,8 @@ import dev.kyralabs.pingogram.feature.settings.R
 
 /**
  * The [birthdate] in a row ending in an "Add" or "Change" [TextButton] that opens `core:ui`'s [BirthdateDialog] (the
- * dialog's "Remove" removes it), then, with a birthday, "Who can see it" with [privacy]'s choice, which opens the privacy
- * setting ([onOpenPrivacy]). The change is saved with the rest of the page ([onPick] only edits it).
+ * dialog's "Remove" removes it), then, with a birthday, "Who can see it" with [privacy]'s choice, which opens the
+ * privacy setting ([onOpenPrivacy]). The change is saved with the rest of the page ([onPick] only edits it).
  */
 @Composable
 internal fun BirthdaySection(
