@@ -9,10 +9,12 @@ import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
 import dev.kyralabs.pingogram.core.domain.model.StoryPrivacy
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.StoryFixtures.story
+import dev.kyralabs.pingogram.core.testing.StoryFixtures.videoContent
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,7 +35,8 @@ import java.io.File
 
 /**
  * Posting the user's stories: what `postStory` gets for photos, videos and privacy, the caption on the first, long
- * videos cut first, copies deleted once posted or never taken, and whether the user may post.
+ * videos cut first, copies deleted once posted or never taken, whether the user may post, and the uploads followed
+ * until posted, failed or cancelled.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibStoryPostRepositoryTest {
@@ -214,7 +217,70 @@ class TdlibStoryPostRepositoryTest {
             assertEquals(Outcome.Success(14), repository().closeFriendCount())
         }
 
+    @Test
+    fun `follows each story's upload until TDLib posted it`() =
+        runTest {
+            client.on(TdApi.PostStory::class) {
+                TdResult.Success(story(id = -1, posterChatId = SELF, content = videoContent(file = uploading(0))))
+            }
+            val repository = repository()
+            repository.post(listOf(video("b.mp4", 14)), FormattedText.Empty, StoryPrivacy.Everyone)
+            runCurrent()
+            assertEquals(listOf(StoryUpload(-1, 0, SIZE)), repository.uploads.value)
+
+            client.emit(TdApi.UpdateFile(uploading(SIZE / 2)))
+            runCurrent()
+            assertEquals(listOf(StoryUpload(-1, SIZE / 2, SIZE)), repository.uploads.value)
+
+            client.emit(TdApi.UpdateStoryPostSucceeded(story(id = 5, posterChatId = SELF), -1))
+            runCurrent()
+            assertTrue(repository.uploads.value.isEmpty())
+        }
+
+    @Test
+    fun `a story TDLib gave up on says why, and cancelling deletes it and its copy`() =
+        runTest {
+            client.on(TdApi.DeleteStory::class, TdResult.Success(TdApi.Ok()))
+            val item = photo("a.jpg")
+            val repository = repository()
+            repository.post(listOf(item), FormattedText.Empty, StoryPrivacy.Everyone)
+
+            client.emit(
+                TdApi.UpdateStoryPostFailed(
+                    story(id = -1, posterChatId = SELF),
+                    TdApi.Error(400, "STORY_SEND_FLOOD"),
+                    TdApi.CanPostStoryResultOk(0),
+                ),
+            )
+            runCurrent()
+            assertTrue(
+                repository.uploads.value
+                    .single()
+                    .failure != null,
+            )
+
+            assertEquals(Outcome.Success(Unit), repository.cancel(listOf(-1)))
+            runCurrent()
+
+            val deleted = client.sentOf<TdApi.DeleteStory>().single()
+            assertEquals(SELF to -1, deleted.storyPosterChatId to deleted.storyId)
+            assertTrue(repository.uploads.value.isEmpty())
+            assertFalse(File(item.path).exists())
+        }
+
+    /** The story video's file, [uploaded] bytes of [SIZE] sent. */
+    private fun uploading(uploaded: Long) =
+        TdApi.File(
+            FILE,
+            SIZE,
+            SIZE,
+            TdApi.LocalFile("", false, false, false, true, 0, SIZE, SIZE),
+            TdApi.RemoteFile("", "", true, false, uploaded),
+        )
+
     private companion object {
         const val SELF = 99L
+        const val FILE = 31
+        const val SIZE = 2_000_000L
     }
 }
