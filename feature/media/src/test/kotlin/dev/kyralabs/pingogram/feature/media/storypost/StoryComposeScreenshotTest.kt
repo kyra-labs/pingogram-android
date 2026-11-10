@@ -22,8 +22,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of composing a story (board 10b, `docs/DESIGN_SYSTEM.md` §6 "New story") on a compact phone, light and
- * dark: to close friends with a bold caption, blocked by the week's limit, posting. To close friends also true black,
- * high contrast, right to left, a 700 dp window and 200% font. Inspection mode, so Coil shows solid colors.
+ * dark: to close friends with a bold caption, to three people picked, blocked by the week's limit, posting. To close
+ * friends also true black, high contrast, right to left, a 700 dp window and 200% font. Inspection mode, so Coil shows
+ * solid colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -97,6 +98,7 @@ class StoryComposeScreenshotTest(
         internal val STATES =
             mapOf(
                 "closeFriends" to StoryComposePreviewData.closeFriends,
+                "selectedPeople" to StoryComposePreviewData.selectedPeople,
                 "weeklyLimit" to StoryComposePreviewData.weeklyLimit,
                 "posting" to StoryComposePreviewData.posting,
             )

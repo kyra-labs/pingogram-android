@@ -85,6 +85,11 @@ internal sealed interface NewStoryEvent {
         val audience: StoryAudience,
     ) : NewStoryEvent
 
+    /** The story is for these people alone, picked in "Selected people". */
+    data class SetSelected(
+        val userIds: List<Long>,
+    ) : NewStoryEvent
+
     data object Post : NewStoryEvent
 
     data object Close : NewStoryEvent
