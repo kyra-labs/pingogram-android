@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.GiveawayInfo
 import dev.kyralabs.pingogram.core.domain.model.GiveawayParticipantStatus
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
@@ -87,7 +89,7 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
             val winners = viewModel.bubble(WINNERS_MESSAGE).giveaway
 
             assertEquals(listOf(CHANNEL_CHAT, PaidPostSamples.OTHER_CHANNEL), giveaway?.channels?.map { it.id })
-            assertEquals("Android Devs Weekly", res(giveaway!!.channels[0].name))
+            assertEquals(UiText.Plain("Android Devs Weekly"), giveaway!!.channels[0].name)
             assertEquals(
                 listOf(
                     PaidPostSamples.WINNER_RAVI,
@@ -98,7 +100,10 @@ class ChatGiveawaysTest : ChatViewModelHarness() {
                     it.id
                 },
             )
-            assertEquals(listOf("Ravi", "Meera", "Winner"), winners!!.winners.map { res(it.name) })
+            assertEquals(
+                listOf(UiText.Plain("Ravi"), UiText.Plain("Meera"), res(R.string.giveaway_winner_unknown)),
+                winners!!.winners.map { it.name },
+            )
             assertTrue(giveaways.requests.isEmpty())
         }
 
