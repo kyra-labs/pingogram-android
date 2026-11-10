@@ -364,4 +364,10 @@
     <string name="login_code_resend_fragment">Get the code on Fragment</string>
     <!-- %1$s: the remaining time, e.g. "42 seconds". -->
     <string name="login_code_resend_in">You can get a new code in %1$s.</string>
+    <!-- The birthday picker (Edit profile, suggesting a birthday to a contact): its default title. -->
+    <string name="birthday_title">Birthday</string>
+    <string name="birthday_show_year">Show the year</string>
+    <string name="birthday_remove">Remove</string>
+    <string name="birthday_cancel">Cancel</string>
+    <string name="birthday_done">Done</string>
 </resources>
