@@ -151,7 +151,12 @@ class ChecklistScreenTest {
         mark.action()
 
         assertTrue(description, description.contains(string(R.string.checklist_kicker)))
-        assertTrue(description, description.contains(string(R.string.checklist_progress, 2, 5)))
+        assertTrue(
+            description,
+            description.contains(
+                RuntimeEnvironment.getApplication().resources.getQuantityString(R.plurals.checklist_progress, 5, 2, 5),
+            ),
+        )
         assertTrue(
             description,
             description.contains(

@@ -44,7 +44,7 @@ internal fun checklistDescription(
         listOf(
             resources.getString(R.string.checklist_kicker),
             list.title.text,
-            resources.getString(R.string.checklist_progress, list.doneCount, list.tasks.size),
+            resources.getQuantityString(R.plurals.checklist_progress, list.tasks.size, list.doneCount, list.tasks.size),
         ) + tasks
     ).joinToString(", ")
 }

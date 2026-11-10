@@ -3,8 +3,11 @@
 <resources>
     <!-- The small label over a checklist's title, shown in capitals. -->
     <string name="checklist_kicker">Checklist</string>
-    <!-- Under the tasks: %1$d tasks of %2$d are done. -->
-    <string name="checklist_progress">%1$d of %2$d done</string>
+    <!-- Under the tasks: %1$d tasks of %2$d are done; the quantity is the total. -->
+    <plurals name="checklist_progress">
+        <item quantity="one">%1$d of %2$d done</item>
+        <item quantity="other">%1$d of %2$d done</item>
+    </plurals>
     <!-- The button under a checklist that opens the field for a new task; also "Checklist" in the attach menu. -->
     <string name="checklist_add_task">Add task</string>
     <string name="attach_checklist">Checklist</string>

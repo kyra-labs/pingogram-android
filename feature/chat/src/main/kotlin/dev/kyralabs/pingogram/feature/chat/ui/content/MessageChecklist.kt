@@ -39,6 +39,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -272,7 +273,7 @@ private fun ChecklistProgress(
             amplitude = { 0f },
         )
         Text(
-            text = stringResource(R.string.checklist_progress, done, total),
+            text = pluralStringResource(R.plurals.checklist_progress, total, done, total),
             color = colors.secondaryContent,
             style = MaterialTheme.typography.labelMediumEmphasized.copy(fontFeatureSettings = "tnum"),
         )
