@@ -115,7 +115,7 @@ internal object PaidPostSamples {
     const val WINNERS = 3
     const val MONTHS = 3
 
-    /** 2026-12-01 18:00 UTC. */
+    /** 2026-12-06 18:00 UTC, a Sunday. */
     const val DRAW_DATE = 1_796_580_000L
     private const val LANDSCAPE = 1280
     private const val PORTRAIT = 960
