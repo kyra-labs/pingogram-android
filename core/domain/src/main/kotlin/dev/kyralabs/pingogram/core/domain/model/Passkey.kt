@@ -13,8 +13,8 @@ data class Passkey(
 )
 
 /**
- * What the user's password manager answered for a new passkey, as TDLib's `addLoginPasskey` takes it: the client data as
- * its JSON text ([clientData]) and the authenticator's attestation object.
+ * What the user's password manager answered for a new passkey, as TDLib's `addLoginPasskey` takes it: the client data
+ * as its JSON text ([clientData]) and the authenticator's attestation object.
  */
 class PasskeyRegistration(
     val clientData: String,

@@ -7,9 +7,9 @@ import kotlinx.collections.immutable.ImmutableList
 
 /**
  * The passkeys that may sign in to the user's account (Privacy and security → Passkeys, `docs/adr/0037-passkeys.md`).
- * Nothing is cached: each call asks Telegram through TDLib, which announces no changes to them. Creating the passkey is
- * the user's password manager's, through Android's Credential Manager: [creationOptions] gives it Telegram's request and
- * [add] hands its answer back.
+ * Nothing is cached: each call asks Telegram through TDLib, which announces no changes to them. Creating the passkey
+ * is the user's password manager's, through Android's Credential Manager: [creationOptions] gives it Telegram's request
+ * and [add] hands its answer back.
  */
 interface PasskeyRepository {
     /** The account's passkeys, in Telegram's order. */
