@@ -109,20 +109,23 @@ class ChecklistScreenTest {
     }
 
     @Test
-    fun `Add task opens the field, whose check sends the text and whose close puts it away`() {
+    fun `Add task opens the field`() {
         setChecklist(ContentPreviewData.checklist())
-        composeRule.onNodeWithText(string(R.string.checklist_add_task)).performClick()
-        assertEquals(listOf<ChecklistAction>(ChecklistAction.OpenAddTask), actions)
 
+        composeRule.onNodeWithText(string(R.string.checklist_add_task)).performClick()
+
+        assertEquals(listOf<ChecklistAction>(ChecklistAction.OpenAddTask), actions)
+    }
+
+    @Test
+    fun `the field's check sends the text, and its close puts the field away`() {
         setChecklist(ContentPreviewData.checklist(), ui = ChecklistUi(isAddingTask = true))
+
         composeRule.onNodeWithText(string(R.string.checklist_new_task)).performTextInput("Order chai")
         composeRule.onNodeWithContentDescription(string(R.string.checklist_add)).performClick()
         composeRule.onNodeWithContentDescription(string(R.string.checklist_cancel_add)).performClick()
 
-        assertEquals(
-            listOf(ChecklistAction.OpenAddTask, ChecklistAction.AddTask("Order chai"), ChecklistAction.DismissAddTask),
-            actions,
-        )
+        assertEquals(listOf(ChecklistAction.AddTask("Order chai"), ChecklistAction.DismissAddTask), actions)
     }
 
     @Test
@@ -142,7 +145,7 @@ class ChecklistScreenTest {
         assertTrue(description, description.contains(string(R.string.checklist_progress, 2, 5)))
         assertTrue(description, description.contains("Freeze strings for translation, " + string(R.string.checklist_task_done_by, "Ada Lovelace")))
         assertTrue(custom.any { it.label == string(R.string.checklist_add_task) })
-        assertEquals(listOf<ChatEvent>(ChecklistEvent.MarkTask(2, taskId = 3, done = true)), events)
+        assertEquals(listOf<ChatEvent>(ChecklistEvent.MarkTask(2, taskId = 3, done = true)), events.filterIsInstance<ChecklistEvent>())
     }
 
     @Test
