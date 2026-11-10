@@ -1,6 +1,10 @@
 package dev.kyralabs.pingogram.feature.chats.ui.stories
 
+import android.content.res.Resources
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +34,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -46,8 +55,10 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.isLargeFontScale
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The chats with active stories above the chat list, as Telegram's apps show them, built from Material parts as
@@ -62,6 +73,7 @@ internal fun StoryRingsRow(
     onOpen: (chatId: Long) -> Unit,
     onNearEnd: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddStory: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val motionScheme = MaterialTheme.motionScheme
@@ -75,7 +87,8 @@ internal fun StoryRingsRow(
         items(rings, key = { it.chatId }, contentType = { STORY_RING }) { ring ->
             StoryRingItem(
                 ring = ring,
-                onClick = { onOpen(ring.chatId) },
+                onClick = { if (ring.isMine && ring.storyCount == 0) onAddStory() else onOpen(ring.chatId) },
+                onAddStory = onAddStory.takeIf { ring.isMine },
                 modifier =
                     Modifier.animateItem(
                         fadeInSpec = motionScheme.defaultEffectsSpec(),
@@ -108,6 +121,7 @@ internal fun StoryRingItem(
     ring: StoryRing,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddStory: (() -> Unit)? = null,
 ) {
     val sizes = MaterialTheme.sizes
     val spacing = MaterialTheme.spacing
@@ -116,19 +130,20 @@ internal fun StoryRingItem(
     val name = if (ring.isMine) resources.getString(R.string.stories_your_story) else ring.name
     val ringColor = if (ring.hasUnread) colors.primary else colors.outlineVariant
     val ringWidth = sizes.avatarRing
+    // The user's own ring without a story: no ring, an add badge, and a tap posts one.
+    val adds = ring.isMine && ring.storyCount == 0
+    val addLabel = resources.getString(R.string.stories_add_story)
     Column(
         modifier =
             modifier
                 .width(sizes.avatarMedium + spacing.large)
                 .clip(MaterialTheme.shapes.large)
-                .clickable(role = Role.Button, onClick = onClick)
+                .combinedClickable(role = Role.Button, onLongClick = onAddStory, onClick = onClick)
                 .clearAndSetSemantics {
-                    val count = resources.getQuantityString(R.plurals.stories_count, ring.storyCount, ring.storyCount)
-                    val seen =
-                        resources.getString(
-                            if (ring.hasUnread) R.string.stories_a11y_unseen else R.string.stories_a11y_seen,
-                        )
-                    contentDescription = spokenList(resources, listOf(name, count, seen))
+                    contentDescription = ringDescription(resources, ring, name, adds)
+                    if (onAddStory != null && !adds) {
+                        customActions = listOf(CustomAccessibilityAction(addLabel) { onAddStory().let { true } })
+                    }
                 }.padding(vertical = spacing.extraSmall),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
@@ -137,10 +152,11 @@ internal fun StoryRingItem(
             modifier =
                 Modifier
                     .size(sizes.avatarMedium)
-                    .drawBehind { drawRing(ringColor, ringWidth.toPx()) },
+                    .drawBehind { if (!adds) drawRing(ringColor, ringWidth.toPx()) },
             contentAlignment = Alignment.Center,
         ) {
             Avatar(photo = ring.photo, name = ring.name, id = ring.chatId, size = sizes.avatarRow)
+            if (adds) AddBadge(Modifier.align(Alignment.BottomEnd))
         }
         Text(
             text = name,
@@ -151,6 +167,40 @@ internal fun StoryRingItem(
             // A second line at large font scales, where one line of the ring's width cuts most names.
             maxLines = if (isLargeFontScale()) 2 else 1,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** "Ada, 3 stories, not seen"; for the user's own ring without a story, "Your story, Add a story". */
+private fun ringDescription(
+    resources: Resources,
+    ring: StoryRing,
+    name: String,
+    adds: Boolean,
+): String {
+    if (adds) return spokenList(resources, listOf(name, resources.getString(R.string.stories_add_story)))
+    val count = resources.getQuantityString(R.plurals.stories_count, ring.storyCount, ring.storyCount)
+    val seen = resources.getString(if (ring.hasUnread) R.string.stories_a11y_unseen else R.string.stories_a11y_seen)
+    return spokenList(resources, listOf(name, count, seen))
+}
+
+/** The add symbol on a `primary` circle, ringed in the row's `surface`, at the avatar's bottom end. Decorative. */
+@Composable
+private fun AddBadge(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        modifier
+            .size(MaterialTheme.sizes.avatarBadge)
+            .border(MaterialTheme.sizes.avatarRing, colors.surface, CircleShape)
+            .clip(CircleShape)
+            .background(colors.primary),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(UiR.drawable.ic_add),
+            contentDescription = null,
+            tint = colors.onPrimary,
+            modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
         )
     }
 }
@@ -184,6 +234,10 @@ internal object StoryRingsPreviewData {
             StoryRing(chatId = 5, name = "Alan Turing", photo = null, hasUnread = false, storyCount = 1),
             StoryRing(chatId = 6, name = "Margaret Hamilton", photo = null, hasUnread = false, storyCount = 4),
         )
+
+    /** The user without a story of their own: their ring offers to post one. */
+    val withoutOwnStory =
+        rings.toPersistentList().set(0, StoryRing(1, "Me", null, hasUnread = false, storyCount = 0, isMine = true))
 }
 
 internal class StoryRingsPreviewStates : PreviewParameterProvider<ImmutableList<StoryRing>> {

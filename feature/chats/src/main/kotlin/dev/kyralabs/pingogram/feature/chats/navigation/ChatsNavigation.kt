@@ -44,7 +44,7 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  * chat's id, and its "New chat" buttons call [onOpenNewChat]; [openChatId]'s row looks and reads as selected. The
  * "New chat" floating action button grows into the New chat screen ([newChatScreen]) while the destination provides
  * its animated visibility scope. A story ring above the chats calls [onOpenStory] with its chat, for the stories viewer
- * (`StoryViewerRoute`, `:feature:media`).
+ * (`StoryViewerRoute`, `:feature:media`), and the user's own ring [onNewStory], for posting a story (`NewStoryRoute`).
  *
  * A folder tab's long press opens its menu: "Mark all as read", and, where [onEditFolder] is given, "Edit folder" first
  * ("Edit folders" on "All chats"), which calls it with the folder's id, or null for "All chats": the hook a folder
@@ -62,6 +62,7 @@ fun ChatListPane(
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenStory: (chatId: Long) -> Unit = {},
+    onNewStory: () -> Unit = {},
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
@@ -72,6 +73,7 @@ fun ChatListPane(
         onOpenNewChat = onOpenNewChat,
         modifier = modifier,
         onOpenStory = onOpenStory,
+        onNewStory = onNewStory,
         openChatId = openChatId,
         onEditFolder = onEditFolder,
         headerActions = headerActions,

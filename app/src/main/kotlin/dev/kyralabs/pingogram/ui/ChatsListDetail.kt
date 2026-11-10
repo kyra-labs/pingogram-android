@@ -106,7 +106,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   rotation and process death.
  * - **New chat**: the list's "New chat" button, at the bottom end of the list pane, opens [onOpenNewChat], pushed
  *   above the whole layout as the archive is.
- * - **Stories**: a story ring above the chats opens [onOpenStory], the stories viewer full screen above the whole
+ * - **Stories**: the user's own ring opens [onNewStory], posting a story; a story ring above the chats opens
+ *   [onOpenStory], the stories viewer full screen above the whole
  *   layout, as the media viewer is.
  * - **Folders**: a folder tab's "Edit folder" opens [onEditFolder] with its folder (null for "All chats"), pushed
  *   above the whole layout as the archive is.
@@ -137,6 +138,7 @@ internal fun ChatsListDetail(
     onOpenChatInfo: (chatId: Long) -> Unit = {},
     onEditContact: (userId: Long) -> Unit = {},
     onOpenStory: (chatId: Long) -> Unit = {},
+    onNewStory: () -> Unit = {},
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
@@ -197,6 +199,7 @@ internal fun ChatsListDetail(
                                 onOpenChat = { keyboard.opening(it, twoPanes) { opener.openChat(it) } },
                                 onOpenNewChat = onOpenNewChat,
                                 onOpenStory = onOpenStory,
+                                onNewStory = onNewStory,
                                 openChatId = shownChatId,
                                 onEditFolder = onEditFolder,
                                 headerActions = headerActions,
