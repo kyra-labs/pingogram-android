@@ -138,7 +138,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                 users.setUsers(user(ME).copy(isPremium = true), user(ADA))
                 secretChats.setSecretChats(ChatFixtures.secretChat())
 
-                val private = showing(privateChat(), history())
+                val private = showing(chat(), history())
                 val secret = showing(chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)), history())
 
                 assertTrue(AttachOption.Checklist in private.options)
