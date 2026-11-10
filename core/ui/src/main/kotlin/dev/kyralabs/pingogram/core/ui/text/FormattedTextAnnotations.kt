@@ -76,8 +76,10 @@ fun FormattedText.toAnnotatedString(
                 ) {
                     addLink(LinkAnnotation.Url(url, linkStyles, onLinkClick), range.start, range.end)
                 }
-                if (shown) addMention(range, text, mentionStyles, onMentionClick)
-                if (shown) addDateTime(range, mentionStyles, onMentionClick)
+                if (shown) {
+                    addMention(range, text, mentionStyles, onMentionClick)
+                    addDateTime(range, mentionStyles, onMentionClick)
+                }
                 addCustomEmoji(range.type, range.start, range.end)
             }
             addDecorations(ranges)
@@ -129,29 +131,6 @@ fun mentionTarget(link: LinkAnnotation): MentionTarget? {
 
 private const val MENTION_TAG = "mention:"
 
-/**
- * The moment a tapped date in a message names ([TextEntityType.DateTime]), in Unix time; null for other links. Dates
- * are [LinkAnnotation.Clickable]s handed the mention listener, which tells them apart with this.
- */
-fun dateTimeOf(link: LinkAnnotation): Long? =
-    ((link as? LinkAnnotation.Clickable)?.tag)
-        ?.takeIf { it.startsWith(DATE_TIME_TAG) }
-        ?.removePrefix(DATE_TIME_TAG)
-        ?.toLongOrNull()
-
-private const val DATE_TIME_TAG = "date-time:"
-
-/** A date as a link in the mention style, which [listener] gets with its moment ([dateTimeOf]). */
-private fun AnnotatedString.Builder.addDateTime(
-    range: EntityRange,
-    styles: TextLinkStyles,
-    listener: LinkInteractionListener?,
-) {
-    val type = range.type as? TextEntityType.DateTime ?: return
-    if (listener == null) return
-    addLink(LinkAnnotation.Clickable(DATE_TIME_TAG + type.unixTime, styles, listener), range.start, range.end)
-}
-
 private const val MENTION_NAME_TAG = "mention-name:"
 
 /** A mention's [LinkAnnotation.Clickable] over [range] of [text], with [onMentionClick]; nothing for other entities. */
@@ -175,7 +154,7 @@ private fun TextEntityType.mentionTag(part: String): String? =
     }
 
 /** An entity's [start] (inclusive) and [end] (exclusive) within the text. */
-private class EntityRange(
+internal class EntityRange(
     val start: Int,
     val end: Int,
     val type: TextEntityType,

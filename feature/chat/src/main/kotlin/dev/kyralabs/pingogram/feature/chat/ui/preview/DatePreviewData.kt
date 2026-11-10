@@ -19,6 +19,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData.today
 internal object DatePreviewData {
     private const val ADA = 2L
 
+    /** 2026-12-06 18:00 UTC, a Sunday. */
+    private const val MOMENT = 1_796_580_000L
+
     /** Ada's invitation with a date and a relative one, and the user's answer. */
     val messages: ChatUiState
         get() =
@@ -36,7 +39,7 @@ internal object DatePreviewData {
     /** The sheet of the date of [messages]' answer. */
     val sheet =
         DateTimeSheet(
-            unixTime = 1_796_580_000,
+            unixTime = MOMENT,
             text = "Sunday, December 6, 2026, 6:00 PM",
             zoneName = "Central European Time",
         )
@@ -57,7 +60,7 @@ internal object DatePreviewData {
             status = if (isOutgoing) OutgoingStatus.Read else null,
             entities =
                 listOf(
-                    TextEntity(text.indexOf(date), date.length, TextEntityType.DateTime(1_796_580_000, format = null)),
+                    TextEntity(text.indexOf(date), date.length, TextEntityType.DateTime(MOMENT, format = null)),
                 ),
         )
 }

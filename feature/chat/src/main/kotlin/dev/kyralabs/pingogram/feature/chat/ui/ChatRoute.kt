@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.os.Build
-import android.provider.CalendarContract
 import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.dates.addToCalendar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
@@ -479,27 +479,6 @@ internal fun Context.copyPlainText(text: String) {
  * Opens [location] in a maps app with a `geo:` link; the snackbar's text if no app on the device handles one, else
  * nothing.
  */
-
-/**
- * The calendar app at a new event starting at [unixTime] (Unix time), for the user to save or not; no permission is
- * needed. The snackbar's text where no calendar app is on the device, else nothing.
- */
-private fun Context.addToCalendar(
-    unixTime: Long,
-    resources: Resources,
-): String =
-    try {
-        startActivity(
-            Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI)
-                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, unixTime * MILLIS_PER_SECOND),
-        )
-        ""
-    } catch (_: ActivityNotFoundException) {
-        resources.getString(R.string.date_time_no_calendar)
-    }
-
-private const val MILLIS_PER_SECOND = 1_000L
-
 private fun Context.openMap(
     location: ChatEffect.OpenLocation,
     resources: Resources,

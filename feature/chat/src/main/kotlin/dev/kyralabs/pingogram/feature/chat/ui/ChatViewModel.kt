@@ -915,7 +915,7 @@ class ChatViewModel internal constructor(
             describe = { unixTime ->
                 DateTimeSheet(
                     unixTime = unixTime,
-                    text = timeFormatter().fullDateTime(unixTime),
+                    text = timeFormatter().dates.full(unixTime),
                     zoneName = clock.zone().getDisplayName(TextStyle.FULL, locale()),
                 )
             },

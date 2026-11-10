@@ -22,8 +22,8 @@ internal fun FormattedText.withReaderDates(
     return replacingEntities { entity ->
         val date = entity.type as? TextEntityType.DateTime ?: return@replacingEntities null
         when {
-            date.format == DateTimeFormat.Relative && now == null -> formatter.fullDateTime(date.unixTime)
-            else -> formatter.dateTimeText(date, now ?: Instant.EPOCH)
+            date.format == DateTimeFormat.Relative && now == null -> formatter.dates.full(date.unixTime)
+            else -> formatter.dates.text(date, now ?: Instant.EPOCH)
         }
     }
 }

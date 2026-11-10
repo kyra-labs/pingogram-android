@@ -164,8 +164,8 @@ internal fun BubbleTheme.namesAbove(bubble: ChatItem.Bubble): Boolean =
 
 /**
  * The conversation's [BubbleResources] for [state]: its shortcuts and downloads, a tapped mention opening what it names
- * ([ChatEvent.OpenMention]) and a tapped date its sheet ([DateTimeEvent.Open]), and vivid or tinted group bubbles, as Appearance's "Group bubbles" and the group's size
- * say (§13.6).
+ * ([ChatEvent.OpenMention]) and a tapped date its sheet ([DateTimeEvent.Open]), and vivid or tinted group bubbles, as
+ * Appearance's "Group bubbles" and the group's size say (§13.6).
  */
 @Composable
 internal fun rememberChatBubbleResources(
