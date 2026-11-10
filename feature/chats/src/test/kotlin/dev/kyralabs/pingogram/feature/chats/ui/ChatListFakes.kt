@@ -213,7 +213,7 @@ class FakeUserRepository : UserRepository {
 
     override val users: Flow<ImmutableMap<Long, User>> = userMap
 
-    override fun user(id: Long): Flow<User?> = unused()
+    override fun user(id: Long): Flow<User?> = userMap.map { it[id] }
 
     override suspend fun getUser(id: Long): Outcome<User> = unused()
 }

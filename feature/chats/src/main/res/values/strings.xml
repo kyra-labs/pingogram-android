@@ -335,6 +335,26 @@
     <string name="create_not_added_ok">OK</string>
     <!-- Story rings above the chat list. -->
     <string name="stories_your_story">Your story</string>
+    <string name="stories_add_story">Add a story</string>
+    <!-- The user's own ring while their stories are being posted (board 10c): "Posting 62%". -->
+    <string name="stories_posting_percent">Posting %1$d%%</string>
+    <string name="stories_posting">Posting…</string>
+    <string name="stories_not_posted">Not posted</string>
+    <plurals name="stories_upload_title">
+        <item quantity="one">Posting your story</item>
+        <item quantity="other">Posting %1$d stories</item>
+    </plurals>
+    <plurals name="stories_upload_failed_title">
+        <item quantity="one">Your story wasn\'t posted</item>
+        <item quantity="other">%1$d stories weren\'t posted</item>
+    </plurals>
+    <!-- How much of the stories being posted is sent: "62% sent". -->
+    <string name="stories_upload_sent">%1$d%% sent</string>
+    <string name="stories_upload_waiting">Waiting to send</string>
+    <string name="stories_upload_note">Keep using Pingogram while it posts. Stopping deletes what isn\'t posted yet.</string>
+    <string name="stories_upload_stop">Stop posting</string>
+    <string name="stories_upload_remove">Remove</string>
+    <string name="stories_upload_view">View your story</string>
     <plurals name="stories_count">
         <item quantity="one">%d story</item>
         <item quantity="other">%d stories</item>

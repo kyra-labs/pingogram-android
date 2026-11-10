@@ -84,6 +84,8 @@ interface AccountRepositories {
 
     fun chatBoostRepository(): ChatBoostRepository
 
+    fun storyPostRepository(): StoryPostRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository

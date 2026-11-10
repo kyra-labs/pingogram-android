@@ -490,13 +490,30 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
 - **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
-  stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, not yet in `:app`'s
-  `NavHost`: it joins it with the composer), `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
+  stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
+  opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
+  `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
   (`PickStoryMedia`, the multiple picker for more than one place left) opens as the screen first shows, the camera app
   takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`), and every pick is
   copied into the upload cache as it arrives (`AttachmentRepository.prepare` as media; anything but a photo or video is
   deleted and refused). The items, their order and the shown one are in its saved state; the copies are deleted when
-  the screen closes or its view model is cleared, unless handed over to the composer (`handOver`).
+  the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
+  second step (`NewStoryStep`, in saved state): `StoryComposer`, a part of the view model, holds the caption
+  (`CaptionText`, copied from `feature:chat`'s composer with its entity edits and formatting transformation, as features
+  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`. "Selected people"
+  is a sheet with a view model of its own (`StoryPeopleSheet`, `StoryPeopleViewModel`: the contacts of
+  `ContactRepository`, people only, filtered on the device, the query and the picks in its saved state while it shows),
+  whose picks the composer keeps in its saved state and posts as `StoryPrivacy.Selected`.
+  Posting: `core:domain`'s `StoryPostRepository` (`TdlibStoryPostRepository`, `core:data`, account-scoped, no cache)
+  asks `canPostStory` of the user's Saved Messages chat (`StoryPostAbility`), counts the close friends
+  (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
+  first). A video longer than 60 s is cut first by `MediaStoryVideoCutter` (the platform's `MediaExtractor` and
+  `MediaMuxer`, at the key frames `storyVideoCuts` plans, nothing encoded again). Copies are deleted once TDLib reports
+  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's. Until then each
+  story TDLib took is followed (`StoryPostings`: its file's `updateFile`, `updateStoryPostFailed`) as
+  `StoryPostRepository.uploads`, which `cancel` stops (`deleteStory`, its copy deleted); `feature:chats`'
+  `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
+  them, with "Stop posting".
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
@@ -983,6 +1000,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecretChatRepository.createSecretChat` (`createNewSecretChat`, Secret chats above), profile photos through
   `UserProfileRepository.profilePhotos` (`getUserProfilePhotos`, paged), and a mention's `@username` through
   `SearchRepository.publicChat` (`searchPublicChat`), which the conversation uses too.
+- Contact notes (`docs/DESIGN_SYSTEM.md` §6 "Contact note"): the note the user keeps about a contact, which only they
+  see and Telegram keeps with their contacts, is `UserFullInfo.note` (td_api.tl `userFullInfo.note`), set with
+  `UserProfileRepository.setNote` (`setUserNote`, plain text of at most `ProfileLimits.NOTE_LENGTH_MAX`, 140,
+  characters). `ProfileViewModel` puts it last in the information rows of a contact (`ProfileInfo.note`) and holds its
+  dialog in `ProfileNote` (`noteEditor`, what is typed in the saved state); TDLib's `updateUserFullInfo` then shows the
+  new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
+  `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
+  The demo keeps notes on the phone (`DemoAccount`).
+- Birthday suggestions (`docs/DESIGN_SYSTEM.md` §6 "Birthday suggestions"): a contact without a birthday on their
+  profile (`UserFullInfo.birthdate` null) gets the offer (`ProfileInfo.birthdaySuggestion`), whose pick
+  `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
+  `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
+  `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
+  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`

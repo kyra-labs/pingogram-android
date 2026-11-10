@@ -133,6 +133,10 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
             ServiceAction.ContactRegistered
         }
 
+        is TdApi.MessageSuggestBirthdate -> {
+            birthdate?.let { ServiceAction.BirthdateSuggested(it.toBirthdate()) } ?: ServiceAction.Other
+        }
+
         is TdApi.MessageCustomServiceAction -> {
             ServiceAction.Custom(text)
         }
@@ -203,7 +207,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessagePremiumGiftCode::class.java,
         TdApi.MessageProximityAlertTriggered::class.java,
         TdApi.MessageRefundedUpgradedGift::class.java,
-        TdApi.MessageSuggestBirthdate::class.java,
         TdApi.MessageSuggestProfilePhoto::class.java,
         TdApi.MessageSuggestedPostApprovalFailed::class.java,
         TdApi.MessageSuggestedPostApproved::class.java,

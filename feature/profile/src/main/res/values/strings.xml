@@ -43,6 +43,38 @@
     <string name="profile_username_value">\@%1$s</string>
     <string name="profile_phone">Mobile</string>
     <string name="profile_birthday">Birthday</string>
+    <!-- The offer on a contact's profile without a birthday (board 16a): %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggest_title">No birthday on %1$s\'s profile</string>
+    <!-- %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggest_text">Suggest one. %1$s decides whether to keep it and who sees it.</string>
+    <!-- The button that opens the date picker, and the picker's title. -->
+    <string name="profile_birthday_suggest_action">Suggest a birthday</string>
+    <!-- The date picker's confirm button. -->
+    <string name="profile_birthday_suggest_confirm">Suggest</string>
+    <!-- A snackbar once Telegram sent the suggestion: %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggested">Birthday suggested to %1$s</string>
+    <!-- The label of the note the user keeps about a contact, on their profile and in its dialog. -->
+    <string name="profile_note">Note</string>
+    <!-- Between "Note" and "Only you see this" in the note row's supporting text. -->
+    <string name="profile_note_separator" translatable="false">·</string>
+    <!-- After "Note" in the note row: the note is private. -->
+    <string name="profile_note_private">Only you see this</string>
+    <!-- The note row of a contact without a note. -->
+    <string name="profile_note_add">Add a note</string>
+    <!-- Spoken by screen readers for what tapping the note row does. -->
+    <string name="profile_note_edit">Edit note</string>
+    <!-- The note dialog's title: %1$s is the contact's first name. -->
+    <string name="profile_note_title">Note about %1$s</string>
+    <string name="profile_note_text">Only you see this note. It stays with your contacts on all your devices.</string>
+    <!-- The note's character counter: %1$d characters typed of at most %2$d. -->
+    <string name="profile_note_counter">%1$d / %2$d</string>
+    <!-- Spoken by screen readers for the note's counter: %1$d characters typed of at most %2$d (the quantity). -->
+    <plurals name="profile_note_counter_description">
+        <item quantity="one">%1$d of %2$d character</item>
+        <item quantity="other">%1$d of %2$d characters</item>
+    </plurals>
+    <string name="profile_note_cancel">Cancel</string>
+    <string name="profile_note_save">Save</string>
     <!-- Spoken by screen readers for the button after a username. -->
     <string name="profile_share_username">Share link</string>
     <!-- Spoken by screen readers for the button after the phone number. -->

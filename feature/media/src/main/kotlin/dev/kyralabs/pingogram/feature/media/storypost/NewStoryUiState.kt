@@ -18,6 +18,7 @@ internal data class NewStoryUiState(
     val items: ImmutableList<StoryPick> = persistentListOf(),
     val selected: String? = null,
     val preparing: Int = 0,
+    val step: NewStoryStep = NewStoryStep.Pick,
 ) {
     /** How many more items the post takes. */
     val remaining: Int get() = (MAX_STORY_ITEMS - items.size - preparing).coerceAtLeast(0)
@@ -27,6 +28,9 @@ internal data class NewStoryUiState(
     /** The item the large preview shows: the selected one, else the first. */
     val shown: StoryPick? get() = items.firstOrNull { it.key == selected } ?: items.firstOrNull()
 }
+
+/** The screen's two steps: picking the items (board 10a), then composing the story (board 10b). */
+internal enum class NewStoryStep { Pick, Compose }
 
 /**
  * One picked item: a photo, or a video of [durationSeconds]. [image] is what shows for it, the photo itself or the
@@ -71,7 +75,22 @@ internal sealed interface NewStoryEvent {
         val to: Int,
     ) : NewStoryEvent
 
+    /** On to composing the story. */
     data object Next : NewStoryEvent
+
+    /** Back from composing to picking. */
+    data object Back : NewStoryEvent
+
+    data class SetAudience(
+        val audience: StoryAudience,
+    ) : NewStoryEvent
+
+    /** The story is for these people alone, picked in "Selected people". */
+    data class SetSelected(
+        val userIds: List<Long>,
+    ) : NewStoryEvent
+
+    data object Post : NewStoryEvent
 
     data object Close : NewStoryEvent
 }
@@ -95,8 +114,8 @@ internal sealed interface NewStoryEffect {
     /** A picked file is no photo or video Android can read, and cannot go into a story. */
     data object NotPostable : NewStoryEffect
 
-    /** The items, in their order, go on to the composer. */
-    data object Next : NewStoryEffect
+    /** TDLib took the stories, which it now uploads: the screen closes. */
+    data object Posted : NewStoryEffect
 
     data object Close : NewStoryEffect
 }

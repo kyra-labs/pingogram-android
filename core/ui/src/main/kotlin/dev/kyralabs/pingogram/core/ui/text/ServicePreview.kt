@@ -146,6 +146,10 @@ private class Actor(
                 UiText.resource(R.string.preview_contact_registered, name)
             }
 
+            is ServiceAction.BirthdateSuggested -> {
+                did(R.string.preview_you_suggested_birthday, R.string.preview_suggested_birthday)
+            }
+
             is ServiceAction.VideoChatInvited -> {
                 did(R.string.preview_you_invited_to_video_chat, R.string.preview_invited_to_video_chat)
             }

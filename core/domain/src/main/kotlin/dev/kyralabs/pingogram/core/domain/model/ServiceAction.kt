@@ -103,6 +103,16 @@ sealed interface ServiceAction {
     /** The sender, one of the user's contacts, joined Telegram. */
     data object ContactRegistered : ServiceAction
 
+    /**
+     * The sender suggested [birthdate] as the other user's birthday (td_api.tl `messageSuggestBirthdate`), which the
+     * receiver may keep on their profile. `toString()` leaves the date out.
+     */
+    data class BirthdateSuggested(
+        val birthdate: Birthdate,
+    ) : ServiceAction {
+        override fun toString() = "BirthdateSuggested(…)"
+    }
+
     /** A video chat starts at [startDate] (Unix seconds). */
     data class VideoChatScheduled(
         val startDate: Long,

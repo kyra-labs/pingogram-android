@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.storypost
 
+import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -10,12 +11,17 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
+import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
+import dev.kyralabs.pingogram.core.domain.model.StoryPrivacy
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.CAMERA_FILE
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.photo
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.video
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -23,7 +29,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,6 +43,7 @@ import kotlin.reflect.cast
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewStoryViewModelTest {
     private val repository = FakeAttachmentRepository()
+    private val posts = FakeStoryPostRepository()
 
     @BeforeEach
     fun setUp() {
@@ -49,7 +55,8 @@ class NewStoryViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(savedState: SavedStateHandle = SavedStateHandle()) = NewStoryViewModel(savedState, repository)
+    private fun TestScope.viewModel(savedState: SavedStateHandle = SavedStateHandle()) =
+        NewStoryViewModel(savedState, repository, posts, backgroundScope)
 
     @Test
     fun `opens the photo picker once, as the screen first shows`() =
@@ -240,33 +247,141 @@ class NewStoryViewModelTest {
         }
 
     @Test
-    fun `leaving the screen deletes the copies unless they were handed over`() =
+    fun `leaving the screen deletes the copies`() =
         runTest {
             val left = viewModel()
             left.onEvent(NewStoryEvent.Picked(listOf("a.jpg")))
             clear(left)
             assertEquals(listOf(photo("a.jpg")), repository.discarded)
-
-            val handedOver = viewModel()
-            handedOver.onEvent(NewStoryEvent.Picked(listOf("b.jpg")))
-            handedOver.handOver()
-            clear(handedOver)
-            assertEquals(listOf(photo("a.jpg")), repository.discarded)
         }
 
     @Test
-    fun `Next goes on only once every item is ready`() =
+    fun `Next goes on to composing only once every item is ready, and Back returns`() =
         runTest {
             val viewModel = viewModel(SavedStateHandle(mapOf("newStory.started" to true)))
-            viewModel.effects.test {
-                viewModel.onEvent(NewStoryEvent.Next)
-                expectNoEvents()
-                viewModel.onEvent(NewStoryEvent.Picked(listOf("a.jpg")))
-                viewModel.onEvent(NewStoryEvent.Next)
-                assertEquals(NewStoryEffect.Next, awaitItem())
-            }
-            assertNull(repository.discarded.firstOrNull())
+            viewModel.onEvent(NewStoryEvent.Next)
+            assertEquals(NewStoryStep.Pick, viewModel.uiState.value.step)
+
+            viewModel.onEvent(NewStoryEvent.Picked(listOf("a.jpg")))
+            viewModel.onEvent(NewStoryEvent.Next)
+            assertEquals(NewStoryStep.Compose, viewModel.uiState.value.step)
+
+            viewModel.onEvent(NewStoryEvent.Back)
+            assertEquals(NewStoryStep.Pick, viewModel.uiState.value.step)
+            assertTrue(repository.discarded.isEmpty())
         }
+
+    @Test
+    fun `composing asks whether the user may post and how many close friends they have`() =
+        runTest {
+            posts.ability = Outcome.Success(StoryPostAbility.WeeklyLimit(3_600))
+            val viewModel = composing()
+
+            val state = viewModel.composer.state.value
+            assertEquals(StoryPostAbility.WeeklyLimit(3_600), state.ability)
+            assertEquals(14, state.closeFriends)
+            assertFalse(state.canPost)
+        }
+
+    @Test
+    fun `posts the items with the caption to the audience chosen, then closes and keeps the copies`() =
+        runTest {
+            val viewModel = composing()
+            viewModel.composer.caption.state
+                .edit { append("  Kapu beach ") }
+            viewModel.onEvent(NewStoryEvent.SetAudience(StoryAudience.CloseFriends))
+
+            viewModel.effects.test {
+                viewModel.onEvent(NewStoryEvent.Post)
+                assertEquals(NewStoryEffect.Posted, awaitItem())
+            }
+
+            val post = posts.posts.single()
+            assertEquals(listOf(photo("a.jpg"), photo("b.jpg")), post.items)
+            assertEquals("Kapu beach", post.caption.text)
+            assertEquals(StoryPrivacy.CloseFriends, post.privacy)
+            clear(viewModel)
+            assertTrue(repository.discarded.isEmpty())
+        }
+
+    @Test
+    fun `a post that fails is said and leaves the copies the user's`() =
+        runTest {
+            posts.onPost = { Outcome.Failure(DomainError.Network) }
+            val viewModel = composing()
+
+            viewModel.effects.test {
+                viewModel.onEvent(NewStoryEvent.Post)
+                assertEquals(NewStoryEffect.Failed(DomainError.Network), awaitItem())
+            }
+            assertFalse(viewModel.composer.state.value.isPosting)
+            clear(viewModel)
+            assertEquals(listOf(photo("a.jpg"), photo("b.jpg")), repository.discarded)
+        }
+
+    @Test
+    fun `keeps the step, the caption and its formatting and the audience across process death`() =
+        runTest {
+            val savedState = SavedStateHandle(mapOf("newStory.started" to true))
+            val before = composing(savedState)
+            before.composer.caption.state
+                .edit { append("Kapu beach") }
+            before.composer.caption.toggle(TextEntityType.Bold, TextRange(0, 4))
+            before.onEvent(NewStoryEvent.SetAudience(StoryAudience.Contacts))
+            testScheduler.runCurrent()
+            androidx.compose.runtime.snapshots.Snapshot
+                .sendApplyNotifications()
+            testScheduler.runCurrent()
+
+            val after = viewModel(SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
+
+            assertEquals(NewStoryStep.Compose, after.uiState.value.step)
+            assertEquals(before.composer.caption.content, after.composer.caption.content)
+            assertEquals(StoryAudience.Contacts, after.composer.state.value.audience)
+        }
+
+    @Test
+    fun `posts to the people picked, and Selected waits for a pick`() =
+        runTest {
+            val viewModel = composing()
+            viewModel.onEvent(NewStoryEvent.SetAudience(StoryAudience.Selected))
+            assertEquals(StoryAudience.Everyone, viewModel.composer.state.value.audience)
+            viewModel.onEvent(NewStoryEvent.SetSelected(emptyList()))
+            assertEquals(StoryAudience.Everyone, viewModel.composer.state.value.audience)
+
+            viewModel.onEvent(NewStoryEvent.SetSelected(listOf(9L, 7L)))
+            assertEquals(StoryAudience.Selected, viewModel.composer.state.value.audience)
+            viewModel.effects.test {
+                viewModel.onEvent(NewStoryEvent.Post)
+                assertEquals(NewStoryEffect.Posted, awaitItem())
+            }
+
+            assertEquals(StoryPrivacy.Selected(persistentListOf(9L, 7L)), posts.posts.single().privacy)
+        }
+
+    @Test
+    fun `keeps the people picked across process death and another audience`() =
+        runTest {
+            val savedState = SavedStateHandle(mapOf("newStory.started" to true))
+            val before = composing(savedState)
+            before.onEvent(NewStoryEvent.SetSelected(listOf(8L)))
+            before.onEvent(NewStoryEvent.SetAudience(StoryAudience.Contacts))
+
+            val after = viewModel(SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
+
+            assertEquals(StoryAudience.Contacts, after.composer.state.value.audience)
+            assertEquals(listOf(8L), after.composer.state.value.selected)
+            after.onEvent(NewStoryEvent.SetAudience(StoryAudience.Selected))
+            assertEquals(StoryAudience.Selected, after.composer.state.value.audience)
+        }
+
+    /** A view model composing a story of two photos. */
+    private fun TestScope.composing(
+        savedState: SavedStateHandle = SavedStateHandle(mapOf("newStory.started" to true)),
+    ) = viewModel(savedState).apply {
+        onEvent(NewStoryEvent.Picked(listOf("a.jpg", "b.jpg")))
+        onEvent(NewStoryEvent.Next)
+    }
 
     /** Clears [viewModel] as leaving the screen does: through a [ViewModelStore]. */
     private fun clear(viewModel: NewStoryViewModel) {

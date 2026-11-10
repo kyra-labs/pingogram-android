@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -41,6 +42,8 @@ class ServiceActionMappersTest {
                 ),
                 TdApi.MessagePollOptionAdded(11, "a", TdApi.FormattedText("Piranesi", emptyArray())),
                 TdApi.MessagePollOptionDeleted(11, "b", TdApi.FormattedText("Klara", emptyArray())),
+                TdApi.MessageSuggestBirthdate(TdApi.Birthdate(10, 12, 0)),
+                TdApi.MessageSuggestBirthdate(TdApi.Birthdate(3, 6, 1994)),
             ).map { it.action() }
 
         assertEquals(
@@ -65,6 +68,8 @@ class ServiceActionMappersTest {
                 ServiceAction.ChecklistTasksAdded(9, count = 1),
                 ServiceAction.PollOptionAdded(11, "Piranesi"),
                 ServiceAction.PollOptionDeleted(11, "Klara"),
+                ServiceAction.BirthdateSuggested(Birthdate(10, 12, null)),
+                ServiceAction.BirthdateSuggested(Birthdate(3, 6, 1994)),
             ),
             actions,
         )
@@ -230,6 +235,7 @@ class ServiceActionMappersTest {
                 "MessageGame",
                 "MessageInvoice",
                 "MessageStory",
+                "MessageSuggestBirthdate",
                 "MessageRichMessage",
                 "MessageExpiredPhoto",
                 "MessageExpiredVideo",

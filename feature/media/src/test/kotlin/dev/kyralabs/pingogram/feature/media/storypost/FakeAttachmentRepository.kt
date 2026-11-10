@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -73,6 +74,13 @@ internal class FakeAttachmentRepository : AttachmentRepository {
     override suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = notHere()
+
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
         options: SendOptions,
         replyTo: ReplyTarget?,
     ): Outcome<Unit> = notHere()

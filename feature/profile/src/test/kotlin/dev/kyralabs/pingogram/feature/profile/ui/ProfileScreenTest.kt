@@ -86,6 +86,46 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `the note row shows the note and opens its dialog`() {
+        setScreen(state = ProfilePreviewData.withNote)
+        val note = "Met at the Analytical Society. Owes me a chai. Prefers letters."
+
+        scrollTo(note)
+        composeRule.onNodeWithText(string(R.string.profile_note_private)).assertIsDisplayed()
+        composeRule.onNodeWithText(note).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.EditNote), events)
+    }
+
+    @Test
+    fun `without a note the row offers to add one`() {
+        setScreen(state = ProfilePreviewData.withoutNote)
+
+        scrollTo(string(R.string.profile_note_add))
+        composeRule.onNodeWithText(string(R.string.profile_note_add)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a contact without a birthday offers to suggest one, in a picker titled so`() {
+        setScreen(state = ProfilePreviewData.withBirthdaySuggestion)
+        val action = string(R.string.profile_birthday_suggest_action)
+
+        scrollTo(action)
+        composeRule.onNode(hasText(action) and hasClickAction()).performClick()
+
+        composeRule.onNodeWithText(string(R.string.profile_birthday_suggest_confirm)).assertIsDisplayed()
+        assertEquals(emptyList<ProfileEvent>(), events)
+    }
+
+    @Test
+    fun `no note row on a profile without one`() {
+        setScreen()
+
+        val rows = composeRule.onAllNodesWithText(string(R.string.profile_note_private)).fetchSemanticsNodes()
+        assertEquals(0, rows.size)
+    }
+
+    @Test
     fun `the action pills send their events`() {
         setScreen()
 
