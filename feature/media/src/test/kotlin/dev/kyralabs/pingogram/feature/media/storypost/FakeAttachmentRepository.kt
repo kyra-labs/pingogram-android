@@ -78,6 +78,13 @@ internal class FakeAttachmentRepository : AttachmentRepository {
         replyTo: ReplyTarget?,
     ): Outcome<Unit> = notHere()
 
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = notHere()
+
     override suspend fun sendGreetingSticker(
         chatId: Long,
         replyTo: ReplyTarget,

@@ -4,10 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,20 +39,27 @@ internal class NewStoryViewModel
     constructor(
         private val savedState: SavedStateHandle,
         private val attachments: AttachmentRepository,
+        postRepository: StoryPostRepository,
+        @ApplicationScope applicationScope: CoroutineScope,
     ) : ViewModel() {
         private val picks = StoryPicks(savedState, attachments)
         private val preparing = MutableStateFlow(0)
+        private val step = MutableStateFlow(savedState.restoredStep())
         private val effectChannel = Channel<NewStoryEffect>(Channel.BUFFERED)
 
+        /** Composing the story once the items are picked: its caption, who it is for, posting. */
+        val composer = StoryComposer(savedState, postRepository, viewModelScope, applicationScope)
+
         val uiState: StateFlow<NewStoryUiState> =
-            combine(picks.items, picks.selected, preparing, ::uiStateOf)
-                .stateIn(viewModelScope, SharingStarted.Eagerly, uiStateOf(picks.items.value, picks.selected.value, 0))
+            combine(picks.items, picks.selected, preparing, step) { items, selected, preparing, step ->
+                uiStateOf(items, selected, preparing).copy(step = step)
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, uiStateOf(picks.items.value, picks.selected.value, 0))
         val effects: Flow<NewStoryEffect> = effectChannel.receiveAsFlow()
 
-        /** The picked photos and videos, in their order, for the composer. */
+        /** The picked photos and videos, in their order. */
         val picked: List<Attachment> get() = picks.items.value
 
-        /** Set once the items are handed on, after which clearing the view model no longer deletes their copies. */
+        /** Set while TDLib may read the copies, from posting on: clearing the view model then leaves them. */
         private var handedOver = false
 
         init {
@@ -57,25 +67,85 @@ internal class NewStoryViewModel
                 savedState.started = true
                 effectChannel.trySend(NewStoryEffect.OpenPicker(MAX_STORY_ITEMS))
             }
+            if (step.value == NewStoryStep.Compose) composer.start()
         }
 
         fun onEvent(event: NewStoryEvent) {
             when (event) {
-                is NewStoryEvent.Picked -> picked(event.uris)
-                NewStoryEvent.AddMore -> addMore()
-                NewStoryEvent.TakePhoto -> takePhoto()
-                is NewStoryEvent.PhotoTaken -> photoTaken(event.taken)
-                is NewStoryEvent.Select -> picks.select(event.key)
-                is NewStoryEvent.Remove -> picks.remove(event.key)
-                is NewStoryEvent.Move -> picks.move(event.key, event.to)
-                NewStoryEvent.Next -> if (uiState.value.canGoNext) effectChannel.trySend(NewStoryEffect.Next)
-                NewStoryEvent.Close -> close()
+                is NewStoryEvent.Picked -> {
+                    picked(event.uris)
+                }
+
+                NewStoryEvent.AddMore -> {
+                    remaining().takeIf { it > 0 }?.let {
+                        effectChannel.trySend(
+                            NewStoryEffect.OpenPicker(it),
+                        )
+                    }
+                }
+
+                NewStoryEvent.TakePhoto -> {
+                    takePhoto()
+                }
+
+                is NewStoryEvent.PhotoTaken -> {
+                    photoTaken(event.taken)
+                }
+
+                is NewStoryEvent.Select -> {
+                    picks.select(event.key)
+                }
+
+                is NewStoryEvent.Remove -> {
+                    picks.remove(event.key)
+                }
+
+                is NewStoryEvent.Move -> {
+                    picks.move(event.key, event.to)
+                }
+
+                NewStoryEvent.Next -> {
+                    if (uiState.value.canGoNext) setStep(NewStoryStep.Compose)
+                }
+
+                NewStoryEvent.Back -> {
+                    setStep(NewStoryStep.Pick)
+                }
+
+                is NewStoryEvent.SetAudience -> {
+                    composer.setAudience(event.audience)
+                }
+
+                NewStoryEvent.Post -> {
+                    post()
+                }
+
+                NewStoryEvent.Close -> {
+                    close()
+                }
             }
         }
 
-        /** The copies now belong to whoever posts them: clearing the view model leaves them. */
-        fun handOver() {
+        private fun setStep(next: NewStoryStep) {
+            step.value = next
+            savedState.saveStep(next)
+            if (next == NewStoryStep.Compose) composer.start()
+        }
+
+        /**
+         * Posts the items with the composer's caption, the copies TDLib's from then on; the screen closes once TDLib
+         * took them, and says what went wrong otherwise, the copies the user's again.
+         */
+        private fun post() {
             handedOver = true
+            composer.post(
+                items = picks.items.value,
+                onPosted = { effectChannel.trySend(NewStoryEffect.Posted) },
+                onFailed = { error ->
+                    handedOver = false
+                    effectChannel.trySend(NewStoryEffect.Failed(error))
+                },
+            )
         }
 
         override fun onCleared() {
@@ -93,11 +163,6 @@ internal class NewStoryViewModel
             viewModelScope.launch {
                 accepted.forEach { uri -> add(attachments.prepare(uri, AttachmentKind.Media)) }
             }
-        }
-
-        private fun addMore() {
-            val remaining = remaining()
-            if (remaining > 0) effectChannel.trySend(NewStoryEffect.OpenPicker(remaining))
         }
 
         private fun takePhoto() {

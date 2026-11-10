@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.ContactAction
+import dev.kyralabs.pingogram.feature.profile.ui.ContactNote
 import dev.kyralabs.pingogram.feature.profile.ui.FileKind
 import dev.kyralabs.pingogram.feature.profile.ui.MediaKind
 import dev.kyralabs.pingogram.feature.profile.ui.MoreMedia
@@ -89,6 +90,18 @@ object ProfilePreviewData {
 
     /** [content] with the user's ID, as "Show IDs" shows it. */
     val withId = content.copy(info = content.info.copy(id = 42))
+
+    /** A contact with the note only the current user sees, last in the information rows. */
+    val withNote =
+        content.copy(
+            info =
+                content.info.copy(
+                    note = ContactNote("Met at the Analytical Society. Owes me a chai. Prefers letters.", "Ada"),
+                ),
+        )
+
+    /** A contact without a note: the row offers to add one. */
+    val withoutNote = content.copy(info = content.info.copy(note = ContactNote("", "Ada")))
 
     val bot =
         ProfileUiState.Content(

@@ -90,6 +90,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageReposito
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStoryPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
@@ -185,6 +186,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
@@ -317,6 +319,9 @@ interface RepositoryModule {
 
     @Binds
     fun chatBoostRepository(repository: TdlibChatBoostRepository): ChatBoostRepository
+
+    @Binds
+    fun storyPostRepository(repository: TdlibStoryPostRepository): StoryPostRepository
 
     @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository

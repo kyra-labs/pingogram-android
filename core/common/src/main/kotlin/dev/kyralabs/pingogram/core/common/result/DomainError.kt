@@ -111,6 +111,12 @@ sealed interface DomainError {
      */
     data object SendingNotAllowed : DomainError
 
+    /**
+     * A video longer than a story takes could not be cut into stories on the device: its key frames lie too far
+     * apart, or Android cannot read or write its tracks (`docs/adr/0036-posting-stories.md`).
+     */
+    data object StoryVideoNotCut : DomainError
+
     // Settings (REQUIREMENTS.md FR-S1).
 
     /**

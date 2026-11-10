@@ -81,6 +81,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
@@ -218,6 +219,9 @@ object ActiveAccountModule {
 
     @Provides
     fun chatBoostRepository(accounts: Accounts): ChatBoostRepository = accounts.active.chatBoostRepository()
+
+    @Provides
+    fun storyPostRepository(accounts: Accounts): StoryPostRepository = accounts.active.storyPostRepository()
 
     @Provides
     fun sharedMediaRepository(accounts: Accounts): SharedMediaRepository = accounts.active.sharedMediaRepository()

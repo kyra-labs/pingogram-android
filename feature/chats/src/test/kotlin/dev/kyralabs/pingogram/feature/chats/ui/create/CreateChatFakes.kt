@@ -74,6 +74,7 @@ class FakeContactRepository : ContactRepository {
         firstName: String,
         lastName: String,
         sharePhoneNumber: Boolean,
+        note: String?,
     ): Outcome<Unit> = unused()
 
     override suspend fun delete(userId: Long): Outcome<Unit> = unused()

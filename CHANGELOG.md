@@ -12,6 +12,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator
   allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
+- Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the
+  camera, reorder them, write a caption with bold, italic, links and spoilers, and choose who sees them: everyone, your
+  contacts or your close friends. Videos longer than a minute are cut into several stories on the phone.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -24,6 +27,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
   that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
   the call.
+- Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
+  all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

@@ -81,6 +81,9 @@ class FakeContactRepository : ContactRepository {
         { id -> Outcome.Success(EditableContact(contact(id, "Grace", "Hopper"), canSharePhoneNumber = false)) }
     var onSave: suspend (Long, String, String, Boolean) -> Outcome<Unit> = { _, _, _, _ -> Outcome.Success(Unit) }
     var onDelete: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** The note of each [save], null where it kept the note the contact has. */
+    val savedNotes = mutableListOf<String?>()
     var onPrivateChatId: suspend (Long) -> Outcome<Long> = { userId -> Outcome.Success(userId * 10) }
     var link = "https://t.me/dl"
 
@@ -129,8 +132,10 @@ class FakeContactRepository : ContactRepository {
         firstName: String,
         lastName: String,
         sharePhoneNumber: Boolean,
+        note: String?,
     ): Outcome<Unit> {
         calls += "save:$userId:$firstName:$lastName:$sharePhoneNumber"
+        savedNotes += note
         return onSave(userId, firstName, lastName, sharePhoneNumber)
     }
 

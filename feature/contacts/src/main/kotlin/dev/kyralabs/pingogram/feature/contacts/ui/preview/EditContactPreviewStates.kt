@@ -20,6 +20,8 @@ internal object EditContactPreviewData {
             firstName = "Grace",
             lastName = "Hopper",
             sharePhoneNumber = false,
+            note = "Wrote COBOL. Found the first bug.",
+            savedNote = "Wrote COBOL. Found the first bug.",
         )
 
     val notContact =
