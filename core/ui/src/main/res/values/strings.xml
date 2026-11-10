@@ -41,6 +41,7 @@
     <!-- A picked photo, video, file or contact could not be read. -->
     <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
     <string name="error_file_too_large">This file is too large to send.</string>
+    <string name="error_story_video_not_cut">This video can\'t be cut into stories.</string>
     <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
     <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
     <!-- Groups and channels: what administrators change. -->
