@@ -445,6 +445,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
   again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
   pushed above Privacy and security.
+- **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
+  (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
+  account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds
+  the password manager's answer (`addLoginPasskey`) and removes one (`removeLoginPasskey`). The password managers are
+  reached through `core:ui`'s `PasskeyCredentials` (`PlatformPasskeyCredentials`: the platform's Credential Manager,
+  Android 14+, no library; `rememberPasskeyCredentials` gives null before), which needs the screen's activity, so the
+  route calls it: `feature:settings`' `PasskeysViewModel` (the list loaded again whenever the page shows, with
+  2-step verification and the session count; the removal's question in saved state) sends
+  `PasskeysEffect.CreatePasskey` with Telegram's request, and `PasskeysRoute` hands the answer back as
+  `PasskeysEvent.Created`. Nothing is logged or kept; the demo lists a sample passkey and says adding one needs an
+  account.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

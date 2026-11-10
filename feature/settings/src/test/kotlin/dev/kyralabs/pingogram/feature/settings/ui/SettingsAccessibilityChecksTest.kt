@@ -35,6 +35,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeInput
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.PasskeysPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.PasskeysScreen
 import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
@@ -355,6 +357,18 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun connectedWebsites() =
         check { ConnectedWebsitesScreen(ConnectedWebsitesPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun passkeys() =
+        check {
+            PasskeysScreen(
+                PasskeysPreviewStates.content,
+                canAdd = true,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+            )
+        }
 
     @Test
     fun personalChannel() =

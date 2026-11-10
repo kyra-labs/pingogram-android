@@ -31,6 +31,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
 - A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
   know it), and Telegram asks them whether to keep it.
+- Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
+  Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

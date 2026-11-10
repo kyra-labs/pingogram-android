@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
@@ -265,6 +266,9 @@ object ActiveAccountModule {
     @Provides
     fun connectedWebsiteRepository(accounts: Accounts): ConnectedWebsiteRepository =
         accounts.active.connectedWebsiteRepository()
+
+    @Provides
+    fun passkeyRepository(accounts: Accounts): PasskeyRepository = accounts.active.passkeyRepository()
 
     @Provides
     fun contactJoinedRepository(accounts: Accounts): ContactJoinedRepository = accounts.active.contactJoinedRepository()

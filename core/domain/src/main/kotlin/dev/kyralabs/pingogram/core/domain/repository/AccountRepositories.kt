@@ -112,6 +112,8 @@ interface AccountRepositories {
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
 
+    fun passkeyRepository(): PasskeyRepository
+
     fun contactJoinedRepository(): ContactJoinedRepository
 
     fun dataOptionsRepository(): DataOptionsRepository

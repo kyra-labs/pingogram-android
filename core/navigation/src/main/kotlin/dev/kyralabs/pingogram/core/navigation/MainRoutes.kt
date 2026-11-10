@@ -233,6 +233,10 @@ data object ActiveSessionsRoute
 @Serializable
 data object ConnectedWebsitesRoute
 
+/** The account's passkeys (`docs/adr/0037-passkeys.md`), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object PasskeysRoute
+
 /**
  * The chats kept behind the passcode (`docs/adr/0029-locked-chats.md`), pushed above [PrivacySecurityRoute], above the
  * chat list from its "Locked chats" row, or from a locked chat's notification.
