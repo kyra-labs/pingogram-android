@@ -52,6 +52,29 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 
 /**
+ * The date and time pickers for a custom closing moment, at the one chosen before; a moment later than Telegram's
+ * `poll_open_period_max` allows is moved back to the latest it does.
+ */
+@Composable
+private fun CloseDateDialog(
+    editor: PollEditor,
+    now: () -> Instant,
+    onDismiss: () -> Unit,
+) {
+    ScheduleDialog(
+        now = now,
+        onDismiss = onDismiss,
+        onSchedule = { at ->
+            onDismiss()
+            val latest = now().epochSecond + editor.limits.maxOpenPeriod
+            editor.customCloseDate = minOf(at.epochSecond, latest)
+            editor.closing = PollClosing.Custom
+        },
+        initial = editor.customCloseDate?.let(Instant::ofEpochSecond),
+    )
+}
+
+/**
  * The form of a new poll (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "New poll", boards 5a and 5b): a
  * [ModalBottomSheet] that opens expanded, "New poll" with the send split button pinned above what scrolls: the
  * question, the photo ([pollMediaItem]), an optional description, the answer options ([pollOptionItems]: links,
@@ -126,19 +149,7 @@ internal fun PollFormSheet(
             },
         )
     }
-    if (pickingCloseDate) {
-        ScheduleDialog(
-            now = now,
-            onDismiss = { pickingCloseDate = false },
-            onSchedule = { at ->
-                pickingCloseDate = false
-                val latest = now().epochSecond + editor.limits.maxOpenPeriod
-                editor.customCloseDate = minOf(at.epochSecond, latest)
-                editor.closing = PollClosing.Custom
-            },
-            initial = editor.customCloseDate?.let(Instant::ofEpochSecond),
-        )
-    }
+    if (pickingCloseDate) CloseDateDialog(editor, now) { pickingCloseDate = false }
 }
 
 /** What the form's buttons do, which the sheet decides. */

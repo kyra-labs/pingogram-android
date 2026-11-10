@@ -5,17 +5,15 @@ import kotlinx.collections.immutable.persistentListOf
 
 /**
  * A poll the user creates (`REQUIREMENTS.md` FR-C5): a [question] and its answer [options], within the limits of
- * td_api.tl `inputMessagePoll` ([MAX_QUESTION_LENGTH], from [MIN_OPTIONS] to Telegram's `poll_answer_count_max`
- * options of up to [MAX_OPTION_LENGTH] characters, `PollLimits`), with an optional [description] and [photo] (a
- * prepared copy, `AttachmentRepository.prepare`). A quiz has one or more correct answers, [correctOptionIndexes] in [options], and
+ * td_api.tl `inputMessagePoll` ([MAX_QUESTION_LENGTH], from [MIN_OPTIONS] to Telegram's `poll_answer_count_max` options
+ * of up to [MAX_OPTION_LENGTH] characters, `PollLimits`), with an optional [description] and [photo] (a prepared copy,
+ * `AttachmentRepository.prepare`). A quiz has one or more correct answers, [correctOptionIndexes] in [options], and
  * then as many answers per voter as it has correct ones, with an optional [explanation]; a regular poll has none and
  * may allow several answers ([allowsMultipleAnswers]), changing the vote ([allowsRevoting]) and members adding answers
  * ([allowsAddingOptions], not in channels or anonymous polls). Voters' names show unless [isAnonymous]; channels allow
  * anonymous polls only. [hidesResults] keeps the results from voters until the poll closes, [shufflesOptions] shows
  * each voter the answers in an order of their own. The poll closes [openPeriod] seconds after it is sent, or at
- * [closeDate] (Unix time), or when its author stops it (both 0).
- *
- * `toString()` leaves the texts out.
+ * [closeDate] (Unix time), or when its author stops it (both 0). `toString()` leaves the texts out.
  */
 data class NewPoll(
     val question: String,

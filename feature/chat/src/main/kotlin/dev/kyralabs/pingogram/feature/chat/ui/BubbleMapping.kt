@@ -78,17 +78,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel =
-            when {
-                album.isNotEmpty() -> albumLabel(album)
-
-                content is MessageContent.Text -> null
-
-                // The bubble shows its blocks, and screen readers hear them (richDescription).
-                content is MessageContent.RichMessage -> null
-
-                else -> contentKindText(content)
-            },
+        contentLabel = contentLabel(content),
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
@@ -116,21 +106,13 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
         checklist = checklistUi(content),
-        pollClosesIn = message.closingPoll?.let { at -> relativeNow?.let { (at - it).coerceAtLeast(0) } },
+        pollClosesIn = pollClosesIn(),
     )
 }
 
-/** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
-private fun albumLabel(album: List<Message>): UiText {
-    val photos = album.count { it.content is MessageContent.Photo }
-    val plural =
-        when (photos) {
-            album.size -> ChatR.plurals.content_album_photos
-            0 -> ChatR.plurals.content_album_videos
-            else -> ChatR.plurals.content_album_media
-        }
-    return UiText.plural(plural, album.size, album.size)
-}
+/** How long the message's open poll stays open as of the current minute, in seconds; null where it does not close. */
+private fun ItemInputs.pollClosesIn(): Long? =
+    message.closingPoll?.let { at -> relativeNow?.let { (at - it).coerceAtLeast(0) } }
 
 /** "You" for the current user's messages; otherwise the sender's full name, or the chat's title. */
 private fun ItemInputs.senderName(): UiText =

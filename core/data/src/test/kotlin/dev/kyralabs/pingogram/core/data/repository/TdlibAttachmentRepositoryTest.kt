@@ -542,7 +542,13 @@ class TdlibAttachmentRepositoryTest {
             )
             assertEquals(
                 listOf<Any>(false, true, true, 3_600, 0),
-                listOf(sent.allowsRevoting, sent.hideResultsUntilCloses, sent.shuffleOptions, sent.openPeriod, sent.closeDate),
+                listOf(
+                    sent.allowsRevoting,
+                    sent.hideResultsUntilCloses,
+                    sent.shuffleOptions,
+                    sent.openPeriod,
+                    sent.closeDate,
+                ),
             )
             assertTrue((sent.type as TdApi.InputPollTypeRegular).allowAddingOptions)
         }
@@ -552,7 +558,8 @@ class TdlibAttachmentRepositoryTest {
         runTest {
             answerSends()
             val options = persistentListOf(NewPollOption("Yes"), NewPollOption("No"))
-            val poll = NewPoll("Ok?", options, isAnonymous = true, allowsMultipleAnswers = false, allowsAddingOptions = true)
+            val poll =
+                NewPoll("Ok?", options, isAnonymous = true, allowsMultipleAnswers = false, allowsAddingOptions = true)
 
             repository().sendPoll(CHAT, poll)
 
@@ -582,7 +589,10 @@ class TdlibAttachmentRepositoryTest {
             val type = sent.type as TdApi.InputPollTypeQuiz
             assertArrayEquals(intArrayOf(0, 1), type.correctOptionIds)
             assertEquals("defer isn't one", type.explanation.text)
-            assertEquals(listOf(true, false, 1_796_580_000), listOf(sent.allowsMultipleAnswers, sent.allowsRevoting, sent.closeDate))
+            assertEquals(
+                listOf(true, false, 1_796_580_000),
+                listOf(sent.allowsMultipleAnswers, sent.allowsRevoting, sent.closeDate),
+            )
         }
 
     @Test

@@ -134,7 +134,10 @@ class TdlibPollRepositoryTest {
 
             assertEquals(Outcome.Success(Unit), result)
             val sent = client.sentOf<TdApi.AddPollOption>().single()
-            assertEquals(listOf<Any>(CHAT, MESSAGE, "Piranesi"), listOf(sent.chatId, sent.messageId, sent.option.text.text))
+            assertEquals(
+                listOf<Any>(CHAT, MESSAGE, "Piranesi"),
+                listOf(sent.chatId, sent.messageId, sent.option.text.text),
+            )
             assertEquals("https://example.org", (sent.option.media as TdApi.InputPollMediaLink).url)
         }
 

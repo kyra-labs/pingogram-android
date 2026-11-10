@@ -253,7 +253,7 @@ internal object PollPreviewData {
                             option(0, "21", votes = 3, percentage = 20),
                             option(1, "23", votes = 6, percentage = 40, chosen = true, correct = true),
                             option(2, "27", votes = 2, percentage = 13, chosen = true),
-                            option(3, "29", votes = 4, percentage = 27, correct = true),
+                            option(index = 3, value = "29", votes = 4, percentage = 27, correct = true),
                         ),
                     totalVoterCount = 8,
                     isAnonymous = true,

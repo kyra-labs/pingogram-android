@@ -327,8 +327,8 @@ sealed interface ChatItem {
      *   null for every other bubble, and while none is checked.
      * @property pollClosesIn how long its open poll stays open, in seconds, as of the current minute; null for every
      *   other bubble and for polls that do not close by themselves.
-     * @property pollAdding the inline field for a new answer of its poll, open or sending (`PollOptionEvent`); null while
-     *   it is closed.
+     * @property pollAdding the inline field for a new answer of its poll, open or sending (`PollOptionEvent`); null
+     *   while it is closed.
      * @property checklist how its checklist shows beyond the message: who ticked each task, the tasks whose change is
      *   on its way, the inline field for a new task (`ChecklistEvent`); null for every other bubble.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of

@@ -27,10 +27,11 @@ import java.text.NumberFormat
 
 /**
  * What screen readers hear of [bubble]'s poll within its bubble's description (`docs/DESIGN_SYSTEM.md` §9): what kind
- * of poll it is and its description, then each answer as one entry (with its link and, in an answered quiz, whether
- * it was the user's and right) ("Spring, 45%, 9 votes, your answer"; a quiz's "correct answer" or
- * "wrong answer"; before voting, whether it is checked or its vote on its way), when it closes, that its results are
- * hidden, why the user cannot vote, the number of voters, a quiz's score and explanation. Empty for other content. The question is the bubble's content label.
+ * of poll it is and its description, then each answer as one entry (with its link and, in an answered quiz, whether it
+ * was the user's and right) ("Spring, 45%, 9 votes, your answer"; a quiz's "correct answer" or "wrong answer"; before
+ * voting, whether it is checked or its vote on its way), when it closes, that its results are hidden, why the user
+ * cannot vote, the number of voters, a quiz's score and explanation. Empty for other content. The question is the
+ * bubble's content label.
  */
 internal fun pollDescription(
     resources: Resources,

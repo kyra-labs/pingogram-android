@@ -137,17 +137,6 @@ class PollEditor(
         return text.isNotEmpty() && fields.take(index).any { it.normalized == text }
     }
 
-    /** Whether the poll may let members add answers: a public regular poll outside channels. */
-    fun canAllowAddingOptions(inChannel: Boolean): Boolean = !isQuiz && !isAnonymous && !inChannel
-
-    /** Whether the poll may close [period] seconds after it is sent, within Telegram's limit. */
-    fun canClose(period: PollClosing): Boolean =
-        when (period) {
-            PollClosing.Never -> true
-            PollClosing.Custom -> limits.maxOpenPeriod > 0
-            else -> period.seconds in 1..limits.maxOpenPeriod
-        }
-
     /**
      * The poll to send at [now] (Unix time); null while it is not complete: a question, at least two filled-in
      * options, none repeated, for a quiz at least one filled-in correct option, and a chosen moment in the future for a
@@ -198,19 +187,6 @@ class PollEditor(
             closeDate = closes.closeDate,
         )
     }
-
-    /** When the poll closes: in seconds after it is sent, or at a moment; null for a custom moment not in the future. */
-    private fun closesAt(now: Long): Closes? =
-        when (closing) {
-            PollClosing.Never -> Closes()
-            PollClosing.Custom -> customCloseDate?.takeIf { it > now }?.let { Closes(closeDate = it) }
-            else -> Closes(openPeriod = closing.seconds)
-        }
-
-    private data class Closes(
-        val openPeriod: Int = 0,
-        val closeDate: Long = 0,
-    )
 
     /** What the form holds now, for process death. */
     val draft: PollDraft
@@ -267,6 +243,31 @@ class PollEditor(
         link: String?,
     ) = PollOptionField(nextKey++, TextFieldState(text), link)
 }
+
+/** When the poll closes: in seconds after it is sent, or at a moment; null for a custom moment in the past. */
+private fun PollEditor.closesAt(now: Long): PollCloses? =
+    when (closing) {
+        PollClosing.Never -> PollCloses()
+        PollClosing.Custom -> customCloseDate?.takeIf { it > now }?.let { PollCloses(closeDate = it) }
+        else -> PollCloses(openPeriod = closing.seconds)
+    }
+
+/** A poll's `open_period` or `close_date` (td_api.tl `inputMessagePoll`), both 0 for a poll that stays open. */
+private data class PollCloses(
+    val openPeriod: Int = 0,
+    val closeDate: Long = 0,
+)
+
+/** Whether the poll may let members add answers: a public regular poll outside channels. */
+internal fun PollEditor.canAllowAddingOptions(inChannel: Boolean): Boolean = !isQuiz && !isAnonymous && !inChannel
+
+/** Whether the poll may close [period] seconds after it is sent, within Telegram's limit. */
+internal fun PollEditor.canClose(period: PollClosing): Boolean =
+    when (period) {
+        PollClosing.Never -> true
+        PollClosing.Custom -> limits.maxOpenPeriod > 0
+        else -> period.seconds in 1..limits.maxOpenPeriod
+    }
 
 /**
  * One answer option of the [PollEditor]: its text field, and its link's field while it has one ([link]), by a [key]

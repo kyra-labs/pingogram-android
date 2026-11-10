@@ -79,6 +79,15 @@ internal fun LazyListScope.pollSettingItems(
             note = stringResource(R.string.poll_hide_results_note),
         )
     }
+    answerSettingItems(sheet, editor)
+    closesItem(editor, actions, now)
+}
+
+/** Shuffling the options, members adding options and quiz mode, the settings about the answers. */
+private fun LazyListScope.answerSettingItems(
+    sheet: PollSheet,
+    editor: PollEditor,
+) {
     item(key = SHUFFLE) {
         FormSwitchRow(
             title = stringResource(R.string.poll_shuffle),
@@ -113,7 +122,6 @@ internal fun LazyListScope.pollSettingItems(
                 ),
         )
     }
-    closesItem(editor, actions, now)
 }
 
 /**

@@ -290,15 +290,21 @@ private class OptionDrag(
         val key = draggedKey ?: return
         offset += delta
         val items = listState.layoutInfo.visibleItemsInfo
-        val current = items.firstOrNull { it.key == key } ?: return
-        val middle = current.offset + offset + current.size / 2
+        val current = items.firstOrNull { it.key == key }
         val keys = editor.options.map { it.key }
         val target =
-            items.firstOrNull { it.key != key && it.key in keys && middle.toInt() in it.offset..(it.offset + it.size) }
-                ?: return
-        editor.moveOption(keys.indexOf(key), keys.indexOf(target.key))
-        offset += current.offset - target.offset
-        haptics?.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            current?.let {
+                val middle = (it.offset + offset + it.size / 2).toInt()
+                items.firstOrNull { item ->
+                    item.key != key && item.key in keys &&
+                        middle in item.offset..(item.offset + item.size)
+                }
+            }
+        if (current != null && target != null) {
+            editor.moveOption(keys.indexOf(key), keys.indexOf(target.key))
+            offset += current.offset - target.offset
+            haptics?.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        }
     }
 }
 

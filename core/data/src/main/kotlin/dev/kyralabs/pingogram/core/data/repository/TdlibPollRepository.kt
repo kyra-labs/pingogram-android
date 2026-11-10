@@ -14,9 +14,9 @@ import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 
 /**
- * [PollRepository] on `setPollAnswer`, `stopPoll`, `getPollVoters` and `addPollOption`, without a cache: TDLib marks a vote on its way
- * at once (`pollOption.is_being_chosen`) and announces every change of the poll with `updatePoll`, which
- * [TdlibMessageRepository]'s windows apply to each message showing it.
+ * [PollRepository] on `setPollAnswer`, `stopPoll`, `getPollVoters` and `addPollOption`, without a cache: TDLib marks a
+ * vote on its way at once (`pollOption.is_being_chosen`) and announces every change of the poll with `updatePoll`,
+ * which [TdlibMessageRepository]'s windows apply to each message showing it.
  */
 @AccountScoped
 class TdlibPollRepository

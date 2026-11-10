@@ -163,15 +163,11 @@ private class Actor(
             }
 
             is ServiceAction.PollOptionAdded -> {
-                did(R.string.preview_you_added_poll_option, R.string.preview_added_poll_option, action.text.bidiIsolated())
+                pollOption(R.string.preview_you_added_poll_option, R.string.preview_added_poll_option, action.text)
             }
 
             is ServiceAction.PollOptionDeleted -> {
-                did(
-                    R.string.preview_you_removed_poll_option,
-                    R.string.preview_removed_poll_option,
-                    action.text.bidiIsolated(),
-                )
+                pollOption(R.string.preview_you_removed_poll_option, R.string.preview_removed_poll_option, action.text)
             }
 
             // Worded by the other functions of this file.
@@ -181,6 +177,13 @@ private class Actor(
         }
 
     fun joined(): UiText = did(R.string.preview_you_joined, R.string.preview_joined)
+
+    /** An answer added to or removed from a poll, its [text] isolated from the words around it. */
+    private fun pollOption(
+        @StringRes mine: Int,
+        @StringRes theirs: Int,
+        text: String,
+    ): UiText = did(mine, theirs, text.bidiIsolated())
 
     /** Tasks marked as done, as not done, or both at once ("changed 3 tasks"). */
     private fun tasksChanged(action: ServiceAction.ChecklistTasksDone): UiText =

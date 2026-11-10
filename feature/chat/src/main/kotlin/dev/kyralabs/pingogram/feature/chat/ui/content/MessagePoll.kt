@@ -230,9 +230,7 @@ private fun PollChoices(
             PollChoice(
                 option = option,
                 poll = poll,
-                multipleAnswers = poll.allowsMultipleAnswers,
                 checked = checked || option.isBeingChosen || option.isChosen,
-                enabled = poll.canVote || poll.isVoting,
                 colors = colors,
                 modifier =
                     Modifier
@@ -245,18 +243,20 @@ private fun PollChoices(
     }
 }
 
-/** An answer to vote for: its radio button or check box ([checked] or not), or its progress, and its text. */
+/**
+ * An answer to vote for: its radio button, or its check box where [poll] allows several answers ([checked] or not,
+ * enabled while the user may vote), or its progress, and its text.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class) // LoadingIndicator
 @Composable
 private fun PollChoice(
     option: PollOption,
     poll: Poll,
-    multipleAnswers: Boolean,
     checked: Boolean,
-    enabled: Boolean,
     colors: BubbleColors,
     modifier: Modifier = Modifier,
 ) {
+    val enabled = poll.canVote || poll.isVoting
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
@@ -272,7 +272,7 @@ private fun PollChoice(
                 }
             }
 
-            multipleAnswers -> {
+            poll.allowsMultipleAnswers -> {
                 Checkbox(
                     checked = checked,
                     onCheckedChange = null,

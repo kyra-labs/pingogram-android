@@ -21,7 +21,12 @@ class PollMappersTest {
                 author = TdApi.MessageSenderUser(42)
             }
 
-        val mapped = PollFixtures.poll(options = arrayOf(option)).toPoll().options.single()
+        val mapped =
+            PollFixtures
+                .poll(options = arrayOf(option))
+                .toPoll()
+                .options
+                .single()
 
         assertEquals("b", mapped.id)
         assertEquals(PollMedia.Link("https://example.org/klara", ""), mapped.media)
@@ -37,10 +42,11 @@ class PollMappersTest {
 
     @Test
     fun `a poll keeps when it closes`() {
-        val poll = PollFixtures.poll().apply {
-            closeDate = 1_796_580_000
-            openPeriod = 3_600
-        }
+        val poll =
+            PollFixtures.poll().apply {
+                closeDate = 1_796_580_000
+                openPeriod = 3_600
+            }
 
         val mapped = poll.toPoll()
 

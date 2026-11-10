@@ -23,9 +23,23 @@ fun richMediaMessageId(id: Long): Long = (-id - 1) / RICH_MEDIA_SPAN * RICH_MEDI
  * caption, and the id [richMediaId] gives it; in the message's order. Empty for a message of any other content.
  */
 fun Message.richMediaMessages(): List<Message> {
-    (content as? MessageContent.Poll)?.mediaContent()?.let { return listOf(copy(id = richMediaId(id, 0), content = it)) }
-    val rich = (content as? MessageContent.RichMessage)?.message ?: return emptyList()
-    return rich.media().map { media -> copy(id = richMediaId(id, media.index), content = media.toContent()) }
+    val pollMedia = (content as? MessageContent.Poll)?.mediaContent()
+    val rich = (content as? MessageContent.RichMessage)?.message
+    return when {
+        pollMedia != null -> {
+            listOf(copy(id = richMediaId(id, 0), content = pollMedia))
+        }
+
+        rich != null -> {
+            rich.media().map { media ->
+                copy(id = richMediaId(id, media.index), content = media.toContent())
+            }
+        }
+
+        else -> {
+            emptyList()
+        }
+    }
 }
 
 /**

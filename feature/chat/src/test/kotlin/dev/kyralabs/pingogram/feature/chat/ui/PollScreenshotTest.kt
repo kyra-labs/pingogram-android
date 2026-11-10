@@ -14,13 +14,13 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of polls (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §6 "Polls", "Poll voters"), every state in the looks
- * the audit asks for (§12): light, dark, true black, high contrast, right to left, a medium window and 200% font
- * scale. A group's conversation with polls to vote in (one tap; answers checked before "Vote"), with results (a public
- * poll with "View votes", a quiz answered wrong with its explanation), and in other states (a vote on its way, a poll
- * only members may vote in, a closed poll; one closing in two hours with its description, a link and its results
- * hidden below the field for a new answer; a quiz with two correct answers and its score); the voters' sheet loaded, loading and failed; the question before a poll
- * is stopped. Brand colors.
+ * Goldens of polls (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §6 "Polls", "Poll voters"), every state in the looks the
+ * audit asks for (§12): light, dark, true black, high contrast, right to left, a medium window and 200% font scale. A
+ * group's conversation with polls to vote in (one tap; answers checked before "Vote"), with results (a public poll with
+ * "View votes", a quiz answered wrong with its explanation), and in other states (a vote on its way, a poll only
+ * members may vote in, a closed poll; one closing in two hours with its description, a link and its results hidden
+ * below the field for a new answer; a quiz with two correct answers and its score); the voters' sheet loaded, loading
+ * and failed; the question before a poll is stopped. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
