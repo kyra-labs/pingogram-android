@@ -59,7 +59,8 @@ internal class AttachLaunchers(
 
     /**
      * Opens the gallery, the file picker or the contact picker for [option]; false when no app opens, and for the
-     * camera, whose file the view model makes first, and the location and poll sheets, which are the screen's.
+     * camera, whose file the view model makes first, and the location, poll and checklist sheets, which are the
+     * screen's.
      */
     fun pick(option: AttachOption): Boolean =
         when (option) {
@@ -77,7 +78,7 @@ internal class AttachLaunchers(
                 launching { contact.launch(Unit) }
             }
 
-            AttachOption.Camera, AttachOption.Location, AttachOption.Poll -> {
+            AttachOption.Camera, AttachOption.Location, AttachOption.Poll, AttachOption.Checklist -> {
                 false
             }
         }
@@ -166,6 +167,7 @@ internal class AttachInputs(
     val hasCamera: Boolean = true,
     val caption: ComposerText = ComposerText(),
     val pollEditor: PollEditor = PollEditor(),
+    val checklistEditor: ChecklistEditor = ChecklistEditor(),
     val location: LocationInputs = LocationInputs(),
 )
 
@@ -182,11 +184,12 @@ internal fun rememberAttachInputs(
     pollEditor: PollEditor,
     snackbarHostState: SnackbarHostState,
     location: LocationInputs = LocationInputs(),
+    checklistEditor: ChecklistEditor = ChecklistEditor(),
 ): AttachInputs {
     val currentOnEvent by rememberUpdatedState(onEvent)
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
-    return remember(launchers, caption, pollEditor, snackbarHostState, resources, scope, location) {
+    return remember(launchers, caption, pollEditor, checklistEditor, snackbarHostState, resources, scope, location) {
         AttachInputs(
             onPick = { option ->
                 when (option) {
@@ -196,6 +199,10 @@ internal fun rememberAttachInputs(
 
                     AttachOption.Poll -> {
                         currentOnEvent(ChatEvent.OpenPoll)
+                    }
+
+                    AttachOption.Checklist -> {
+                        currentOnEvent(ChatEvent.OpenChecklist)
                     }
 
                     AttachOption.Location -> {
@@ -213,6 +220,7 @@ internal fun rememberAttachInputs(
             hasCamera = launchers.hasCamera,
             caption = caption,
             pollEditor = pollEditor,
+            checklistEditor = checklistEditor,
             location = location,
         )
     }

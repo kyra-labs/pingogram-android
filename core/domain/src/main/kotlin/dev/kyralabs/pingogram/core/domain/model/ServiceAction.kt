@@ -120,6 +120,22 @@ sealed interface ServiceAction {
         val userIds: ImmutableList<Long>,
     ) : ServiceAction
 
+    /**
+     * The sender marked [doneCount] tasks of the checklist of message [checklistMessageId] as done, and
+     * [notDoneCount] as not done again.
+     */
+    data class ChecklistTasksDone(
+        val checklistMessageId: Long,
+        val doneCount: Int,
+        val notDoneCount: Int,
+    ) : ServiceAction
+
+    /** The sender added [count] tasks to the checklist of message [checklistMessageId]. */
+    data class ChecklistTasksAdded(
+        val checklistMessageId: Long,
+        val count: Int,
+    ) : ServiceAction
+
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */
     data class Custom(
         val text: String,

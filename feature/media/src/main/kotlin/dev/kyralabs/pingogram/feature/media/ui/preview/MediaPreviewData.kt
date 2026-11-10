@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.feature.media.ui.VideoPlayback
 import dev.kyralabs.pingogram.feature.media.ui.ViewerMedia
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import java.io.File
 
 /**
  * The viewer's states for previews and screenshot tests: a photo with a caption (with Share and Save, or in a chat
@@ -182,7 +183,8 @@ internal object MediaPreviewData {
 
 /**
  * Images for previews and screenshot tests, which Coil takes from `LocalAsyncImagePreviewHandler` in inspection mode
- * only: TDLib files as solid colors of the theme, picked by file id, or, with [loading], kept loading, so the
+ * only: TDLib files and local files as solid colors of the theme, picked by file id or the number in the file's
+ * name, or, with [loading], kept loading, so the
  * placeholders show.
  */
 @OptIn(ExperimentalCoilApi::class)
@@ -204,8 +206,16 @@ internal fun PreviewImages(
             } else {
                 val palette = listOf(colorScheme.tertiary, colorScheme.secondary, colorScheme.primary)
                 AsyncImagePreviewHandler { request ->
-                    val fileId = (request.data as? TdlibFileImage)?.fileId ?: 0
-                    ColorImage(palette[fileId.mod(palette.size)].toArgb())
+                    val index =
+                        when (val data = request.data) {
+                            is TdlibFileImage -> data.fileId
+
+                            // A story's picked item, by the number in its file's name ("photo2.jpg").
+                            is File -> data.name.filter(Char::isDigit).toIntOrNull() ?: 0
+
+                            else -> 0
+                        }
+                    ColorImage(palette[index.mod(palette.size)].toArgb())
                 }
             }
         }

@@ -101,4 +101,32 @@
     <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
     <string name="story_unavailable_title">Story unavailable</string>
     <string name="story_unavailable_body">This story was deleted or has expired.</string>
+    <!-- Posting a story, picking its photos and videos (docs/adr/0036-posting-stories.md). -->
+    <string name="new_story_title">New story</string>
+    <string name="new_story_close">Close</string>
+    <!-- How many photos and videos are picked: "4 selected". -->
+    <plurals name="new_story_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="new_story_in_this_story">In this story</string>
+    <string name="new_story_drag_to_reorder">Drag to reorder</string>
+    <string name="new_story_add_more">Add more</string>
+    <string name="new_story_camera">Camera</string>
+    <string name="new_story_next">Next</string>
+    <string name="new_story_remove">Remove from story</string>
+    <string name="new_story_move_earlier">Move earlier</string>
+    <string name="new_story_move_later">Move later</string>
+    <!-- Read by screen readers for a picked item: "Photo 1 of 4", "Video 3 of 4, 0:14". -->
+    <string name="new_story_a11y_photo">Photo %1$d of %2$d</string>
+    <string name="new_story_a11y_video">Video %1$d of %2$d, %3$s</string>
+    <string name="new_story_a11y_preparing">Adding a photo or video</string>
+    <!-- Under the picked items; Pingogram never asks for the storage permission. -->
+    <plurals name="new_story_picker_note">
+        <item quantity="one">Picked with Android\'s photo picker. Pingogram can only see this item.</item>
+        <item quantity="other">Picked with Android\'s photo picker. Pingogram can only see these %1$d items.</item>
+    </plurals>
+    <string name="new_story_not_postable">Only photos and videos can go into a story</string>
+    <string name="new_story_no_picker">No app on this device can pick photos</string>
+    <string name="new_story_no_camera_app">No camera app on this device can take a photo</string>
 </resources>
