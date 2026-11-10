@@ -513,7 +513,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   story TDLib took is followed (`StoryPostings`: its file's `updateFile`, `updateStoryPostFailed`) as
   `StoryPostRepository.uploads`, which `cancel` stops (`deleteStory`, its copy deleted); `feature:chats`'
   `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
-  them, with "Stop posting".
+  them, with "Stop posting". `TdlibTransferRepository` counts those still sending as uploads, so the background
+  transfers' service keeps posting them with the app in the background, and its "Cancel" stops them too.
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
@@ -1246,14 +1247,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Background transfers (FR-N4, `docs/adr/0009-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
-  its deletion, progress from `updateFile`), and the downloads asked for with `DownloadPriority.Requested` (a document
+  its deletion, progress from `updateFile`), the stories being posted that TDLib has not given up on
+  (`StoryPostRepository.uploads`), and the downloads asked for with `DownloadPriority.Requested` (a document
   or a photo tapped in a bubble, files saved from a selection), which `TdlibFileRepository` hands it. Automatic downloads
   (prefetch) and what is on screen (visible) never count. `:app`'s `TransfersController` starts `core:notifications`'
   `TransfersWorker` (unique expedited work) as transfers begin while the app is in the foreground, or when the user
   comes back to them; the worker runs in WorkManager's foreground service with type `dataSync`, shows their progress
   in the "Transfers" channel (`TransferNotificationBuilder`, `ProgressStyle` on Android 16) with "Cancel"
-  (`TransferCancelReceiver` → `cancelAll`: `cancelDownloadFile`, `deleteMessages` of the messages being sent), and ends
-  2 s after the last one. Android 15's daily `dataSync` limit reaches it through WorkManager's `onTimeout`.
+  (`TransferCancelReceiver` → `cancelAll`: `cancelDownloadFile`, `deleteMessages` of the messages being sent,
+  `StoryPostRepository.cancel` of the stories), and ends 2 s after the last one. Android 15's daily `dataSync` limit reaches it through WorkManager's `onTimeout`.
 - Send-as (FR-C5): the chat's `Chat.messageSender` (`updateChatMessageSender`, kept by `TdlibChatRepository`) is who new
   messages go out as; `SendAsRepository` (`TdlibSendAsRepository`, `core:data`, no cache) lists who the user can send as
   (`getChatAvailableMessageSenders`) and changes it (`setChatMessageSender`). `feature:chat`'s `ChatSendAs` (a part of

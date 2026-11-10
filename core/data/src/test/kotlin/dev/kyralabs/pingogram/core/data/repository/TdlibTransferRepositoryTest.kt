@@ -1,8 +1,15 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
+import dev.kyralabs.pingogram.core.domain.model.StoryPrivacy
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
 import dev.kyralabs.pingogram.core.domain.model.Transfers
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -19,8 +26,11 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateFile
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageSendFailed
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageSendSucceeded
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -184,6 +194,48 @@ class TdlibTransferRepositoryTest {
         }
 
     @Test
+    fun `stories being posted count as uploads, not those TDLib gave up on`() =
+        runTest {
+            val stories = StoryPostsFake()
+            val repository = TdlibTransferRepository(client, stories, backgroundScope).also { runCurrent() }
+            emit(updateNewMessage(sending(id = 1, uploading(UPLOAD_FILE, uploadedSize = 100))))
+
+            stories.uploads.value =
+                persistentListOf(
+                    StoryUpload(storyId = 5, uploadedBytes = 250, sizeBytes = SIZE),
+                    StoryUpload(storyId = 6, uploadedBytes = 0, sizeBytes = 0),
+                    StoryUpload(storyId = 7, uploadedBytes = 10, sizeBytes = SIZE, failure = DomainError.Network),
+                )
+            runCurrent()
+
+            assertEquals(
+                Transfers(uploads = 3, transferredSize = 350, totalSize = 2 * SIZE),
+                repository.transfers.value,
+            )
+            stories.uploads.value = persistentListOf()
+            runCurrent()
+            assertEquals(1, repository.transfers.value.uploads)
+        }
+
+    @Test
+    fun `cancelling stops the stories being posted too`() =
+        runTest {
+            val stories = StoryPostsFake()
+            val repository = TdlibTransferRepository(client, stories, backgroundScope).also { runCurrent() }
+            stories.uploads.value =
+                persistentListOf(
+                    StoryUpload(storyId = 5, uploadedBytes = 0, sizeBytes = SIZE),
+                    StoryUpload(storyId = 7, uploadedBytes = 0, sizeBytes = SIZE, failure = DomainError.Network),
+                )
+
+            assertEquals(Outcome.Success(Unit), repository.cancelAll())
+            assertEquals(listOf(listOf(5)), stories.cancelled)
+
+            stories.cancelResult = Outcome.Failure(DomainError.Network)
+            assertTrue(repository.cancelAll() is Outcome.Failure)
+        }
+
+    @Test
     fun `logging out ends every transfer`() =
         runTest {
             val repository = repository()
@@ -216,6 +268,28 @@ class TdlibTransferRepositoryTest {
         fileId: Int,
         downloadedSize: Long,
     ) = file(id = fileId, size = SIZE, downloadedSize = downloadedSize, isDownloadingActive = true)
+
+    /** The stories being posted, set by the tests; cancelling records the ids asked. */
+    private class StoryPostsFake : StoryPostRepository {
+        override val uploads = MutableStateFlow<ImmutableList<StoryUpload>>(persistentListOf())
+        val cancelled = mutableListOf<List<Int>>()
+        var cancelResult: Outcome<Unit> = Outcome.Success(Unit)
+
+        override suspend fun ability(): Outcome<StoryPostAbility> = error("not used")
+
+        override suspend fun closeFriendCount(): Outcome<Int> = error("not used")
+
+        override suspend fun post(
+            items: List<Attachment>,
+            caption: FormattedText,
+            privacy: StoryPrivacy,
+        ): Outcome<Unit> = error("not used")
+
+        override suspend fun cancel(storyIds: List<Int>): Outcome<Unit> {
+            cancelled += storyIds
+            return cancelResult
+        }
+    }
 
     private companion object {
         const val CHAT_ID = 100L
