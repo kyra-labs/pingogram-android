@@ -23,8 +23,6 @@
     <!-- Screen readers' actions on a task. %1$s is its text. -->
     <string name="checklist_mark_done">Mark %1$s as done</string>
     <string name="checklist_mark_not_done">Mark %1$s as not done</string>
-    <!-- For screen readers: who ticked a task, on their avatar. %1$s is their name. -->
-    <string name="checklist_completer">Done by %1$s</string>
 
     <!-- The form of a new checklist. -->
     <string name="checklist_form_title">New checklist</string>
