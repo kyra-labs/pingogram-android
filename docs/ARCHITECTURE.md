@@ -500,7 +500,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
   second step (`NewStoryStep`, in saved state): `StoryComposer`, a part of the view model, holds the caption
   (`CaptionText`, copied from `feature:chat`'s composer with its entity edits and formatting transformation, as features
-  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`.
+  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`. "Selected people"
+  is a sheet with a view model of its own (`StoryPeopleSheet`, `StoryPeopleViewModel`: the contacts of
+  `ContactRepository`, people only, filtered on the device, the query and the picks in its saved state while it shows),
+  whose picks the composer keeps in its saved state and posts as `StoryPrivacy.Selected`.
   Posting: `core:domain`'s `StoryPostRepository` (`TdlibStoryPostRepository`, `core:data`, account-scoped, no cache)
   asks `canPostStory` of the user's Saved Messages chat (`StoryPostAbility`), counts the close friends
   (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the

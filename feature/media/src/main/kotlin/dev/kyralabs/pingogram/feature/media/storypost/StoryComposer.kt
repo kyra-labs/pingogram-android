@@ -12,6 +12,8 @@ import dev.kyralabs.pingogram.core.domain.model.StoryPrivacy
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,13 +22,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Who a story is for, as the composer's chip offers it. */
-internal enum class StoryAudience(
-    val privacy: StoryPrivacy,
-) {
-    Everyone(StoryPrivacy.Everyone),
-    Contacts(StoryPrivacy.Contacts),
-    CloseFriends(StoryPrivacy.CloseFriends),
+/** Who a story is for, as the composer's chip offers it: [Selected] is the people the user picked. */
+internal enum class StoryAudience {
+    Everyone,
+    Contacts,
+    CloseFriends,
+    Selected,
 }
 
 /**
@@ -39,8 +40,23 @@ internal data class StoryComposeState(
     val ability: StoryPostAbility? = null,
     val closeFriends: Int? = null,
     val isPosting: Boolean = false,
+    /** The people picked for [StoryAudience.Selected], in the order they were picked; kept when another is chosen. */
+    val selected: ImmutableList<Long> = persistentListOf(),
 ) {
-    val canPost: Boolean get() = ability is StoryPostAbility.Allowed && !isPosting
+    val canPost: Boolean
+        get() =
+            ability is StoryPostAbility.Allowed && !isPosting &&
+                (audience != StoryAudience.Selected || selected.isNotEmpty())
+
+    /** Who TDLib posts the story to. */
+    val privacy: StoryPrivacy
+        get() =
+            when (audience) {
+                StoryAudience.Everyone -> StoryPrivacy.Everyone
+                StoryAudience.Contacts -> StoryPrivacy.Contacts
+                StoryAudience.CloseFriends -> StoryPrivacy.CloseFriends
+                StoryAudience.Selected -> StoryPrivacy.Selected(selected)
+            }
 }
 
 /**
@@ -57,7 +73,10 @@ internal class StoryComposer(
 ) {
     val caption = CaptionText(savedState.restoredCaption())
 
-    private val mutableState = MutableStateFlow(StoryComposeState(audience = savedState.restoredAudience()))
+    private val mutableState =
+        MutableStateFlow(
+            StoryComposeState(audience = savedState.restoredAudience(), selected = savedState.restoredPeople()),
+        )
     val state: StateFlow<StoryComposeState> = mutableState.asStateFlow()
 
     private var started = false
@@ -77,9 +96,19 @@ internal class StoryComposer(
         }
     }
 
+    /** Chooses [audience]; [StoryAudience.Selected] only once people are picked, through [setSelected]. */
     fun setAudience(audience: StoryAudience) {
+        if (audience == StoryAudience.Selected && mutableState.value.selected.isEmpty()) return
         savedState[KEY_AUDIENCE] = audience.name
         mutableState.update { it.copy(audience = audience) }
+    }
+
+    /** The story is for [userIds] alone; none picked changes nothing. */
+    fun setSelected(userIds: List<Long>) {
+        if (userIds.isEmpty()) return
+        savedState[KEY_SELECTED] = userIds.toLongArray()
+        mutableState.update { it.copy(selected = userIds.toImmutableList()) }
+        setAudience(StoryAudience.Selected)
     }
 
     /**
@@ -96,7 +125,7 @@ internal class StoryComposer(
         mutableState.update { it.copy(isPosting = true) }
         val content = caption.content.trimmed()
         applicationScope.launch {
-            val result = repository.post(items, content, current.audience.privacy)
+            val result = repository.post(items, content, current.privacy)
             mutableState.update { it.copy(isPosting = false) }
             when (result) {
                 is Outcome.Success -> onPosted()
@@ -125,6 +154,7 @@ private fun FormattedText.trimmed(): FormattedText {
 private const val KEY_CAPTION = "newStory.caption"
 private const val KEY_CAPTION_ENTITIES = "newStory.captionEntities"
 private const val KEY_AUDIENCE = "newStory.audience"
+private const val KEY_SELECTED = "newStory.selectedPeople"
 private const val SEPARATOR = "|"
 private const val LINK = "link"
 private const val PARTS = 4
@@ -180,3 +210,6 @@ private fun SavedStateHandle.restoredCaption(): FormattedText {
 private fun SavedStateHandle.restoredAudience(): StoryAudience =
     get<String>(KEY_AUDIENCE)?.let { name -> StoryAudience.entries.firstOrNull { it.name == name } }
         ?: StoryAudience.Everyone
+
+private fun SavedStateHandle.restoredPeople(): ImmutableList<Long> =
+    get<LongArray>(KEY_SELECTED)?.toList().orEmpty().toImmutableList()

@@ -155,7 +155,8 @@ private fun LinkDialog(
 
 /**
  * Who the story is for, an `AssistChip` on `secondaryContainer` with the audience's symbol that opens an expressive
- * menu of the three, and how long it stays, a label on `surfaceContainerHigh`: other periods need Telegram Premium.
+ * menu of the four, "Selected people" opening a picker of contacts; and how long it stays, a label on
+ * `surfaceContainerHigh`: other periods need Telegram Premium.
  */
 @Composable
 internal fun AudienceRow(
@@ -163,8 +164,9 @@ internal fun AudienceRow(
     onEvent: (NewStoryEvent) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
     val audience = compose.audience
-    val name = stringResource(audience.label)
+    val name = audienceName(compose)
     val description = stringResource(R.string.new_story_audience_a11y, name)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -200,14 +202,37 @@ internal fun AudienceRow(
             )
             AudienceMenu(open, audience, onDismiss = { open = false }) { chosen ->
                 open = false
-                onEvent(NewStoryEvent.SetAudience(chosen))
+                if (chosen == StoryAudience.Selected) picking = true else onEvent(NewStoryEvent.SetAudience(chosen))
             }
         }
         StaysLabel()
     }
+    if (picking) {
+        StoryPeopleSheet(
+            initial = compose.selected,
+            onDone = { userIds ->
+                picking = false
+                onEvent(NewStoryEvent.SetSelected(userIds))
+            },
+            onDismiss = { picking = false },
+        )
+    }
 }
 
-/** The three audiences in an expressive menu, the chosen one marked and selected for screen readers. */
+/** The chip's label: the audience's name, or "3 people" for the people picked. */
+@Composable
+private fun audienceName(compose: StoryComposeState): String =
+    if (compose.audience == StoryAudience.Selected) {
+        val count = compose.selected.size
+        pluralStringResource(R.plurals.new_story_audience_people, count, count)
+    } else {
+        stringResource(compose.audience.label)
+    }
+
+/**
+ * The four audiences in an expressive menu, the chosen one marked and selected for screen readers; "Selected people"
+ * opens the picker, also when chosen, to change who.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AudienceMenu(
@@ -274,6 +299,10 @@ internal fun summaryText(
                 compose.closeFriends?.let { pluralStringResource(R.plurals.new_story_shown_to_close_friends, it, it) }
                     ?: stringResource(R.string.new_story_shown_to_close_friends_unknown)
             }
+
+            StoryAudience.Selected -> {
+                compose.selected.size.let { pluralStringResource(R.plurals.new_story_shown_to_people, it, it) }
+            }
         }
     val count = state.items.size
     val position = pluralStringResource(R.plurals.new_story_item_of, count, state.items.indexOf(state.shown) + 1, count)
@@ -327,6 +356,7 @@ private val StoryAudience.label: Int
             StoryAudience.Everyone -> R.string.new_story_audience_everyone
             StoryAudience.Contacts -> R.string.new_story_audience_contacts
             StoryAudience.CloseFriends -> R.string.new_story_audience_close_friends
+            StoryAudience.Selected -> R.string.new_story_audience_selected
         }
 
 private val StoryAudience.icon: Int
@@ -335,4 +365,5 @@ private val StoryAudience.icon: Int
             StoryAudience.Everyone -> UiR.drawable.ic_public
             StoryAudience.Contacts -> UiR.drawable.ic_contacts
             StoryAudience.CloseFriends -> UiR.drawable.ic_favorite_filled
+            StoryAudience.Selected -> UiR.drawable.ic_group
         }

@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.CAMERA_FILE
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.photo
 import dev.kyralabs.pingogram.feature.media.storypost.FakeAttachmentRepository.Companion.video
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -337,6 +338,41 @@ class NewStoryViewModelTest {
             assertEquals(NewStoryStep.Compose, after.uiState.value.step)
             assertEquals(before.composer.caption.content, after.composer.caption.content)
             assertEquals(StoryAudience.Contacts, after.composer.state.value.audience)
+        }
+
+    @Test
+    fun `posts to the people picked, and Selected waits for a pick`() =
+        runTest {
+            val viewModel = composing()
+            viewModel.onEvent(NewStoryEvent.SetAudience(StoryAudience.Selected))
+            assertEquals(StoryAudience.Everyone, viewModel.composer.state.value.audience)
+            viewModel.onEvent(NewStoryEvent.SetSelected(emptyList()))
+            assertEquals(StoryAudience.Everyone, viewModel.composer.state.value.audience)
+
+            viewModel.onEvent(NewStoryEvent.SetSelected(listOf(9L, 7L)))
+            assertEquals(StoryAudience.Selected, viewModel.composer.state.value.audience)
+            viewModel.effects.test {
+                viewModel.onEvent(NewStoryEvent.Post)
+                assertEquals(NewStoryEffect.Posted, awaitItem())
+            }
+
+            assertEquals(StoryPrivacy.Selected(persistentListOf(9L, 7L)), posts.posts.single().privacy)
+        }
+
+    @Test
+    fun `keeps the people picked across process death and another audience`() =
+        runTest {
+            val savedState = SavedStateHandle(mapOf("newStory.started" to true))
+            val before = composing(savedState)
+            before.onEvent(NewStoryEvent.SetSelected(listOf(8L)))
+            before.onEvent(NewStoryEvent.SetAudience(StoryAudience.Contacts))
+
+            val after = viewModel(SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
+
+            assertEquals(StoryAudience.Contacts, after.composer.state.value.audience)
+            assertEquals(listOf(8L), after.composer.state.value.selected)
+            after.onEvent(NewStoryEvent.SetAudience(StoryAudience.Selected))
+            assertEquals(StoryAudience.Selected, after.composer.state.value.audience)
         }
 
     /** A view model composing a story of two photos. */
