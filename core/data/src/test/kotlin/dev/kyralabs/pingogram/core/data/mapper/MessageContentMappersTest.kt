@@ -493,7 +493,6 @@ class MessageContentMappersTest {
             listOf(
                 TdApi.MessagePaidMedia::class.java,
                 TdApi.MessageStakeDice::class.java,
-                TdApi.MessageChecklist::class.java,
                 TdApi.MessageGiveaway::class.java,
                 TdApi.MessageGiveawayWinners::class.java,
                 TdApi.MessageUnsupported::class.java,

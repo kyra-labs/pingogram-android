@@ -774,6 +774,22 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+- **Checklists** (FR-C4): `core:domain`'s `ChecklistRepository` (`TdlibChecklistRepository`, `core:data`, no cache)
+  marks tasks as done or not done (`markChecklistTasksAsDone`) and adds tasks (`addChecklistTasks`, each with the id
+  after the checklist's highest, which td_api.tl leaves to the client); TDLib answers both with `updateMessageContent`
+  of the checklist's message, which `HistoryCache` applies, so the bubble follows Telegram, never a guess. `Checklist`
+  carries TDLib's say on what the user may do (`canMarkTasksAsDone`, `canAddTasks`); `ChecklistTask.completedBy` is a
+  `MessageSender`. `AttachmentRepository.sendChecklist` sends `inputMessageChecklist` (`NewChecklist`: plain title and
+  tasks numbered from 1, who else may mark and add). `feature:chat`'s `ChatChecklists` (a part of `ChatViewModel`,
+  `checklist/`) sends each mark with the task pending in its bubble alone (`withChecklists`, like `withPollChoices`),
+  keeps which bubbles' inline field is open in the saved state and adds the task typed there (its text is the field's
+  own state); `ChecklistUi` on `ChatItem.Bubble.checklist` holds the completers' avatars, looked up with the item's
+  members (`memberIdsOf`, so a completer TDLib has not announced is asked for as a member is). The form is
+  `ChatAttachments`' `ChecklistEditor` (its draft in the saved state, as the poll's) behind `ChecklistFormSheet`, which
+  the attach menu offers to Telegram Premium subscribers only (`attachOptions(isPremium)`, from the signed-in user's
+  `isPremium`), never to anyone else. The service messages `messageChecklistTasksDone` and `messageChecklistTasksAdded`
+  are `ServiceAction.ChecklistTasksDone` / `ChecklistTasksAdded`, worded by `core:ui`'s `ServicePreview` with their
+  counts.
 - **Rich messages** (td_api.tl `messageRichMessage`, the posts channels write with headings, collapsible sections,
   photos, lists and tables): `core:domain`'s `MessageContent.RichMessage` holds a `RichMessage`, its `RichBlock`s (each
   text a `FormattedText`, its formatting and links as the entities of a text message, with `Marked`, `Subscript` and

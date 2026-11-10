@@ -5,9 +5,10 @@ import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
 
-// The attach preview and the poll form in a SavedStateHandle, which keeps only Bundle types, for process death: each
-// attachment as one string of its fields, separated by a NUL character, which neither paths nor the cleaned file
-// names of copies hold. Attachments still being prepared are not kept: their picker's read grant does not survive.
+// The attach preview and the poll form in a SavedStateHandle, which keeps only Bundle types, for process death (the
+// checklist form: ChecklistSaving.kt): each attachment as one string of its fields, separated by a NUL character,
+// which neither paths nor the cleaned file names of copies hold. Attachments still being prepared are not kept: their
+// picker's read grant does not survive.
 
 /** Keeps the preview's [kind] and its ready [attachments]; nothing for no preview. */
 internal fun SavedStateHandle.savePreview(

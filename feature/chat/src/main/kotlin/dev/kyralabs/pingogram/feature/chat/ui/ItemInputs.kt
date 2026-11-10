@@ -149,11 +149,26 @@ private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
     if (chatId == chat.id) ChatRef(chat.id, chat.title, chat.photo) else people.chats[chatId]
 
 /** The users a service message names besides its sender, whose names its text may show. */
-private fun memberIdsOf(content: MessageContent): List<Long> =
-    when (val action = (content as? MessageContent.Service)?.action) {
-        is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
-        is ServiceAction.MemberRemoved -> listOf(action.userId)
-        else -> emptyList()
+internal fun memberIdsOf(content: MessageContent): List<Long> =
+    when (content) {
+        is MessageContent.Service -> {
+            when (val action = content.action) {
+                is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
+                is ServiceAction.MemberRemoved -> listOf(action.userId)
+                else -> emptyList()
+            }
+        }
+
+        // Who ticked each task, for the avatars at their ends.
+        is MessageContent.Checklist -> {
+            content.list.tasks
+                .mapNotNull { (it.completedBy as? MessageSender.User)?.userId }
+                .distinct()
+        }
+
+        else -> {
+            emptyList()
+        }
     }
 
 /**

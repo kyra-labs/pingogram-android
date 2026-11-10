@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.RecordedVideoNote
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
@@ -135,6 +136,13 @@ internal class TopicAttachmentRepository(
         options: SendOptions,
         replyTo: ReplyTarget?,
     ) = attachments.sendPoll(chatId, poll, options.copy(topic = topic), replyTo)
+
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ) = attachments.sendChecklist(chatId, checklist, options.copy(topic = topic), replyTo)
 }
 
 /** [voiceNotes] sent into [topic]. */

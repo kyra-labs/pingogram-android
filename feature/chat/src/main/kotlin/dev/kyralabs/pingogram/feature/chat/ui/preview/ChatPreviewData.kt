@@ -60,7 +60,10 @@ internal object ChatPreviewData {
     val canWrite =
         ComposerUiState.Available(
             canSchedule = true,
-            attachOptions = AttachOption.entries.filter { it != AttachOption.Poll }.toPersistentList(),
+            attachOptions =
+                AttachOption.entries
+                    .filter { it != AttachOption.Poll && it != AttachOption.Checklist }
+                    .toPersistentList(),
         )
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */
