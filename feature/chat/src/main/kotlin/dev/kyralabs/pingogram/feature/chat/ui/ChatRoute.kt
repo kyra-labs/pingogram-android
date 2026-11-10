@@ -155,6 +155,7 @@ internal fun ConversationRoute(
             onEvent = viewModel::onEvent,
             caption = viewModel.attachCaption,
             pollEditor = viewModel.pollEditor,
+            checklistEditor = viewModel.checklistEditor,
             snackbarHostState = snackbarHostState,
             location = rememberLocationInputs(locationViewModel, snackbarHostState),
         )

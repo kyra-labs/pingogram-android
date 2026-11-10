@@ -433,6 +433,14 @@ data class StoryViewerRoute(
 )
 
 /**
+ * Posting a story (`docs/adr/0036-posting-stories.md`), `:feature:media`: the photos and videos picked with Android's
+ * photo picker or taken with the camera app, reordered and sent on to the composer. Full screen, like the stories
+ * viewer, without the navigation bar or rail.
+ */
+@Serializable
+data object NewStoryRoute
+
+/**
  * The forward sheet (`REQUIREMENTS.md` FR-C6) for messages [messageIds] of chat [fromChatId], `:feature:chat`: a
  * dialog destination above the screen it is opened from, which stays visible below the sheet. The media viewer opens
  * it for its current item; the conversation shows the same sheet in place, for its own messages.

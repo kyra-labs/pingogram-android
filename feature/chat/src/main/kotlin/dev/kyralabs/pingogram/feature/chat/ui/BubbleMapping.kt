@@ -15,9 +15,11 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -113,6 +115,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
+        checklist = checklistUi(content),
     )
 }
 

@@ -101,6 +101,18 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
             ServiceAction.VideoChatEnded(duration)
         }
 
+        is TdApi.MessageChecklistTasksDone -> {
+            ServiceAction.ChecklistTasksDone(
+                checklistMessageId,
+                doneCount = markedAsDoneTaskIds.size,
+                notDoneCount = markedAsNotDoneTaskIds.size,
+            )
+        }
+
+        is TdApi.MessageChecklistTasksAdded -> {
+            ServiceAction.ChecklistTasksAdded(checklistMessageId, count = tasks.size)
+        }
+
         is TdApi.MessageInviteVideoChatParticipants -> {
             ServiceAction.VideoChatInvited(userIds.asList().toImmutableList())
         }
@@ -159,8 +171,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageChatSetBackground::class.java,
         TdApi.MessageChatSetTheme::class.java,
         TdApi.MessageChatShared::class.java,
-        TdApi.MessageChecklistTasksAdded::class.java,
-        TdApi.MessageChecklistTasksDone::class.java,
         TdApi.MessageDirectMessagePriceChanged::class.java,
         TdApi.MessageForumTopicCreated::class.java,
         TdApi.MessageForumTopicEdited::class.java,

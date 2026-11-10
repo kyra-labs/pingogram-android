@@ -32,18 +32,23 @@ enum class AttachOption {
 
     /** A poll or quiz, created in a form. */
     Poll,
+
+    /** A checklist, created in a form; Telegram Premium subscribers only (td_api.tl `premiumFeatureChecklists`). */
+    Checklist,
 }
 
 /**
  * The attach options of [chat], for a user who may write in it: everything everywhere, but polls only where Telegram
  * takes them (td/telegram/MessageContent.cpp, can_send_message_content): groups and channels, chats with bots and the
- * user's Saved Messages, never secret chats. [user] is the other user of a private chat (null while unknown), and
- * [myUserId] the current user's (null while unknown).
+ * user's Saved Messages, never secret chats; and checklists only for Telegram Premium subscribers ([isPremium],
+ * td_api.tl `premiumFeatureChecklists`), in every chat but secret chats, never offered to anyone else. [user] is the
+ * other user of a private chat (null while unknown), and [myUserId] the current user's (null while unknown).
  */
 internal fun attachOptions(
     chat: Chat,
     user: User?,
     myUserId: Long?,
+    isPremium: Boolean = false,
 ): ImmutableList<AttachOption> {
     val canSendPolls =
         when (val type = chat.type) {
@@ -51,7 +56,15 @@ internal fun attachOptions(
             is ChatType.Private -> user?.type == UserType.Bot || (myUserId != null && type.userId == myUserId)
             is ChatType.Secret -> false
         }
-    return AttachOption.entries.filter { it != AttachOption.Poll || canSendPolls }.toImmutableList()
+    val canSendChecklists = isPremium && chat.type !is ChatType.Secret
+    return AttachOption.entries
+        .filter {
+            when (it) {
+                AttachOption.Poll -> canSendPolls
+                AttachOption.Checklist -> canSendChecklists
+                else -> true
+            }
+        }.toImmutableList()
 }
 
 /** Whether [chat] is a channel, where polls are always anonymous (td_api.tl `inputMessagePoll.is_anonymous`). */

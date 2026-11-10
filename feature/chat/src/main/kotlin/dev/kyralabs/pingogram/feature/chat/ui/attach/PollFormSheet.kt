@@ -179,7 +179,7 @@ internal fun ColumnScope.PollForm(
 /** The options' header, a row per option, and the button that adds one while fewer than ten are there. */
 private fun LazyListScope.optionItems(editor: PollEditor) {
     item(key = OPTIONS) {
-        SectionHeader(
+        FormSectionHeader(
             title = stringResource(R.string.poll_options),
             note =
                 stringResource(R.string.poll_choose_correct)
@@ -235,9 +235,9 @@ private fun LazyListScope.settingItems(
     sheet: PollSheet,
     editor: PollEditor,
 ) {
-    item(key = SETTINGS) { SectionHeader(stringResource(R.string.poll_settings)) }
+    item(key = SETTINGS) { FormSectionHeader(stringResource(R.string.poll_settings)) }
     item(key = ANONYMOUS) {
-        SwitchRow(
+        FormSwitchRow(
             title = stringResource(R.string.poll_anonymous),
             checked = sheet.isChannel || editor.isAnonymous,
             onCheckedChange = { editor.isAnonymous = it },
@@ -246,7 +246,7 @@ private fun LazyListScope.settingItems(
         )
     }
     item(key = MULTIPLE) {
-        SwitchRow(
+        FormSwitchRow(
             title = stringResource(R.string.poll_multiple),
             checked = !editor.isQuiz && editor.allowsMultipleAnswers,
             onCheckedChange = { editor.allowsMultipleAnswers = it },
@@ -254,7 +254,7 @@ private fun LazyListScope.settingItems(
         )
     }
     item(key = QUIZ) {
-        SwitchRow(
+        FormSwitchRow(
             title = stringResource(R.string.poll_quiz),
             checked = editor.isQuiz,
             onCheckedChange = { editor.isQuiz = it },
@@ -320,7 +320,7 @@ private fun OptionRow(
 
 /** A section's title in `titleSmallEmphasized` and `primary`, as in settings, with an optional [note] below. */
 @Composable
-private fun SectionHeader(
+internal fun FormSectionHeader(
     title: String,
     note: String? = null,
 ) {
@@ -341,7 +341,7 @@ private fun SectionHeader(
  * sheet's color.
  */
 @Composable
-private fun SwitchRow(
+internal fun FormSwitchRow(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

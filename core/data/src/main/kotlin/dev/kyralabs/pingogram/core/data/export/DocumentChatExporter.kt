@@ -469,6 +469,7 @@ private fun MessageContent.text(): FormattedText =
         is MessageContent.Audio -> caption
         is MessageContent.Document -> caption
         is MessageContent.Poll -> description
+        is MessageContent.Checklist -> list.title
         is MessageContent.RichMessage -> message.fullText()
         else -> FormattedText.Empty
     }
