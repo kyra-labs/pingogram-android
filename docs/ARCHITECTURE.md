@@ -520,7 +520,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
   first). A video longer than 60 s is cut first by `MediaStoryVideoCutter` (the platform's `MediaExtractor` and
   `MediaMuxer`, at the key frames `storyVideoCuts` plans, nothing encoded again). Copies are deleted once TDLib reports
-  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's.
+  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's. Until then each
+  story TDLib took is followed (`StoryPostings`: its file's `updateFile`, `updateStoryPostFailed`) as
+  `StoryPostRepository.uploads`, which `cancel` stops (`deleteStory`, its copy deleted); `feature:chats`'
+  `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
+  them, with "Stop posting".
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
@@ -839,6 +843,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
   media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
   Forward, "Show in chat", saving and deletions, leaving Delete out.
+- **Dates in messages** (td_api.tl `textEntityTypeDateTime`, `TextEntityType.DateTime`): `feature:chat`'s bubble
+  mapping words each date for its reader before anything else marks the text (`withReaderDates`, `dates/`):
+  `ChatTimeFormatter.dateTimeText` in the reader's zone, language and clock, relative ones through `core:ui`'s
+  `TimePatterns.relativeTime` (the platform's `RelativeDateTimeFormatter`; null on the JVM, which shows the date in
+  full). `core:domain`'s `FormattedText.replacingEntities` writes the parts anew and moves every other entity with
+  them, so mentions, search highlights, custom emoji and a headline mark the text as shown. An item with a relative
+  date carries the current minute in its inputs (`ItemInputs.relativeNow`), so it alone is mapped again each minute.
+  `core:ui`'s `toAnnotatedString` makes a date a `LinkAnnotation.Clickable` (`dateTimeOf`) handed the mention
+  listener; `DateTimeEvent.Open` opens `ChatDateTimes`' sheet (a part of `ChatViewModel`, `dateTimeSheet`, kept out of
+  `ChatUiState`, its moment in the saved state), whose "Add to calendar" is `ChatEffect.AddToCalendar` (the route's
+  `ACTION_INSERT` of `CalendarContract.Events`, no permission) and "Copy" `ChatEffect.CopyText`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

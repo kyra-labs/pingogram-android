@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadContent
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadSheetScreenshotTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -83,6 +85,23 @@ class ChatsAccessibilityChecksTest(
                             )
                         },
                     )
+                }
+                put("chatList.storyPosting") {
+                    ChatListScreen(
+                        state = ChatListPreviewData.contentWithArchive,
+                        onEvent = {},
+                        stories = { modifier ->
+                            StoryRingsRow(
+                                rings = StoryRingsPreviewData.posting,
+                                onOpen = {},
+                                onNearEnd = {},
+                                modifier = modifier,
+                            )
+                        },
+                    )
+                }
+                StoryUploadSheetScreenshotTest.STATES.forEach { (name, state) ->
+                    put("storyUpload.$name") { StoryUploadContent(state.upload, state.cancel, state.canView, {}) }
                 }
                 NotificationPromptScreenshotTest.STATES.forEach { (name, state) ->
                     put("notificationPrompt.$name") {

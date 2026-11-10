@@ -15,7 +15,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the
   camera, reorder them, write a caption with bold, italic, links and spoilers, and choose who sees them: everyone, your
   contacts, your close friends or the contacts you pick. Videos longer than a minute are cut into several stories on
-  the phone.
+  the phone. While they post, "Your story" shows how far it is; tap it to see the progress or stop posting.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -24,6 +24,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 - Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
   people to it.
+- Dates in messages show in your own time zone and date format; tap one to add it to your calendar or copy it.
 - Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
   that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
   the call.

@@ -90,6 +90,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
+import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
+import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
@@ -175,6 +177,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Locale
 
 /**
@@ -933,6 +936,22 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val dateTimes =
+        ChatDateTimes(
+            describe = { unixTime ->
+                DateTimeSheet(
+                    unixTime = unixTime,
+                    text = timeFormatter().dates.full(unixTime),
+                    zoneName = clock.zone().getDisplayName(TextStyle.FULL, locale()),
+                )
+            },
+            savedState = savedStateHandle,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** A tapped date in a message, in the reader's time zone; null while its sheet is closed. Kept out of [uiState]. */
+    val dateTimeSheet: StateFlow<DateTimeSheet?> get() = dateTimes.sheet
+
     /** Who voted for each answer of a public poll; null while the sheet is closed. Kept out of [uiState]. */
     val pollVotersSheet: StateFlow<PollVotersSheet?> get() = polls.votersSheet
 
@@ -1237,6 +1256,7 @@ class ChatViewModel internal constructor(
             is TranslationEvent -> translation.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
+            is DateTimeEvent -> dateTimes.onEvent(event)
             is ChecklistEvent -> checklists.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
@@ -1537,6 +1557,7 @@ private fun ChatItemMapper.content(
                         unreadAfterId = unreadAfterId,
                         today = now.atZone(formatter.zone).toLocalDate(),
                         timeFormatter = formatter,
+                        now = now,
                     ),
                 )
             ChatContent.Content(

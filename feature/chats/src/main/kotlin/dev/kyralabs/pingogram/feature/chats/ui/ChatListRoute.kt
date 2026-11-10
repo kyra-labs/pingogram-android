@@ -10,8 +10,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -22,7 +25,10 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsUiState
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadSheet
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadSheetEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -62,6 +68,7 @@ internal fun ChatListRoute(
     val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
     val currentOnOpenStory by rememberUpdatedState(onOpenStory)
     val currentOnNewStory by rememberUpdatedState(onNewStory)
+    var uploadShown by rememberSaveable { mutableStateOf(false) }
     // Reads the rings in the row's own composition, not here.
     val stories: @Composable (Modifier) -> Unit =
         remember(storyRings, rings) {
@@ -72,9 +79,18 @@ internal fun ChatListRoute(
                     onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
                     modifier = rowModifier,
                     onAddStory = { currentOnNewStory() },
+                    onShowUpload = { uploadShown = true },
                 )
             }
         }
+    if (uploadShown) {
+        StoryUploadHost(
+            state = rings.value,
+            onEvent = storyRings::onEvent,
+            onOpenStory = { currentOnOpenStory(it) },
+            onClose = { uploadShown = false },
+        )
+    }
     ChatListDestination(
         state = state,
         viewModel = viewModel,
@@ -250,3 +266,39 @@ private fun archivedMessage(
     } else {
         resources.getQuantityString(R.plurals.chat_list_archived_many, count, count)
     }
+
+/**
+ * The sheet of the user's stories being posted, while there are some ([StoryUploadSheet]); it closes by itself once
+ * none are left, as when they were all posted or stopped.
+ */
+@Composable
+private fun StoryUploadHost(
+    state: StoryRingsUiState,
+    onEvent: (StoryRingsEvent) -> Unit,
+    onOpenStory: (chatId: Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    val own = state.rings.firstOrNull { it.isMine }
+    val upload = own?.upload
+    if (own == null || upload == null) {
+        LaunchedEffect(Unit) { onClose() }
+        return
+    }
+    StoryUploadSheet(upload, state.cancel, canView = own.storyCount > 0) { event ->
+        when (event) {
+            StoryUploadSheetEvent.Stop -> {
+                onEvent(StoryRingsEvent.CancelUploads)
+            }
+
+            StoryUploadSheetEvent.View -> {
+                onClose()
+                onOpenStory(own.chatId)
+            }
+
+            StoryUploadSheetEvent.Dismiss -> {
+                onEvent(StoryRingsEvent.CancelErrorShown)
+                onClose()
+            }
+        }
+    }
+}

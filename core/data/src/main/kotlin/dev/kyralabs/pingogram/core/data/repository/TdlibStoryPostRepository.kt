@@ -8,24 +8,25 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.error.toDomainError
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.story.MediaStoryVideoCutter
+import dev.kyralabs.pingogram.core.data.story.StoryPostings
 import dev.kyralabs.pingogram.core.data.story.StoryVideoCutter
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
 import dev.kyralabs.pingogram.core.domain.model.StoryPrivacy
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository.Companion.MAX_VIDEO_SECONDS
+import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.getAndUpdate
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
@@ -38,9 +39,12 @@ import javax.inject.Inject
  *
  * - **Videos** longer than [MAX_VIDEO_SECONDS] are cut first by [cutter], all of them before anything is posted, so
  *   one that cannot be cut posts nothing; a cut video's copy is deleted once its parts were all posted.
- * - **Copies** of what TDLib took are deleted once it posted them (`updateStoryPostSucceeded`). A story that failed
- *   keeps its copy, for posting it again; the upload cache's cleaning deletes it otherwise. When posting fails, the
- *   items' copies TDLib did not take stay the caller's, to post again or discard; the parts cut for them are deleted.
+ * - **Copies** of what TDLib took are deleted once it posted them (`updateStoryPostSucceeded`) or the user cancelled
+ *   them ([cancel]). A story that failed keeps its copy until removed; the upload cache's cleaning deletes it
+ *   otherwise. When posting fails, the items' copies TDLib did not take stay the caller's, to post again or discard;
+ *   the parts cut for them are deleted.
+ * - **Uploads** (board 10c): each story TDLib took is followed until it is posted, its file's `updateFile` giving how
+ *   much is sent and `updateStoryPostFailed` why it failed, in [uploads].
  *
  * Nothing about a story (caption, content) is logged.
  */
@@ -60,14 +64,34 @@ class TdlibStoryPostRepository internal constructor(
         @ApplicationScope scope: CoroutineScope,
     ) : this(client, files, MediaStoryVideoCutter(files), io, scope)
 
-    /** The copies of the stories TDLib is posting, by their temporary ids. */
-    private val posting = MutableStateFlow<PersistentMap<Int, String>>(persistentMapOf())
+    /** The stories TDLib is posting. */
+    private val posting = StoryPostings(scope)
+
+    override val uploads: StateFlow<ImmutableList<StoryUpload>> = posting.uploads
 
     init {
         // Subscribed before this returns, so no update about a story posted through it is missed.
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             client.updates.collect { update ->
-                if (update is TdApi.UpdateStoryPostSucceeded) posted(update.oldStoryId)
+                when (update) {
+                    is TdApi.UpdateStoryPostSucceeded -> {
+                        posted(update.oldStoryId)
+                    }
+
+                    is TdApi.UpdateStoryPostFailed -> {
+                        val error = update.error
+                        posting.fail(update.story.id, TdError(error.code, error.message).toDomainError())
+                    }
+
+                    is TdApi.UpdateFile -> {
+                        val file = update.file
+                        posting.sent(file.id, file.remote.uploadedSize, file.sizeOrExpected())
+                    }
+
+                    else -> {
+                        Unit
+                    }
+                }
             }
         }
     }
@@ -116,7 +140,9 @@ class TdlibStoryPostRepository internal constructor(
             val story = TdApi.PostStory(chat, file.content, null, text, privacy, IntArray(0), DAY, null, true, false)
             when (val posted = client.request(story)) {
                 is Outcome.Success -> {
-                    posting.update { it.put(posted.value.id, file.path) }
+                    val story = posted.value
+                    val upload = story.content.file()
+                    posting.add(story.id, file.path, upload?.id ?: StoryPostings.NO_FILE, uploadOf(story.id, upload))
                 }
 
                 is Outcome.Failure -> {
@@ -161,9 +187,22 @@ class TdlibStoryPostRepository internal constructor(
         return result
     }
 
-    /** TDLib posted the story it first knew as [storyId]: its copy is no longer needed. */
+    override suspend fun cancel(storyIds: List<Int>): Outcome<Unit> {
+        val chat = selfChat()
+        if (chat !is Outcome.Success) return chat as Outcome.Failure
+        var result: Outcome<Unit> = Outcome.Success(Unit)
+        storyIds.forEach { id ->
+            when (val deleted = client.request(TdApi.DeleteStory(chat.value, id))) {
+                is Outcome.Success -> posted(id)
+                is Outcome.Failure -> result = deleted
+            }
+        }
+        return result
+    }
+
+    /** TDLib posted the story it first knew as [storyId], or it was cancelled: its copy is no longer needed. */
     private fun posted(storyId: Int) {
-        val path = posting.getAndUpdate { it.remove(storyId) }[storyId] ?: return
+        val path = posting.remove(storyId) ?: return
         delete(listOf(path))
     }
 
@@ -196,6 +235,28 @@ private fun video(
     durationSeconds: Double,
 ): TdApi.InputStoryContent =
     TdApi.InputStoryContentVideo(TdApi.InputFileLocal(path), IntArray(0), durationSeconds, 0.0, false)
+
+/** The file TDLib uploads for a story's content: a photo's largest size, or the video. */
+private fun TdApi.StoryContent.file(): TdApi.File? =
+    when (this) {
+        is TdApi.StoryContentPhoto -> photo.sizes.maxByOrNull { it.width.toLong() * it.height }?.photo
+        is TdApi.StoryContentVideo -> video.video
+        else -> null
+    }
+
+/** How much of [file] is sent for story [storyId]; nothing known without a file. */
+private fun uploadOf(
+    storyId: Int,
+    file: TdApi.File?,
+): StoryUpload =
+    StoryUpload(
+        storyId = storyId,
+        uploadedBytes = file?.remote?.uploadedSize ?: 0,
+        sizeBytes = file?.sizeOrExpected() ?: 0,
+    )
+
+/** The file's size, or what TDLib expects it to be while it does not know it. */
+private fun TdApi.File.sizeOrExpected(): Long = if (size > 0) size else expectedSize
 
 private fun StoryPrivacy.toTd(): TdApi.StoryPrivacySettings =
     when (this) {

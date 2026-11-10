@@ -205,19 +205,45 @@ class FormattedTextAnnotationsTest {
     }
 
     @Test
-    fun `custom emoji, dates, bank cards and unknown entities show the text as it is`() {
+    fun `custom emoji, bank cards and unknown entities show the text as it is`() {
         val annotated =
             annotate(
-                "😀 at 5 4111 x",
+                "😀 at 4111 x",
                 "😀" to TextEntityType.CustomEmoji(customEmojiId = 1),
-                "5" to TextEntityType.DateTime(unixTime = 0, format = null),
                 "4111" to TextEntityType.BankCardNumber,
                 "x" to TextEntityType.Unknown,
             )
 
-        assertEquals("😀 at 5 4111 x", annotated.text)
+        assertEquals("😀 at 4111 x", annotated.text)
         assertTrue(annotated.spanStyles.isEmpty())
         assertTrue(annotated.links().isEmpty())
+    }
+
+    @Test
+    fun `a date is a link in the mention style that names its moment`() {
+        val listener = LinkInteractionListener {}
+        val text = "Meet Sunday 6 PM"
+        val annotated =
+            FormattedText(
+                text,
+                listOf(entity(text, "Sunday 6 PM", TextEntityType.DateTime(1_796_580_000, format = null)))
+                    .toImmutableList(),
+            ).toAnnotatedString(styles, onMentionClick = listener)
+
+        val links = annotated.links()
+        assertEquals(listOf("Sunday 6 PM"), links.map { it.first })
+        assertEquals(1_796_580_000L, dateTimeOf(links.single().second))
+        assertEquals(null, mentionTarget(links.single().second))
+        assertEquals(listOf(Styled("Sunday 6 PM", SpanStyle(color = Color.Magenta))), annotated.styled())
+    }
+
+    @Test
+    fun `a date is no link without a listener, and other links name no moment`() {
+        val annotated = annotate("at 5", "5" to TextEntityType.DateTime(unixTime = 0, format = null))
+
+        assertTrue(annotated.links().isEmpty())
+        assertEquals(null, dateTimeOf(LinkAnnotation.Url("https://example.org")))
+        assertEquals(null, dateTimeOf(LinkAnnotation.Clickable("mention:ada") {}))
     }
 
     @Test
