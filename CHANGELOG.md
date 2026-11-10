@@ -24,6 +24,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 - Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
   people to it.
+- Dates in messages show in your own time zone and date format; tap one to add it to your calendar or copy it.
 - Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
   that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
   the call.

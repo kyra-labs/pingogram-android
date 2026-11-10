@@ -13,6 +13,7 @@ import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
+import dev.kyralabs.pingogram.core.ui.text.dateTimeOf
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
@@ -192,12 +193,13 @@ internal fun rememberBubbleResources(
     lift: MessageLiftState = remember { MessageLiftState() },
     vividHues: Boolean = true,
     showsUpdateLink: Boolean = false,
+    onDateTime: (unixTime: Long) -> Unit = {},
     onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
     val theme = rememberBubbleTheme(vividHues)
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
-    val onMentionClick = rememberMentionOpener(onMention)
+    val onMentionClick = rememberMentionOpener(onMention, onDateTime)
     val reactions = rememberReactionToggleState()
     val swipe = rememberSwipeReplyStyle()
     val share = rememberShareButtonStyle()
@@ -233,13 +235,23 @@ internal fun rememberBubbleResources(
 }
 
 /**
- * What tapping a mention in a bubble does: [onMention] with who it names ([mentionTarget]). One listener for the
- * screen's lifetime, as the cached texts keep it, which calls the latest [onMention].
+ * What tapping a mention in a bubble does: [onMention] with who it names ([mentionTarget]); a date, which shares the
+ * listener, [onDateTime] with its moment ([dateTimeOf]). One listener for the screen's lifetime, as the cached texts
+ * keep it, which calls the latest of both.
  */
 @Composable
-private fun rememberMentionOpener(onMention: (MentionTarget) -> Unit): LinkInteractionListener {
+private fun rememberMentionOpener(
+    onMention: (MentionTarget) -> Unit,
+    onDateTime: (unixTime: Long) -> Unit,
+): LinkInteractionListener {
     val currentOnMention by rememberUpdatedState(onMention)
-    return remember { LinkInteractionListener { link -> mentionTarget(link)?.let { currentOnMention(it) } } }
+    val currentOnDateTime by rememberUpdatedState(onDateTime)
+    return remember {
+        LinkInteractionListener { link ->
+            val dateTime = dateTimeOf(link)
+            if (dateTime != null) currentOnDateTime(dateTime) else mentionTarget(link)?.let { currentOnMention(it) }
+        }
+    }
 }
 
 /**

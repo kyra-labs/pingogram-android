@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import java.time.Instant
 import java.time.LocalDate
 
 /** The name and photo of a chat that messages refer to: a sender, a forward's origin, a replied message's sender. */
@@ -78,6 +79,8 @@ internal class ItemSources(
     val unreadAfterId: Long,
     val today: LocalDate,
     val timeFormatter: ChatTimeFormatter,
+    /** Now, for dates in texts worded relative to it; null where none are (scheduled messages show them in full). */
+    val now: Instant? = null,
 ) {
     val history: ChatHistory get() = messages.history
     val users: Map<Long, User> get() = people.users

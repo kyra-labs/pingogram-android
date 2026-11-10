@@ -854,6 +854,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Pingogram" (`ChatEvent.OpenUpdatePage` → `ChatEffect.OpenUrl` of the latest GitHub release) unless the build came
   from an app store: `ChatViewModel` takes `AppInfo` and puts `!isFromAppStore` into `ChatUiState.showsUpdateLink`,
   which the bubbles read through `BubbleResources`.
+- **Dates in messages** (td_api.tl `textEntityTypeDateTime`, `TextEntityType.DateTime`): `feature:chat`'s bubble
+  mapping words each date for its reader before anything else marks the text (`withReaderDates`, `dates/`):
+  `ChatTimeFormatter.dateTimeText` in the reader's zone, language and clock, relative ones through `core:ui`'s
+  `TimePatterns.relativeTime` (the platform's `RelativeDateTimeFormatter`; null on the JVM, which shows the date in
+  full). `core:domain`'s `FormattedText.replacingEntities` writes the parts anew and moves every other entity with
+  them, so mentions, search highlights, custom emoji and a headline mark the text as shown. An item with a relative
+  date carries the current minute in its inputs (`ItemInputs.relativeNow`), so it alone is mapped again each minute.
+  `core:ui`'s `toAnnotatedString` makes a date a `LinkAnnotation.Clickable` (`dateTimeOf`) handed the mention
+  listener; `DateTimeEvent.Open` opens `ChatDateTimes`' sheet (a part of `ChatViewModel`, `dateTimeSheet`, kept out of
+  `ChatUiState`, its moment in the saved state), whose "Add to calendar" is `ChatEffect.AddToCalendar` (the route's
+  `ACTION_INSERT` of `CalendarContract.Events`, no permission) and "Copy" `ChatEffect.CopyText`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
+import dev.kyralabs.pingogram.feature.chat.ui.dates.hasRelativeDates
 
 /**
  * Everything one item is made from: the message and its place, what it refers to (its sender, the members a service
@@ -43,6 +44,11 @@ internal data class ItemInputs(
     val myUsernames: Set<String> = emptySet(),
     /** The chats the content names ([chatIdsOf]: a giveaway's participating channels), as looked up, in that order. */
     val chats: List<ChatRef?> = emptyList(),
+    /**
+     * The current minute (Unix time) for a text with dates worded relative to now ("in 3 days"), so the item is mapped
+     * again each minute; null for every other text, whose item stays reused.
+     */
+    val relativeNow: Long? = null,
 )
 
 /** What kind of chat it is, as far as bubbles show: sender names and avatars in groups, no checks in channels. */
@@ -92,6 +98,10 @@ internal fun ItemSources.inputsOf(
                 ?.usernames
                 .orEmpty()
                 .mapTo(HashSet()) { it.lowercase() },
+        relativeNow =
+            now?.takeIf { message.content.textOrCaption.hasRelativeDates }?.let {
+                it.epochSecond / SECONDS_PER_MINUTE * SECONDS_PER_MINUTE
+            },
     )
 }
 
@@ -246,3 +256,5 @@ internal fun ItemInputs.canWave(action: ServiceAction): Boolean {
         }
     return kind == ChatKind.Group && joined.isNotEmpty() && myUserId !in joined
 }
+
+private const val SECONDS_PER_MINUTE = 60L

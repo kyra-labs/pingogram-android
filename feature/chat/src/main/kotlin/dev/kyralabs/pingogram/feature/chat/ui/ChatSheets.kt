@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialogHost
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardDialogHost
 import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineChatsSheet
+import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
@@ -54,8 +55,8 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
 }
 
 /**
- * The sheets of a message's actions: the chats to reply in, who voted in a poll, the question before a stop, and a
- * giveaway's details.
+ * The sheets of a message's actions: the chats to reply in, who voted in a poll, the question before a stop, a
+ * giveaway's details and a tapped date.
  */
 @Composable
 private fun MessageSheets(viewModel: ChatViewModel) {
@@ -67,4 +68,6 @@ private fun MessageSheets(viewModel: ChatViewModel) {
     if (stopPollDialog != null) StopPollAlert(viewModel::onEvent)
     val giveawayInfoSheet by viewModel.giveawayInfoSheet.collectAsStateWithLifecycle()
     giveawayInfoSheet?.let { GiveawayInfoBottomSheet(it, viewModel::onEvent) }
+    val dateTimeSheet by viewModel.dateTimeSheet.collectAsStateWithLifecycle()
+    dateTimeSheet?.let { DateTimeBottomSheet(it, viewModel::onEvent) }
 }

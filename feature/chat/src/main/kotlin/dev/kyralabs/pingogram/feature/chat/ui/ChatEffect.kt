@@ -59,6 +59,11 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open the calendar app at a new event starting at [unixTime] (Unix time), for the user to save or not. */
+    data class AddToCalendar(
+        val unixTime: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,

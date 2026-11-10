@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.dates.addToCalendar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
@@ -302,6 +303,10 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenLocation -> {
                         context.openMap(effect, resources)
+                    }
+
+                    is ChatEffect.AddToCalendar -> {
+                        context.addToCalendar(effect.unixTime, resources)
                     }
 
                     is ChatEffect.MessageScheduled -> {
