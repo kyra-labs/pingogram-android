@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -296,6 +297,9 @@ object ActiveAccountModule {
 
     @Provides
     fun pollRepository(accounts: Accounts): PollRepository = accounts.active.pollRepository()
+
+    @Provides
+    fun giveawayRepository(accounts: Accounts): GiveawayRepository = accounts.active.giveawayRepository()
 
     @Provides
     fun botInfoRepository(accounts: Accounts): BotInfoRepository = accounts.active.botInfoRepository()

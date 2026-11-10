@@ -132,6 +132,8 @@ interface AccountRepositories {
 
     fun pollRepository(): PollRepository
 
+    fun giveawayRepository(): GiveawayRepository
+
     fun botInfoRepository(): BotInfoRepository
 
     fun inlineBotRepository(): InlineBotRepository

@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -74,17 +75,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel =
-            when {
-                album.isNotEmpty() -> albumLabel(album)
-
-                content is MessageContent.Text -> null
-
-                // The bubble shows its blocks, and screen readers hear them (richDescription).
-                content is MessageContent.RichMessage -> null
-
-                else -> contentKindText(content)
-            },
+        contentLabel = contentLabel(content),
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
@@ -111,8 +102,33 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
+        giveaway = giveawayUi(content),
     )
 }
+
+/**
+ * What screen readers hear the content is: the album's count, or the kind of media; nothing for text and for content
+ * whose own description says what it is (rich messages' blocks, paid posts, giveaways).
+ */
+private fun ItemInputs.contentLabel(content: MessageContent): UiText? =
+    when {
+        album.isNotEmpty() -> albumLabel(album)
+        content.describesItself -> null
+        else -> contentKindText(content)
+    }
+
+private val MessageContent.describesItself: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Text,
+            is MessageContent.RichMessage,
+            is MessageContent.PaidMedia,
+            is MessageContent.Giveaway,
+            is MessageContent.GiveawayWinners,
+            -> true
+
+            else -> false
+        }
 
 /** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
 private fun albumLabel(album: List<Message>): UiText {

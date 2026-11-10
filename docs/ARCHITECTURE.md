@@ -791,6 +791,32 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
   media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
   Forward, "Show in chat", saving and deletions, leaving Delete out.
+- **Paid media** (FR-C4, §1.2): `MessageContent.PaidMedia` (td_api.tl `messagePaidMedia`: the price, the media as
+  `PaidMediaItem`s, previews of their sizes while not paid for and the photos and videos once paid for, `isUnlocked`)
+  is mapped by `core:data`'s `PaidMediaMappers.kt`. Pingogram offers no purchase: a locked post shows its blurred
+  previews, its price and a note. A post paid for opens in the media viewer the way a rich message's media do:
+  `Message.richMediaMessages()` (`core:domain`'s `RichMedia.kt`) turns its photos and videos into messages of their
+  own with the ids `richMediaId` gives them (by their index in the post), which `ChatMediaRepository.richMedia`
+  pages and the viewer loads unchanged; `MessageContent.PaidMedia.mediaContents()` is what the viewer pages and the
+  export copies. `feature:chat`'s `MessagePaidMedia` draws it edge to edge like an album (`isEdgeToEdge`; a locked
+  post's note is the bubble's footer, `showsNoteBelowMedia`), and `richMediaToOpen` checks a tapped id against the
+  post's media as against a rich message's.
+- **Giveaways** (FR-C4, §1.2): `MessageContent.Giveaway` and `MessageContent.GiveawayWinners` (td_api.tl
+  `messageGiveaway`, `messageGiveawayWinners`; `GiveawayParameters`, `GiveawayPrize`) are mapped by `core:data`'s
+  `GiveawayMappers.kt`, a prize of a kind a newer TDLib added keeping the message unsupported. `core:domain`'s
+  `GiveawayRepository` (`TdlibGiveawayRepository`, `core:data`, no cache) asks `getGiveawayInfo` into `GiveawayInfo`
+  (ongoing with the user's `GiveawayParticipantStatus`, or completed with whether they won), only when the user opens
+  the details. The item mapper looks the participating channels up with the chats messages refer to
+  (`chatIdsOf`, `referencedChatIds`, `ItemInputs.chats`) and the winners with the users (`memberIdsOf`), into
+  `ChatItem.Bubble.giveaway` (`GiveawayUi`, `giveawayUi`). `feature:chat`'s `ChatGiveaways` (a part of
+  `ChatViewModel`, `giveaway/`) holds the details sheet (`giveawayInfoSheet`, kept out of `ChatUiState`; its message
+  in the saved state, opened again once the history holds it), loads the info, again on "Try again", and names the
+  chat whose administrators do not take part; a channel's chip is `ChatEvent.OpenChat` → `ChatEffect.OpenChat`, a
+  winner's tile `ChatEvent.OpenProfile`. Nothing enters or buys.
+- **Unsupported messages**: `MessageContent.Unsupported` shows `feature:chat`'s `MessageUnsupported`, with "Update
+  Pingogram" (`ChatEvent.OpenUpdatePage` → `ChatEffect.OpenUrl` of the latest GitHub release) unless the build came
+  from an app store: `ChatViewModel` takes `AppInfo` and puts `!isFromAppStore` into `ChatUiState.showsUpdateLink`,
+  which the bubbles read through `BubbleResources`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

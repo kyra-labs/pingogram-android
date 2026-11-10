@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
@@ -100,6 +101,7 @@ abstract class ChatViewModelHarness {
     protected val customEmoji = FakeCustomEmojiRepository()
     protected val polls = FakePollRepository()
     protected val scheduledMessages = FakeScheduledMessageRepository()
+    protected val giveaways = FakeGiveawayRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -127,6 +129,7 @@ abstract class ChatViewModelHarness {
         messageId: Long? = null,
         topic: MessageTopic? = null,
         originalQuality: Boolean = false,
+        appInfo: AppInfo = AppInfo(versionName = ""),
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
@@ -167,11 +170,13 @@ abstract class ChatViewModelHarness {
                 customEmojiRepository = customEmoji,
                 pollRepository = polls,
                 scheduledMessageRepository = scheduledMessages,
+                giveawayRepository = giveaways,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },
                 topic = topic,
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
+                appInfo = appInfo,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

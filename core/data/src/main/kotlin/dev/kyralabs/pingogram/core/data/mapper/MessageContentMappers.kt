@@ -71,6 +71,19 @@ internal fun TdApi.MessageContent.toMessageContent(
             message?.toRichMessage()?.let(MessageContent::RichMessage) ?: MessageContent.Unsupported
         }
 
+        is TdApi.MessagePaidMedia -> {
+            toPaidMedia()
+        }
+
+        // A prize of a kind a newer TDLib added cannot be worded.
+        is TdApi.MessageGiveaway -> {
+            toGiveaway() ?: MessageContent.Unsupported
+        }
+
+        is TdApi.MessageGiveawayWinners -> {
+            toGiveawayWinners() ?: MessageContent.Unsupported
+        }
+
         is TdApi.MessageExpiredPhoto -> {
             MessageContent.Expired(ExpiredMedia.Photo)
         }

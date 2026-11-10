@@ -176,6 +176,8 @@ internal class BubbleResources(
     val lift: MessageLiftState,
     val swipe: SwipeReplyStyle,
     val share: ShareButtonStyle,
+    /** Whether a message this version cannot show offers "Update Pingogram" ([ChatUiState.showsUpdateLink]). */
+    val showsUpdateLink: Boolean = false,
 )
 
 /**
@@ -189,6 +191,7 @@ internal fun rememberBubbleResources(
     mediaDownloads: MediaDownloads = MediaDownloads(),
     lift: MessageLiftState = remember { MessageLiftState() },
     vividHues: Boolean = true,
+    showsUpdateLink: Boolean = false,
     onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
     val theme = rememberBubbleTheme(vividHues)
@@ -210,6 +213,7 @@ internal fun rememberBubbleResources(
         lift,
         swipe,
         share,
+        showsUpdateLink,
     ) {
         BubbleResources(
             theme,
@@ -223,6 +227,7 @@ internal fun rememberBubbleResources(
             lift,
             swipe,
             share,
+            showsUpdateLink,
         )
     }
 }

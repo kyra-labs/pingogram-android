@@ -18,6 +18,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 - Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
   people to it.
+- Paid posts: a post whose photos and videos unlock for Telegram Stars shows its blurred previews, its price and how
+  many photos and videos it holds, with a note that Pingogram can't pay yet; a post you paid for shows its album and
+  opens in the media viewer.
+- Giveaways: a channel's giveaway shows its prize, the participating channels (tap one to open it), when the winners
+  are picked and who takes part; the winners message shows who won (tap to open a profile); "Learn more" tells
+  whether you take part or won.
+- A message this version of Pingogram can't show says so and offers "Update Pingogram", a link to the latest
+  release (left out when an app store installed Pingogram).
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

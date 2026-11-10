@@ -40,6 +40,8 @@ internal data class ItemInputs(
     val senderRole: UiText? = null,
     /** The user's own usernames, lowercase and without `@`, which `@username` mentions of the user name. */
     val myUsernames: Set<String> = emptySet(),
+    /** The chats the content names ([chatIdsOf]: a giveaway's participating channels), as looked up, in that order. */
+    val chats: List<ChatRef?> = emptyList(),
 )
 
 /** What kind of chat it is, as far as bubbles show: sender names and avatars in groups, no checks in channels. */
@@ -74,6 +76,7 @@ internal fun ItemSources.inputsOf(
         kind = chatKind,
         sender = refOf(message.sender),
         members = memberIdsOf(message.content).map(users::get),
+        chats = chatIdsOf(message.content).map(::chatRefOf),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
         isRead = newest.isOutgoing && newest.id <= chat.lastReadOutboxMessageId,
@@ -148,11 +151,34 @@ private fun ItemSources.refOf(origin: MessageOrigin): Any? =
 private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
     if (chatId == chat.id) ChatRef(chat.id, chat.title, chat.photo) else people.chats[chatId]
 
-/** The users a service message names besides its sender, whose names its text may show. */
-private fun memberIdsOf(content: MessageContent): List<Long> =
-    when (val action = (content as? MessageContent.Service)?.action) {
-        is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
-        is ServiceAction.MemberRemoved -> listOf(action.userId)
+/**
+ * The users the content names besides its sender, whose names it shows: a service message's member, a giveaway's
+ * winners.
+ */
+internal fun memberIdsOf(content: MessageContent): List<Long> =
+    when (content) {
+        is MessageContent.Service -> {
+            when (val action = content.action) {
+                is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
+                is ServiceAction.MemberRemoved -> listOf(action.userId)
+                else -> emptyList()
+            }
+        }
+
+        is MessageContent.GiveawayWinners -> {
+            content.winnerUserIds
+        }
+
+        else -> {
+            emptyList()
+        }
+    }
+
+/** The chats the content names and shows: a giveaway's participating channels, the boosted chat first. */
+internal fun chatIdsOf(content: MessageContent): List<Long> =
+    when (content) {
+        is MessageContent.Giveaway -> content.parameters.chatIds
+        is MessageContent.GiveawayWinners -> listOf(content.boostedChatId)
         else -> emptyList()
     }
 

@@ -175,9 +175,14 @@ internal fun rememberChatBubbleResources(
     onEvent: (ChatEvent) -> Unit,
 ): BubbleResources {
     val vivid = MaterialTheme.chatStyle.groupBubbles.isVivid(state.groupMemberCount)
-    return rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift, vivid) { target ->
-        onEvent(ChatEvent.OpenMention(target))
-    }
+    return rememberBubbleResources(
+        jumpState,
+        state.shortcuts,
+        state.mediaDownloads,
+        lift,
+        vivid,
+        showsUpdateLink = state.showsUpdateLink,
+    ) { target -> onEvent(ChatEvent.OpenMention(target)) }
 }
 
 /** How many saw a channel post: the visibility symbol and the count in the language's digits; decorative. */
