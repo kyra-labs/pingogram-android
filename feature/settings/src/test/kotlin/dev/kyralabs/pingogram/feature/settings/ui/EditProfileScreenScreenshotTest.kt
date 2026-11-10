@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
+import dev.kyralabs.pingogram.core.ui.time.BirthdateDialog
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -105,25 +106,25 @@ class EditProfileScreenScreenshotTest {
     @Test
     fun birthdateDialogLight() =
         composeRule.captureScreen(javaClass, "birthdateDialogLight", ThemeMode.Light) {
-            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {}, onRemove = {})
         }
 
     @Test
     fun birthdateDialogDark() =
         composeRule.captureScreen(javaClass, "birthdateDialogDark", ThemeMode.Dark) {
-            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {}, onRemove = {})
         }
 
     @Test
     fun birthdateDialogWithoutYear() =
         composeRule.captureScreen(javaClass, "birthdateDialogWithoutYear", ThemeMode.Light) {
-            BirthdateDialog(birthdate = Birthdate(29, 2, null), onDismiss = {}, onPick = {})
+            BirthdateDialog(birthdate = Birthdate(29, 2, null), onDismiss = {}, onPick = {}, onRemove = {})
         }
 
     @Test
     fun birthdateDialogRtl() =
         composeRule.captureScreen(javaClass, "birthdateDialogRtl", ScreenshotVariant.Rtl) {
-            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {})
+            BirthdateDialog(birthdate = Birthdate(10, 12, 1990), onDismiss = {}, onPick = {}, onRemove = {})
         }
 
     private val available = SettingsPreviewData.editedProfile(UsernameStatus.Checked(UsernameCheck.Available))

@@ -43,6 +43,16 @@
     <string name="profile_username_value">\@%1$s</string>
     <string name="profile_phone">Mobile</string>
     <string name="profile_birthday">Birthday</string>
+    <!-- The offer on a contact's profile without a birthday (board 16a): %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggest_title">No birthday on %1$s\'s profile</string>
+    <!-- %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggest_text">Suggest one. %1$s decides whether to keep it and who sees it.</string>
+    <!-- The button that opens the date picker, and the picker's title. -->
+    <string name="profile_birthday_suggest_action">Suggest a birthday</string>
+    <!-- The date picker's confirm button. -->
+    <string name="profile_birthday_suggest_confirm">Suggest</string>
+    <!-- A snackbar once Telegram sent the suggestion: %1$s is the contact's first name. -->
+    <string name="profile_birthday_suggested">Birthday suggested to %1$s</string>
     <!-- The label of the note the user keeps about a contact, on their profile and in its dialog. -->
     <string name="profile_note">Note</string>
     <!-- Between "Note" and "Only you see this" in the note row's supporting text. -->

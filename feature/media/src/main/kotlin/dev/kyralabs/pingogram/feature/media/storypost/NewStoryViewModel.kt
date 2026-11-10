@@ -116,6 +116,10 @@ internal class NewStoryViewModel
                     composer.setAudience(event.audience)
                 }
 
+                is NewStoryEvent.SetSelected -> {
+                    composer.setSelected(event.userIds)
+                }
+
                 NewStoryEvent.Post -> {
                     post()
                 }

@@ -500,7 +500,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
   second step (`NewStoryStep`, in saved state): `StoryComposer`, a part of the view model, holds the caption
   (`CaptionText`, copied from `feature:chat`'s composer with its entity edits and formatting transformation, as features
-  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`.
+  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`. "Selected people"
+  is a sheet with a view model of its own (`StoryPeopleSheet`, `StoryPeopleViewModel`: the contacts of
+  `ContactRepository`, people only, filtered on the device, the query and the picks in its saved state while it shows),
+  whose picks the composer keeps in its saved state and posts as `StoryPrivacy.Selected`.
   Posting: `core:domain`'s `StoryPostRepository` (`TdlibStoryPostRepository`, `core:data`, account-scoped, no cache)
   asks `canPostStory` of the user's Saved Messages chat (`StoryPostAbility`), counts the close friends
   (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
@@ -1006,6 +1009,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
   `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
   The demo keeps notes on the phone (`DemoAccount`).
+- Birthday suggestions (`docs/DESIGN_SYSTEM.md` §6 "Birthday suggestions"): a contact without a birthday on their
+  profile (`UserFullInfo.birthdate` null) gets the offer (`ProfileInfo.birthdaySuggestion`), whose pick
+  `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
+  `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
+  `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
+  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`

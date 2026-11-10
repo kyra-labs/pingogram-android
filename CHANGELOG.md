@@ -14,7 +14,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
 - Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the
   camera, reorder them, write a caption with bold, italic, links and spoilers, and choose who sees them: everyone, your
-  contacts or your close friends. Videos longer than a minute are cut into several stories on the phone.
+  contacts, your close friends or the contacts you pick. Videos longer than a minute are cut into several stories on
+  the phone.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -36,6 +37,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   whether you take part or won.
 - A message this version of Pingogram can't show says so and offers "Update Pingogram", a link to the latest
   release (left out when an app store installed Pingogram).
+- A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
+  know it), and Telegram asks them whether to keep it.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

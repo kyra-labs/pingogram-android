@@ -35,7 +35,10 @@ internal object NewStoryPreviewData {
     val full = NewStoryUiState((1..MAX_STORY_ITEMS).map(::photo).toImmutableList())
 }
 
-/** The composer's states for previews and goldens: to close friends, blocked by the week's limit, posting. */
+/**
+ * The composer's states for previews and goldens: to close friends, to three people picked, blocked by the week's
+ * limit, posting.
+ */
 internal object StoryComposePreviewData {
     val items = NewStoryPreviewData.picked.copy(step = NewStoryStep.Compose)
 
@@ -45,6 +48,9 @@ internal object StoryComposePreviewData {
             ability = StoryPostAbility.Allowed(3),
             closeFriends = 14,
         )
+
+    val selectedPeople =
+        closeFriends.copy(audience = StoryAudience.Selected, selected = persistentListOf(7L, 8L, 9L))
 
     val weeklyLimit = StoryComposeState(ability = StoryPostAbility.WeeklyLimit(WEEKLY_LIMIT_SECONDS))
 
@@ -65,7 +71,7 @@ internal object StoryComposePreviewData {
 
 internal class StoryComposePreviewStates : PreviewParameterProvider<StoryComposeState> {
     override val values: Sequence<StoryComposeState> =
-        with(StoryComposePreviewData) { sequenceOf(closeFriends, weeklyLimit, posting) }
+        with(StoryComposePreviewData) { sequenceOf(closeFriends, selectedPeople, weeklyLimit, posting) }
 }
 
 @PingogramPreviews
