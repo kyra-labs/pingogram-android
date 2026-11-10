@@ -7,7 +7,7 @@ import kotlinx.collections.immutable.ImmutableList
  * `userFullInfo` has it: what the user wrote about themselves, their birthday, whether the current user blocked them,
  * and a bot's description. TDLib reads it from the server when first asked, then keeps it and reports its changes.
  *
- * `toString()` leaves the bio, the birthday and the description out, so it can be logged.
+ * `toString()` leaves the bio, the birthday, the description and the note out, so it can be logged.
  *
  * @property bio the user's bio with its links and mentions; empty without one, and always for bots.
  * @property birthdate the birthday the user shares with the current user; null if they share none.
@@ -17,6 +17,8 @@ import kotlinx.collections.immutable.ImmutableList
  * @property canBeCalled the user's privacy settings let the current user call them (td_api.tl `can_be_called`).
  * @property supportsVideoCalls the user's app takes video calls (td_api.tl `supports_video_calls`).
  * @property personalChatId the channel the user shows on their profile (td_api.tl `personal_chat_id`); 0 for none.
+ * @property note what the current user wrote about this contact for themselves (td_api.tl `userFullInfo.note`): only
+ *   they see it, and it stays with their contacts on all their devices; empty without one.
  */
 data class UserFullInfo(
     val bio: FormattedText,
@@ -27,6 +29,7 @@ data class UserFullInfo(
     val canBeCalled: Boolean = false,
     val supportsVideoCalls: Boolean = false,
     val personalChatId: Long = 0,
+    val note: FormattedText = FormattedText.Empty,
 ) {
     override fun toString() = "UserFullInfo(isBlocked=$isBlocked, groupsInCommon=$groupsInCommon, …)"
 }

@@ -272,6 +272,37 @@ class TdlibContactRepositoryTest {
         }
 
     @Test
+    fun `an editable contact carries the note about them`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 7, firstName = "Grace", isContact = true)))
+            client.on(TdApi.GetUserFullInfo::class) {
+                TdResult.Success(TdApi.UserFullInfo().apply { note = formattedText("Wrote COBOL") })
+            }
+
+            assertEquals("Wrote COBOL", (repository.editableContact(7) as Outcome.Success).value.note)
+        }
+
+    @Test
+    fun `saving with a note typed sends it as plain text, without asking for the old one`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 7, firstName = "Grace", isContact = true)))
+            client.on(TdApi.AddContact::class) { TdResult.Success(TdApi.Ok()) }
+
+            repository.save(7, "Grace", "Hopper", sharePhoneNumber = false, note = " Found the first bug ")
+
+            assertEquals(
+                "Found the first bug",
+                client
+                    .sentOf<TdApi.AddContact>()
+                    .single()
+                    .contact.note.text,
+            )
+            assertTrue(client.sentOf<TdApi.GetUserFullInfo>().isEmpty())
+        }
+
+    @Test
     fun `without its full info a user can still be edited, without sharing the number`() =
         runTest {
             val repository = repository()
