@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -53,6 +54,12 @@ class FakeAttachmentRepository : AttachmentRepository {
     var onSendSticker: suspend (Sticker) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     val sentPolls = mutableListOf<SentPoll>()
+
+    /** Every [sendChecklist] call. */
+
+    val sentChecklists = mutableListOf<SentChecklist>()
+
+    var onSendChecklist: suspend (NewChecklist) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** What every send replied to, with its quote and chat, in order; null for none. */
@@ -180,6 +187,17 @@ class FakeAttachmentRepository : AttachmentRepository {
         return onSendPoll(poll)
     }
 
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> {
+        replyTargets += replyTo
+        sentChecklists += SentChecklist(checklist, options, replyTo?.messageId)
+        return onSendChecklist(checklist)
+    }
+
     override suspend fun editMedia(
         chatId: Long,
         messageId: Long,
@@ -216,6 +234,13 @@ class FakeAttachmentRepository : AttachmentRepository {
         val attachment: Attachment,
         val caption: FormattedText,
         val showCaptionAboveMedia: Boolean,
+    )
+
+    /** One [sendChecklist] call. */
+    data class SentChecklist(
+        val checklist: NewChecklist,
+        val options: SendOptions,
+        val replyToMessageId: Long?,
     )
 
     /** One [sendPoll] call. */

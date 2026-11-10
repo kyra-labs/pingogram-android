@@ -492,7 +492,6 @@ class MessageContentMappersTest {
         val UNSUPPORTED_CONTENTS: List<Class<out TdApi.MessageContent>> =
             listOf(
                 TdApi.MessageStakeDice::class.java,
-                TdApi.MessageChecklist::class.java,
                 TdApi.MessageUnsupported::class.java,
             )
     }

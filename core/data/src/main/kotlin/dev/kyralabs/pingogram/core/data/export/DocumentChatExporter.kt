@@ -471,6 +471,7 @@ private fun MessageContent.text(): FormattedText =
         is MessageContent.Document -> caption
         is MessageContent.Poll -> description
         is MessageContent.PaidMedia -> caption
+        is MessageContent.Checklist -> list.title
         is MessageContent.RichMessage -> message.fullText()
         else -> FormattedText.Empty
     }

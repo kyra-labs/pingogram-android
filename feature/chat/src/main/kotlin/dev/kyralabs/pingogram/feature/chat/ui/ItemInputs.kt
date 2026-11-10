@@ -153,8 +153,8 @@ private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
     if (chatId == chat.id) ChatRef(chat.id, chat.title, chat.photo) else people.chats[chatId]
 
 /**
- * The users the content names besides its sender, whose names it shows: a service message's member, a giveaway's
- * winners.
+ * The users the content names besides its sender, whose names it shows: a service message's member, who ticked a
+ * checklist's tasks, a giveaway's winners.
  */
 internal fun memberIdsOf(content: MessageContent): List<Long> =
     when (content) {
@@ -164,6 +164,13 @@ internal fun memberIdsOf(content: MessageContent): List<Long> =
                 is ServiceAction.MemberRemoved -> listOf(action.userId)
                 else -> emptyList()
             }
+        }
+
+        // Who ticked each task, for the avatars at their ends.
+        is MessageContent.Checklist -> {
+            content.list.tasks
+                .mapNotNull { (it.completedBy as? MessageSender.User)?.userId }
+                .distinct()
         }
 
         is MessageContent.GiveawayWinners -> {

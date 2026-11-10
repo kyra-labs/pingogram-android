@@ -60,6 +60,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botButtonActions
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistActions
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
@@ -329,6 +330,7 @@ private fun bubbleActions(
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
     val giveaway = giveawayActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
         (bubble.content as? MessageContent.RichMessage)
@@ -354,7 +356,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + giveaway + rich + buttons + reactions + allReactions +
+    } + original + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }

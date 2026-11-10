@@ -15,12 +15,15 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
+import dev.kyralabs.pingogram.feature.chat.ui.content.ChecklistAction
 import dev.kyralabs.pingogram.feature.chat.ui.content.GiveawayAction
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaUploadProgress
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimatedEmoji
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimation
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAudio
+import dev.kyralabs.pingogram.feature.chat.ui.content.MessageChecklist
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageContact
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageDice
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageDocument
@@ -260,7 +263,8 @@ private fun FileContent(
 
 /**
  * Locations, contacts, polls (with the answers checked before voting, [ChatItem.Bubble.pollChoices], and their taps as
- * [PollEvent]s) and the rest, padded in the bubble; nothing for text, which the bubble shows.
+ * [PollEvent]s), checklists ([ChatItem.Bubble.checklist], their taps as [ChecklistEvent]s) and the rest, padded in the
+ * bubble; nothing for text, which the bubble shows.
  */
 @Suppress("CyclomaticComplexMethod") // One branch per kind of content the padded bubble shows: one place to read.
 @Composable
@@ -291,6 +295,16 @@ private fun InfoContent(
                 modifier = modifier,
                 colors = colors,
                 choices = bubble.pollChoices ?: persistentSetOf(),
+                onAction = { action -> onEvent(action.eventFor(bubble.id)) },
+            )
+        }
+
+        is MessageContent.Checklist -> {
+            MessageChecklist(
+                content = content,
+                modifier = modifier,
+                colors = colors,
+                ui = bubble.checklist ?: ChecklistUi(),
                 onAction = { action -> onEvent(action.eventFor(bubble.id)) },
             )
         }
@@ -347,6 +361,15 @@ private fun GiveawayAction.eventFor(messageId: Long): ChatEvent =
         GiveawayAction.LearnMore -> GiveawayEvent.OpenInfo(messageId)
         is GiveawayAction.OpenChat -> ChatEvent.OpenChat(chatId)
         is GiveawayAction.OpenWinner -> ChatEvent.OpenProfile(userId)
+    }
+
+/** The event of a tap in the checklist of message [messageId]. */
+private fun ChecklistAction.eventFor(messageId: Long): ChatEvent =
+    when (this) {
+        is ChecklistAction.Mark -> ChecklistEvent.MarkTask(messageId, taskId, done)
+        ChecklistAction.OpenAddTask -> ChecklistEvent.OpenAddTask(messageId)
+        ChecklistAction.DismissAddTask -> ChecklistEvent.DismissAddTask(messageId)
+        is ChecklistAction.AddTask -> ChecklistEvent.AddTask(messageId, text)
     }
 
 /** The event of a tap in the poll of message [messageId]. */

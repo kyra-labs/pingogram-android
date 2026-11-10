@@ -42,6 +42,8 @@ internal fun contentPreviewText(content: MessageContent): UiText =
 
         is MessageContent.Poll -> pollText(content.poll)
 
+        is MessageContent.Checklist -> labelled(R.string.preview_checklist, content.list.title.text)
+
         is MessageContent.Dice -> UiText.Plain(content.emoji)
 
         is MessageContent.AnimatedEmoji -> UiText.Plain(content.emoji)

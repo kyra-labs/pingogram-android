@@ -47,6 +47,10 @@ internal fun TdApi.MessageContent.toMessageContent(
             MessageContent.Poll(poll.toPoll(), description.toFormattedText())
         }
 
+        is TdApi.MessageChecklist -> {
+            MessageContent.Checklist(list.toChecklist())
+        }
+
         is TdApi.MessageDice -> {
             MessageContent.Dice(emoji, value)
         }

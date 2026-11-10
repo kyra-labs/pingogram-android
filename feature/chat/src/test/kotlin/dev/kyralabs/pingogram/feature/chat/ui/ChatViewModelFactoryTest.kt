@@ -114,6 +114,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
                 customEmojiRepository = FakeCustomEmojiRepository(),
                 pollRepository = FakePollRepository(),
+                checklistRepository = FakeChecklistRepository(),
                 scheduledMessageRepository = FakeScheduledMessageRepository(),
                 giveawayRepository = FakeGiveawayRepository(),
                 targetPreferences = TargetPreferences(),

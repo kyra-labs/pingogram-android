@@ -100,6 +100,7 @@ abstract class ChatViewModelHarness {
     internal val groupMembers = FakeGroupInfoRepository()
     protected val customEmoji = FakeCustomEmojiRepository()
     protected val polls = FakePollRepository()
+    protected val checklists = FakeChecklistRepository()
     protected val scheduledMessages = FakeScheduledMessageRepository()
     protected val giveaways = FakeGiveawayRepository()
 
@@ -169,6 +170,7 @@ abstract class ChatViewModelHarness {
                 searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
                 customEmojiRepository = customEmoji,
                 pollRepository = polls,
+                checklistRepository = checklists,
                 scheduledMessageRepository = scheduledMessages,
                 giveawayRepository = giveaways,
                 log = { logged += it },

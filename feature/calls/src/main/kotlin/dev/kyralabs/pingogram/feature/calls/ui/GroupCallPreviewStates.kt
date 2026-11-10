@@ -3,6 +3,7 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
@@ -10,7 +11,11 @@ import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.AudioRouteType
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
+import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentUi
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsHost
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsUiState
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 
 /** The states of the voice chat's screen, shared by the previews and the screenshot tests. */
 internal object GroupCallPreviewStates {
@@ -136,11 +141,78 @@ internal object GroupCallPreviewStates {
             emojis = persistentListOf("🐝", "🌵", "🎈", "🦊"),
             canInvite = true,
         )
+
+    private fun comment(
+        id: Int,
+        senderId: Long,
+        name: String,
+        text: String,
+        paidStarCount: Long = 0,
+        isOwn: Boolean = false,
+        isFailed: Boolean = false,
+    ) = CommentUi(
+        id = id,
+        senderKey = "user:$senderId",
+        senderId = senderId,
+        name = name,
+        photo = null,
+        text = text,
+        paidStarCount = paidStarCount,
+        isOwn = isOwn,
+        canDelete = isOwn,
+        isFailed = isFailed,
+    )
+
+    /** Comments on, newest at the bottom: one paid ("★ 50"), one of the user's that Telegram refused (board 9a). */
+    val comments =
+        GroupCallCommentsUiState.Available(
+            isShown = true,
+            areAllowed = true,
+            canComment = true,
+            received = 214,
+            comments =
+                persistentListOf(
+                    comment(1, 5, "Margaret Hamilton", "Is the recording going up on the channel later?"),
+                    comment(2, 4, "Katherine Johnson", "Grace, which emulator image are you using?"),
+                    comment(3, 2, "Alan Turing", "Can someone drop the PR link?", paidStarCount = 50),
+                    comment(4, 1, "Grace Hopper", "Linked it in the group, #338"),
+                    comment(5, 3, "Ada Lovelace", "Thanks!", isOwn = true, isFailed = true),
+                ),
+            // No floating reactions: they rise on a spring, which a golden would capture at an arbitrary point.
+        )
+
+    /** Comments are off: an administrator sees the menu to turn them on, others only that they are off. */
+    val commentsOff =
+        comments.copy(
+            areAllowed = false,
+            canComment = false,
+            canToggle = true,
+            comments = persistentListOf(),
+        )
+
+    /** Comments cost Telegram Stars: the field says Pingogram can't pay. */
+    val commentsPaid = comments.copy(isPaid = true)
+
+    /** A conference call with its video tiles and its "Invite link" chip beside the comments (board 9b). */
+    val conferenceVideos =
+        videos.copy(
+            chat = GroupCallChat(chatId = 0, title = "", photo = null),
+            isConference = true,
+            inviteLink = "https://t.me/call/abc",
+            participants = participants.take(4).toPersistentList(),
+        )
 }
 
+/** A comments host showing [state], for previews and goldens. */
+internal fun previewComments(state: GroupCallCommentsUiState) =
+    GroupCallCommentsHost(mutableStateOf(state), mutableStateOf(null), onEvent = {})
+
 @Composable
-private fun Preview(state: GroupCallUiState) {
-    PingogramPreview { GroupCallScreen(state, {}, {}, {}, {}) }
+private fun Preview(
+    state: GroupCallUiState,
+    comments: GroupCallCommentsUiState = GroupCallCommentsUiState.Unavailable,
+) {
+    PingogramPreview { GroupCallScreen(state, {}, {}, {}, {}, comments = previewComments(comments)) }
 }
 
 @PingogramPreviews
@@ -202,3 +274,28 @@ private fun GroupCallConfirmConferencePreview() = Preview(GroupCallPreviewStates
 @PingogramPreviews
 @Composable
 private fun GroupCallConferencePreview() = Preview(GroupCallPreviewStates.conference)
+
+@PingogramPreviews
+@PingogramVariantPreviews
+@Composable
+private fun GroupCallCommentsPreview() = Preview(GroupCallPreviewStates.connected, GroupCallPreviewStates.comments)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallCommentsOffPreview() =
+    Preview(GroupCallPreviewStates.connected, GroupCallPreviewStates.commentsOff)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallCommentsPaidPreview() =
+    Preview(GroupCallPreviewStates.connected, GroupCallPreviewStates.commentsPaid)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallConferenceCommentsPreview() =
+    Preview(GroupCallPreviewStates.conferenceVideos, GroupCallPreviewStates.comments)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallCommentsHiddenPreview() =
+    Preview(GroupCallPreviewStates.connected, GroupCallPreviewStates.comments.copy(isShown = false))

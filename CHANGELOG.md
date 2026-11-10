@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator
+  allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -18,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 - Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
   people to it.
+- Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
+  that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
+  the call.
 - Paid posts: a post whose photos and videos unlock for Telegram Stars shows its blurred previews, its price and how
   many photos and videos it holds, with a note that Pingogram can't pay yet; a post you paid for shows its album and
   opens in the media viewer.

@@ -100,6 +100,11 @@ sealed interface MessageContent {
         val description: FormattedText,
     ) : MessageContent
 
+    /** A checklist, whose tasks people in the chat tick off and add to (td_api.tl `messageChecklist`). */
+    data class Checklist(
+        val list: dev.kyralabs.pingogram.core.domain.model.Checklist,
+    ) : MessageContent
+
     /** A die thrown by Telegram: [value] is the result for [emoji] (🎲, 🎯, 🏀, …), 0 while it is still rolling. */
     data class Dice(
         val emoji: String,
@@ -196,7 +201,7 @@ sealed interface MessageContent {
         val message: dev.kyralabs.pingogram.core.domain.model.RichMessage,
     ) : MessageContent
 
-    /** Content Pingogram cannot show (yet): paid media, giveaways, checklists, …. */
+    /** Content Pingogram cannot show (yet): paid media, giveaways, …. */
     data object Unsupported : MessageContent
 }
 

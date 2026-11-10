@@ -46,6 +46,16 @@ data class GroupCall(
     val isMyVideoEnabled: Boolean = false,
     /** A conference call's link (`t.me/call/…`), which joins it; empty for a chat's voice chat. */
     val inviteLink: String = "",
+    /** Comments are on in the call (td_api.tl `are_messages_allowed`). */
+    val areCommentsAllowed: Boolean = false,
+    /** The user may comment now: comments are on, and the call is under Telegram's limit for them. */
+    val canComment: Boolean = false,
+    /** The user may turn comments on or off for everyone (an administrator). */
+    val canToggleComments: Boolean = false,
+    /** The user may delete others' comments (an administrator). */
+    val canDeleteComments: Boolean = false,
+    /** Telegram Stars a comment costs; 0 for free. Pingogram can't pay, so it does not send paid comments. */
+    val commentStarCount: Long = 0,
 )
 
 /** One of a [GroupCall]'s recent speakers. */
