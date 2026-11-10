@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +30,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,19 +42,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -122,6 +129,7 @@ internal fun EditContactRoute(
  * wide inside the window margin:
  * - the user's avatar, name and phone number (left to right), as one for screen readers;
  * - the first and last names in Material's rounded tonal fields;
+ * - the note only the current user sees, a multi-line field of the same style with its counter ([ContactNoteField]);
  * - "Share my phone number", a switch row, only where the user cannot see the number yet;
  * - "Delete contact" in `error` as a [TextButton] at the start (a contact only), and the default [Button] "Save" (or
  *   "Add") at the end, both with the press morph, below the `FLOOD_WAIT` countdown or the request's progress.
@@ -232,10 +240,14 @@ private fun ColumnScope.EditContactForm(
             ContactFieldSpec(
                 label = stringResource(R.string.contacts_last_name_optional),
                 enabled = enabled,
-                keyboardOptions = nameKeyboard.copy(imeAction = ImeAction.Done),
-                onImeAction = { onEvent(EditContactEvent.Save) },
+                keyboardOptions = nameKeyboard,
                 autofill = ContentType.PersonLastName,
             ),
+    )
+    ContactNoteField(
+        value = state.note,
+        onValueChange = { onEvent(EditContactEvent.NoteChanged(it)) },
+        enabled = enabled,
     )
     if (state.canSharePhoneNumber) {
         SharePhoneNumberRow(
@@ -317,6 +329,49 @@ private fun ColumnScope.ContactHeader(state: EditContactUiState.Content) {
         }
     }
 }
+
+/**
+ * The note only the current user sees about the contact (`docs/DESIGN_SYSTEM.md` §6 "Contact note"): Material's rounded
+ * tonal field, multi-line (user content, sentences capitalized), labelled "Note", with "Only you see this note. It
+ * stays with your contacts on all your devices." at the start below it and the counter ("66 / 140", tabular figures,
+ * read as "66 of 140 characters") at the end.
+ */
+@Composable
+private fun ContactNoteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+) {
+    val max = ProfileLimits.NOTE_LENGTH_MAX
+    val length = value.codePointCount(0, value.length)
+    val counter = pluralStringResource(R.plurals.contacts_note_counter_description, max, length, max)
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = enabled,
+        textStyle = MaterialTheme.typography.bodyLarge.userContent,
+        label = { Text(stringResource(R.string.contacts_note)) },
+        supportingText = {
+            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
+                Text(stringResource(R.string.contacts_note_private), Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.contacts_note_counter, length, max),
+                    modifier = Modifier.clearAndSetSemantics { contentDescription = counter },
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                )
+            }
+        },
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        minLines = NOTE_MIN_LINES,
+        maxLines = NOTE_MAX_LINES,
+        shape = TextFieldDefaults.roundedShape,
+        colors = TextFieldDefaults.tonalColors(),
+    )
+}
+
+private const val NOTE_MIN_LINES = 2
+private const val NOTE_MAX_LINES = 6
 
 /**
  * "Share my phone number": a list item with a [CheckSwitch] at its end on the fields' tonal container

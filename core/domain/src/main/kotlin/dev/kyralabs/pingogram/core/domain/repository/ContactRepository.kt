@@ -56,13 +56,16 @@ interface ContactRepository {
 
     /**
      * Saves user [userId] as a contact named [firstName] and [lastName], adding them if they are none yet;
-     * [sharePhoneNumber] lets them see the current user's phone number ([EditableContact.canSharePhoneNumber]).
+     * [sharePhoneNumber] lets them see the current user's phone number ([EditableContact.canSharePhoneNumber]). [note]
+     * replaces the note about them (plain text, at most `ProfileLimits.NOTE_LENGTH_MAX` characters, empty for none);
+     * null keeps the note they have, with its formatting.
      */
     suspend fun save(
         userId: Long,
         firstName: String,
         lastName: String,
         sharePhoneNumber: Boolean,
+        note: String? = null,
     ): Outcome<Unit>
 
     /** Takes user [userId] out of the contacts. */

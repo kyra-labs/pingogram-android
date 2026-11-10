@@ -17,10 +17,13 @@ sealed interface AddContactResult {
  * @property user the user as TDLib has it; for a contact, its names are those the current user gave it.
  * @property canSharePhoneNumber the user cannot see the current user's phone number, so saving them as a contact can
  *   share it (TDLib's `need_phone_number_privacy_exception`); false where that does not apply.
+ * @property note the note the current user keeps about the user, as plain text (td_api.tl `userFullInfo.note`); empty
+ *   without one, or where TDLib could not tell.
  */
 data class EditableContact(
     val user: User,
     val canSharePhoneNumber: Boolean,
+    val note: String = "",
 ) {
-    override fun toString() = "EditableContact(user=$user, canSharePhoneNumber=$canSharePhoneNumber)"
+    override fun toString() = "EditableContact(user=$user, canSharePhoneNumber=$canSharePhoneNumber, …)"
 }

@@ -69,10 +69,12 @@ class EditContactViewModelTest {
     private fun editable(
         isContact: Boolean = true,
         canSharePhoneNumber: Boolean = false,
+        note: String = "",
     ) = Outcome.Success(
         EditableContact(
             contact(USER, "Grace", "Hopper", phoneNumber = "447911123456", isContact = isContact),
             canSharePhoneNumber,
+            note,
         ),
     )
 
@@ -128,6 +130,33 @@ class EditContactViewModelTest {
 
             assertTrue(repository.calls.contains("save:$USER:Admiral:Hopper:false"))
             assertEquals(listOf(EditContactEffect.Done), effects)
+        }
+
+    @Test
+    fun `the note starts as the contact's, goes with the names only where it changed, and keeps 140 characters`() =
+        runTest {
+            repository.onEditableContact = { editable(note = "Wrote COBOL") }
+            val viewModel = viewModel()
+            assertEquals("Wrote COBOL", viewModel.content.note)
+
+            send(viewModel, EditContactEvent.Save)
+            assertEquals(listOf<String?>(null), repository.savedNotes)
+
+            send(viewModel, EditContactEvent.NoteChanged("x".repeat(200)))
+            assertEquals(140, viewModel.content.note.length)
+            send(viewModel, EditContactEvent.NoteChanged("Wrote COBOL. Found the first bug."))
+            send(viewModel, EditContactEvent.Save)
+            assertEquals("Wrote COBOL. Found the first bug.", repository.savedNotes.last())
+        }
+
+    @Test
+    fun `the note typed survives process death`() =
+        runTest {
+            repository.onEditableContact = { editable(note = "Wrote COBOL") }
+            val handle = SavedStateHandle()
+            send(viewModel(handle), EditContactEvent.NoteChanged("Admiral"))
+
+            assertEquals("Admiral", viewModel(handle).content.note)
         }
 
     @Test

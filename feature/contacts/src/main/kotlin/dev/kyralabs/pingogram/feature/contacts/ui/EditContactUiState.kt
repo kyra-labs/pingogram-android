@@ -18,9 +18,11 @@ sealed interface EditContactUiState {
     /**
      * User [userId] with their [photo], [name] and [phoneNumber] (digits, empty where their privacy settings hide it)
      * as the screen's header; [isContact] whether they are a contact already (Edit, or Add to contacts). The fields as
-     * typed: [firstName], [lastName], and [sharePhoneNumber] where saving can share the user's own number with them
-     * ([canSharePhoneNumber]). [fieldError], [isWorking] and the `FLOOD_WAIT` countdown ([floodWaitSeconds] from
-     * [floodWaitTotalSeconds]) as on Add contact; [showsDeleteDialog] while deleting is asked about.
+     * typed: [firstName], [lastName], the [note] only the current user sees (at most `ProfileLimits.NOTE_LENGTH_MAX`
+     * characters; [savedNote] is the one the contact has), and [sharePhoneNumber] where saving can share the user's own
+     * number with them ([canSharePhoneNumber]). [fieldError], [isWorking] and the `FLOOD_WAIT` countdown
+     * ([floodWaitSeconds] from [floodWaitTotalSeconds]) as on Add contact; [showsDeleteDialog] while deleting is asked
+     * about.
      */
     data class Content(
         val userId: Long,
@@ -32,6 +34,8 @@ sealed interface EditContactUiState {
         val firstName: String,
         val lastName: String,
         val sharePhoneNumber: Boolean,
+        val note: String = "",
+        val savedNote: String = "",
         val fieldError: ContactFieldError? = null,
         val isWorking: Boolean = false,
         val floodWaitSeconds: Long? = null,
@@ -54,6 +58,13 @@ sealed interface EditContactEvent {
     data class LastNameChanged(
         val value: String,
     ) : EditContactEvent
+
+    /** The note was typed. */
+    data class NoteChanged(
+        val value: String,
+    ) : EditContactEvent {
+        override fun toString() = "NoteChanged(…)"
+    }
 
     data class SharePhoneNumberChanged(
         val share: Boolean,

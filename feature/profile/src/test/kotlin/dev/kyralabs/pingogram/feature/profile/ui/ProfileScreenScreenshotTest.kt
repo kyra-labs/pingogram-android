@@ -99,6 +99,40 @@ class ProfileScreenScreenshotTest {
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
     fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
 
+    /** A contact's note closes the Info group, on its tinted container. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteHighContrast() = capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun noteMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun noteFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withNote)
+
+    /** A contact without a note: the row offers to add one. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun noNote() = capture(ScreenshotVariant.Light, ProfilePreviewData.withoutNote)
+
     private fun capture(
         variant: ScreenshotVariant,
         state: ProfileUiState = ProfilePreviewData.content,

@@ -77,6 +77,8 @@ enum class ProfileWarning {
  * @property birthday the birthday, formatted ("December 10, 1815", or "December 10" without a year).
  * @property personalChannel the channel the user shows on their profile (td_api.tl `personal_chat_id`).
  * @property id the user's ID, only while Privacy and security's "Show IDs" is on.
+ * @property note the note the current user keeps about a contact, which only they see; null where there is none to
+ *   keep (not a contact, oneself, a bot) or the full info is not known yet.
  */
 @Immutable
 data class ProfileInfo(
@@ -87,13 +89,26 @@ data class ProfileInfo(
     val birthday: String? = null,
     val personalChannel: PersonalChannel? = null,
     val id: Long? = null,
+    val note: ContactNote? = null,
 ) {
     val isEmpty: Boolean
         get() =
             bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
-                id == null
+                id == null && note == null
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
+}
+
+/**
+ * The note about a contact: its [text] (empty without one, when the row offers to add one) and the contact's
+ * [firstName], which the dialog names.
+ */
+@Immutable
+data class ContactNote(
+    val text: String,
+    val firstName: String,
+) {
+    override fun toString() = "ContactNote(…)"
 }
 
 /** A channel a user shows on their profile, by its chat [chatId] and [title]. */
@@ -237,6 +252,22 @@ sealed interface ProfileEvent {
 
     /** Put the bio (or a bot's description) on the clipboard. */
     data object CopyBio : ProfileEvent
+
+    /** The note row was tapped: open its dialog. */
+    data object EditNote : ProfileEvent
+
+    /** The note was typed in its dialog. */
+    data class NoteChanged(
+        val text: String,
+    ) : ProfileEvent {
+        override fun toString() = "NoteChanged(…)"
+    }
+
+    /** "Save" in the note dialog. */
+    data object SaveNote : ProfileEvent
+
+    /** "Cancel", back or a tap outside the note dialog. */
+    data object DismissNote : ProfileEvent
 
     /** The carousel reached its last loaded photos. */
     data object LoadMorePhotos : ProfileEvent

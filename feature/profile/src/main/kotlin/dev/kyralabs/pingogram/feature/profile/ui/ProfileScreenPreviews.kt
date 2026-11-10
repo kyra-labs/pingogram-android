@@ -125,6 +125,18 @@ private fun ProfileScreenFilesPreview() {
     ProfileScreenPreviewContent(ProfilePreviewData.scam, ProfilePreviewData.files)
 }
 
+@PingogramPreviews
+@Composable
+private fun ProfileScreenNotePreview() {
+    ProfileScreenPreviewContent(ProfilePreviewData.withNote)
+}
+
+@PingogramPreviews
+@Composable
+private fun ProfileScreenNoNotePreview() {
+    ProfileScreenPreviewContent(ProfilePreviewData.withoutNote)
+}
+
 @Preview(name = "Expanded", widthDp = EXPANDED_PREVIEW_WIDTH, heightDp = EXPANDED_PREVIEW_HEIGHT)
 @Composable
 private fun ProfileScreenExpandedPreview() {

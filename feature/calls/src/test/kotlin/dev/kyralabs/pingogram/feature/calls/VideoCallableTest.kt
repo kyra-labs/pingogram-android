@@ -90,5 +90,10 @@ class VideoCallableTest {
             offset: Int,
             limit: Int,
         ): Outcome<UserProfilePhotosPage> = Outcome.Failure(DomainError.Network)
+
+        override suspend fun setNote(
+            userId: Long,
+            note: String,
+        ): Outcome<Unit> = Outcome.Failure(DomainError.Network)
     }
 }

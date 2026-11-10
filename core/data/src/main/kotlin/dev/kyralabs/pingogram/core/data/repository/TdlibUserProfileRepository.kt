@@ -30,8 +30,10 @@ import javax.inject.Inject
  * - **Full info**: the updates are followed before the request goes out, so a change in between is not missed. TDLib
  *   sends an update before the answer it causes, so the answer is never older than an update before it.
  * - **Photos**: `getUserProfilePhotos` pages by offset; TDLib announces their files with the answer.
+ * - **Note**: `setUserNote` with plain text (the note's formatting, which other apps may set, is not kept once edited
+ *   here); TDLib then sends the new full info.
  *
- * Nothing about a user (bio, birthday, photos) is logged.
+ * Nothing about a user (bio, birthday, photos, note) is logged.
  */
 @AccountScoped
 class TdlibUserProfileRepository
@@ -49,6 +51,14 @@ class TdlibUserProfileRepository
                 }
                 send(client.request(TdApi.GetUserFullInfo(userId)).map { it.toUserFullInfo() })
             }
+
+        override suspend fun setNote(
+            userId: Long,
+            note: String,
+        ): Outcome<Unit> {
+            val text = TdApi.FormattedText(note.trim(), emptyArray())
+            return client.request(TdApi.SetUserNote(userId, text)).map {}
+        }
 
         override suspend fun profilePhotos(
             userId: Long,
@@ -78,4 +88,5 @@ private fun TdApi.UserFullInfo.toUserFullInfo(): UserFullInfo =
         canBeCalled = canBeCalled,
         supportsVideoCalls = supportsVideoCalls,
         personalChatId = personalChatId,
+        note = note?.toFormattedText() ?: FormattedText.Empty,
     )
