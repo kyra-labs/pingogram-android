@@ -509,7 +509,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
   first). A video longer than 60 s is cut first by `MediaStoryVideoCutter` (the platform's `MediaExtractor` and
   `MediaMuxer`, at the key frames `storyVideoCuts` plans, nothing encoded again). Copies are deleted once TDLib reports
-  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's.
+  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's. Until then each
+  story TDLib took is followed (`StoryPostings`: its file's `updateFile`, `updateStoryPostFailed`) as
+  `StoryPostRepository.uploads`, which `cancel` stops (`deleteStory`, its copy deleted); `feature:chats`'
+  `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
+  them, with "Stop posting".
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)

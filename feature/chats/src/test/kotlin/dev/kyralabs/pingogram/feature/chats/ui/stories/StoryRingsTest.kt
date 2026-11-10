@@ -21,7 +21,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The story rings row: a ring opens its chat's stories, one button for screen readers; more load near its end. */
+/**
+ * The story rings row: a ring opens its chat's stories, one button for screen readers; more load near its end; the
+ * user's own ring while posting shows the upload.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
 class StoryRingsTest {
@@ -33,13 +36,29 @@ class StoryRingsTest {
 
     private val opened = mutableListOf<Long>()
     private var nearEnd = 0
+    private var uploadsShown = 0
 
     private fun setRings(rings: ImmutableList<StoryRing> = StoryRingsPreviewData.rings) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                StoryRingsRow(rings = rings, onOpen = { opened += it }, onNearEnd = { nearEnd++ })
+                StoryRingsRow(
+                    rings = rings,
+                    onOpen = { opened += it },
+                    onNearEnd = { nearEnd++ },
+                    onShowUpload = { uploadsShown++ },
+                )
             }
         }
+    }
+
+    @Test
+    fun `the user's ring while posting says how far it is and shows the upload`() {
+        setRings(StoryRingsPreviewData.posting)
+
+        composeRule.onNodeWithContentDescription("Your story, Posting 62%").performClick()
+
+        assertEquals(1, uploadsShown)
+        assertEquals(emptyList<Long>(), opened)
     }
 
     @Test
