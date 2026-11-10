@@ -143,7 +143,8 @@ private fun NoteField(
     onEvent: (ProfileEvent) -> Unit,
 ) {
     val resources = LocalResources.current
-    val error = editor.error?.let { errorMessage(resources, it, isDebuggable()) }
+    val showDetails = isDebuggable()
+    val error = editor.error?.let { errorMessage(resources, it, showDetails) }
     TextField(
         value = editor.text,
         onValueChange = { onEvent(ProfileEvent.NoteChanged(it)) },
