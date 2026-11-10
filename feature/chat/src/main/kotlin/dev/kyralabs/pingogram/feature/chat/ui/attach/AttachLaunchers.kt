@@ -166,6 +166,7 @@ internal class AttachInputs(
     val hasCamera: Boolean = true,
     val caption: ComposerText = ComposerText(),
     val pollEditor: PollEditor = PollEditor(),
+    val checklistEditor: ChecklistEditor = ChecklistEditor(),
     val location: LocationInputs = LocationInputs(),
 )
 
@@ -182,11 +183,12 @@ internal fun rememberAttachInputs(
     pollEditor: PollEditor,
     snackbarHostState: SnackbarHostState,
     location: LocationInputs = LocationInputs(),
+    checklistEditor: ChecklistEditor = ChecklistEditor(),
 ): AttachInputs {
     val currentOnEvent by rememberUpdatedState(onEvent)
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
-    return remember(launchers, caption, pollEditor, snackbarHostState, resources, scope, location) {
+    return remember(launchers, caption, pollEditor, checklistEditor, snackbarHostState, resources, scope, location) {
         AttachInputs(
             onPick = { option ->
                 when (option) {
@@ -196,6 +198,10 @@ internal fun rememberAttachInputs(
 
                     AttachOption.Poll -> {
                         currentOnEvent(ChatEvent.OpenPoll)
+                    }
+
+                    AttachOption.Checklist -> {
+                        currentOnEvent(ChatEvent.OpenChecklist)
                     }
 
                     AttachOption.Location -> {
@@ -213,6 +219,7 @@ internal fun rememberAttachInputs(
             hasCamera = launchers.hasCamera,
             caption = caption,
             pollEditor = pollEditor,
+            checklistEditor = checklistEditor,
             location = location,
         )
     }

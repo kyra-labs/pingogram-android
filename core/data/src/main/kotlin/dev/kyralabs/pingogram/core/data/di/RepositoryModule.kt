@@ -69,6 +69,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepo
 import dev.kyralabs.pingogram.core.data.repository.TdlibPersonalChannelRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChecklistRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPollRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
@@ -161,6 +162,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
@@ -387,6 +389,9 @@ interface RepositoryModule {
 
     @Binds
     fun pollRepository(repository: TdlibPollRepository): PollRepository
+
+    @Binds
+    fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
 
     @Binds
     fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository

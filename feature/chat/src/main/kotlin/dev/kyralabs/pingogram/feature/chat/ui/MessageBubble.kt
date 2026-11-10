@@ -64,6 +64,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
@@ -327,6 +328,7 @@ private fun bubbleActions(
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
         (bubble.content as? MessageContent.RichMessage)
             ?.let { content ->
@@ -351,7 +353,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + rich + buttons + reactions + allReactions +
+    } + original + poll + checklist + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }

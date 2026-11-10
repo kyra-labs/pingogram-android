@@ -12,12 +12,15 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Audio
+import dev.kyralabs.pingogram.core.domain.model.Checklist
+import dev.kyralabs.pingogram.core.domain.model.ChecklistTask
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
@@ -303,6 +306,53 @@ internal object ContentPreviewData {
             description = FormattedText.Empty,
         )
     }
+
+    /**
+     * A checklist of five tasks, [done] of them ticked by [completerId] (the first two by the preview's Ada); the user
+     * may tick tasks where [canMark] and add tasks where [canAdd].
+     */
+    fun checklist(
+        done: Int = 2,
+        canMark: Boolean = true,
+        canAdd: Boolean = true,
+        completerId: Long = CHECKLIST_COMPLETER,
+        release: Boolean = true,
+    ): MessageContent.Checklist {
+        val texts = if (release) ReleaseTasks else MeetupTasks
+        val tasks =
+            texts.mapIndexed { index, text ->
+                val isDone = index < done
+                ChecklistTask(
+                    id = index + 1,
+                    text = FormattedText(text, persistentListOf()),
+                    completedBy = if (isDone) MessageSender.User(completerId) else null,
+                    completionDate = if (isDone) CHECKLIST_DONE_AT + index else 0,
+                )
+            }
+        return MessageContent.Checklist(
+            Checklist(
+                title = FormattedText(if (release) "Pingogram 1.2 release" else "Meetup on Saturday", persistentListOf()),
+                tasks = tasks.toImmutableList(),
+                othersCanAddTasks = canAdd,
+                canAddTasks = canAdd,
+                othersCanMarkTasksAsDone = canMark,
+                canMarkTasksAsDone = canMark,
+            ),
+        )
+    }
+
+    const val CHECKLIST_COMPLETER = 42L
+    private const val CHECKLIST_DONE_AT = 1_700_000_000L
+    private val ReleaseTasks =
+        listOf(
+            "Freeze strings for translation",
+            "Update Play Store screenshots",
+            "Run the TDLib upgrade tests",
+            "Write the changelog",
+            "Tag the release on GitHub",
+        )
+    private val MeetupTasks =
+        listOf("Book the room at the café", "Bring the projector", "Print 30 name tags", "Order samosas and chai", "Share the slides link")
 
     private val QuizExplanation =
         FormattedText(

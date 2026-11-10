@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Location
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -447,6 +448,26 @@ class TdlibAttachmentRepositoryTest {
                     (it.inputMessageContent as TdApi.InputMessageLocation).location.horizontalAccuracy
                 }
             assertEquals(listOf(1_500.0, 0.0), accuracies)
+        }
+
+    @Test
+    fun `a checklist goes out with its tasks numbered and who may change it`() =
+        runTest {
+            answerSends()
+            val checklist =
+                NewChecklist(
+                    "Release",
+                    persistentListOf("Tag", "Post"),
+                    othersCanAddTasks = true,
+                    othersCanMarkTasksAsDone = false,
+                )
+
+            repository().sendChecklist(CHAT, checklist)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessageChecklist
+            assertEquals("Release", sent.checklist.title.text)
+            assertEquals(listOf(1 to "Tag", 2 to "Post"), sent.checklist.tasks.map { it.id to it.text.text })
+            assertEquals(listOf(true, false), listOf(sent.checklist.othersCanAddTasks, sent.checklist.othersCanMarkTasksAsDone))
         }
 
     @Test

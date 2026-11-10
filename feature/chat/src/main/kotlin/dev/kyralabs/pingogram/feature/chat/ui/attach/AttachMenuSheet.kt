@@ -181,6 +181,7 @@ private val AttachOption.label: Int
             AttachOption.Location -> R.string.attach_location
             AttachOption.Contact -> R.string.attach_contact
             AttachOption.Poll -> R.string.attach_poll
+            AttachOption.Checklist -> R.string.attach_checklist
         }
 
 private val AttachOption.icon: Int
@@ -192,6 +193,7 @@ private val AttachOption.icon: Int
             AttachOption.Location -> UiR.drawable.ic_location_on_filled
             AttachOption.Contact -> UiR.drawable.ic_person_filled
             AttachOption.Poll -> UiR.drawable.ic_poll_filled
+            AttachOption.Checklist -> UiR.drawable.ic_checklist
         }
 
 @PingogramPreviews

@@ -55,6 +55,31 @@ internal fun SavedStateHandle.restoredPoll(): PollDraft {
     )
 }
 
+/** Keeps the checklist form: whether it is open, and what it holds. */
+internal fun SavedStateHandle.saveChecklist(
+    open: Boolean,
+    draft: ChecklistDraft,
+) {
+    this[KEY_CHECKLIST_OPEN] = open
+    this[KEY_CHECKLIST_TITLE] = draft.title
+    this[KEY_CHECKLIST_TASKS] = ArrayList(draft.tasks)
+    this[KEY_CHECKLIST_FLAGS] = booleanArrayOf(draft.othersCanAddTasks, draft.othersCanMarkTasksAsDone)
+}
+
+/** Whether the checklist form was open. */
+internal fun SavedStateHandle.restoredChecklistOpen(): Boolean = get<Boolean>(KEY_CHECKLIST_OPEN) == true
+
+/** What the checklist form held, or an empty form. */
+internal fun SavedStateHandle.restoredChecklist(): ChecklistDraft {
+    val flags = get<BooleanArray>(KEY_CHECKLIST_FLAGS)?.takeIf { it.size == CHECKLIST_FLAGS } ?: return ChecklistDraft()
+    return ChecklistDraft(
+        title = get<String>(KEY_CHECKLIST_TITLE).orEmpty(),
+        tasks = get<ArrayList<String>>(KEY_CHECKLIST_TASKS).orEmpty(),
+        othersCanAddTasks = flags[0],
+        othersCanMarkTasksAsDone = flags[1],
+    )
+}
+
 /** This attachment as one string of its fields; [restoredAttachment] reads it back. */
 internal fun Attachment.saved(): String =
     when (this) {
@@ -161,3 +186,8 @@ private const val KEY_POLL_OPTIONS = "chat.pollOptions"
 private const val KEY_POLL_FLAGS = "chat.pollFlags"
 private const val KEY_POLL_CORRECT = "chat.pollCorrect"
 private const val KEY_POLL_REQUIRED_QUIZ = "chat.pollRequiredQuiz"
+private const val KEY_CHECKLIST_OPEN = "chat.checklistOpen"
+private const val KEY_CHECKLIST_TITLE = "chat.checklistTitle"
+private const val KEY_CHECKLIST_TASKS = "chat.checklistTasks"
+private const val KEY_CHECKLIST_FLAGS = "chat.checklistFlags"
+private const val CHECKLIST_FLAGS = 2

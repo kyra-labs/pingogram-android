@@ -15,12 +15,15 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 // What one item of the conversation shows (REQUIREMENTS.md FR-C2–C4), from its ItemInputs alone.
@@ -111,7 +114,27 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
+        checklist = (content as? MessageContent.Checklist)?.let { checklistUi(content) },
     )
+}
+
+/** The checklist's completers' avatars by task id, from the users looked up for the item ([ItemInputs.members]). */
+private fun ItemInputs.checklistUi(content: MessageContent.Checklist): ChecklistUi {
+    val users = memberIdsOf(content).zip(members).toMap()
+    val completers =
+        content.list.tasks
+            .mapNotNull { task ->
+                val userId = (task.completedBy as? MessageSender.User)?.userId ?: return@mapNotNull null
+                val user = users[userId] ?: return@mapNotNull null
+                task.id to
+                    SenderAvatar(
+                        id = user.id,
+                        name = user.fullName(),
+                        photo = user.profilePhoto,
+                        placeholderIcon = if (user.isDeleted) R.drawable.ic_person_filled else null,
+                    )
+            }.toMap()
+    return ChecklistUi(completers = completers.toImmutableMap())
 }
 
 /** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */

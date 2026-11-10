@@ -60,6 +60,7 @@ import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsReposit
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
@@ -296,6 +297,9 @@ object ActiveAccountModule {
 
     @Provides
     fun pollRepository(accounts: Accounts): PollRepository = accounts.active.pollRepository()
+
+    @Provides
+    fun checklistRepository(accounts: Accounts): ChecklistRepository = accounts.active.checklistRepository()
 
     @Provides
     fun botInfoRepository(accounts: Accounts): BotInfoRepository = accounts.active.botInfoRepository()

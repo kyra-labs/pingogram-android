@@ -34,6 +34,8 @@ class ServiceActionMappersTest {
                 TdApi.MessageChatSetMessageAutoDeleteTime(86_400, 0),
                 TdApi.MessageContactRegistered(),
                 TdApi.MessageCustomServiceAction("Something happened"),
+                TdApi.MessageChecklistTasksDone(9, intArrayOf(1, 2), intArrayOf(3)),
+                TdApi.MessageChecklistTasksAdded(9, arrayOf(TdApi.ChecklistTask(4, TdApi.FormattedText("Post", emptyArray()), null, 0))),
             ).map { it.action() }
 
         assertEquals(
@@ -54,6 +56,8 @@ class ServiceActionMappersTest {
                 ServiceAction.AutoDeleteTimerChanged(86_400, 0),
                 ServiceAction.ContactRegistered,
                 ServiceAction.Custom("Something happened"),
+                ServiceAction.ChecklistTasksDone(9, doneCount = 2, notDoneCount = 1),
+                ServiceAction.ChecklistTasksAdded(9, count = 1),
             ),
             actions,
         )
@@ -213,6 +217,7 @@ class ServiceActionMappersTest {
                 "MessageVenue",
                 "MessageContact",
                 "MessagePoll",
+                "MessageChecklist",
                 "MessageDice",
                 "MessageAnimatedEmoji",
                 "MessageGame",
@@ -245,6 +250,8 @@ class ServiceActionMappersTest {
                 "MessageChatSetMessageAutoDeleteTime",
                 "MessageContactRegistered",
                 "MessageCustomServiceAction",
+                "MessageChecklistTasksDone",
+                "MessageChecklistTasksAdded",
             )
     }
 }

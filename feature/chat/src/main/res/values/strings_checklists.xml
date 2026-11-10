@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Checklists in messages (REQUIREMENTS.md FR-C4) and the form of a new one (FR-C5). -->
+<resources>
+    <!-- The small label over a checklist's title, shown in capitals. -->
+    <string name="checklist_kicker">Checklist</string>
+    <!-- Under the tasks: %1$d tasks of %2$d are done. -->
+    <string name="checklist_progress">%1$d of %2$d done</string>
+    <!-- The button under a checklist that opens the field for a new task; also "Checklist" in the attach menu. -->
+    <string name="checklist_add_task">Add task</string>
+    <string name="attach_checklist">Checklist</string>
+    <!-- The inline field for a new task, and its buttons. -->
+    <string name="checklist_new_task">New task</string>
+    <string name="checklist_add">Add</string>
+    <string name="checklist_cancel_add">Cancel</string>
+    <!-- For screen readers: a task's state. %1$s is who ticked it. -->
+    <string name="checklist_task_done">done</string>
+    <string name="checklist_task_done_by">done by %1$s</string>
+    <string name="checklist_task_not_done">not done</string>
+    <string name="checklist_task_sending">saving</string>
+    <!-- Screen readers' actions on a task. %1$s is its text. -->
+    <string name="checklist_mark_done">Mark %1$s as done</string>
+    <string name="checklist_mark_not_done">Mark %1$s as not done</string>
+    <!-- For screen readers: who ticked a task, on their avatar. %1$s is their name. -->
+    <string name="checklist_completer">Done by %1$s</string>
+
+    <!-- The form of a new checklist. -->
+    <string name="checklist_form_title">New checklist</string>
+    <string name="checklist_form_name">Title</string>
+    <string name="checklist_form_tasks">Tasks</string>
+    <!-- %1$d is the task's number. -->
+    <string name="checklist_form_task">Task %1$d</string>
+    <string name="checklist_form_remove_task">Remove task %1$d</string>
+    <string name="checklist_form_add_task">Add a task</string>
+    <!-- A task that repeats one above it, which Telegram refuses. -->
+    <string name="checklist_form_task_repeated">This task repeats one above</string>
+    <string name="checklist_form_settings">Settings</string>
+    <string name="checklist_form_others_mark">Others can mark tasks as done</string>
+    <string name="checklist_form_others_mark_note">Anyone in the chat can tick tasks off and untick them</string>
+    <string name="checklist_form_others_add">Others can add tasks</string>
+    <string name="checklist_form_others_add_note">Anyone in the chat can add tasks to the list</string>
+</resources>
