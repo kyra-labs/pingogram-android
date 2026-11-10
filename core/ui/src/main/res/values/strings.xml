@@ -201,6 +201,10 @@
     <string name="preview_auto_delete_off">Auto-delete turned off</string>
     <!-- One of the user's contacts created a Telegram account. -->
     <string name="preview_contact_registered">%1$s joined Telegram</string>
+    <!-- The current user suggested a birthday to the other person of a private chat. -->
+    <string name="preview_you_suggested_birthday">You suggested a birthday</string>
+    <!-- %1$s suggested a birthday to the current user. -->
+    <string name="preview_suggested_birthday">%1$s suggested your birthday</string>
     <string name="preview_video_chat_scheduled">Video chat scheduled</string>
     <string name="preview_video_chat_started">Video chat started</string>
     <string name="preview_video_chat_ended">Video chat ended</string>
