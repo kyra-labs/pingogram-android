@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.story.StoryViewerPreviewData
 import dev.kyralabs.pingogram.feature.media.story.StoryViewerScreen
 import dev.kyralabs.pingogram.feature.media.story.StoryViewerUiState
+import dev.kyralabs.pingogram.feature.media.storypost.NewStoryPreviewData
+import dev.kyralabs.pingogram.feature.media.storypost.NewStoryScreen
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaPreviewData
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
 import org.junit.Rule
@@ -20,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The media viewer's and the stories viewer's states have named controls with 48 dp touch targets
+ * The media viewer's, the stories viewer's and posting a story's states have named controls with 48 dp touch targets
  * ([assertAccessible], `docs/audit/accessibility.md`), on a compact phone.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -58,6 +60,15 @@ class MediaAccessibilityChecksTest {
 
     @Test
     fun storyFailed() = stories(StoryViewerPreviewData.failed)
+
+    @Test
+    fun newStoryPicked() = check { NewStoryScreen(state = NewStoryPreviewData.videoShown, onEvent = {}) }
+
+    @Test
+    fun newStoryAdding() = check { NewStoryScreen(state = NewStoryPreviewData.adding, onEvent = {}) }
+
+    @Test
+    fun newStoryFull() = check { NewStoryScreen(state = NewStoryPreviewData.full, onEvent = {}) }
 
     private fun viewer(state: MediaViewerUiState) =
         check { MediaViewerScreen(state = state, onEvent = {}, onBack = {}) }
