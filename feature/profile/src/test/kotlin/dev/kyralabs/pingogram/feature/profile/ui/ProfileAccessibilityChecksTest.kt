@@ -86,6 +86,23 @@ class ProfileAccessibilityChecksTest {
         }
 
     @Test
+    fun profileWithNote() =
+        check {
+            ProfileScreen(
+                state = ProfilePreviewData.withNote,
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+                onEditContact = {},
+            )
+        }
+
+    @Test
+    fun noteDialog() = check { ContactNoteDialog(ContactNoteEditorStates().values.first(), onEvent = {}) }
+
+    @Test
     fun chatInfoWithId() =
         check {
             ChatInfoScreen(
