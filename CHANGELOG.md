@@ -23,6 +23,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
   that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
   the call.
+- Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
+  all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

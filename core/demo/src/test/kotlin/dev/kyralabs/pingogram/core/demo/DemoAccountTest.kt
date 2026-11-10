@@ -44,6 +44,17 @@ class DemoAccountTest {
         }
 
     @Test
+    fun `a note about one of the people is kept after a restart`() =
+        runTest {
+            val (client, _) = client()
+
+            client.ask(TdApi.SetUserNote(DemoData.ADA, TdApi.FormattedText("Owes me a chai", emptyArray())))
+            val (restarted, _) = client()
+
+            assertEquals("Owes me a chai", restarted.ask(TdApi.GetUserFullInfo(DemoData.ADA)).note?.text)
+        }
+
+    @Test
     fun `privacy rules start open but for the phone number, and change`() =
         runTest {
             val (client, _) = client()

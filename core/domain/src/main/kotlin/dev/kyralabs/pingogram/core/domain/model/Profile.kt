@@ -51,6 +51,12 @@ object ProfileLimits {
 
     /** The longest bio until TDLib reports its option `bio_length_max` (larger with Telegram Premium). */
     const val BIO_LENGTH_MAX_DEFAULT = 70
+
+    /**
+     * The longest note about a contact (td_api.tl `setUserNote`, `importedContact.note`), as Telegram's apps count it;
+     * Telegram refuses longer ones.
+     */
+    const val NOTE_LENGTH_MAX = 140
 }
 
 /** Why a username cannot be taken, found without asking Telegram ([usernameProblem]). */
