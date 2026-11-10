@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.core.ui.time.UserStatusFormatter
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.dates.EntityDates
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -106,6 +107,9 @@ internal class ChatTimeFormatter(
             else -> DayAndTime.OnDate(shortDate.format(dateTime), timeOfDay)
         }
     }
+
+    /** How dates in messages are worded for this reader ([EntityDates]). */
+    val dates = EntityDates(zone, locale, is24HourClock, patterns)
 
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(
