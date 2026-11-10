@@ -3,8 +3,10 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.mapper.toBirthdate
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toPhoto
+import dev.kyralabs.pingogram.core.data.mapper.toTdBirthdate
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.UserFullInfo
@@ -30,6 +32,7 @@ import javax.inject.Inject
  * - **Full info**: the updates are followed before the request goes out, so a change in between is not missed. TDLib
  *   sends an update before the answer it causes, so the answer is never older than an update before it.
  * - **Photos**: `getUserProfilePhotos` pages by offset; TDLib announces their files with the answer.
+ * - **Birthday suggestions**: `suggestUserBirthdate`, which sends the user a `messageSuggestBirthdate`.
  * - **Note**: `setUserNote` with plain text (the note's formatting, which other apps may set, is not kept once edited
  *   here); TDLib then sends the new full info.
  *
@@ -60,6 +63,11 @@ class TdlibUserProfileRepository
             return client.request(TdApi.SetUserNote(userId, text)).map {}
         }
 
+        override suspend fun suggestBirthdate(
+            userId: Long,
+            birthdate: Birthdate,
+        ): Outcome<Unit> = client.request(TdApi.SuggestUserBirthdate(userId, birthdate.toTdBirthdate())).map {}
+
         override suspend fun profilePhotos(
             userId: Long,
             offset: Int,
@@ -81,7 +89,7 @@ class TdlibUserProfileRepository
 private fun TdApi.UserFullInfo.toUserFullInfo(): UserFullInfo =
     UserFullInfo(
         bio = bio?.toFormattedText() ?: FormattedText.Empty,
-        birthdate = birthdate?.let { Birthdate(it.day, it.month, it.year.takeIf { year -> year > 0 }) },
+        birthdate = birthdate?.toBirthdate(),
         isBlocked = blockList is TdApi.BlockListMain,
         botDescription = botInfo?.description?.takeIf { it.isNotBlank() },
         groupsInCommon = groupInCommonCount.coerceAtLeast(0),

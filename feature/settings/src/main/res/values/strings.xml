@@ -911,10 +911,6 @@
     <!-- For screen readers: the "Change" button of the birthday row; %1$s is the birthday, "December 10". -->
     <string name="settings_edit_profile_birthday_change_label">Change birthday %1$s</string>
     <string name="settings_edit_profile_birthday_privacy">Who can see it</string>
-    <string name="settings_edit_profile_birthday_show_year">Show the year</string>
-    <string name="settings_edit_profile_birthday_remove">Remove</string>
-    <string name="settings_edit_profile_birthday_cancel">Cancel</string>
-    <string name="settings_edit_profile_birthday_done">Done</string>
     <string name="settings_section_profile_phone">Phone number</string>
     <string name="settings_edit_profile_change_number">Change</string>
     <!-- The same button for screen readers: %1$s the phone number. -->

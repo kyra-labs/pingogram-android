@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.profile.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
@@ -77,6 +78,8 @@ enum class ProfileWarning {
  * @property birthday the birthday, formatted ("December 10, 1815", or "December 10" without a year).
  * @property personalChannel the channel the user shows on their profile (td_api.tl `personal_chat_id`).
  * @property id the user's ID, only while Privacy and security's "Show IDs" is on.
+ * @property birthdaySuggestion a contact without a birthday on their profile, to whom one can be suggested; null for
+ *   anyone else, or while the full info is not known.
  * @property note the note the current user keeps about a contact, which only they see; null where there is none to
  *   keep (not a contact, oneself, a bot) or the full info is not known yet.
  */
@@ -89,12 +92,13 @@ data class ProfileInfo(
     val birthday: String? = null,
     val personalChannel: PersonalChannel? = null,
     val id: Long? = null,
+    val birthdaySuggestion: BirthdaySuggestionOffer? = null,
     val note: ContactNote? = null,
 ) {
     val isEmpty: Boolean
         get() =
             bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
-                id == null && note == null
+                id == null && birthdaySuggestion == null && note == null
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
 }
@@ -109,6 +113,18 @@ data class ContactNote(
     val firstName: String,
 ) {
     override fun toString() = "ContactNote(…)"
+}
+
+/**
+ * The offer to suggest a birthday to a contact without one (the owner's board 16a): their [firstName], and whether a
+ * suggestion [isSending] to Telegram.
+ */
+@Immutable
+data class BirthdaySuggestionOffer(
+    val firstName: String,
+    val isSending: Boolean = false,
+) {
+    override fun toString() = "BirthdaySuggestionOffer(isSending=$isSending)"
 }
 
 /** A channel a user shows on their profile, by its chat [chatId] and [title]. */
@@ -253,6 +269,11 @@ sealed interface ProfileEvent {
     /** Put the bio (or a bot's description) on the clipboard. */
     data object CopyBio : ProfileEvent
 
+    /** A birthday was picked in "Suggest a birthday": send it to the contact. */
+    data class SuggestBirthdate(
+        val birthdate: Birthdate,
+    ) : ProfileEvent
+
     /** The note row was tapped: open its dialog. */
     data object EditNote : ProfileEvent
 
@@ -327,6 +348,13 @@ sealed interface ProfileEffect {
         val name: UiText,
         val blocked: Boolean,
     ) : ProfileEffect
+
+    /** Telegram sent the birthday suggested to [name]: a snackbar says so. */
+    data class BirthdaySuggested(
+        val name: String,
+    ) : ProfileEffect {
+        override fun toString() = "BirthdaySuggested(…)"
+    }
 
     /** Telegram has the report: a snackbar thanks the user. */
     data object Reported : ProfileEffect

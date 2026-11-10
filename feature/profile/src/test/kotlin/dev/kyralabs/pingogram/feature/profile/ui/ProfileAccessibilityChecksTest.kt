@@ -100,6 +100,20 @@ class ProfileAccessibilityChecksTest {
         }
 
     @Test
+    fun profileWithBirthdaySuggestion() =
+        check {
+            ProfileScreen(
+                state = ProfilePreviewData.withBirthdaySuggestion,
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+                onEditContact = {},
+            )
+        }
+
+    @Test
     fun noteDialog() = check { ContactNoteDialog(ContactNoteEditorStates().values.first(), onEvent = {}) }
 
     @Test

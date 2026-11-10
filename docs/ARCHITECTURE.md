@@ -983,6 +983,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
   `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
   The demo keeps notes on the phone (`DemoAccount`).
+- Birthday suggestions (`docs/DESIGN_SYSTEM.md` §6 "Birthday suggestions"): a contact without a birthday on their
+  profile (`UserFullInfo.birthdate` null) gets the offer (`ProfileInfo.birthdaySuggestion`), whose pick
+  `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
+  `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
+  `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
+  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`

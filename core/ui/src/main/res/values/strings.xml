@@ -202,6 +202,10 @@
     <string name="preview_auto_delete_off">Auto-delete turned off</string>
     <!-- One of the user's contacts created a Telegram account. -->
     <string name="preview_contact_registered">%1$s joined Telegram</string>
+    <!-- The current user suggested a birthday to the other person of a private chat. -->
+    <string name="preview_you_suggested_birthday">You suggested a birthday</string>
+    <!-- %1$s suggested a birthday to the current user. -->
+    <string name="preview_suggested_birthday">%1$s suggested your birthday</string>
     <string name="preview_video_chat_scheduled">Video chat scheduled</string>
     <string name="preview_video_chat_started">Video chat started</string>
     <string name="preview_video_chat_ended">Video chat ended</string>
@@ -365,4 +369,23 @@
     <string name="login_code_resend_fragment">Get the code on Fragment</string>
     <!-- %1$s: the remaining time, e.g. "42 seconds". -->
     <string name="login_code_resend_in">You can get a new code in %1$s.</string>
+    <!-- The birthday picker (Edit profile, suggesting a birthday to a contact): its default title. -->
+    <string name="birthday_title">Birthday</string>
+    <string name="birthday_show_year">Show the year</string>
+    <string name="birthday_remove">Remove</string>
+    <string name="birthday_cancel">Cancel</string>
+    <string name="birthday_done">Done</string>
+    <!-- A birthday suggestion in a chat (board 16b): %1$s is who suggested it. -->
+    <string name="birthday_suggestion_title">%1$s suggested your birthday</string>
+    <!-- The same card for a suggestion the user sent: %1$s is whom it was suggested to. -->
+    <string name="birthday_suggestion_title_outgoing">You suggested %1$s\'s birthday</string>
+    <!-- %1$s is who may see the birthday under the user's Birthday privacy setting, e.g. "My contacts". -->
+    <string name="birthday_suggestion_text">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting (%1$s).</string>
+    <string name="birthday_suggestion_text_no_privacy">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting.</string>
+    <!-- %1$s is whom the birthday was suggested to. -->
+    <string name="birthday_suggestion_text_outgoing">%1$s decides whether to keep it and who sees it.</string>
+    <string name="birthday_suggestion_decline">Decline</string>
+    <string name="birthday_suggestion_accept">Accept</string>
+    <string name="birthday_suggestion_accepted">Added to your profile</string>
+    <string name="birthday_suggestion_declined">Declined</string>
 </resources>
