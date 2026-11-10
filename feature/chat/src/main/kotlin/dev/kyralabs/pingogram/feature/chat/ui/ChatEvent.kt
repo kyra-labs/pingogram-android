@@ -240,6 +240,17 @@ sealed interface ChatEvent {
         val options: SendOptions = SendOptions(),
     ) : ChatEvent
 
+    /** "Checklist" in the attach menu: the form of a new checklist opens. */
+    data object OpenChecklist : ChatEvent
+
+    /** The checklist form was dismissed: nothing is sent, the form empties. */
+    data object DismissChecklist : ChatEvent
+
+    /** Send the checklist of the form as [options] say. */
+    data class SendChecklist(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
     /** The cancel button on the upload of messages [messageIds], still being sent: they are deleted. */
     data class CancelUpload(
         val messageIds: List<Long>,

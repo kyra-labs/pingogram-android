@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -59,6 +60,7 @@ import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ChatAttachments
+import dev.kyralabs.pingogram.feature.chat.ui.attach.ChecklistEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewDraft
@@ -77,6 +79,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChatChecklists
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.withChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -348,6 +353,7 @@ class ChatViewModel internal constructor(
     searchRepositories: ChatSearchRepositories,
     customEmojiRepository: CustomEmojiRepository,
     pollRepository: PollRepository,
+    checklistRepository: ChecklistRepository,
     scheduledMessageRepository: ScheduledMessageRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
@@ -394,6 +400,7 @@ class ChatViewModel internal constructor(
         searchRepositories: ChatSearchRepositories,
         customEmojiRepository: CustomEmojiRepository,
         pollRepository: PollRepository,
+        checklistRepository: ChecklistRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
         targetPreferences: TargetPreferences,
         @ApplicationScope applicationScope: CoroutineScope,
@@ -435,6 +442,7 @@ class ChatViewModel internal constructor(
         searchRepositories,
         customEmojiRepository,
         pollRepository,
+        checklistRepository,
         scheduledMessageRepository,
         AndroidChatLog,
         messageId,
@@ -835,6 +843,9 @@ class ChatViewModel internal constructor(
     /** What the form of a new poll holds, for its fields; kept like [composerText]. */
     val pollEditor: PollEditor get() = attachments.poll
 
+    /** What the form of a new checklist holds, for its fields; kept like [composerText]. */
+    val checklistEditor: ChecklistEditor get() = attachments.checklist
+
     private val chat: Flow<ChatLookup> =
         chatAttempts
             .flatMapLatest {
@@ -887,6 +898,21 @@ class ChatViewModel internal constructor(
             users = userRepository,
             chats = chatRepository,
             history = history,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    private val checklists =
+        ChatChecklists(
+            chatId = chatId,
+            repository = checklistRepository,
             messageOf = { id ->
                 history.replayCache
                     .firstOrNull()
@@ -1110,9 +1136,9 @@ class ChatViewModel internal constructor(
             messageActions.sheet,
             messageActions.deleteDialog,
             attachments.preview,
-            attachments.isPollOpen,
-        ) { composerTargetState, sheet, deleteDialog, preview, pollOpen ->
-            Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen)
+            combine(attachments.isPollOpen, attachments.isChecklistOpen, ::Pair),
+        ) { composerTargetState, sheet, deleteDialog, preview, (pollOpen, checklistOpen) ->
+            Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen, checklistOpen)
         }
 
     val uiState: StateFlow<ChatUiState> =
@@ -1134,6 +1160,7 @@ class ChatViewModel internal constructor(
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
             .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
@@ -1210,6 +1237,7 @@ class ChatViewModel internal constructor(
             is TranslationEvent -> translation.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
+            is ChecklistEvent -> checklists.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
@@ -1285,6 +1313,12 @@ class ChatViewModel internal constructor(
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
+
+            ChatEvent.OpenChecklist -> attachments.openChecklist()
+
+            ChatEvent.DismissChecklist -> attachments.dismissChecklist()
+
+            is ChatEvent.SendChecklist -> attachments.sendChecklist(event.options)
 
             is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
 
@@ -1412,7 +1446,8 @@ class ChatViewModel internal constructor(
             composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
                 .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
-        val options = attachOptions(chat, user, people.myUserId)
+        val me = people.myUserId?.let(people.users::get)
+        val options = attachOptions(chat, user, people.myUserId, isPremium = me?.isPremium == true)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
         return ChatUiState(
             header = header,
@@ -1438,10 +1473,8 @@ class ChatViewModel internal constructor(
                         isReplacement = preview.replacing != null,
                     )
                 },
-            poll =
-                PollSheet(chat.isChannel, canSchedule).takeIf {
-                    canWrite && overlays.pollOpen && AttachOption.Poll in options
-                },
+            poll = overlays.pollSheet(chat, canWrite, canSchedule, options),
+            checklistForm = overlays.checklistSheet(canWrite, canSchedule, options),
         )
     }
 
@@ -1547,8 +1580,29 @@ private class Overlays(
     val deleteDialog: DeleteMessagesDialog?,
     val preview: PreviewDraft?,
     val pollOpen: Boolean,
+    val checklistOpen: Boolean,
 ) {
     val mode: ComposerMode get() = composerTargets.mode
+
+    /** The poll form while it is open, where the user may write and the chat takes polls. */
+    fun pollSheet(
+        chat: Chat,
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: ImmutableList<AttachOption>,
+    ): PollSheet? =
+        PollSheet(chat.isChannel, canSchedule).takeIf { canWrite && pollOpen && AttachOption.Poll in options }
+
+    /** The checklist form while it is open, where the user may write and the chat takes checklists. */
+    fun checklistSheet(
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: ImmutableList<AttachOption>,
+    ): ChecklistSheet? =
+        ChecklistSheet(canSchedule).takeIf {
+            canWrite && checklistOpen &&
+                AttachOption.Checklist in options
+        }
 
     fun bar(
         chat: Chat,
