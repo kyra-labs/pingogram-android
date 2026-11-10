@@ -25,6 +25,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the call.
 - Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
   all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
+- A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
+  know it), and Telegram asks them whether to keep it.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
