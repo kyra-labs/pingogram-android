@@ -156,7 +156,8 @@ class AttachScreenTest {
     fun `the poll is sent once it is complete`() {
         val editor = PollEditor()
         setScreen(ChatPreviewData.groupChat.copy(poll = PollSheet()), poll = editor)
-        composeRule.onNodeWithContentDescription("Send").performScrollTo().assertIsNotEnabled()
+        // Send stays pinned above the form, whatever it scrolls.
+        composeRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
         composeRule.runOnIdle {
             editor.question.setTextAndPlaceCursorAtEnd("Lunch?")
@@ -165,7 +166,6 @@ class AttachScreenTest {
         }
         composeRule
             .onNodeWithContentDescription("Send")
-            .performScrollTo()
             .assertIsEnabled()
             .performClick()
         composeRule.waitForIdle()
@@ -174,13 +174,13 @@ class AttachScreenTest {
     }
 
     @Test
-    fun `in quiz mode a radio button marks the correct answer`() {
+    fun `in quiz mode a check box marks a correct answer`() {
         val editor = PollEditor(PollDraft("2 + 2?", listOf("3", "4"), isQuiz = true))
         setScreen(ChatPreviewData.groupChat.copy(poll = PollSheet()), poll = editor)
 
         composeRule.onNodeWithContentDescription("Option 2 is the correct answer").performClick()
 
-        composeRule.runOnIdle { assertEquals(editor.options[1].key, editor.correctOption) }
+        composeRule.runOnIdle { assertEquals(listOf(editor.options[1].key), editor.correctOptions) }
     }
 
     @Test
