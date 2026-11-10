@@ -35,10 +35,6 @@ sealed interface PasskeyResult<out T> {
     data object Failed : PasskeyResult<Nothing>
 }
 
-/** Whether this device offers passkeys to Pingogram: Android 14 and later (`docs/adr/0037-passkeys.md`). */
-val arePasskeysSupported: Boolean
-    get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-
 /** The password managers for this screen's activity, or null before Android 14, where Pingogram offers no passkeys. */
 @Composable
 fun rememberPasskeyCredentials(): PasskeyCredentials? {
