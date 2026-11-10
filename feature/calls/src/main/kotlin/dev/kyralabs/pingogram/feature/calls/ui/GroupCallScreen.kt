@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -83,6 +84,11 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentEvent
+import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentsToggle
+import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentsVisibility
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsHost
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsPane
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -115,6 +121,8 @@ fun GroupCallScreen(
     pictureInPicture: Boolean = false,
     onAddPeople: () -> Unit = {},
     snackbarHostState: SnackbarHostState? = null,
+    comments: GroupCallCommentsHost = GroupCallCommentsHost.None,
+    onShareLink: (String) -> Unit = {},
 ) {
     // A Surface, so text and icons take the window's content color.
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxSize()) {
@@ -127,16 +135,18 @@ fun GroupCallScreen(
                 onOpenSettings,
                 GroupCallVideos(video, selfVideo, participantVideo),
                 pictureInPicture,
-                GroupCallExtras(onAddPeople, snackbarHostState),
+                GroupCallExtras(onAddPeople, snackbarHostState, comments, onShareLink),
             )
         }
     }
 }
 
-/** "Add people" in a conference call, and where its results show. */
+/** "Add people" in a conference call, where its results show, the comments and sharing a conference's link. */
 private class GroupCallExtras(
     val onAddPeople: () -> Unit,
     val snackbarHostState: SnackbarHostState?,
+    val comments: GroupCallCommentsHost,
+    val onShareLink: (String) -> Unit,
 )
 
 /** What draws a voice chat's videos: a live stream's, the user's own camera (the self-view) and the others'. */
@@ -206,8 +216,11 @@ private fun InGroupCall(
     extras: GroupCallExtras,
 ) {
     val spacing = MaterialTheme.spacing
+    val visibility by extras.comments.visibility
+    // The comments pane (docs/DESIGN_SYSTEM.md §6, "Voice chat comments"): never in a live stream, nor once it ended.
+    val commenting = visibility == CommentsVisibility.Shown && !state.isStream && state.hasControls
     Column(Modifier.fillMaxSize()) {
-        Header(state, onEvent, onMinimize)
+        Header(state, onEvent, onMinimize, visibility, extras.comments.onEvent)
         AnimatedVisibility(
             visible = state.video.isSharingScreen,
             enter =
@@ -241,6 +254,10 @@ private fun InGroupCall(
                         .fillMaxWidth(SELF_VIEW_WIDTH),
             )
         }
+        if (commenting) {
+            CommentingBody(state, onEvent, videos, extras)
+            return@Column
+        }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (state.isStream) {
                 videos.stream(
@@ -259,14 +276,93 @@ private fun InGroupCall(
 }
 
 /**
- * "Back to the app", the chat's title and where the voice chat is, inside the safe area; "Share screen" at the end
- * where the user may share (`docs/adr/0026-screen-sharing.md`).
+ * While the comments pane shows: the participants as tiles above the call's controls in a compact row, then the pane,
+ * which takes the larger share of the height and ends at the window's bottom with its field (board 9a).
+ */
+@Composable
+private fun ColumnScope.CommentingBody(
+    state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
+    videos: GroupCallVideos,
+    extras: GroupCallExtras,
+) {
+    Box(Modifier.weight(TILES_WEIGHT).fillMaxWidth()) {
+        ParticipantTiles(
+            state,
+            videos.participants,
+            videos.self,
+            onEvent,
+            extras.onAddPeople,
+            extras.onShareLink,
+            Modifier.fillMaxSize(),
+        )
+        extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
+    }
+    CompactControls(state, onEvent)
+    GroupCallCommentsPane(
+        state = extras.comments.state,
+        announcement = extras.comments.announcement,
+        onEvent = extras.comments.onEvent,
+        modifier = Modifier.weight(PANE_WEIGHT).fillMaxWidth(),
+    )
+}
+
+/**
+ * The call's controls in one row above the comments: Mute (or Raise hand), the audio route, the camera and a round
+ * "Leave", each in its 48 dp target and named for screen readers, without the labels the docked panel shows.
+ */
+@Composable
+private fun CompactControls(
+    state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .padding(horizontal = spacing.large, vertical = spacing.small),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (state.canUnmute) {
+            Toggle(
+                checked = state.isMuted,
+                icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
+                label = R.string.call_mute,
+            ) { onEvent(GroupCallEvent.ToggleMute) }
+        } else {
+            Toggle(
+                checked = state.isHandRaised,
+                icon = R.drawable.ic_back_hand,
+                label = R.string.group_call_raise_hand,
+            ) { onEvent(GroupCallEvent.ToggleHand) }
+        }
+        RouteButton(state.route, state.routes, labeled = false) { onEvent(GroupCallEvent.SelectRoute(it)) }
+        if (state.video.canSend) {
+            val on = state.video.camera != null
+            Toggle(
+                checked = on,
+                icon = if (on) R.drawable.ic_videocam_filled else R.drawable.ic_videocam_off_filled,
+                label = R.string.call_camera,
+            ) { onEvent(GroupCallEvent.ToggleCamera) }
+        }
+        LeaveButton(canEnd = state.canEnd, isStream = false, onEvent = onEvent, compact = true)
+    }
+}
+
+/**
+ * "Back to the app", the chat's title and where the voice chat is, inside the safe area; "Comments" where the call
+ * offers them, and "Share screen" at the end where the user may share (`docs/adr/0026-screen-sharing.md`).
  */
 @Composable
 private fun Header(
     state: GroupCallUiState.InCall,
     onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
+    comments: CommentsVisibility,
+    onCommentEvent: (CommentEvent) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     Column(
@@ -280,6 +376,12 @@ private fun Header(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             HeaderRow(state, onEvent, onMinimize)
+            if (comments != CommentsVisibility.Unavailable && !state.isStream && state.hasControls) {
+                CommentsToggle(
+                    shown = comments == CommentsVisibility.Shown,
+                    onToggle = { onCommentEvent(CommentEvent.ToggleShown) },
+                )
+            }
         }
         // A conference call's emojis, once Telegram verified its state (docs/adr/0025-conference-calls.md).
         AnimatedVisibility(
@@ -466,7 +568,7 @@ private fun ParticipantRow(
 
 /** "Add people": the add-person symbol in a `primaryContainer` circle where the avatars sit; opens the picker. */
 @Composable
-private fun AddPeopleRow(
+internal fun AddPeopleRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -494,7 +596,7 @@ private fun AddPeopleRow(
     }
 }
 
-private fun ParticipantState.label(): Int =
+internal fun ParticipantState.label(): Int =
     when (this) {
         ParticipantState.Speaking -> R.string.group_call_speaking
         ParticipantState.Listening -> R.string.group_call_listening
@@ -594,12 +696,19 @@ private fun LeaveButton(
     canEnd: Boolean,
     isStream: Boolean,
     onEvent: (GroupCallEvent) -> Unit,
+    compact: Boolean = false,
 ) {
     var menu by rememberSaveable { mutableStateOf(false) }
     var confirmEnd by rememberSaveable { mutableStateOf(false) }
     Box {
-        HangUpButton(label = R.string.group_call_leave) {
-            if (canEnd) menu = true else onEvent(GroupCallEvent.Leave)
+        val onLeave = { if (canEnd) menu = true else onEvent(GroupCallEvent.Leave) }
+        if (compact) {
+            RoundHangUpButton(
+                R.string.group_call_leave,
+                onLeave,
+            )
+        } else {
+            HangUpButton(R.string.group_call_leave, onLeave)
         }
         DropdownMenuPopup(expanded = menu && canEnd, onDismissRequest = { menu = false }) {
             DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
@@ -797,6 +906,10 @@ private fun Message(
         )
     }
 }
+
+/** The participants' share of the height beside the comments pane's. */
+private const val TILES_WEIGHT = 0.4f
+private const val PANE_WEIGHT = 0.6f
 
 /** The self-view's share of the window's width (at most `sizes.illustrationMaxSize`), leaving room below it. */
 private const val SELF_VIEW_WIDTH = 0.6f

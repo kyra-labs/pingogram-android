@@ -34,12 +34,16 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
+import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentEffect
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsHost
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsViewModel
 import dev.kyralabs.pingogram.feature.calls.ui.invite.InvitePeopleSheet
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -65,6 +69,8 @@ class GroupCallActivity : ComponentActivity() {
     @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: GroupCallViewModel by viewModels()
+
+    private val commentsViewModel: GroupCallCommentsViewModel by viewModels()
 
     private var inPictureInPicture by mutableStateOf(false)
 
@@ -128,6 +134,19 @@ class GroupCallActivity : ComponentActivity() {
             val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             val snackbarHostState = remember { SnackbarHostState() }
             var inviting by rememberSaveable { mutableStateOf(false) }
+            val commentsState = commentsViewModel.uiState.collectAsStateWithLifecycle()
+            val announcement = commentsViewModel.announcement.collectAsStateWithLifecycle()
+            val comments =
+                remember(commentsState, announcement) {
+                    GroupCallCommentsHost(commentsState, announcement, commentsViewModel::onEvent)
+                }
+            LaunchedEffect(Unit) {
+                commentsViewModel.effects.collect { effect ->
+                    if (effect is CommentEffect.Failed) {
+                        lifecycleScope.launch { snackbarHostState.showSnackbar(errorText(effect.error)) }
+                    }
+                }
+            }
             LaunchedEffect(Unit) {
                 viewModel.effects.collect {
                     onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture, snackbarHostState)
@@ -150,6 +169,8 @@ class GroupCallActivity : ComponentActivity() {
                         pictureInPicture = inPictureInPicture,
                         onAddPeople = { inviting = true },
                         snackbarHostState = snackbarHostState,
+                        comments = comments,
+                        onShareLink = ::shareLink,
                     )
                     if (inviting) InviteSheet(state, onClose = { inviting = false })
                 }
@@ -223,13 +244,24 @@ class GroupCallActivity : ComponentActivity() {
             },
         ).joinToString(" ")
 
-    private fun inviteFailedText(effect: CallEffect.InviteFailed): String =
+    private fun inviteFailedText(effect: CallEffect.InviteFailed): String = errorText(effect.error)
+
+    private fun errorText(error: DomainError): String =
         errorMessage(
             resources,
-            effect.error,
+            error,
             showDetails =
                 applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
         )
+
+    /** A conference call's "Invite link": Android's share sheet with the link. */
+    private fun shareLink(link: String) {
+        val send =
+            Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, link)
+        startActivity(Intent.createChooser(send, getString(R.string.group_call_invite_link)))
+    }
 
     private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted))
 
