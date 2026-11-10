@@ -12,7 +12,6 @@ import dev.kyralabs.pingogram.feature.calls.AudioRouteType
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentUi
-import dev.kyralabs.pingogram.feature.calls.ui.comments.FloatingReaction
 import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsHost
 import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsUiState
 import kotlinx.collections.immutable.persistentListOf
@@ -179,7 +178,7 @@ internal object GroupCallPreviewStates {
                     comment(4, 1, "Grace Hopper", "Linked it in the group, #338"),
                     comment(5, 3, "Ada Lovelace", "Thanks!", isOwn = true, isFailed = true),
                 ),
-            reactions = persistentListOf(FloatingReaction(6, "❤")),
+            // No floating reactions: they rise on a spring, which a golden would capture at an arbitrary point.
         )
 
     /** Comments are off: an administrator sees the menu to turn them on, others only that they are off. */

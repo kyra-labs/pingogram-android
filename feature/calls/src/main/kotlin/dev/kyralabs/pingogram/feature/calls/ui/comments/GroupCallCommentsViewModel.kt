@@ -122,10 +122,10 @@ class GroupCallCommentsViewModel
                             return@collect
                         }
                         val (received, newest) = current
-                        val before = baseline
+                        val announced = announcementOf(baseline, received, newest)
                         baseline = received
-                        if (before != null && received > before && newest != null && !newest.isOwn) {
-                            emit(CommentAnnouncement(received - before, newest.name, newest.text))
+                        if (announced != null) {
+                            emit(announced)
                             delay(ANNOUNCE_INTERVAL_MS)
                         }
                     }
@@ -190,8 +190,8 @@ class GroupCallCommentsViewModel
         )
 
         private suspend fun Content.toUiState(shown: Boolean): GroupCallCommentsUiState {
-            val call = info ?: return GroupCallCommentsUiState.Unavailable
-            if (!call.areCommentsAllowed && !call.canToggleComments) return GroupCallCommentsUiState.Unavailable
+            val call = info?.takeIf { it.areCommentsAllowed || it.canToggleComments }
+            if (call == null) return GroupCallCommentsUiState.Unavailable
             val start = seenAtStart ?: comments.items.mapTo(mutableSetOf()) { it.id }.also { seenAtStart = it }
             val rows = comments.items.map { it.toRow(call, self, users) }
             return GroupCallCommentsUiState.Available(
@@ -245,12 +245,16 @@ class GroupCallCommentsViewModel
             )
         }
 
+        /** The sender with [key] ("user:42", "chat:-100"), where the user may delete their comments. */
         private fun senderOf(key: String): MessageSender? {
-            val state = uiState.value as? GroupCallCommentsUiState.Available ?: return null
-            if (!state.canModerate) return null
-            val (kind, value) = key.split(':', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } ?: return null
-            val id = value.toLongOrNull() ?: return null
-            return if (kind == "user") MessageSender.User(id) else MessageSender.Chat(id)
+            val state = uiState.value as? GroupCallCommentsUiState.Available
+            val parts = key.split(':', limit = 2)
+            val id = parts.getOrNull(1)?.toLongOrNull()
+            return when {
+                state?.canModerate != true || id == null -> null
+                parts[0] == "user" -> MessageSender.User(id)
+                else -> MessageSender.Chat(id)
+            }
         }
 
         companion object {
@@ -263,6 +267,19 @@ class GroupCallCommentsViewModel
             private const val STOP_TIMEOUT_MS = 5_000L
         }
     }
+
+/**
+ * What screen readers hear of the comments that came since [before] (null: none counted yet), the newest last; nothing
+ * for the user's own.
+ */
+private fun announcementOf(
+    before: Int?,
+    received: Int,
+    newest: CommentUi?,
+): CommentAnnouncement? {
+    val count = received - (before ?: received)
+    return newest?.takeIf { count > 0 && !it.isOwn }?.let { CommentAnnouncement(count, it.name, it.text) }
+}
 
 /** A sender's key: "user:42" or "chat:-100". */
 private fun MessageSender.key(): String =

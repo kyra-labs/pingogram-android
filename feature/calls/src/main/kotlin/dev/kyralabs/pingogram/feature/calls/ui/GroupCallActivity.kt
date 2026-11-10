@@ -125,28 +125,10 @@ class GroupCallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
                     viewModel.onEvent(GroupCallEvent.MicrophoneResult(granted, canAskAgain))
                 }
-            val camera =
-                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                    val canAskAgain =
-                        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
-                    viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
-                }
+            val camera = rememberCameraRequest()
             val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             val snackbarHostState = remember { SnackbarHostState() }
             var inviting by rememberSaveable { mutableStateOf(false) }
-            val commentsState = commentsViewModel.uiState.collectAsStateWithLifecycle()
-            val announcement = commentsViewModel.announcement.collectAsStateWithLifecycle()
-            val comments =
-                remember(commentsState, announcement) {
-                    GroupCallCommentsHost(commentsState, announcement, commentsViewModel::onEvent)
-                }
-            LaunchedEffect(Unit) {
-                commentsViewModel.effects.collect { effect ->
-                    if (effect is CommentEffect.Failed) {
-                        lifecycleScope.launch { snackbarHostState.showSnackbar(errorText(effect.error)) }
-                    }
-                }
-            }
             LaunchedEffect(Unit) {
                 viewModel.effects.collect {
                     onEffect(it, { camera.launch(Manifest.permission.CAMERA) }, screenCapture, snackbarHostState)
@@ -169,12 +151,37 @@ class GroupCallActivity : ComponentActivity() {
                         pictureInPicture = inPictureInPicture,
                         onAddPeople = { inviting = true },
                         snackbarHostState = snackbarHostState,
-                        comments = comments,
+                        comments = rememberComments(snackbarHostState),
                         onShareLink = ::shareLink,
                     )
                     if (inviting) InviteSheet(state, onClose = { inviting = false })
                 }
             }
+        }
+    }
+
+    /** Android's request for the camera, its answer handed to the view model. */
+    @Composable
+    private fun rememberCameraRequest() =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val canAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
+            viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
+        }
+
+    /** The comments' state for the screen, their refusals shown in [snackbarHostState]. */
+    @Composable
+    private fun rememberComments(snackbarHostState: SnackbarHostState): GroupCallCommentsHost {
+        val state = commentsViewModel.uiState.collectAsStateWithLifecycle()
+        val announcement = commentsViewModel.announcement.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) {
+            commentsViewModel.effects.collect { effect ->
+                if (effect is CommentEffect.Failed) {
+                    lifecycleScope.launch { snackbarHostState.showSnackbar(errorText(effect.error)) }
+                }
+            }
+        }
+        return remember(state, announcement) {
+            GroupCallCommentsHost(state, announcement, commentsViewModel::onEvent)
         }
     }
 

@@ -349,9 +349,9 @@ private fun GroupCallState.withFailedComment(
     commentId: Int,
     error: TdApi.Error?,
 ): GroupCallState {
-    val log = comments[callId] ?: return this
-    val index = log.items.indexOfFirst { it.id == commentId }
-    if (index < 0) return this
+    val log = comments[callId]
+    val index = log?.items?.indexOfFirst { it.id == commentId } ?: -1
+    if (log == null || index < 0) return this
     val failure = TdError(error?.code ?: 0, error?.message.orEmpty()).toDomainError()
     val items = log.items.set(index, log.items[index].copy(sendError = failure))
     return copy(comments = comments.put(callId, log.copy(items = items)))

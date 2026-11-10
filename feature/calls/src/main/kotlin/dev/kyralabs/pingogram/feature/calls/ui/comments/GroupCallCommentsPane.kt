@@ -59,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -315,27 +316,7 @@ private fun CommentRow(
                 id = comment.senderId,
                 size = MaterialTheme.sizes.avatarExtraSmall,
             )
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.labelLargeEmphasized.userContent,
-                        color = if (paid) colors.onTertiaryContainer else ink,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (paid) StarPill(stars, Modifier.padding(start = spacing.small))
-                }
-                Text(
-                    comment.text,
-                    style = MaterialTheme.typography.bodyMedium.userContent,
-                    color = if (paid) colors.onTertiaryContainer else colors.onSurface,
-                )
-                if (comment.isFailed) {
-                    Text(failed, style = MaterialTheme.typography.labelSmall, color = colors.error)
-                }
-            }
+            CommentText(comment, name, ink, stars, failed, Modifier.weight(1f))
         }
         CommentMenu(expanded = menu, actions = actions, onDismiss = { menu = false })
     }
@@ -344,6 +325,41 @@ private fun CommentRow(
 /** The newest comment [CommentList] last followed. */
 private class NewestFollower {
     var newest: Int? = null
+}
+
+/** The sender's name (with a paid comment's price) over the comment's text, and "Not sent" for a refused one. */
+@Composable
+private fun CommentText(
+    comment: CommentUi,
+    name: String,
+    ink: Color,
+    stars: String,
+    failed: String,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val paid = comment.paidStarCount > 0
+    Column(modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                name,
+                style = MaterialTheme.typography.labelLargeEmphasized.userContent,
+                color = if (paid) colors.onTertiaryContainer else ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            if (paid) StarPill(stars, Modifier.padding(start = MaterialTheme.spacing.small))
+        }
+        Text(
+            comment.text,
+            style = MaterialTheme.typography.bodyMedium.userContent,
+            color = if (paid) colors.onTertiaryContainer else colors.onSurface,
+        )
+        if (comment.isFailed) {
+            Text(failed, style = MaterialTheme.typography.labelSmall, color = colors.error)
+        }
+    }
 }
 
 /** A paid comment's price: "★ 50" on `tertiary`. */

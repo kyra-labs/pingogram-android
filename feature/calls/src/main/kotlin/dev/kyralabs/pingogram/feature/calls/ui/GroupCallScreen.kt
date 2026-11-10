@@ -292,8 +292,7 @@ private fun ColumnScope.CommentingBody(
             videos.participants,
             videos.self,
             onEvent,
-            extras.onAddPeople,
-            extras.onShareLink,
+            ConferenceActions(extras.onAddPeople, extras.onShareLink),
             Modifier.fillMaxSize(),
         )
         extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }

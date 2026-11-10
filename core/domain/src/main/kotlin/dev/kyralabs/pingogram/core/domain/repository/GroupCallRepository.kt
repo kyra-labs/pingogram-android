@@ -133,7 +133,9 @@ interface GroupCallRepository {
         reportSpam: Boolean,
     ): Outcome<Unit>
 
-    /** Turns comments in call [id] on or off for everyone, as an administrator (`toggleGroupCallAreMessagesAllowed`). */
+    /**
+     * Turns comments in call [id] on or off for everyone, as an administrator (`toggleGroupCallAreMessagesAllowed`).
+     */
     suspend fun setCommentsAllowed(
         id: Int,
         allowed: Boolean,

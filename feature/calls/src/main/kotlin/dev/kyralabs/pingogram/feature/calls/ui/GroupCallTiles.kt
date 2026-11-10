@@ -58,8 +58,7 @@ internal fun ParticipantTiles(
     videos: ParticipantVideo,
     self: CallVideo,
     onEvent: (GroupCallEvent) -> Unit,
-    onAddPeople: () -> Unit,
-    onShareLink: (String) -> Unit,
+    conference: ConferenceActions,
     modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
@@ -78,12 +77,12 @@ internal fun ParticipantTiles(
         val link = state.inviteLink
         if (state.isConference && !link.isNullOrEmpty()) {
             item(key = "link", contentType = "link", span = { GridItemSpan(maxLineSpan) }) {
-                InviteLinkChip(onClick = { onShareLink(link) })
+                InviteLinkChip(onClick = { conference.onShareLink(link) })
             }
         }
         if (state.canInvite) {
             item(key = "add", contentType = "add", span = { GridItemSpan(maxLineSpan) }) {
-                AddPeopleRow(onAddPeople)
+                AddPeopleRow(conference.onAddPeople)
             }
         }
         items(state.participants, key = { it.key }, contentType = { "tile" }) { participant ->
@@ -91,6 +90,12 @@ internal fun ParticipantTiles(
         }
     }
 }
+
+/** A conference call's "Add people" and "Invite link". */
+internal class ConferenceActions(
+    val onAddPeople: () -> Unit,
+    val onShareLink: (String) -> Unit,
+)
 
 /** "Invite link": an `AssistChip` with the link symbol, which shares the conference call's link. */
 @Composable
