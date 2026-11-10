@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallSpeaker
 import dev.kyralabs.pingogram.core.domain.model.GroupCallStream
@@ -9,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
+import dev.kyralabs.pingogram.core.domain.repository.MAX_COMMENTS
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -258,6 +260,116 @@ class TdlibGroupCallRepositoryTest {
             assertEquals(StreamSegment.Unavailable, repository.streamSegment(5, 1000, 0, 0, null))
             assertNull(client.sentOf<TdApi.GetGroupCallStreamSegment>().last().videoQuality)
         }
+
+    @Test
+    fun `comments come in order, keep the newest, leave when deleted and stay marked when refused`() =
+        runTest {
+            val repository = repository()
+            client.emit(TdApi.UpdateNewGroupCallMessage(5, comment(1, "Hi")))
+            client.emit(TdApi.UpdateNewGroupCallMessage(5, comment(2, "Hello")))
+            client.emit(TdApi.UpdateNewGroupCallMessage(6, comment(1, "Elsewhere")))
+
+            val comments = repository.comments(5).first()
+            assertEquals(listOf("Hi", "Hello"), comments.items.map { it.text.text })
+            assertEquals(2, comments.received)
+
+            client.emit(TdApi.UpdateGroupCallMessagesDeleted(5, intArrayOf(1)))
+            client.emit(TdApi.UpdateGroupCallMessageSendFailed(5, 2, TdApi.Error(400, "MESSAGE_TOO_LONG")))
+            val after = repository.comments(5).first()
+            assertEquals(listOf(2), after.items.map { it.id })
+            assertTrue(after.items.single().sendError != null)
+            assertEquals(2, after.received)
+        }
+
+    @Test
+    fun `a call keeps at most the newest comments`() =
+        runTest {
+            val repository = repository()
+            repeat(MAX_COMMENTS + 3) { client.emit(TdApi.UpdateNewGroupCallMessage(5, comment(it + 1, "#$it"))) }
+
+            val comments = repository.comments(5).first()
+            assertEquals(MAX_COMMENTS, comments.items.size)
+            assertEquals(4, comments.items.first().id)
+            assertEquals(MAX_COMMENTS + 3, comments.received)
+        }
+
+    @Test
+    fun `leaving drops the call's comments`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.LeaveGroupCall::class, TdResult.Success(TdApi.Ok()))
+            client.emit(TdApi.UpdateNewGroupCallMessage(5, comment(1, "Hi")))
+
+            repository.leave(5)
+
+            assertTrue(
+                repository
+                    .comments(5)
+                    .first()
+                    .items
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `comments are sent free, deleted and turned off with TDLib's requests`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.SendGroupCallMessage::class, TdResult.Success(TdApi.Ok()))
+            client.on(TdApi.DeleteGroupCallMessages::class, TdResult.Success(TdApi.Ok()))
+            client.on(TdApi.DeleteGroupCallMessagesBySender::class, TdResult.Success(TdApi.Ok()))
+            client.on(TdApi.ToggleGroupCallAreMessagesAllowed::class, TdResult.Success(TdApi.Ok()))
+
+            repository.sendComment(5, FormattedText("Hi", persistentListOf()))
+            repository.deleteComments(5, listOf(3, 4), reportSpam = true)
+            repository.deleteCommentsBy(5, MessageSender.User(42), reportSpam = false)
+            repository.setCommentsAllowed(5, allowed = false)
+
+            val send = client.sentOf<TdApi.SendGroupCallMessage>().single()
+            assertEquals("Hi", send.text.text)
+            assertEquals(0L, send.paidMessageStarCount)
+            val delete = client.sentOf<TdApi.DeleteGroupCallMessages>().single()
+            assertArrayEquals(intArrayOf(3, 4), delete.messageIds)
+            assertTrue(delete.reportSpam)
+            assertEquals(
+                42L,
+                (client.sentOf<TdApi.DeleteGroupCallMessagesBySender>().single().senderId as TdApi.MessageSenderUser)
+                    .userId,
+            )
+            assertEquals(false, client.sentOf<TdApi.ToggleGroupCallAreMessagesAllowed>().single().areMessagesAllowed)
+        }
+
+    @Test
+    fun `a call says whether the user may comment`() =
+        runTest {
+            val repository = repository()
+            client.emit(
+                TdApi.UpdateGroupCall(
+                    groupCall().also {
+                        it.areMessagesAllowed = true
+                        it.canSendMessages = true
+                        it.canDeleteMessages = true
+                    },
+                ),
+            )
+
+            val call = repository.groupCall(5).filterNotNull().first()
+            assertTrue(call.areCommentsAllowed && call.canComment && call.canDeleteComments)
+            assertEquals(false, call.canToggleComments)
+        }
+
+    private fun comment(
+        id: Int,
+        text: String,
+    ) = TdApi.GroupCallMessage(
+        id,
+        TdApi.MessageSenderUser(42),
+        1_700_000_000,
+        TdApi.FormattedText(text, emptyArray()),
+        0,
+        false,
+        false,
+    )
 
     private fun dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant.userId() =
         (participant as MessageSender.User).userId
