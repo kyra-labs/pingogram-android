@@ -3,25 +3,34 @@ package dev.kyralabs.pingogram.feature.chat.ui.poll
 import android.content.res.Resources
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Poll
+import dev.kyralabs.pingogram.core.domain.model.PollMedia
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.mediaContent
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.PollEvent
+import dev.kyralabs.pingogram.feature.chat.ui.PollOptionEvent
 import dev.kyralabs.pingogram.feature.chat.ui.content.PollMark
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollExplanation
-import dev.kyralabs.pingogram.feature.chat.ui.content.pollLabel
+import dev.kyralabs.pingogram.feature.chat.ui.content.label
+import dev.kyralabs.pingogram.feature.chat.ui.content.pollEndsText
+import dev.kyralabs.pingogram.feature.chat.ui.content.pollKicker
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollMark
 import dev.kyralabs.pingogram.feature.chat.ui.content.pollRestriction
+import dev.kyralabs.pingogram.feature.chat.ui.content.quizScore
+import dev.kyralabs.pingogram.feature.chat.ui.content.quizTag
 import dev.kyralabs.pingogram.feature.chat.ui.content.showsResults
 import dev.kyralabs.pingogram.feature.chat.ui.content.showsVoters
 import java.text.NumberFormat
 
 /**
  * What screen readers hear of [bubble]'s poll within its bubble's description (`docs/DESIGN_SYSTEM.md` §9): what kind
- * of poll it is, then each answer as one entry ("Spring, 45%, 9 votes, your answer"; a quiz's "correct answer" or
- * "wrong answer"; before voting, whether it is checked or its vote on its way), why the user cannot vote, the number
- * of voters and a quiz's explanation. Empty for other content. The question is the bubble's content label.
+ * of poll it is and its description, then each answer as one entry (with its link and, in an answered quiz, whether
+ * it was the user's and right) ("Spring, 45%, 9 votes, your answer"; a quiz's "correct answer" or
+ * "wrong answer"; before voting, whether it is checked or its vote on its way), when it closes, that its results are
+ * hidden, why the user cannot vote, the number of voters, a quiz's score and explanation. Empty for other content. The question is the bubble's content label.
  */
 internal fun pollDescription(
     resources: Resources,
@@ -35,6 +44,8 @@ internal fun pollDescription(
             val parts =
                 buildList {
                     add(option.text.text)
+                    (option.media as? PollMedia.Link)?.let { add(resources.getString(R.string.poll_link_named, it.label())) }
+                    quizTag(option, poll)?.let { add(resources.getString(it)) }
                     if (poll.showsResults) {
                         add(
                             resources.getQuantityString(
@@ -46,18 +57,24 @@ internal fun pollDescription(
                         )
                         markText(pollMark(option, poll))?.let { add(resources.getString(it)) }
                     } else {
-                        if (option.index in choices) add(resources.getString(R.string.poll_option_checked))
+                        if (option.index in choices || option.isChosen) {
+                            add(resources.getString(R.string.poll_option_checked))
+                        }
                         if (option.isBeingChosen) add(resources.getString(R.string.poll_option_sending))
                     }
                 }
             parts.joinToString(", ")
         }
+    val description = (bubble.content as MessageContent.Poll).description.text
     return (
-        listOf(resources.getString(pollLabel(poll).text)) +
+        listOfNotNull(pollKicker(resources, poll), description.ifEmpty { null }) +
             options +
             listOfNotNull(
+                pollEndsText(resources, bubble.pollClosesIn.takeUnless { poll.isClosed }),
+                resources.getString(R.string.poll_results_hidden).takeIf { poll.hidesResults },
                 pollRestriction(poll)?.let(resources::getString),
                 totalText(resources, poll, number),
+                quizScore(resources, poll),
                 pollExplanation(poll)?.let { "${resources.getString(R.string.poll_explanation)}: ${it.text}" },
             )
     ).joinToString(", ")
@@ -72,7 +89,38 @@ internal fun pollActions(
     resources: Resources,
     bubble: ChatItem.Bubble,
 ): List<Pair<String, ChatEvent>> {
-    val poll = (bubble.content as? MessageContent.Poll)?.poll ?: return emptyList()
+    val content = bubble.content as? MessageContent.Poll ?: return emptyList()
+    return votingActions(resources, bubble, content.poll) + extraActions(resources, bubble, content)
+}
+
+/**
+ * "Open the poll's photo", "Open link …" for each answer's link ([PollEvent.OpenLink]), and "Add an option" where
+ * the poll takes answers.
+ */
+private fun extraActions(
+    resources: Resources,
+    bubble: ChatItem.Bubble,
+    content: MessageContent.Poll,
+): List<Pair<String, ChatEvent>> =
+    buildList {
+        if (content.mediaContent() != null) {
+            add(resources.getString(R.string.poll_open_photo) to ChatEvent.OpenMedia(richMediaId(bubble.id, 0)))
+        }
+        content.poll.options.forEach { option ->
+            (option.media as? PollMedia.Link)?.let {
+                add(resources.getString(R.string.poll_open_link, it.label()) to PollEvent.OpenLink(it.url))
+            }
+        }
+        if (content.canAddOption && !content.poll.isClosed && bubble.pollAdding == null) {
+            add(resources.getString(R.string.poll_add_option) to PollOptionEvent.Open(bubble.id))
+        }
+    }
+
+private fun votingActions(
+    resources: Resources,
+    bubble: ChatItem.Bubble,
+    poll: Poll,
+): List<Pair<String, ChatEvent>> {
     val choices = bubble.pollChoices.orEmpty()
     return when {
         poll.canVote && poll.allowsMultipleAnswers -> {

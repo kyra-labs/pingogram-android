@@ -95,7 +95,7 @@ internal fun ItemSources.inputsOf(
                 .orEmpty()
                 .mapTo(HashSet()) { it.lowercase() },
         relativeNow =
-            now?.takeIf { message.content.textOrCaption.hasRelativeDates }?.let {
+            now?.takeIf { message.content.textOrCaption.hasRelativeDates || message.closingPoll != null }?.let {
                 it.epochSecond / SECONDS_PER_MINUTE * SECONDS_PER_MINUTE
             },
     )
@@ -247,3 +247,7 @@ internal fun ItemInputs.canWave(action: ServiceAction): Boolean {
 }
 
 private const val SECONDS_PER_MINUTE = 60L
+
+/** When this message's open poll closes by itself (Unix time); null for other messages and polls that stay open. */
+internal val Message.closingPoll: Long?
+    get() = (content as? MessageContent.Poll)?.poll?.closesAt(date)

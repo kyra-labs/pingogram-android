@@ -116,6 +116,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
         checklist = checklistUi(content),
+        pollClosesIn = message.closingPoll?.let { at -> relativeNow?.let { (at - it).coerceAtLeast(0) } },
     )
 }
 
@@ -202,7 +203,7 @@ internal fun Message.reactionChips(): ImmutableList<ReactionChip> =
 /** The text or caption of [this] content as its sender wrote it, before [withReaderDates]. */
 internal val MessageContent.textOrCaption: FormattedText get() = text
 
-/** The text or caption of [this] content; a poll's description; empty for content without one. */
+/** The text or caption of [this] content; empty for content without one (a poll's description is the poll's own). */
 private val MessageContent.text: FormattedText
     get() =
         when (this) {
@@ -213,6 +214,5 @@ private val MessageContent.text: FormattedText
             is MessageContent.VoiceNote -> caption
             is MessageContent.Audio -> caption
             is MessageContent.Document -> caption
-            is MessageContent.Poll -> description
             else -> FormattedText.Empty
         }

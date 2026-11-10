@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
@@ -40,6 +41,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVideoNote
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVoiceNote
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PollAction
+import dev.kyralabs.pingogram.feature.chat.ui.content.PollUi
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
@@ -272,7 +274,7 @@ private fun InfoContent(
                 content = content,
                 modifier = modifier,
                 colors = colors,
-                choices = bubble.pollChoices ?: persistentSetOf(),
+                ui = PollUi(bubble.id, bubble.pollChoices ?: persistentSetOf(), bubble.pollClosesIn, bubble.pollAdding),
                 onAction = { action -> onEvent(action.eventFor(bubble.id)) },
             )
         }
@@ -346,4 +348,8 @@ private fun PollAction.eventFor(messageId: Long): ChatEvent =
         is PollAction.Toggle -> PollEvent.Toggle(messageId, optionIndex)
         PollAction.Submit -> PollEvent.SubmitVotes(messageId)
         PollAction.ShowVoters -> PollEvent.OpenVoters(messageId)
+        PollAction.OpenMedia -> ChatEvent.OpenMedia(richMediaId(messageId, 0))
+        PollAction.OpenAddOption -> PollOptionEvent.Open(messageId)
+        PollAction.DismissAddOption -> PollOptionEvent.Dismiss(messageId)
+        is PollAction.AddOption -> PollOptionEvent.Add(messageId, text)
     }

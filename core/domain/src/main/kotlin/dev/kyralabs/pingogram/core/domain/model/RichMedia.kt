@@ -18,14 +18,26 @@ fun isRichMediaId(id: Long): Boolean = id < 0
 fun richMediaMessageId(id: Long): Long = (-id - 1) / RICH_MEDIA_SPAN * RICH_MEDIA_SPAN
 
 /**
- * The photos, videos and GIFs of this rich message as messages of their own, for the media viewer: each a copy of
- * this message (sender, date, chat) with the media as its content, its caption as the caption, and the id
- * [richMediaId] gives it; in the message's order. Empty for a message of any other content.
+ * The photos, videos and GIFs of this rich message, or a poll's photo or video, as messages of their own, for the
+ * media viewer: each a copy of this message (sender, date, chat) with the media as its content, its caption as the
+ * caption, and the id [richMediaId] gives it; in the message's order. Empty for a message of any other content.
  */
 fun Message.richMediaMessages(): List<Message> {
+    (content as? MessageContent.Poll)?.mediaContent()?.let { return listOf(copy(id = richMediaId(id, 0), content = it)) }
     val rich = (content as? MessageContent.RichMessage)?.message ?: return emptyList()
     return rich.media().map { media -> copy(id = richMediaId(id, media.index), content = media.toContent()) }
 }
+
+/**
+ * A poll's photo or video as the content of a message of its own, which the media viewer shows by [richMediaId] with
+ * index 0, without a caption; null for a poll without one.
+ */
+fun MessageContent.Poll.mediaContent(): MessageContent? =
+    when (val media = media) {
+        is PollMedia.Photo -> MessageContent.Photo(media.photo, FormattedText.Empty, false, false, false)
+        is PollMedia.Video -> MessageContent.Video(media.video, FormattedText.Empty, false, false, false)
+        else -> null
+    }
 
 /** This media as the content of a message of its own, its caption's text as the caption. */
 private fun RichBlock.Media.toContent(): MessageContent =

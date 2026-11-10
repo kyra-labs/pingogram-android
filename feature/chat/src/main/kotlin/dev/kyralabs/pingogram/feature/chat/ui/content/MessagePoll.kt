@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -87,7 +88,7 @@ internal fun MessagePoll(
     content: MessageContent.Poll,
     modifier: Modifier = Modifier,
     colors: BubbleColors = MaterialTheme.pingogramColors.incomingBubble,
-    choices: ImmutableSet<Int> = persistentSetOf(),
+    ui: PollUi = PollUi(),
     onAction: (PollAction) -> Unit = {},
 ) {
     val poll = content.poll
@@ -95,23 +96,17 @@ internal fun MessagePoll(
         modifier = modifier.width(MaterialTheme.sizes.mediaMaxWidth),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
-            Text(
-                text = poll.question.text,
-                color = colors.content,
-                style = MaterialTheme.typography.titleMedium.userContent,
-            )
-            Text(
-                text = stringResource(pollLabel(poll).text),
-                color = colors.content,
-                style = MaterialTheme.typography.labelMedium,
-            )
-        }
+        content.media?.let { PollPhoto(it, ui.messageId, onAction) }
+        PollHeader(poll, content.description, colors)
         if (poll.showsResults) {
-            poll.options.forEach { option -> PollResult(option, pollMark(option, poll), colors) }
+            val winners = remember(poll) { poll.winners() }
+            poll.options.forEach { option ->
+                PollResult(option, poll, pollMark(option, poll), colors, emphasized = option.index in winners)
+            }
         } else {
-            PollChoices(poll, choices, colors, onAction)
+            PollChoices(poll, ui.choices, colors, onAction)
         }
+        PollStatus(poll, ui.closesIn, colors)
         pollRestriction(poll)?.let { text ->
             Text(
                 text = stringResource(text),
@@ -120,15 +115,18 @@ internal fun MessagePoll(
             )
         }
         PollExplanation(poll, colors)
-        PollFooter(poll, choices, colors, onAction)
+        if (content.canAddOption && !poll.isClosed) PollAddOption(ui.adding, colors, onAction)
+        PollFooter(poll, ui.choices, colors, onAction)
     }
 }
 
 @Composable
 private fun PollResult(
     option: PollOption,
+    poll: Poll,
     mark: PollMark,
     colors: BubbleColors,
+    emphasized: Boolean,
 ) {
     val barColor =
         when (mark) {
@@ -136,6 +134,7 @@ private fun PollResult(
             PollMark.Wrong -> colors.wrong
             PollMark.Chosen, PollMark.None -> colors.accent
         }
+    val typography = MaterialTheme.typography
     Column(
         modifier = Modifier.semantics(mergeDescendants = true) {},
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
@@ -144,18 +143,14 @@ private fun PollResult(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = option.text.text,
-                modifier = Modifier.weight(1f),
-                color = colors.content,
-                style = MaterialTheme.typography.bodyMedium.userContent,
-            )
+            OptionText(option, poll, colors, Modifier.weight(1f), emphasized)
             PollMarkIcon(mark, barColor)
             Text(
                 text = stringResource(R.string.content_poll_percentage, option.votePercentage),
                 color = colors.content,
                 maxLines = 1,
-                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+                style = (if (emphasized) typography.labelLargeEmphasized else typography.labelLarge)
+                    .copy(fontFeatureSettings = "tnum"),
             )
         }
         Spacer(
@@ -233,8 +228,9 @@ private fun PollChoices(
                 }
             PollChoice(
                 option = option,
+                poll = poll,
                 multipleAnswers = poll.allowsMultipleAnswers,
-                checked = checked || option.isBeingChosen,
+                checked = checked || option.isBeingChosen || option.isChosen,
                 enabled = poll.canVote || poll.isVoting,
                 colors = colors,
                 modifier =
@@ -253,6 +249,7 @@ private fun PollChoices(
 @Composable
 private fun PollChoice(
     option: PollOption,
+    poll: Poll,
     multipleAnswers: Boolean,
     checked: Boolean,
     enabled: Boolean,
@@ -301,19 +298,24 @@ private fun PollChoice(
                 )
             }
         }
-        Text(text = option.text.text, color = colors.content, style = MaterialTheme.typography.bodyMedium.userContent)
+        OptionText(option, poll, colors)
     }
 }
 
-/** A quiz's explanation once the user answered it or it closed: on the bubble's block color, with its formatting. */
+/**
+ * A quiz's explanation once the user answered it or it closed, after how many correct answers they chose where there
+ * are several ("You got 1 of 2"): on the bubble's block color, with its formatting.
+ */
 @Composable
 private fun PollExplanation(
     poll: Poll,
     colors: BubbleColors,
 ) {
-    val explanation = pollExplanation(poll) ?: return
+    val explanation = pollExplanation(poll)
+    val score = quizScore(LocalResources.current, poll)
+    if (explanation == null && score == null) return
     val styles = rememberFormattedTextStyles(codeBackground = colors.container, spoilerColor = colors.spoiler)
-    val text = remember(explanation, styles) { explanation.toAnnotatedString(styles, spoilersRevealed = true) }
+    val text = remember(explanation, styles) { explanation?.toAnnotatedString(styles, spoilersRevealed = true) }
     Column(
         modifier =
             Modifier
@@ -322,12 +324,17 @@ private fun PollExplanation(
                 .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
     ) {
-        Text(
-            text = stringResource(R.string.poll_explanation),
-            color = colors.accent,
-            style = MaterialTheme.typography.labelMedium,
-        )
-        Text(text = text, color = colors.blockContent, style = MaterialTheme.typography.bodyMedium.userContent)
+        score?.let {
+            Text(text = it, color = colors.blockContent, style = MaterialTheme.typography.labelLargeEmphasized)
+        }
+        text?.let {
+            Text(
+                text = stringResource(R.string.poll_explanation),
+                color = colors.accent,
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Text(text = it, color = colors.blockContent, style = MaterialTheme.typography.bodyMedium.userContent)
+        }
     }
 }
 

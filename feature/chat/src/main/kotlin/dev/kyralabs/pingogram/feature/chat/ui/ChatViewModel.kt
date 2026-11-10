@@ -105,6 +105,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
+import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
+import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
@@ -914,6 +916,21 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val pollOptions =
+        PollOptionAdding(
+            chatId = chatId,
+            repository = pollRepository,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     private val checklists =
         ChatChecklists(
             chatId = chatId,
@@ -1181,6 +1198,7 @@ class ChatViewModel internal constructor(
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
             .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
@@ -1261,6 +1279,7 @@ class ChatViewModel internal constructor(
             is PollEvent -> onPollEvent(event)
             is DateTimeEvent -> dateTimes.onEvent(event)
             is ChecklistEvent -> checklists.onEvent(event)
+            is PollOptionEvent -> pollOptions.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
