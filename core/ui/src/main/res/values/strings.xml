@@ -374,4 +374,17 @@
     <string name="birthday_remove">Remove</string>
     <string name="birthday_cancel">Cancel</string>
     <string name="birthday_done">Done</string>
+    <!-- A birthday suggestion in a chat (board 16b): %1$s is who suggested it. -->
+    <string name="birthday_suggestion_title">%1$s suggested your birthday</string>
+    <!-- The same card for a suggestion the user sent: %1$s is whom it was suggested to. -->
+    <string name="birthday_suggestion_title_outgoing">You suggested %1$s\'s birthday</string>
+    <!-- %1$s is who may see the birthday under the user's Birthday privacy setting, e.g. "My contacts". -->
+    <string name="birthday_suggestion_text">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting (%1$s).</string>
+    <string name="birthday_suggestion_text_no_privacy">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting.</string>
+    <!-- %1$s is whom the birthday was suggested to. -->
+    <string name="birthday_suggestion_text_outgoing">%1$s decides whether to keep it and who sees it.</string>
+    <string name="birthday_suggestion_decline">Decline</string>
+    <string name="birthday_suggestion_accept">Accept</string>
+    <string name="birthday_suggestion_accepted">Added to your profile</string>
+    <string name="birthday_suggestion_declined">Declined</string>
 </resources>
