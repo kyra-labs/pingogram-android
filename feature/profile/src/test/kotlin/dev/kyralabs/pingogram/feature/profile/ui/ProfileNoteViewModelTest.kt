@@ -104,7 +104,7 @@ class ProfileNoteViewModelTest {
             ) = "MMMM d"
         }
 
-    private fun TestScope.viewModel(
+    private suspend fun TestScope.viewModel(
         handle: SavedStateHandle = SavedStateHandle(),
         myId: Long = ME,
     ): ProfileViewModel {
