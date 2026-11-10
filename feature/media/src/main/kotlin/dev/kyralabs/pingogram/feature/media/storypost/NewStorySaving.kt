@@ -11,6 +11,7 @@ private const val KEY_ITEMS = "newStory.items"
 private const val KEY_SELECTED = "newStory.selected"
 private const val KEY_CAMERA_FILE = "newStory.cameraFile"
 private const val KEY_STARTED = "newStory.started"
+private const val KEY_STEP = "newStory.step"
 private const val SEPARATOR = "\u001F"
 private const val PHOTO = "photo"
 private const val VIDEO = "video"
@@ -50,6 +51,13 @@ internal var SavedStateHandle.started: Boolean
     set(value) {
         this[KEY_STARTED] = value
     }
+
+internal fun SavedStateHandle.saveStep(step: NewStoryStep) {
+    this[KEY_STEP] = step.name
+}
+
+internal fun SavedStateHandle.restoredStep(): NewStoryStep =
+    get<String>(KEY_STEP)?.let { name -> NewStoryStep.entries.firstOrNull { it.name == name } } ?: NewStoryStep.Pick
 
 private fun Attachment.saved(): String? =
     when (this) {

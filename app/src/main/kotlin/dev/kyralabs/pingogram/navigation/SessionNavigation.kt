@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
+import dev.kyralabs.pingogram.core.navigation.NewStoryRoute
 import dev.kyralabs.pingogram.core.navigation.QrScannerRoute
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.feature.auth.navigation.navigateToAuth
@@ -27,11 +28,13 @@ internal fun NavDestination?.isInMainGraph(): Boolean = this?.hierarchy?.any { i
 
 /**
  * Whether this destination of the signed-in app takes the whole window, without the navigation bar or rail: the media
- * viewer, [MediaViewerRoute], the stories viewer, [StoryViewerRoute], and the QR code scanner, [QrScannerRoute].
+ * viewer, [MediaViewerRoute], the stories viewer, [StoryViewerRoute], posting a story, [NewStoryRoute], and the QR
+ * code scanner, [QrScannerRoute].
  */
 internal fun NavDestination?.isFullScreen(): Boolean =
     this?.hasRoute<MediaViewerRoute>() == true ||
         this?.hasRoute<StoryViewerRoute>() == true ||
+        this?.hasRoute<NewStoryRoute>() == true ||
         this?.hasRoute<QrScannerRoute>() == true
 
 /** Whether this destination is the login flow, [AuthRoute]. */
