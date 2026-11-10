@@ -59,7 +59,7 @@ internal class AttachLaunchers(
 
     /**
      * Opens the gallery, the file picker or the contact picker for [option]; false when no app opens, and for the
-     * camera, whose file the view model makes first, and the location and poll sheets, which are the screen's.
+     * camera, whose file the view model makes first, and the location, poll and checklist sheets, which are the screen's.
      */
     fun pick(option: AttachOption): Boolean =
         when (option) {
@@ -77,7 +77,7 @@ internal class AttachLaunchers(
                 launching { contact.launch(Unit) }
             }
 
-            AttachOption.Camera, AttachOption.Location, AttachOption.Poll -> {
+            AttachOption.Camera, AttachOption.Location, AttachOption.Poll, AttachOption.Checklist -> {
                 false
             }
         }
