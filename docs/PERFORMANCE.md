@@ -562,6 +562,26 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   behind the text from its layout, added over the cached text of the bubbles that mention the user only. Measuring it
   found a crash on `main` (vivid bubbles with their name above them, text drawn with blocks), fixed by `WithNameAbove`
   and kept by `VividBubbleScrollTest`.
+- Voice chat comments (2026-11-10, `docs/DESIGN_SYSTEM.md` §6 "Voice chat comments"): `feature:calls`'
+  `GroupCallFrameCostTest` steps the voice chat's screen frame by frame, the timer and the speaker changing every frame
+  (a stress case: on a phone they change once a second), and prints the main thread's CPU time per frame and how many
+  of Pingogram's composables recompose per frame, with `-Ppingogram.scrollCost`. Its checks always run: a comment
+  recomposes the comments pane alone (`GroupCallCommentsViewModel` keeps them out of `GroupCallUiState`, and the screen
+  reads only the pane's derived visibility), a comment while the pane is hidden recomposes nothing, and a new comment
+  shows at the bottom. Three runs each on the shared 4-core machine:
+  - **Before** (`main` at fe6cac5, the same scenario): P50 12.7–13.0 ms, P90 15.4–16.6 ms, P99 20.3–21.6 ms, 14.0
+    composables recomposed per frame.
+  - **After, comments hidden or unavailable**: P50 12.4–13.3 ms, P90 15.6–16.9 ms, P99 18.6–21.8 ms, 14.0 per frame:
+    unchanged.
+  - **After, comments shown, 10 a second**: P50 8.5–9.0 ms, P90 18.0–18.7 ms, P99 26.2–28.4 ms, 16.7 per frame. The
+    participants' tiles cost less than the rows at most frames; a frame with a new comment composes and places one row
+    and moves the list, which the P90 and P99 show. The rows already on screen skip; the pane's field and floating
+    reactions take only what they show, so they skip too.
+  - **On the owner's phone**: install `fossBenchmarkRelease` (§9 above), join a busy voice chat with comments on (or
+    have a few people comment and react from Telegram's apps), keep the voice chat's screen in front with the comments
+    showing, and run `tools/perfetto/video-call.sh` (it records the main thread's and the RenderThread's frames, `gfx` and
+    `view`, for 5 minutes); then once more with the comments hidden. Send back both folders' `device.txt` and
+    `video-call.perfetto-trace`. The frames' durations against the display's period tell whether the pane holds.
 - Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
   ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
   P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99

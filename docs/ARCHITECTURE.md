@@ -1502,6 +1502,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   chats: `messageGroupCall` maps to `ServiceAction.GroupCall` (`core:ui`'s previews word it), and `feature:chat`'s
   service pill of one that goes on (`ChatItem.Service.groupCallChatId`) opens it through `core:ui`'s
   `VoiceChats.joinInvitation`, which asks before it joins (`ConferenceTarget.Invitation`).
+- **Comments in group calls** (`REQUIREMENTS.md` FR-V2, `docs/DESIGN_SYSTEM.md` §6 "Voice chat comments"):
+  `GroupCallRepository` also keeps each joined call's comments (`comments`: `updateNewGroupCallMessage`,
+  `updateGroupCallMessagesDeleted`, `updateGroupCallMessageSendFailed`, the newest 200, dropped when the user leaves or
+  the call ends), sends them free (`sendComment`, `sendGroupCallMessage` with no Stars: a call whose comments cost Stars
+  only says so), deletes them (`deleteComments`, `deleteCommentsBy`) and turns them on or off (`setCommentsAllowed`);
+  `GroupCall` carries `are_messages_allowed`, `can_send_messages` (Telegram's limit of participants for comments),
+  `can_toggle_are_messages_allowed`, `can_delete_messages` and `paid_message_star_count`. The screen's
+  `GroupCallCommentsViewModel` (`feature:calls` `ui/comments/`, beside `GroupCallViewModel`, so a comment recomposes
+  the pane alone) names the senders, keeps whether the pane shows in its saved state, and announces new comments to
+  screen readers at most every 5 s; `GroupCallActivity` hands both to `GroupCallScreen` as a `GroupCallCommentsHost`,
+  whose derived visibility is all the rest of the screen reads.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

@@ -400,7 +400,13 @@ class GroupCallViewModel
                             duration(ids.second),
                             conferences.verification(ids.first),
                         ) { info, rows, duration, verification ->
-                            Details(info?.participantCount, rows, duration, verification?.emojis ?: persistentListOf())
+                            Details(
+                                info?.participantCount,
+                                rows,
+                                duration,
+                                verification?.emojis ?: persistentListOf(),
+                                info?.inviteLink?.takeIf { it.isNotEmpty() },
+                            )
                         }
                     }
                 }
@@ -474,6 +480,8 @@ class GroupCallViewModel
             val duration: String? = null,
             /** A conference call's emojis to compare; empty for a voice chat, and until the call is verified. */
             val emojis: ImmutableList<String> = persistentListOf(),
+            /** A conference call's link, which "Invite link" shares. */
+            val inviteLink: String? = null,
         )
 
         private fun ActiveGroupCall.toUiState(
@@ -499,6 +507,7 @@ class GroupCallViewModel
             isHandRaised = isHandRaised,
             canEnd = canEnd,
             canInvite = canInvite,
+            inviteLink = details.inviteLink,
             route = audio.route,
             routes = audio.available,
             video =

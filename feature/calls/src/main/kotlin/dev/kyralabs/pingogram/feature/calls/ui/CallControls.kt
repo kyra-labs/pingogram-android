@@ -19,6 +19,7 @@ import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -130,6 +131,34 @@ internal fun HangUpButton(
 }
 
 /**
+ * "Leave" as a round `error` button, for the compact row of controls above a voice chat's comments: the hang-up symbol,
+ * named for screen readers, with the medium icon button's size and press morph.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun RoundHangUpButton(
+    @StringRes label: Int,
+    onClick: () -> Unit,
+) {
+    FilledIconButton(
+        onClick = onClick,
+        shapes = IconButtonDefaults.shapes(),
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
+        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_call_end_filled),
+            contentDescription = stringResource(label),
+            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+        )
+    }
+}
+
+/**
  * The audio route: with only the earpiece and the speaker, a toggle between them; with a headset or Bluetooth too, a
  * menu of every route, the current one selected.
  */
@@ -138,13 +167,14 @@ internal fun HangUpButton(
 internal fun RouteButton(
     route: AudioRoute?,
     routes: List<AudioRoute>,
+    labeled: Boolean = true,
     onSelect: (AudioRoute) -> Unit,
 ) {
     val speaker = routes.firstOrNull { it.type == AudioRouteType.Speaker }
     val other = routes.firstOrNull { it.type == AudioRouteType.Earpiece }
     val simple = routes.all { it.type == AudioRouteType.Speaker || it.type == AudioRouteType.Earpiece }
     var menuOpen by remember { mutableStateOf(false) }
-    LabeledButton(if (simple) R.string.call_speaker else R.string.call_audio) {
+    LabeledButton(if (simple) R.string.call_speaker else R.string.call_audio, labeled) {
         Box {
             Toggle(
                 checked =
@@ -257,8 +287,13 @@ internal fun Toggle(
 @Composable
 internal fun LabeledButton(
     @StringRes label: Int,
+    labeled: Boolean = true,
     button: @Composable () -> Unit,
 ) {
+    if (!labeled) {
+        button()
+        return
+    }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         button()
         Spacer(Modifier.height(MaterialTheme.spacing.small))
