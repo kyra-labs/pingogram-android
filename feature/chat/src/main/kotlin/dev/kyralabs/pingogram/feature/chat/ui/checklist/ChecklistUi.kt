@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.fullName
+import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.feature.chat.ui.ItemInputs
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
 import dev.kyralabs.pingogram.feature.chat.ui.memberIdsOf

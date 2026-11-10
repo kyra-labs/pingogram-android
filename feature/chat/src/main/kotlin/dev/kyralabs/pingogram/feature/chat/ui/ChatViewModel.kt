@@ -1589,7 +1589,7 @@ private class Overlays(
         chat: Chat,
         canWrite: Boolean,
         canSchedule: Boolean,
-        options: Set<AttachOption>,
+        options: ImmutableList<AttachOption>,
     ): PollSheet? =
         PollSheet(chat.isChannel, canSchedule).takeIf { canWrite && pollOpen && AttachOption.Poll in options }
 
@@ -1597,7 +1597,7 @@ private class Overlays(
     fun checklistSheet(
         canWrite: Boolean,
         canSchedule: Boolean,
-        options: Set<AttachOption>,
+        options: ImmutableList<AttachOption>,
     ): ChecklistSheet? =
         ChecklistSheet(canSchedule).takeIf {
             canWrite && checklistOpen &&
