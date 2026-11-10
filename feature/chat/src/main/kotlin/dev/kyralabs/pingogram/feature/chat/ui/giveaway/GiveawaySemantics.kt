@@ -5,8 +5,8 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
-import dev.kyralabs.pingogram.feature.chat.ui.GiveawayEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
+import dev.kyralabs.pingogram.feature.chat.ui.GiveawayEvent
 
 /**
  * What screen readers hear of [bubble]'s giveaway within its bubble's description (`docs/DESIGN_SYSTEM.md` §9): the
