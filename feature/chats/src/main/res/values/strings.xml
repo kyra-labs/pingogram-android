@@ -335,6 +335,7 @@
     <string name="create_not_added_ok">OK</string>
     <!-- Story rings above the chat list. -->
     <string name="stories_your_story">Your story</string>
+    <string name="stories_add_story">Add a story</string>
     <plurals name="stories_count">
         <item quantity="one">%d story</item>
         <item quantity="other">%d stories</item>

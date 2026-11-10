@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
@@ -30,35 +31,68 @@ import dev.kyralabs.pingogram.feature.media.R
 import kotlinx.coroutines.launch
 
 /**
- * Picking the photos and videos of a new story, full screen: hoists its [NewStoryViewModel], opens Android's photo
- * picker (as the screen first shows, and for "Add more") and the camera app, shows what failed in a snackbar, and
- * leaves through [onClose] or on to the composer through [onNext]. Neither the picker nor the camera app needs a
+ * Posting a new story, full screen: hoists its [NewStoryViewModel] and shows its step, picking the photos and videos
+ * ([NewStoryScreen]) or composing the story ([StoryComposeScreen]), whose back returns to picking. Opens Android's
+ * photo picker (as the screen first shows, and for "Add more") and the camera app, shows what failed in a snackbar, and
+ * leaves through [onClose], also once the stories are posted. Neither the picker nor the camera app needs a
  * permission.
  */
 @Composable
 internal fun NewStoryRoute(
     onClose: () -> Unit,
-    onNext: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NewStoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val launchers = rememberStoryLaunchers(viewModel::onEvent)
+    StoryEffects(viewModel, launchers, snackbarHostState, onClose)
+    when (state.step) {
+        NewStoryStep.Pick -> {
+            NewStoryScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                modifier = modifier,
+                hasCamera = launchers.hasCamera,
+                snackbarHostState = snackbarHostState,
+            )
+        }
+
+        NewStoryStep.Compose -> {
+            val compose by viewModel.composer.state.collectAsStateWithLifecycle()
+            BackHandler { viewModel.onEvent(NewStoryEvent.Back) }
+            StoryComposeScreen(
+                state = state,
+                compose = compose,
+                caption = viewModel.composer.caption,
+                onEvent = viewModel::onEvent,
+                modifier = modifier,
+                snackbarHostState = snackbarHostState,
+            )
+        }
+    }
+}
+
+/**
+ * Handles [viewModel]'s effects: closing ([onClose], also once posted), the photo picker and the camera app through
+ * [launchers], and what failed as snackbars on [snackbarHostState].
+ */
+@Composable
+private fun StoryEffects(
+    viewModel: NewStoryViewModel,
+    launchers: StoryLaunchers,
+    snackbarHostState: SnackbarHostState,
+    onClose: () -> Unit,
+) {
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val currentOnClose by rememberUpdatedState(onClose)
-    val currentOnNext by rememberUpdatedState(onNext)
     LaunchedEffect(viewModel, launchers) {
         viewModel.effects.collect { effect ->
             val message =
                 when (effect) {
-                    NewStoryEffect.Close -> {
+                    NewStoryEffect.Close, NewStoryEffect.Posted -> {
                         return@collect currentOnClose()
-                    }
-
-                    NewStoryEffect.Next -> {
-                        return@collect currentOnNext()
                     }
 
                     is NewStoryEffect.OpenPicker -> {
@@ -89,13 +123,6 @@ internal fun NewStoryRoute(
             launch { snackbarHostState.showSnackbar(message) }
         }
     }
-    NewStoryScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        modifier = modifier,
-        hasCamera = launchers.hasCamera,
-        snackbarHostState = snackbarHostState,
-    )
 }
 
 /** Android's photo picker and the camera app, whose results go to [onEvent]. */

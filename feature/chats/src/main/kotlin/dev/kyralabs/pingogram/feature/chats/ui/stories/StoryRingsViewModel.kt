@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
@@ -19,6 +20,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +33,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** The story rings above the chat list: one per chat with active stories, in the stories list's order. */
+/**
+ * The story rings above the chat list: the user's own first, also without a story, from which they post one; then one
+ * per chat with active stories, in the stories list's order.
+ */
 @Immutable
 data class StoryRingsUiState(
     val rings: ImmutableList<StoryRing> = persistentListOf(),
@@ -99,11 +104,9 @@ class StoryRingsViewModel
                         }
                     }
                 }.combine(userRepository.myUserId) { chats, me ->
-                    StoryRingsUiState(
-                        chats
-                            .mapNotNull { (stories, chat) -> chat?.let { ringOf(stories, it, me) } }
-                            .toImmutableList(),
-                    )
+                    chats.mapNotNull { (stories, chat) -> chat?.let { ringOf(stories, it, me) } }
+                }.combine(myself(userRepository)) { rings, me ->
+                    StoryRingsUiState(withOwnRing(rings, me).toImmutableList())
                 }.distinctUntilChanged()
                 .onStart { viewModelScope.launch { storyRepository.loadActiveStories(StoryList.Main) } }
 
@@ -123,6 +126,44 @@ class StoryRingsViewModel
                             val loaded = storyRepository.loadMoreActiveStories(StoryList.Main)
                             if (loaded is Outcome.Success) allLoaded = !loaded.value
                         }
+                }
+            }
+        }
+
+        /** The user, once known, for their own ring while they have no story. */
+        private fun myself(users: UserRepository): Flow<User?> =
+            users.myUserId.flatMapLatest { id -> if (id == null) flowOf(null) else users.user(id) }
+
+        /**
+         * [rings] with the user's own first: theirs when they have stories, else one without stories that posting
+         * starts from (`docs/adr/0036-posting-stories.md`), from their Saved Messages chat, whose id is theirs.
+         */
+        private fun withOwnRing(
+            rings: List<StoryRing>,
+            me: User?,
+        ): List<StoryRing> {
+            val own = rings.firstOrNull { it.isMine }
+            return when {
+                own != null -> {
+                    listOf(own) + (rings - own)
+                }
+
+                me == null -> {
+                    rings
+                }
+
+                else -> {
+                    listOf(
+                        StoryRing(
+                            me.id,
+                            me.firstName,
+                            me.profilePhoto,
+                            hasUnread = false,
+                            storyCount = 0,
+                            isMine = true,
+                        ),
+                    ) +
+                        rings
                 }
             }
         }

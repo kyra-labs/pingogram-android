@@ -490,13 +490,23 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
 - **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
-  stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, not yet in `:app`'s
-  `NavHost`: it joins it with the composer), `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
+  stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
+  opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
+  `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
   (`PickStoryMedia`, the multiple picker for more than one place left) opens as the screen first shows, the camera app
   takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`), and every pick is
   copied into the upload cache as it arrives (`AttachmentRepository.prepare` as media; anything but a photo or video is
   deleted and refused). The items, their order and the shown one are in its saved state; the copies are deleted when
-  the screen closes or its view model is cleared, unless handed over to the composer (`handOver`).
+  the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
+  second step (`NewStoryStep`, in saved state): `StoryComposer`, a part of the view model, holds the caption
+  (`CaptionText`, copied from `feature:chat`'s composer with its entity edits and formatting transformation, as features
+  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`.
+  Posting: `core:domain`'s `StoryPostRepository` (`TdlibStoryPostRepository`, `core:data`, account-scoped, no cache)
+  asks `canPostStory` of the user's Saved Messages chat (`StoryPostAbility`), counts the close friends
+  (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
+  first). A video longer than 60 s is cut first by `MediaStoryVideoCutter` (the platform's `MediaExtractor` and
+  `MediaMuxer`, at the key frames `storyVideoCuts` plans, nothing encoded again). Copies are deleted once TDLib reports
+  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's.
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)

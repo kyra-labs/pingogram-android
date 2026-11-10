@@ -8,13 +8,11 @@ import dev.kyralabs.pingogram.feature.media.storypost.NewStoryRoute as NewStory
 
 /**
  * Adds posting a story, [NewStoryRoute], to the graph, with the `NavHost`'s transitions for full-screen destinations
- * (`docs/adr/0036-posting-stories.md`): [onClose] leaves it, [onNext] goes on to the composer with the picked items.
+ * (`docs/adr/0036-posting-stories.md`): picking the photos and videos, then composing the story. [onClose] leaves
+ * it, also once the stories are posted.
  */
-fun NavGraphBuilder.newStoryScreen(
-    onClose: () -> Unit,
-    onNext: () -> Unit,
-) {
-    composable<NewStoryRoute> { NewStory(onClose = onClose, onNext = onNext) }
+fun NavGraphBuilder.newStoryScreen(onClose: () -> Unit) {
+    composable<NewStoryRoute> { NewStory(onClose = onClose) }
 }
 
 /** Opens posting a story; once, however often it is asked for. */

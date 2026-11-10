@@ -3,6 +3,10 @@ package dev.kyralabs.pingogram.feature.media.storypost
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
+import dev.kyralabs.pingogram.core.domain.model.TextEntity
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
@@ -29,6 +33,56 @@ internal object NewStoryPreviewData {
 
     /** Ten items: the post is full, so "Add more" and "Camera" give way. */
     val full = NewStoryUiState((1..MAX_STORY_ITEMS).map(::photo).toImmutableList())
+}
+
+/** The composer's states for previews and goldens: to close friends, blocked by the week's limit, posting. */
+internal object StoryComposePreviewData {
+    val items = NewStoryPreviewData.picked.copy(step = NewStoryStep.Compose)
+
+    val closeFriends =
+        StoryComposeState(
+            audience = StoryAudience.CloseFriends,
+            ability = StoryPostAbility.Allowed(3),
+            closeFriends = 14,
+        )
+
+    val weeklyLimit = StoryComposeState(ability = StoryPostAbility.WeeklyLimit(WEEKLY_LIMIT_SECONDS))
+
+    val posting = closeFriends.copy(audience = StoryAudience.Everyone, isPosting = true)
+
+    /** "Kapu beach — we got lucky with the clouds tonight", its first words bold. */
+    fun caption() =
+        CaptionText(
+            FormattedText(
+                "Kapu beach — we got lucky with the clouds tonight",
+                persistentListOf(TextEntity(0, CAPTION_BOLD, TextEntityType.Bold)),
+            ),
+        )
+
+    private const val WEEKLY_LIMIT_SECONDS = 2 * 3_600
+    private const val CAPTION_BOLD = 10
+}
+
+internal class StoryComposePreviewStates : PreviewParameterProvider<StoryComposeState> {
+    override val values: Sequence<StoryComposeState> =
+        with(StoryComposePreviewData) { sequenceOf(closeFriends, weeklyLimit, posting) }
+}
+
+@PingogramPreviews
+@Composable
+private fun StoryComposeScreenPreview(
+    @PreviewParameter(StoryComposePreviewStates::class) compose: StoryComposeState,
+) {
+    PingogramPreview {
+        PreviewImages {
+            StoryComposeScreen(
+                state = StoryComposePreviewData.items,
+                compose = compose,
+                caption = StoryComposePreviewData.caption(),
+                onEvent = {},
+            )
+        }
+    }
 }
 
 internal class NewStoryPreviewStates : PreviewParameterProvider<NewStoryUiState> {
