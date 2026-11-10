@@ -18,6 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
 - Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
   people to it.
+- Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
+  all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

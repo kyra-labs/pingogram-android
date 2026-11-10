@@ -938,6 +938,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecretChatRepository.createSecretChat` (`createNewSecretChat`, Secret chats above), profile photos through
   `UserProfileRepository.profilePhotos` (`getUserProfilePhotos`, paged), and a mention's `@username` through
   `SearchRepository.publicChat` (`searchPublicChat`), which the conversation uses too.
+- Contact notes (`docs/DESIGN_SYSTEM.md` §6 "Contact note"): the note the user keeps about a contact, which only they
+  see and Telegram keeps with their contacts, is `UserFullInfo.note` (td_api.tl `userFullInfo.note`), set with
+  `UserProfileRepository.setNote` (`setUserNote`, plain text of at most `ProfileLimits.NOTE_LENGTH_MAX`, 140,
+  characters). `ProfileViewModel` puts it last in the information rows of a contact (`ProfileInfo.note`) and holds its
+  dialog in `ProfileNote` (`noteEditor`, what is typed in the saved state); TDLib's `updateUserFullInfo` then shows the
+  new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
+  `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
+  The demo keeps notes on the phone (`DemoAccount`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`
