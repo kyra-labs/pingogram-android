@@ -133,6 +133,36 @@ class ProfileScreenScreenshotTest {
     @Config(qualifiers = TALL)
     fun noNote() = capture(ScreenshotVariant.Light, ProfilePreviewData.withoutNote)
 
+    /** A contact without a birthday: the offer to suggest one, on `tertiaryContainer`. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionHighContrast() =
+        capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun birthdaySuggestionMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun birthdaySuggestionFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withBirthdaySuggestion)
+
     private fun capture(
         variant: ScreenshotVariant,
         state: ProfileUiState = ProfilePreviewData.content,

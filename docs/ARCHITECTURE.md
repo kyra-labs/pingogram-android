@@ -832,6 +832,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
   media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
   Forward, "Show in chat", saving and deletions, leaving Delete out.
+- **Dates in messages** (td_api.tl `textEntityTypeDateTime`, `TextEntityType.DateTime`): `feature:chat`'s bubble
+  mapping words each date for its reader before anything else marks the text (`withReaderDates`, `dates/`):
+  `ChatTimeFormatter.dateTimeText` in the reader's zone, language and clock, relative ones through `core:ui`'s
+  `TimePatterns.relativeTime` (the platform's `RelativeDateTimeFormatter`; null on the JVM, which shows the date in
+  full). `core:domain`'s `FormattedText.replacingEntities` writes the parts anew and moves every other entity with
+  them, so mentions, search highlights, custom emoji and a headline mark the text as shown. An item with a relative
+  date carries the current minute in its inputs (`ItemInputs.relativeNow`), so it alone is mapped again each minute.
+  `core:ui`'s `toAnnotatedString` makes a date a `LinkAnnotation.Clickable` (`dateTimeOf`) handed the mention
+  listener; `DateTimeEvent.Open` opens `ChatDateTimes`' sheet (a part of `ChatViewModel`, `dateTimeSheet`, kept out of
+  `ChatUiState`, its moment in the saved state), whose "Add to calendar" is `ChatEffect.AddToCalendar` (the route's
+  `ACTION_INSERT` of `CalendarContract.Events`, no permission) and "Copy" `ChatEffect.CopyText`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -987,6 +998,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
   `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
   The demo keeps notes on the phone (`DemoAccount`).
+- Birthday suggestions (`docs/DESIGN_SYSTEM.md` §6 "Birthday suggestions"): a contact without a birthday on their
+  profile (`UserFullInfo.birthdate` null) gets the offer (`ProfileInfo.birthdaySuggestion`), whose pick
+  `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
+  `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
+  `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
+  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`

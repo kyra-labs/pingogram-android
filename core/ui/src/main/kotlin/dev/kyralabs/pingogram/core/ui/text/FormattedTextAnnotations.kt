@@ -76,7 +76,10 @@ fun FormattedText.toAnnotatedString(
                 ) {
                     addLink(LinkAnnotation.Url(url, linkStyles, onLinkClick), range.start, range.end)
                 }
-                if (shown) addMention(range, text, mentionStyles, onMentionClick)
+                if (shown) {
+                    addMention(range, text, mentionStyles, onMentionClick)
+                    addDateTime(range, mentionStyles, onMentionClick)
+                }
                 addCustomEmoji(range.type, range.start, range.end)
             }
             addDecorations(ranges)
@@ -127,6 +130,7 @@ fun mentionTarget(link: LinkAnnotation): MentionTarget? {
 }
 
 private const val MENTION_TAG = "mention:"
+
 private const val MENTION_NAME_TAG = "mention-name:"
 
 /** A mention's [LinkAnnotation.Clickable] over [range] of [text], with [onMentionClick]; nothing for other entities. */
@@ -150,7 +154,7 @@ private fun TextEntityType.mentionTag(part: String): String? =
     }
 
 /** An entity's [start] (inclusive) and [end] (exclusive) within the text. */
-private class EntityRange(
+internal class EntityRange(
     val start: Int,
     val end: Int,
     val type: TextEntityType,
@@ -229,6 +233,7 @@ private fun TextEntityType.spanStyle(
         TextEntityType.Cashtag,
         TextEntityType.BotCommand,
         is TextEntityType.MediaTimestamp,
+        is TextEntityType.DateTime,
         -> {
             SpanStyle(color = styles.mentionColor)
         }
@@ -244,7 +249,6 @@ private fun TextEntityType.spanStyle(
         TextEntityType.BankCardNumber,
         TextEntityType.TonAddress,
         is TextEntityType.CustomEmoji,
-        is TextEntityType.DateTime,
         TextEntityType.Unknown,
         -> {
             null

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.UserFullInfo
 import dev.kyralabs.pingogram.core.domain.model.UserProfilePhotosPage
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,15 @@ interface UserProfileRepository {
     suspend fun setNote(
         userId: Long,
         note: String,
+    ): Outcome<Unit>
+
+    /**
+     * Suggests [birthdate] to user [userId], who has none on their profile: Telegram sends them a message they can
+     * accept, keeping it on their profile, or decline.
+     */
+    suspend fun suggestBirthdate(
+        userId: Long,
+        birthdate: Birthdate,
     ): Outcome<Unit>
 
     /** Up to [limit] (at most 100) of user [userId]'s profile photos, after the first [offset] of them. */

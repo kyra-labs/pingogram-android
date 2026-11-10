@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.ui.BirthdaySuggestionOffer
 import dev.kyralabs.pingogram.feature.profile.ui.ContactAction
 import dev.kyralabs.pingogram.feature.profile.ui.ContactNote
 import dev.kyralabs.pingogram.feature.profile.ui.FileKind
@@ -102,6 +103,17 @@ object ProfilePreviewData {
 
     /** A contact without a note: the row offers to add one. */
     val withoutNote = content.copy(info = content.info.copy(note = ContactNote("", "Ada")))
+
+    /** A contact without a birthday: the offer to suggest one, then the note row. */
+    val withBirthdaySuggestion =
+        content.copy(
+            info =
+                content.info.copy(
+                    birthday = null,
+                    birthdaySuggestion = BirthdaySuggestionOffer("Ada"),
+                    note = ContactNote("", "Ada"),
+                ),
+        )
 
     val bot =
         ProfileUiState.Content(
