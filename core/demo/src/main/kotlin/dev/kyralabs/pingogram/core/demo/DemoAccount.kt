@@ -50,6 +50,10 @@ internal class DemoAccount : DemoArea {
                 changeMine(world) { birthdate = function.birthdate }
             }
 
+            is TdApi.SetUserNote -> {
+                setNote(world, function.userId, function.note)
+            }
+
             is TdApi.SetPersonalChat -> {
                 changeMine(world) { personalChatId = function.chatId }
             }
@@ -405,11 +409,28 @@ internal class DemoAccount : DemoArea {
         val user = world.users[function.userId] ?: return notFound()
         user.isContact = true
         user.isMutualContact = true
+        val updates = mutableListOf<TdApi.Update>()
         function.contact?.let {
             if (it.firstName.isNotBlank()) user.firstName = it.firstName.trim()
             user.lastName = it.lastName.orEmpty().trim()
+            val info = info(world, user.id)
+            if (it.note != null && info != null) {
+                info.note = it.note
+                updates += TdApi.UpdateUserFullInfo(user.id, info)
+            }
         }
-        return okChanged(listOf(TdApi.UpdateUser(user)))
+        return okChanged(listOf(TdApi.UpdateUser(user)) + updates)
+    }
+
+    /** The note about one of the demo's people, which only the user sees: kept on the phone, like everything here. */
+    private fun setNote(
+        world: DemoWorld,
+        userId: Long,
+        note: TdApi.FormattedText?,
+    ): DemoAnswer {
+        val info = info(world, userId) ?: return notFound()
+        info.note = note ?: TdApi.FormattedText("", emptyArray())
+        return okChanged(listOf(TdApi.UpdateUserFullInfo(userId, info)))
     }
 
     /** Numbers of the demo's people match them; every other number is not on Telegram (user id 0). */

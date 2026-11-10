@@ -33,7 +33,8 @@ import kotlinx.coroutines.launch
  * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive, and the "New chat" buttons [onOpenNewChat].
  * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
  * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
- * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat. The
+ * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat, and
+ * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
  * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary].
@@ -45,6 +46,7 @@ internal fun ChatListRoute(
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenStory: (chatId: Long) -> Unit = {},
+    onNewStory: () -> Unit = {},
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
@@ -59,6 +61,7 @@ internal fun ChatListRoute(
     val rings = storyRings.uiState.collectAsStateWithLifecycle()
     val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
     val currentOnOpenStory by rememberUpdatedState(onOpenStory)
+    val currentOnNewStory by rememberUpdatedState(onNewStory)
     // Reads the rings in the row's own composition, not here.
     val stories: @Composable (Modifier) -> Unit =
         remember(storyRings, rings) {
@@ -68,6 +71,7 @@ internal fun ChatListRoute(
                     onOpen = { currentOnOpenStory(it) },
                     onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
                     modifier = rowModifier,
+                    onAddStory = { currentOnNewStory() },
                 )
             }
         }

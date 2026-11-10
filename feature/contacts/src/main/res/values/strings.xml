@@ -56,6 +56,16 @@
     <string name="contacts_first_name">First name</string>
     <string name="contacts_first_name_optional">First name (optional)</string>
     <string name="contacts_last_name_optional">Last name (optional)</string>
+    <!-- The field of the note the user keeps about a contact, which only they see. -->
+    <string name="contacts_note">Note</string>
+    <string name="contacts_note_private">Only you see this note. It stays with your contacts on all your devices.</string>
+    <!-- The note's character counter: %1$d characters typed of at most %2$d. -->
+    <string name="contacts_note_counter">%1$d / %2$d</string>
+    <!-- Spoken by screen readers for the note's counter: %1$d characters typed of at most %2$d (the quantity). -->
+    <plurals name="contacts_note_counter_description">
+        <item quantity="one">%1$d of %2$d character</item>
+        <item quantity="other">%1$d of %2$d characters</item>
+    </plurals>
     <string name="contacts_phone_number">Phone number</string>
     <!-- "Calling code", the "+44" part, never "country code": some places are regions. -->
     <string name="contacts_phone_number_note">With the calling code, like +44 7911 123456</string>

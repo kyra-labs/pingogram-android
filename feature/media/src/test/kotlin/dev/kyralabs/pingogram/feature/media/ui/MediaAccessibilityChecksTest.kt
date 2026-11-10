@@ -13,6 +13,8 @@ import dev.kyralabs.pingogram.feature.media.story.StoryViewerScreen
 import dev.kyralabs.pingogram.feature.media.story.StoryViewerUiState
 import dev.kyralabs.pingogram.feature.media.storypost.NewStoryPreviewData
 import dev.kyralabs.pingogram.feature.media.storypost.NewStoryScreen
+import dev.kyralabs.pingogram.feature.media.storypost.StoryComposePreviewData
+import dev.kyralabs.pingogram.feature.media.storypost.StoryComposeScreen
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaPreviewData
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
 import org.junit.Rule
@@ -69,6 +71,17 @@ class MediaAccessibilityChecksTest {
 
     @Test
     fun newStoryFull() = check { NewStoryScreen(state = NewStoryPreviewData.full, onEvent = {}) }
+
+    @Test
+    fun storyCompose() =
+        check {
+            StoryComposeScreen(
+                state = StoryComposePreviewData.items,
+                compose = StoryComposePreviewData.closeFriends,
+                caption = StoryComposePreviewData.caption(),
+                onEvent = {},
+            )
+        }
 
     private fun viewer(state: MediaViewerUiState) =
         check { MediaViewerScreen(state = state, onEvent = {}, onBack = {}) }

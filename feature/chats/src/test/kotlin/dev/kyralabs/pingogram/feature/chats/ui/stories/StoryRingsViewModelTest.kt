@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui.stories
 
+import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
@@ -115,6 +116,52 @@ class StoryRingsViewModelTest {
                 assertTrue(ring.isMine)
             }
         }
+
+    @Test
+    fun `without a story of their own, the user's ring comes first for posting one`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            users.setUsers(ChatListFixtures.user(ChatListFixtures.ME, firstName = "Me"))
+            chats.setChats(ChatListType.Main, ChatListFixtures.chat(id = 2, title = "Ada"))
+            stories.setActive(active(chatId = 2, order = 5))
+
+            viewModel().uiState.test {
+                val rings = awaitRings { it.size == 2 }
+                assertEquals(listOf(ChatListFixtures.ME, 2L), rings.map { it.chatId })
+                val own = rings.first()
+                assertTrue(own.isMine)
+                assertEquals(0, own.storyCount)
+            }
+        }
+
+    @Test
+    fun `the user's own ring comes first however TDLib orders it`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            chats.setChats(
+                ChatListType.Main,
+                ChatListFixtures.chat(id = ChatListFixtures.ME, title = "Me"),
+                ChatListFixtures.chat(id = 2, title = "Ada"),
+            )
+            stories.setActive(active(chatId = 2, order = 9))
+            stories.setActive(active(chatId = ChatListFixtures.ME, order = 1))
+
+            viewModel().uiState.test {
+                val rings = awaitRings { it.size == 2 }
+                assertEquals(listOf(ChatListFixtures.ME, 2L), rings.map { it.chatId })
+                assertEquals(2, rings.first().storyCount)
+            }
+        }
+
+    /** The rings once they are as [done] says. */
+    private suspend fun ReceiveTurbine<StoryRingsUiState>.awaitRings(
+        done: (List<StoryRing>) -> Boolean,
+    ): List<StoryRing> {
+        while (true) {
+            val rings = awaitItem().rings
+            if (done(rings)) return rings
+        }
+    }
 
     @Test
     fun `loads the first chats with stories once the rings are collected`() =

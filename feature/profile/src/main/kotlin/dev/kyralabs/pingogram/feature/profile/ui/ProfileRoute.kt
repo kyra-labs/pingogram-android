@@ -38,7 +38,8 @@ import kotlinx.coroutines.launch
  * [onExportChat], where given, the export page of the private chat (`docs/adr/0021-chat-export.md`).
  * Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar before Android 13, which
  * confirms copies itself), a phone number to the dialer (`ACTION_DIAL`, no permission), a username's link to the
- * system's share sheet. The dialogs and the report sheet show over the screen while the view model has one.
+ * system's share sheet. The dialogs, the note dialog and the report sheet show over the screen while the view model has
+ * one.
  */
 @Suppress("LongParameterList") // The app's navigation from the profile.
 @Composable
@@ -56,6 +57,7 @@ internal fun ProfileRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val media by viewModel.media.collectAsStateWithLifecycle()
     val reportSheet by viewModel.reportSheet.collectAsStateWithLifecycle()
+    val noteEditor by viewModel.noteEditor.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
@@ -85,6 +87,7 @@ internal fun ProfileRoute(
     )
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)
     reportSheet?.let { ReportProfileSheet(it, viewModel.reportComment, viewModel::onEvent) }
+    noteEditor?.let { ContactNoteDialog(it, viewModel::onEvent) }
 }
 
 /**

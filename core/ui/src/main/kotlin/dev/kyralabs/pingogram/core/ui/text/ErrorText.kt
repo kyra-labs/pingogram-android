@@ -78,6 +78,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.FileUnavailable -> R.string.error_file_unavailable
         DomainError.FileTooLarge -> R.string.error_file_too_large
         DomainError.SendingNotAllowed -> R.string.error_sending_not_allowed
+        DomainError.StoryVideoNotCut -> R.string.error_story_video_not_cut
         DomainError.PremiumRequired -> R.string.error_premium_required
         DomainError.UsernameTaken -> R.string.error_username_taken
         DomainError.UsernameInvalid -> R.string.error_username_invalid

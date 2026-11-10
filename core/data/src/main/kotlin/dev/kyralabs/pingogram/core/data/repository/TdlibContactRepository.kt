@@ -41,8 +41,9 @@ import javax.inject.Inject
  *   on Telegram.
  * - **Adding by username**: `searchPublicChat`, then `addContact` for the user of its private chat, without sharing
  *   the phone number.
- * - **Editing**: `addContact`, which adds or renames, keeping the note the user wrote about the contact elsewhere
- *   (`userFullInfo.note`); whether to offer sharing the phone number comes from `userFullInfo`.
+ * - **Editing**: `addContact`, which adds or renames, with the note the user keeps about the contact
+ *   (`importedContact.note`): the one typed in Edit contact as plain text, else the one they have
+ *   (`userFullInfo.note`), with its formatting; whether to offer sharing the phone number comes from `userFullInfo`.
  * - **Deleting**: `removeContacts`. **Opening**: `createPrivateChat` through [ChatRepository.privateChat].
  * - **Invitations**: `getApplicationDownloadLink`, else Telegram's download page.
  */
@@ -123,7 +124,7 @@ class TdlibContactRepository
                     val user = found.value
                     val first = firstName.trim().ifEmpty { user.firstName }
                     val last = if (firstName.isBlank()) user.lastName else lastName.trim()
-                    val contact = TdApi.ImportedContact(user.phoneNumber, first, last, note(user.id))
+                    val contact = TdApi.ImportedContact(user.phoneNumber, first, last, currentNote(user.id))
                     client.request(TdApi.AddContact(user.id, contact, false)).map { user.id }
                 }
 
@@ -138,9 +139,15 @@ class TdlibContactRepository
                     is Outcome.Success -> found.value
                     is Outcome.Failure -> return found
                 }
-            // Without the full info the switch is left out; editing the names still works.
+            // Without the full info the switch is left out and the note empty; editing the names still works.
             val fullInfo = client.request(TdApi.GetUserFullInfo(userId)).getOrNull()
-            return Outcome.Success(EditableContact(user, fullInfo?.needPhoneNumberPrivacyException == true))
+            return Outcome.Success(
+                EditableContact(
+                    user = user,
+                    canSharePhoneNumber = fullInfo?.needPhoneNumberPrivacyException == true,
+                    note = fullInfo?.note?.text.orEmpty(),
+                ),
+            )
         }
 
         override suspend fun save(
@@ -148,6 +155,7 @@ class TdlibContactRepository
             firstName: String,
             lastName: String,
             sharePhoneNumber: Boolean,
+            note: String?,
         ): Outcome<Unit> {
             val phoneNumber =
                 userRepository
@@ -155,7 +163,8 @@ class TdlibContactRepository
                     .getOrNull()
                     ?.phoneNumber
                     .orEmpty()
-            val contact = TdApi.ImportedContact(phoneNumber, firstName.trim(), lastName.trim(), note(userId))
+            val kept = note?.let { TdApi.FormattedText(it.trim(), emptyArray()) } ?: currentNote(userId)
+            val contact = TdApi.ImportedContact(phoneNumber, firstName.trim(), lastName.trim(), kept)
             return client.request(TdApi.AddContact(userId, contact, sharePhoneNumber)).map {}
         }
 
@@ -204,7 +213,7 @@ class TdlibContactRepository
          * The note the user wrote about user [userId], which `addContact` would otherwise replace; an empty one if
          * there is none or TDLib cannot tell.
          */
-        private suspend fun note(userId: Long): TdApi.FormattedText =
+        private suspend fun currentNote(userId: Long): TdApi.FormattedText =
             client.request(TdApi.GetUserFullInfo(userId)).getOrNull()?.note ?: emptyNote()
 
         private companion object {
