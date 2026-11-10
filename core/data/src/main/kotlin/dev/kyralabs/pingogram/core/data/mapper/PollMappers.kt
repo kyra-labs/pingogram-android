@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.Poll
+import dev.kyralabs.pingogram.core.domain.model.PollMedia
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
 import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
@@ -26,6 +27,9 @@ internal fun TdApi.Poll.toPoll(): Poll {
                 isChosen = option.isChosen,
                 isCorrect = index in correctIndexes,
                 isBeingChosen = option.isBeingChosen,
+                id = option.id.orEmpty(),
+                media = option.media?.toPollMedia(),
+                author = option.author?.toMessageSender(),
             )
         }
     return Poll(
@@ -42,8 +46,34 @@ internal fun TdApi.Poll.toPoll(): Poll {
         canGetVoters = canGetVoters,
         allowsRevoting = allowsRevoting,
         voteRestriction = voteRestrictionReason?.toVoteRestriction(),
+        closeDate = closeDate.toLong(),
+        openPeriod = openPeriod,
     )
 }
+
+/**
+ * A poll's or an answer's media: photos (their live video left out: a still, as other photos show), videos and links
+ * (titled by their preview, else their site's name); the rest is [PollMedia.Other].
+ */
+internal fun TdApi.PollMedia.toPollMedia(): PollMedia =
+    when (this) {
+        is TdApi.PollMediaPhoto -> {
+            PollMedia.Photo(photo.toPhoto())
+        }
+
+        is TdApi.PollMediaVideo -> {
+            PollMedia.Video(video.toVideo())
+        }
+
+        is TdApi.PollMediaLink -> {
+            val title = linkPreview?.title?.takeIf { it.isNotBlank() } ?: linkPreview?.siteName.orEmpty()
+            PollMedia.Link(url.orEmpty(), title)
+        }
+
+        else -> {
+            PollMedia.Other
+        }
+    }
 
 /** In [order] (0-based indexes) if TDLib gives one that lists every option once; otherwise as they are. */
 private fun List<PollOption>.inDisplayOrder(order: IntArray): ImmutableList<PollOption> =

@@ -384,13 +384,13 @@
     <string name="poll_remove_option">Remove option %1$d</string>
     <!-- Screen readers: the radio button that marks option %1$d as the quiz's correct answer. -->
     <string name="poll_correct_option">Option %1$d is the correct answer</string>
-    <string name="poll_choose_correct">Choose the correct answer</string>
+    <string name="poll_choose_correct">Choose the correct answers</string>
     <string name="poll_settings">Settings</string>
     <string name="poll_anonymous">Anonymous voting</string>
     <string name="poll_anonymous_channel">Polls in channels are always anonymous</string>
     <string name="poll_multiple">Multiple answers</string>
     <string name="poll_quiz">Quiz mode</string>
-    <string name="poll_quiz_note">One answer is correct, and votes can\'t be changed</string>
+    <string name="poll_quiz_note">Some answers are correct, and votes can\'t be changed</string>
 
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->

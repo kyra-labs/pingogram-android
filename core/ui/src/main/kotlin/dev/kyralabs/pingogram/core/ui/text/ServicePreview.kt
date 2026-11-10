@@ -158,6 +158,18 @@ private class Actor(
                 counted(R.plurals.preview_you_added_tasks, R.plurals.preview_added_tasks, action.count)
             }
 
+            is ServiceAction.PollOptionAdded -> {
+                did(R.string.preview_you_added_poll_option, R.string.preview_added_poll_option, action.text.bidiIsolated())
+            }
+
+            is ServiceAction.PollOptionDeleted -> {
+                did(
+                    R.string.preview_you_removed_poll_option,
+                    R.string.preview_removed_poll_option,
+                    action.text.bidiIsolated(),
+                )
+            }
+
             // Worded by the other functions of this file.
             else -> {
                 UiText.resource(R.string.preview_service_other)

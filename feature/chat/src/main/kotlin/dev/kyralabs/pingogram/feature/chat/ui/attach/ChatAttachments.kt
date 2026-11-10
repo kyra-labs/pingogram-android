@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -65,6 +66,8 @@ internal class ChatAttachments(
     private val replies: ReplyHandoff,
     private val onEffect: (ChatEffect) -> Unit,
     private val originalByDefault: () -> Boolean = { false },
+    private val pollLimits: suspend () -> PollLimits = { PollLimits() },
+    private val now: () -> Long = { System.currentTimeMillis() / MILLIS_PER_SECOND },
 ) {
     /** The caption of the preview's photos, videos or files. */
     val caption =
@@ -315,12 +318,52 @@ internal class ChatAttachments(
     fun openPoll(requiredQuiz: Boolean? = null) {
         poll.require(requiredQuiz)
         setPollOpen(true)
+        loadPollLimits()
     }
 
-    /** Closes the poll form, emptying it. */
+    /** Reads what Telegram allows in a poll, for the open form (also after process death). */
+    fun loadPollLimits() {
+        scope.launch { poll.limits = pollLimits() }
+    }
+
+    /** Closes the poll form, emptying it and deleting its photo's copy. */
     fun dismissPoll() {
         setPollOpen(false)
+        poll.photo?.let { repository.discard(listOf(it)) }
         poll.clear()
+    }
+
+    /**
+     * Prepares the photo picked at [uri] for the poll, in place of the one it had (whose copy is deleted); anything
+     * that is not a photo is a snackbar.
+     */
+    fun pickPollPhoto(uri: String) {
+        poll.isPreparingPhoto = true
+        scope.launch {
+            val result = repository.prepare(uri, AttachmentKind.Media)
+            poll.isPreparingPhoto = false
+            when (val prepared = (result as? Outcome.Success)?.value) {
+                is Attachment.Photo -> {
+                    poll.photo?.let { repository.discard(listOf(it)) }
+                    poll.photo = prepared
+                }
+
+                null -> {
+                    onEffect(ChatEffect.ShowError((result as Outcome.Failure).error))
+                }
+
+                else -> {
+                    repository.discard(listOf(prepared))
+                    onEffect(ChatEffect.PollPhotoOnly)
+                }
+            }
+        }
+    }
+
+    /** Takes the poll's photo away, deleting its copy. */
+    fun removePollPhoto() {
+        poll.photo?.let { repository.discard(listOf(it)) }
+        poll.photo = null
     }
 
     /**
@@ -331,7 +374,7 @@ internal class ChatAttachments(
         options: SendOptions,
         inChannel: Boolean,
     ) {
-        val newPoll = poll.poll(forceAnonymous = inChannel) ?: return
+        val newPoll = poll.poll(forceAnonymous = inChannel, now = now()) ?: return
         setPollOpen(false)
         val replyTo = replies.takeReply()
         scope.launch {
@@ -379,6 +422,7 @@ internal class ChatAttachments(
     fun release() {
         mutablePreview.value?.let { repository.discard(it.attachments) }
         savedState.get<String>(KEY_CAMERA_FILE)?.let(repository::discardCameraFile)
+        poll.photo?.takeUnless { isPollOpen.value }?.let { repository.discard(listOf(it)) }
     }
 
     private fun pick(
@@ -493,6 +537,8 @@ internal class ChatAttachments(
     }
 
     private companion object {
+        const val MILLIS_PER_SECOND = 1_000L
+
         /** The caption's text and formatting ([savedEntities]), for process death. */
         const val KEY_CAPTION = "chat.attachCaption"
         const val KEY_CAPTION_ENTITIES = "chat.attachCaptionEntities"

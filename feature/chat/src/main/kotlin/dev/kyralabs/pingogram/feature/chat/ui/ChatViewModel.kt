@@ -583,6 +583,8 @@ class ChatViewModel internal constructor(
             replies = composer,
             onEffect = { effectChannel.trySend(it) },
             originalByDefault = { originalQualityByDefault.value },
+            pollLimits = { pollRepository.limits() },
+            now = { clock.now().epochSecond },
         )
 
     private val recorder =
@@ -1197,6 +1199,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch(Dispatchers.Main) {
             composer.start()
             attachments.start()
+            if (attachments.isPollOpen.value) attachments.loadPollLimits()
             shares.start()
             replyElsewhere.start()
             bots.start()
@@ -1330,6 +1333,10 @@ class ChatViewModel internal constructor(
             ChatEvent.OpenPoll -> attachments.openPoll()
 
             ChatEvent.DismissPoll -> attachments.dismissPoll()
+
+            is ChatEvent.PickPollPhoto -> attachments.pickPollPhoto(event.uri)
+
+            ChatEvent.RemovePollPhoto -> attachments.removePollPhoto()
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)

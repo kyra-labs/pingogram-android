@@ -113,6 +113,14 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
             ServiceAction.ChecklistTasksAdded(checklistMessageId, count = tasks.size)
         }
 
+        is TdApi.MessagePollOptionAdded -> {
+            ServiceAction.PollOptionAdded(pollMessageId, text.text.orEmpty())
+        }
+
+        is TdApi.MessagePollOptionDeleted -> {
+            ServiceAction.PollOptionDeleted(pollMessageId, text.text.orEmpty())
+        }
+
         is TdApi.MessageInviteVideoChatParticipants -> {
             ServiceAction.VideoChatInvited(userIds.asList().toImmutableList())
         }
@@ -192,8 +200,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessagePaymentRefunded::class.java,
         TdApi.MessagePaymentSuccessful::class.java,
         TdApi.MessagePaymentSuccessfulBot::class.java,
-        TdApi.MessagePollOptionAdded::class.java,
-        TdApi.MessagePollOptionDeleted::class.java,
         TdApi.MessagePremiumGiftCode::class.java,
         TdApi.MessageProximityAlertTriggered::class.java,
         TdApi.MessageRefundedUpgradedGift::class.java,

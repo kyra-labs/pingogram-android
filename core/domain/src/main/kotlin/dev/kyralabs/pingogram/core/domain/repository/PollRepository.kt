@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.NewPollOption
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.PollVoters
 
 /**
@@ -43,4 +45,17 @@ interface PollRepository {
         offset: Int,
         limit: Int,
     ): Outcome<PollVoters>
+
+    /**
+     * Adds [option] to the answers of the poll of message [messageId] of chat [chatId], where the poll allows it
+     * (`MessageContent.Poll.canAddOption`); TDLib's `updatePoll` then brings it to the bubble.
+     */
+    suspend fun addOption(
+        chatId: Long,
+        messageId: Long,
+        option: NewPollOption,
+    ): Outcome<Unit>
+
+    /** What Telegram allows in a new poll; [PollLimits]' defaults where TDLib does not say. */
+    suspend fun limits(): PollLimits
 }

@@ -44,7 +44,7 @@ internal fun TdApi.MessageContent.toMessageContent(
         }
 
         is TdApi.MessagePoll -> {
-            MessageContent.Poll(poll.toPoll(), description.toFormattedText())
+            MessageContent.Poll(poll.toPoll(), description.toFormattedText(), media?.toPollMedia(), canAddOption)
         }
 
         is TdApi.MessageChecklist -> {

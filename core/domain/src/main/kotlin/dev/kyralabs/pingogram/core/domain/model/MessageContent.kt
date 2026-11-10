@@ -92,10 +92,15 @@ sealed interface MessageContent {
         val contact: dev.kyralabs.pingogram.core.domain.model.Contact,
     ) : MessageContent
 
-    /** [description] may be empty. */
+    /**
+     * A poll; [description] may be empty, [media] is the poll's photo or video, if any, and [canAddOption] says that
+     * the user may add an answer (td_api.tl `messagePoll.can_add_option`, `addPollOption`).
+     */
     data class Poll(
         val poll: dev.kyralabs.pingogram.core.domain.model.Poll,
         val description: FormattedText,
+        val media: PollMedia? = null,
+        val canAddOption: Boolean = false,
     ) : MessageContent
 
     /** A checklist, whose tasks people in the chat tick off and add to (td_api.tl `messageChecklist`). */
