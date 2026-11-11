@@ -485,8 +485,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and declines (`declineOauthRequest`). A link (`internalLinkTypeOauth`) resolves to `LinkTarget.OauthLogin`, which
   `:app`'s `LinkViewModel` opens only from another app (a tapped one offers the browser, as TDLib asks), and which it
   opens for every announced request too. `feature:settings`' `OauthLoginRoute` (`oauthLoginSheet`, a dialog destination
-  registered in `:app`'s `NavHost`, `OauthLoginViewModel`: the code and the switches in saved state) asks first; closing
-  it unanswered declines the request in the app's scope.
+  registered in `:app`'s `NavHost`, `OauthLoginViewModel`: the code and the switches in saved state) sends nothing before
+  "Allow", which checks the code and accepts; closing it unanswered declines the request in the app's scope. Once
+  allowed, the website is among the connected websites (`ConnectedWebsiteRepository`).
 - **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
   (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
   account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds

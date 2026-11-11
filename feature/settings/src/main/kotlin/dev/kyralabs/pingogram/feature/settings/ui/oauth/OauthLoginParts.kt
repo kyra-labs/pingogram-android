@@ -19,18 +19,47 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 
 // The parts of the "Log in with Telegram" sheet's question (OauthLoginSheet.kt).
 
-/** Where the request comes from: the browser and its system, and the place its address points to. */
+/**
+ * Who asks and what it gets: the website's or app's domain (left to right), the account's name, username and photo,
+ * then where the request comes from: the browser and its system, and the place its address points to.
+ */
 @Composable
-internal fun Details(state: OauthLoginUiState) {
+internal fun Details(
+    state: OauthLoginUiState,
+    name: String,
+) {
     val request = state.request ?: return
     val colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     val browser = listOf(request.browser, request.platform).filter { it.isNotBlank() }.joinToString(" · ")
     Column(Modifier.fillMaxWidth()) {
+        ListItem(
+            headlineContent = { Text(request.domain, style = MaterialTheme.typography.bodyLarge.numericContent) },
+            supportingContent = {
+                Text(
+                    stringResource(if (request.isApp) R.string.settings_oauth_app else R.string.settings_oauth_website),
+                )
+            },
+            colors = colors,
+        )
+        ListItem(
+            overlineContent = {
+                Text(
+                    stringResource(R.string.settings_oauth_gets, name.bidiIsolated()).bidiIsolated(),
+                )
+            },
+            headlineContent = { Text(stringResource(R.string.settings_oauth_gets_what)) },
+            supportingContent =
+                state.accountName?.let { account ->
+                    { Text(stringResource(R.string.settings_oauth_as, account.bidiIsolated()).bidiIsolated()) }
+                },
+            colors = colors,
+        )
         if (browser.isNotEmpty()) {
             ListItem(
                 headlineContent = { Text(browser, style = MaterialTheme.typography.bodyLarge.userContent) },

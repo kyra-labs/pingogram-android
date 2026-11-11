@@ -274,8 +274,8 @@ private fun MatchCode(
 }
 
 /**
- * What logging in shares: who asks and from where, the switches for what the website asks for (off at first), the TON
- * wallet that is never shared, then "Decline" and "Log in".
+ * What logging in shares: who asks and from where, what it gets, the switches for what the website asks for (off at
+ * first), the TON wallet that is never shared, then "Decline" and "Allow".
  */
 @Composable
 private fun Confirm(
@@ -283,18 +283,10 @@ private fun Confirm(
     onEvent: (OauthLoginEvent) -> Unit,
 ) {
     val request = state.request ?: return
-    val domain = request.domain.bidiIsolated()
     val name = request.appName.ifBlank { stringResource(R.string.settings_oauth_unverified) }
-    val source = if (request.isApp) R.string.settings_oauth_app else R.string.settings_oauth_website
     StepBadge(UiR.drawable.ic_public)
-    Title(
-        stringResource(R.string.settings_oauth_title, domain).bidiIsolated(),
-        listOfNotNull(
-            stringResource(source, name.bidiIsolated()).bidiIsolated(),
-            state.accountName?.let { stringResource(R.string.settings_oauth_as, it.bidiIsolated()).bidiIsolated() },
-        ).joinToString("\n"),
-    )
-    Details(state)
+    Title(stringResource(R.string.settings_oauth_title, name.bidiIsolated()).bidiIsolated())
+    Details(state, name)
     Toggles(state, onEvent)
     if (request.asksForTonWallet) {
         Text(
@@ -320,8 +312,8 @@ private fun Confirm(
     Actions(
         secondary = R.string.settings_oauth_decline,
         onSecondary = { onEvent(OauthLoginEvent.Decline) },
-        primary = R.string.settings_oauth_log_in,
-        onPrimary = { onEvent(OauthLoginEvent.LogIn) },
+        primary = R.string.settings_oauth_allow,
+        onPrimary = { onEvent(OauthLoginEvent.Allow) },
         enabled = !state.isBusy,
     )
 }

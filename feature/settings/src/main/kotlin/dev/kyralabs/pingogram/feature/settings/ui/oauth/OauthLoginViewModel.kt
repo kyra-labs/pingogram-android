@@ -34,7 +34,7 @@ enum class OauthLoginStep {
     /** The user picks the code the website shows. */
     MatchCode,
 
-    /** What is shared, and "Log in". */
+    /** What is shared, and "Allow". */
     Confirm,
 
     /** Logged in; the website was opened to go on. */
@@ -78,7 +78,7 @@ sealed interface OauthLoginEvent {
         val share: Boolean,
     ) : OauthLoginEvent
 
-    data object LogIn : OauthLoginEvent
+    data object Allow : OauthLoginEvent
 
     /** "Decline": the request is declined and the sheet closes. */
     data object Decline : OauthLoginEvent
@@ -102,7 +102,7 @@ sealed interface OauthLoginEffect {
 /**
  * The sheet of a "Log in with Telegram" request (`docs/DESIGN_SYSTEM.md` §6 "Log in with Telegram"): reads the request
  * ([OauthLoginRepository.request]), asks for the code the website shows where Telegram wants one first, then shows what
- * is shared. Nothing is shared before "Log in", and then only what the user turned on: the phone number and the bot's
+ * is shared. Nothing is sent before "Allow", which checks the code first, and nothing is shared and then only what the user turned on: the phone number and the bot's
  * messages are off at first, and the TON wallet is never shared. "Decline", and closing the sheet without answering
  * ([onDismissed]), decline the request in the app's scope, as the sheet's destination leaves with it.
  *
@@ -145,6 +145,8 @@ class OauthLoginViewModel internal constructor(
 
     private var answered = false
 
+    private var codeChecked = false
+
     init {
         load()
     }
@@ -154,7 +156,7 @@ class OauthLoginViewModel internal constructor(
             is OauthLoginEvent.PickCode -> pickCode(event.code)
             is OauthLoginEvent.SetAllowMessages -> setAllowMessages(event.allow)
             is OauthLoginEvent.SetSharePhoneNumber -> setSharePhoneNumber(event.share)
-            OauthLoginEvent.LogIn -> logIn()
+            OauthLoginEvent.Allow -> allow()
             OauthLoginEvent.Decline -> decline(close = true)
             OauthLoginEvent.Retry -> load()
         }
@@ -200,26 +202,12 @@ class OauthLoginViewModel internal constructor(
         }
     }
 
+    /** The code the website shows, kept until "Allow", which checks it first: nothing is sent before. */
     private fun pickCode(code: String) {
         val state = uiState.value
         if (state.isBusy || state.step != OauthLoginStep.MatchCode) return
-        mutableUiState.value = state.copy(isBusy = true, error = null)
-        viewModelScope.launch {
-            when (val checked = repository.checkMatchCode(url, code)) {
-                is Outcome.Success -> {
-                    savedStateHandle[KEY_CODE] = code
-                    mutableUiState.update { it.copy(step = OauthLoginStep.Confirm, isBusy = false) }
-                }
-
-                // A wrong code ends the request: there is nothing left to answer.
-                is Outcome.Failure -> {
-                    answered = true
-                    mutableUiState.update {
-                        it.copy(step = OauthLoginStep.Failed, isBusy = false, error = checked.error)
-                    }
-                }
-            }
-        }
+        savedStateHandle[KEY_CODE] = code
+        mutableUiState.value = state.copy(step = OauthLoginStep.Confirm, error = null)
     }
 
     private fun setAllowMessages(allow: Boolean) {
@@ -232,16 +220,18 @@ class OauthLoginViewModel internal constructor(
         mutableUiState.update { it.copy(sharePhoneNumber = share) }
     }
 
-    private fun logIn() {
+    private fun allow() {
         val state = uiState.value
         val request = state.request
         if (state.isBusy || state.step != OauthLoginStep.Confirm || request == null) return
         mutableUiState.value = state.copy(isBusy = true, error = null)
         viewModelScope.launch {
+            val code = savedStateHandle[KEY_CODE] ?: ""
+            if (!checkCode(request, code)) return@launch
             val accepted =
                 repository.accept(
                     url = url,
-                    matchCode = savedStateHandle[KEY_CODE] ?: "",
+                    matchCode = code,
                     allowMessages = request.asksToMessage && state.allowMessages,
                     sharePhoneNumber = request.asksForPhoneNumber && state.sharePhoneNumber,
                 )
@@ -255,6 +245,29 @@ class OauthLoginViewModel internal constructor(
                 is Outcome.Failure -> {
                     mutableUiState.update { it.copy(isBusy = false, error = accepted.error) }
                 }
+            }
+        }
+    }
+
+    /**
+     * Checks the code the user picked where Telegram wants it first, once: a wrong one ends the request, which has
+     * nothing left to answer then. True where the login may go on.
+     */
+    private suspend fun checkCode(
+        request: OauthLoginRequest,
+        code: String,
+    ): Boolean {
+        if (!request.needsMatchCode || codeChecked) return true
+        return when (val checked = repository.checkMatchCode(url, code)) {
+            is Outcome.Success -> {
+                codeChecked = true
+                true
+            }
+
+            is Outcome.Failure -> {
+                answered = true
+                mutableUiState.update { it.copy(step = OauthLoginStep.Failed, isBusy = false, error = checked.error) }
+                false
             }
         }
     }

@@ -110,7 +110,7 @@ class OauthLoginViewModelTest {
             val effects = effectsOf(viewModel)
 
             viewModel.onEvent(OauthLoginEvent.SetSharePhoneNumber(true))
-            viewModel.onEvent(OauthLoginEvent.LogIn)
+            viewModel.onEvent(OauthLoginEvent.Allow)
             runCurrent()
 
             val accept = client.sentOf<TdApi.AcceptOauthRequest>().single()
@@ -121,7 +121,37 @@ class OauthLoginViewModelTest {
         }
 
     @Test
-    fun `a code asked first is checked before the login shows`() =
+    fun `the phone number stays private unless the user turns it on`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.onEvent(OauthLoginEvent.Allow)
+            runCurrent()
+
+            val accept = client.sentOf<TdApi.AcceptOauthRequest>().single()
+            assertFalse(accept.allowPhoneNumberAccess)
+            assertFalse(accept.allowWriteAccess)
+        }
+
+    @Test
+    fun `a request that expired says so in the sheet and opens nothing`() =
+        runTest {
+            client.on(TdApi.AcceptOauthRequest::class, TdResult.Failure(TdError(400, "URL_EXPIRED")))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            viewModel.onEvent(OauthLoginEvent.Allow)
+            runCurrent()
+
+            val state = viewModel.uiState.value
+            assertEquals(OauthLoginStep.Confirm, state.step)
+            assertFalse(state.isBusy)
+            assertTrue(state.error != null)
+            assertTrue(effects.isEmpty())
+        }
+
+    @Test
+    fun `a code asked first is picked, then checked only on Allow`() =
         runTest {
             client.on(TdApi.GetOauthLinkInfo::class, TdResult.Success(info(matchCodeFirst = true)))
             val viewModel = viewModel()
@@ -129,7 +159,10 @@ class OauthLoginViewModelTest {
 
             viewModel.onEvent(OauthLoginEvent.PickCode("42"))
             runCurrent()
-            viewModel.onEvent(OauthLoginEvent.LogIn)
+            assertEquals(OauthLoginStep.Confirm, viewModel.uiState.value.step)
+            assertTrue(client.sentOf<TdApi.CheckOauthRequestMatchCode>().isEmpty())
+
+            viewModel.onEvent(OauthLoginEvent.Allow)
             runCurrent()
 
             assertEquals("42", client.sentOf<TdApi.CheckOauthRequestMatchCode>().single().matchCode)
@@ -144,11 +177,13 @@ class OauthLoginViewModelTest {
             val viewModel = viewModel()
 
             viewModel.onEvent(OauthLoginEvent.PickCode("17"))
+            viewModel.onEvent(OauthLoginEvent.Allow)
             runCurrent()
             viewModel.onDismissed()
             runCurrent()
 
             assertEquals(OauthLoginStep.Failed, viewModel.uiState.value.step)
+            assertTrue(client.sentOf<TdApi.AcceptOauthRequest>().isEmpty())
             assertTrue(client.sentOf<TdApi.DeclineOauthRequest>().isEmpty())
         }
 
