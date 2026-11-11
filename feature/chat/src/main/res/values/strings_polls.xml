@@ -81,5 +81,4 @@
     <string name="poll_new_option">New option</string>
     <string name="poll_add_option_confirm">Add option</string>
     <string name="poll_add_option_cancel">Cancel adding an option</string>
-    <string name="poll_adding_option">Adding the option</string>
 </resources>
