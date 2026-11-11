@@ -22,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -76,13 +77,14 @@ internal fun LazyListScope.pollOptionItems(
     }
     itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
         val drag = rememberOptionDrag(editor, listState)
-        OptionRow(editor, option, index, drag, optionPlacement(drag, option.key))
+        val motionScheme = MaterialTheme.motionScheme
+        OptionRow(editor, option, index, drag, Modifier.optionPlacement(this, drag, option.key, motionScheme))
     }
     if (editor.canAddOption) {
         item(key = ADD) {
             TextButton(
                 onClick = { editor.addOption() },
-                modifier = springPlacement().padding(horizontal = MaterialTheme.spacing.small),
+                modifier = Modifier.springPlacement(this, MaterialTheme.motionScheme).padding(horizontal = MaterialTheme.spacing.small),
                 shapes = ButtonDefaults.shapes(),
             ) {
                 Icon(
@@ -113,27 +115,30 @@ internal fun LazyListScope.pollOptionItems(
 }
 
 /** The row being dragged follows the finger above the rest; the others slide into their places on springs. */
-@Composable
-private fun LazyItemScope.optionPlacement(
+private fun Modifier.optionPlacement(
+    scope: LazyItemScope,
     drag: OptionDrag,
     key: Long,
+    motionScheme: MotionScheme,
 ): Modifier =
     if (drag.draggedKey == key) {
-        Modifier.zIndex(1f).graphicsLayer { translationY = drag.offset }
+        zIndex(1f).graphicsLayer { translationY = drag.offset }
     } else {
-        springPlacement()
+        springPlacement(scope, motionScheme)
     }
 
 /** Comes, goes and moves on the motion scheme's springs. */
-@Composable
-private fun LazyItemScope.springPlacement(): Modifier {
-    val motionScheme = MaterialTheme.motionScheme
-    return Modifier.animateItem(
-        fadeInSpec = motionScheme.defaultEffectsSpec(),
-        placementSpec = motionScheme.defaultSpatialSpec(),
-        fadeOutSpec = motionScheme.fastEffectsSpec(),
-    )
-}
+private fun Modifier.springPlacement(
+    scope: LazyItemScope,
+    motionScheme: MotionScheme,
+): Modifier =
+    with(scope) {
+        this@springPlacement.animateItem(
+            fadeInSpec = motionScheme.defaultEffectsSpec(),
+            placementSpec = motionScheme.defaultSpatialSpec(),
+            fadeOutSpec = motionScheme.fastEffectsSpec(),
+        )
+    }
 
 /**
  * Option [index]: its drag handle, in quiz mode a check box that marks it as a correct answer, its text field
