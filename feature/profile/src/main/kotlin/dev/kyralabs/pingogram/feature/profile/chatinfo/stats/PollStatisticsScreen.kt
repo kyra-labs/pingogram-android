@@ -41,7 +41,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
 
-/** The statistics page of a poll ([PollStatisticsRoute][dev.kyralabs.pingogram.core.navigation.PollStatisticsRoute]). */
+/** The statistics page of a poll (`PollStatisticsRoute` of `core:navigation`): hoists [PollStatisticsViewModel]. */
 @Composable
 internal fun PollStatisticsRoute(
     onBack: () -> Unit,
