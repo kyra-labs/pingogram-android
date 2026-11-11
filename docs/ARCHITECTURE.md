@@ -679,6 +679,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   on, and the messages chosen or kept in the original, are in the saved state. A translated bubble that is the result
   the search in the chat shows marks the query's words in the translation it shows (`withSearchMatch` after
   `withTranslations`); words only its original has stay unmarked there, and "Show original" marks them.
+  Summaries go the same way (`ChatSummaries`, a part of `ChatViewModel` beside `ChatTranslation`):
+  `Message.summaryLanguage` (td_api.tl `message.summary_language_code`, null where Telegram offers none) offers
+  "Summarize" in the message's actions, `TranslationRepository.summarizeMessage` (`summarizeMessage`, into the reader's
+  language where they do not read the post's, else its own) answers only that tap, and the summary reaches the bubble as
+  a `BubbleTranslation.Summary` over any translation (`withSummaries`); the messages chosen are in the saved state and
+  summarized again after process death or an edit, the summaries kept in memory for the view model's life.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its

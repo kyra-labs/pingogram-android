@@ -135,8 +135,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
@@ -785,7 +787,11 @@ class ChatViewModel internal constructor(
             inThread = topic != null,
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
-            translationAction = { translation.actionFor(it) },
+            translationAction = { message ->
+                // A bubble showing its summary offers its full text back, not a translation of the summary.
+                val summary = summaries.actionFor(message)
+                listOfNotNull(translation.actionFor(message).takeIf { summary != MessageAction.ShowFullText }, summary)
+            },
             onRetractVote = { polls.retract(it) },
             onStopPoll = { polls.askStop(it) },
         )
@@ -899,6 +905,16 @@ class ChatViewModel internal constructor(
                     ?.messages
                     ?.findById(id)
             },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    private val summaries =
+        ChatSummaries(
+            chatId = chatId,
+            repositories = translationRepositories,
+            history = history,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -1198,8 +1214,9 @@ class ChatViewModel internal constructor(
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
-            .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
-            .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
+            .combine(translation.bubbles.combine(summaries.bubbles, ::withSummaries)) { state, translations ->
+                state.withTranslations(translations)
+            }.combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
@@ -1231,6 +1248,7 @@ class ChatViewModel internal constructor(
             autoDownloads.start()
             customEmojis.start(composer.text)
             translation.start()
+            summaries.start()
             giveaways.restore()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
@@ -1281,6 +1299,7 @@ class ChatViewModel internal constructor(
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
+            is SummaryEvent -> summaries.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
             is GiveawayEvent -> giveaways.onEvent(event)
