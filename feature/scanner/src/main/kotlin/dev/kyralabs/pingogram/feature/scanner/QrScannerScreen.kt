@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -75,6 +76,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
+import dev.kyralabs.pingogram.core.ui.theme.effectsExit
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -172,31 +176,44 @@ internal fun QrScannerScreen(
             .background(MaterialTheme.colorScheme.scrim)
             .semantics { this.paneTitle = paneTitle },
     ) {
-        when (val camera = state.camera) {
-            CameraAccess.Granted -> {
-                if (viewfinder != null) {
-                    viewfinder()
-                } else if (!LocalInspectionMode.current) {
-                    ScannerCamera(
-                        scanning = state.isScanning,
-                        torchOn = state.torchOn,
-                        onFound = { onEvent(QrScannerEvent.Scanned(it)) },
-                        onTorchAvailable = { torchAvailable = it },
-                        onUnavailable = {
-                            onEvent(
-                                QrScannerEvent.Started(hasCamera = false, permissionGranted = true),
-                            )
-                        },
-                    )
+        // The camera's picture, composed alone, as its own: it never crossfades.
+        if (state.camera == CameraAccess.Granted) {
+            if (viewfinder != null) {
+                viewfinder()
+            } else if (!LocalInspectionMode.current) {
+                ScannerCamera(
+                    scanning = state.isScanning,
+                    torchOn = state.torchOn,
+                    onFound = { onEvent(QrScannerEvent.Scanned(it)) },
+                    onTorchAvailable = { torchAvailable = it },
+                    onUnavailable = {
+                        onEvent(
+                            QrScannerEvent.Started(hasCamera = false, permissionGranted = true),
+                        )
+                    },
+                )
+            }
+        }
+        // The rationale's card and the viewfinder's window crossfade on the effects springs, as the steps of §6 "QR
+        // code scanner" do: once the camera is allowed, the card gives way to the window over the camera.
+        StateCrossfade(
+            targetState = state.camera,
+            modifier = Modifier.matchParentSize(),
+            contentAlignment = Alignment.Center,
+            contentKey = { it::class },
+            label = "cameraAccess",
+        ) { camera ->
+            when (camera) {
+                CameraAccess.Granted -> {
+                    Box(Modifier.fillMaxSize()) { ViewfinderFrame(state.purpose) }
                 }
-                ViewfinderFrame(state.purpose)
-            }
 
-            is CameraAccess.Rationale, CameraAccess.NoCamera -> {
-                CameraRationale(camera, onEvent, Modifier.align(Alignment.Center))
-            }
+                is CameraAccess.Rationale, CameraAccess.NoCamera -> {
+                    CameraRationale(camera, onEvent)
+                }
 
-            CameraAccess.Checking -> {}
+                CameraAccess.Checking -> {}
+            }
         }
         ScannerTopBar(
             torchAvailable = torchAvailable && state.camera == CameraAccess.Granted,
@@ -232,7 +249,12 @@ private fun ScannerTopBar(
                 Icon(painterResource(UiR.drawable.ic_close), contentDescription = close)
             }
         }
-        if (torchAvailable) {
+        // The torch fades in once the camera says it has one, and out as it goes.
+        AnimatedVisibility(
+            visible = torchAvailable,
+            enter = effectsEnter(MaterialTheme.motionScheme),
+            exit = effectsExit(MaterialTheme.motionScheme),
+        ) {
             val torch = stringResource(R.string.scanner_torch)
             WithTooltip(torch) {
                 FilledTonalIconToggleButton(
