@@ -52,6 +52,9 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
                         )
                         it.outputs.upToDateWhen { false }
                     }
+                    // Gradle gives test JVMs 512 MB. A tall golden (3200 dp at xxhdpi, about 47 MB a bitmap) is held
+                    // several times over while Roborazzi compares it, which ran feature:profile out of memory on CI.
+                    it.maxHeapSize = TEST_HEAP
                     // Roborazzi renders with Robolectric's native graphics (real Skia, fonts and shapes).
                     it.systemProperty("robolectric.graphicsMode", "NATIVE")
                     // Robolectric's Android 16 runtime sets FileDescriptor internals through jdk.internal.access.
@@ -90,3 +93,6 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
         }
     }
 }
+
+/** The heap of each test JVM: room for the tallest goldens, and four such JVMs beside the 4 GB Gradle daemon on CI. */
+private const val TEST_HEAP = "1536m"
