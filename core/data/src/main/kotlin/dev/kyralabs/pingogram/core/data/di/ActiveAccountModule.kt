@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -338,6 +339,9 @@ object ActiveAccountModule {
 
     @Provides
     fun checklistRepository(accounts: Accounts): ChecklistRepository = accounts.active.checklistRepository()
+
+    @Provides
+    fun chatActionBarRepository(accounts: Accounts): ChatActionBarRepository = accounts.active.chatActionBarRepository()
 
     @Provides
     fun suggestedPostRepository(accounts: Accounts): SuggestedPostRepository = accounts.active.suggestedPostRepository()

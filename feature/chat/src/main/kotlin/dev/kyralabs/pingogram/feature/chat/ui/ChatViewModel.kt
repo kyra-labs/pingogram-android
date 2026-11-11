@@ -1306,6 +1306,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
             ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
+            ChatEvent.ReportChat -> reporting.start(emptyList(), wholeChat = true)
             is ChatEvent.OpenMention -> mentions.open(event.target)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)

@@ -131,6 +131,9 @@ sealed interface ChatEvent {
     /** "Update Pingogram" on a message this version cannot show: open the latest release's page. */
     data object OpenUpdatePage : ChatEvent
 
+    /** The action bar's "Report": the report sheet for the whole chat, without messages. */
+    data object ReportChat : ChatEvent
+
     /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
     data class OpenMention(
         val target: MentionTarget,

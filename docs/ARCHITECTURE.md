@@ -472,6 +472,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   while it is frozen. `feature:settings`' `SettingsHomeViewModel` follows it into `SettingsHomeSummaries.freeze`, which
   Settings home shows as `FrozenAccountBanner` above the account card. A private chat's "Disable sharing"
   (`Chat.hasProtectedContent`) reaches the profile as `ProfileInfo.isSharingDisabled`, shown as information.
+- **Chat action bar** (`docs/audit/feature-gaps-telegram-2026.md`, "Safety"): `Chat.actionBar` (`ChatActionBar`,
+  td_api.tl `chat.action_bar`: block, report and add a new person who wrote first, with what Telegram tells of their
+  account; report spam; share the phone number; a join request; kept by `TdlibChatRepository` from
+  `updateChatActionBar`). `core:domain`'s `ChatActionBarRepository` (`TdlibChatActionBarRepository`, `core:data`,
+  account-scoped, no cache) dismisses it (`removeChatActionBar`) and shares the phone number (`sharePhoneNumber`).
+  `feature:chat`'s `ChatActionBarViewModel` (`actionbar/`, keyed by the chat, hoisted by `ConversationRoute`) maps it
+  with the other person's first name, blocks through `BlockListRepository` after a question kept in its saved state,
+  adds the contact through `ContactRepository.save`; `ChatActionBarHost` hands the card to the conversation through
+  `LocalChatActionBar`, so a change recomposes the card alone. "Report" is the conversation's own `ChatEvent.ReportChat`
+  (`ChatReporting.start` for the whole chat, `reportChat` without messages).
 - **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
   (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
   logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,

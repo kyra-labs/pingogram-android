@@ -779,4 +779,34 @@
     <string name="ai_style_close">Close</string>
     <string name="ai_style_not_found">Style not found</string>
     <string name="ai_style_try_again">Try again</string>
+    <!-- The chat action bar: what Telegram suggests about a chat someone new started. %1$s is the other person's first name. -->
+    <string name="action_bar_not_contact_named">%1$s isn\'t in your contacts</string>
+    <string name="action_bar_not_contact">Not in your contacts</string>
+    <string name="action_bar_spam">Someone you don\'t know added you here</string>
+    <string name="action_bar_share_phone_title_named">%1$s can\'t see your phone number</string>
+    <string name="action_bar_share_phone_title">This contact can\'t see your phone number</string>
+    <!-- Who asked to join which group or channel and when: %1$s the person, %2$s the group or channel, %3$s the day. -->
+    <string name="action_bar_join_group_named">%1$s asked to join %2$s on %3$s</string>
+    <string name="action_bar_join_channel_named">%1$s asked to join your channel %2$s on %3$s</string>
+    <string name="action_bar_join_group">Asked to join %1$s on %2$s</string>
+    <string name="action_bar_join_channel">Asked to join your channel %1$s on %2$s</string>
+    <!-- What Telegram tells of the account: %1$s is a month and year ("March 2024"). -->
+    <string name="action_bar_registered">Joined Telegram in %1$s</string>
+    <!-- %1$s is a country or region ("Germany"). -->
+    <string name="action_bar_phone_country">Phone number from %1$s</string>
+    <!-- %1$s is a day ("Oct 3, 2026"). -->
+    <string name="action_bar_name_changed">Changed their name on %1$s</string>
+    <string name="action_bar_photo_changed">Changed their photo on %1$s</string>
+    <string name="action_bar_block">Block</string>
+    <string name="action_bar_report">Report</string>
+    <string name="action_bar_add_contact">Add contact</string>
+    <string name="action_bar_share_phone">Share my phone number</string>
+    <string name="action_bar_close">Close</string>
+    <string name="action_bar_cancel">Cancel</string>
+    <string name="action_bar_block_title_named">Block %1$s?</string>
+    <string name="action_bar_block_title">Block this person?</string>
+    <string name="action_bar_block_text">They won\'t be able to message or call you. You can unblock them in Privacy and security.</string>
+    <string name="action_bar_blocked">Blocked</string>
+    <string name="action_bar_contact_added">Added to your contacts</string>
+    <string name="action_bar_phone_shared">Phone number shared</string>
 </resources>
