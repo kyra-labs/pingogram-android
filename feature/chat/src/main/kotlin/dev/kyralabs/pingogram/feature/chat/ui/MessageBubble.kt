@@ -70,7 +70,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
-import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
@@ -288,6 +288,7 @@ internal fun BubbleRowContent(
  * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
  * while there are some.
  */
+
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
     resources: Resources,
@@ -314,17 +315,7 @@ private fun bubbleActions(
             shareAction(bubble, shortcuts),
         ) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
-    val original =
-        if (bubble.translation is BubbleTranslation.Shown) {
-            listOf(
-                action(
-                    resources.getString(R.string.message_action_show_original),
-                    TranslationEvent.ShowOriginal(bubble.id),
-                ),
-            )
-        } else {
-            emptyList()
-        }
+    val original = listOfNotNull(originalTextAction(resources, bubble)?.let { (label, event) -> action(label, event) })
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)

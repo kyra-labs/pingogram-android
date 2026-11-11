@@ -4,9 +4,10 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 
 /**
- * Translating messages through Telegram (`REQUIREMENTS.md` FR-C3 "translate"), the only service that ever sees their
- * text (`REQUIREMENTS.md` §6.2). Telegram translates single messages for everyone, keeping the formatting for Telegram
- * Premium subscribers only, and suggests translating whole chats to Premium subscribers (`Chat.isTranslatable`).
+ * Translating and summarizing messages through Telegram (`REQUIREMENTS.md` FR-C3 "translate"), the only service that
+ * ever sees their text (`REQUIREMENTS.md` §6.2). Telegram translates single messages for everyone, keeping the
+ * formatting for Telegram Premium subscribers only, and suggests translating whole chats to Premium subscribers
+ * (`Chat.isTranslatable`).
  */
 interface TranslationRepository {
     /**
@@ -25,5 +26,17 @@ interface TranslationRepository {
         chatId: Long,
         messageId: Long,
         toLanguage: String,
+    ): Outcome<FormattedText>
+
+    /**
+     * Telegram's summary of message [messageId] of chat [chatId] (td_api.tl `summarizeMessage`, on Telegram's servers),
+     * offered where the message has a `Message.summaryLanguage`; in [toLanguage], a code of [targetLanguageOf], or in
+     * the message's own language where null. Each call is one request, made only on the user's request; it fails as
+     * [translateMessage] does.
+     */
+    suspend fun summarizeMessage(
+        chatId: Long,
+        messageId: Long,
+        toLanguage: String?,
     ): Outcome<FormattedText>
 }

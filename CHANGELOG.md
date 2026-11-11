@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
+  or yearly, for Telegram Premium subscribers.
+
+- "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
+  with "Show full text" to go back (in the reader's language where they don't read the post's).
 
 - "Message channel" in channels that take direct messages: it opens your private thread with the channel's admins.
   Where messages cost Telegram Stars, the button shows the price and says Pingogram can't pay yet.
@@ -23,6 +28,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   gains "Manage welcome messages".
 - Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
   its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
+  Members add their groups and channels ("Suggest a chat" where admins decide), mute the community and show it as one
+  entry in the chat list; admins answer the requests to add a chat and remove chats.
 - Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
   tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
   their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given
@@ -38,6 +45,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   its comments below.
 - Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
   and tap a story to play the album from there.
+- Profile music: a profile with songs shows a player below its header, which plays them one after another while the
+  profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
+  remove them.
+- Make a sticker: a photo's "More" menu in the media viewer makes it a sticker: crop it to a square, add text and
+  emoji, keep or drop the white outline, then add it to one of your sticker sets with an emoji, or start a new set
+  with it.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".

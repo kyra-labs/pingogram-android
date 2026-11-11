@@ -137,8 +137,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
@@ -787,7 +789,11 @@ class ChatViewModel internal constructor(
             inThread = topic != null,
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
-            translationAction = { translation.actionFor(it) },
+            translationAction = { message ->
+                // A bubble showing its summary offers its full text back, not a translation of the summary.
+                val summary = summaries.actionFor(message)
+                listOfNotNull(translation.actionFor(message).takeIf { summary != MessageAction.ShowFullText }, summary)
+            },
             onRetractVote = { polls.retract(it) },
             onStopPoll = { polls.askStop(it) },
         )
@@ -901,6 +907,16 @@ class ChatViewModel internal constructor(
                     ?.messages
                     ?.findById(id)
             },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    private val summaries =
+        ChatSummaries(
+            chatId = chatId,
+            repositories = translationRepositories,
+            history = history,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -1204,8 +1220,9 @@ class ChatViewModel internal constructor(
             .combine(messageChannel) { state, button -> state.withMessageChannel(button) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
-            .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
-            .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
+            .combine(translation.bubbles.combine(summaries.bubbles, ::withSummaries)) { state, translations ->
+                state.withTranslations(translations)
+            }.combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
@@ -1237,6 +1254,7 @@ class ChatViewModel internal constructor(
             autoDownloads.start()
             customEmojis.start(composer.text)
             translation.start()
+            summaries.start()
             giveaways.restore()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
@@ -1287,6 +1305,7 @@ class ChatViewModel internal constructor(
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
+            is SummaryEvent -> summaries.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
             is GiveawayEvent -> giveaways.onEvent(event)
@@ -1500,9 +1519,10 @@ class ChatViewModel internal constructor(
             composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
                 .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
-        val me = people.myUserId?.let(people.users::get)
-        val options = attachOptions(chat, user, people.myUserId, isPremium = me?.isPremium == true)
+        val premium = people.myUserId?.let(people.users::get)?.isPremium == true
+        val options = attachOptions(chat, user, people.myUserId, isPremium = premium)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
+        val bar = overlays.bar(chat, history, people)
         return ChatUiState(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
@@ -1511,7 +1531,7 @@ class ChatViewModel internal constructor(
             showsUpdateLink = !appInfo.isFromAppStore,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
+            composer = if (canWrite) composer.withBar(bar, options, premium) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
@@ -1718,8 +1738,14 @@ private data class ChatGroup(
 private fun ComposerUiState.Available.withBar(
     bar: ComposerBar?,
     attachOptions: ImmutableList<AttachOption>,
+    canRepeat: Boolean,
 ): ComposerUiState.Available =
-    copy(bar = bar, attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions)
+    copy(
+        bar = bar,
+        attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions,
+        // A Telegram Premium subscriber may repeat what they schedule; an edit schedules nothing.
+        canRepeat = canRepeat && canSchedule && bar !is ComposerBar.Edit,
+    )
 
 /** The state with [sendAs] on the composer, where the user can write and is not editing: an edit keeps its sender. */
 private fun ChatUiState.withSendAs(sendAs: SendAsChoice?): ChatUiState {

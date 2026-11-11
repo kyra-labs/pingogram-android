@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Community
+import dev.kyralabs.pingogram.core.domain.model.CommunityAddChatRequest
 import dev.kyralabs.pingogram.core.domain.model.CommunityChat
 import dev.kyralabs.pingogram.core.domain.model.CommunityDetails
 import dev.kyralabs.pingogram.core.domain.model.CommunityLimits
@@ -19,6 +20,8 @@ import dev.kyralabs.pingogram.core.domain.model.CommunityRole
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.canChangeInfo
+import dev.kyralabs.pingogram.core.domain.model.canEditChatList
+import dev.kyralabs.pingogram.core.domain.model.isJoined
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
@@ -26,8 +29,12 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.CommunityRoute
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
+import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.fullName
+import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.limitedToCodePoints
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +47,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -49,6 +57,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The page of community [communityId] (`docs/DESIGN_SYSTEM.md` §6 "Community page", the owner's board 19a) as
@@ -60,6 +69,11 @@ import javax.inject.Inject
  *   accept, and a refusal, are snackbars.
  * - **Renaming** (the owner, and administrators who may change its info) types the name in a dialog kept in the
  *   [SavedStateHandle]; **deleting** (the owner) asks first and closes the page once Telegram took it.
+ * - **Adding chats** is [CommunityAddChats]' sheet; **removing** one (those who may change the list) asks first.
+ * - **Requests** to add a chat (`getCommunityAddChatRequests`) are read for those who may change the list while the
+ *   full info counts some, again whenever the count changes, and each is answered on a tap.
+ * - **Mute** (`setCommunityNotificationSettings`) and the chat list's one entry (`toggleCommunityAreChatsCollapsed`)
+ *   are one request each; TDLib's updates then show the change.
  *
  * The page starts its work after the frame that composes it.
  */
@@ -105,14 +119,36 @@ class CommunityViewModel internal constructor(
     private val attempts = MutableStateFlow(0)
     private val joining = MutableStateFlow<Set<Long>>(emptySet())
     private val isBusy = MutableStateFlow(false)
+    private val answering = MutableStateFlow<Set<Long>>(emptySet())
+    private val requestsVersion = MutableStateFlow(0)
     private val dialog =
         MutableStateFlow(
             when {
-                savedStateHandle.contains(KEY_NAME) -> CommunityDialog.Rename(savedStateHandle[KEY_NAME] ?: "")
-                savedStateHandle.get<Boolean>(KEY_DELETE) == true -> CommunityDialog.Delete
-                else -> null
+                savedStateHandle.contains(KEY_NAME) -> {
+                    CommunityDialog.Rename(savedStateHandle[KEY_NAME] ?: "")
+                }
+
+                savedStateHandle.get<Boolean>(KEY_DELETE) == true -> {
+                    CommunityDialog.Delete
+                }
+
+                savedStateHandle.contains(KEY_REMOVE) -> {
+                    CommunityDialog.RemoveChat(
+                        savedStateHandle[KEY_REMOVE] ?: 0L,
+                        savedStateHandle[KEY_REMOVE_TITLE] ?: "",
+                    )
+                }
+
+                else -> {
+                    null
+                }
             },
         )
+
+    private val addChats =
+        CommunityAddChats(communityId, savedStateHandle, communityRepository, viewModelScope, ::itemOf) {
+            effectChannel.trySend(it)
+        }
 
     private val details: Flow<Outcome<CommunityDetails>?> =
         combine(started, attempts) { isStarted, _ -> isStarted }.flatMapLatest { isStarted ->
@@ -135,12 +171,66 @@ class CommunityViewModel internal constructor(
                 if (chats.isEmpty()) flowOf(emptyList()) else combine(chats.map(::itemOf)) { it.filterNotNull() }
             }
 
+    /** The requests to add a chat, for those who may change the list, while the full info counts some. */
+    private val requests: Flow<List<AddChatRequestItem>> =
+        combine(
+            communityRepository.community(communityId).map { it?.role?.canEditChatList == true }.distinctUntilChanged(),
+            details.map { (it as? Outcome.Success)?.value?.addChatRequestCount ?: 0 }.distinctUntilChanged(),
+            requestsVersion,
+        ) { canEdit, count, _ -> canEdit && count > 0 }
+            .flatMapLatest { load ->
+                if (load) {
+                    flow { emit(communityRepository.addChatRequests(communityId)) }
+                } else {
+                    flowOf(Outcome.Success(persistentListOf()))
+                }
+            }.flatMapLatest { loaded: Outcome<List<CommunityAddChatRequest>> ->
+                val list = (loaded as? Outcome.Success<List<CommunityAddChatRequest>>)?.value.orEmpty()
+                if (list.isEmpty()) {
+                    flowOf(emptyList())
+                } else {
+                    combine(
+                        list.map { request ->
+                            combine(
+                                itemOf(
+                                    CommunityChat(request.chatId, canViewHistory = true, isHidden = request.isHidden),
+                                ),
+                                userRepository.users.map { it[request.senderUserId] }.distinctUntilChanged(),
+                            ) { chat, sender ->
+                                chat?.let {
+                                    AddChatRequestItem(
+                                        chat = it,
+                                        senderName =
+                                            sender?.takeUnless { user -> user.isDeleted }?.fullName()
+                                                ?: UiText.resource(UiR.string.user_deleted_account),
+                                    )
+                                }
+                            }
+                        },
+                    ) { it.filterNotNull() }
+                }
+            }
+
+    private val chatIds: Flow<Set<Long>> =
+        details.map {
+            (it as? Outcome.Success)
+                ?.value
+                ?.chats
+                .orEmpty()
+                .map(CommunityChat::chatId)
+                .toSet()
+        }
+
     val uiState: StateFlow<CommunityUiState> =
         combine(communityRepository.community(communityId), details, chats, joining) { community, details, chats, j ->
             Sources(community, details, chats, j)
-        }.combine(dialog) { sources, dialog -> sources to dialog }
+        }.combine(requests) { sources, requests -> sources.copy(requests = requests) }
+            .combine(answering) { sources, answering -> sources.copy(answering = answering) }
+            .combine(dialog) { sources, dialog -> sources to dialog }
             .combine(isBusy) { (sources, dialog), busy -> sources.toUiState(dialog, busy) }
-            .flowOn(dispatcher)
+            .combine(addChats.sheet(chatIds)) { state, sheet ->
+                if (state is CommunityUiState.Content) state.copy(addChats = sheet) else state
+            }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), CommunityUiState.Loading)
 
     init {
@@ -158,6 +248,73 @@ class CommunityViewModel internal constructor(
             CommunityEvent.Delete -> openDialog(CommunityDialog.Delete)
             CommunityEvent.Confirm -> confirm()
             CommunityEvent.DismissDialog -> openDialog(null)
+            CommunityEvent.ToggleMute -> toggleMute()
+            CommunityEvent.ToggleCollapsed -> toggleCollapsed()
+            is CommunityEvent.RemoveChat -> openRemove(event.chatId)
+            is CommunityEvent.AnswerRequest -> answer(event.chatId, event.approve)
+            CommunityEvent.AddChats -> addChats.open()
+            is CommunityEvent.PickChat -> addChats.toggle(event.chatId)
+            is CommunityEvent.HiddenChanged -> addChats.setHidden(event.isHidden)
+            CommunityEvent.SendChats -> addChats.send()
+            CommunityEvent.RetryAddChats -> addChats.retry()
+            CommunityEvent.DismissAddChats -> addChats.close()
+        }
+    }
+
+    private fun content(): CommunityUiState.Content? = uiState.value as? CommunityUiState.Content
+
+    private fun toggleMute() {
+        val header = content()?.header ?: return
+        change { communityRepository.setMuted(communityId, !header.isMuted) }
+    }
+
+    private fun toggleCollapsed() {
+        val header = content()?.header ?: return
+        change(
+            if (header.areChatsCollapsed) R.string.community_expanded_notice else R.string.community_collapsed_notice,
+        ) { communityRepository.setCollapsed(communityId, !header.areChatsCollapsed) }
+    }
+
+    /** One request on a tap: a snackbar says [done] once Telegram took it, and the error where it refused. */
+    private fun change(
+        done: Int? = null,
+        request: suspend () -> Outcome<Unit>,
+    ) {
+        viewModelScope.launch {
+            when (val outcome = request()) {
+                is Outcome.Success -> done?.let(::notice)
+                is Outcome.Failure -> showError(outcome.error)
+            }
+        }
+    }
+
+    private fun openRemove(chatId: Long) {
+        val state = content()?.takeIf { it.header.canEditChatList } ?: return
+        state.chats.firstOrNull { it.chatId == chatId }?.let {
+            openDialog(
+                CommunityDialog.RemoveChat(chatId, it.title),
+            )
+        }
+    }
+
+    private fun answer(
+        chatId: Long,
+        approve: Boolean,
+    ) {
+        if (chatId in answering.value) return
+        answering.update { it + chatId }
+        viewModelScope.launch {
+            when (val outcome = communityRepository.processAddChatRequest(communityId, chatId, approve)) {
+                is Outcome.Success -> {
+                    notice(if (approve) R.string.community_request_approved else R.string.community_request_declined)
+                    requestsVersion.update { it + 1 }
+                }
+
+                is Outcome.Failure -> {
+                    showError(outcome.error)
+                }
+            }
+            answering.update { it - chatId }
         }
     }
 
@@ -264,9 +421,16 @@ class CommunityViewModel internal constructor(
                 savedStateHandle[KEY_DELETE] = true
             }
 
+            is CommunityDialog.RemoveChat -> {
+                savedStateHandle[KEY_REMOVE] = open.chatId
+                savedStateHandle[KEY_REMOVE_TITLE] = open.title
+            }
+
             null -> {
                 savedStateHandle.remove<String>(KEY_NAME)
                 savedStateHandle.remove<Boolean>(KEY_DELETE)
+                savedStateHandle.remove<Long>(KEY_REMOVE)
+                savedStateHandle.remove<String>(KEY_REMOVE_TITLE)
             }
         }
     }
@@ -280,12 +444,14 @@ class CommunityViewModel internal constructor(
                 when (open) {
                     is CommunityDialog.Rename -> communityRepository.rename(communityId, open.name)
                     CommunityDialog.Delete -> communityRepository.delete(communityId)
+                    is CommunityDialog.RemoveChat -> communityRepository.removeChat(communityId, open.chatId)
                 }
             isBusy.value = false
             when (outcome) {
                 is Outcome.Success -> {
                     openDialog(null)
                     if (open == CommunityDialog.Delete) effectChannel.trySend(CommunityEffect.Deleted)
+                    if (open is CommunityDialog.RemoveChat) notice(R.string.community_chat_removed)
                 }
 
                 is Outcome.Failure -> {
@@ -304,11 +470,13 @@ class CommunityViewModel internal constructor(
     }
 
     /** What the page is made from, as of one emission. */
-    private class Sources(
+    private data class Sources(
         val community: Community?,
         val details: Outcome<CommunityDetails>?,
         val chats: List<CommunityChatItem>,
         val joining: Set<Long>,
+        val requests: List<AddChatRequestItem> = emptyList(),
+        val answering: Set<Long> = emptySet(),
     ) {
         fun toUiState(
             dialog: CommunityDialog?,
@@ -325,10 +493,14 @@ class CommunityViewModel internal constructor(
 
                 is Outcome.Success -> {
                     CommunityUiState.Content(
-                        header = header(),
+                        header = header(details.value),
                         chats =
                             chats
                                 .map { if (it.chatId in joining) it.copy(membership = Membership.Joining) else it }
+                                .toImmutableList(),
+                        requests =
+                            requests
+                                .map { if (it.chat.chatId in answering) it.copy(isBusy = true) else it }
                                 .toImmutableList(),
                         dialog = dialog,
                         isBusy = isBusy,
@@ -336,7 +508,7 @@ class CommunityViewModel internal constructor(
                 }
             }
 
-        private fun header(): CommunityHeader {
+        private fun header(details: CommunityDetails): CommunityHeader {
             val role = community?.role
             return CommunityHeader(
                 id = community?.id ?: 0,
@@ -350,6 +522,10 @@ class CommunityViewModel internal constructor(
                     },
                 canRename = role?.canChangeInfo == true,
                 canDelete = role == CommunityRole.Owner,
+                isJoined = role?.isJoined == true,
+                canEditChatList = role?.canEditChatList == true,
+                isMuted = details.isMuted,
+                areChatsCollapsed = community?.areChatsCollapsed == true,
             )
         }
     }
@@ -358,6 +534,8 @@ class CommunityViewModel internal constructor(
         const val STOP_TIMEOUT_MILLIS = 5_000L
         const val KEY_NAME = "community.name"
         const val KEY_DELETE = "community.delete"
+        const val KEY_REMOVE = "community.remove"
+        const val KEY_REMOVE_TITLE = "community.remove.title"
 
         val LOADING: Outcome<CommunityDetails>? = null
     }

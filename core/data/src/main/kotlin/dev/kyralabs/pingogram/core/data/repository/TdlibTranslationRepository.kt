@@ -17,7 +17,7 @@ import javax.inject.Inject
  * so the text goes nowhere else (`REQUIREMENTS.md` §6.2). No cache: the conversation keeps what it translated while it
  * lives (`ChatTranslation`), and TDLib asks Telegram again for each request. Telegram translates for every user and
  * keeps the formatting for Telegram Premium subscribers only; whatever it refuses is the caller's error to show, never
- * worked around.
+ * worked around. Summaries (`summarizeMessage`) go the same way: Telegram summarizes the message it knows by its id.
  */
 @AccountScoped
 class TdlibTranslationRepository
@@ -46,6 +46,15 @@ class TdlibTranslationRepository
         ): Outcome<FormattedText> =
             client
                 .request(TdApi.TranslateMessageText(chatId, messageId, toLanguage, DEFAULT_TONE))
+                .map { it.toFormattedText() }
+
+        override suspend fun summarizeMessage(
+            chatId: Long,
+            messageId: Long,
+            toLanguage: String?,
+        ): Outcome<FormattedText> =
+            client
+                .request(TdApi.SummarizeMessage(chatId, messageId, toLanguage.orEmpty(), DEFAULT_TONE))
                 .map { it.toFormattedText() }
 
         private companion object {

@@ -175,7 +175,7 @@ private fun actionsOf(
 ): @Composable () -> Unit {
     val media = content.current.media
     val file = ItemFile(media.fileId, content.files[media.fileId])
-    return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, file, onEvent) }
+    return { ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, onEvent) }
 }
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
