@@ -1474,7 +1474,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
-  refused.
+  refused. A paused recording can be trimmed (`VoiceRecordingUiState.trim`, `VoiceEvent.Trim`, `TrimWaveform`): sent
+  trimmed, it is first cut by `VoiceNoteRepository.trimVoiceNote` (`core:data`'s `MediaVoiceNoteCutter`: the platform's
+  `MediaExtractor` and `MediaMuxer`, Ogg or MP4, nothing encoded again) into a new upload directory, its waveform the
+  kept part's levels.
 - Round video messages (FR-C5, `docs/adr/0032-round-video-messages.md`) go through the same `ChatRecorder`, whose
   record button a tap switches to video (`RecordModeUiState`, kept in `ComposerSettingsRepository.recordsVideoMessages`
   where the device has a camera): `feature:chat`'s `videonote/` package records them on `VideoNoteRecorder`
