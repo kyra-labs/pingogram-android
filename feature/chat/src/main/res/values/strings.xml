@@ -712,4 +712,10 @@
     <string name="chat_wave">Wave</string>
     <!-- Screen readers: the pane of stickers suggested above the composer for the emoji typed alone. -->
     <string name="panel_sticker_suggestions">Sticker suggestions</string>
+
+    <!-- The welcome pack a new member of a group sees (the owner's board 6). -->
+    <string name="welcome_pack_label">Welcome message · only you see this</string>
+    <string name="welcome_pack_title">Welcome message</string>
+    <string name="welcome_pack_got_it">Got it</string>
+    <string name="welcome_pack_open">Open the welcome message</string>
 </resources>

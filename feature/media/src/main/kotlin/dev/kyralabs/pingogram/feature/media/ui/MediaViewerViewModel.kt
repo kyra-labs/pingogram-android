@@ -17,9 +17,12 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.PowerSaving
+import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
@@ -213,10 +216,16 @@ class MediaViewerViewModel internal constructor(
             effectChannel.showError(error)
         }
 
+    /** The videos that were given where to start: a sender's start time applies once, and never over a return. */
+    private val startedAt = mutableSetOf<Long>()
+
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
             // Picture-in-picture gave this video back: it plays on from where the window left it.
-            pictureInPicture.takeReturn(chatId, route.messageId)?.let { startAt(it.messageId, it.positionMillis) }
+            pictureInPicture.takeReturn(chatId, route.messageId)?.let {
+                startedAt += it.messageId
+                startAt(it.messageId, it.positionMillis)
+            }
         }
 
     /** The last [files], whose states carry over while the next ones are subscribed; main thread only. */
@@ -576,10 +585,19 @@ class MediaViewerViewModel internal constructor(
             index,
             files,
             streamed = (target?.source as? PlaySource.Stream)?.fileId,
+            motion = (media as? ViewerMedia.Image)?.motion?.file?.id,
         )
+        startAtSendersTime(message)
         playback.show(target)
         sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
         deletion.focus(message.id)
+    }
+
+    /** A video the sender marked a start time in (td_api.tl `messageVideo.start_timestamp`) starts there, once. */
+    private fun startAtSendersTime(message: Message) {
+        val seconds = (message.content as? MessageContent.Video)?.startSeconds ?: return
+        if (seconds <= 0 || !startedAt.add(message.id)) return
+        playback.startAt(message.id, seconds * MILLIS_PER_SECOND)
     }
 
     /** The message of item [id]: its own, or for a rich message's media, that message. */
@@ -741,6 +759,16 @@ private fun SendChannel<MediaViewerEffect>.showError(error: DomainError) {
     if (error != DomainError.Silent) trySend(MediaViewerEffect.ShowError(error))
 }
 
+/** A live photo's motion once on the device, muted and looping as a GIF plays. */
+private fun motionTarget(
+    messageId: Long,
+    motion: Video,
+    files: Map<Int, FileState>,
+): PlayTarget? {
+    val path = (files[motion.file.id] as? FileState.Downloaded)?.path ?: return null
+    return PlayTarget(messageId, PlaySource.File(path), VideoKind.Gif, motion.duration * MILLIS_PER_SECOND)
+}
+
 /**
  * What the player plays for this media: a video that supports it as it streams, whether on the device or not, so the
  * target stays the same as it downloads (`docs/adr/0028-streaming-media.md`); another video's or a GIF's file once it
@@ -766,6 +794,10 @@ private fun ViewerMedia.playTarget(
 
         this is ViewerMedia.Gif -> {
             PlayTarget(messageId, downloaded, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
+        }
+
+        this is ViewerMedia.Image && motion != null -> {
+            motionTarget(messageId, motion, files)
         }
 
         else -> {
