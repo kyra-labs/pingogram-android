@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -122,10 +123,29 @@ private fun PhotoButtons(
     }
 }
 
-/** What [task] shows over the avatar, which [modifier] sizes the ring around. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/**
+ * What [task] shows over the avatar, which [modifier] sizes: the upload's ring around it, or the loading indicator
+ * while it is prepared or removed, the two crossfading on the effects springs as one turns into the other.
+ */
 @Composable
 private fun PhotoTaskProgress(
+    task: PhotoTask,
+    modifier: Modifier,
+) {
+    StateCrossfade(
+        targetState = task,
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+        // Within an upload the ring follows its progress; the crossfade is between kinds of work.
+        contentKey = { it::class },
+        label = "photoTask",
+    ) { shown -> PhotoTaskIndicator(shown, Modifier.fillMaxSize()) }
+}
+
+/** The ring of an upload's progress, which [modifier] sizes, or the contained loading indicator; nothing when idle. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PhotoTaskIndicator(
     task: PhotoTask,
     modifier: Modifier,
 ) {
@@ -144,6 +164,8 @@ private fun PhotoTaskProgress(
             modifier = modifier.semantics { contentDescription = description },
         )
     } else {
-        ContainedLoadingIndicator(Modifier.semantics { contentDescription = description })
+        Box(modifier, contentAlignment = Alignment.Center) {
+            ContainedLoadingIndicator(Modifier.semantics { contentDescription = description })
+        }
     }
 }
