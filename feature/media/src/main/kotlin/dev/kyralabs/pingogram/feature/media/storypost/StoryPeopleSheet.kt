@@ -60,6 +60,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -245,9 +247,13 @@ private fun Candidates(
     state: StoryPeopleUiState.Content,
     onToggle: (Long) -> Unit,
 ) {
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.fillMaxWidth()) {
         items(state.candidates, key = { it.userId }, contentType = { "person" }) { candidate ->
-            PersonRow(candidate, onToggle = { onToggle(candidate.userId) })
+            // People come and go as the search filters them, on the theme's item motion.
+            Box(Modifier.animateItem(this, motion)) {
+                PersonRow(candidate, onToggle = { onToggle(candidate.userId) })
+            }
         }
     }
 }

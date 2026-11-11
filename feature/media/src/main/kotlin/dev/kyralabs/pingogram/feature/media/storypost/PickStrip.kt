@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.storypost
 
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,9 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,18 +54,23 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.zIndex
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.formatDuration
+import kotlinx.coroutines.CoroutineScope
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * "In this story": the picked items in the order they will be posted, a keyed row of tiles (`large` corners, the
  * shown one ringed in `primary`), then those still being added and "Add more" while the post takes more. A tap shows an
  * item; a long press lifts it to drag it into its place, the others sliding aside on the motion scheme's spatial
- * spring, with a `SegmentTick` at each place it passes. Screen readers hear "Photo 2 of 4" and move or remove an item
- * through its custom actions.
+ * spring, with a `SegmentTick` at each place it passes; dropped, it settles into its place on the default spatial
+ * spring. Every tile comes, moves and goes on the theme's item motion. Screen readers hear "Photo 2 of 4" and move or
+ * remove an item through its custom actions.
  */
 @Composable
 internal fun PickStrip(
@@ -74,6 +80,7 @@ internal fun PickStrip(
 ) {
     val spacing = MaterialTheme.spacing
     val drag = remember { StripDrag() }
+    val motion = rememberItemMotion()
     val step = with(LocalDensity.current) { (MaterialTheme.sizes.panelSticker + spacing.small).toPx() }
     LazyRow(
         modifier = modifier,
@@ -89,16 +96,26 @@ internal fun PickStrip(
                 onEvent = onEvent,
                 modifier =
                     if (dragged) {
-                        Modifier.zIndex(1f).graphicsLayer { translationX = drag.offset.floatValue }
+                        // Under the finger, then settling into its place: its own offset, not the list's placement.
+                        Modifier.zIndex(1f).graphicsLayer { translationX = drag.offset.value }
                     } else {
-                        Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
-                    }.dragToReorder(drag, pick.key, TilePosition(index, state.items.size), step, onEvent),
+                        Modifier
+                    }.animateItem(this, motion, placement = !dragged)
+                        .dragToReorder(
+                            drag,
+                            pick.key,
+                            TilePosition(index, state.items.size),
+                            step,
+                            onEvent,
+                        ),
             )
         }
-        items(state.preparing) { PreparingTile() }
+        items(state.preparing, key = { PREPARING_KEY + it }, contentType = { PREPARING_KEY }) {
+            Box(Modifier.animateItem(this, motion)) { PreparingTile() }
+        }
         if (state.remaining > 0 && state.items.isNotEmpty()) {
             item(key = "add", contentType = "add") {
-                AddMoreTile(onClick = { onEvent(NewStoryEvent.AddMore) })
+                Box(Modifier.animateItem(this, motion)) { AddMoreTile(onClick = { onEvent(NewStoryEvent.AddMore) }) }
             }
         }
     }
@@ -110,16 +127,35 @@ internal data class TilePosition(
     val count: Int,
 )
 
-/** The tile being dragged, by its key, and how far it is from its place, in the layout's direction. */
+/**
+ * The tile being dragged or settling after a drop, by its key, and how far it is from its place, in the layout's
+ * direction: a [SettlingOffset], so a drop settles it into its place and a new drag takes it from there.
+ */
 @Stable
 private class StripDrag {
     var key by mutableStateOf<String?>(null)
-    val offset = mutableFloatStateOf(0f)
+    val offset = SettlingOffset()
+
+    /** A long press lifts the tile of [tileKey]: it takes over from a tile still settling. */
+    fun lift(tileKey: String) {
+        if (key != tileKey) offset.snapTo(0f) else offset.dragBy(0f)
+        key = tileKey
+    }
+
+    /** The finger let go: the tile settles into its place, then the list's placement takes it again. */
+    fun drop(
+        scope: CoroutineScope,
+        spec: AnimationSpec<Float>,
+    ) {
+        val dropped = key ?: return
+        offset.settle(scope, 0f, spec, onSettled = { if (key == dropped) key = null })
+    }
 }
 
 /**
  * Lifts the tile on a long press and drags it: past half a tile toward a neighbour it takes the neighbour's place
- * ([NewStoryEvent.Move]) and its offset is kept relative to the new place, so it stays under the finger.
+ * ([NewStoryEvent.Move]) and its offset is kept relative to the new place, so it stays under the finger. Dropped, it
+ * settles into its place on the default spatial spring.
  */
 @Composable
 private fun Modifier.dragToReorder(
@@ -131,19 +167,21 @@ private fun Modifier.dragToReorder(
 ): Modifier {
     val current by rememberUpdatedState(position)
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val settle by rememberUpdatedState(MaterialTheme.motionScheme.defaultSpatialSpec<Float>())
+    val drop = { drag.drop(scope, settle) }
     val sign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     return pointerInput(key, step, sign) {
         detectDragGesturesAfterLongPress(
             onDragStart = {
-                drag.key = key
-                drag.offset.floatValue = 0f
+                drag.lift(key)
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             },
-            onDragEnd = { drag.key = null },
-            onDragCancel = { drag.key = null },
+            onDragEnd = { drop() },
+            onDragCancel = { drop() },
             onDrag = { change, amount ->
                 change.consume()
-                drag.offset.floatValue += amount.x
+                drag.offset.dragBy(amount.x)
                 drag.passed(current, step * sign)?.let { to ->
                     onEvent(NewStoryEvent.Move(key, to))
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -161,7 +199,7 @@ private fun StripDrag.passed(
     position: TilePosition,
     step: Float,
 ): Int? {
-    val ratio = offset.floatValue / step
+    val ratio = offset.value / step
     val places =
         if (ratio > HALF) {
             1
@@ -172,7 +210,7 @@ private fun StripDrag.passed(
         }
     val to = position.index + places
     if (places == 0 || to !in 0 until position.count) return null
-    offset.floatValue -= places * step
+    offset.snapTo(offset.value - places * step)
     return to
 }
 
@@ -281,3 +319,6 @@ internal const val TILE_ASPECT_RATIO = 3f / 4f
 
 /** A dragged tile takes a neighbour's place past half a step. */
 private const val HALF = 0.5f
+
+/** The keys of the tiles of items still being added. */
+private const val PREPARING_KEY = "preparing:"
