@@ -4,6 +4,7 @@ import io.gitlab.arturbosch.detekt.api.Finding
 import io.gitlab.arturbosch.detekt.test.TestConfig
 import io.gitlab.arturbosch.detekt.test.assertThat
 import io.gitlab.arturbosch.detekt.test.lint
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -35,7 +36,7 @@ class PingogramMotionDefaultTest {
         val findings = lint(code)
 
         assertThat(findings).singleElement()
-        assertThat(findings.single().message).startsWith("$check: ")
+        assertTrue(findings.single().message.startsWith("$check: "), findings.single().message)
     }
 
     @ParameterizedTest(name = "{0} allows {1}")
@@ -52,7 +53,7 @@ class PingogramMotionDefaultTest {
         val findings = lint("val size = Modifier.animateContentSize()", path = APP_SOURCE)
 
         assertThat(findings).singleElement()
-        assertThat(findings.single().message).startsWith("contentSize: ")
+        assertTrue(findings.single().message.startsWith("contentSize: "), findings.single().message)
     }
 
     @Test
@@ -74,7 +75,7 @@ class PingogramMotionDefaultTest {
         listOf(CORE_SOURCE, APP_SOURCE).forEach { path ->
             val findings = lint(code, path = path)
             assertThat(findings).hasSize(EXPECTED_LITERALS)
-            assertThat(findings).allMatch { it.message.startsWith("literals: ") }
+            assertTrue(findings.all { it.message.startsWith("literals: ") }, findings.joinToString { it.message })
         }
     }
 
@@ -107,7 +108,7 @@ class PingogramMotionDefaultTest {
         val findings = lint(code, rule = rule)
 
         assertThat(findings).singleElement()
-        assertThat(findings.single().message).startsWith("contentSize: ")
+        assertTrue(findings.single().message.startsWith("contentSize: "), findings.single().message)
     }
 
     @Test
@@ -122,7 +123,7 @@ class PingogramMotionDefaultTest {
         val findings = lint(code, rule = rule)
 
         assertThat(findings).singleElement()
-        assertThat(findings.single().message).startsWith("items: ")
+        assertTrue(findings.single().message.startsWith("items: "), findings.single().message)
     }
 
     @Test
