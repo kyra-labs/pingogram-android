@@ -1151,7 +1151,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
   `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
   `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
-  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  in the conversation (`feature:chat`'s `birthday/`: the service item's `ChatItem.ServiceBirthday`, drawn by
+  `BirthdaySuggestionRow`). Its answers come from `BirthdaySuggestionsViewModel` (keyed by the chat, hoisted by
+  `ConversationRoute` and provided as `LocalBirthdaySuggestions`, so only the cards read them): accepted while the
+  user's birthday (`ProfileRepository.editableProfile`) is the one suggested, "Accept" being
+  `ProfileRepository.setBirthdate`; declined on the device (`core:domain`'s `DeclinedBirthdaysRepository`,
+  `DataStoreDeclinedBirthdaysRepository`, the settings file); the Birthday privacy setting's choice from
+  `PrivacyRepository`. Nothing is asked until a card shows. The birthday picker is `core:ui`'s
   `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
