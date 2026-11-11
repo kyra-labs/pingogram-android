@@ -496,6 +496,7 @@ class MessageContentMappersTest {
                 TdApi.MessageGiveaway::class.java,
                 TdApi.MessageGiveawayWinners::class.java,
                 TdApi.MessageUnsupported::class.java,
+                TdApi.MessageWidget::class.java,
             )
     }
 }

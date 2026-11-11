@@ -90,7 +90,8 @@ class TdlibCommunityRepositoryTest {
             assertEquals(ID, client.sentOf<TdApi.DeleteCommunity>().single().communityId)
         }
 
-    private fun fullInfo(vararg chats: TdApi.CommunityChat) = TdApi.CommunityFullInfo(null, arrayOf(*chats), 2, 0, 0, null)
+    private fun fullInfo(vararg chats: TdApi.CommunityChat) =
+        TdApi.CommunityFullInfo(null, arrayOf(*chats), 2, 0, 0, null)
 
     private companion object {
         const val ID = 77L

@@ -154,9 +154,8 @@ class TdlibChatSettingsRepository
             withSupergroup(chatId) { supergroupId ->
                 // Pingogram offers no sidebar (td_api.tl `has_forum_sidebar`): one another app turned on is kept while
                 // topics stay on without tabs, which TDLib requires to be apart.
-                val sidebar =
-                    isForum && !hasTabs &&
-                        (client.request(TdApi.GetSupergroup(supergroupId)) as? Outcome.Success)?.value?.hasForumSidebar == true
+                val current = client.request(TdApi.GetSupergroup(supergroupId)) as? Outcome.Success
+                val sidebar = isForum && !hasTabs && current?.value?.hasForumSidebar == true
                 client.request(TdApi.ToggleSupergroupIsForum(supergroupId, isForum, isForum && hasTabs, sidebar))
             }
 

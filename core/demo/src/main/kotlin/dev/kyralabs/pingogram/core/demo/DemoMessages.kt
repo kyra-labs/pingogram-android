@@ -352,7 +352,10 @@ internal class DemoMessages : DemoArea {
             }
         }
 
-    private fun quoteOf(quote: TdApi.InputTextQuote?) = quote?.let { TdApi.TextQuote(it.text, it.richTexts, it.position, true) }
+    private fun quoteOf(quote: TdApi.InputTextQuote?) =
+        quote?.let {
+            TdApi.TextQuote(it.text, it.richTexts, it.position, true)
+        }
 
     /** A message "forwarded" through `inputMessageForwarded` (a forward of one message with a caption kept or not). */
     private fun forwarded(

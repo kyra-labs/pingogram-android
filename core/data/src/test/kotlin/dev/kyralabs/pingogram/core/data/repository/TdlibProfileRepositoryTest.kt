@@ -293,7 +293,10 @@ class TdlibProfileRepositoryTest {
         runTest {
             client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/ada", 0, false)))
             val permanent = repository().profileLink()
-            client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/contact/abc", 3600, false)))
+            client.on(
+                TdApi.GetUserLink::class,
+                TdResult.Success(TdApi.UserLink("https://t.me/contact/abc", 3600, false)),
+            )
             val temporary = repository().profileLink()
 
             assertEquals(Outcome.Success(ProfileLink("https://t.me/ada", 0)), permanent)
