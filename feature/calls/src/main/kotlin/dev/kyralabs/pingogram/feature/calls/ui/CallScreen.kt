@@ -7,16 +7,10 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.calculateTargetValue
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
@@ -109,16 +103,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
+import dev.kyralabs.pingogram.core.ui.theme.effectsExit
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
 import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.AudioRouteType
@@ -164,10 +160,19 @@ fun CallScreen(
             is CallUiState.InCall -> {
                 if (pictureInPicture) {
                     PictureInPicture(state, video)
-                } else if (state.video.shows) {
-                    VideoInCall(state, onEvent, onMinimize, video)
                 } else {
-                    InCall(state, onEvent, onMinimize, onMessage)
+                    // A camera turning on or off crossfades the voice and video layouts on the effects springs.
+                    AnimatedContent(
+                        targetState = state.video.shows,
+                        transitionSpec = stateCrossfade(callMotionScheme()),
+                        label = "callLayout",
+                    ) { showsVideo ->
+                        if (showsVideo) {
+                            VideoInCall(state, onEvent, onMinimize, video)
+                        } else {
+                            InCall(state, onEvent, onMinimize, onMessage)
+                        }
+                    }
                 }
                 // Over the ended call, never in picture-in-picture, whose window has no room for it.
                 val rating = state.rating
@@ -218,15 +223,9 @@ private fun InCall(
                 name = state.person.name,
                 status = { CallStatus(state) },
                 subtitle = {
-                    AnimatedVisibility(
-                        visible = state.emojis.isNotEmpty(),
-                        enter =
-                            expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-                        exit =
-                            shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
-                    ) { KeyEmojis(state.emojis, keyExplanation(state.person.name)) }
+                    CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
+                        KeyEmojis(state.emojis, keyExplanation(state.person.name))
+                    }
                     SharingPill(state, onEvent)
                 },
             )
@@ -235,13 +234,9 @@ private fun InCall(
             CallAvatar(state.person, size, ringing = state.stage.isRinging(), large = state.isIncomingRinging)
         },
         controls = { docked ->
-            val fade = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-            val resize = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
             AnimatedContent(
                 targetState = state.controls(),
-                transitionSpec = {
-                    (fadeIn(fade) togetherWith fadeOut(fade)).using(SizeTransform { _, _ -> resize })
-                },
+                transitionSpec = stateCrossfade(callMotionScheme(), clip = true),
                 contentAlignment = Alignment.BottomCenter,
                 label = "callControls",
             ) { controls ->
@@ -372,8 +367,14 @@ private fun VideoInCall(
                 .fillMaxSize()
                 .semantics { contentDescription = description },
         )
-        if (state.video.remote == RemoteVideo.Paused) {
-            OverlayPill(Modifier.align(Alignment.Center)) {
+        // "Video paused" fades in and out over the video, as the overlay's other pills come and go.
+        AnimatedVisibility(
+            visible = state.video.remote == RemoteVideo.Paused,
+            modifier = Modifier.align(Alignment.Center),
+            enter = effectsEnter(callMotionScheme()),
+            exit = effectsExit(callMotionScheme()),
+        ) {
+            OverlayPill {
                 Text(stringResource(R.string.call_video_paused), style = MaterialTheme.typography.bodyMedium)
             }
         }
@@ -392,17 +393,9 @@ private fun VideoOverlay(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compactHeight = maxHeight < MaterialTheme.sizes.messageMenuMinWindowHeight
+        val selfWidth = minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION
         val selfView: @Composable (Modifier) -> Unit = { modifier ->
-            if (state.video.remote != RemoteVideo.Off && state.video.camera != null) {
-                SelfView(
-                    mirror = state.video.camera == CameraFacing.Front,
-                    canSwitch = state.video.canSwitchCamera,
-                    aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
-                    video = video,
-                    onSwitch = { onEvent(CallEvent.SwitchCamera) },
-                    modifier = modifier.width(minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION),
-                )
-            }
+            OverlaySelfView(state, onEvent, video, compactHeight, modifier.width(selfWidth))
         }
         val top: @Composable () -> Unit = {
             CallTopBar(state, onEvent, onMinimize, overlay = true)
@@ -446,6 +439,33 @@ private fun VideoOverlay(
                 }
             }
         }
+    }
+}
+
+/** The self-view card over the video: it fades in and out on the effects springs; its bounds do not animate (Q-15). */
+@Composable
+private fun OverlaySelfView(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+    video: CallVideo,
+    compactHeight: Boolean,
+    modifier: Modifier,
+) {
+    val camera = state.video.camera
+    val shownCamera = rememberLastNonNull(camera)
+    AnimatedVisibility(
+        visible = state.video.remote != RemoteVideo.Off && camera != null,
+        modifier = modifier,
+        enter = effectsEnter(callMotionScheme()),
+        exit = effectsExit(callMotionScheme()),
+    ) {
+        SelfView(
+            mirror = shownCamera == CameraFacing.Front,
+            canSwitch = state.video.canSwitchCamera,
+            aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
+            video = video,
+            onSwitch = { onEvent(CallEvent.SwitchCamera) },
+        )
     }
 }
 
@@ -514,15 +534,7 @@ private fun SharingPill(
     state: CallUiState.InCall,
     onEvent: (CallEvent) -> Unit,
 ) {
-    AnimatedVisibility(
-        visible = state.video.isSharingScreen,
-        enter =
-            expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-        exit =
-            shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
-    ) {
+    CallGrowingVisibility(visible = state.video.isSharingScreen) {
         ScreenSharingPill(
             onStop = { onEvent(CallEvent.ToggleScreenSharing) },
             modifier = Modifier.padding(top = MaterialTheme.spacing.small),
@@ -550,9 +562,11 @@ private fun VideoHeader(
                 )
             }
         }
-        if (state.emojis.isNotEmpty()) {
-            Spacer(Modifier.height(MaterialTheme.spacing.small))
-            KeyEmojis(state.emojis, keyExplanation(state.person.name))
+        CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.height(MaterialTheme.spacing.small))
+                KeyEmojis(state.emojis, keyExplanation(state.person.name))
+            }
         }
     }
 }
@@ -653,7 +667,7 @@ internal fun KeyEmojis(
             Spacer(Modifier.size(MaterialTheme.spacing.small))
             Text(emojis.joinToString(" "), style = MaterialTheme.typography.titleLarge)
         }
-        if (expanded) {
+        CallGrowingVisibility(visible = expanded) {
             Text(
                 explanation,
                 style = MaterialTheme.typography.bodyMedium,
