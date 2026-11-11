@@ -641,3 +641,9 @@ data object FeedbackRoute
  */
 @Serializable
 data object RecentCallsRoute
+
+/** The welcome messages of group [chatId] (the owner's board 20), pushed above its info page. */
+@Serializable
+data class WelcomeMessagesRoute(
+    val chatId: Long,
+)

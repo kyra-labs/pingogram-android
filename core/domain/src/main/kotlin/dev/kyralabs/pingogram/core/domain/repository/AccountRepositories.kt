@@ -146,6 +146,8 @@ interface AccountRepositories {
 
     fun communityRepository(): CommunityRepository
 
+    fun welcomeMessageRepository(): WelcomeMessageRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

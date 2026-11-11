@@ -101,6 +101,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -199,6 +200,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
  * Binds each account's repositories to their interfaces, in [AccountComponent] (`docs/adr/0031-multiple-accounts.md`).
@@ -416,6 +418,9 @@ interface RepositoryModule {
 
     @Binds
     fun communityRepository(repository: TdlibCommunityRepository): CommunityRepository
+
+    @Binds
+    fun welcomeMessageRepository(repository: TdlibWelcomeMessageRepository): WelcomeMessageRepository
 
     @Binds
     fun storyRepository(repository: TdlibStoryRepository): StoryRepository

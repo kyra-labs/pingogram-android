@@ -92,6 +92,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
  * The active account's repositories (`docs/adr/0031-multiple-accounts.md`), for everything outside [AccountComponent]:
@@ -321,6 +322,10 @@ object ActiveAccountModule {
 
     @Provides
     fun communityRepository(accounts: Accounts): CommunityRepository = accounts.active.communityRepository()
+
+    @Provides
+    fun welcomeMessageRepository(accounts: Accounts): WelcomeMessageRepository =
+        accounts.active.welcomeMessageRepository()
 
     @Provides
     fun storyRepository(accounts: Accounts): StoryRepository = accounts.active.storyRepository()

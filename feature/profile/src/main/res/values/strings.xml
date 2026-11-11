@@ -362,6 +362,7 @@
     <string name="chat_info_right_delete_stories">Delete stories of others</string>
     <string name="chat_info_right_manage_direct_messages">Manage direct messages</string>
     <string name="chat_info_right_manage_tags">Edit member tags</string>
+    <string name="chat_info_right_send_welcome_messages">Manage welcome messages</string>
     <string name="chat_info_right_promote_members">Add new admins</string>
     <string name="chat_info_right_anonymous">Remain anonymous</string>
 
@@ -713,4 +714,47 @@
     <string name="statistics_graph_empty">Not enough data for this chart</string>
     <string name="statistics_chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
     <string name="profile_personal_channel">Channel</string>
+    <!-- Welcome messages (the owner's board 20) -->
+    <string name="welcome_title">Welcome message</string>
+    <string name="welcome_loading">Loading the welcome messages</string>
+    <string name="welcome_error_title">Couldn\'t load the welcome messages</string>
+    <string name="welcome_switch_title">Welcome new members</string>
+    <string name="welcome_switch_text">Shown once to each person who joins</string>
+    <string name="welcome_messages">Messages</string>
+    <string name="welcome_count">%1$s of %2$s</string>
+    <string name="welcome_count_description">%1$s of %2$s welcome messages</string>
+    <string name="welcome_kind_text">Text</string>
+    <string name="welcome_kind_photo">Photo</string>
+    <string name="welcome_kind_photo_caption">Photo and caption</string>
+    <string name="welcome_kind_other">Can\'t be shown</string>
+    <string name="welcome_other_text">Another app set this message, of a kind Pingogram can\'t show yet. You can delete it.</string>
+    <string name="welcome_message_description">Message %1$d</string>
+    <string name="welcome_edit">Edit message %1$d</string>
+    <string name="welcome_delete">Delete message %1$d</string>
+    <string name="welcome_add">Add message</string>
+    <string name="welcome_limit">A group can have up to %1$s welcome messages.</string>
+    <string name="welcome_footer">New members see the welcome messages right after joining, once, and only they see them.</string>
+    <string name="welcome_preview_title">What new members see</string>
+    <string name="welcome_preview_label">Welcome message · only they see this</string>
+    <string name="welcome_photo">Photo</string>
+    <string name="welcome_delete_title">Delete message %1$d?</string>
+    <string name="welcome_delete_text">New members won\'t see it any more.</string>
+    <string name="welcome_delete_confirm">Delete</string>
+    <string name="welcome_turn_off_title">Stop welcoming new members?</string>
+    <string name="welcome_turn_off_text">This deletes every welcome message of the group.</string>
+    <string name="welcome_turn_off_confirm">Turn off</string>
+    <string name="welcome_turned_off">Welcome messages turned off</string>
+    <string name="welcome_added">Welcome message added</string>
+    <string name="welcome_saved">Welcome message saved</string>
+    <string name="welcome_new_title">New welcome message</string>
+    <string name="welcome_edit_title">Edit welcome message</string>
+    <string name="welcome_text_label">Message</string>
+    <string name="welcome_caption_label">Caption</string>
+    <string name="welcome_add_photo">Add photo</string>
+    <string name="welcome_change_photo">Change photo</string>
+    <string name="welcome_remove_photo">Remove photo</string>
+    <string name="welcome_preparing">Preparing the photo</string>
+    <string name="welcome_plain_text">Formatting isn\'t kept when you change the text.</string>
+    <string name="welcome_cancel">Cancel</string>
+    <string name="welcome_save">Save</string>
 </resources>

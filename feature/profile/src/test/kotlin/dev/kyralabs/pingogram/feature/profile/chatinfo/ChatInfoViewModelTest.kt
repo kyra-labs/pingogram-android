@@ -123,6 +123,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                     assertEquals(3, administratorCount)
                     assertEquals(2, bannedCount)
                     assertEquals(1, restrictedCount)
+                    assertFalse(canManageWelcomeMessages)
                 }
                 assertTrue(actions.canLeave && actions.canClearHistory)
                 assertFalse(actions.canDelete)
@@ -131,6 +132,17 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
             val preview = client.sentOf<TdApi.GetSupergroupMembers>().single()
             assertInstanceOf(TdApi.SupergroupMembersFilterRecent::class.java, preview.filter)
             assertEquals(ChatInfoViewModel.MEMBERS_PREVIEW, preview.limit)
+        }
+
+    @Test
+    fun `an administrator who may send welcome messages gets their row in a supergroup, not in a channel`() =
+        runTest {
+            val rights = TdApi.ChatAdministratorRights().also { it.canSendWelcomeMessages = true }
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, rights))
+            assertTrue(checkNotNull(viewModel().content.administration).canManageWelcomeMessages)
+
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, rights), isChannel = true)
+            assertFalse(viewModel().content.administration?.canManageWelcomeMessages == true)
         }
 
     @Test

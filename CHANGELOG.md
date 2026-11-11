@@ -11,6 +11,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,
+  a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a preview; the rights page
+  gains "Manage welcome messages".
 - Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
   its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
 - Group members show their tags after their names, administrators' in the accent color. Administrators who may edit

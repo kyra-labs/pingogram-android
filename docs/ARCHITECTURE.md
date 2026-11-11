@@ -1055,6 +1055,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `WelcomeMessageRepository` (`TdlibWelcomeMessageRepository`, no cache: TDLib keeps them and announces them with
+    `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
+    (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
+    `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (a94b83d) cannot reorder them.
+    `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
+    message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
+    for administrators with `AdministratorRights.canSendWelcomeMessages`.
   - `CommunityRepository` (`TdlibCommunityRepository`, a `TdlibUpdateCache`: TDLib announces each community only with
     `updateCommunity`): a community the account knows (`Community`: its name, photo and the user's `CommunityRole`), what
     it holds (`getCommunityFullInfo`, then `updateCommunityFullInfo` while collected: its chats, hidden ones for its

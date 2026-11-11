@@ -308,7 +308,8 @@ internal fun ChatMembersGroup(
 
 /**
  * What administrators manage, each row where their rights allow it (`docs/DESIGN_SYSTEM.md` §6): "Name and
- * description", "Permissions" (groups), "Administrators", "Invite links", "Restricted users", "Removed users" and, for
+ * description", "Permissions" (groups), "Administrators", "Invite links", "Welcome message" (supergroups), "Restricted
+ * users", "Removed users" and, for
  * supergroups and channels, "Boosts" (read only), the counts as supporting text. Each opens its page.
  */
 @Composable
@@ -359,6 +360,8 @@ internal fun ChatAdministrationGroup(
                 .takeIf { administration.canViewStatistics },
             page("links", R.string.chat_info_invite_links, ChatInfoPage.InviteLinks)
                 .takeIf { administration.canManageInviteLinks },
+            page("welcome", R.string.welcome_title, ChatInfoPage.WelcomeMessages)
+                .takeIf { administration.canManageWelcomeMessages },
             administration.joinRequestCount?.let { count ->
                 ProfileRow("requests") { shapes ->
                     ChatInfoActionRow(

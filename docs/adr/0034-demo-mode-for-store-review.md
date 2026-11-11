@@ -78,6 +78,8 @@ say that they need a Telegram account, or are not shown in the demo (owner to ch
 - **GIF search**: the demo names no GIF search bot, so the GIF tab shows the saved GIFs (none) without its search
   field. The sample bot shows inline results, buttons and a keyboard instead; Mini Apps, games and payments are not
   offered by Pingogram at all.
+- **Welcome messages** (a group's info page → Welcome message): the demo keeps none, so the page says it needs a
+  Telegram account; the rights page's "Manage welcome messages" switch works as the other rights do.
 - **Sponsored messages**: Telegram chooses them; the demo shows none rather than made-up advertisements.
 - **Notifications, push and the home screen widget**: they never see the demo (its account graph is kept apart).
 
