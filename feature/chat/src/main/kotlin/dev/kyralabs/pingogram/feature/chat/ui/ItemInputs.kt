@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.birthdayRecipientOf
 import dev.kyralabs.pingogram.feature.chat.ui.dates.hasRelativeDates
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 
@@ -82,7 +83,7 @@ internal fun ItemSources.inputsOf(
         date = date,
         kind = chatKind,
         sender = refOf(message.sender),
-        members = memberIdsOf(message.content).map(users::get),
+        members = (memberIdsOf(message.content) + birthdayRecipientOf(message)).map(users::get),
         chats = chatIdsOf(message.content).map(::chatRefOf),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
@@ -166,6 +167,7 @@ private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
  * The users the content names besides its sender, whose names it shows: a service message's member, who ticked a
  * checklist's tasks, a giveaway's winners.
  */
+
 internal fun memberIdsOf(content: MessageContent): List<Long> =
     when (content) {
         is MessageContent.Service -> {

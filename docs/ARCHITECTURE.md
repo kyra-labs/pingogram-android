@@ -478,6 +478,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
   again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
   pushed above Privacy and security.
+- **Log in with Telegram** (a website or app logging in with the account): `core:domain`'s `OauthLoginRepository`
+  (`TdlibOauthLoginRepository`, `core:data`, account-scoped, no cache) follows the requests Telegram announces
+  (`updateNewOauthRequest`), reads one (`getOauthLinkInfo`, as a link from outside the app), checks the code the website
+  shows (`checkOauthRequestMatchCode`), accepts with only what the user allowed (`acceptOauthRequest`, never a TON wallet)
+  and declines (`declineOauthRequest`). A link (`internalLinkTypeOauth`) resolves to `LinkTarget.OauthLogin`, which
+  `:app`'s `LinkViewModel` opens only from another app (a tapped one offers the browser, as TDLib asks), and which it
+  opens for every announced request too. `feature:settings`' `OauthLoginRoute` (`oauthLoginSheet`, a dialog destination
+  registered in `:app`'s `NavHost`, `OauthLoginViewModel`: the code and the switches in saved state) sends nothing before
+  "Allow", which checks the code and accepts; closing it unanswered declines the request in the app's scope. Once
+  allowed, the website is among the connected websites (`ConnectedWebsiteRepository`).
 - **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
   (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
   account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds
@@ -702,6 +712,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   language where they do not read the post's, else its own) answers only that tap, and the summary reaches the bubble as
   a `BubbleTranslation.Summary` over any translation (`withSummaries`); the messages chosen are in the saved state and
   summarized again after process death or an edit, the summaries kept in memory for the view model's life.
+- **AI text editor** (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): `core:domain`'s `AiTextRepository`
+  (`TdlibAiTextRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of `updateTextCompositionStyles`) fixes
+  (`fixTextWithAi`, with its `DiffText`), rewrites and translates (`composeTextWithAi`, the style, the language among those
+  of message translation, `TelegramLanguages.kt`, and emoji), finds, adds and removes shared custom styles
+  (`searchTextCompositionStyle`, `addTextCompositionStyle`, `removeTextCompositionStyle`) and reads how many may be added
+  (option `added_text_composition_style_count_max`); `AICOMPOSE_FLOOD_PREMIUM` and `TONES_SAVED_TOO_MANY` are
+  `DomainError.AiEditLimitReached` and `TooManyTextStyles`. `AiEditorConsentRepository` (`DataStoreAiEditorConsentRepository`,
+  the settings file) keeps the one-time explanation read. `feature:chat`'s `ai/`: `AiEditorViewModel` (keyed by the chat,
+  hoisted by `ConversationRoute`; never in a secret chat) holds the sheet, sends the text only on the action's tap, and hands
+  the result to `AiEditorHost`, which puts it in the composer's `ComposerText` with "Undo"; `LocalAiEditor` offers it to the
+  main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
+  (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
+  `TextStyleViewModel`), which adds the style only on a tap.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
@@ -1151,7 +1174,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
   `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
   `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
-  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  in the conversation (`feature:chat`'s `birthday/`: the service item's `ChatItem.ServiceBirthday`, drawn by
+  `BirthdaySuggestionRow`). Its answers come from `BirthdaySuggestionsViewModel` (keyed by the chat, hoisted by
+  `ConversationRoute` and provided as `LocalBirthdaySuggestions`, so only the cards read them): accepted while the
+  user's birthday (`ProfileRepository.editableProfile`) is the one suggested, "Accept" being
+  `ProfileRepository.setBirthdate`; declined on the device (`core:domain`'s `DeclinedBirthdaysRepository`,
+  `DataStoreDeclinedBirthdaysRepository`, the settings file); the Birthday privacy setting's choice from
+  `PrivacyRepository`. Nothing is asked until a card shows. The birthday picker is `core:ui`'s
   `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
@@ -1247,7 +1276,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     which `chartOf` reads with the platform's `org.json` into a `Chart` (x values, named series, line, bar or area,
     stacked, shares of the whole). `GroupDetails.canGetStatistics` says whether the user may ask. `feature:profile`'s
     `ChatStatisticsRoute(chatId)` (`StatisticsViewModel`: the tokens' graphs three at a time, numbers and days formatted
-    in the user's language by `StatisticsFormat`) draws them on a canvas (`StatisticsChart`), no chart library.
+    in the user's language by `StatisticsFormat`) draws them on a canvas with `core:ui`'s `StatisticsChart` (`chart/`, its
+    `ChartUi` made by `ChartFormat`, there so other features can draw charts too), no chart library. A poll's votes over time are
+    `pollVotes` (`getPollVoteStatistics`, where `MessageProperties.canGetPollVoteStatistics`), which
+    `PollStatisticsRoute(chatId, messageId)` (`PollStatisticsViewModel`: the totals from the message, the graph by its
+    token where Telegram gives one) draws with the same chart; `:app` registers it (`pollStatisticsScreen`), and the
+    poll's message actions open it with `navigateToPollStatistics`.
 
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
@@ -1371,7 +1405,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MessageContent.Video.startSeconds` (`messageVideo.start_timestamp`). The media viewer's `ViewerMedia.Image` carries
   the motion, which `MediaDownloads` downloads after the still (`motion`) and `MediaPlayback` plays as a GIF once on the
   device; `MediaViewerViewModel` starts a video at its sender's time once (`startAtSendersTime`), never over
-  picture-in-picture's return.
+  picture-in-picture's return. A message link's `?t=` (`messageLinkInfo.media_timestamp`, of a video only) comes as
+  `LinkTarget.Chat.videoSeconds`; `:app`'s `openLinkedChat` opens the chat at the message, then the viewer above it with
+  `MediaViewerRoute.startSeconds`, which wins over the sender's time.
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

@@ -64,6 +64,8 @@
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
     <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
+    <string name="error_ai_edit_limit">You\'ve used your free AI edits for now. Telegram Premium allows more.</string>
+    <string name="error_too_many_text_styles">You\'ve added as many custom styles as Telegram allows.</string>
     <string name="error_not_available_in_demo">This needs a Telegram account. The demo can\'t do it.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
@@ -398,4 +400,6 @@
     <string name="birthday_suggestion_accept">Accept</string>
     <string name="birthday_suggestion_accepted">Added to your profile</string>
     <string name="birthday_suggestion_declined">Declined</string>
+    <!-- A statistics chart for screen readers: a series' name, first, last and highest values. -->
+    <string name="chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
 </resources>

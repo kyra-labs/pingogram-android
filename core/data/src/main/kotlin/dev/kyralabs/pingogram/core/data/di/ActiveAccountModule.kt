@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
+import dev.kyralabs.pingogram.core.domain.repository.AiTextRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -63,6 +64,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
@@ -285,6 +287,9 @@ object ActiveAccountModule {
     fun accountFreezeRepository(accounts: Accounts): AccountFreezeRepository = accounts.active.accountFreezeRepository()
 
     @Provides
+    fun oauthLoginRepository(accounts: Accounts): OauthLoginRepository = accounts.active.oauthLoginRepository()
+
+    @Provides
     fun quickReactionRepository(accounts: Accounts): QuickReactionRepository = accounts.active.quickReactionRepository()
 
     @Provides
@@ -350,6 +355,9 @@ object ActiveAccountModule {
 
     @Provides
     fun accentColorRepository(accounts: Accounts): AccentColorRepository = accounts.active.accentColorRepository()
+
+    @Provides
+    fun aiTextRepository(accounts: Accounts): AiTextRepository = accounts.active.aiTextRepository()
 
     @Provides
     fun stickerSetCreationRepository(accounts: Accounts): StickerSetCreationRepository =

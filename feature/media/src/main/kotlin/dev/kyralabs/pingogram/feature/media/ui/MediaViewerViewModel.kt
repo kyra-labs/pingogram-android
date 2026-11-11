@@ -216,15 +216,25 @@ class MediaViewerViewModel internal constructor(
             effectChannel.showError(error)
         }
 
-    /** The videos that were given where to start: a sender's start time applies once, and never over a return. */
+    /**
+     * The videos that were given where to start: a link's or a sender's start time applies once, and never over a
+     * return.
+     */
     private val startedAt = mutableSetOf<Long>()
 
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
             // Picture-in-picture gave this video back: it plays on from where the window left it.
-            pictureInPicture.takeReturn(chatId, route.messageId)?.let {
-                startedAt += it.messageId
-                startAt(it.messageId, it.positionMillis)
+            val returned = pictureInPicture.takeReturn(chatId, route.messageId)
+            if (returned != null) {
+                startedAt += returned.messageId
+                startAt(returned.messageId, returned.positionMillis)
+            } else {
+                // A message link's `?t=` wins over the time the sender marked.
+                route.startSeconds?.takeIf { it > 0 }?.let { seconds ->
+                    startedAt += route.messageId
+                    startAt(route.messageId, seconds * MILLIS_PER_SECOND)
+                }
             }
         }
 

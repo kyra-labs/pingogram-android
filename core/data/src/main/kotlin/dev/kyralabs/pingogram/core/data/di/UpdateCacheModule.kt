@@ -7,6 +7,7 @@ import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -80,6 +81,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
+
+    /** TDLib announces the AI editor's styles only with `updateTextCompositionStyles`, once per start. */
+    @Binds
+    @IntoSet
+    fun aiTextCache(repository: TdlibAiTextRepository): TdlibUpdateCache
 
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds

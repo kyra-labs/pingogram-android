@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -425,10 +426,28 @@ sealed interface ChatItem {
          * (`docs/DESIGN_SYSTEM.md` §13.6).
          */
         val canWave: Boolean = false,
+        /**
+         * A birthday suggestion (td_api.tl `messageSuggestBirthdate`): shown as its card (the owner's board 16b) in
+         * place of the pill, with "Accept" and "Decline" where it is the user's to answer.
+         */
+        val birthday: ServiceBirthday? = null,
     ) : ChatItem {
         override val key: Any get() = id
 
         override fun toString() = "Service(id=$id, …)"
+    }
+
+    /**
+     * What a birthday suggestion's card shows of its message: the [birthdate] suggested, the other person's [name]
+     * (who suggested it, or for one the user sent, whom to), and whether the user sent it ([outgoing]).
+     */
+    @Immutable
+    data class ServiceBirthday(
+        val birthdate: Birthdate,
+        val name: UiText,
+        val outgoing: Boolean,
+    ) {
+        override fun toString() = "ServiceBirthday(outgoing=$outgoing, …)"
     }
 
     /** The first message of a day follows this: "Today", "Yesterday", "Monday, March 17". */

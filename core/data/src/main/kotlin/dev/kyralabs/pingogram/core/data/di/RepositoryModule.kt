@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -72,6 +73,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkUsageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibOauthLoginRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPasskeyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPersonalChannelRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeRepository
@@ -114,6 +116,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
+import dev.kyralabs.pingogram.core.domain.repository.AiTextRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -177,6 +180,7 @@ import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
@@ -393,6 +397,9 @@ interface RepositoryModule {
     fun accountFreezeRepository(repository: TdlibAccountFreezeRepository): AccountFreezeRepository
 
     @Binds
+    fun oauthLoginRepository(repository: TdlibOauthLoginRepository): OauthLoginRepository
+
+    @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
 
     @Binds
@@ -454,6 +461,9 @@ interface RepositoryModule {
 
     @Binds
     fun accentColorRepository(repository: TdlibAccentColorRepository): AccentColorRepository
+
+    @Binds
+    fun aiTextRepository(repository: TdlibAiTextRepository): AiTextRepository
 
     @Binds
     fun stickerSetCreationRepository(repository: TdlibStickerSetCreationRepository): StickerSetCreationRepository

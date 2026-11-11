@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbum
 import dev.kyralabs.pingogram.feature.media.profilemusic.ProfileMusicSection
 import dev.kyralabs.pingogram.feature.media.storyalbum.StoryAlbumsSection
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
+import dev.kyralabs.pingogram.feature.profile.navigation.pollStatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
 
@@ -93,6 +94,11 @@ internal fun NavGraphBuilder.chatInfo(
         },
         onSaved = { navController.popBackStackAfterGroupChange() },
     )
+}
+
+/** A poll's statistics, pushed above the conversation (its entry is in the poll's message actions). */
+internal fun NavGraphBuilder.pollStatistics(navController: NavHostController) {
+    pollStatisticsScreen(onBack = { navController.popBackStack() })
 }
 
 /** Pushes the info page of group or channel [chatId], unless it is shown already. */

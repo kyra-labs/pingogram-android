@@ -116,6 +116,8 @@ interface AccountRepositories {
 
     fun accountFreezeRepository(): AccountFreezeRepository
 
+    fun oauthLoginRepository(): OauthLoginRepository
+
     fun quickReactionRepository(): QuickReactionRepository
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
@@ -163,6 +165,8 @@ interface AccountRepositories {
     fun stickerMakerRepository(): StickerMakerRepository
 
     fun accentColorRepository(): AccentColorRepository
+
+    fun aiTextRepository(): AiTextRepository
 
     fun storyRepository(): StoryRepository
 
