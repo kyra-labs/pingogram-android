@@ -109,7 +109,7 @@ private fun RepeatMenu(
                     text = { Text(label(choice)) },
                     modifier = Modifier.semantics { selected = choice == period },
                     shape = MenuDefaults.itemShape(index, choices.size).shape,
-                    trailingIcon = {
+                    trailingContent = {
                         if (choice == period) {
                             Icon(
                                 painter = painterResource(UiR.drawable.ic_check),

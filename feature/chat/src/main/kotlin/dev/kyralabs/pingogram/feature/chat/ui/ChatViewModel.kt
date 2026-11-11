@@ -1469,6 +1469,7 @@ class ChatViewModel internal constructor(
         val premium = people.myUserId?.let(people.users::get)?.isPremium == true
         val options = attachOptions(chat, user, people.myUserId, isPremium = premium)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
+        val bar = overlays.bar(chat, history, people)
         return ChatUiState(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
@@ -1476,7 +1477,7 @@ class ChatViewModel internal constructor(
             unreadMentionCount = chat.unreadMentionCount,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options, premium) else composer,
+            composer = if (canWrite) composer.withBar(bar, options, premium) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
