@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Log in with Telegram: a website or app that asks to log in with your account opens a sheet that says who asks, from
+  where and what it gets, asks for the code the website shows where Telegram wants it, and shares your phone number
+  only if you turn it on. Nothing is sent before "Allow"; the website is then listed in Privacy and security → Websites.
 - Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your
   profile and "Decline".
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
@@ -20,6 +23,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   saying how many are left and, once they are used, when the next one comes.
 - Live photos: photos taken as iOS Live Photos or Android Motion Photos say "LIVE" in the chat and play their motion
   in the media viewer. Videos sent with a start time open there.
+- Message links with a time (`t.me/channel/7?t=83`) open the chat at the video and play it from that time.
 - A channel's direct messages, for its administrators: who wrote, with search, All / Unread / Paid filters and unread
   counts; a long press marks a conversation read or unread, and a tap opens it.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,

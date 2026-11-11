@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Videos that start where their sender marked (td_api.tl `messageVideo.start_timestamp`) and live photos, whose motion
- * (`messagePhoto.video`) plays over the still as a GIF does.
+ * Videos that start where their sender marked (td_api.tl `messageVideo.start_timestamp`) or a message link's `?t=`
+ * says, and live photos, whose motion (`messagePhoto.video`) plays over the still as a GIF does.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MediaViewerMotionTest : MediaViewerViewModelHarness() {
@@ -63,6 +63,17 @@ class MediaViewerMotionTest : MediaViewerViewModelHarness() {
             send(viewModel, MediaViewerEvent.PageSettled(2))
 
             assertEquals(1, player.calls.count { it.startsWith("seek:") })
+        }
+
+    @Test
+    fun `a message link's time wins over the sender's start time`() =
+        runViewModelTest {
+            media.serve(listOf(message(1), message(2, videoContent(2).copy(startSeconds = 83))))
+            files.setFile(fullFileId(2), FileState.Downloaded(videoPath, 12_000_000))
+
+            send(viewModel(messageId = 2, startSeconds = 12), MediaViewerEvent.Started)
+
+            assertEquals(listOf("play:$videoPath:Video", "seek:12000"), player.calls)
         }
 
     @Test
