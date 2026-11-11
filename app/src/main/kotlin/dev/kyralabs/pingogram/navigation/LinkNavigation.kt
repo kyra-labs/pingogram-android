@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
+import dev.kyralabs.pingogram.core.navigation.OauthLoginRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
@@ -76,8 +77,9 @@ internal fun OpenLinkEffect(
  *   (`StickerSetRoute`, a dialog destination of the settings pages' graph); a **QR code
  *   login** the page that asks before logging the device in (`QrLoginRoute`); a **boost** link the chat's boosts
  *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`); a **proxy** the sheet that asks before
- *   connecting through it (`ProxyLinkRoute`, a dialog destination of the settings pages' graph). Each of them changes
- *   nothing by itself.
+ *   connecting through it (`ProxyLinkRoute`, a dialog destination of the settings pages' graph); a request to **log in
+ *   with Telegram**, handed over by another app, the sheet that asks before anything is shared (`OauthLoginRoute`, the
+ *   same). Each of them changes nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
  *   goes to, never sent by itself.
  * - A **group call's** link (`t.me/call/…`) opens the voice chat's screen through [onJoinGroupCall], which asks before
@@ -109,6 +111,7 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }
         is LinkTarget.ProxyServer -> navigate(target.proxy.linkRoute()) { launchSingleTop = true }
+        is LinkTarget.OauthLogin -> navigate(OauthLoginRoute(target.url)) { launchSingleTop = true }
         is LinkTarget.MessageDraft -> onShare(SharedContent(text = target.text))
         else -> return target is LinkTarget.GroupCall && onJoinGroupCall?.invoke(target.link) != null
     }

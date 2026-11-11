@@ -654,6 +654,17 @@ data class QrLoginRoute(
     override fun toString() = "QrLoginRoute(…)"
 }
 
+/**
+ * A request to log in to a website or an app with the Telegram account ("Log in with Telegram", `:feature:settings`):
+ * a dialog destination whose sheet asks before anything is shared. `toString()` leaves out the request's link.
+ */
+@Serializable
+data class OauthLoginRoute(
+    val url: String,
+) {
+    override fun toString() = "OauthLoginRoute(…)"
+}
+
 /** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */
 @Serializable
 data object MyQrCodeRoute

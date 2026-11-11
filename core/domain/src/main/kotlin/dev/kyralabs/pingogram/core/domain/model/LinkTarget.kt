@@ -135,6 +135,18 @@ sealed interface LinkTarget {
         override fun toString() = "GroupCall(…)"
     }
 
+    /**
+     * A request to log in to a website or an app with the Telegram account ([url], td_api.tl `internalLinkTypeOauth`,
+     * "Log in with Telegram"): its sheet asks before anything is shared. TDLib says to act on it only when another app
+     * handed it over; a tap inside Pingogram offers the browser instead.
+     */
+    data class OauthLogin(
+        val url: String,
+    ) : LinkTarget {
+        // Whoever has the link can see the request.
+        override fun toString() = "OauthLogin(…)"
+    }
+
     /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */
     data object MyQrCode : LinkTarget
 
