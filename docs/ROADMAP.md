@@ -164,6 +164,7 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 ## Backlog (unscheduled)
 
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
-reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion.
+reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion, composing rich messages
+(the rich text editor, owner 2026-11-11: Pingogram shows them, `docs/audit/feature-gaps-telegram-2026.md`).
 
 Features other clients have, with verdicts and priorities: `docs/audit/feature-gaps-octogram.md` (2026-10-24).
