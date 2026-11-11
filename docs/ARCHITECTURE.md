@@ -631,6 +631,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   chats of a page (`UserRepository`, `ChatRepository`) before it shows, words the times as the conversation does
   (`ChatTimeFormatter.dayAndTime`), and keeps the request and the selected tab in its saved state, loading that tab again
   after process death. A row opens the profile through the route's `onOpenProfile`, a channel through `onOpenChatInfo`.
+  Where TDLib allows it (`MessageProperties.canDeleteReactions`, carried in the request), the reactions' rows remove a
+  sender's reaction to the message (`MessageInteractionRepository.removeReactions`, `deleteMessageReactionsFromSender`)
+  or all their recent ones in the chat (`removeAllRecentReactions`, `deleteAllRecentMessageReactionsFromSender`):
+  `ReactionRemoval`, a part of the view model, keeps the question in the saved state, and on success drops the
+  sender's rows from the loaded reactions' tabs.
 - **Scheduled messages** (FR-C5): sending with a time (`SendOptions.scheduledAt`) holds a message on Telegram's servers,
   outside the history (`HistoryCache` leaves every message with a scheduling state out). `core:domain`'s
   `ScheduledMessageRepository` (`TdlibScheduledMessageRepository`, `core:data`, no cache, as the pinned messages) loads a
