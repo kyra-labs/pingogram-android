@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.ui
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.indication
@@ -38,6 +37,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
@@ -50,6 +50,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.ui.component.animateColorProducer
 import dev.kyralabs.pingogram.core.ui.component.floatingNavigationBarHeight
 import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -232,8 +233,9 @@ private fun NavigationTabs(
 /**
  * One tab: a pill-shaped `Role.Tab` in [selectedColors] (pill, content) whose icon slides in when it is selected,
  * and whose indicator grows along one axis from the tab's center on the motion scheme's fast spatial spring while it
- * fades in on the default effects spring, as Material's navigation indicator does. The indicator's width and alpha are
- * read in the draw phase and the icon's width in the layout phase ([revealHorizontally]), so none of them recomposes.
+ * fades in on the default effects spring, as Material's navigation indicator does. The indicator's width and alpha and
+ * the content's color are read in the draw phase, and the icon's width and the selected tab's extra room in the layout
+ * phase ([revealHorizontally]), so none of them recomposes.
  */
 @Composable
 private fun NavigationTab(
@@ -250,10 +252,11 @@ private fun NavigationTab(
     val (indicatorColor, selectedContent) = selectedColors
     val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
     val indicatorWidth = animateFloatAsState(if (selected) 1f else 0f, motionScheme.fastSpatialSpec())
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) selectedContent else LocalContentColor.current,
-        animationSpec = motionScheme.defaultEffectsSpec(),
-    )
+    val contentColor =
+        animateColorProducer(
+            targetValue = if (selected) selectedContent else LocalContentColor.current,
+            animationSpec = motionScheme.defaultEffectsSpec(),
+        )
     // The tab takes touches over the pill's whole height (56 dp, `REQUIREMENTS.md` §6.3), its indicator and ripple
     // drawn inset by the pill's padding.
     val interactionSource = remember { MutableInteractionSource() }
@@ -270,27 +273,13 @@ private fun NavigationTab(
                 .clip(CircleShape)
                 .indication(interactionSource, ripple())
                 .tabIndicator(indicatorColor, width = { indicatorWidth.value }, alpha = { indicatorAlpha.value })
-                .padding(horizontal = if (selected) spacing.large else spacing.medium),
+                .padding(horizontal = spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val iconShown = selected || !showLabel
-        val iconWidth = animateFloatAsState(if (iconShown) 1f else 0f, motionScheme.fastSpatialSpec())
-        val iconAlpha = animateFloatAsState(if (iconShown) 1f else 0f, motionScheme.fastEffectsSpec())
-        Row(
-            modifier =
-                Modifier
-                    .revealHorizontally { iconWidth.value }
-                    .graphicsLayer { alpha = iconAlpha.value },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
-                // Without a label, the icon names the tab.
-                contentDescription = if (showLabel) null else label,
-                tint = contentColor,
-            )
-            if (showLabel) Spacer(Modifier.width(spacing.small))
-        }
+        // The selected tab's extra room at each side, growing with its indicator in the layout phase.
+        val extraRoom = Modifier.revealHorizontally { indicatorWidth.value }.width(spacing.large - spacing.medium)
+        Spacer(extraRoom)
+        TabIcon(destination, selected, showLabel, label, contentColor)
         if (showLabel) {
             val typography = MaterialTheme.typography
             Text(
@@ -300,6 +289,39 @@ private fun NavigationTab(
                 maxLines = 1,
             )
         }
+        Spacer(extraRoom)
+    }
+}
+
+/**
+ * The tab's icon, shown while it is selected or has no label: its width and opacity follow on the fast springs in the
+ * layout and draw phases.
+ */
+@Composable
+private fun TabIcon(
+    destination: TopLevelDestination,
+    selected: Boolean,
+    showLabel: Boolean,
+    label: String,
+    contentColor: ColorProducer,
+) {
+    val iconShown = selected || !showLabel
+    val iconWidth = animateFloatAsState(if (iconShown) 1f else 0f, MaterialTheme.motionScheme.fastSpatialSpec())
+    val iconAlpha = animateFloatAsState(if (iconShown) 1f else 0f, MaterialTheme.motionScheme.fastEffectsSpec())
+    Row(
+        modifier =
+            Modifier
+                .revealHorizontally { iconWidth.value }
+                .graphicsLayer { alpha = iconAlpha.value },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+            // Without a label, the icon names the tab.
+            contentDescription = if (showLabel) null else label,
+            tint = contentColor,
+        )
+        if (showLabel) Spacer(Modifier.width(MaterialTheme.spacing.small))
     }
 }
 

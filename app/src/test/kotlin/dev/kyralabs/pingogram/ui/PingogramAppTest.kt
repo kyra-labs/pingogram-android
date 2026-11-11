@@ -86,6 +86,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.scanner.navigation.navigateToQrScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,6 +106,7 @@ import dev.kyralabs.pingogram.feature.auth.R as AuthR
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
+import dev.kyralabs.pingogram.feature.scanner.R as ScannerR
 import dev.kyralabs.pingogram.feature.settings.R as SettingsR
 
 /**
@@ -607,6 +609,30 @@ class PingogramAppTest {
     }
 
     @Test
+    fun `a predictive back gesture shrinks a full-screen page as it does others, and it stays visible`() {
+        setApp()
+        composeRule.runOnUiThread { navController.navigateToQrScanner() }
+        val title = composeRule.onNodeWithText(string(ScannerR.string.scanner_rationale_title))
+        composeRule.waitUntil(TIMEOUT_MILLIS) { runCatching { title.fetchSemanticsNode() }.isSuccess }
+        val resting = title.fetchSemanticsNode().boundsInRoot.width
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, THIRD_OF_GESTURE, BackEventCompat.EDGE_LEFT))
+        }
+        composeRule.waitForIdle()
+
+        // Shrinking, not only fading: the page is still there a third of the way into the gesture.
+        title.assertIsDisplayed()
+        val scale = title.fetchSemanticsNode().boundsInRoot.width / resting
+        assertTrue("$scale", scale < 1f)
+        composeRule.runOnUiThread { dispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        title.assertDoesNotExist()
+    }
+
+    @Test
     fun `a predictive back gesture shrinks the conversation over the chat list, then leaves it`() {
         tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
         setApp()
@@ -849,6 +875,7 @@ class PingogramAppTest {
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
         const val HALF_GESTURE = 0.5f
+        const val THIRD_OF_GESTURE = 0.3f
 
         /** A few frames into a container transform. */
         const val TRANSFORM_FRAMES = 3

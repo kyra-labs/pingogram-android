@@ -70,7 +70,7 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *   into it while nothing below composes anew.
  *
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
- * ([predictiveBackPopExit]); the viewer follows the gesture itself.
+ * ([predictiveBackPopExit]), full-screen ones included; the viewers follow the gesture themselves.
  *
  * The `NavHost` sits in the app shell's `SharedTransitionLayout`, whose scope comes through
  * `LocalSharedTransitionScope` (`PingogramApp`, [ProvideSharedTransitionScope]), and each destination that shares
@@ -122,13 +122,8 @@ internal fun PingogramNavHost(
         popEnterTransition = { popEnter(motionScheme, axisDistance) },
         popExitTransition = { popExit(motionScheme, axisDistance) },
         predictivePopEnterTransition = { predictiveBackPopEnter() },
-        predictivePopExitTransition = {
-            if (initialState.destination.isFullScreen()) {
-                popExit(motionScheme, axisDistance)
-            } else {
-                predictiveBackPopExit(motionScheme)
-            }
-        },
+        // Full-screen pages too (the QR code scanner, New story's picking): the gesture shrinks them as it does others.
+        predictivePopExitTransition = { predictiveBackPopExit(motionScheme) },
     ) {
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
