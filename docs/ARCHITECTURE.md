@@ -907,7 +907,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Reject` haptic), and holds the question before a stop (`stopPollDialog`) and the voters' sheet (`pollVotersSheet`,
   the users named from `UserRepository`), both kept out of `ChatUiState`. "Retract vote" and "Stop poll" are message
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
-  `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
+  `can_be_edited`. "Statistics" (`MessageAction.PollStatistics`, where `MessageProperties.canGetPollVoteStatistics`) sends
+  `ChatEffect.OpenPollStatistics`, which the route hands to `core:ui`'s `LocalPollStatisticsLauncher`, provided by `:app`
+  with `feature:profile`'s `navigateToPollStatistics`, as features do not depend on each other. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
   Since 2026: `MessageContent.Poll` carries the poll's photo or video (`PollMedia`, td_api.tl `pollMedia`, shown in the
   media viewer by `richMediaId(messageId, 0)`, as rich messages' media are) and `canAddOption`; `Poll` its `closeDate`,
