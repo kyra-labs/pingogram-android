@@ -415,6 +415,7 @@ data class ChatRoute(
     val messageId: Long? = null,
     val topicId: Int? = null,
     val threadId: Long? = null,
+    val directMessagesTopicId: Long? = null,
 )
 
 /**

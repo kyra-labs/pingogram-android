@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCustomEmojiRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibDataOptionsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
@@ -149,6 +150,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
+import dev.kyralabs.pingogram.core.domain.repository.DirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
@@ -271,6 +273,9 @@ interface RepositoryModule {
 
     @Binds
     fun savedMessagesTopicRepository(repository: TdlibSavedMessagesTopicRepository): SavedMessagesTopicRepository
+
+    @Binds
+    fun directMessagesTopicRepository(repository: TdlibDirectMessagesTopicRepository): DirectMessagesTopicRepository
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository

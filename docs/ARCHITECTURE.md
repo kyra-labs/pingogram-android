@@ -1275,6 +1275,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   would be hidden (`withMessageChannel`); the button sends `ChatEvent.OpenChat`. In the direct messages chat a
   subscriber writes without being a member (`writeAccess` follows the chat's permissions there), and where messages
   cost Telegram Stars `composerState` shows the price and that Pingogram can't pay instead of the composer.
+- **A channel's direct messages, the administrators' page** (board 7b): `core:domain`'s `DirectMessagesTopicRepository`
+  (`TdlibDirectMessagesTopicRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces each person's conversation
+  only with `updateDirectMessagesChatTopic`) keeps every `DirectMessagesTopic` by chat for the session, loads more
+  (`loadDirectMessagesChatTopics`) and marks one unread (`setDirectMessagesChatTopicIsMarkedAsUnread`). A conversation
+  is `MessageTopic.DirectMessages` (td_api.tl `messageTopicDirectMessages`): its history
+  `getDirectMessagesChatTopicHistory`, its newest message `getDirectMessagesChatTopic`, what is sent goes into it
+  (`sendMessage.topic_id`), read through `messageSourceDirectMessagesChatTopicHistory`; `ChatThread` reads it as
+  `ThreadState.DirectTopic` (the sender's name in the top bar, its unread count). `ChatOpeningViewModel` opens an
+  administered direct messages chat (`Supergroup.isAdministeredDirectMessages`) as `ChatOpening.DirectMessages`
+  (`DirectMessagesRoute`, `DirectMessagesViewModel`: the filter and the search in saved state), a found message as its
+  conversation; `ChatRoute.directMessagesTopicId` pushes one.
 - **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
   `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
   page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost
