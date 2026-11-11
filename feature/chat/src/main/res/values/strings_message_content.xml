@@ -8,6 +8,9 @@
     <string name="content_duration_and_size">%1$s · %2$s</string>
     <!-- For screen readers: %1$s is what something is ("Video"), %2$s more about it ("1:05 · 12 MB", "Not played yet"). -->
     <string name="content_kind_and_details">%1$s, %2$s</string>
+    <!-- A live photo's label over its picture in the bubble (iOS Live Photos, Android Motion Photos). -->
+    <string name="content_live_label">LIVE</string>
+    <string name="content_live_photo">Live photo</string>
     <!-- How much of a voice message or a song has played ("0:12 / 0:42"), or of a file has downloaded ("1.2 MB / 4.5 MB"). -->
     <string name="content_progress_of">%1$s / %2$s</string>
     <string name="content_play">Play</string>

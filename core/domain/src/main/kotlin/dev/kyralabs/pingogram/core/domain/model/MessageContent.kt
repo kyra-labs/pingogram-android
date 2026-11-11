@@ -25,6 +25,8 @@ sealed interface MessageContent {
         val hasSpoiler: Boolean,
         val isSecret: Boolean,
         val showCaptionAboveMedia: Boolean,
+        /** A live photo's motion (td_api.tl `messagePhoto.video`: iOS Live Photos, Android Motion Photos). */
+        val motion: dev.kyralabs.pingogram.core.domain.model.Video? = null,
     ) : MessageContent
 
     /** Flags as for [Photo]. */
@@ -34,6 +36,8 @@ sealed interface MessageContent {
         val hasSpoiler: Boolean,
         val isSecret: Boolean,
         val showCaptionAboveMedia: Boolean,
+        /** Where the video starts playing, in seconds (td_api.tl `messageVideo.start_timestamp`); 0 from its start. */
+        val startSeconds: Int = 0,
     ) : MessageContent
 
     /** A GIF; flags as for [Photo]. */

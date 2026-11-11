@@ -104,12 +104,26 @@ private fun TdApi.MessageContent.toMediaContent(): MessageContent? =
     when (this) {
         is TdApi.MessagePhoto -> {
             val caption = caption.toFormattedText()
-            MessageContent.Photo(photo.toPhoto(), caption, hasSpoiler, isSecret, showCaptionAboveMedia)
+            MessageContent.Photo(
+                photo.toPhoto(),
+                caption,
+                hasSpoiler,
+                isSecret,
+                showCaptionAboveMedia,
+                motion = video?.toVideo(),
+            )
         }
 
         is TdApi.MessageVideo -> {
             val caption = caption.toFormattedText()
-            MessageContent.Video(video.toVideo(), caption, hasSpoiler, isSecret, showCaptionAboveMedia)
+            MessageContent.Video(
+                video.toVideo(),
+                caption,
+                hasSpoiler,
+                isSecret,
+                showCaptionAboveMedia,
+                startSeconds = startTimestamp.coerceAtLeast(0),
+            )
         }
 
         is TdApi.MessageAnimation -> {
