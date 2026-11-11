@@ -5,6 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
+import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -278,6 +279,9 @@ object ActiveAccountModule {
     @Provides
     fun reactionNotificationRepository(accounts: Accounts): ReactionNotificationRepository =
         accounts.active.reactionNotificationRepository()
+
+    @Provides
+    fun accountFreezeRepository(accounts: Accounts): AccountFreezeRepository = accounts.active.accountFreezeRepository()
 
     @Provides
     fun quickReactionRepository(accounts: Accounts): QuickReactionRepository = accounts.active.quickReactionRepository()

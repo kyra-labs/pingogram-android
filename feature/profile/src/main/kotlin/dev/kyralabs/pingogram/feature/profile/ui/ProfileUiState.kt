@@ -100,11 +100,12 @@ data class ProfileInfo(
     val id: Long? = null,
     val birthdaySuggestion: BirthdaySuggestionOffer? = null,
     val note: ContactNote? = null,
+    val isSharingDisabled: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
-                id == null && birthdaySuggestion == null && note == null
+                id == null && birthdaySuggestion == null && note == null && !isSharingDisabled
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
 }

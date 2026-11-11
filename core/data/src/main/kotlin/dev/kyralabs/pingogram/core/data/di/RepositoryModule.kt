@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
@@ -110,6 +111,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
+import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -384,6 +386,9 @@ interface RepositoryModule {
 
     @Binds
     fun reactionNotificationRepository(repository: TdlibReactionNotificationRepository): ReactionNotificationRepository
+
+    @Binds
+    fun accountFreezeRepository(repository: TdlibAccountFreezeRepository): AccountFreezeRepository
 
     @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository

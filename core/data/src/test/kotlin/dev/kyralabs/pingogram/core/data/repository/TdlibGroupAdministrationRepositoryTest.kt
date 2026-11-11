@@ -166,6 +166,15 @@ class TdlibGroupAdministrationRepositoryTest {
         }
 
     @Test
+    fun `tells who becomes the owner if the owner leaves without choosing`() =
+        runTest {
+            client.on(TdApi.GetChatOwnerAfterLeaving::class, TdResult.Success(TdApiFixtures.user(id = 42)))
+
+            assertEquals(Outcome.Success(42L), repository.ownerAfterLeaving(CHAT))
+            assertEquals(CHAT, client.sentOf<TdApi.GetChatOwnerAfterLeaving>().single().chatId)
+        }
+
+    @Test
     fun `maps whether the ownership may be transferred now`() =
         runTest {
             val answers =

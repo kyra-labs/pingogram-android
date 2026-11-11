@@ -6,6 +6,7 @@ import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -132,6 +133,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
+
+    /** For whether the account is frozen, which TDLib announces only as an update. */
+    @Binds
+    @IntoSet
+    fun accountFreezeCache(repository: TdlibAccountFreezeRepository): TdlibUpdateCache
 
     /** For the reaction notification settings, which TDLib announces once per start and cannot be asked for. */
     @Binds

@@ -252,6 +252,22 @@ class ProfileViewModelTest {
         }
 
     @Test
+    fun `a private chat with sharing disabled says so, and follows the change`() =
+        runTest {
+            answerProfile()
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, true))
+            runCurrent()
+            assertTrue(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, false))
+            runCurrent()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+        }
+
+    @Test
     fun `no personal channel, no row`() =
         runTest {
             answerProfile()

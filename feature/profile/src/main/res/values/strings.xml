@@ -112,6 +112,9 @@
     <string name="profile_block_text">They won\'t be able to send you messages or call you, and won\'t see when you were last online or your profile photo changes.</string>
     <string name="profile_block_confirm">Block</string>
     <string name="profile_dialog_dismiss">Cancel</string>
+    <!-- A private chat with "Disable sharing" on (Telegram Premium), shown on the profile as information. -->
+    <string name="profile_sharing">Sharing</string>
+    <string name="profile_sharing_disabled">Messages in this chat can\'t be forwarded, copied or saved</string>
     <!-- Snackbars after blocking. %1$s is the person's name. -->
     <string name="profile_blocked">%1$s blocked</string>
     <string name="profile_unblocked">%1$s unblocked</string>
@@ -518,6 +521,25 @@
     <string name="chat_info_clear_history_title">Clear history?</string>
     <string name="chat_info_clear_history_text">The messages of %1$s will be deleted for you. Other members still see them.</string>
     <string name="chat_info_clear_history_confirm">Clear</string>
+    <!-- Leaving as the owner (`docs/DESIGN_SYSTEM.md` §6 "Leaving as the owner"). %1$s is the chat's title. -->
+    <string name="chat_info_owner_leave_title">Leave %1$s?</string>
+    <string name="chat_info_owner_leave_text_group">You own this group. Choose an administrator to own it after you, or let Telegram choose.</string>
+    <string name="chat_info_owner_leave_text_channel">You own this channel. Choose an administrator to own it after you, or let Telegram choose.</string>
+    <string name="chat_info_owner_leave_next">Next owner</string>
+    <string name="chat_info_owner_leave_auto">Let Telegram choose</string>
+    <!-- %1$s is the name of who Telegram makes the owner. -->
+    <string name="chat_info_owner_leave_auto_later">%1$s becomes the owner in 7 days, unless you come back.</string>
+    <string name="chat_info_owner_leave_auto_now">%1$s becomes the owner as soon as you leave.</string>
+    <string name="chat_info_owner_leave_auto_later_unknown">Telegram picks a member to own it in 7 days, unless you come back.</string>
+    <string name="chat_info_owner_leave_auto_now_unknown">Telegram picks a member to own it as soon as you leave.</string>
+    <string name="chat_info_owner_leave_admins_note">Only administrators can be chosen. Make someone an administrator first to choose them.</string>
+    <string name="chat_info_owner_leave_no_admins">No other administrators</string>
+    <string name="chat_info_owner_leave_transfer">Transfer and leave</string>
+    <!-- %1$s is the chosen administrator's name. -->
+    <string name="chat_info_owner_leave_password_title">Make %1$s the owner?</string>
+    <string name="chat_info_owner_leave_password_text_group">%1$s will own the group right away, and you leave it. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_owner_leave_password_text_channel">%1$s will own the channel right away, and you leave it. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_owner_leave_back">Back</string>
     <string name="chat_info_history_cleared">History cleared</string>
 
     <!-- The join sheet of an invite link (REQUIREMENTS.md FR-P5). -->

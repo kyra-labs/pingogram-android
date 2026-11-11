@@ -114,6 +114,8 @@ interface AccountRepositories {
 
     fun reactionNotificationRepository(): ReactionNotificationRepository
 
+    fun accountFreezeRepository(): AccountFreezeRepository
+
     fun quickReactionRepository(): QuickReactionRepository
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
