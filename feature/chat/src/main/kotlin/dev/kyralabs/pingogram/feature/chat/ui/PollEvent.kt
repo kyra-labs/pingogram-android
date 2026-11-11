@@ -31,6 +31,11 @@ sealed interface PollEvent : ChatEvent {
         val messageId: Long,
     ) : PollEvent
 
+    /** "Statistics" in the message actions of message [messageId]: the poll's statistics page opens. */
+    data class OpenStatistics(
+        val messageId: Long,
+    ) : PollEvent
+
     /** The question whether to stop the poll was answered with "Stop": it closes for everyone. */
     data object ConfirmStop : PollEvent
 

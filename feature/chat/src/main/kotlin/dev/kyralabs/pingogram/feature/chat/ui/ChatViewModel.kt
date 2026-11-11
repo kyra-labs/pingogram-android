@@ -1343,6 +1343,7 @@ class ChatViewModel internal constructor(
         when (event) {
             is PollEvent.RetractVote -> messageActions.retractVote(event.messageId)
             is PollEvent.StopPoll -> messageActions.stopPoll(event.messageId)
+            is PollEvent.OpenStatistics -> effectChannel.trySend(ChatEffect.OpenPollStatistics(chatId, event.messageId))
             else -> polls.onEvent(event)
         }
     }
@@ -1392,7 +1393,7 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.Wave -> attachments.wave(event.messageId)
 
-            is ChatEvent.SendAnimation -> attachments.sendAnimation(event.animation)
+            is ChatEvent.SendAnimation -> attachments.sendAnimation(event, composer)
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 

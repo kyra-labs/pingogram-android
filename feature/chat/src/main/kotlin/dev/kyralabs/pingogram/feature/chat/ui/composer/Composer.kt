@@ -82,7 +82,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.panel.GifCaption
 import dev.kyralabs.pingogram.feature.chat.ui.panel.StickerSuggestionsInput
+import dev.kyralabs.pingogram.feature.chat.ui.panel.rememberGifCaptionChoice
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
@@ -150,7 +152,7 @@ internal fun ChatBottomBar(
     panel: EmojiPanelUiState = EmojiPanelUiState(),
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
     onSendSticker: (Sticker) -> Unit = {},
-    onSendAnimation: (Animation) -> Unit = {},
+    onSendAnimation: (Animation, captionAbove: Boolean) -> Unit = { _, _ -> },
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
     onOpenChat: (chatId: Long) -> Unit = {},
@@ -216,10 +218,18 @@ internal fun ChatBottomBar(
                             botKeyboard = botKeyboard,
                         )
                     }
+                    // A GIF from the panel takes the field's text as its caption, where the GIF tab's bar says.
+                    val gifCaption = rememberGifCaptionChoice()
+                    val gifCaptionBar = remember(gifCaption, text) { GifCaption(gifCaption) { !text.isEmpty } }
                     PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
                         // Not while editing: a sticker would be a new message.
                         val stickers = composer.attachOptions.isNotEmpty()
-                        val sends = PanelSends(onSendSticker, onSendAnimation)
+                        val sends =
+                            PanelSends(
+                                onSendSticker,
+                                { onSendAnimation(it, gifCaption.above) },
+                                gifCaptionBar,
+                            )
                         ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
                     }
                 }

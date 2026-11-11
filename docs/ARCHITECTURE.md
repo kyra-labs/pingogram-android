@@ -920,7 +920,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Reject` haptic), and holds the question before a stop (`stopPollDialog`) and the voters' sheet (`pollVotersSheet`,
   the users named from `UserRepository`), both kept out of `ChatUiState`. "Retract vote" and "Stop poll" are message
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
-  `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
+  `can_be_edited`. "Statistics" (`MessageAction.PollStatistics`, where `MessageProperties.canGetPollVoteStatistics`) sends
+  `ChatEffect.OpenPollStatistics`, which the route hands to `core:ui`'s `LocalPollStatisticsLauncher`, provided by `:app`
+  with `feature:profile`'s `navigateToPollStatistics`, as features do not depend on each other.
+  The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
   Since 2026: `MessageContent.Poll` carries the poll's photo or video (`PollMedia`, td_api.tl `pollMedia`, shown in the
   media viewer by `richMediaId(messageId, 0)`, as rich messages' media are) and `canAddOption`; `Poll` its `closeDate`,
@@ -1462,7 +1465,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
   first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
   `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
-  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply and its
+  text as the caption (`ChatComposer.takeCaption`, given back by `restoreCaption` on a refusal), below the GIF or
+  above it as the tab's `GifCaptionBar` says (`GifCaptionChoice`, saved with the composer). While
   the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
   stays above it instead of giving way.
 - Storage clean-up (`docs/PERFORMANCE.md` §3, owner decision 2026-10-27): `core:notifications`' `StorageOptimization`
