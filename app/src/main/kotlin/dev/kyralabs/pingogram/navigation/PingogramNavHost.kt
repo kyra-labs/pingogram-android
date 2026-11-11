@@ -270,6 +270,7 @@ private fun NavGraphBuilder.mainGraph(
         chatScreens(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
+        pollStatistics(navController)
         chatInvite(navController)
         chatFolderInvite(navController)
         mediaViewer(navController)

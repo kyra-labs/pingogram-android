@@ -593,6 +593,16 @@ data class ChatStatisticsRoute(
     val chatId: Long,
 )
 
+/**
+ * The statistics of the poll of message [messageId] in chat [chatId]: its votes over time and its totals, which
+ * Telegram gives the chat's administrators (`MessageProperties.canGetPollVoteStatistics`).
+ */
+@Serializable
+data class PollStatisticsRoute(
+    val chatId: Long,
+    val messageId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(
