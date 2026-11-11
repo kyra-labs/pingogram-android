@@ -1372,7 +1372,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MessageContent.Video.startSeconds` (`messageVideo.start_timestamp`). The media viewer's `ViewerMedia.Image` carries
   the motion, which `MediaDownloads` downloads after the still (`motion`) and `MediaPlayback` plays as a GIF once on the
   device; `MediaViewerViewModel` starts a video at its sender's time once (`startAtSendersTime`), never over
-  picture-in-picture's return.
+  picture-in-picture's return. A message link's `?t=` (`messageLinkInfo.media_timestamp`, of a video only) comes as
+  `LinkTarget.Chat.videoSeconds`; `:app`'s `openLinkedChat` opens the chat at the message, then the viewer above it with
+  `MediaViewerRoute.startSeconds`, which wins over the sender's time.
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

@@ -14,13 +14,17 @@ sealed interface LinkTarget {
     /**
      * The conversation of chat [chatId], at message [messageId] if the link named one. [draftText], a text the link
      * suggests writing, goes into the composer if it has none ([LinkTarget.Chat] of `t.me/username?text=…`).
+     * [videoSeconds], a message link's `?t=` to a video (`t.me/channel/7?t=83`), opens the media viewer on that video
+     * at that time, above the conversation.
      */
     data class Chat(
         val chatId: Long,
         val messageId: Long? = null,
         val draftText: String? = null,
+        val videoSeconds: Int? = null,
     ) : LinkTarget {
-        override fun toString() = "Chat(chatId=$chatId, messageId=$messageId, hasDraft=${draftText != null})"
+        override fun toString() =
+            "Chat(chatId=$chatId, messageId=$messageId, hasDraft=${draftText != null}, videoSeconds=$videoSeconds)"
     }
 
     /**

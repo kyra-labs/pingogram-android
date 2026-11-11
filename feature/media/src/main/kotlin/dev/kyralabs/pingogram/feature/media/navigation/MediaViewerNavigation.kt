@@ -48,12 +48,16 @@ fun NavGraphBuilder.mediaViewerScreen(
     }
 }
 
-/** Opens the media viewer on the photo, video or GIF [messageId] of chat [chatId]; once, however often it is tapped. */
+/**
+ * Opens the media viewer on the photo, video or GIF [messageId] of chat [chatId]; once, however often it is tapped. A
+ * video starts at [startSeconds] where a message link gave one.
+ */
 fun NavController.navigateToMediaViewer(
     chatId: Long,
     messageId: Long,
+    startSeconds: Int? = null,
 ) {
-    navigate(MediaViewerRoute(chatId, messageId)) { launchSingleTop = true }
+    navigate(MediaViewerRoute(chatId, messageId, startSeconds)) { launchSingleTop = true }
 }
 
 /**

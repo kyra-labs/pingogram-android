@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 
 /**
  * Hands [link], a Telegram link another app opened Pingogram with, to [onOpen] once the main graph shows, after
@@ -127,13 +128,19 @@ private fun NavHostController.openLinkedChat(
     val openChat = current?.takeIf { it.destination.hasRoute<ChatRoute>() }?.toRoute<ChatRoute>()
     val sameChat = openChat?.chatId == target.chatId
     if (sameChat && target.messageId == null) return
-    if (besideList) return navigateToChat(target.chatId, target.messageId, besideList = true)
-    navigate(ChatRoute(target.chatId, target.messageId)) {
-        when {
-            sameChat -> popUpTo<ChatRoute> { inclusive = true }
-            fromOutside -> popUpTo(TopLevelDestination.Start.route)
+    if (besideList) {
+        navigateToChat(target.chatId, target.messageId, besideList = true)
+    } else {
+        navigate(ChatRoute(target.chatId, target.messageId)) {
+            when {
+                sameChat -> popUpTo<ChatRoute> { inclusive = true }
+                fromOutside -> popUpTo(TopLevelDestination.Start.route)
+            }
         }
     }
+    // A link's `?t=` to a video plays it from there, above its conversation.
+    val messageId = target.messageId ?: return
+    target.videoSeconds?.let { navigateToMediaViewer(target.chatId, messageId, startSeconds = it) }
 }
 
 /** The route of the sheet that asks before connecting through this proxy. */
