@@ -214,9 +214,13 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
-    /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */
+    /**
+     * A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply and its text as
+     * the caption, above the GIF with [captionAbove].
+     */
     data class SendAnimation(
         val animation: Animation,
+        val captionAbove: Boolean = false,
     ) : ChatEvent
 
     /** The attach preview's "Send without compression": its photos and videos go as files, or compressed. */

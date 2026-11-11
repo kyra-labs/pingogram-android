@@ -486,6 +486,15 @@ data class ForwardRoute(
 )
 
 /**
+ * A shared style of Telegram's AI editor by its [name] (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"),
+ * `:feature:chat`: a dialog destination above the screen it is opened from, whose sheet adds the style only on a tap.
+ */
+@Serializable
+data class TextStyleRoute(
+    val name: String,
+)
+
+/**
  * The share sheet (`REQUIREMENTS.md` FR-N2, direct share) for what another app shared, or a `t.me/share` link, kept in
  * memory under [shareId] (`ShareInbox` of `:feature:chat`): a dialog destination above the screen it is opened from,
  * which picks the chat or chats it goes to. After process death the share is gone and the sheet closes at once.

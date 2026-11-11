@@ -15,6 +15,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   only if you turn it on. Nothing is sent before "Allow"; the website is then listed in Privacy and security → Websites.
 - Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your
   profile and "Decline".
+- GIFs from the panel take the text you typed as their caption, below or above the GIF.
 - Voice messages can be trimmed before sending: pause the recording and drag its ends.
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
 - A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
@@ -38,6 +39,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 
+- Edit with AI: once a message runs past three lines, the field's menu offers Telegram's AI to fix it, rewrite it in a
+  style or translate it. The text goes to Telegram's AI only when you tap Fix, Rewrite or Translate; "Use" puts the
+  result in the field, with "Undo". Shared style links open a sheet to add the style.
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
   with "Show full text" to go back (in the reader's language where they don't read the post's).
 

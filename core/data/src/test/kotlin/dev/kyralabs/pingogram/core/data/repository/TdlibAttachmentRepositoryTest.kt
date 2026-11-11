@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.attachment.ImageInfo
 import dev.kyralabs.pingogram.core.data.attachment.Orientation
 import dev.kyralabs.pingogram.core.data.attachment.PhoneContact
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -434,6 +435,32 @@ class TdlibAttachmentRepositoryTest {
             assertEquals(listOf(512, 480), listOf(content.sticker.width, content.sticker.height))
             assertEquals("🦆", content.emoji)
             assertEquals(7L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+        }
+
+    @Test
+    fun `a GIF goes with its caption above or below it, and without one when it is blank`() =
+        runTest {
+            answerSends()
+            val cat =
+                Animation(2, 320, 240, "video/mp4", minithumbnail = null, thumbnail = null, file = FileRef(10, 100))
+
+            repository().sendAnimation(
+                CHAT,
+                cat,
+                caption = FormattedText("Monday mood", persistentListOf()),
+                captionAbove = true,
+            )
+            repository().sendAnimation(CHAT, cat, caption = FormattedText(" ", persistentListOf()), captionAbove = true)
+
+            val (captioned, blank) =
+                client.sentOf<TdApi.SendMessage>().map {
+                    it.inputMessageContent as TdApi.InputMessageAnimation
+                }
+            assertEquals(10, (captioned.animation.animation as TdApi.InputFileId).id)
+            assertEquals("Monday mood", captioned.caption.text)
+            assertEquals(true, captioned.showCaptionAboveMedia)
+            assertEquals("", blank.caption.text)
+            assertEquals(false, blank.showCaptionAboveMedia)
         }
 
     @Test

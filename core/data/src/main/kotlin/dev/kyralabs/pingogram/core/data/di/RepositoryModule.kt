@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -115,6 +116,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
+import dev.kyralabs.pingogram.core.domain.repository.AiTextRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -459,6 +461,9 @@ interface RepositoryModule {
 
     @Binds
     fun accentColorRepository(repository: TdlibAccentColorRepository): AccentColorRepository
+
+    @Binds
+    fun aiTextRepository(repository: TdlibAiTextRepository): AiTextRepository
 
     @Binds
     fun stickerSetCreationRepository(repository: TdlibStickerSetCreationRepository): StickerSetCreationRepository

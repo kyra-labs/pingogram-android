@@ -96,6 +96,8 @@ internal class FakeAttachmentRepository : AttachmentRepository {
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
+        caption: FormattedText?,
+        captionAbove: Boolean,
     ): Outcome<Unit> = notHere()
 
     override suspend fun sendPoll(

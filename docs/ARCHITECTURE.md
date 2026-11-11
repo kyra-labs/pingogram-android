@@ -712,6 +712,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   language where they do not read the post's, else its own) answers only that tap, and the summary reaches the bubble as
   a `BubbleTranslation.Summary` over any translation (`withSummaries`); the messages chosen are in the saved state and
   summarized again after process death or an edit, the summaries kept in memory for the view model's life.
+- **AI text editor** (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): `core:domain`'s `AiTextRepository`
+  (`TdlibAiTextRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of `updateTextCompositionStyles`) fixes
+  (`fixTextWithAi`, with its `DiffText`), rewrites and translates (`composeTextWithAi`, the style, the language among those
+  of message translation, `TelegramLanguages.kt`, and emoji), finds, adds and removes shared custom styles
+  (`searchTextCompositionStyle`, `addTextCompositionStyle`, `removeTextCompositionStyle`) and reads how many may be added
+  (option `added_text_composition_style_count_max`); `AICOMPOSE_FLOOD_PREMIUM` and `TONES_SAVED_TOO_MANY` are
+  `DomainError.AiEditLimitReached` and `TooManyTextStyles`. `AiEditorConsentRepository` (`DataStoreAiEditorConsentRepository`,
+  the settings file) keeps the one-time explanation read. `feature:chat`'s `ai/`: `AiEditorViewModel` (keyed by the chat,
+  hoisted by `ConversationRoute`; never in a secret chat) holds the sheet, sends the text only on the action's tap, and hands
+  the result to `AiEditorHost`, which puts it in the composer's `ComposerText` with "Undo"; `LocalAiEditor` offers it to the
+  main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
+  (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
+  `TextStyleViewModel`), which adds the style only on a tap.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
@@ -1447,7 +1460,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
   first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
   `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
-  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply and its
+  text as the caption (`ChatComposer.takeCaption`, given back by `restoreCaption` on a refusal), below the GIF or
+  above it as the tab's `GifCaptionBar` says (`GifCaptionChoice`, saved with the composer). While
   the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
   stays above it instead of giving way.
 - Storage clean-up (`docs/PERFORMANCE.md` §3, owner decision 2026-10-27): `core:notifications`' `StorageOptimization`
