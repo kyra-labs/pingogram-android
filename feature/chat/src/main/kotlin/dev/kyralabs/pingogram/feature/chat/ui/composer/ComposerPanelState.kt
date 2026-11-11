@@ -46,6 +46,7 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.panel.GifCaption
 import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -173,10 +174,14 @@ internal fun PanelButton(
     }
 }
 
-/** Where the panel's stickers ([onSticker]) and GIFs ([onAnimation]) go: sent into the conversation. */
+/**
+ * Where the panel's stickers ([onSticker]) and GIFs ([onAnimation]) go: sent into the conversation, a GIF with the
+ * composer's text as its caption where [gifCaption] says so.
+ */
 internal class PanelSends(
     val onSticker: (Sticker) -> Unit,
     val onAnimation: (Animation) -> Unit,
+    val gifCaption: GifCaption? = null,
 )
 
 /**
@@ -208,6 +213,7 @@ internal fun ComposerEmojiPanel(
             onEvent = onPanelEvent,
             modifier = Modifier.fillMaxSize(),
             showStickers = showStickers,
+            gifCaption = sends.gifCaption,
         )
     }
 }

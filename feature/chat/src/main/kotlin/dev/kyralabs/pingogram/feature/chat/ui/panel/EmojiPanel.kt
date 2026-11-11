@@ -106,6 +106,7 @@ internal fun EmojiPanel(
     onSearchFocus: (Boolean) -> Unit = {},
     showStickers: Boolean = true,
     initialTab: PanelTab = PanelTab.Emoji,
+    gifCaption: GifCaption? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     val shownTab = if (showStickers) tab else PanelTab.Emoji
@@ -114,7 +115,7 @@ internal fun EmojiPanel(
             when (shownTab) {
                 PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
                 PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
-                PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus)
+                PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus, gifCaption)
             }
         }
         PanelTabBar(shownTab, onSelect = { tab = it }, showStickers = showStickers, onBackspace = onBackspace)

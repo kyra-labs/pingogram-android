@@ -240,6 +240,13 @@
     <string name="panel_tab_stickers">Stickers</string>
     <string name="panel_tab_gifs">GIFs</string>
     <string name="panel_gifs_search">Search GIFs</string>
+    <!-- Above the GIFs while the message field holds text, which a GIF tapped below takes as its caption. -->
+    <string name="chat_gif_caption_note">Your text goes with the GIF as its caption</string>
+    <!-- The caption's place, "Below" and "Above" the GIF, for screen readers. -->
+    <string name="chat_gif_caption_below_description">Caption below the GIF</string>
+    <string name="chat_gif_caption_above_description">Caption above the GIF</string>
+    <string name="chat_gif_caption_below">Below</string>
+    <string name="chat_gif_caption_above">Above</string>
     <string name="panel_gifs_clear">Clear search</string>
     <string name="panel_gifs_empty_title">No saved GIFs</string>
     <string name="panel_gifs_empty_body">GIFs you send show here. Search above to find one.</string>

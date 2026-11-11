@@ -100,6 +100,7 @@ internal fun GifTabContent(
     onGif: (Animation) -> Unit,
     onEvent: (EmojiPanelEvent) -> Unit,
     onSearchFocus: (Boolean) -> Unit = {},
+    caption: GifCaption? = null,
 ) {
     when (tab) {
         GifTab.Loading -> {
@@ -117,6 +118,7 @@ internal fun GifTabContent(
                         onEvent(EmojiPanelEvent.GifQueryChanged(it))
                     }
                 }
+                if (caption != null && caption.shows) GifCaptionBar(caption.choice)
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     val search = tab.search
                     if (search == null) {

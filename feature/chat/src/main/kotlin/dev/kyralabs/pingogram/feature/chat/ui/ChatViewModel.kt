@@ -1392,7 +1392,7 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.Wave -> attachments.wave(event.messageId)
 
-            is ChatEvent.SendAnimation -> attachments.sendAnimation(event.animation)
+            is ChatEvent.SendAnimation -> attachments.sendAnimation(event, composer)
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 
