@@ -661,7 +661,7 @@ M-078
 | A-9 `refactor/motion-reaction-badge` | A | Medium | M-036 (M-044 is closed by Q-13) |
 | B-1 `fix/motion-answer-slider` | B | High | M-052, M-054, M-062 ✓ (#440) |
 | B-2 `fix/motion-call-reactions` | B | High | M-053 ✓ (#449) |
-| B-3 `fix/motion-voice-chat-layout` | B | High | M-055, M-056, M-058, M-065, M-071 |
+| B-3 `fix/motion-voice-chat-layout` | B | High | M-055, M-056, M-058, M-065, M-071 ✓ (#450) |
 | B-4 `fix/motion-viewer-swipe-up` | B | High | M-072 |
 | B-5 `fix/motion-story-picker` | B | High | M-079, M-084, M-085, M-089 |
 | B-6 `refactor/motion-call-screen` | B | Medium | M-059, M-060, M-066, M-067, M-068 |
