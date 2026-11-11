@@ -4,11 +4,13 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.datastore.DataStoreDeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDirectShareRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreIdVisibilityRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLockedChatIdsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
@@ -17,8 +19,8 @@ import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityReposi
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that keep what the screen and Telegram see of the user's
- * chats: the locked chats, link previews in secret chats, whether phone numbers and IDs show on screen, and whether
- * Android's share sheet offers the chats.
+ * chats: the locked chats, link previews in secret chats, whether phone numbers and IDs show on screen, whether
+ * Android's share sheet offers the chats, and the birthday suggestions the user declined.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -39,4 +41,7 @@ interface ChatPrivacyModule {
 
     @Binds
     fun directShareRepository(repository: DataStoreDirectShareRepository): DirectShareRepository
+
+    @Binds
+    fun declinedBirthdaysRepository(repository: DataStoreDeclinedBirthdaysRepository): DeclinedBirthdaysRepository
 }

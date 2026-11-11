@@ -78,6 +78,11 @@ class StatisticsViewModelTest : GroupViewModelTest() {
 
         override suspend fun statistics(chatId: Long) = answer
 
+        override suspend fun pollVotes(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<StatisticGraph> = Outcome.Failure(DomainError.NotFound)
+
         override suspend fun graph(
             chatId: Long,
             token: String,

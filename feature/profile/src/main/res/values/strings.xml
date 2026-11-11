@@ -742,6 +742,16 @@
     <string name="recent_actions_other">Did something Pingogram can’t show yet</string>
     <!-- Statistics of a supergroup or channel, from the info page's Administration. -->
     <string name="statistics">Statistics</string>
+    <!-- A poll's statistics (docs/DESIGN_SYSTEM.md §6 "Poll statistics"). -->
+    <string name="poll_statistics">Poll statistics</string>
+    <string name="poll_statistics_note">Telegram makes the graph of the votes once a poll has 100 votes. Only the chat\'s administrators see these statistics.</string>
+    <string name="poll_statistics_graph">Votes over time</string>
+    <string name="poll_statistics_graph_empty">No graph yet. Telegram makes it once the poll has 100 votes.</string>
+    <string name="poll_statistics_results">Results · %1$s</string>
+    <plurals name="poll_statistics_votes">
+        <item quantity="one">%1$d vote</item>
+        <item quantity="other">%1$d votes</item>
+    </plurals>
     <string name="statistics_period">%1$s, as Telegram counts it</string>
     <string name="statistics_overview">Overview</string>
     <string name="statistics_top_members">Top members</string>
