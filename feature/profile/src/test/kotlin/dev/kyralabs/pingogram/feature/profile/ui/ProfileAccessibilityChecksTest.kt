@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberTagContent
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberTagPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.AddChatsContent
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
@@ -141,6 +142,9 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun community() = check { CommunityScreen(CommunityPreviewData.owner, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun communityAddChats() = check { AddChatsContent(CommunityPreviewData.addChats, isDirect = true, onEvent = {}) }
 
     @Test
     fun welcomeMessages() = check { WelcomeMessagesScreen(WelcomeMessagesPreviewData.on, onEvent = {}, onBack = {}) }

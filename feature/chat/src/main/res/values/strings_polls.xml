@@ -44,4 +44,41 @@
     <string name="poll_voters_more">Show more</string>
     <string name="poll_voters_error">Couldn\'t load these votes</string>
     <string name="poll_voters_retry">Try again</string>
+
+    <!-- Polls since 2026 (board 4a, 4b): the kicker over the question, "Poll · Multiple answers". -->
+    <string name="content_poll_kicker">%1$s · %2$s</string>
+    <string name="content_poll_kind">Poll</string>
+    <string name="content_quiz_kind">Quiz</string>
+    <string name="content_poll_tag_closed">Closed</string>
+    <string name="content_poll_tag_multiple">Multiple answers</string>
+    <string name="content_poll_tag_anonymous">Anonymous</string>
+    <string name="content_poll_tag_public">Public</string>
+    <plurals name="content_quiz_tag_correct">
+        <item quantity="one">%1$d correct answer</item>
+        <item quantity="other">%1$d correct answers</item>
+    </plurals>
+    <plurals name="poll_ends_in_minutes">
+        <item quantity="one">Ends in %1$d min</item>
+        <item quantity="other">Ends in %1$d min</item>
+    </plurals>
+    <plurals name="poll_ends_in_hours">
+        <item quantity="one">Ends in %1$d h</item>
+        <item quantity="other">Ends in %1$d h</item>
+    </plurals>
+    <plurals name="poll_ends_in_days">
+        <item quantity="one">Ends in %1$d day</item>
+        <item quantity="other">Ends in %1$d days</item>
+    </plurals>
+    <string name="poll_results_hidden">Results hidden until the end</string>
+    <string name="content_quiz_your_correct">Your answer · correct</string>
+    <string name="content_quiz_your_wrong">Your answer · wrong</string>
+    <string name="content_quiz_missed">Correct · missed</string>
+    <!-- "You got 1 of 2": correct answers chosen, of the quiz's correct answers. -->
+    <string name="content_quiz_score">You got %1$d of %2$d</string>
+    <string name="poll_open_photo">Open the poll\'s photo</string>
+    <string name="poll_open_link">Open link %1$s</string>
+    <string name="poll_link_named">link: %1$s</string>
+    <string name="poll_new_option">New option</string>
+    <string name="poll_add_option_confirm">Add option</string>
+    <string name="poll_add_option_cancel">Cancel adding an option</string>
 </resources>

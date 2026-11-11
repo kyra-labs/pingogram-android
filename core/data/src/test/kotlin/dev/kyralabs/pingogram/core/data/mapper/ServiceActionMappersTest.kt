@@ -40,6 +40,8 @@ class ServiceActionMappersTest {
                     9,
                     arrayOf(TdApi.ChecklistTask(4, TdApi.FormattedText("Post", emptyArray()), null, 0)),
                 ),
+                TdApi.MessagePollOptionAdded(11, "a", TdApi.FormattedText("Piranesi", emptyArray())),
+                TdApi.MessagePollOptionDeleted(11, "b", TdApi.FormattedText("Klara", emptyArray())),
                 TdApi.MessageSuggestBirthdate(TdApi.Birthdate(10, 12, 0)),
                 TdApi.MessageSuggestBirthdate(TdApi.Birthdate(3, 6, 1994)),
             ).map { it.action() }
@@ -64,6 +66,8 @@ class ServiceActionMappersTest {
                 ServiceAction.Custom("Something happened"),
                 ServiceAction.ChecklistTasksDone(9, doneCount = 2, notDoneCount = 1),
                 ServiceAction.ChecklistTasksAdded(9, count = 1),
+                ServiceAction.PollOptionAdded(11, "Piranesi"),
+                ServiceAction.PollOptionDeleted(11, "Klara"),
                 ServiceAction.BirthdateSuggested(Birthdate(10, 12, null)),
                 ServiceAction.BirthdateSuggested(Birthdate(3, 6, 1994)),
             ),
@@ -264,6 +268,8 @@ class ServiceActionMappersTest {
                 "MessageCustomServiceAction",
                 "MessageChecklistTasksDone",
                 "MessageChecklistTasksAdded",
+                "MessagePollOptionAdded",
+                "MessagePollOptionDeleted",
             )
     }
 }

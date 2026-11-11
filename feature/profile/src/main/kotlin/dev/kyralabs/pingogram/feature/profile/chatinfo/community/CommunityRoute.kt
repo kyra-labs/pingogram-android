@@ -52,6 +52,10 @@ internal fun CommunityScreenRoute(
                         resources.getString(effect.text)
                     }
 
+                    is CommunityEffect.CountNotice -> {
+                        resources.getQuantityString(effect.text, effect.count, effect.count)
+                    }
+
                     is CommunityEffect.ShowError -> {
                         errorMessage(resources, effect.error, showDetails)
                     }

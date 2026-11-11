@@ -58,7 +58,8 @@ import kotlinx.coroutines.launch
  * failed page offers to try again), hand a file to the system's share sheet, put a photo on the clipboard, and on
  * Android 8–9 check and ask for the storage permission that saving needs ([MediaViewerEffects]). [onBack] leaves it,
  * as deleting the last item does; [onShowInChat] opens the conversation at the current item's message, [onForward]
- * the forward sheet for its message. A secret chat's media keeps the window secure ([SecureWindow]). [notices] shows,
+ * the forward sheet for its message, [onMakeSticker] the sticker maker on its photo. A secret chat's media keeps the
+ * window secure ([SecureWindow]). [notices] shows,
  * in the viewer's snackbar host, snackbars of other features (what came of forwarding).
  *
  * Videos draw on Media3's [PlayerSurface] in a `TextureView`: unlike a `SurfaceView`, it scales, moves and fades with
@@ -72,6 +73,7 @@ internal fun MediaViewerRoute(
     onShowInChat: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     onForward: (chatId: Long, messageIds: List<Long>) -> Unit = { _, _ -> },
+    onMakeSticker: (fileId: Int) -> Unit = {},
     notices: @Composable (SnackbarHostState) -> Unit = {},
     viewModel: MediaViewerViewModel = hiltViewModel(),
 ) {
@@ -90,7 +92,10 @@ internal fun MediaViewerRoute(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
         onEvent = viewModel::onEvent,
-        exits = remember(onBack, onShowInChat, onForward) { ViewerExits(onBack, onShowInChat, onForward) },
+        exits =
+            remember(onBack, onShowInChat, onForward, onMakeSticker) {
+                ViewerExits(onBack, onShowInChat, onForward, onMakeSticker)
+            },
     )
     notices(snackbarHostState)
     val context = LocalContext.current
@@ -128,7 +133,7 @@ internal fun MediaViewerRoute(
  * - **Share**: the file goes to the system's share sheet with the activity ([shareTdlibFile]); a snackbar if it cannot.
  * - **Copy**: the photo goes on the clipboard as a `content://` URI of the app's `FileProvider` ([copy]),
  *   which apps that paste it may read; a snackbar says so below Android 13, where the system shows no confirmation.
- * - **Show in chat**, **Forward** and **Close** go where [exits] lead.
+ * - **Show in chat**, **Forward**, **Make a sticker** and **Close** go where [exits] lead.
  * - **Storage permission** (Android 8–9): whether the system wants its reason shown first
  *   ([ActivityCompat.shouldShowRequestPermissionRationale]), and the system's request, whose answer goes back.
  */
@@ -205,12 +210,13 @@ private fun MediaViewerEffects(
 
 /**
  * Where the viewer's navigation effects lead: [onBack] leaves it, [onShowInChat] opens the conversation at a message,
- * [onForward] the forward sheet above the viewer.
+ * [onForward] the forward sheet above the viewer, [onMakeSticker] the sticker maker in its place.
  */
 private class ViewerExits(
     private val onBack: () -> Unit,
     private val onShowInChat: (chatId: Long, messageId: Long) -> Unit,
     private val onForward: (chatId: Long, messageIds: List<Long>) -> Unit,
+    private val onMakeSticker: (fileId: Int) -> Unit,
 ) {
     /** Follows [effect] if it leads somewhere ([MediaViewerEffect.ShowInChat], `Forward`, `Close`); whether it did. */
     fun follow(effect: MediaViewerEffect): Boolean {
@@ -218,6 +224,7 @@ private class ViewerExits(
             is MediaViewerEffect.ShowInChat -> onShowInChat(effect.chatId, effect.messageId)
             is MediaViewerEffect.Forward -> onForward(effect.chatId, listOf(effect.messageId))
             MediaViewerEffect.Close -> onBack()
+            is MediaViewerEffect.MakeSticker -> onMakeSticker(effect.fileId)
             else -> return false
         }
         return true

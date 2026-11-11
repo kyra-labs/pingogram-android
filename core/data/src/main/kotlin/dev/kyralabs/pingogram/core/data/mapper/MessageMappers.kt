@@ -45,6 +45,7 @@ internal fun TdApi.Message.toMessage(): Message {
         content = content.toMessageContent(sender, isChannelPost),
         topic = topicId?.toMessageTopic(),
         replyMarkup = replyMarkup?.toReplyMarkup(),
+        summaryLanguage = summaryLanguageCode?.ifEmpty { null },
     )
 }
 

@@ -51,6 +51,7 @@
     <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
     <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
     <string name="error_chat_full">This group is full.</string>
+    <string name="error_community_full">This community has as many chats as Telegram allows.</string>
     <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>
@@ -186,6 +187,10 @@
     <string name="preview_removed_you">%1$s removed you</string>
     <string name="preview_pinned">%1$s pinned a message</string>
     <string name="preview_you_pinned">You pinned a message</string>
+    <string name="preview_added_poll_option">%1$s added “%2$s” to the poll</string>
+    <string name="preview_you_added_poll_option">You added “%1$s” to the poll</string>
+    <string name="preview_removed_poll_option">%1$s removed “%2$s” from the poll</string>
+    <string name="preview_you_removed_poll_option">You removed “%1$s” from the poll</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>

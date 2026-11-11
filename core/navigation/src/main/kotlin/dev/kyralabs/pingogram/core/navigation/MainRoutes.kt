@@ -461,6 +461,16 @@ data class StoryAlbumRoute(
 data object NewStoryRoute
 
 /**
+ * Making a sticker from the photo of file [fileId] (boards 14a, 14b), `:feature:media`: the photo cropped to a square
+ * with text, emoji and an outline, then added to one of the user's sticker sets or a new one. Full screen, like the
+ * stories viewer, without the navigation bar or rail; the media viewer's "Make a sticker" opens it in its place.
+ */
+@Serializable
+data class MakeStickerRoute(
+    val fileId: Int,
+)
+
+/**
  * The forward sheet (`REQUIREMENTS.md` FR-C6) for messages [messageIds] of chat [fromChatId], `:feature:chat`: a
  * dialog destination above the screen it is opened from, which stays visible below the sheet. The media viewer opens
  * it for its current item; the conversation shows the same sheet in place, for its own messages.
