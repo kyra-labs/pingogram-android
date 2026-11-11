@@ -1101,8 +1101,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     (`ChatInfoUiState.Content.community`, `ChatInfoEffect.OpenCommunity`); `feature:profile`'s `CommunityRoute(communityId)`
     (`CommunityViewModel`: each chat from `ChatRepository`, `getChat` once where TDLib has not announced it, the user's
     membership from `GroupRepository`, joining through `ChatJoinRepository.join`, the rename dialog in saved state) is
-    a page of the info pages' graph. td_api.tl (a94b83d) has no function to add a chat to a community or to list the
-    user's communities, so neither is offered.
+    a page of the info pages' graph. Since TDLib 1.8.70 it also lists the communities the user joined
+    (`getJoinedCommunities`, then the store), adds chats (`getSuitableCommunityChats`, `addCommunityChat`, whose
+    `COMMUNITY_REQUEST_CREATED` is a request sent to the administrators, `CommunityAddResult`), removes them, reads and
+    answers the requests to add a chat (`getCommunityAddChatRequests`, `processCommunityAddChatRequest`), mutes
+    (`setCommunityNotificationSettings`, the other settings sent back as Telegram has them) and shows the community as
+    one entry in the chat list (`toggleCommunityAreChatsCollapsed`). The page's sheet that adds chats is
+    `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
+    saved state).
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 

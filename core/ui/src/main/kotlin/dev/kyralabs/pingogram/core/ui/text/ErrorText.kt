@@ -95,6 +95,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.TooManyAdmins -> R.string.error_too_many_admins
         DomainError.InviteLinkInvalid -> R.string.error_invite_link_invalid
         DomainError.ChatFull -> R.string.error_chat_full
+        DomainError.CommunityFull -> R.string.error_community_full
         DomainError.QrLoginExpired -> R.string.error_qr_login_expired
         DomainError.CallPrivacyRestricted -> R.string.error_call_privacy_restricted
         DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
