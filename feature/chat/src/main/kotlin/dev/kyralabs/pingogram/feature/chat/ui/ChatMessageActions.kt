@@ -518,7 +518,8 @@ private fun ActionContext.interactionActions(
 /**
  * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), and stopping an open poll
  * where TDLib lets the user edit the message (td_api.tl: `stopPoll` needs `can_be_edited`), which only its author and
- * the chat's editors can.
+ * the chat's editors can; and its statistics where Telegram gives them (`canGetPollVoteStatistics`: the chat's
+ * administrators, once enough people voted).
  */
 private fun pollActions(
     message: Message,
@@ -528,6 +529,7 @@ private fun pollActions(
     return listOfNotNull(
         MessageAction.RetractVote.takeIf { poll.canRetractVote },
         MessageAction.StopPoll.takeIf { properties.canBeEdited && !poll.isClosed },
+        MessageAction.PollStatistics.takeIf { properties.canGetPollVoteStatistics },
     )
 }
 
