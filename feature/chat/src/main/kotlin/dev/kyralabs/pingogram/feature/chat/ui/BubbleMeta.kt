@@ -39,6 +39,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.repeatLabel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.isPending
+import dev.kyralabs.pingogram.feature.chat.ui.translation.isSummary
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -129,8 +131,8 @@ private fun MetaRow(
 
 /**
  * The translate symbol and "Translated from Spanish" in the meta's color, or a loading indicator and "Translating…"
- * while Telegram translates; the label gives way first where the meta has no room for all of it. Screen readers hear
- * it in the description.
+ * while Telegram translates; for a summary the list symbol and "Summary by Telegram", or "Summarizing…". The label
+ * gives way first where the meta has no room for all of it. Screen readers hear it in the description.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -140,10 +142,11 @@ private fun RowScope.TranslationMark(
     style: TextStyle,
 ) {
     val iconModifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall)
-    if (translation == BubbleTranslation.Translating) {
+    if (translation.isPending) {
         LoadingIndicator(modifier = iconModifier, color = color)
     } else {
-        Icon(painterResource(R.drawable.ic_translate), contentDescription = null, modifier = iconModifier, tint = color)
+        val icon = if (translation.isSummary) UiR.drawable.ic_format_list_bulleted else R.drawable.ic_translate
+        Icon(painterResource(icon), contentDescription = null, modifier = iconModifier, tint = color)
     }
     Text(
         text = translationLabel(LocalResources.current, translation, LocalConfiguration.current.locales[0]),

@@ -35,7 +35,25 @@ class FakeTranslationRepository : TranslationRepository {
         return onTranslate(chatId, messageId, toLanguage)
     }
 
+    /** Every summary asked for, as (message id, language code or null), in order. */
+    val summaryRequests = mutableListOf<Pair<Long, String?>>()
+
+    var onSummarize: suspend (chatId: Long, messageId: Long, code: String?) -> Outcome<FormattedText> =
+        { _, messageId, _ -> Outcome.Success(summaryOf(messageId)) }
+
+    override suspend fun summarizeMessage(
+        chatId: Long,
+        messageId: Long,
+        toLanguage: String?,
+    ): Outcome<FormattedText> {
+        summaryRequests += messageId to toLanguage
+        return onSummarize(chatId, messageId, toLanguage)
+    }
+
     companion object {
+        /** What the fake summarizes message [messageId] as by default. */
+        fun summaryOf(messageId: Long) = FormattedText("Summary of message $messageId", persistentListOf())
+
         /** What the fake translates message [messageId] into [code] as by default. */
         fun translationOf(
             messageId: Long,

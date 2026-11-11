@@ -11,6 +11,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
+  with "Show full text" to go back (in the reader's language where they don't read the post's).
+
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.
 - New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
