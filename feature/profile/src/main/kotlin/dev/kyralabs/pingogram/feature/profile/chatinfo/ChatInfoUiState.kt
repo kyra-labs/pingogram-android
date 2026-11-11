@@ -44,6 +44,7 @@ sealed interface ChatInfoUiState {
         val administration: ChatAdministration? = null,
         val dialog: ChatInfoDialog? = null,
         val id: Long? = null,
+        val community: CommunityLink? = null,
     ) : ChatInfoUiState
 }
 
@@ -230,6 +231,9 @@ sealed interface ChatInfoEvent {
 
     data object ShowQrCode : ChatInfoEvent
 
+    /** Open the page of the community the chat belongs to. */
+    data object OpenCommunity : ChatInfoEvent
+
     /** Put the description on the clipboard. */
     data object CopyDescription : ChatInfoEvent
 
@@ -253,6 +257,13 @@ sealed interface ChatInfoEvent {
         val page: ChatInfoPage,
     ) : ChatInfoEvent
 }
+
+/** The community a chat belongs to: its [id], and its [name], empty while TDLib has not announced it. */
+@Immutable
+data class CommunityLink(
+    val id: Long,
+    val name: String,
+)
 
 /** The pages the info page opens: those for administrators, and the export for anyone. */
 enum class ChatInfoPage {
@@ -295,6 +306,11 @@ sealed interface ChatInfoEffect {
 
     data class Open(
         val page: ChatInfoPage,
+    ) : ChatInfoEffect
+
+    /** Open the page of community [communityId], which the chat belongs to. */
+    data class OpenCommunity(
+        val communityId: Long,
     ) : ChatInfoEffect
 
     /** The user left or deleted the chat, which is gone from the lists: the page and the conversation close. */

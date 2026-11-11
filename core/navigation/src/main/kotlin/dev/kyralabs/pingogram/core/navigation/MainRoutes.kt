@@ -590,6 +590,12 @@ data class ChatInviteRoute(
     override fun toString() = "ChatInviteRoute(…)"
 }
 
+/** The page of community [communityId] (the owner's board 19a), pushed above the info page of one of its chats. */
+@Serializable
+data class CommunityRoute(
+    val communityId: Long,
+)
+
 /** The boosts of channel or supergroup [chatId], read only (`REQUIREMENTS.md` FR-P5), pushed above its info page. */
 @Serializable
 data class ChatBoostRoute(

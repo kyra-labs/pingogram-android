@@ -144,6 +144,8 @@ interface AccountRepositories {
 
     fun secretChatRepository(): SecretChatRepository
 
+    fun communityRepository(): CommunityRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

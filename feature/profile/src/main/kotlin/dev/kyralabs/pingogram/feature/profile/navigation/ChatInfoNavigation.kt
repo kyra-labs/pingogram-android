@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatMembersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatPermissionsRoute
 import dev.kyralabs.pingogram.core.navigation.ChatSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.ChatStatisticsRoute
+import dev.kyralabs.pingogram.core.navigation.CommunityRoute
 import dev.kyralabs.pingogram.core.navigation.EditChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.EditInviteLinkRoute
 import dev.kyralabs.pingogram.core.navigation.InviteLinksRoute
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoNavigation
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoPage
 import dev.kyralabs.pingogram.feature.profile.chatinfo.INVITE_LINKS_CHANGED_RESULT
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MEMBERS_CHANGED_RESULT
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatBoostRoute as ChatBoostScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoRoute as ChatInfoScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatMembersRoute as ChatMembersScreenRoute
@@ -80,6 +82,7 @@ fun NavGraphBuilder.chatInfoScreens(
                         onOpenPage = { page -> onOpen(page.route(chatId)) },
                         onOpenMedia = onOpenMedia,
                         onOpenMessage = onOpenMessage,
+                        onOpenCommunity = { communityId -> onOpen(CommunityRoute(communityId)) },
                     ),
             )
         }
@@ -110,6 +113,7 @@ fun NavGraphBuilder.chatInfoScreens(
     }
     composable<EditInviteLinkRoute> { EditInviteLinkScreenRoute(onBack = onBack, onSaved = onSaved) }
     composable<ChatBoostRoute> { ChatBoostScreenRoute(onBack = onBack) }
+    composable<CommunityRoute> { CommunityScreenRoute(onBack = onBack, onOpenChat = onOpenChat) }
 }
 
 /** The route of [this] page of chat [chatId]. */
