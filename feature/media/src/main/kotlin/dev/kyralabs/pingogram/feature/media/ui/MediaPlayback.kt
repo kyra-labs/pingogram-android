@@ -214,6 +214,7 @@ internal class MediaPlayback(
                     progress = it.readProgress,
                     buffered = it.readBuffered,
                     waitsForTap = !it.hasStarted && !autoplay,
+                    canHandOff = it.hasStarted && it.target.kind == VideoKind.Video,
                 )
             }
     }

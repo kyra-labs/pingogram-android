@@ -205,7 +205,8 @@ data class MediaCount(
  * The video or GIF of message [messageId] in the player: playing or paused as [isPlaying] says, and [showsFrame] once
  * its first frame is on the surface, which uncovers it. How far a video has played is snapshot state that [progress]
  * reads (0–1), so the position moving re-emits nothing: only what reads it in the draw or layout phase follows it.
- * [waitsForTap] while power saving keeps it from playing by itself, until its play button is tapped.
+ * [waitsForTap] while power saving keeps it from playing by itself, until its play button is tapped. [canHandOff] once
+ * it is a video the player has started, which picture-in-picture can take where it is.
  */
 @Stable
 data class VideoPlayback(
@@ -216,6 +217,7 @@ data class VideoPlayback(
     /** How far the player has the video, 0–1, read in the seek bar's draw phase. */
     val buffered: () -> Float = progress,
     val waitsForTap: Boolean = false,
+    val canHandOff: Boolean = false,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -379,11 +381,16 @@ sealed interface MediaViewerEffect {
     data object StoragePermissionDenied : MediaViewerEffect
 }
 
-/** Whether the current item is a video that plays, which a swipe up hands to picture-in-picture. */
+/**
+ * Whether the current item is a video the player has started, which a swipe up hands to picture-in-picture. Not a
+ * GIF, nor a video waiting for its play button (power saving) or for the screen: the player could not hand those
+ * over, so a swipe up closes the viewer as a swipe down does.
+ */
 internal val MediaViewerUiState.Content?.playsVideo: Boolean
     get() =
         this != null &&
             playback?.messageId == current.messageId &&
+            playback.canHandOff &&
             current.media is ViewerMedia.Clip
 
 /** The action on the current item's file that [MediaViewerEvent.Share], `Save` and `Copy` ask for; null for others. */

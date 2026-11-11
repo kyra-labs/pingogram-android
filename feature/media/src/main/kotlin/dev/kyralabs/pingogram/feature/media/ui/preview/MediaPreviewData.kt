@@ -159,7 +159,14 @@ internal object MediaPreviewData {
             currentIndex = 1,
             count = count,
             files = persistentMapOf(21 to FileState.Downloaded("/files/21.mp4", 12_000_000)),
-            playback = VideoPlayback(VIDEO, isPlaying = true, showsFrame = false, progress = { VIDEO_PROGRESS }),
+            playback =
+                VideoPlayback(
+                    VIDEO,
+                    isPlaying = true,
+                    showsFrame = false,
+                    progress = { VIDEO_PROGRESS },
+                    canHandOff = true,
+                ),
         )
 
     /** The video while power saving keeps it from playing by itself: its play button waits for a tap. */

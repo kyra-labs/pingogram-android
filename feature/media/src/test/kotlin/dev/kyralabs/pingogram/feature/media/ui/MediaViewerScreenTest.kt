@@ -29,6 +29,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.R
@@ -60,11 +61,19 @@ class MediaViewerScreenTest {
     private var backs = 0
     private var state by mutableStateOf<MediaViewerUiState>(MediaPreviewData.photo)
 
-    private fun setScreen(initial: MediaViewerUiState = MediaPreviewData.photo) {
+    private fun setScreen(
+        initial: MediaViewerUiState = MediaPreviewData.photo,
+        canPictureInPicture: Boolean = false,
+    ) {
         state = initial
         composeRule.setContent {
             PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
-                MediaViewerScreen(state = state, onEvent = { events += it }, onBack = { backs++ })
+                MediaViewerScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onBack = { backs++ },
+                    canPictureInPicture = canPictureInPicture,
+                )
             }
         }
         composeRule.waitForIdle()
@@ -234,6 +243,28 @@ class MediaViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun `a swipe up on a playing video takes it into picture-in-picture`() {
+        setScreen(MediaPreviewData.video, canPictureInPicture = true)
+
+        composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top) }
+        composeRule.waitForIdle()
+
+        assertTrue(MediaViewerEvent.PictureInPicture in events)
+        assertEquals(0, backs)
+    }
+
+    @Test
+    fun `a swipe up on a video that has not started closes the viewer, as a swipe down does`() {
+        setScreen(MediaPreviewData.videoWaitingForTap, canPictureInPicture = true)
+
+        composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top) }
+        composeRule.waitForIdle()
+
+        assertEquals(1, backs)
+        assertTrue(events.none { it == MediaViewerEvent.PictureInPicture })
     }
 
     @Test
