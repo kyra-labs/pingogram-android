@@ -27,10 +27,11 @@ import kotlinx.coroutines.flow.stateIn
 /**
  * What opening chat [chatId] shows (`REQUIREMENTS.md` FR-C9): its conversation, or for a forum (a supergroup with
  * topics) its topic list, or its conversation with the topics as tabs where it shows them so; a message search found
- * in a forum ([messageId]) opens the conversation of its topic. Saved Messages opens its conversation with its tabs.
- * Decided
- * from TDLib's memory (the chat and its supergroup, which TDLib announces before the chat), so it takes a frame or
- * two; meanwhile [opening] is [ChatOpening.Unknown], and the destination draws what the conversation draws first.
+ * in a forum ([messageId]) opens the conversation of its topic. Saved Messages opens its conversation with its tabs. A
+ * channel's direct messages open, for its administrators, the list of who wrote ([ChatOpening.DirectMessages]), or a
+ * found message's conversation. Decided from TDLib's memory (the chat and its supergroup, which TDLib announces before
+ * the chat), so it takes a frame or two; meanwhile [opening] is [ChatOpening.Unknown], and the destination draws what
+ * the conversation draws first.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ChatOpeningViewModel.Factory::class)
@@ -69,18 +70,30 @@ class ChatOpeningViewModel
                         groups
                             .supergroup(type.supergroupId)
                             .filterNotNull()
-                            .map { it.isForum to it.hasForumTabs }
+                            .map { Triple(it.isForum, it.hasForumTabs, it.isAdministeredDirectMessages) }
                             .distinctUntilChanged()
-                            .map { (isForum, tabs) ->
+                            .map { (isForum, tabs, directMessages) ->
                                 when {
+                                    // A channel's direct messages, as its administrators see them: who wrote.
+                                    directMessages -> directMessagesOpening()
+
                                     !isForum -> ChatOpening.Conversation
+
                                     tabs -> ChatOpening.ForumTabs(topicOf(messageId))
+
                                     else -> forumOpening()
                                 }
                             },
                     )
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatOpening.Unknown)
+
+        /** Who wrote, or the conversation of the message the chat opens at. */
+        private suspend fun directMessagesOpening(): ChatOpening {
+            if (messageId == null) return ChatOpening.DirectMessages
+            val topic = messages.message(chatId, messageId).getOrNull()?.topic as? MessageTopic.DirectMessages
+            return topic?.let(ChatOpening::Topic) ?: ChatOpening.DirectMessages
+        }
 
         /** The topic list, or the topic of the message the forum opens at. */
         private suspend fun forumOpening(): ChatOpening {
@@ -110,6 +123,9 @@ sealed interface ChatOpening {
     /** A forum's topic list. */
     data object Topics : ChatOpening
 
+    /** A channel's direct messages as its administrators see them: who wrote, one conversation each. */
+    data object DirectMessages : ChatOpening
+
     /**
      * A forum that shows its topics as tabs (td_api.tl `supergroup.has_forum_tabs`): its whole conversation with the
      * topics as tabs above it, at [topic]'s tab where the message it opens at is in one.
@@ -118,8 +134,8 @@ sealed interface ChatOpening {
         val topic: MessageTopic.Forum?,
     ) : ChatOpening
 
-    /** The conversation of a forum topic, at the message the forum was opened at. */
+    /** The conversation of a forum topic or a direct messages topic, at the message the chat was opened at. */
     data class Topic(
-        val topic: MessageTopic.Forum,
+        val topic: MessageTopic,
     ) : ChatOpening
 }

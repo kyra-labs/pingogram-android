@@ -143,7 +143,8 @@ internal data class HistoryKey(
     /**
      * Whether [message], of this chat, belongs to this history: every message to the chat's own; to a topic's, those in
      * it (in the General topic also those without a topic); to a thread's, its replies, the message that starts it
-     * excluded (its head, which the conversation shows itself); to a Saved Messages topic's, those in it.
+     * excluded (its head, which the conversation shows itself); to a Saved Messages or direct messages topic's, those
+     * in it.
      */
     fun holds(message: Message): Boolean =
         when (topic) {
@@ -151,6 +152,7 @@ internal data class HistoryKey(
             is MessageTopic.Forum -> message.topic == topic || (topic.isGeneral && message.topic == null)
             is MessageTopic.Thread -> message.topic == topic && message.id > topic.threadId
             is MessageTopic.SavedMessages -> message.topic == topic
+            is MessageTopic.DirectMessages -> message.topic == topic
         }
 }
 

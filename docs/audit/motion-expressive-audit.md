@@ -4,6 +4,7 @@ Date: 2026-11-11. Scope: every animation in the main sources of `core:ui`, `:app
 against Material 3 Expressive's motion system, `docs/DESIGN_SYSTEM.md` §4–§6 and §13, and `docs/PERFORMANCE.md` §4.
 Research and documentation only: no app code changed. The fixes are planned in `docs/plans/motion-expressive-plan.md`.
 File and line numbers are those of `main` at `b7b13571`; later commits may have moved them by a few lines.
+The questions of §5 were decided by the owner on 2026-11-11; the decisions are in §6.
 
 How it was done:
 
@@ -58,6 +59,22 @@ The last column is arithmetic on the constants for a unit mass (overshoot `exp(-
 `exp(-ζ√k·t)`), not a measurement. A spring that is awaited ends later than it looks: `Animatable.animateTo` returns
 only within its visibility threshold (0.01 by default), about twice the time above. Code that waits for a spring before
 it acts therefore acts late (findings M-013, M-054).
+
+**What material3's own components use** (the motion tokens each class refers to in the pinned
+`material3:1.5.0-beta02` AAR, read with `javap`), which shows the rule at work:
+
+- Fast spatial: toggle buttons, button groups, segmented buttons, chips, switch, radio button, list items, menus,
+  tooltips, snackbars, the FAB and its menu, the floating toolbar, the navigation bar and rail, text fields. `Button`
+  and `IconButton` morph their pressed shape on the default effects spec instead.
+- Default spatial: the navigation drawers (`ModalNavigationDrawer`, `DismissibleNavigationDrawer`), the wide
+  navigation rail's layout and its modal form, tabs, navigation items, checkbox, the FAB, date and time pickers.
+- Slow spatial: one use only, the full-screen search bar. `rememberSearchBarState` expands on the slow spatial spec
+  and collapses on the default one (its `animationSpecForExpand` and `animationSpecForCollapse` defaults).
+- The top bars' snap (`TopAppBarDefaults`) and the modal bottom sheet use the default effects spec.
+- material3-adaptive 1.3.0 moves its panes on a spring of 0.8 / 380, the default spatial values (1.3).
+
+So what covers part of the screen moves at the default speed, and what grows to fill it opens at the slow one and
+closes at the default one.
 
 ### 1.2 What goes on which spec
 
@@ -186,7 +203,7 @@ Severities, as the brief sets them, with how this report reads them:
 - **Low**: consistency; not noticeable without comparing two places.
 
 No finding is in the "Reduced motion" category: everything found either goes through a spec, which Compose ends at
-once, or already checks `isReducedMotion()`. Two places are open questions instead (Q-14, Q-19).
+once, or already checks `isReducedMotion()`. Two places were questions for the owner instead (Q-14, Q-19).
 
 ## 3. Findings
 
@@ -478,10 +495,11 @@ What slips through:
 The plan (`docs/plans/motion-expressive-plan.md`, "The lint rule") proposes a second rule, `PingogramMotionDefault`,
 for items 1–6, so that the existing rule's meaning does not change.
 
-## 5. Open questions for the owner
+## 5. Questions for the owner
 
-Each is a design decision this audit does not make. "Owner decision to confirm (2026-11-11)" applies to every item.
-The plan marks the pull requests that wait for an answer.
+Each is a design decision this audit does not make. They were open when the audit was written and are decided now:
+the decisions are in §6. "The audit's reading" below is what the audit thought before the check of §6, kept as it
+was written.
 
 | # | Question | Where | What the code and the documents say |
 |---|---|---|---|
@@ -511,3 +529,40 @@ The plan marks the pull requests that wait for an answer.
 | Q-24 | Is pinch zoom meant to stop hard at 1× and 5× (no rubber band), and is a swipe up meant to close the stories viewer too? | `feature:media` `ui/zoom/ZoomMath.kt:116`, `story/StoryViewerScreen.kt:137` | §6 "Story viewer" names a swipe down only |
 | Q-25 | Should the fast-scroll index's dot slide between letters or jump, and should a session swipe's threshold haptic fire again when `reset()` moves the row back? | `feature:contacts` `ui/FastScrollIndex.kt:139-144`; `feature:settings` `ui/SessionSwipe.kt:74-76` | §13.8 and §13.10 do not say |
 | Q-26 | Should the motion lint rules cover `:app` (as a feature) and `core:ui` (literal tweens and durations only)? | §4 | `docs/TESTING.md` says "Test sources and `core`/`app` are not checked" |
+
+## 6. The owner's decisions (2026-11-11)
+
+The owner took this audit's recommendation for each question, after asking for a check against Material 3
+Expressive's rules. The check used the two sources that could be read: Material's rule of speed by size (1.1) and
+what material3's own components do in the pinned versions (1.1, "What material3's own components use"). It confirmed
+22 recommendations and changed four, each marked below. The decisions are normative in `docs/DESIGN_SYSTEM.md` §5.1,
+and `docs/plans/motion-expressive-plan.md` §9 names the pull request each lands in.
+
+| # | Decision | Basis |
+|---|---|---|
+| Q-01 | A bar or block that grew in shrinks away on `defaultSpatialSpec`; fast exits stay only where §6 names them | Part of the screen is the default speed; material3's drawer and wide rail use the default spatial spec |
+| Q-02 | Fades come in on `defaultEffectsSpec` and leave on `fastEffectsSpec`, everywhere | One rule; `Motion.kt` already does it |
+| Q-03 | **Changed by the check.** A whole screen growing out of a button or a thumbnail moves on `slowSpatialSpec` on its way in and on `defaultSpatialSpec` on its way back. Shared-axis pushes keep `defaultSpatialSpec` | Material's rule: slow for full-screen animations. material3's full-screen search bar expands on the slow spatial spec and collapses on the default one (`rememberSearchBarState`). The first recommendation was to keep default both ways |
+| Q-04 | **Changed by the check.** Panes move on `defaultSpatialSpec`, read from the scheme | A pane covers part of the window, and material3-adaptive moves its panes on 0.8 / 380, the default spatial values. The first recommendation was slow, as §5 said |
+| Q-05 | The collapsing header keeps material3's own settle | The top bar's snap reads the scheme's default effects spec (`TopAppBarDefaults`) |
+| Q-06 | Signing in and out fade through | The two graphs are unrelated screens |
+| Q-07 | A committed folder swipe lands on `defaultSpatialSpec`, as a tab tap | A full-width list is not a small component |
+| Q-08 | Step-backs inside a screen preview with the back gesture, through one helper | §5 and Android's predictive back guidance |
+| Q-09 | Scroll to top on tab reselect runs on `defaultSpatialSpec`; other programmatic scrolls keep Compose's | It is the one users see; `animateScrollToItem` takes no spec |
+| Q-10 | Chat rows and sessions keep `SwipeToDismissBox`'s own settle | Material's component, used as it is |
+| Q-11 | The emoji panel and a bot keyboard grow in and shrink away on `defaultSpatialSpec` when no keyboard is involved, and back previews it | Part of the screen is the default speed |
+| Q-12 | A reaction badge added to a bubble scales in on `fastSpatialSpec` in its draw phase; no burst | A badge is a small component; material3's chips use the fast spatial spec |
+| Q-13 | A new message fades in place while its neighbours slide | The neighbours' slide shows the direction; a second moving layer costs scroll frames |
+| Q-14 | Floating reactions rise on `slowSpatialSpec` and fade on `slowEffectsSpec`, and stop with power saving's "Stop call screen animations" | "For color or alpha animations use the `effects` equivalent" (`MotionScheme`) |
+| Q-15 | Video tiles fade in and out and the voice and video layouts crossfade, on the effects springs; tiles' bounds do not animate | Opacity is an effects value; resizing a video surface every frame is not measured on a device |
+| Q-16 | The message menu waits for the lifted message's return only when the message had been moved to fit | Most closes stay as fast as now |
+| Q-17 | **Changed by the check.** The record pill springs back on `fastSpatialSpec` | Material's rule: fast for small components such as switches and buttons; material3's toggle buttons, button groups and switch use the fast spatial spec. The first recommendation was default, as swipe to reply |
+| Q-18 | New story's two steps move on the shared axis X; the shared media tabs' content crossfades on the effects springs | A forward step is what the shared axis is for; the tabs sit inside the profile's grid |
+| Q-19 | With animations off, auth's back gesture previews nothing: the step changes when the gesture commits | §5: "replace springs with snaps" |
+| Q-20 | Progress while Telegram answers sits in a reserved slot above the buttons; auth keeps its progress in the button | Nothing moves, and §6 stays as written |
+| Q-21 | Rows that depend on a switch grow in and shrink away inside `SettingsGroup` | One place, no page restructured |
+| Q-22 | **Changed by the check.** A cancelled back gesture in the viewers returns on `defaultSpatialSpec`, and a new gesture cancels the return | The return is a change of scale, which is a spatial value (1.1). The first recommendation was `defaultEffectsSpec` |
+| Q-23 | Story segments and the video seek bar keep their 32 ms steps, to be looked at on a 120 Hz phone before any change | Not measured on a device |
+| Q-24 | Pinch zoom keeps its hard stops; the stories viewer closes on a swipe down only | §6 "Story viewer" names a swipe down; today a swipe up closes it too (`ui/DismissState.kt:101-104`) |
+| Q-25 | The fast-scroll index's dot jumps between letters; the session swipe's haptic fires only for the user's own crossing | The dot is under the finger; a haptic answers what the user did |
+| Q-26 | The motion lint rule covers `:app` as it covers the features; `core:ui` is checked for literal tweens, durations and easings only | `:app` holds screens; `core:ui` is where the helpers build their specs |

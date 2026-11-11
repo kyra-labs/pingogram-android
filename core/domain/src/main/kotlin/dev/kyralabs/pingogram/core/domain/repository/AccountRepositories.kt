@@ -40,6 +40,8 @@ interface AccountRepositories {
 
     fun savedMessagesTopicRepository(): SavedMessagesTopicRepository
 
+    fun directMessagesTopicRepository(): DirectMessagesTopicRepository
+
     fun messageThreadRepository(): MessageThreadRepository
 
     fun messageInteractionRepository(): MessageInteractionRepository
