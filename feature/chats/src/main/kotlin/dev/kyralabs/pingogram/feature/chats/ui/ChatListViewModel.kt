@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -83,6 +84,8 @@ import java.util.Locale
  *   one chat; several chats are deleted for the current user only.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every
  *   emission, so a change shows at the next minute at the latest.
+ * - **Communities** (main list only): the chats of a community that collapses them show as one entry
+ *   ([ChatListCommunities]).
  * - **Archive row** (Chats tab only): full, compact or hidden as [ArchiveRowRepository] keeps it on the device; a
  *   hidden row leaves the archive to the top bar ([ChatListUiState.hiddenArchive]). Its style and the tabs' "Mark all
  *   as read" go through [ChatListActions].
@@ -106,6 +109,7 @@ class ChatListViewModel internal constructor(
     chatLock: ChatLockRepository,
     archiveRowRepository: ArchiveRowRepository,
     archiveSettingsRepository: ArchiveSettingsRepository,
+    communityRepository: CommunityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -124,6 +128,7 @@ class ChatListViewModel internal constructor(
         chatLock: ChatLockRepository,
         archiveRowRepository: ArchiveRowRepository,
         archiveSettingsRepository: ArchiveSettingsRepository,
+        communityRepository: CommunityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -139,6 +144,7 @@ class ChatListViewModel internal constructor(
         chatLock,
         archiveRowRepository,
         archiveSettingsRepository,
+        communityRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -188,6 +194,14 @@ class ChatListViewModel internal constructor(
             effects = effectChannel,
         )
 
+    private val communities =
+        ChatListCommunities(
+            repository = communityRepository.takeIf { kind == ChatListKind.Chats },
+            savedStateHandle = savedStateHandle,
+            scope = viewModelScope,
+            effects = effectChannel,
+        )
+
     private val selectedList: Flow<ChatListType> =
         when (kind) {
             ChatListKind.Archive -> {
@@ -221,7 +235,8 @@ class ChatListViewModel internal constructor(
                 chatRepository.chatList(list).without(lockedChatIds),
                 rowSources,
                 loads.map { it[list] ?: ListLoad() }.distinctUntilChanged(),
-            ) { chats, snapshot, load -> ListState(list, content(list, chats, snapshot, load)) }
+                communities.of(list),
+            ) { chats, snapshot, load, groups -> ListState(list, content(list, chats, snapshot, load, groups)) }
         }
 
     private val folderTabs: Flow<ImmutableList<FolderTab>> =
@@ -306,8 +321,9 @@ class ChatListViewModel internal constructor(
                             chatRepository.chatList(type).without(lockedChatIds),
                             rowSources,
                             loads.map { it[type] ?: ListLoad() }.distinctUntilChanged(),
-                        ) { chats, snapshot, load ->
-                            val content = content(type, chats, snapshot, load, mapper)
+                            communities.of(type),
+                        ) { chats, snapshot, load, groups ->
+                            val content = content(type, chats, snapshot, load, groups, mapper)
                             FolderNeighbourList((type as? ChatListType.Folder)?.id, ChatListUiState(kind, content))
                         }
                     }
@@ -437,6 +453,10 @@ class ChatListViewModel internal constructor(
 
             ChatListEvent.DismissDelete -> {
                 deleteDialog.value = null
+            }
+
+            is ChatListEvent.ToggleCommunity, is ChatListEvent.ShowCommunityChatsSeparately -> {
+                communities.onEvent(event)
             }
         }
     }
@@ -571,19 +591,23 @@ class ChatListViewModel internal constructor(
         }
     }
 
-    /** Runs on [dispatcher]: maps the rows. */
+    /** Runs on [dispatcher]: maps the rows, and puts the chats of [groups] in their communities' entries. */
+    @Suppress("LongParameterList") // The list, what its rows show and how far it loaded, and the mapper to use.
     private fun content(
         list: ChatListType,
         chats: List<Chat>,
         snapshot: RowSnapshot,
         load: ListLoad,
+        groups: CommunityGroups,
         mapper: ChatListItemMapper = this.mapper,
     ): ChatListContent {
         val error = load.error
         return when {
             chats.isNotEmpty() -> {
-                val items = mapper.map(chats, snapshot.sourcesFor(list))
-                ChatListContent.Content(items, pinnedCount = items.pinnedCount())
+                val mapped = mapper.map(chats, snapshot.sourcesFor(list))
+                val pinnedCount = mapped.pinnedCount()
+                val (items, entries) = groupCommunities(mapped, pinnedCount, groups)
+                ChatListContent.Content(items, pinnedCount = pinnedCount, communities = entries)
             }
 
             error != null -> {
@@ -676,9 +700,9 @@ class ChatListViewModel internal constructor(
     }
 }
 
-/** The rows shown; none while the list loads, is empty or failed. */
+/** The rows shown, those in communities' entries too; none while the list loads, is empty or failed. */
 private val ChatListUiState.rows: List<ChatListItemModel>
-    get() = (content as? ChatListContent.Content)?.items.orEmpty()
+    get() = (content as? ChatListContent.Content)?.allRows.orEmpty()
 
 private val ChatListUiState.shownChatIds: Set<Long>
     get() = rows.mapTo(HashSet()) { it.id }

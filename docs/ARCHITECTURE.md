@@ -1149,7 +1149,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     (`setCommunityNotificationSettings`, the other settings sent back as Telegram has them) and shows the community as
     one entry in the chat list (`toggleCommunityAreChatsCollapsed`). The page's sheet that adds chats is
     `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
-    saved state).
+    saved state). The chat list shows those entries (board 19b): `feature:chats`' `ChatListCommunities`, a part of
+    `ChatListViewModel` for the Chats tab, follows `joined()` and, for the communities that collapse their chats, their
+    `details()`; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
+    `ChatListContent.Content.communities`, each `CommunityEntry` before the row its newest chat preceded, as td_api.tl
+    keeps no place for a community in the chat list. Which entries are expanded is in the view model's saved state;
+    `chatsWithCommunities` (`CommunityRows.kt`) lays the entries and their chats among the rows, keyed as before, so a
+    chat moves between its place and its community's group with the list's item animations.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 
