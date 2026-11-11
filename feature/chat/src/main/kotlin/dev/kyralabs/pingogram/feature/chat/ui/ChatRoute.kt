@@ -216,43 +216,43 @@ internal fun ConversationRoute(
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, viewModel::onEvent, snackbarHostState, shown = topic == null) {
-        AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
-            ChatScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                onBack = onBack,
-                modifier = modifier,
-                snackbarHostState = snackbarHostState,
-                jumpState = jumpState,
-                composerText = viewModel.composerText,
-                composerFocus = composerFocus,
-                attach = attach,
-                recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-                reportComment = viewModel.reportComment,
-                emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-                onEmojiPanelEvent = panelViewModel::onEvent,
-                onOpenProfile = onOpenProfile,
-                onOpenChatInfo = onOpenChatInfo,
-                commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-                inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-                search = viewModel.searchState.collectAsStateWithLifecycle().value,
-                searchQuery = viewModel.searchQuery,
-                botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-                topicAction = topicActions?.button,
-                connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
-                onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
-                // A topic's or thread's conversation is not where a new member lands.
-                welcome =
-                    welcomeViewModel.pack
-                        .collectAsStateWithLifecycle()
-                        .value
-                        .takeIf { topic == null },
-                onWelcomeEvent = welcomeViewModel::onEvent,
-                nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
-                recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
-                videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
-            )
-        }
+            AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
+                ChatScreen(
+                    state = state,
+                    onEvent = viewModel::onEvent,
+                    onBack = onBack,
+                    modifier = modifier,
+                    snackbarHostState = snackbarHostState,
+                    jumpState = jumpState,
+                    composerText = viewModel.composerText,
+                    composerFocus = composerFocus,
+                    attach = attach,
+                    recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+                    reportComment = viewModel.reportComment,
+                    emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+                    onEmojiPanelEvent = panelViewModel::onEvent,
+                    onOpenProfile = onOpenProfile,
+                    onOpenChatInfo = onOpenChatInfo,
+                    commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+                    inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+                    search = viewModel.searchState.collectAsStateWithLifecycle().value,
+                    searchQuery = viewModel.searchQuery,
+                    botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+                    topicAction = topicActions?.button,
+                    connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+                    onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+                    // A topic's or thread's conversation is not where a new member lands.
+                    welcome =
+                        welcomeViewModel.pack
+                            .collectAsStateWithLifecycle()
+                            .value
+                            .takeIf { topic == null },
+                    onWelcomeEvent = welcomeViewModel::onEvent,
+                    nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+                    recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+                    videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
+                )
+            }
         }
         ChatSheets(viewModel)
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
