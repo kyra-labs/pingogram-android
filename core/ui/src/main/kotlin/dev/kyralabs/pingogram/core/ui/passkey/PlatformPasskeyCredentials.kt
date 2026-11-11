@@ -5,11 +5,16 @@ import android.credentials.CreateCredentialException
 import android.credentials.CreateCredentialRequest
 import android.credentials.CreateCredentialResponse
 import android.credentials.CredentialManager
+import android.credentials.CredentialOption
+import android.credentials.GetCredentialException
+import android.credentials.GetCredentialRequest
+import android.credentials.GetCredentialResponse
 import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import androidx.annotation.RequiresApi
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.model.PasskeyRegistration
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -59,7 +64,70 @@ internal class PlatformPasskeyCredentials(
             )
         }
     }
+
+    override suspend fun get(requestJson: String): PasskeyResult<PasskeyAssertion> {
+        val manager =
+            activity.getSystemService(CredentialManager::class.java) ?: return PasskeyResult.Unavailable
+        val option =
+            CredentialOption
+                .Builder(TYPE_PUBLIC_KEY_CREDENTIAL, signInData(requestJson), signInData(requestJson))
+                .setIsSystemProviderRequired(false)
+                .build()
+        val request = GetCredentialRequest.Builder(signInMetadata()).addCredentialOption(option).build()
+        return suspendCancellableCoroutine { continuation ->
+            val cancellation = CancellationSignal()
+            continuation.invokeOnCancellation { cancellation.cancel() }
+            manager.getCredential(
+                activity,
+                request,
+                cancellation,
+                activity.mainExecutor,
+                object : OutcomeReceiver<GetCredentialResponse, GetCredentialException> {
+                    override fun onResult(result: GetCredentialResponse) {
+                        val assertion =
+                            result.credential.data
+                                .getString(BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON)
+                                ?.let(::assertionOf)
+                        continuation.resume(assertion?.let { PasskeyResult.Done(it) } ?: PasskeyResult.Failed)
+                    }
+
+                    override fun onError(error: GetCredentialException) {
+                        continuation.resume(signInFailure(error.type))
+                    }
+                },
+            )
+        }
+    }
 }
+
+/**
+ * The sign-in option as Jetpack's `GetPublicKeyCredentialOption` makes it: its subtype and [requestJson], without a
+ * client data hash (the password manager makes the client data), and the flags `CredentialOption` adds: no automatic
+ * pick, the passkey's priority.
+ */
+private fun signInData(requestJson: String): Bundle =
+    Bundle().apply {
+        putString(BUNDLE_KEY_SUBTYPE, BUNDLE_VALUE_SUBTYPE_GET_PUBLIC_KEY_CREDENTIAL_OPTION)
+        putString(BUNDLE_KEY_REQUEST_JSON, requestJson)
+        putBoolean(BUNDLE_KEY_IS_AUTO_SELECT_ALLOWED, false)
+        putInt(BUNDLE_KEY_TYPE_PRIORITY_VALUE, PRIORITY_PASSKEY)
+    }
+
+/** The sign-in request's own data, as Jetpack's `GetCredentialRequest` makes it with its defaults. */
+private fun signInMetadata(): Bundle =
+    Bundle().apply {
+        putBoolean(BUNDLE_KEY_PREFER_IDENTITY_DOC_UI, false)
+        putBoolean(BUNDLE_KEY_PREFER_IMMEDIATELY_AVAILABLE_CREDENTIALS, false)
+    }
+
+/** A sign-in that failed with Android's error [type], as the sign-in words it. */
+internal fun signInFailure(type: String): PasskeyResult<Nothing> =
+    when {
+        type == GetCredentialException.TYPE_USER_CANCELED -> PasskeyResult.Cancelled
+        type == GetCredentialException.TYPE_NO_CREDENTIAL -> PasskeyResult.NotFound
+        type.endsWith(SECURITY_ERROR) -> PasskeyResult.Unavailable
+        else -> PasskeyResult.Failed
+    }
 
 /**
  * The creation request as Jetpack's `CreatePublicKeyCredentialRequest` makes it: its subtype and [requestJson], the
@@ -113,6 +181,15 @@ private const val BUNDLE_KEY_REQUEST_DISPLAY_INFO = "androidx.credentials.BUNDLE
 private const val BUNDLE_KEY_USER_ID = "androidx.credentials.BUNDLE_KEY_USER_ID"
 private const val BUNDLE_KEY_USER_DISPLAY_NAME = "androidx.credentials.BUNDLE_KEY_USER_DISPLAY_NAME"
 private const val BUNDLE_KEY_REGISTRATION_RESPONSE_JSON = "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"
+private const val BUNDLE_VALUE_SUBTYPE_GET_PUBLIC_KEY_CREDENTIAL_OPTION =
+    "androidx.credentials.BUNDLE_VALUE_SUBTYPE_GET_PUBLIC_KEY_CREDENTIAL_OPTION"
+private const val BUNDLE_KEY_TYPE_PRIORITY_VALUE = "androidx.credentials.BUNDLE_KEY_TYPE_PRIORITY_VALUE"
+private const val BUNDLE_KEY_PREFER_IDENTITY_DOC_UI = "androidx.credentials.BUNDLE_KEY_PREFER_IDENTITY_DOC_UI"
+private const val BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON =
+    "androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON"
+
+/** `CredentialOption.PRIORITY_PASSKEY_OR_SIMILAR`, the priority Jetpack gives a passkey option. */
+private const val PRIORITY_PASSKEY = 100
 private const val SECURITY_ERROR = "androidx.credentials.TYPE_SECURITY_ERROR"
 
 /** The account a creation request is for: its `user.name`, and its `user.displayName` where it has one. */

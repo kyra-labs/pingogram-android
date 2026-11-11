@@ -31,6 +31,9 @@ class AuthAccessibilityChecksTest {
     fun phoneNumber() = check(AuthPreviewData.phoneNumberError)
 
     @Test
+    fun phoneNumberWithPasskey() = check(AuthPreviewData.phoneNumber, canUsePasskeys = true)
+
+    @Test
     fun countryPicker() = check(AuthPreviewData.countryPicker)
 
     @Test
@@ -48,8 +51,15 @@ class AuthAccessibilityChecksTest {
     @Test
     fun emailCode() = check(AuthPreviewData.emailCode)
 
-    private fun check(state: AuthUiState) {
-        composeRule.setContent { PingogramTheme(dynamicColor = false) { AuthScreen(state = state, onEvent = {}) } }
+    private fun check(
+        state: AuthUiState,
+        canUsePasskeys: Boolean = false,
+    ) {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                AuthScreen(state = state, onEvent = {}, canUsePasskeys = canUsePasskeys)
+            }
+        }
         composeRule.assertAccessible()
     }
 }

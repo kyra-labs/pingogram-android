@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.model.codeLength
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
+import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
 import dev.kyralabs.pingogram.core.ui.text.isPlausibleEmailAddress
 import dev.kyralabs.pingogram.core.ui.time.timeLeft
@@ -143,6 +145,8 @@ class AuthViewModel internal constructor(
             AuthEvent.CloseCountryPicker -> closeCountryPicker()
             AuthEvent.SubmitPhoneNumber -> submitPhoneNumber()
             AuthEvent.LogInWithQrCode -> requestQrCode()
+            AuthEvent.SignInWithPasskey -> signInWithPasskey()
+            is AuthEvent.PasskeyAnswered -> onPasskeyAnswered(event.result)
             AuthEvent.CancelQrCode -> cancelQrCode()
             is AuthEvent.CodeChanged -> onCodeChanged(event.code)
             AuthEvent.SubmitCode -> submitCode()
@@ -284,6 +288,77 @@ class AuthViewModel internal constructor(
     private fun requestQrCode() {
         launchAction(AuthAction.RequestQrCode, ErrorField.None, authRepository::requestQrCode, awaitsStep = true) {
             update { it.copy(editingPhone = false) }
+        }
+    }
+
+    /**
+     * Signing in with a passkey (`docs/adr/0037-passkeys.md`): asks Telegram for its request, which the route hands to
+     * the user's password manager ([AuthEffect.GetPasskey]); its answer comes back as [AuthEvent.PasskeyAnswered]. The
+     * button shows progress all along.
+     */
+    private fun signInWithPasskey() {
+        if (model.step != AuthStep.WaitPhoneNumber || model.pendingAction != null || model.floodWaitSeconds != null) {
+            return
+        }
+        update { it.copy(pendingAction = AuthAction.SignInWithPasskey) }
+        viewModelScope.launch {
+            when (val request = authRepository.passkeySignInRequest()) {
+                is Outcome.Success -> {
+                    sendEffect(AuthEffect.GetPasskey(request.value))
+                }
+
+                is Outcome.Failure -> {
+                    update { it.copy(pendingAction = null) }
+                    handleFailure(request.error, ErrorField.None)
+                }
+            }
+        }
+    }
+
+    private fun onPasskeyAnswered(result: PasskeyResult<PasskeyAssertion>) {
+        if (model.pendingAction != AuthAction.SignInWithPasskey) return
+        when (result) {
+            is PasskeyResult.Done -> {
+                checkPasskey(result.value)
+            }
+
+            PasskeyResult.Cancelled -> {
+                update { it.copy(pendingAction = null) }
+            }
+
+            PasskeyResult.NotFound -> {
+                update { it.copy(pendingAction = null) }
+                sendEffect(AuthEffect.PasskeyNotUsed(PasskeyProblem.NotFound))
+            }
+
+            PasskeyResult.Unavailable -> {
+                update { it.copy(pendingAction = null) }
+                sendEffect(AuthEffect.PasskeyNotUsed(PasskeyProblem.Unavailable))
+            }
+
+            PasskeyResult.Failed -> {
+                update { it.copy(pendingAction = null) }
+                sendEffect(AuthEffect.PasskeyNotUsed(PasskeyProblem.Failed))
+            }
+        }
+    }
+
+    /** Sends the password manager's answer; as after a code, TDLib then moves on (to the password, or logged in). */
+    private fun checkPasskey(assertion: PasskeyAssertion) {
+        val stepsBefore = stepCount
+        viewModelScope.launch {
+            val outcome = authRepository.checkPasskey(assertion)
+            inputFeedback(AuthAction.SignInWithPasskey, outcome)
+            val moveOn = { update { it.copy(editingPhone = false) } }
+            if (outcome is Outcome.Success && stepCount == stepsBefore) {
+                awaitingStep = moveOn
+                return@launch
+            }
+            update { it.copy(pendingAction = null) }
+            when (outcome) {
+                is Outcome.Success -> moveOn()
+                is Outcome.Failure -> handleFailure(outcome.error, ErrorField.None)
+            }
         }
     }
 
@@ -765,6 +840,7 @@ private val InputChecks =
         AuthAction.SubmitRecoveryCode,
         AuthAction.SubmitNewPassword,
         AuthAction.SubmitEmailCode,
+        AuthAction.SignInWithPasskey,
     )
 
 /** The saved state's key of [AuthViewModel.demoDialog]. */

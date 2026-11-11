@@ -75,5 +75,8 @@ the `gms` APK has about 1.6 MB left of its budget (`docs/PERFORMANCE.md` §8).
 - Pingogram keeps a small copy of Jetpack's request format; a password manager that changes what it reads would need
   Pingogram to follow, where the library would have followed for it. The keys are part of Jetpack's public API, so a
   change there is unlikely.
+- Built: the Passkeys page (kyra-labs/pingogram-android#406) and signing in on the phone number step, both on
+  `core:ui`'s `PasskeyCredentials` (`create`, `get`); signing in reads Jetpack's `GetPublicKeyCredentialOption` and
+  `GetCredentialRequest` keys from the same 1.6.0 classes.
 - Until Telegram's asset links name Pingogram's certificates, adding a passkey and signing in with one fail with the
   snackbar above; listing and removing work, as they go through TDLib only.

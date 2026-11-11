@@ -30,6 +30,13 @@
     <string name="auth_phone_change_title">Change phone number</string>
     <string name="auth_phone_description">Check the calling code and enter your phone number. Telegram will send you a login code.</string>
     <string name="auth_qr_login">Log in with QR code</string>
+    <!-- Between the phone number step's two ways in: Next, then signing in with a passkey. -->
+    <string name="auth_or">or</string>
+    <string name="auth_passkey_sign_in">Sign in with a passkey</string>
+    <string name="auth_passkey_note">Uses a passkey you added in Privacy and security. No code needed.</string>
+    <string name="auth_passkey_not_found">No passkey for this account was found. Add one in Privacy and security once you’re signed in.</string>
+    <string name="auth_passkey_unavailable">Passkeys aren’t available to Pingogram yet</string>
+    <string name="auth_passkey_failed">Couldn’t sign in with a passkey. Try again.</string>
 
     <!-- Login code (FR-A3); %1$s is the phone number. -->
     <string name="auth_code_title">Enter the code</string>

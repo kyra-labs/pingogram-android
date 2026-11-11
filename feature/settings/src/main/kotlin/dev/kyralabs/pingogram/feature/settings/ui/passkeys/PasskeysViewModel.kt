@@ -166,7 +166,7 @@ class PasskeysViewModel
                     effectChannel.trySend(PasskeysEffect.Unavailable)
                 }
 
-                PasskeyResult.Failed -> {
+                PasskeyResult.Failed, PasskeyResult.NotFound -> {
                     mutableUiState.update { it.copy(isAdding = false) }
                     effectChannel.trySend(PasskeysEffect.Failed)
                 }

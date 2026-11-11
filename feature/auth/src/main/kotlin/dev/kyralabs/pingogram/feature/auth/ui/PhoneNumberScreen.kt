@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.phone.CountryField
 import dev.kyralabs.pingogram.core.ui.phone.CountryPickerSheet
+import dev.kyralabs.pingogram.core.ui.phone.CountryPickerUiState
 import dev.kyralabs.pingogram.core.ui.phone.CountryUiModel
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberFields
 import dev.kyralabs.pingogram.core.ui.phone.formatNationalNumber
@@ -45,6 +46,7 @@ import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.PasskeySignInOption
 import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
@@ -53,7 +55,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A2: country, calling code and phone number with live formatting; the country picker opens over it. QR code login
- * (FR-A6) is offered as the alternative.
+ * (FR-A6) is offered as the alternative, and where the device offers passkeys ([canUsePasskeys], Android 14 and later)
+ * signing in with one (`docs/adr/0037-passkeys.md`).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -63,6 +66,7 @@ fun PhoneNumberScreen(
     pendingAction: AuthAction?,
     onEvent: (AuthEvent) -> Unit,
     modifier: Modifier = Modifier,
+    canUsePasskeys: Boolean = false,
 ) {
     val submit = { onEvent(AuthEvent.SubmitPhoneNumber) }
     AuthStepLayout(
@@ -106,15 +110,29 @@ fun PhoneNumberScreen(
             onNumberChange = { onEvent(AuthEvent.PhoneNumberChanged(it)) },
             onDone = submit,
         )
+        // Only while TDLib waits for a phone number, which signing in with a passkey replaces.
+        if (canUsePasskeys && !state.isChangingNumber) {
+            PasskeySignInOption(
+                enabled = canSubmit,
+                inProgress = pendingAction == AuthAction.SignInWithPasskey,
+                onClick = { onEvent(AuthEvent.SignInWithPasskey) },
+            )
+        }
     }
-    state.countryPicker?.let { picker ->
-        CountryPickerSheet(
-            state = picker,
-            onQueryChange = { onEvent(AuthEvent.CountryQueryChanged(it)) },
-            onSelect = { onEvent(AuthEvent.CountrySelected(it)) },
-            onDismiss = { onEvent(AuthEvent.CloseCountryPicker) },
-        )
-    }
+    state.countryPicker?.let { picker -> CountryPicker(picker, onEvent) }
+}
+
+@Composable
+private fun CountryPicker(
+    picker: CountryPickerUiState,
+    onEvent: (AuthEvent) -> Unit,
+) {
+    CountryPickerSheet(
+        state = picker,
+        onQueryChange = { onEvent(AuthEvent.CountryQueryChanged(it)) },
+        onSelect = { onEvent(AuthEvent.CountrySelected(it)) },
+        onDismiss = { onEvent(AuthEvent.CloseCountryPicker) },
+    )
 }
 
 // Also two panes on a phone in landscape (`docs/DESIGN_SYSTEM.md` §7).
@@ -124,6 +142,21 @@ fun PhoneNumberScreen(
 @Composable
 private fun PhoneNumberScreenPreview() {
     AuthScreenPreview(AuthPreviewData.phoneNumber)
+}
+
+@PingogramPreviews
+@Composable
+private fun PhoneNumberScreenPasskeyPreview() {
+    AuthScreenPreview(AuthPreviewData.phoneNumber, canUsePasskeys = true)
+}
+
+@PingogramPreviews
+@Composable
+private fun PhoneNumberScreenSigningInWithPasskeyPreview() {
+    AuthScreenPreview(
+        AuthPreviewData.phoneNumber.copy(pendingAction = AuthAction.SignInWithPasskey),
+        canUsePasskeys = true,
+    )
 }
 
 @PingogramPreviews

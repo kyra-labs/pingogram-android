@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.PasskeyRegistration
 import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
 import dev.kyralabs.pingogram.core.ui.passkey.rememberPasskeyCredentials
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -79,10 +80,15 @@ internal fun PasskeysRoute(
             val message =
                 when (effect) {
                     is PasskeysEffect.CreatePasskey -> {
-                        // Android's sheet shows meanwhile; the answer goes back to the view model as an event.
+                        // Android's sheet shows meanwhile. The answer always goes back, a cancelled wait (the page
+                        // leaving, a rotation) as cancelled, so "Add passkey" never stays busy.
                         launch {
-                            val result = currentCredentials?.create(effect.requestJson) ?: PasskeyResult.Unavailable
-                            viewModel.onEvent(PasskeysEvent.Created(result))
+                            var result: PasskeyResult<PasskeyRegistration> = PasskeyResult.Cancelled
+                            try {
+                                result = currentCredentials?.create(effect.requestJson) ?: PasskeyResult.Unavailable
+                            } finally {
+                                viewModel.onEvent(PasskeysEvent.Created(result))
+                            }
                         }
                         null
                     }

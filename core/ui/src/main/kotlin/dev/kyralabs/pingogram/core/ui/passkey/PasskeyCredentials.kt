@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.model.PasskeyRegistration
 
 /**
@@ -14,6 +15,9 @@ import dev.kyralabs.pingogram.core.domain.model.PasskeyRegistration
 interface PasskeyCredentials {
     /** Asks for a new passkey for Telegram's creation request [requestJson] (WebAuthn's JSON, as TDLib gives it). */
     suspend fun create(requestJson: String): PasskeyResult<PasskeyRegistration>
+
+    /** Asks for a passkey that answers Telegram's sign-in request [requestJson] (WebAuthn's JSON from TDLib). */
+    suspend fun get(requestJson: String): PasskeyResult<PasskeyAssertion>
 }
 
 /** What a password manager answered. */
@@ -31,7 +35,10 @@ sealed interface PasskeyResult<out T> {
      */
     data object Unavailable : PasskeyResult<Nothing>
 
-    /** Anything else went wrong; nothing was made. */
+    /** Signing in: no password manager has a passkey for the request (none was added, or it was deleted there). */
+    data object NotFound : PasskeyResult<Nothing>
+
+    /** Anything else went wrong; nothing was made or sent. */
     data object Failed : PasskeyResult<Nothing>
 }
 

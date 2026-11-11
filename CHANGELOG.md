@@ -35,6 +35,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   know it), and Telegram asks them whether to keep it.
 - Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
   Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
+- On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
+  are signed in without a code (or asked for your 2-step verification password).
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

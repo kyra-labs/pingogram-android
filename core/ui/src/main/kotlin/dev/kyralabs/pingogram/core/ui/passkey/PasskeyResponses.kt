@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.passkey
 
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.model.PasskeyRegistration
 import org.json.JSONException
 import org.json.JSONObject
@@ -30,6 +31,29 @@ internal fun registrationOf(responseJson: String): PasskeyRegistration? =
         PasskeyRegistration(
             clientData = String(base64Url(response.getString("clientDataJSON")), Charsets.UTF_8),
             attestationObject = base64Url(response.getString("attestationObject")),
+        )
+    } catch (_: JSONException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
+/**
+ * A password manager's answer to a sign-in request ([responseJson], WebAuthn's `AuthenticationResponseJSON`) as TDLib's
+ * `checkAuthenticationPasskey` takes it: the credential's id as written (base64url), the client data decoded into its
+ * JSON text, the authenticator data, signature and user handle (empty where it has none) into their bytes. Null where
+ * the answer lacks one of the others or is no JSON.
+ */
+internal fun assertionOf(responseJson: String): PasskeyAssertion? =
+    try {
+        val json = JSONObject(responseJson)
+        val response = json.getJSONObject("response")
+        PasskeyAssertion(
+            credentialId = json.getString("id"),
+            clientData = String(base64Url(response.getString("clientDataJSON")), Charsets.UTF_8),
+            authenticatorData = base64Url(response.getString("authenticatorData")),
+            signature = base64Url(response.getString("signature")),
+            userHandle = response.optString("userHandle").let { if (it.isEmpty()) ByteArray(0) else base64Url(it) },
         )
     } catch (_: JSONException) {
         null
