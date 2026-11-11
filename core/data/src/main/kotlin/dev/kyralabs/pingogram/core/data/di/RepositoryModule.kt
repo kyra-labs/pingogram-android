@@ -85,6 +85,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibScheduledMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -191,6 +192,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -491,6 +493,9 @@ interface RepositoryModule {
 
     @Binds
     fun savedGifRepository(repository: TdlibSavedGifRepository): SavedGifRepository
+
+    @Binds
+    fun savedMessagesTagRepository(repository: TdlibSavedMessagesTagRepository): SavedMessagesTagRepository
 
     @Binds
     fun stickerSetRepository(repository: TdlibStickerSetRepository): StickerSetRepository

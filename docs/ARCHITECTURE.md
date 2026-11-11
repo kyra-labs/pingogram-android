@@ -831,6 +831,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   in its saved state) hands the tabs to the top bar through `LocalConversationTabs`. What is sent from a tab goes to
   Saved Messages without a topic (`SendOptions.tdTopic` leaves Saved Messages topics out), which Telegram files under
   the user's notes, so only the notes' tab has a composer.
+- **Saved Messages tags** (the owner's board 8): `core:domain`'s `SavedMessagesTagRepository`
+  (`TdlibSavedMessagesTagRepository`, `core:data`, account-scoped, no cache: TDLib keeps the tags) reads all of Saved
+  Messages' tags (`getSavedMessagesTags` of topic 0, again on its `updateSavedMessagesTags`, through `readOn`), pages
+  the messages a tag filters (`searchSavedMessages` without words, as `TaggedMessages`) and sets a tag's label
+  (`setSavedMessagesTagLabel`). `feature:chat`'s `SavedTagsViewModel` (`saved/`, held by `SavedMessagesConversation`
+  beside `SavedTabsViewModel`) keeps the selected tag and the rename dialog in its saved state; the chips
+  (`SavedTagChips`) join the tabs in `LocalConversationTabs` on "All", and a selected tag shows `SavedTagScreen` in the
+  conversation's place, whose rows open the "All" conversation at their message.
 - **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
   others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
   `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a

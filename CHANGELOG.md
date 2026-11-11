@@ -26,6 +26,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Removing reactions: in a group, administrators remove someone's reaction to a message, or all their recent reactions,
   from the message's Reactions sheet.
 - The welcome messages of a group show to new members at the top of the chat, until "Got it" folds them into a bar.
+- Saved Messages tags: your tags show as chips under the tabs. A tag filters your saved messages, and you can rename
+  its label.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 

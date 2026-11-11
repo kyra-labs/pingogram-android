@@ -76,6 +76,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -392,6 +393,10 @@ object ActiveAccountModule {
 
     @Provides
     fun savedGifRepository(accounts: Accounts): SavedGifRepository = accounts.active.savedGifRepository()
+
+    @Provides
+    fun savedMessagesTagRepository(accounts: Accounts): SavedMessagesTagRepository =
+        accounts.active.savedMessagesTagRepository()
 
     @Provides
     fun stickerSetRepository(accounts: Accounts): StickerSetRepository = accounts.active.stickerSetRepository()
