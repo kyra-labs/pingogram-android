@@ -38,6 +38,7 @@ import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.core.navigation.ChatStatisticsRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
@@ -48,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
@@ -179,6 +181,12 @@ fun PingogramApp(
     val openNewContact = remember(navController) { { navController.navigateToNewContact() } }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
+    val openPollStatistics =
+        remember(navController) {
+            { chatId: Long, messageId: Long ->
+                navController.navigate(ChatStatisticsRoute(chatId, messageId)) { launchSingleTop = true }
+            }
+        }
     val openLockedChats =
         remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
     val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
@@ -207,6 +215,7 @@ fun PingogramApp(
                             LocalTabReselection provides tabReselection,
                             LocalFeedbackLauncher provides openFeedback,
                             LocalRecentCallsLauncher provides openRecentCalls,
+                            LocalPollStatisticsLauncher provides openPollStatistics,
                             // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on
                             // the page.
                             LocalLockedChatsLauncher provides openLockedChats,

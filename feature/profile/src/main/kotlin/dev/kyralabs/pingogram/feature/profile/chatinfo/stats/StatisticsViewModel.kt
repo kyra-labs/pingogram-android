@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChatStatistics
 import dev.kyralabs.pingogram.core.domain.model.StatisticGraph
 import dev.kyralabs.pingogram.core.domain.model.StatisticGraphEntry
+import dev.kyralabs.pingogram.core.domain.model.StatisticGraphKind
 import dev.kyralabs.pingogram.core.domain.model.TopSender
 import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.profile.R
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -38,9 +40,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The statistics of supergroup or channel [chatId] (`REQUIREMENTS.md` FR-P3): `getChatStatistics` once the page opens,
  * then the graphs Telegram gives only as a token, three at a time (`getStatisticalGraph`). Numbers and dates are
- * formatted here in the user's language ([StatisticsFormat]); the charts keep their raw values for the canvas.
+ * formatted here in the user's language ([StatisticsFormat]); the charts keep their raw values for the canvas. With a
+ * [pollMessageId], the page shows that poll's votes over time instead (`getPollVoteStatistics`, [isPoll]).
  */
-@Suppress("LongParameterList") // The route, two repositories, the clock, the patterns and the language.
+@Suppress("LongParameterList") // The route, two repositories, the clock, the patterns, the poll and the language.
 @HiltViewModel
 class StatisticsViewModel internal constructor(
     private val chatId: Long,
@@ -48,6 +51,7 @@ class StatisticsViewModel internal constructor(
     private val userRepository: UserRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
+    private val pollMessageId: Long = 0,
     private val locale: () -> Locale,
 ) : ViewModel() {
     @Inject
@@ -63,8 +67,12 @@ class StatisticsViewModel internal constructor(
         userRepository,
         clock,
         timePatterns,
+        savedStateHandle.toRoute<ChatStatisticsRoute>().pollMessageId,
         Locale::getDefault,
     )
+
+    /** The page shows a poll's votes over time rather than the chat's statistics. */
+    val isPoll: Boolean = pollMessageId != 0L
 
     private val mutableUiState = MutableStateFlow<StatisticsUiState>(StatisticsUiState.Loading)
     val uiState: StateFlow<StatisticsUiState> = mutableUiState.asStateFlow()
@@ -88,6 +96,10 @@ class StatisticsViewModel internal constructor(
     private fun load() {
         mutableUiState.value = StatisticsUiState.Loading
         viewModelScope.launch {
+            if (isPoll) {
+                loadPoll()
+                return@launch
+            }
             when (val loaded = repository.statistics(chatId)) {
                 is Outcome.Success -> show(loaded.value)
                 is Outcome.Failure -> mutableUiState.value = StatisticsUiState.Error(loaded.error)
@@ -112,6 +124,32 @@ class StatisticsViewModel internal constructor(
         statistics.graphs
             .mapNotNull { entry -> (entry.graph as? StatisticGraph.Pending)?.let { entry to it.token } }
             .forEach { (entry, token) -> viewModelScope.launch { loadGraph(entry, token, format) } }
+    }
+
+    /** The poll's votes over time, as the page's one chart, read again by its token where Telegram gives one. */
+    private suspend fun loadPoll() {
+        val graph =
+            when (val loaded = repository.pollVotes(chatId, pollMessageId)) {
+                is Outcome.Failure -> {
+                    mutableUiState.value = StatisticsUiState.Error(loaded.error)
+                    return
+                }
+
+                is Outcome.Success -> {
+                    loaded.value
+                }
+            }
+        val entry = StatisticGraphEntry(StatisticGraphKind.PollVotes, graph)
+        val format = StatisticsFormat(locale(), clock.zone(), timePatterns)
+        mutableUiState.value =
+            StatisticsUiState.Content(
+                isChannel = true,
+                period = null,
+                overview = persistentListOf(),
+                graphs = persistentListOf(graphItem(entry.kind.name, entry, format)),
+                topSenders = persistentListOf(),
+            )
+        (graph as? StatisticGraph.Pending)?.let { loadGraph(entry, it.token, format) }
     }
 
     private suspend fun loadGraph(

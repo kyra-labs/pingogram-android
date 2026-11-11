@@ -24,6 +24,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
@@ -291,6 +292,7 @@ internal fun ChatEffects(
     val showErrorDetails = isDebuggable()
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     val haptics = LocalHapticFeedback.current
+    val openPollStatistics = LocalPollStatisticsLauncher.current
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -363,6 +365,11 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenInteractions -> {
                         onOpenInteractions(effect.request)
+                        ""
+                    }
+
+                    is ChatEffect.OpenPollStatistics -> {
+                        openPollStatistics?.invoke(effect.chatId, effect.messageId)
                         ""
                     }
 

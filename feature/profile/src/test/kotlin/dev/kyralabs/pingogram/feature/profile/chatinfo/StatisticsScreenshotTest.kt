@@ -16,7 +16,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the statistics page (`docs/TESTING.md`): a channel's (lines, stacked bars, shares of the whole, and a
  * chart without data) in light, dark, AMOLED, high contrast, right to left, a 700 dp window and twice the
- * font size; a supergroup's with its top members, the error and loading. Tall, so the charts show.
+ * font size; a supergroup's with its top members, the error and loading; a poll's votes in every variant. Tall, so the
+ * charts show.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = TALL)
@@ -55,10 +56,39 @@ class StatisticsScreenshotTest {
     @Config(qualifiers = COMPACT)
     fun loading() = capture(ScreenshotVariant.Light, StatisticsUiState.Loading)
 
+    @Test
+    @Config(qualifiers = COMPACT)
+    fun pollLight() = capture(ScreenshotVariant.Light, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = COMPACT)
+    fun pollDark() = capture(ScreenshotVariant.Dark, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = COMPACT)
+    fun pollAmoled() = capture(ScreenshotVariant.Amoled, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = COMPACT)
+    fun pollHighContrast() = capture(ScreenshotVariant.HighContrast, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = COMPACT)
+    fun pollRtl() = capture(ScreenshotVariant.Rtl, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun pollMedium() = capture(ScreenshotVariant.Medium, StatisticsPreviewData.poll, isPoll = true)
+
+    @Test
+    @Config(qualifiers = TALL, fontScale = 2f)
+    fun pollFontScale200() = capture(ScreenshotVariant.Light, StatisticsPreviewData.poll, isPoll = true)
+
     private fun capture(
         variant: ScreenshotVariant,
         state: StatisticsUiState,
-    ) = captureRoboImage { ScreenshotTheme(variant) { StatisticsScreen(state, {}, {}) } }
+        isPoll: Boolean = false,
+    ) = captureRoboImage { ScreenshotTheme(variant) { StatisticsScreen(state, {}, {}, isPoll = isPoll) } }
 }
 
 private const val TALL = "w411dp-h1800dp-xxhdpi"

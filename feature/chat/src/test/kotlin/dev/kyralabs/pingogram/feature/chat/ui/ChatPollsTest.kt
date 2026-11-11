@@ -242,6 +242,39 @@ class ChatPollsTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `a poll whose votes Telegram counts offers its statistics, which open the page`() =
+            runViewModelTest {
+                messageActions.onProperties = {
+                    Outcome.Success(FakeMessageActionRepository.ALL_ALLOWED.copy(canGetPollVoteStatistics = true))
+                }
+                val viewModel = conversation(poll())
+
+                send(viewModel, ChatEvent.ShowMessageActions(MESSAGE))
+                val actions =
+                    viewModel.uiState.value.messageActions
+                        ?.actions
+                        .orEmpty()
+                send(viewModel, PollEvent.ShowStatistics(MESSAGE))
+
+                assertTrue(MessageAction.PollStatistics in actions)
+                assertEquals(listOf(ChatEffect.OpenPollStatistics(GROUP_CHAT, MESSAGE)), effects)
+            }
+
+        @Test
+        fun `a poll without statistics offers none`() =
+            runViewModelTest {
+                val viewModel = conversation(poll())
+
+                send(viewModel, ChatEvent.ShowMessageActions(MESSAGE))
+
+                val actions =
+                    viewModel.uiState.value.messageActions
+                        ?.actions
+                        .orEmpty()
+                assertFalse(MessageAction.PollStatistics in actions)
+            }
+
+        @Test
         fun `retracting sends no answers`() =
             runViewModelTest {
                 val viewModel = conversation(poll(chosen = 1, revoting = true))

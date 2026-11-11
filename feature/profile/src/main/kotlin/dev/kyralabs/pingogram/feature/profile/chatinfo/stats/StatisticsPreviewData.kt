@@ -113,4 +113,38 @@ internal object StatisticsPreviewData {
         )
 
     val error = StatisticsUiState.Error(DomainError.Network)
+
+    /** A poll's votes over time: each answer's votes by day, stacked. */
+    val poll =
+        StatisticsUiState.Content(
+            isChannel = true,
+            period = null,
+            overview = persistentListOf(),
+            graphs =
+                persistentListOf(
+                    GraphItem(
+                        key = "PollVotes",
+                        title = R.string.statistics_graph_poll_votes,
+                        state =
+                            GraphState.Drawn(
+                                ChartUi(
+                                    series =
+                                        persistentListOf(
+                                            series("Summer", listOf(40, 62, 31, 18, 12, 9, 6)),
+                                            series("Autumn", listOf(28, 44, 25, 15, 9, 7, 5)),
+                                            series("Winter", listOf(10, 16, 9, 6, 4, 3, 2)),
+                                        ),
+                                    style = ChartStyle.Bar,
+                                    stacked = true,
+                                    percentage = false,
+                                    maxValue = 122,
+                                    maxLabel = "122",
+                                    xLabels = persistentListOf("Oct 16", "Oct 19", "Oct 22"),
+                                    pointCount = 7,
+                                ),
+                            ),
+                    ),
+                ),
+            topSenders = persistentListOf(),
+        )
 }

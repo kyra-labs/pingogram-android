@@ -49,6 +49,12 @@ sealed interface ChatEffect {
         val request: MessageInteractionsRequest,
     ) : ChatEffect
 
+    /** Open the votes over time of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
+    data class OpenPollStatistics(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
+
     /** Open chat [chatId], a group or channel a mention named. */
     data class OpenChat(
         val chatId: Long,

@@ -33,3 +33,9 @@ private fun StatisticsErrorPreview() {
 private fun StatisticsLoadingPreview() {
     PingogramPreview { StatisticsScreen(StatisticsUiState.Loading, onEvent = {}, onBack = {}) }
 }
+
+@PingogramPreviews
+@Composable
+private fun StatisticsPollPreview() {
+    PingogramPreview { StatisticsScreen(StatisticsPreviewData.poll, onEvent = {}, onBack = {}, isPoll = true) }
+}

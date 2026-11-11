@@ -1343,6 +1343,7 @@ class ChatViewModel internal constructor(
         when (event) {
             is PollEvent.RetractVote -> messageActions.retractVote(event.messageId)
             is PollEvent.StopPoll -> messageActions.stopPoll(event.messageId)
+            is PollEvent.ShowStatistics -> messageActions.showPollStatistics(event.messageId)
             else -> polls.onEvent(event)
         }
     }

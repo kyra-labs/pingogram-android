@@ -54,7 +54,10 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileSectionHeader
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowContainerColor
 
-/** The statistics page: hoists [StatisticsViewModel]; a top member's row opens their profile. */
+/**
+ * The statistics page: hoists [StatisticsViewModel]; a top member's row opens their profile. A poll's votes over time
+ * take the same page, titled "Poll statistics".
+ */
 @Composable
 internal fun StatisticsRoute(
     onBack: () -> Unit,
@@ -71,7 +74,7 @@ internal fun StatisticsRoute(
             }
         }
     }
-    StatisticsScreen(state, viewModel::onEvent, onBack, modifier)
+    StatisticsScreen(state, viewModel::onEvent, onBack, modifier, isPoll = viewModel.isPoll)
 }
 
 /**
@@ -88,9 +91,10 @@ internal fun StatisticsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    isPoll: Boolean = false,
 ) {
     InfoPageScaffold(
-        title = stringResource(R.string.statistics),
+        title = stringResource(if (isPoll) R.string.statistics_poll else R.string.statistics),
         onBack = onBack,
         modifier = modifier,
     ) { innerPadding ->
@@ -137,7 +141,9 @@ private fun StatisticsList(
     ) {
         item(key = PERIOD, contentType = PERIOD) {
             Text(
-                text = stringResource(R.string.statistics_period, state.period),
+                text =
+                    state.period?.let { stringResource(R.string.statistics_period, it) }
+                        ?: stringResource(R.string.statistics_poll_text),
                 modifier = rowModifier,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,

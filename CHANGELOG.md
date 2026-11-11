@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Poll statistics: a channel's administrators see how a poll's votes came in over time, from the poll's message
+  actions.
 - Log in with Telegram: a website or app that asks to log in with your account opens a sheet that says who asks and
   from where, asks for the code the website shows where Telegram wants it, and shares your phone number or lets its bot
   write only if you turn them on.

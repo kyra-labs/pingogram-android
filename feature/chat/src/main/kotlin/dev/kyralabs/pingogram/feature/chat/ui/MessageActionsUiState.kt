@@ -153,6 +153,9 @@ enum class MessageAction {
     /** Close its poll for everyone, after a question (`ChatPolls`): its author only. */
     StopPoll,
 
+    /** Show its poll's votes over time (`feature:profile`'s statistics page), where Telegram gives them. */
+    PollStatistics,
+
     /** Copy its file (an album's every file) into the public Downloads collection. */
     SaveToDownloads,
 

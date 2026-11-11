@@ -160,6 +160,7 @@ internal val StatisticGraphKind.title: Int
             StatisticGraphKind.StoryInteractions -> R.string.statistics_graph_story_interactions
             StatisticGraphKind.StoryReactions -> R.string.statistics_graph_story_reactions
             StatisticGraphKind.InstantViewInteractions -> R.string.statistics_graph_instant_view
+            StatisticGraphKind.PollVotes -> R.string.statistics_graph_poll_votes
         }
 
 /** The graphs over the hours of a day, whose x values are hours. */

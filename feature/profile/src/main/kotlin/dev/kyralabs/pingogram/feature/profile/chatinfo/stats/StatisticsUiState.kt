@@ -18,14 +18,14 @@ sealed interface StatisticsUiState {
     ) : StatisticsUiState
 
     /**
-     * @property period the days the statistics cover, "Oct 1 – Oct 22".
+     * @property period the days the statistics cover, "Oct 1 – Oct 22"; null for a poll's votes.
      * @property overview the period's numbers against the period before.
      * @property graphs the charts, in Telegram's order.
      * @property topSenders a supergroup's members who sent the most messages.
      */
     data class Content(
         val isChannel: Boolean,
-        val period: String,
+        val period: String?,
         val overview: ImmutableList<OverviewItem>,
         val graphs: ImmutableList<GraphItem>,
         val topSenders: ImmutableList<TopSenderItem>,

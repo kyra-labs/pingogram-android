@@ -293,6 +293,12 @@ internal class ChatMessageActions(
         onEffect(ChatEffect.OpenInteractions(request))
     }
 
+    /** Opens the votes over time of the poll of message [messageId], where TDLib gives them. */
+    fun showPollStatistics(messageId: Long) =
+        act(messageId, MessageAction.PollStatistics) { _, _, _ ->
+            onEffect(ChatEffect.OpenPollStatistics(chatId, messageId))
+        }
+
     /** Saves the file of message [messageId], an album's every file, to Downloads. */
     fun saveToDownloads(messageId: Long) =
         act(messageId, MessageAction.SaveToDownloads) { context, message, _ -> onSave(context.albumOf(message)) }
@@ -516,9 +522,9 @@ private fun ActionContext.interactionActions(
     )
 
 /**
- * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), and stopping an open poll
+ * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), stopping an open poll
  * where TDLib lets the user edit the message (td_api.tl: `stopPoll` needs `can_be_edited`), which only its author and
- * the chat's editors can.
+ * the chat's editors can, and its votes over time where Telegram gives them (`can_get_poll_vote_statistics`).
  */
 private fun pollActions(
     message: Message,
@@ -528,6 +534,7 @@ private fun pollActions(
     return listOfNotNull(
         MessageAction.RetractVote.takeIf { poll.canRetractVote },
         MessageAction.StopPoll.takeIf { properties.canBeEdited && !poll.isClosed },
+        MessageAction.PollStatistics.takeIf { properties.canGetPollVoteStatistics },
     )
 }
 

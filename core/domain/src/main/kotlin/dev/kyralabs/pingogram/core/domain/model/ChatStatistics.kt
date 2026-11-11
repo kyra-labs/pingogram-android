@@ -62,6 +62,9 @@ enum class StatisticGraphKind {
     StoryInteractions,
     StoryReactions,
     InstantViewInteractions,
+
+    /** A poll's votes over time (`ChatStatisticsRepository.pollVotes`). */
+    PollVotes,
 }
 
 /** A graph: its data, a [token] to ask for it later with, or why Telegram has none. */

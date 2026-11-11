@@ -126,8 +126,8 @@ internal class ChatPolls(
 
             is PollEvent.OpenLink -> onEffect(ChatEffect.OpenUrl(event.url))
 
-            // Through the message actions, which check what TDLib allows: retract and askStop.
-            is PollEvent.RetractVote, is PollEvent.StopPoll -> Unit
+            // Through the message actions, which check what TDLib allows: retract, askStop and the statistics.
+            is PollEvent.RetractVote, is PollEvent.StopPoll, is PollEvent.ShowStatistics -> Unit
         }
     }
 

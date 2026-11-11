@@ -75,8 +75,18 @@ class StatisticsViewModelTest : GroupViewModelTest() {
     ) : ChatStatisticsRepository {
         val graph = CompletableDeferred<Outcome<StatisticGraph>>()
         val tokens = mutableListOf<String>()
+        var poll: Outcome<StatisticGraph> = Outcome.Success(StatisticGraph.Loaded(chart))
+        val polls = mutableListOf<Long>()
 
         override suspend fun statistics(chatId: Long) = answer
+
+        override suspend fun pollVotes(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<StatisticGraph> {
+            polls += messageId
+            return poll
+        }
 
         override suspend fun graph(
             chatId: Long,
@@ -87,12 +97,15 @@ class StatisticsViewModelTest : GroupViewModelTest() {
         }
     }
 
-    private suspend fun TestScope.viewModel(repository: FakeStatistics): StatisticsViewModel {
+    private suspend fun TestScope.viewModel(
+        repository: FakeStatistics,
+        pollMessageId: Long = 0,
+    ): StatisticsViewModel {
         val users = TdlibUserRepository(client, backgroundScope)
         runCurrent()
         client.emit(TdApiFixtures.updateUser(TdApiFixtures.user(id = ADA, firstName = "Ada")))
         runCurrent()
-        return StatisticsViewModel(CHAT, repository, users, clock, patterns) { Locale.US }.also {
+        return StatisticsViewModel(CHAT, repository, users, clock, patterns, pollMessageId) { Locale.US }.also {
             created += it
             runCurrent()
         }
@@ -182,7 +195,57 @@ class StatisticsViewModelTest : GroupViewModelTest() {
             assertTrue(viewModel.content.graphs.isEmpty())
         }
 
+    @Test
+    fun `a poll's statistics show its votes as the one chart, without the chat's`() =
+        runTest {
+            val repository = FakeStatistics()
+            val viewModel = viewModel(repository, pollMessageId = POLL)
+
+            val content = viewModel.content
+            assertTrue(viewModel.isPoll)
+            assertEquals(null, content.period)
+            assertTrue(content.overview.isEmpty())
+            assertEquals(StatisticGraphKind.PollVotes.name, content.graphs.single().key)
+            assertTrue(content.graphs.single().state is GraphState.Drawn)
+            assertEquals(listOf(POLL), repository.polls)
+        }
+
+    @Test
+    fun `a poll's votes Telegram gives as a token are read by it`() =
+        runTest {
+            val repository = FakeStatistics().apply { poll = Outcome.Success(StatisticGraph.Pending("votes")) }
+            val viewModel = viewModel(repository, pollMessageId = POLL)
+            assertEquals(
+                GraphState.Loading,
+                viewModel.content.graphs
+                    .single()
+                    .state,
+            )
+
+            repository.graph.complete(Outcome.Success(StatisticGraph.Loaded(chart)))
+            runCurrent()
+
+            assertEquals(listOf("votes"), repository.tokens)
+            assertTrue(
+                viewModel.content.graphs
+                    .single()
+                    .state is GraphState.Drawn,
+            )
+        }
+
+    @Test
+    fun `a poll's statistics that cannot be read show the error`() =
+        runTest {
+            val repository = FakeStatistics().apply { poll = Outcome.Failure(DomainError.Network) }
+
+            assertEquals(
+                StatisticsUiState.Error(DomainError.Network),
+                viewModel(repository, pollMessageId = POLL).uiState.value,
+            )
+        }
+
     private companion object {
+        const val POLL = 77L
         const val DAY_1 = 1_792_540_800_000L
         const val DAY_2 = DAY_1 + 86_400_000L
         const val DAY_3 = DAY_2 + 86_400_000L

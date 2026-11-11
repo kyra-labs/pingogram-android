@@ -743,6 +743,8 @@
     <!-- Statistics of a supergroup or channel, from the info page's Administration. -->
     <string name="statistics">Statistics</string>
     <string name="statistics_period">%1$s, as Telegram counts it</string>
+    <string name="statistics_poll">Poll statistics</string>
+    <string name="statistics_poll_text">How the votes came in over time, as Telegram counts them. Only the chat\'s administrators see this.</string>
     <string name="statistics_overview">Overview</string>
     <string name="statistics_top_members">Top members</string>
     <plurals name="statistics_messages">
@@ -776,6 +778,7 @@
     <string name="statistics_graph_story_interactions">Story interactions</string>
     <string name="statistics_graph_story_reactions">Story reactions</string>
     <string name="statistics_graph_instant_view">Instant View interactions</string>
+    <string name="statistics_graph_poll_votes">Votes</string>
     <string name="statistics_graph_loading">Loading the chart</string>
     <string name="statistics_graph_empty">Not enough data for this chart</string>
     <string name="statistics_chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
