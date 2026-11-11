@@ -13,7 +13,9 @@ import kotlinx.collections.immutable.persistentListOf
  * ([allowsAddingOptions], not in channels or anonymous polls). Voters' names show unless [isAnonymous]; channels allow
  * anonymous polls only. [hidesResults] keeps the results from voters until the poll closes, [shufflesOptions] shows
  * each voter the answers in an order of their own. The poll closes [openPeriod] seconds after it is sent, or at
- * [closeDate] (Unix time), or when its author stops it (both 0). `toString()` leaves the texts out.
+ * [closeDate] (Unix time), or when its author stops it (both 0). In a channel only, voting may be limited to its
+ * subscribers ([membersOnly]) or to users of some countries ([countryCodes], ISO 3166-1 alpha-2; empty for every
+ * country). `toString()` leaves the texts out.
  */
 data class NewPoll(
     val question: String,
@@ -30,13 +32,15 @@ data class NewPoll(
     val allowsAddingOptions: Boolean = false,
     val openPeriod: Int = 0,
     val closeDate: Long = 0,
+    val membersOnly: Boolean = false,
+    val countryCodes: ImmutableList<String> = persistentListOf(),
 ) {
     val isQuiz: Boolean get() = correctOptionIndexes.isNotEmpty()
 
     override fun toString() =
         "NewPoll(options=${options.size}, isAnonymous=$isAnonymous, allowsMultipleAnswers=$allowsMultipleAnswers, " +
             "correctOptionIndexes=$correctOptionIndexes, photo=${photo != null}, openPeriod=$openPeriod, " +
-            "closeDate=$closeDate, …)"
+            "closeDate=$closeDate, membersOnly=$membersOnly, countryCodes=$countryCodes, …)"
 
     companion object {
         /** The longest question, in characters (td_api.tl: 1–255 for users). */

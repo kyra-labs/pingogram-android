@@ -80,6 +80,7 @@ internal fun LazyListScope.pollSettingItems(
         )
     }
     answerSettingItems(sheet, editor)
+    pollVotersItems(sheet, editor)
     closesItem(editor, actions, now)
 }
 

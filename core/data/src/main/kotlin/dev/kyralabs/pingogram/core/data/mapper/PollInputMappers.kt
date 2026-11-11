@@ -7,7 +7,8 @@ import org.drinkless.tdlib.TdApi
 /**
  * `inputMessagePoll` of this poll: plain question, description and options (only Premium users may add custom emoji),
  * the photo as a local file, each answer's link as `inputPollMediaLink`. A quiz takes as many answers per voter as it
- * has correct ones, and its votes are final; a regular poll keeps the user's choices.
+ * has correct ones, and its votes are final; a regular poll keeps the user's choices. Who may vote (subscribers only,
+ * some countries) goes as it is: the form offers it in channels only.
  */
 internal fun NewPoll.toInputMessagePoll(): TdApi.InputMessagePoll {
     val type =
@@ -36,8 +37,8 @@ internal fun NewPoll.toInputMessagePoll(): TdApi.InputMessagePoll {
         isAnonymous,
         if (isQuiz) correctOptionIndexes.size > 1 else allowsMultipleAnswers,
         !isQuiz && allowsRevoting,
-        false,
-        emptyArray(),
+        membersOnly,
+        countryCodes.toTypedArray(),
         shufflesOptions,
         hidesResults,
         type,

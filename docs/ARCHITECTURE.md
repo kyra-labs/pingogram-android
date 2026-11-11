@@ -919,6 +919,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `PollEditor` (`attach/`, its draft in the saved state through `PollSaving.kt`) builds the `NewPoll`
   (`inputMessagePoll`: description, a picked photo as `inputPollMediaPhoto`, answers' links as `inputPollMediaLink`,
   several correct answers, the settings and `open_period` or `close_date`), its photo prepared by `ChatAttachments`.
+  In a channel, the form also limits who may vote (`PollVoters`: subscribers, `NewPoll.membersOnly`, or some countries,
+  `NewPoll.countryCodes`, picked with `PollCountriesViewModel` over `CountryRepository`).
 - **Checklists** (FR-C4): `core:domain`'s `ChecklistRepository` (`TdlibChecklistRepository`, `core:data`, no cache)
   marks tasks as done or not done (`markChecklistTasksAsDone`) and adds tasks (`addChecklistTasks`, each with the id
   after the checklist's highest, which td_api.tl leaves to the client); TDLib answers both with `updateMessageContent`

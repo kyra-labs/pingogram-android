@@ -37,6 +37,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 
+- A channel's new poll can be limited to its subscribers or to people in some countries ("Who can vote").
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
   with "Show full text" to go back (in the reader's language where they don't read the post's).
 

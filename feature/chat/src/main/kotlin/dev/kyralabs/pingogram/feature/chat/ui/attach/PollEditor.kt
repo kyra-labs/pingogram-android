@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.NewPollOption
 import dev.kyralabs.pingogram.core.domain.model.PollLimits
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import java.util.Locale
 
@@ -65,6 +67,15 @@ class PollEditor(
     var allowsAddingOptions by mutableStateOf(initial.allowsAddingOptions)
 
     var isQuiz by mutableStateOf(initial.isQuiz)
+
+    /** Who may vote, in a channel: everyone, its subscribers, or users of [countries]. */
+    var voters by mutableStateOf(initial.voters)
+
+    /**
+     * The countries whose users may vote while [voters] is [PollVoters.Countries], ISO codes in the order picked; the
+     * form adds each once.
+     */
+    val countries: MutableList<String> = mutableStateListOf()
 
     /** When the poll closes by itself. */
     var closing by mutableStateOf(initial.closing)
@@ -140,7 +151,8 @@ class PollEditor(
     /**
      * The poll to send at [now] (Unix time); null while it is not complete: a question, at least two filled-in
      * options, none repeated, for a quiz at least one filled-in correct option, and a chosen moment in the future for a
-     * custom closing time. Empty options are left out; [forceAnonymous] (channels) overrides [isAnonymous].
+     * custom closing time, and a country for voting limited to some. Empty options are left out; [forceAnonymous]
+     * (channels) overrides [isAnonymous], and only there are voters limited ([voters]).
      */
     fun poll(
         forceAnonymous: Boolean = false,
@@ -154,11 +166,13 @@ class PollEditor(
         val filled = fields.filter { it.normalized.isNotEmpty() }
         val correct = filled.indices.filter { filled[it].key in correctKeys }
         val closes = closesAt(now)
+        val voterLimits = voterLimits(inChannel = forceAnonymous)
         val complete =
             question.isNotEmpty() &&
                 filled.size >= NewPoll.MIN_OPTIONS &&
                 fields.none { isDuplicate(it.key) } &&
                 (!isQuiz || correct.isNotEmpty()) &&
+                voterLimits != null &&
                 closes != null
         if (!complete) return null
         val anonymous = forceAnonymous || isAnonymous
@@ -185,6 +199,8 @@ class PollEditor(
             allowsAddingOptions = canAllowAddingOptions(forceAnonymous) && allowsAddingOptions,
             openPeriod = closes.openPeriod,
             closeDate = closes.closeDate,
+            membersOnly = voterLimits.membersOnly,
+            countryCodes = voterLimits.countryCodes,
         )
     }
 
@@ -209,6 +225,8 @@ class PollEditor(
                 correctOptionIndexes = fields.indices.filter { fields[it].key in correctKeys },
                 closing = closing,
                 customCloseDate = customCloseDate,
+                voters = voters,
+                countries = countries.toList(),
             )
 
     /** Empties the form for the next poll; the photo's copy is the caller's to discard. */
@@ -234,6 +252,9 @@ class PollEditor(
         requiredQuiz = draft.requiredQuiz
         closing = draft.closing
         customCloseDate = draft.customCloseDate
+        voters = draft.voters
+        countries.clear()
+        countries += draft.countries
         correctKeys.clear()
         correctKeys += draft.correctOptionIndexes.mapNotNull { fields.getOrNull(it)?.key }
     }
@@ -251,6 +272,24 @@ private fun PollEditor.closesAt(now: Long): PollCloses? =
         PollClosing.Custom -> customCloseDate?.takeIf { it > now }?.let { PollCloses(closeDate = it) }
         else -> PollCloses(openPeriod = closing.seconds)
     }
+
+/**
+ * Who may vote in the poll: anyone outside channels; in one, its subscribers or users of the countries picked; null
+ * while a country is still to be picked.
+ */
+private fun PollEditor.voterLimits(inChannel: Boolean): VoterLimits? =
+    when {
+        !inChannel || voters == PollVoters.Everyone -> VoterLimits()
+        voters == PollVoters.Subscribers -> VoterLimits(membersOnly = true)
+        countries.isEmpty() -> null
+        else -> VoterLimits(countryCodes = countries.toImmutableList())
+    }
+
+/** A poll's `members_only` and `country_codes` (td_api.tl `inputMessagePoll`). */
+private data class VoterLimits(
+    val membersOnly: Boolean = false,
+    val countryCodes: ImmutableList<String> = persistentListOf(),
+)
 
 /** A poll's `open_period` or `close_date` (td_api.tl `inputMessagePoll`), both 0 for a poll that stays open. */
 private data class PollCloses(
@@ -324,6 +363,13 @@ enum class PollClosing(
 private const val SECONDS_PER_HOUR = 3_600
 private const val SECONDS_PER_DAY = 86_400
 
+/** Who may vote in a channel's poll (td_api.tl `inputMessagePoll.members_only`, `country_codes`). */
+enum class PollVoters {
+    Everyone,
+    Subscribers,
+    Countries,
+}
+
 /** What a [PollEditor] holds, as plain values: for process death, and for previews and tests. */
 data class PollDraft(
     val question: String = "",
@@ -344,6 +390,8 @@ data class PollDraft(
     val requiredQuiz: Boolean? = null,
     val closing: PollClosing = PollClosing.Never,
     val customCloseDate: Long? = null,
+    val voters: PollVoters = PollVoters.Everyone,
+    val countries: List<String> = emptyList(),
 ) {
     override fun toString() = "PollDraft(options=${options.size}, isQuiz=$isQuiz, closing=$closing, …)"
 }
