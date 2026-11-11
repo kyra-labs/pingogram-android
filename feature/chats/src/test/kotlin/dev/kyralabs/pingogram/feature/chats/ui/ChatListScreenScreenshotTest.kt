@@ -58,7 +58,7 @@ class ChatListScreenScreenshotTest(
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName in setOf("selecting", "connecting", "contentWithFolders", "archiveRow"))
+        assumeTrue(stateName in setOf("selecting", "connecting", "contentWithFolders", "archiveRow", "communities"))
         capture(ScreenshotVariant.Light, "fontScale200")
     }
 
@@ -88,9 +88,12 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
-    /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
+    /**
+     * The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for the representative state, and for the communities'
+     * entries (the owner's board 19b).
+     */
     private fun captureAudit(variant: ScreenshotVariant) {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName == "content" || stateName == "communities")
         capture(variant)
     }
 
@@ -125,6 +128,7 @@ class ChatListScreenScreenshotTest(
             mapOf(
                 "contentWithFolders" to ChatListPreviewData.contentWithFolders,
                 "content" to ChatListPreviewData.content,
+                "communities" to ChatListPreviewData.withCommunities,
                 "archiveRow" to ChatListPreviewData.contentWithArchive,
                 "selecting" to ChatListPreviewData.selecting,
                 "connecting" to ChatListPreviewData.connecting,

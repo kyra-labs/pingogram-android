@@ -47,7 +47,14 @@ internal fun selectionOf(
     content: ChatListContent,
     ids: Set<Long>,
 ): ChatSelection? {
-    val rows = if (ids.isEmpty()) emptyList() else (content as? ChatListContent.Content)?.items?.filter { it.id in ids }
+    val rows =
+        if (ids.isEmpty()) {
+            emptyList()
+        } else {
+            (content as? ChatListContent.Content)?.allRows?.filter {
+                it.id in ids
+            }
+        }
     return if (rows.isNullOrEmpty()) {
         null
     } else {

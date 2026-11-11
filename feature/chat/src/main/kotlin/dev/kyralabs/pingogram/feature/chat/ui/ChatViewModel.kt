@@ -94,6 +94,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
 import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.messageChannelButton
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.withMessageChannel
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
@@ -107,8 +109,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
+import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
+import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
@@ -595,6 +599,8 @@ class ChatViewModel internal constructor(
             replies = composer,
             onEffect = { effectChannel.trySend(it) },
             originalByDefault = { originalQualityByDefault.value },
+            pollLimits = { pollRepository.limits() },
+            now = { clock.now().epochSecond },
         )
 
     private val recorder =
@@ -938,6 +944,21 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val pollOptions =
+        PollOptionAdding(
+            chatId = chatId,
+            repository = pollRepository,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     private val checklists =
         ChatChecklists(
             chatId = chatId,
@@ -1072,6 +1093,9 @@ class ChatViewModel internal constructor(
                     }
                 }
             }.distinctUntilChanged()
+
+    /** "Message channel" of a channel whose subscribers write to its administrators; null for other chats. */
+    private val messageChannel = messageChannelButton(group.map { it.supergroup }, chatJoinRepository, groupRepository)
 
     /** The chats the messages name, by id: their titles and photos, which change far less often than the chats. */
     private val referencedChats: Flow<ImmutableMap<Long, ChatRef>> =
@@ -1212,6 +1236,7 @@ class ChatViewModel internal constructor(
             .combine(bots.state) { state, bots -> state.withBots(bots) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
+            .combine(messageChannel) { state, button -> state.withMessageChannel(button) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
             .combine(translation.bubbles.combine(summaries.bubbles, ::withSummaries)) { state, translations ->
@@ -1220,6 +1245,7 @@ class ChatViewModel internal constructor(
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
             .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
@@ -1238,6 +1264,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch(Dispatchers.Main) {
             composer.start()
             attachments.start()
+            if (attachments.isPollOpen.value) attachments.loadPollLimits()
             shares.start()
             replyElsewhere.start()
             bots.start()
@@ -1305,6 +1332,7 @@ class ChatViewModel internal constructor(
             is GiveawayEvent -> giveaways.onEvent(event)
             is DateTimeEvent -> dateTimes.onEvent(event)
             is ChecklistEvent -> checklists.onEvent(event)
+            is PollOptionEvent -> pollOptions.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
@@ -1377,6 +1405,10 @@ class ChatViewModel internal constructor(
             ChatEvent.OpenPoll -> attachments.openPoll()
 
             ChatEvent.DismissPoll -> attachments.dismissPoll()
+
+            is ChatEvent.PickPollPhoto -> attachments.pickPollPhoto(event.uri)
+
+            ChatEvent.RemovePollPhoto -> attachments.removePollPhoto()
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)

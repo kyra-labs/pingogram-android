@@ -142,6 +142,18 @@
     <string name="composer_join_group">Join group</string>
     <string name="composer_join_channel">Join channel</string>
     <string name="composer_request_to_join">Request to join</string>
+    <!-- A channel's direct messages (the owner's boards 7a and 7b): the user's private thread with the channel. -->
+    <string name="composer_message_channel">Message channel</string>
+    <!-- %1$s: the Telegram Stars each message costs, as a number. ★ stands for Telegram Stars. -->
+    <string name="composer_message_channel_paid">Message · %1$s ★</string>
+    <plurals name="composer_message_channel_paid_description">
+        <item quantity="one">Message channel, %d Telegram Star per message</item>
+        <item quantity="other">Message channel, %d Telegram Stars per message</item>
+    </plurals>
+    <plurals name="composer_channel_charges">
+        <item quantity="one">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+        <item quantity="other">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+    </plurals>
     <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
     <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->
@@ -386,13 +398,13 @@
     <string name="poll_remove_option">Remove option %1$d</string>
     <!-- Screen readers: the radio button that marks option %1$d as the quiz's correct answer. -->
     <string name="poll_correct_option">Option %1$d is the correct answer</string>
-    <string name="poll_choose_correct">Choose the correct answer</string>
+    <string name="poll_choose_correct">Choose the correct answers</string>
     <string name="poll_settings">Settings</string>
     <string name="poll_anonymous">Anonymous voting</string>
     <string name="poll_anonymous_channel">Polls in channels are always anonymous</string>
     <string name="poll_multiple">Multiple answers</string>
     <string name="poll_quiz">Quiz mode</string>
-    <string name="poll_quiz_note">One answer is correct, and votes can\'t be changed</string>
+    <string name="poll_quiz_note">Some answers are correct, and votes can\'t be changed</string>
 
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->

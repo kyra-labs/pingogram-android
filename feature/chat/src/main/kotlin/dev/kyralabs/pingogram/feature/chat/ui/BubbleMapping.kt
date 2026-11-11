@@ -14,7 +14,6 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
-import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -79,15 +78,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel =
-            when {
-                album.isNotEmpty() -> albumLabel(album)
-
-                // Rich messages' blocks, paid posts and giveaways say what they are in their own description.
-                content.describesItself -> null
-
-                else -> contentKindText(content)
-            },
+        contentLabel = contentLabel(content),
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
@@ -115,34 +106,14 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
         checklist = checklistUi(content),
+        pollClosesIn = pollClosesIn(),
         giveaway = giveawayUi(content),
     )
 }
 
-private val MessageContent.describesItself: Boolean
-    get() =
-        when (this) {
-            is MessageContent.Text,
-            is MessageContent.RichMessage,
-            is MessageContent.PaidMedia,
-            is MessageContent.Giveaway,
-            is MessageContent.GiveawayWinners,
-            -> true
-
-            else -> false
-        }
-
-/** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
-private fun albumLabel(album: List<Message>): UiText {
-    val photos = album.count { it.content is MessageContent.Photo }
-    val plural =
-        when (photos) {
-            album.size -> ChatR.plurals.content_album_photos
-            0 -> ChatR.plurals.content_album_videos
-            else -> ChatR.plurals.content_album_media
-        }
-    return UiText.plural(plural, album.size, album.size)
-}
+/** How long the message's open poll stays open as of the current minute, in seconds; null where it does not close. */
+private fun ItemInputs.pollClosesIn(): Long? =
+    message.closingPoll?.let { at -> relativeNow?.let { (at - it).coerceAtLeast(0) } }
 
 /** "You" for the current user's messages; otherwise the sender's full name, or the chat's title. */
 private fun ItemInputs.senderName(): UiText =
@@ -215,7 +186,7 @@ internal fun Message.reactionChips(): ImmutableList<ReactionChip> =
 /** The text or caption of [this] content as its sender wrote it, before [withReaderDates]. */
 internal val MessageContent.textOrCaption: FormattedText get() = text
 
-/** The text or caption of [this] content; a poll's description; empty for content without one. */
+/** The text or caption of [this] content; empty for content without one (a poll's description is the poll's own). */
 private val MessageContent.text: FormattedText
     get() =
         when (this) {
@@ -226,6 +197,5 @@ private val MessageContent.text: FormattedText
             is MessageContent.VoiceNote -> caption
             is MessageContent.Audio -> caption
             is MessageContent.Document -> caption
-            is MessageContent.Poll -> description
             else -> FormattedText.Empty
         }
