@@ -324,6 +324,41 @@ class GroupCallScreenshotTest {
     fun streamPictureInPicture() = capture(GroupCallPreviewStates.stream, ThemeMode.Dark, pictureInPicture = true)
 
     @Test
+    fun liveStoryLight() = capture(GroupCallPreviewStates.liveStory, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryDark() =
+        capture(GroupCallPreviewStates.liveStory, ThemeMode.Dark, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryAmoled() =
+        capture(
+            GroupCallPreviewStates.liveStory,
+            ThemeMode.Dark,
+            amoled = true,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    fun liveStoryHighContrast() =
+        capture(GroupCallPreviewStates.liveStory, contrast = Contrast.High, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryRtl() =
+        capture(
+            GroupCallPreviewStates.liveStory,
+            layoutDirection = LayoutDirection.Rtl,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    @Config(fontScale = 2f)
+    fun liveStoryFontScale200() = capture(GroupCallPreviewStates.liveStory, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryNoCommentsLight() = capture(GroupCallPreviewStates.liveStory)
+
+    @Test
     fun commentsLight() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.comments)
 
     @Test

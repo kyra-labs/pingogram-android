@@ -346,6 +346,7 @@ class GroupCallActivity : ComponentActivity() {
         const val EXTRA_LINK = "link"
         const val EXTRA_INVITATION_CHAT_ID = "invitation_chat_id"
         const val EXTRA_INVITATION_MESSAGE_ID = "invitation_message_id"
+        const val EXTRA_GROUP_CALL_ID = "group_call_id"
 
         /** Shows the voice chat the user is in. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW_VOICE_CHAT"
@@ -365,6 +366,9 @@ class GroupCallActivity : ComponentActivity() {
          */
         const val ACTION_JOIN_INVITATION = "dev.kyralabs.pingogram.calls.JOIN_INVITATION"
 
+        /** Watches chat [EXTRA_CHAT_ID]'s live story, its group call [EXTRA_GROUP_CALL_ID] (board 12). */
+        const val ACTION_WATCH_LIVE_STORY = "dev.kyralabs.pingogram.calls.WATCH_LIVE_STORY"
+
         /** Starts a new conference call with no one else in it yet, and joins it: Recent calls' "New group call". */
         const val ACTION_START_CONFERENCE = "dev.kyralabs.pingogram.calls.START_CONFERENCE"
 
@@ -376,6 +380,19 @@ class GroupCallActivity : ComponentActivity() {
         ) {
             context.startActivity(
                 intent(context, if (start) ACTION_START else ACTION_JOIN).putExtra(EXTRA_CHAT_ID, chatId),
+            )
+        }
+
+        /** Watches chat [chatId]'s live story, its group call [groupCallId], and shows it. */
+        fun openLiveStory(
+            context: Context,
+            chatId: Long,
+            groupCallId: Int,
+        ) {
+            context.startActivity(
+                intent(context, ACTION_WATCH_LIVE_STORY)
+                    .putExtra(EXTRA_CHAT_ID, chatId)
+                    .putExtra(EXTRA_GROUP_CALL_ID, groupCallId),
             )
         }
 

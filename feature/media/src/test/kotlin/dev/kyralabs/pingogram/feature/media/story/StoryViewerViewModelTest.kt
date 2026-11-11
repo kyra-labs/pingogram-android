@@ -498,6 +498,18 @@ class StoryViewerViewModelTest {
         }
 
     @Test
+    fun `a live story offers its group call to watch, then moves on`() =
+        runViewModelTest {
+            stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Live(groupCallId = 77)))
+            val viewModel = viewModel()
+
+            assertEquals(StoryMedia.Live(ADA, 77), viewModel.content.story.media)
+            advanceTimeBy(PHOTO_MILLIS + TICK_MILLIS)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
     fun `what the viewer cannot show says so and moves on`() =
         runViewModelTest {
             stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Unsupported))

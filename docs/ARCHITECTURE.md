@@ -519,6 +519,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
+- **Live stories** (board 12, watched only): a story whose content is live (`StoryContent.Live`, td_api.tl
+  `storyContentLive.group_call_id`) shows "Live now" in the stories viewer, whose "Watch live" calls `core:ui`'s
+  `VoiceChats.watchLiveStory`. `feature:calls`' `GroupCallScreens` (the `VoiceChats` `Calls` delegates to) opens
+  `GroupCallActivity` with `ACTION_WATCH_LIVE_STORY`; `GroupCallManager.joinLiveStory` joins muted through
+  `GroupCallRepository.joinLiveStory` (`joinLiveStory`), the rest as a voice chat's (the poster's video, the stream of an
+  RTMP one, comments, picture-in-picture), and the screen draws it in a layout of its own (`LiveStoryCall`). Starting a
+  live story and paid live reactions are not offered.
 - **Story albums** (boards 11a, 11b, read only): `core:domain`'s `StoryAlbumRepository` (`TdlibStoryAlbumRepository`,
   `core:data`, account-scoped, no cache: td_api.tl announces no change to albums) reads a chat's albums
   (`getChatStoryAlbums`, a `StoryAlbum` with its cover) and pages an album's stories (`getStoryAlbumStories`, with the

@@ -89,6 +89,9 @@ internal object StoryViewerPreviewData {
             reply = null,
         )
 
+    /** A live story, with "Watch live" where the app provides voice chats. */
+    val live = content(StoryMedia.Live(chatId = 42, groupCallId = 11), reply = null, reactions = null)
+
     /** Content Pingogram cannot show. */
     val unsupported = content(StoryMedia.Unsupported, reply = null, reactions = null)
 
@@ -113,6 +116,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
             StoryViewerPreviewData.photo,
             StoryViewerPreviewData.video,
             StoryViewerPreviewData.reacting,
+            StoryViewerPreviewData.live,
             StoryViewerPreviewData.unsupported,
             StoryViewerPreviewData.failed,
             StoryViewerUiState.Loading,

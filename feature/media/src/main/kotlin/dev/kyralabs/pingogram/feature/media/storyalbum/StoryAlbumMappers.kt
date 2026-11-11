@@ -40,7 +40,7 @@ internal fun Story.toAlbumStory(date: String): AlbumStory =
             AlbumStory(id, date, AlbumPicture(content.minithumbnail, content.thumbnail.toFiles()), isVideo = true)
         }
 
-        StoryContent.Live, StoryContent.Unsupported -> {
+        is StoryContent.Live, StoryContent.Unsupported -> {
             AlbumStory(id, date, picture = null, isVideo = false)
         }
     }

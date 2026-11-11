@@ -582,6 +582,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     showing, and run `tools/perfetto/video-call.sh` (it records the main thread's and the RenderThread's frames, `gfx` and
     `view`, for 5 minutes); then once more with the comments hidden. Send back both folders' `device.txt` and
     `video-call.perfetto-trace`. The frames' durations against the display's period tell whether the pane holds.
+- Live stories (2026-11-10, board 12): watching one adds a way into the voice chat screen and a layout of its own for
+  it, and changes nothing the voice chat's frames do. `GroupCallFrameCostTest` on the branch, twice on the shared
+  4-core machine, against the numbers above: comments hidden P50 12.3–12.6 ms, P90 15.0–15.4 ms, P99 18.8–20.2 ms,
+  14.0 composables recomposed per frame; comments shown P50 7.4–8.4 ms, P90 15.0–17.1 ms, P99 20.6–21.6 ms, 16.7 per
+  frame: the same within the machine's noise. On the owner's phone: install `fossBenchmarkRelease` (§9), open a live
+  story with "Watch live" and keep its screen in front with the comments showing, run
+  `tools/perfetto/video-call.sh` (5 minutes), and send back its folder's `device.txt` and `video-call.perfetto-trace`.
 - Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
   ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
   P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99
