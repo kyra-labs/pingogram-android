@@ -33,6 +33,8 @@
     <!-- The message actions of a poll. -->
     <string name="message_action_retract_vote">Retract vote</string>
     <string name="message_action_stop_poll">Stop poll</string>
+    <!-- A poll's message action, for the chat's administrators: its votes over time. -->
+    <string name="message_action_poll_statistics">Statistics</string>
     <!-- The question before a poll is stopped. -->
     <string name="poll_stop_title">Stop poll?</string>
     <string name="poll_stop_text">No one will be able to vote any more, and everyone sees the final results. You can\'t open it again.</string>

@@ -6,13 +6,15 @@ package dev.kyralabs.pingogram.core.domain.model
  * [repeatPeriod] sends a scheduled message again every so many seconds after that, one of [REPEAT_PERIODS] (td_api.tl
  * `messageSchedulingStateSendAtDate.repeat_period`, which Telegram takes from Telegram Premium subscribers and for one
  * message at a time); 0 sends it once. [topic] is the forum topic or message thread it goes into (FR-C9); null sends it
- * to the chat itself.
+ * to the chat itself. [suggestAsPost] sends it to a channel's direct messages as a post suggested to the channel, free
+ * and at any time its administrators choose (td_api.tl `inputSuggestedPostInfo` without a price).
  */
 data class SendOptions(
     val silent: Boolean = false,
     val scheduledAt: Long? = null,
     val topic: MessageTopic? = null,
     val repeatPeriod: Int = 0,
+    val suggestAsPost: Boolean = false,
 ) {
     companion object {
         private const val DAY = 86_400

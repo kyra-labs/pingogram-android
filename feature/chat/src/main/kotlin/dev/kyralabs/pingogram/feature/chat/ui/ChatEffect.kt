@@ -106,6 +106,12 @@ sealed interface ChatEffect {
     /** What was picked for a poll's media is no photo, which polls take: a snackbar says so. */
     data object PollPhotoOnly : ChatEffect
 
+    /** Open the statistics of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
+    data class OpenPollStatistics(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
+
     /**
      * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
      * the channel's discussion group for a post's comments.

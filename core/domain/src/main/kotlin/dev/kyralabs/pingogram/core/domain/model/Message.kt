@@ -49,6 +49,8 @@ data class Message(
      * long channel posts and the like); null where Telegram offers no summary of it.
      */
     val summaryLanguage: String? = null,
+    /** The post it suggests to a channel, in the channel's direct messages; null for any other message. */
+    val suggestedPost: SuggestedPost? = null,
 )
 
 /** Who sent a message: a user, or a chat (a channel, or a group's anonymous admins). */

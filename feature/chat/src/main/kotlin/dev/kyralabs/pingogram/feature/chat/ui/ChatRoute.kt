@@ -24,6 +24,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
@@ -60,6 +61,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialog
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
@@ -145,6 +148,10 @@ internal fun ConversationRoute(
         hiltViewModel<WelcomePackViewModel, WelcomePackViewModel.Factory>(key = "welcome-$chatId") {
             it.create(chatId)
         },
+    suggestedPostsViewModel: SuggestedPostsViewModel =
+        hiltViewModel<SuggestedPostsViewModel, SuggestedPostsViewModel.Factory>(key = "suggested-$chatId") {
+            it.create(chatId)
+        },
     birthdaysViewModel: BirthdaySuggestionsViewModel =
         hiltViewModel<BirthdaySuggestionsViewModel, BirthdaySuggestionsViewModel.Factory>(key = "birthdays-$chatId") {
             it.create(chatId)
@@ -159,6 +166,13 @@ internal fun ConversationRoute(
         },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // A suggested post's answers go to a view model of their own (docs/DESIGN_SYSTEM.md §6 "Suggested posts").
+    val onEvent: (ChatEvent) -> Unit =
+        remember(viewModel, suggestedPostsViewModel) {
+            { event ->
+                if (event is SuggestedPostEvent) suggestedPostsViewModel.onEvent(event) else viewModel.onEvent(event)
+            }
+        }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
@@ -215,11 +229,11 @@ internal fun ConversationRoute(
         LocalBirthdaySuggestions provides birthdaysViewModel,
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
-        ChatActionBarHost(actionBarViewModel, viewModel::onEvent, snackbarHostState, shown = topic == null) {
+        ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
             AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
                 ChatScreen(
                     state = state,
-                    onEvent = viewModel::onEvent,
+                    onEvent = onEvent,
                     onBack = onBack,
                     modifier = modifier,
                     snackbarHostState = snackbarHostState,
@@ -255,6 +269,10 @@ internal fun ConversationRoute(
             }
         }
         ChatSheets(viewModel)
+        val suggestedPostDialog by suggestedPostsViewModel.dialog.collectAsStateWithLifecycle()
+        suggestedPostDialog?.let {
+            SuggestedPostAnswerDialog(it, suggestedPostsViewModel.comment, suggestedPostsViewModel::onEvent)
+        }
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
     }
@@ -317,6 +335,7 @@ internal fun ChatEffects(
     val showErrorDetails = isDebuggable()
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     val haptics = LocalHapticFeedback.current
+    val openPollStatistics by rememberUpdatedState(LocalPollStatisticsLauncher.current)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -354,6 +373,11 @@ internal fun ChatEffects(
                     is ChatEffect.CopyText -> {
                         context.copyText(effect.text)
                         copiedNotice(resources)
+                    }
+
+                    is ChatEffect.OpenPollStatistics -> {
+                        openPollStatistics?.invoke(effect.chatId, effect.messageId)
+                        ""
                     }
 
                     is ChatEffect.OpenProfile, is ChatEffect.OpenChat, is ChatEffect.OpenThread -> {

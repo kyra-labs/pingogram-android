@@ -15,6 +15,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   only if you turn it on. Nothing is sent before "Allow"; the website is then listed in Privacy and security → Websites.
 - Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your
   profile and "Decline".
+- GIFs from the panel take the text you typed as their caption, below or above the GIF.
+- Voice messages can be trimmed before sending: pause the recording and drag its ends.
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
 - A chat someone new started opens with a card to block them, report the chat or add them to your contacts, with
   what Telegram tells of their account (when they joined, their number's country, recent name and photo changes).
@@ -28,6 +30,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Message links with a time (`t.me/channel/7?t=83`) open the chat at the video and play it from that time.
 - A channel's direct messages, for its administrators: who wrote, with search, All / Unread / Paid filters and unread
   counts; a long press marks a conversation read or unread, and a tap opens it.
+- Suggested posts in a channel's direct messages: subscribers suggest a post from the send button's menu, and the
+  channel's administrators approve or decline it, with an optional comment, from a card below it. Offers of Telegram
+  Stars or Toncoin are shown, never paid or taken.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
 - Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
@@ -42,6 +47,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Edit with AI: once a message runs past three lines, the field's menu offers Telegram's AI to fix it, rewrite it in a
   style or translate it. The text goes to Telegram's AI only when you tap Fix, Rewrite or Translate; "Use" puts the
   result in the field, with "Undo". Shared style links open a sheet to add the style.
+- A poll's message actions offer "Statistics" to the chat's administrators where Telegram gives them (once 100 people
+  voted).
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
   with "Show full text" to go back (in the reader's language where they don't read the post's).
 

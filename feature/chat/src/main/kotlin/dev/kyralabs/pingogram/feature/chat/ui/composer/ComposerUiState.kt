@@ -67,7 +67,8 @@ sealed interface ComposerUiState {
      * out as, where the user can choose (its avatar opens the send-as picker); null hides it, as while editing. [bot]
      * the button of the chat's bots at the start of the pill, where they offer commands or a menu; null hides it, as
      * while editing. [canRepeat] whether scheduling offers to repeat the message (`SendOptions.repeatPeriod`), which
-     * Telegram allows Telegram Premium subscribers only.
+     * Telegram allows Telegram Premium subscribers only. [canSuggestPost] whether its send menu offers "Suggest as a
+     * post" (`SendOptions.suggestAsPost`): in a channel's direct messages, to a subscriber.
      */
     data class Available(
         val canSchedule: Boolean,
@@ -76,6 +77,7 @@ sealed interface ComposerUiState {
         val sendAs: SendAsChoice? = null,
         val bot: ComposerBotButton? = null,
         val canRepeat: Boolean = false,
+        val canSuggestPost: Boolean = false,
     ) : ComposerUiState
 }
 
@@ -141,7 +143,12 @@ internal fun composerState(
         when (chat.writeAccess(user, basicGroup, supergroup)) {
             WriteAccess.Allowed -> {
                 supergroup?.paidComposerState()
-                    ?: ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
+                    ?: ComposerUiState.Available(
+                        canSchedule = chat.type !is ChatType.Secret,
+                        // A subscriber suggests posts in a channel's direct messages; its administrators answer them.
+                        canSuggestPost =
+                            supergroup?.isDirectMessages == true && !supergroup.isAdministeredDirectMessages,
+                    )
             }
 
             WriteAccess.ReadOnly, WriteAccess.Unknown -> {

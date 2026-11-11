@@ -162,6 +162,19 @@ sealed interface ServiceAction {
         override fun toString() = "PollOptionDeleted($pollMessageId, …)"
     }
 
+    /**
+     * The post suggested by message [postMessageId] of a channel's direct messages: [Approved][SuggestedPostAnswer]
+     * or declined (with the administrators' [comment], empty for none), or it could not be published, was paid for or
+     * refunded (td_api.tl `messageSuggestedPost*`). `toString()` leaves the comment out.
+     */
+    data class SuggestedPostAnswered(
+        val postMessageId: Long,
+        val answer: SuggestedPostAnswer,
+        val comment: String = "",
+    ) : ServiceAction {
+        override fun toString() = "SuggestedPostAnswered($postMessageId, $answer, …)"
+    }
+
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */
     data class Custom(
         val text: String,
@@ -191,4 +204,13 @@ enum class CallDiscardReason {
     HungUp,
 
     UpgradedToGroupCall,
+}
+
+/** What became of a suggested post ([ServiceAction.SuggestedPostAnswered]). */
+enum class SuggestedPostAnswer {
+    Approved,
+    Declined,
+    ApprovalFailed,
+    Paid,
+    Refunded,
 }

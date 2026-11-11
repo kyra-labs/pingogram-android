@@ -120,13 +120,16 @@ interface AttachmentRepository {
 
     /**
      * Sends GIF [animation], one TDLib knows already (a saved GIF, a GIF search's result), to chat [chatId] as
-     * [options] say, replying as [replyTo] says if it is not null. Telegram then puts it first among the saved GIFs.
+     * [options] say, replying as [replyTo] says if it is not null, with [caption] below it, or above it with
+     * [captionAbove]. Telegram then puts it first among the saved GIFs.
      */
     suspend fun sendAnimation(
         chatId: Long,
         animation: Animation,
         options: SendOptions = SendOptions(),
         replyTo: ReplyTarget? = null,
+        caption: FormattedText? = null,
+        captionAbove: Boolean = false,
     ): Outcome<Unit>
 
     /** Sends [poll] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. */

@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.followedBy
 import dev.kyralabs.pingogram.feature.chat.ui.composer.restoredText
@@ -304,11 +306,30 @@ internal class ChatAttachments(
         scope.launch { report(repository.sendGreetingSticker(chatId, replyTo, options), options, replyTo) }
     }
 
-    /** Sends GIF [animation], tapped in the composer's GIF tab, at once, with the composer's reply. */
-    fun sendAnimation(animation: Animation) {
+    /** Sends the GIF of [event], with [composer]'s text as its caption, given back to it on a refusal. */
+    fun sendAnimation(
+        event: ChatEvent.SendAnimation,
+        composer: ChatComposer,
+    ) = sendAnimation(event.animation, composer.takeCaption(), event.captionAbove, composer::restoreCaption)
+
+    /**
+     * Sends GIF [animation], tapped in the composer's GIF tab, at once, with the composer's reply and [caption] (the
+     * composer's text, null without one) below it, or above it with [captionAbove]. A failure gives the caption back
+     * through [onFailed].
+     */
+    fun sendAnimation(
+        animation: Animation,
+        caption: FormattedText? = null,
+        captionAbove: Boolean = false,
+        onFailed: (FormattedText) -> Unit = {},
+    ) {
         val replyTo = replies.takeReply()
         val options = SendOptions()
-        scope.launch { report(repository.sendAnimation(chatId, animation, options, replyTo), options, replyTo) }
+        scope.launch {
+            val result = repository.sendAnimation(chatId, animation, options, replyTo, caption, captionAbove)
+            if (result is Outcome.Failure) caption?.let(onFailed)
+            report(result, options, replyTo)
+        }
     }
 
     /**

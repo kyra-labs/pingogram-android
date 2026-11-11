@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
+import dev.kyralabs.pingogram.core.domain.model.SuggestedPostAnswer
 import dev.kyralabs.pingogram.core.ui.R
 
 /**
@@ -83,6 +84,10 @@ private fun eventText(action: ServiceAction): UiText? =
 
         is ServiceAction.Custom -> {
             UiText.Plain(previewLine(action.text))
+        }
+
+        is ServiceAction.SuggestedPostAnswered -> {
+            suggestedPostText(action)
         }
 
         ServiceAction.Other -> {
@@ -315,3 +320,34 @@ private fun callText(
         }
     return UiText.resource(if (call.isVideo) video else voice)
 }
+
+/** What became of a suggested post; a decline with the administrators' comment quotes it. */
+private fun suggestedPostText(action: ServiceAction.SuggestedPostAnswered): UiText =
+    when (action.answer) {
+        SuggestedPostAnswer.Approved -> {
+            UiText.resource(R.string.preview_suggested_post_approved)
+        }
+
+        SuggestedPostAnswer.Declined -> {
+            if (action.comment.isBlank()) {
+                UiText.resource(R.string.preview_suggested_post_declined)
+            } else {
+                UiText.resource(
+                    R.string.preview_suggested_post_declined_comment,
+                    previewLine(action.comment).bidiIsolated(),
+                )
+            }
+        }
+
+        SuggestedPostAnswer.ApprovalFailed -> {
+            UiText.resource(R.string.preview_suggested_post_failed)
+        }
+
+        SuggestedPostAnswer.Paid -> {
+            UiText.resource(R.string.preview_suggested_post_paid)
+        }
+
+        SuggestedPostAnswer.Refunded -> {
+            UiText.resource(R.string.preview_suggested_post_refunded)
+        }
+    }

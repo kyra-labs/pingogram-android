@@ -270,6 +270,11 @@ class ServiceActionMappersTest {
                 "MessageChecklistTasksAdded",
                 "MessagePollOptionAdded",
                 "MessagePollOptionDeleted",
+                "MessageSuggestedPostApproved",
+                "MessageSuggestedPostDeclined",
+                "MessageSuggestedPostApprovalFailed",
+                "MessageSuggestedPostPaid",
+                "MessageSuggestedPostRefunded",
             )
     }
 }

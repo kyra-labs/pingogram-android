@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toPoll
 import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
+import dev.kyralabs.pingogram.core.data.mapper.toSuggestedPost
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -396,6 +397,7 @@ private fun TdApi.Update.historyChatId(): Long? =
         is TdApi.UpdateMessageContent -> chatId
         is TdApi.UpdateMessageEdited -> chatId
         is TdApi.UpdateMessageIsPinned -> chatId
+        is TdApi.UpdateMessageSuggestedPostInfo -> chatId
         is TdApi.UpdateMessageInteractionInfo -> chatId
         is TdApi.UpdateMessageContentOpened -> chatId
         is TdApi.UpdateMessageMentionRead -> chatId
@@ -438,6 +440,12 @@ private fun TdApi.Update.toHistoryChange(): HistoryChange? =
 
         is TdApi.UpdateMessageIsPinned -> {
             HistoryChange.Edit(messageId) { it.copy(isPinned = isPinned) }
+        }
+
+        // A suggested post approved or declined, or one the user may no longer answer.
+        is TdApi.UpdateMessageSuggestedPostInfo -> {
+            val post = suggestedPostInfo?.toSuggestedPost()
+            HistoryChange.Edit(messageId) { it.copy(suggestedPost = post) }
         }
 
         is TdApi.UpdateMessageInteractionInfo -> {

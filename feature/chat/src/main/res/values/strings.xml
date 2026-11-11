@@ -240,6 +240,13 @@
     <string name="panel_tab_stickers">Stickers</string>
     <string name="panel_tab_gifs">GIFs</string>
     <string name="panel_gifs_search">Search GIFs</string>
+    <!-- Above the GIFs while the message field holds text, which a GIF tapped below takes as its caption. -->
+    <string name="chat_gif_caption_note">Your text goes with the GIF as its caption</string>
+    <!-- The caption's place, "Below" and "Above" the GIF, for screen readers. -->
+    <string name="chat_gif_caption_below_description">Caption below the GIF</string>
+    <string name="chat_gif_caption_above_description">Caption above the GIF</string>
+    <string name="chat_gif_caption_below">Below</string>
+    <string name="chat_gif_caption_above">Above</string>
     <string name="panel_gifs_clear">Clear search</string>
     <string name="panel_gifs_empty_title">No saved GIFs</string>
     <string name="panel_gifs_empty_body">GIFs you send show here. Search above to find one.</string>
@@ -290,6 +297,12 @@
     <string name="voice_state_paused">Paused</string>
     <string name="voice_pause">Pause recording</string>
     <string name="voice_resume">Resume recording</string>
+    <!-- A paused voice recording's trim, for screen readers: the part that will be sent, %1$s to %2$s, of all of it (%3$s); times as "0:07". -->
+    <string name="voice_trim_description">Trim: keeps %1$s to %2$s of %3$s</string>
+    <string name="voice_trim_start_later">Start one second later</string>
+    <string name="voice_trim_start_earlier">Start one second earlier</string>
+    <string name="voice_trim_end_earlier">End one second earlier</string>
+    <string name="voice_trim_end_later">End one second later</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
     <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
     <string name="voice_permission_allow">Allow</string>

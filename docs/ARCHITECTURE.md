@@ -930,7 +930,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Reject` haptic), and holds the question before a stop (`stopPollDialog`) and the voters' sheet (`pollVotersSheet`,
   the users named from `UserRepository`), both kept out of `ChatUiState`. "Retract vote" and "Stop poll" are message
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
-  `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
+  `can_be_edited`. "Statistics" (`MessageAction.PollStatistics`, where `MessageProperties.canGetPollVoteStatistics`) sends
+  `ChatEffect.OpenPollStatistics`, which the route hands to `core:ui`'s `LocalPollStatisticsLauncher`, provided by `:app`
+  with `feature:profile`'s `navigateToPollStatistics`, as features do not depend on each other.
+  The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
   Since 2026: `MessageContent.Poll` carries the poll's photo or video (`PollMedia`, td_api.tl `pollMedia`, shown in the
   media viewer by `richMediaId(messageId, 0)`, as rich messages' media are) and `canAddOption`; `Poll` its `closeDate`,
@@ -1348,6 +1351,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   administered direct messages chat (`Supergroup.isAdministeredDirectMessages`) as `ChatOpening.DirectMessages`
   (`DirectMessagesRoute`, `DirectMessagesViewModel`: the filter and the search in saved state), a found message as its
   conversation; `ChatRoute.directMessagesTopicId` pushes one.
+- **Suggested posts** (td_api.tl `suggestedPostInfo`): `Message.suggestedPost` (`SuggestedPost`: the price, the time,
+  the state, whether the user may approve or decline), replaced by `updateMessageSuggestedPostInfo` in the history
+  (`HistoryCache`); `SendOptions.suggestAsPost` sends a message as a free suggestion (`inputSuggestedPostInfo` without
+  a price), which the composer's send menu offers a subscriber in a channel's direct messages
+  (`ComposerUiState.Available.canSuggestPost`); `core:domain`'s `SuggestedPostRepository` (`TdlibSuggestedPostRepository`,
+  `core:data`, account-scoped, no cache) approves (`approveSuggestedPost`) and declines (`declineSuggestedPost`) them;
+  what became of one is `ServiceAction.SuggestedPostAnswered`. `feature:chat`'s `suggested/`: the bubble's
+  `SuggestedPostUi` in its footer (`SuggestedPostCard`, with the bot buttons and the comments link), whose answers go
+  to `SuggestedPostsViewModel` (keyed by the chat, hoisted by `ConversationRoute`, which hands it the
+  `SuggestedPostEvent`s instead of `ChatViewModel`): the question before answering, the open one in its saved state. A
+  paid suggestion is never approved here: Pingogram takes no payments (`REQUIREMENTS.md` §1.2).
 - **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
   `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
   page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost
@@ -1470,7 +1484,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
   first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
   `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
-  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply and its
+  text as the caption (`ChatComposer.takeCaption`, given back by `restoreCaption` on a refusal), below the GIF or
+  above it as the tab's `GifCaptionBar` says (`GifCaptionChoice`, saved with the composer). While
   the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
   stays above it instead of giving way.
 - Storage clean-up (`docs/PERFORMANCE.md` §3, owner decision 2026-10-27): `core:notifications`' `StorageOptimization`
@@ -1520,7 +1536,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
-  refused.
+  refused. A paused recording can be trimmed (`VoiceRecordingUiState.trim`, `VoiceEvent.Trim`, `TrimWaveform`): sent
+  trimmed, it is first cut by `VoiceNoteRepository.trimVoiceNote` (`core:data`'s `MediaVoiceNoteCutter`: the platform's
+  `MediaExtractor` and `MediaMuxer`, Ogg or MP4, nothing encoded again) into a new upload directory, its waveform the
+  kept part's levels.
 - Round video messages (FR-C5, `docs/adr/0032-round-video-messages.md`) go through the same `ChatRecorder`, whose
   record button a tap switches to video (`RecordModeUiState`, kept in `ComposerSettingsRepository.recordsVideoMessages`
   where the device has a camera): `feature:chat`'s `videonote/` package records them on `VideoNoteRecorder`

@@ -152,6 +152,8 @@ interface AccountRepositories {
 
     fun chatActionBarRepository(): ChatActionBarRepository
 
+    fun suggestedPostRepository(): SuggestedPostRepository
+
     fun botInfoRepository(): BotInfoRepository
 
     fun inlineBotRepository(): InlineBotRepository

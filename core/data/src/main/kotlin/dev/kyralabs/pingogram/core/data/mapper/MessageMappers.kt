@@ -46,6 +46,7 @@ internal fun TdApi.Message.toMessage(): Message {
         topic = topicId?.toMessageTopic(),
         replyMarkup = replyMarkup?.toReplyMarkup(),
         summaryLanguage = summaryLanguageCode?.ifEmpty { null },
+        suggestedPost = suggestedPostInfo?.toSuggestedPost(),
     )
 }
 
