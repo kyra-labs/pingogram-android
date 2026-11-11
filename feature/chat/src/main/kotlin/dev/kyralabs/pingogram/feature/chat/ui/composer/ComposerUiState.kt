@@ -42,6 +42,17 @@ sealed interface ComposerUiState {
     ) : ComposerUiState
 
     /**
+     * A channel the user reads, whose subscribers can write to its administrators (td_api.tl
+     * `supergroup.has_direct_messages_group`): "Message channel" in the composer's place, which opens [chatId], the
+     * user's thread with the channel; where each message costs Telegram Stars ([starCount] > 0), "Message · 10 ★" with
+     * a note that Pingogram can't pay yet.
+     */
+    data class MessageChannel(
+        val chatId: Long,
+        val starCount: Long,
+    ) : ComposerUiState
+
+    /**
      * A private chat with a bot that has no messages yet, or that a start link opened: "Start" in the composer's place,
      * which starts the bot (`sendBotStartMessage`) once tapped; busy while Telegram is asked ([isStarting]).
      */
@@ -126,12 +137,37 @@ internal fun composerState(
         ComposerUiState.Join(isChannel = isChannel, requestsToJoin = supergroup.joinByRequest && !isChannel)
     } else {
         when (chat.writeAccess(user, basicGroup, supergroup)) {
-            WriteAccess.Allowed -> ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
-            WriteAccess.ReadOnly, WriteAccess.Unknown -> ComposerUiState.Hidden
-            WriteAccess.NotMember -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
-            WriteAccess.Restricted -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+            WriteAccess.Allowed -> {
+                supergroup?.paidComposerState()
+                    ?: ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
+            }
+
+            WriteAccess.ReadOnly, WriteAccess.Unknown -> {
+                ComposerUiState.Hidden
+            }
+
+            WriteAccess.NotMember -> {
+                ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
+            }
+
+            WriteAccess.Restricted -> {
+                ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+            }
         }
     }
+
+/**
+ * A channel's direct messages chat where each message costs Telegram Stars, for a subscriber: a label with the price
+ * and that Pingogram can't pay yet (`CLAUDE.md` rule 3: shown honestly, never worked around); null where messages are
+ * free, or for the channel's administrators, who never pay.
+ */
+private fun Supergroup.paidComposerState(): ComposerUiState? {
+    val stars = paidMessageStarCount.takeIf { isDirectMessages && !isAdministeredDirectMessages && it > 0 }
+    return stars?.let {
+        val count = it.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        ComposerUiState.Unavailable(UiText.plural(R.plurals.composer_channel_charges, count, count))
+    }
+}
 
 /** The label of a secret chat that is not ready: pending or ended; nothing while it is not known. */
 private fun secretComposerState(state: SecretChatState?): ComposerUiState =

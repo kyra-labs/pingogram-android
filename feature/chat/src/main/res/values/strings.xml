@@ -142,6 +142,18 @@
     <string name="composer_join_group">Join group</string>
     <string name="composer_join_channel">Join channel</string>
     <string name="composer_request_to_join">Request to join</string>
+    <!-- A channel's direct messages (the owner's boards 7a and 7b): the user's private thread with the channel. -->
+    <string name="composer_message_channel">Message channel</string>
+    <!-- %1$s: the Telegram Stars each message costs, as a number. ★ stands for Telegram Stars. -->
+    <string name="composer_message_channel_paid">Message · %1$s ★</string>
+    <plurals name="composer_message_channel_paid_description">
+        <item quantity="one">Message channel, %d Telegram Star per message</item>
+        <item quantity="other">Message channel, %d Telegram Stars per message</item>
+    </plurals>
+    <plurals name="composer_channel_charges">
+        <item quantity="one">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+        <item quantity="other">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+    </plurals>
     <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
     <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->

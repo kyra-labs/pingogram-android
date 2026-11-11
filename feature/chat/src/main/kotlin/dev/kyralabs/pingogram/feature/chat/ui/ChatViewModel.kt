@@ -94,6 +94,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
 import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.messageChannelButton
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.withMessageChannel
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
@@ -1057,6 +1059,9 @@ class ChatViewModel internal constructor(
                 }
             }.distinctUntilChanged()
 
+    /** "Message channel" of a channel whose subscribers write to its administrators; null for other chats. */
+    private val messageChannel = messageChannelButton(group.map { it.supergroup }, chatJoinRepository, groupRepository)
+
     /** The chats the messages name, by id: their titles and photos, which change far less often than the chats. */
     private val referencedChats: Flow<ImmutableMap<Long, ChatRef>> =
         combine(history, replies, composer.mode) { history, replies, mode ->
@@ -1196,6 +1201,7 @@ class ChatViewModel internal constructor(
             .combine(bots.state) { state, bots -> state.withBots(bots) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
+            .combine(messageChannel) { state, button -> state.withMessageChannel(button) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
             .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }

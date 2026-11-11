@@ -52,9 +52,37 @@ data class Supergroup(
      * comment on the channel's posts (td_api.tl `supergroup.join_to_send_messages`).
      */
     val joinToSendMessages: Boolean = false,
+    /**
+     * A channel whose subscribers can write to its administrators (td_api.tl `supergroup.has_direct_messages_group`),
+     * in the chat its full info names.
+     */
+    val hasDirectMessages: Boolean = false,
+    /**
+     * The chat where a channel's subscribers write to its administrators (td_api.tl
+     * `supergroup.is_direct_messages_group`): each subscriber sees their own messages there, the administrators every
+     * subscriber's ([isAdministeredDirectMessages]).
+     */
+    val isDirectMessages: Boolean = false,
+    /** A channel's direct messages chat the user administers (td_api.tl `is_administered_direct_messages_group`). */
+    val isAdministeredDirectMessages: Boolean = false,
+    /**
+     * The Telegram Stars each message costs non-administrators (td_api.tl `supergroup.paid_message_star_count`); 0 for
+     * free messages.
+     */
+    val paidMessageStarCount: Long = 0,
 ) {
     override fun toString() = "Supergroup(id=$id, status=$status, isChannel=$isChannel, isForum=$isForum, …)"
 }
+
+/**
+ * The chat where a channel's subscribers write to its administrators (td_api.tl
+ * `supergroupFullInfo.direct_messages_chat_id`): [chatId], and [supergroupId], the supergroup behind it, which says
+ * whether messages there cost Telegram Stars.
+ */
+data class DirectMessagesChat(
+    val chatId: Long,
+    val supergroupId: Long,
+)
 
 /** The current user's membership of a group or channel (td_api.tl `ChatMemberStatus`). */
 sealed interface ChatMemberStatus {

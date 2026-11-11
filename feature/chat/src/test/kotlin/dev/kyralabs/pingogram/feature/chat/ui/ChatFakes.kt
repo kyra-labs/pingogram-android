@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatInvite
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.DirectMessagesChat
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
@@ -707,6 +708,12 @@ class FakeChatJoinRepository : ChatJoinRepository {
         joined += chatId
         return result
     }
+
+    /** The direct messages chat each channel's supergroup has; [DomainError.NotFound] for the others. */
+    val directMessagesChats = mutableMapOf<Long, Outcome<DirectMessagesChat>>()
+
+    override suspend fun directMessagesChat(supergroupId: Long): Outcome<DirectMessagesChat> =
+        directMessagesChats[supergroupId] ?: Outcome.Failure(DomainError.NotFound)
 }
 
 class FakeGroupRepository : GroupRepository {

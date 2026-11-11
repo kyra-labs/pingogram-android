@@ -424,6 +424,7 @@ private fun ChatScreenBottomBar(
                     onSent(SendOptions())
                 },
                 onJoin = { onEvent(ChatEvent.JoinChat) },
+                onOpenChat = { onEvent(ChatEvent.OpenChat(it)) },
                 bots = bots,
                 inline = inline,
             )
