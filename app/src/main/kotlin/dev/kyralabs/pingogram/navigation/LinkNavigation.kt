@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
+import dev.kyralabs.pingogram.core.navigation.TextStyleRoute
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 
 /**
@@ -107,6 +108,7 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.ChatInvite -> navigate(ChatInviteRoute(target.inviteLink)) { launchSingleTop = true }
         is LinkTarget.ChatFolderInvite -> navigate(ChatFolderInviteRoute(target.inviteLink)) { launchSingleTop = true }
         is LinkTarget.StickerSet -> navigate(StickerSetRoute(name = target.name)) { launchSingleTop = true }
+        is LinkTarget.TextCompositionStyle -> navigate(TextStyleRoute(target.name)) { launchSingleTop = true }
         is LinkTarget.QrCodeLogin -> navigate(QrLoginRoute(target.link)) { launchSingleTop = true }
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }

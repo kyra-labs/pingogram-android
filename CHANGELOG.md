@@ -37,6 +37,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 
+- Edit with AI: once a message runs past three lines, the field's menu offers Telegram's AI to fix it, rewrite it in a
+  style or translate it. The text goes to Telegram's AI only when you tap Fix, Rewrite or Translate; "Use" puts the
+  result in the field, with "Undo". Shared style links open a sheet to add the style.
 - A poll's message actions offer "Statistics" to the chat's administrators where Telegram gives them (once 100 people
   voted).
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",

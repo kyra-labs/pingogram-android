@@ -100,6 +100,16 @@ sealed interface LinkTarget {
     }
 
     /**
+     * A style of Telegram's AI editor that someone shared, by its [name]: its sheet shows it and adds it to the user's
+     * styles only on a tap (td_api.tl `internalLinkTypeTextCompositionStyle`).
+     */
+    data class TextCompositionStyle(
+        val name: String,
+    ) : LinkTarget {
+        override fun toString() = "TextCompositionStyle(…)"
+    }
+
+    /**
      * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
      * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */
