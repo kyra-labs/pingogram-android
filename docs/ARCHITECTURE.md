@@ -1264,7 +1264,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     stacked, shares of the whole). `GroupDetails.canGetStatistics` says whether the user may ask. `feature:profile`'s
     `ChatStatisticsRoute(chatId)` (`StatisticsViewModel`: the tokens' graphs three at a time, numbers and days formatted
     in the user's language by `StatisticsFormat`) draws them on a canvas with `core:ui`'s `StatisticsChart` (`chart/`, its
-    `ChartUi` made by `ChartFormat`, there so other features can draw charts too), no chart library.
+    `ChartUi` made by `ChartFormat`, there so other features can draw charts too), no chart library. A poll's votes over time are
+    `pollVotes` (`getPollVoteStatistics`, where `MessageProperties.canGetPollVoteStatistics`), which
+    `PollStatisticsRoute(chatId, messageId)` (`PollStatisticsViewModel`: the totals from the message, the graph by its
+    token where Telegram gives one) draws with the same chart; `:app` registers it (`pollStatisticsScreen`), and the
+    poll's message actions open it with `navigateToPollStatistics`.
 
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.

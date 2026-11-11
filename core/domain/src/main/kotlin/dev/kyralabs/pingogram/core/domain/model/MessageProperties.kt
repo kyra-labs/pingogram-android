@@ -54,6 +54,11 @@ data class MessageProperties(
      * administrators may (`MessageInteractionRepository.removeReactions`).
      */
     val canDeleteReactions: Boolean = false,
+    /**
+     * Its poll's votes over time can be shown (td_api.tl `messageProperties.can_get_poll_vote_statistics`,
+     * `ChatStatisticsRepository.pollVotes`), which Telegram gives a chat's administrators.
+     */
+    val canGetPollVoteStatistics: Boolean = false,
 )
 
 /**
