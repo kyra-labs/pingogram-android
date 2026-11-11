@@ -9,7 +9,6 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeWithVelocity
 import androidx.compose.ui.unit.Dp
@@ -54,7 +53,7 @@ class AnswerSliderTest {
     fun `a quick flick toward Answer answers`() {
         setScreen()
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput {
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
             swipeWithVelocity(center, center + Offset(width * 0.6f, 0f), endVelocity = FLICK_VELOCITY)
         }
         composeRule.waitForIdle()
@@ -68,7 +67,7 @@ class AnswerSliderTest {
         composeRule.mainClock.autoAdvance = false
         val travel = travel()
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput {
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
             down(center)
             moveBy(Offset(travel * 0.8f, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
@@ -85,7 +84,7 @@ class AnswerSliderTest {
         composeRule.mainClock.autoAdvance = false
         val travel = travel()
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput {
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
             down(center)
             moveBy(Offset(travel * 0.4f, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
@@ -95,7 +94,7 @@ class AnswerSliderTest {
         val caught = handleLeft()
         assertTrue("the handle springs back: $start, then $caught", caught > start)
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput { down(center) }
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput { down(center) }
         repeat(HELD_FRAMES) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
 
@@ -110,7 +109,7 @@ class AnswerSliderTest {
         composeRule.mainClock.autoAdvance = false
         val travel = travel()
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput {
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
             down(center)
             moveBy(Offset(travel * 0.4f, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
@@ -128,18 +127,18 @@ class AnswerSliderTest {
         shadowOf(manager).setTouchExplorationEnabled(true)
         setScreen()
 
-        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).assertDoesNotExist()
-        val answer = composeRule.activity.getString(R.string.call_answer)
-        composeRule.onNodeWithText(answer).assertExists()
-        composeRule.onNodeWithContentDescription(answer).assertExists()
+        composeRule.onNodeWithContentDescription(slideDescription()).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(composeRule.activity.getString(R.string.call_answer)).assertExists()
+        composeRule.onNodeWithContentDescription(composeRule.activity.getString(R.string.call_decline)).assertExists()
     }
 
-    private fun handleLeft(): Dp = composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).getBoundsInRoot().left
+    private fun handleLeft(): Dp =
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).getBoundsInRoot().left
 
     /** How far, in pixels, the handle can go from the middle toward either side. */
     private fun travel(): Float {
         val slider = composeRule.onNodeWithContentDescription(slideDescription()).getBoundsInRoot()
-        val handle = composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).getBoundsInRoot()
+        val handle = composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).getBoundsInRoot()
         val widthDp = (slider.right - slider.left) - (handle.right - handle.left)
         return with(composeRule.density) { (widthDp / 2).toPx() }
     }

@@ -92,7 +92,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -104,6 +103,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -936,7 +936,9 @@ private fun AnswerSlider(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.large)
-                .graphicsLayer { alpha = 1f - abs(slider.progress()) },
+                .graphicsLayer { alpha = 1f - abs(slider.progress()) }
+                // The labels are the slider's custom actions for screen readers.
+                .clearAndSetSemantics {},
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.call_decline), style = MaterialTheme.typography.bodyLarge)
@@ -966,7 +968,10 @@ private fun AnswerSlider(
     }
 }
 
-/** The slider's semantics: one item, answered and declined through its custom actions. */
+/**
+ * The slider's semantics: one item, answered and declined through its custom actions. Its children merge into it: the
+ * labels and the handle say nothing of their own, the handle keeping only its test tag.
+ */
 @Composable
 private fun Modifier.answerActions(
     onAnswer: () -> Unit,
@@ -975,7 +980,7 @@ private fun Modifier.answerActions(
     val answer = stringResource(R.string.call_answer)
     val decline = stringResource(R.string.call_decline)
     val description = stringResource(R.string.call_slide_description)
-    return clearAndSetSemantics {
+    return semantics(mergeDescendants = true) {
         contentDescription = description
         customActions =
             listOf(
@@ -1005,7 +1010,8 @@ private fun SliderHandle(
             .size(SliderHandleSize)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceBright)
-            .testTag(ANSWER_SLIDER_HANDLE)
+            // Its drag and tap are the slider's custom actions for screen readers: only the tag, for tests.
+            .clearAndSetSemantics { testTag = ANSWER_SLIDER_HANDLE }
             .draggable(
                 dragState,
                 Orientation.Horizontal,
