@@ -1319,6 +1319,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
   it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
   stream. The seek bar shows the player's buffered position.
+- Live photos and start times: `MessageContent.Photo.motion` (td_api.tl `messagePhoto.video`) and
+  `MessageContent.Video.startSeconds` (`messageVideo.start_timestamp`). The media viewer's `ViewerMedia.Image` carries
+  the motion, which `MediaDownloads` downloads after the still (`motion`) and `MediaPlayback` plays as a GIF once on the
+  device; `MediaViewerViewModel` starts a video at its sender's time once (`startAtSendersTime`), never over
+  picture-in-picture's return.
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

@@ -141,10 +141,14 @@ sealed interface ViewerMedia {
     /** The file the viewer downloads in full: the largest size of a photo, a video's or GIF's own file. */
     val fileId: Int
 
-    /** [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. */
+    /**
+     * [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. A live photo's
+     * [motion] plays over it, muted and looping, once on the device.
+     */
     data class Image(
         val photo: Photo,
         val full: PhotoSize,
+        val motion: Video? = null,
     ) : ViewerMedia {
         override val width get() = full.width
         override val height get() = full.height
