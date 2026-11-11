@@ -70,6 +70,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -314,7 +315,8 @@ private fun bubbleActions(
             threadAction(bubble),
             shareAction(bubble, shortcuts),
         ) +
-            contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
+            contentActions(bubble, fileState, isPlaying) + suggestedPostActions(bubble.suggestedPost) +
+            messageShortcuts(bubble, shortcuts)
     val original = listOfNotNull(originalTextAction(resources, bubble)?.let { (label, event) -> action(label, event) })
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->

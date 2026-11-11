@@ -105,6 +105,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryAlbumRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSuggestedPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
@@ -215,6 +216,7 @@ import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
+import dev.kyralabs.pingogram.core.domain.repository.SuggestedPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -443,6 +445,9 @@ interface RepositoryModule {
 
     @Binds
     fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
+
+    @Binds
+    fun suggestedPostRepository(repository: TdlibSuggestedPostRepository): SuggestedPostRepository
 
     @Binds
     fun giveawayRepository(repository: TdlibGiveawayRepository): GiveawayRepository

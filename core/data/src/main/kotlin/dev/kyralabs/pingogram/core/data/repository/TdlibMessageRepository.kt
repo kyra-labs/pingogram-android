@@ -250,11 +250,13 @@ internal fun SendOptions.tdTopic(): TdApi.MessageTopic? =
 /**
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until
  * then (`messageSchedulingStateSendAtDate`, repeated every [SendOptions.repeatPeriod] seconds where that is more than
- * 0), both together where both are asked; everything else is TDLib's default for a user's message.
+ * 0), both together where both are asked; a suggested post goes free, at any time (`inputSuggestedPostInfo` without a
+ * price or date); everything else is TDLib's default for a user's message.
  */
 internal fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
     TdApi.MessageSendOptions().also { options ->
         options.disableNotification = silent
         options.schedulingState =
             scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), repeatPeriod.coerceAtLeast(0)) }
+        if (suggestAsPost) options.suggestedPostInfo = TdApi.InputSuggestedPostInfo(null, 0)
     }

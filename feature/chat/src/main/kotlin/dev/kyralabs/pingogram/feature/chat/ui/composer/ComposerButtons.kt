@@ -41,9 +41,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The send button, the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`, `primary`,
  * `docs/DESIGN_SYSTEM.md` §6 Composer): a tap sends, a long press (with its haptic) opens the menu of other
- * ways to send below it (without sound; at a time, where [canSchedule]), which screen readers reach as the button's
- * custom actions. Its shape morphs while pressed. Not [enabled], it is disabled, e.g. while picked files are being
- * prepared.
+ * ways to send below it (without sound; at a time, where [canSchedule]; as a post suggested to a channel, where
+ * [onSuggestPost] is given), which screen readers reach as the button's custom actions. Its shape morphs while pressed.
+ * Not [enabled], it is disabled, e.g. while picked files are being prepared.
  */
 @Composable
 internal fun SendButton(
@@ -52,11 +52,11 @@ internal fun SendButton(
     onSendSilently: () -> Unit,
     onSchedule: () -> Unit,
     enabled: Boolean = true,
+    onSuggestPost: (() -> Unit)? = null,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
-    val silentLabel = stringResource(R.string.composer_send_silently)
-    val scheduleLabel = stringResource(R.string.composer_schedule)
+    val actions = sendActions(canSchedule, onSendSilently, onSchedule, onSuggestPost)
     // The same lambda across recompositions, so the long-press gesture is not restarted.
     val openMenu =
         remember(haptics) {
@@ -73,23 +73,7 @@ internal fun SendButton(
                     .size(IconButtonDefaults.mediumContainerSize())
                     .testTag(SEND_BUTTON_TEST_TAG)
                     .longPress(enabled, openMenu)
-                    .semantics {
-                        customActions =
-                            listOfNotNull(
-                                CustomAccessibilityAction(silentLabel) {
-                                    onSendSilently()
-                                    true
-                                },
-                                if (canSchedule) {
-                                    CustomAccessibilityAction(scheduleLabel) {
-                                        onSchedule()
-                                        true
-                                    }
-                                } else {
-                                    null
-                                },
-                            )
-                    },
+                    .semantics { customActions = actions },
             enabled = enabled,
             shapes = sendShapes(),
         ) {
@@ -105,8 +89,31 @@ internal fun SendButton(
             onDismiss = { menuOpen = false },
             onSendSilently = onSendSilently,
             onSchedule = onSchedule,
+            onSuggestPost = onSuggestPost,
         )
     }
+}
+
+/** The send menu's ways to send, as the send button's custom actions for screen readers. */
+@Composable
+private fun sendActions(
+    canSchedule: Boolean,
+    onSendSilently: () -> Unit,
+    onSchedule: () -> Unit,
+    onSuggestPost: (() -> Unit)?,
+): List<CustomAccessibilityAction> {
+    fun action(
+        label: String,
+        onClick: () -> Unit,
+    ) = CustomAccessibilityAction(label) {
+        onClick()
+        true
+    }
+    return listOfNotNull(
+        action(stringResource(R.string.composer_send_silently), onSendSilently),
+        if (canSchedule) action(stringResource(R.string.composer_schedule), onSchedule) else null,
+        onSuggestPost?.let { action(stringResource(R.string.composer_suggest_post), it) },
+    )
 }
 
 /** The shapes of the composer's round button: a circle at rest, morphing to the medium pressed shape. */
@@ -194,8 +201,8 @@ internal fun SaveEditButton(onSave: () -> Unit) {
 }
 
 /**
- * The other ways to send, under the send button (and an inline bot's result): without sound, and at a time where
- * [canSchedule].
+ * The other ways to send, under the send button (and an inline bot's result): without sound, at a time where
+ * [canSchedule], and as a post suggested to a channel where [onSuggestPost] is given.
  */
 @Composable
 internal fun SendOptionsMenu(
@@ -204,6 +211,7 @@ internal fun SendOptionsMenu(
     onDismiss: () -> Unit,
     onSendSilently: () -> Unit,
     onSchedule: () -> Unit,
+    onSuggestPost: (() -> Unit)? = null,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         DropdownMenuItem(
@@ -222,6 +230,16 @@ internal fun SendOptionsMenu(
                     onSchedule()
                 },
                 leadingIcon = { Icon(painterResource(UiR.drawable.ic_schedule), null) },
+            )
+        }
+        if (onSuggestPost != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.composer_suggest_post)) },
+                onClick = {
+                    onDismiss()
+                    onSuggestPost()
+                },
+                leadingIcon = { Icon(painterResource(UiR.drawable.ic_campaign), null) },
             )
         }
     }

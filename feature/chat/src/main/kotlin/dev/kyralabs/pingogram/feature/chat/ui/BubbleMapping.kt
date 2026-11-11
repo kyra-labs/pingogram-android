@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayUi
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -100,6 +101,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
+        suggestedPost = message.suggestedPost?.let { suggestedPostUi(message.id, it) },
         hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
         senderHue = senderHue(showsSender),
         senderRole = senderRole.takeIf { showsSender },

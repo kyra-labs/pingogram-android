@@ -357,7 +357,7 @@ private fun Composer(
                 botKeyboard = botKeyboard,
             )
         }
-        ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
+        ComposerAction(edit, canSend, composer, send, onSchedule = { scheduling = true }, voice)
     }
     linking?.let { selection -> TextLinkDialog(text, selection, onDone = { linking = null }) }
     if (scheduling) {
@@ -371,7 +371,8 @@ private fun Composer(
 /**
  * The button beside the text field: the check that saves an [edit] while there is something to save (also for an
  * emptied caption); else the send button while there is something to send ([canSend]), whose menu schedules where
- * [canSchedule] ([onSchedule]), and the microphone ([RecordButton]) while there is not. While a voice message records,
+ * the [composer] allows it ([onSchedule]) and suggests a post where it may, and the microphone ([RecordButton])
+ * while there is not. While a voice message records,
  * the record button stays, also when an edit starts meanwhile.
  */
 @Suppress("LongParameterList") // What to save or send and how, and the voice recording.
@@ -379,7 +380,7 @@ private fun Composer(
 private fun RowScope.ComposerAction(
     edit: ComposerBar.Edit?,
     canSend: Boolean,
-    canSchedule: Boolean,
+    composer: ComposerUiState.Available,
     send: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
     voice: VoiceInput,
@@ -396,10 +397,11 @@ private fun RowScope.ComposerAction(
     } else {
         Appearing(visible = canSend && recording == null) {
             SendButton(
-                canSchedule = canSchedule,
+                canSchedule = composer.canSchedule,
                 onSend = { send(SendOptions()) },
                 onSendSilently = { send(SendOptions(silent = true)) },
                 onSchedule = onSchedule,
+                onSuggestPost = if (composer.canSuggestPost) ({ send(SendOptions(suggestAsPost = true)) }) else null,
             )
         }
         Appearing(visible = !canSend || recording != null) {

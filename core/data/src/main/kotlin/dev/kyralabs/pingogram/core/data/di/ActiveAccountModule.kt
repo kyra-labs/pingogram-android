@@ -96,6 +96,7 @@ import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
+import dev.kyralabs.pingogram.core.domain.repository.SuggestedPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -337,6 +338,9 @@ object ActiveAccountModule {
 
     @Provides
     fun checklistRepository(accounts: Accounts): ChecklistRepository = accounts.active.checklistRepository()
+
+    @Provides
+    fun suggestedPostRepository(accounts: Accounts): SuggestedPostRepository = accounts.active.suggestedPostRepository()
 
     @Provides
     fun giveawayRepository(accounts: Accounts): GiveawayRepository = accounts.active.giveawayRepository()
