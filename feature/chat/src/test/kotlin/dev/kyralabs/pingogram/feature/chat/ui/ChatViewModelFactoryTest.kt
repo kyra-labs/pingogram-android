@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
@@ -133,6 +134,9 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
             FakeForumTopicRepository(),
             FakeMessageThreadRepository(),
             FakeSavedMessagesTopicRepository(),
+            FakeDirectMessagesTopicRepository(),
+            FakeUserRepository(),
+            FakeChatRepository(),
         )
 
     private fun inlineBotRepositories() =

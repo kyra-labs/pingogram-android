@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -92,6 +93,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun savedMessagesTopicCache(repository: TdlibSavedMessagesTopicRepository): TdlibUpdateCache
+
+    /** TDLib announces a channel's direct messages topics only with `updateDirectMessagesChatTopic`. */
+    @Binds
+    @IntoSet
+    fun directMessagesTopicCache(repository: TdlibDirectMessagesTopicRepository): TdlibUpdateCache
 
     /** TDLib announces each call, an incoming one too, only with `updateCall`. */
     @Binds
