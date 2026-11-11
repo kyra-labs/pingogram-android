@@ -651,3 +651,7 @@ data object RecentCallsRoute
 data class WelcomeMessagesRoute(
     val chatId: Long,
 )
+
+/** The user's name color (the owner's board 22b), pushed above Edit profile. */
+@Serializable
+data object ProfileColorRoute

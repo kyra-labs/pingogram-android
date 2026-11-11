@@ -11,6 +11,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
+  information. Profiles show a user's emoji status after their name and their profile color in the header.
 - New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
   with an emoji each, moved and removed, then published to share.
 - Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,

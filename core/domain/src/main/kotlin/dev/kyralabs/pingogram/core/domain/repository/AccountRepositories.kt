@@ -150,6 +150,8 @@ interface AccountRepositories {
 
     fun stickerSetCreationRepository(): StickerSetCreationRepository
 
+    fun accentColorRepository(): AccentColorRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

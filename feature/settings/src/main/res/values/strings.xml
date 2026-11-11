@@ -1521,4 +1521,23 @@
     <string name="settings_new_sticker_set_emoji_objects">Objects</string>
     <string name="settings_new_sticker_set_emoji_symbols">Symbols</string>
     <string name="settings_new_sticker_set_emoji_flags">Flags</string>
+    <!-- Your name color (the owner's board 22b) -->
+    <string name="settings_profile_color">Your color</string>
+    <string name="settings_profile_color_summary">The color of your name in chats</string>
+    <string name="settings_profile_color_save">Save</string>
+    <string name="settings_profile_color_loading">Loading your color</string>
+    <string name="settings_profile_color_preview">Preview: %1$s, in the chosen color</string>
+    <string name="settings_profile_color_sample">This is how your name looks in groups</string>
+    <string name="settings_profile_color_name">Name color</string>
+    <string name="settings_profile_color_footer">People see your name in this color in groups and on your profile.</string>
+    <string name="settings_profile_color_premium">Premium colors</string>
+    <string name="settings_profile_color_premium_one">Premium color</string>
+    <string name="settings_profile_color_premium_footer">These colors come with a Telegram Premium account. People with Premium can set them; you see them on their profiles.</string>
+    <string name="settings_profile_color_red">Red</string>
+    <string name="settings_profile_color_orange">Orange</string>
+    <string name="settings_profile_color_violet">Violet</string>
+    <string name="settings_profile_color_green">Green</string>
+    <string name="settings_profile_color_cyan">Cyan</string>
+    <string name="settings_profile_color_blue">Blue</string>
+    <string name="settings_profile_color_pink">Pink</string>
 </resources>

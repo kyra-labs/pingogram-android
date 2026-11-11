@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -323,6 +324,9 @@ object ActiveAccountModule {
 
     @Provides
     fun communityRepository(accounts: Accounts): CommunityRepository = accounts.active.communityRepository()
+
+    @Provides
+    fun accentColorRepository(accounts: Accounts): AccentColorRepository = accounts.active.accentColorRepository()
 
     @Provides
     fun stickerSetCreationRepository(accounts: Accounts): StickerSetCreationRepository =

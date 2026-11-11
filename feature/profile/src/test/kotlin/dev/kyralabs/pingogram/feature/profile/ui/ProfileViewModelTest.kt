@@ -286,6 +286,21 @@ class ProfileViewModelTest {
         }
 
     @Test
+    fun `the header carries the user's profile color and emoji status`() =
+        runTest {
+            answerProfile(
+                ada.apply {
+                    profileAccentColorId = 3
+                    emojiStatus = TdApi.EmojiStatus(TdApi.EmojiStatusTypeCustomEmoji(99), 0)
+                },
+            )
+            with(viewModel().content.header) {
+                assertEquals(3, profileColor)
+                assertEquals(99L, emojiStatusId)
+            }
+        }
+
+    @Test
     fun `a user TDLib does not know is an error, and retrying looks again`() =
         runTest {
             answerProfile()

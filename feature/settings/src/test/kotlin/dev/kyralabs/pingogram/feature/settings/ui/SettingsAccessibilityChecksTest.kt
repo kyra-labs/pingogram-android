@@ -54,6 +54,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorScreen
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstPreviewStates
@@ -384,6 +386,9 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun proxyLinkConnected() = check { ProxyLinkContent(ProxyPreviewStates.linkConnected, onEvent = {}, onClose = {}) }
+
+    @Test
+    fun profileColor() = check { ProfileColorScreen(ProfileColorPreviewData.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun newStickerSetName() = check { NewStickerSet(NewStickerSetPreviewData.name) }

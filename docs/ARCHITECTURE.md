@@ -420,6 +420,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Name color** (Edit profile, boards 22a/22b): `core:domain`'s `AccentColorRepository` (`TdlibAccentColorRepository`,
+  `core:data`, a `TdlibUpdateCache` of `updateAccentColors`, which TDLib sends once per start) lists the colors Telegram offers
+  (`AccentColorOption`: the id and the built-in color it is drawn like) and sets the user's (`setAccentColor`, no background
+  emoji). `feature:settings`' `ProfileColorRoute` (`ProfileColorViewModel`: the signed-in user from `UserRepository`, the pick in
+  saved state) sits above Edit profile. `User.profileAccentColorId` and `User.emojiStatusId` reach the profile header
+  (`ProfileHeader.profileColor`, `emojiStatusId`); `feature:profile`'s `EmojiStatusViewModel` loads the status's custom emoji
+  through `CustomEmojiRepository` for the route's `LocalCustomEmoji`.
 - **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
   no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
   (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
