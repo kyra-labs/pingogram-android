@@ -4,7 +4,6 @@ import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
-import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import org.drinkless.tdlib.TdApi
@@ -119,37 +118,3 @@ internal fun Animation.toInputMessageAnimation(): TdApi.InputMessageAnimation =
  */
 internal fun Sticker.toInputMessageSticker(): TdApi.InputMessageSticker =
     TdApi.InputMessageSticker(TdApi.InputSticker(TdApi.InputFileId(file.id), null, width, height), emoji)
-
-/**
- * `inputMessagePoll` of this poll: plain question and options (only Premium users may add custom emoji), no
- * description or media, open until closed by hand. A regular poll lets voters change their vote and adds no options
- * later; a quiz has one correct option and no explanation, and votes in it are final.
- */
-internal fun NewPoll.toInputMessagePoll(): TdApi.InputMessagePoll {
-    val correct = correctOptionIndex
-    val type =
-        if (correct != null) {
-            TdApi.InputPollTypeQuiz(intArrayOf(correct), TdApi.FormattedText("", emptyArray()), null)
-        } else {
-            TdApi.InputPollTypeRegular(false)
-        }
-    return TdApi.InputMessagePoll(
-        plainText(question),
-        options.map { TdApi.InputPollOption(plainText(it), null) }.toTypedArray(),
-        null,
-        null,
-        isAnonymous,
-        allowsMultipleAnswers && correct == null,
-        correct == null,
-        false,
-        emptyArray(),
-        false,
-        false,
-        type,
-        0,
-        0,
-        false,
-    )
-}
-
-private fun plainText(text: String) = TdApi.FormattedText(text, emptyArray())

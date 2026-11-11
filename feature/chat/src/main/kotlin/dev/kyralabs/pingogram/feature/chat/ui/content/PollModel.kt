@@ -1,12 +1,16 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
 import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.PollAdding
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 
 /** The line under a poll's question that says what kind of poll it is, or that it is closed. */
 internal enum class PollLabel(
@@ -110,4 +114,33 @@ internal sealed interface PollAction {
 
     /** Open the voters' sheet. */
     data object ShowVoters : PollAction
+
+    /** Open the poll's photo or video in the media viewer. */
+    data object OpenMedia : PollAction
+
+    /** "Add an option": the inline field opens. */
+    data object OpenAddOption : PollAction
+
+    /** The inline field closes without adding. */
+    data object DismissAddOption : PollAction
+
+    /** Add [text] as an answer. `toString()` leaves it out. */
+    data class AddOption(
+        val text: String,
+    ) : PollAction {
+        override fun toString() = "AddOption(…)"
+    }
 }
+
+/**
+ * How the poll of message [messageId] shows beyond the message: the answers checked before "Vote" ([choices]), how
+ * long it stays open as of the current minute ([closesIn], seconds), and the inline field for a new answer
+ * ([adding]).
+ */
+@Immutable
+internal data class PollUi(
+    val messageId: Long = 0,
+    val choices: ImmutableSet<Int> = persistentSetOf(),
+    val closesIn: Long? = null,
+    val adding: PollAdding? = null,
+)

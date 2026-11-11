@@ -141,10 +141,14 @@ sealed interface ViewerMedia {
     /** The file the viewer downloads in full: the largest size of a photo, a video's or GIF's own file. */
     val fileId: Int
 
-    /** [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. */
+    /**
+     * [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. A live photo's
+     * [motion] plays over it, muted and looping, once on the device.
+     */
     data class Image(
         val photo: Photo,
         val full: PhotoSize,
+        val motion: Video? = null,
     ) : ViewerMedia {
         override val width get() = full.width
         override val height get() = full.height
@@ -272,6 +276,11 @@ sealed interface MediaViewerEvent {
     /** Forward was tapped: the forward sheet opens for the current item's message. */
     data object Forward : MediaViewerEvent
 
+    /** "Make a sticker" was chosen for the current photo, of file [fileId] (boards 14a, 14b). */
+    data class MakeSticker(
+        val fileId: Int,
+    ) : MediaViewerEvent
+
     /**
      * The screen checked, after [MediaViewerEffect.CheckStoragePermission], whether the system wants the reason for
      * the storage permission shown first ([showRationale]).
@@ -348,6 +357,11 @@ sealed interface MediaViewerEffect {
 
     /** The user deleted the last item the viewer showed: it closes. */
     data object Close : MediaViewerEffect
+
+    /** Open the sticker maker on the photo of file [fileId], in the viewer's place. */
+    data class MakeSticker(
+        val fileId: Int,
+    ) : MediaViewerEffect
 
     /** The file could not be saved into the gallery: a snackbar says so. */
     data object SaveFailed : MediaViewerEffect

@@ -25,6 +25,8 @@ sealed interface MessageContent {
         val hasSpoiler: Boolean,
         val isSecret: Boolean,
         val showCaptionAboveMedia: Boolean,
+        /** A live photo's motion (td_api.tl `messagePhoto.video`: iOS Live Photos, Android Motion Photos). */
+        val motion: dev.kyralabs.pingogram.core.domain.model.Video? = null,
     ) : MessageContent
 
     /** Flags as for [Photo]. */
@@ -34,6 +36,8 @@ sealed interface MessageContent {
         val hasSpoiler: Boolean,
         val isSecret: Boolean,
         val showCaptionAboveMedia: Boolean,
+        /** Where the video starts playing, in seconds (td_api.tl `messageVideo.start_timestamp`); 0 from its start. */
+        val startSeconds: Int = 0,
     ) : MessageContent
 
     /** A GIF; flags as for [Photo]. */
@@ -94,10 +98,15 @@ sealed interface MessageContent {
         val contact: dev.kyralabs.pingogram.core.domain.model.Contact,
     ) : MessageContent
 
-    /** [description] may be empty. */
+    /**
+     * A poll; [description] may be empty, [media] is the poll's photo or video, if any, and [canAddOption] says that
+     * the user may add an answer (td_api.tl `messagePoll.can_add_option`, `addPollOption`).
+     */
     data class Poll(
         val poll: dev.kyralabs.pingogram.core.domain.model.Poll,
         val description: FormattedText,
+        val media: PollMedia? = null,
+        val canAddOption: Boolean = false,
     ) : MessageContent
 
     /** A checklist, whose tasks people in the chat tick off and add to (td_api.tl `messageChecklist`). */

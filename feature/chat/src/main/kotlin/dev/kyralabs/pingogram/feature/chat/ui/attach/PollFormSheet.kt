@@ -1,37 +1,28 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.maxLength
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,18 +33,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
-import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
-import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -64,21 +50,46 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.SendButton
 import dev.kyralabs.pingogram.feature.chat.ui.preview.AttachPreviewData
 import kotlinx.coroutines.launch
 import java.time.Instant
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The form of a new poll (`REQUIREMENTS.md` FR-C5): a [ModalBottomSheet] that scrolls, with the question, the answer
- * options (two to ten, each removable while more than two are left, "Add an option" below them), and switches for
- * anonymous voting, multiple answers and quiz mode, then the send split button.
+ * The date and time pickers for a custom closing moment, at the one chosen before; a moment later than Telegram's
+ * `poll_open_period_max` allows is moved back to the latest it does.
+ */
+@Composable
+private fun CloseDateDialog(
+    editor: PollEditor,
+    now: () -> Instant,
+    onDismiss: () -> Unit,
+) {
+    ScheduleDialog(
+        now = now,
+        onDismiss = onDismiss,
+        onSchedule = { at ->
+            onDismiss()
+            val latest = now().epochSecond + editor.limits.maxOpenPeriod
+            editor.customCloseDate = minOf(at.epochSecond, latest)
+            editor.closing = PollClosing.Custom
+        },
+        initial = editor.customCloseDate?.let(Instant::ofEpochSecond),
+    )
+}
+
+/**
+ * The form of a new poll (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "New poll", boards 5a and 5b): a
+ * [ModalBottomSheet] that opens expanded, "New poll" with the send split button pinned above what scrolls: the
+ * question, the photo ([pollMediaItem]), an optional description, the answer options ([pollOptionItems]: links,
+ * reordering, up to Telegram's limit), a quiz's explanation, the settings and when the poll closes
+ * ([pollSettingItems]).
  *
  * - The fields edit [editor] (the view model's), limited to Telegram's lengths; an option that repeats one above it
  *   says so in `error`.
- * - In quiz mode a radio button before each option marks the correct one, and multiple answers turn off. In a channel
- *   ([PollSheet.isChannel]) voting is always anonymous, and the switch says why.
+ * - "Add media" opens the system Photo Picker (no permission), whose photo the view model prepares
+ *   ([ChatEvent.PickPollPhoto]).
  * - Send waits until the poll is complete ([PollEditor.poll]); it confirms with a haptic, hides the sheet on its
  *   spring, then sends ([ChatEvent.SendPoll]); its menu sends without sound or at a time where the chat allows it.
- * - Options come and go on the motion scheme's springs. Dragging the sheet down, the scrim and the back gesture
- *   (Material's predictive back) dismiss it ([ChatEvent.DismissPoll]), which empties the form.
+ * - A custom closing time comes from the composer's date and time pickers ([ScheduleDialog]), within Telegram's limit.
+ * - Dragging the sheet down, the scrim and the back gesture (Material's predictive back) dismiss it
+ *   ([ChatEvent.DismissPoll]), which empties the form.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,11 +104,13 @@ internal fun PollFormSheet(
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val currentOnEvent by rememberUpdatedState(onEvent)
-    val canSend by remember(editor, sheet.isChannel) { derivedStateOf { editor.poll(sheet.isChannel) != null } }
+    val canSend by remember(editor, sheet.isChannel) {
+        derivedStateOf { editor.poll(sheet.isChannel, now().epochSecond) != null }
+    }
     val send: (SendOptions) -> Unit =
         remember(sheetState, scope, haptics, editor, sheet.isChannel) {
             { options ->
-                if (editor.poll(sheet.isChannel) != null) {
+                if (editor.poll(sheet.isChannel, now().epochSecond) != null) {
                     haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     scope
                         .launch { sheetState.hide() }
@@ -106,14 +119,25 @@ internal fun PollFormSheet(
             }
         }
     var scheduling by rememberSaveable { mutableStateOf(false) }
+    var pickingCloseDate by rememberSaveable { mutableStateOf(false) }
+    val photoPicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri?.let { currentOnEvent(ChatEvent.PickPollPhoto(it.toString())) }
+        }
+    val actions =
+        remember(send) {
+            PollFormActions(
+                onSend = send,
+                onSchedule = { scheduling = true },
+                onPickPhoto = {
+                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onRemovePhoto = { currentOnEvent(ChatEvent.RemovePollPhoto) },
+                onPickCloseDate = { pickingCloseDate = true },
+            )
+        }
     ModalBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissPoll) }, sheetState = sheetState) {
-        PollForm(
-            sheet = sheet,
-            editor = editor,
-            canSend = canSend,
-            onSend = send,
-            onSchedule = { scheduling = true },
-        )
+        PollForm(sheet = sheet, editor = editor, canSend = canSend, actions = actions, now = now)
     }
     if (scheduling) {
         ScheduleDialog(
@@ -125,30 +149,53 @@ internal fun PollFormSheet(
             },
         )
     }
+    if (pickingCloseDate) CloseDateDialog(editor, now) { pickingCloseDate = false }
 }
 
-/** The form itself, in a lazy column bounded by the sheet. */
+/** What the form's buttons do, which the sheet decides. */
+@Immutable
+internal class PollFormActions(
+    val onSend: (SendOptions) -> Unit = {},
+    val onSchedule: () -> Unit = {},
+    val onPickPhoto: () -> Unit = {},
+    val onRemovePhoto: () -> Unit = {},
+    val onPickCloseDate: () -> Unit = {},
+)
+
+/** The form itself: its title and the send button over a lazy column bounded by the sheet. */
 @Composable
 internal fun ColumnScope.PollForm(
     sheet: PollSheet,
     editor: PollEditor,
     canSend: Boolean,
-    onSend: (SendOptions) -> Unit,
-    onSchedule: () -> Unit,
+    actions: PollFormActions,
+    now: () -> Instant = Instant::now,
 ) {
     val spacing = MaterialTheme.spacing
     val fieldModifier = Modifier.fillMaxWidth().padding(horizontal = spacing.large)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.large).padding(bottom = spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.poll_title),
+            modifier = Modifier.weight(1f).semantics { heading() },
+            style = MaterialTheme.typography.titleLargeEmphasized,
+        )
+        SendButton(
+            canSchedule = sheet.canSchedule,
+            onSend = { actions.onSend(SendOptions()) },
+            onSendSilently = { actions.onSend(SendOptions(silent = true)) },
+            onSchedule = actions.onSchedule,
+            enabled = canSend,
+        )
+    }
+    val listState = rememberLazyListState()
     LazyColumn(
+        state = listState,
         modifier = Modifier.weight(1f, fill = false),
         verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
-        item(key = TITLE) {
-            Text(
-                text = stringResource(R.string.poll_title),
-                modifier = fieldModifier,
-                style = MaterialTheme.typography.titleLargeEmphasized,
-            )
-        }
         item(key = QUESTION) {
             OutlinedTextField(
                 state = editor.question,
@@ -158,229 +205,24 @@ internal fun ColumnScope.PollForm(
                 lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
             )
         }
-        optionItems(editor)
-        settingItems(sheet, editor)
-        item(key = SEND) {
-            Box(Modifier.fillMaxWidth().padding(horizontal = spacing.large, vertical = spacing.small)) {
-                Box(Modifier.align(Alignment.CenterEnd)) {
-                    SendButton(
-                        canSchedule = sheet.canSchedule,
-                        onSend = { onSend(SendOptions()) },
-                        onSendSilently = { onSend(SendOptions(silent = true)) },
-                        onSchedule = onSchedule,
-                        enabled = canSend,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** The options' header, a row per option, and the button that adds one while fewer than ten are there. */
-private fun LazyListScope.optionItems(editor: PollEditor) {
-    item(key = OPTIONS) {
-        FormSectionHeader(
-            title = stringResource(R.string.poll_options),
-            note =
-                stringResource(R.string.poll_choose_correct)
-                    .takeIf { editor.isQuiz && editor.correctOption == null },
-        )
-    }
-    itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
-        val motionScheme = MaterialTheme.motionScheme
-        OptionRow(
-            editor = editor,
-            option = option,
-            number = index + 1,
-            modifier =
-                Modifier.animateItem(
-                    fadeInSpec = motionScheme.defaultEffectsSpec(),
-                    placementSpec = motionScheme.defaultSpatialSpec(),
-                    fadeOutSpec = motionScheme.fastEffectsSpec(),
-                ),
-        )
-    }
-    if (editor.canAddOption) {
-        item(key = ADD) {
-            val motionScheme = MaterialTheme.motionScheme
-            TextButton(
-                onClick = { editor.addOption() },
-                modifier =
-                    Modifier.padding(horizontal = MaterialTheme.spacing.small).animateItem(
-                        fadeInSpec = motionScheme.defaultEffectsSpec(),
-                        placementSpec = motionScheme.defaultSpatialSpec(),
-                        fadeOutSpec = motionScheme.fastEffectsSpec(),
-                    ),
-            ) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_add),
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize),
-                )
-                Text(
-                    text = stringResource(R.string.poll_add_option),
-                    modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        }
-    }
-}
-
-/**
- * The settings: anonymous voting (always on in a channel, which says why), multiple answers (off in quiz mode) and
- * quiz mode.
- */
-private fun LazyListScope.settingItems(
-    sheet: PollSheet,
-    editor: PollEditor,
-) {
-    item(key = SETTINGS) { FormSectionHeader(stringResource(R.string.poll_settings)) }
-    item(key = ANONYMOUS) {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_anonymous),
-            checked = sheet.isChannel || editor.isAnonymous,
-            onCheckedChange = { editor.isAnonymous = it },
-            enabled = !sheet.isChannel,
-            note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
-        )
-    }
-    item(key = MULTIPLE) {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_multiple),
-            checked = !editor.isQuiz && editor.allowsMultipleAnswers,
-            onCheckedChange = { editor.allowsMultipleAnswers = it },
-            enabled = !editor.isQuiz,
-        )
-    }
-    item(key = QUIZ) {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_quiz),
-            checked = editor.isQuiz,
-            onCheckedChange = { editor.isQuiz = it },
-            // A bot's keyboard button may ask for a quiz, or for a regular poll.
-            enabled = editor.requiredQuiz == null,
-            note =
-                stringResource(
-                    when (editor.requiredQuiz) {
-                        true -> R.string.poll_quiz_required
-                        false -> R.string.poll_regular_required
-                        null -> R.string.poll_quiz_note
-                    },
-                ),
-        )
-    }
-}
-
-/**
- * Option [number]: in quiz mode a radio button that marks it as the correct answer, its text field ("Option 1"), with
- * a note in `error` when it repeats an option above it, and its remove button while more than two are left.
- */
-@Composable
-private fun OptionRow(
-    editor: PollEditor,
-    option: PollOptionField,
-    number: Int,
-    modifier: Modifier = Modifier,
-) {
-    val spacing = MaterialTheme.spacing
-    val duplicate = editor.isDuplicate(option.key)
-    val label = stringResource(R.string.poll_option, number)
-    Row(
-        modifier = modifier.fillMaxWidth().padding(start = spacing.large, end = spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (editor.isQuiz) {
-            val correctLabel = stringResource(R.string.poll_correct_option, number)
-            RadioButton(
-                selected = editor.correctOption == option.key,
-                onClick = { editor.correctOption = option.key },
-                modifier = Modifier.semantics { contentDescription = correctLabel },
+        pollMediaItem(editor, actions)
+        item(key = DESCRIPTION) {
+            OutlinedTextField(
+                state = editor.description,
+                modifier = fieldModifier,
+                label = { Text(stringResource(R.string.poll_description)) },
+                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
             )
         }
-        OutlinedTextField(
-            state = option.text,
-            modifier = Modifier.weight(1f),
-            label = { Text(label) },
-            isError = duplicate,
-            supportingText = if (duplicate) ({ Text(stringResource(R.string.poll_option_repeated)) }) else null,
-            inputTransformation = InputTransformation.maxLength(NewPoll.MAX_OPTION_LENGTH),
-            lineLimits = TextFieldLineLimits.SingleLine,
-        )
-        if (editor.canRemoveOption) {
-            IconButton(onClick = { editor.removeOption(option.key) }, shapes = IconButtonDefaults.shapes()) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_close),
-                    contentDescription = stringResource(R.string.poll_remove_option, number),
-                )
-            }
-        }
+        pollOptionItems(editor, listState)
+        pollSettingItems(sheet, editor, actions, now)
     }
 }
 
-/** A section's title in `titleSmallEmphasized` and `primary`, as in settings, with an optional [note] below. */
-@Composable
-internal fun FormSectionHeader(
-    title: String,
-    note: String? = null,
-) {
-    val spacing = MaterialTheme.spacing
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.large).padding(top = spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-    ) {
-        Text(title, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleSmallEmphasized)
-        note?.let {
-            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-/**
- * A setting as a list item with a switch ([CheckSwitch]), the whole row toggling it with a toggle haptic, on the
- * sheet's color.
- */
-@Composable
-internal fun FormSwitchRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true,
-    note: String? = null,
-) {
-    val haptics = LocalHapticFeedback.current
-    ListItem(
-        modifier =
-            Modifier.toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                onValueChange = {
-                    haptics.performToggle(it)
-                    onCheckedChange(it)
-                },
-            ),
-        enabled = enabled,
-        trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
-        supportingContent = note?.let { { Text(it) } },
-        colors =
-            ListItemDefaults.colors(containerColor = Color.Transparent, disabledContainerColor = Color.Transparent),
-    ) {
-        Text(title)
-    }
-}
-
-private const val TITLE = "title"
 private const val QUESTION = "question"
-private const val OPTIONS = "options"
-private const val ADD = "add"
-private const val SETTINGS = "settings"
-private const val ANONYMOUS = "anonymous"
-private const val MULTIPLE = "multiple"
-private const val QUIZ = "quiz"
-private const val SEND = "send"
+private const val DESCRIPTION = "description"
 
-/** The lines the question grows to before it scrolls. */
+/** The lines the question and the description grow to before they scroll. */
 private const val QUESTION_LINES = 4
 
 @PingogramPreviews
@@ -392,8 +234,27 @@ private fun PollFormPreview() {
                 sheet = PollSheet(),
                 editor = remember { PollEditor(AttachPreviewData.quiz) },
                 canSend = true,
-                onSend = {},
-                onSchedule = {},
+                actions = PollFormActions(),
+            )
+        }
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun PollFormFilledPreview() {
+    PingogramPreview {
+        Column {
+            PollForm(
+                sheet = PollSheet(),
+                editor =
+                    remember {
+                        PollEditor(
+                            AttachPreviewData.bookPoll,
+                        ).apply { limits = AttachPreviewData.limits }
+                    },
+                canSend = true,
+                actions = PollFormActions(),
             )
         }
     }

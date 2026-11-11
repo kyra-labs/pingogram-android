@@ -57,6 +57,7 @@
     <string name="media_show_in_chat">Show in chat</string>
     <!-- Puts the shown photo on the clipboard -->
     <string name="media_copy">Copy</string>
+    <string name="media_make_sticker">Make a sticker</string>
     <!-- State of the More button while the photo downloads before it is copied -->
     <string name="media_copy_pending">Preparing to copy</string>
     <!-- The clipboard's label of a copied photo -->
@@ -242,4 +243,68 @@
     <string name="profile_music_track_line">%1$s · %2$s</string>
     <string name="profile_music_play_song">Play %1$s</string>
     <string name="profile_music_no_picker">No app on this phone can pick a song</string>
+
+    <!-- Making a sticker from a photo (boards 14a, 14b). -->
+    <string name="make_sticker_title">Make a sticker</string>
+    <string name="make_sticker_close">Close</string>
+    <string name="make_sticker_next">Next</string>
+    <string name="make_sticker_writing">Making the sticker</string>
+    <string name="make_sticker_loading">Downloading the photo</string>
+    <string name="make_sticker_photo_failed">The photo can\'t be downloaded</string>
+    <string name="make_sticker_retry">Try again</string>
+    <string name="make_sticker_photo">Sticker photo. Drag to move it, pinch to zoom.</string>
+    <string name="make_sticker_zoom_in">Zoom in</string>
+    <string name="make_sticker_zoom_out">Zoom out</string>
+    <string name="make_sticker_layer_text">Text: %1$s</string>
+    <string name="make_sticker_layer_emoji">Emoji: %1$s</string>
+    <string name="make_sticker_remove">Remove</string>
+    <string name="make_sticker_remove_text">Remove text %1$s</string>
+    <string name="make_sticker_remove_emoji">Remove emoji %1$s</string>
+    <!-- Stands for text on the "Add text" button, as the board draws it. -->
+    <string name="make_sticker_text_glyph" translatable="false">Aa</string>
+    <string name="make_sticker_add_text">Add text</string>
+    <string name="make_sticker_add_emoji">Add emoji</string>
+    <string name="make_sticker_outline">Outline</string>
+    <string name="make_sticker_hint">Drag and pinch the photo to crop it. Drag text and emoji to place them.</string>
+    <string name="make_sticker_hint_layer">Drag it to place it.</string>
+    <string name="make_sticker_text_label">Text</string>
+    <string name="make_sticker_cancel">Cancel</string>
+    <string name="make_sticker_add">Add</string>
+    <string name="make_sticker_emoji_title">Sticker emoji</string>
+    <string name="make_sticker_emoji_loading">Loading emoji</string>
+    <string name="make_sticker_emoji_smileys">Smileys and emotion</string>
+    <string name="make_sticker_emoji_people">People and body</string>
+    <string name="make_sticker_emoji_animals">Animals and nature</string>
+    <string name="make_sticker_emoji_food">Food and drink</string>
+    <string name="make_sticker_emoji_travel">Travel and places</string>
+    <string name="make_sticker_emoji_activities">Activities</string>
+    <string name="make_sticker_emoji_objects">Objects</string>
+    <string name="make_sticker_emoji_symbols">Symbols</string>
+    <string name="make_sticker_emoji_flags">Flags</string>
+    <string name="make_sticker_add_to_set">Add to sticker set</string>
+    <string name="make_sticker_add_to_set_why">Pick an emoji so it shows up in suggestions</string>
+    <string name="make_sticker_more_emoji">More emoji</string>
+    <string name="make_sticker_sets_loading">Loading your sticker sets</string>
+    <plurals name="make_sticker_set_size">
+        <item quantity="one">%1$d sticker</item>
+        <item quantity="other">%1$d stickers</item>
+    </plurals>
+    <string name="make_sticker_new_set">New sticker set</string>
+    <string name="make_sticker_new_set_next">Name it on the next step</string>
+    <string name="make_sticker_add_to">Add to %1$s</string>
+    <string name="make_sticker_adding">Adding the sticker</string>
+    <string name="make_sticker_new_set_about">Your sticker starts it. Telegram makes the set public at its link, where anyone can add it.</string>
+    <string name="make_sticker_set_title">Name</string>
+    <string name="make_sticker_set_link">Link</string>
+    <string name="make_sticker_link_prefix" translatable="false">t.me/addstickers/</string>
+    <string name="make_sticker_link_checking">Checking…</string>
+    <string name="make_sticker_link_free">Available</string>
+    <string name="make_sticker_link_taken">Another set has this link</string>
+    <string name="make_sticker_link_invalid">Use 5 to 64 letters, digits and single underscores, starting with a letter</string>
+    <string name="make_sticker_create_set">Create set</string>
+    <string name="make_sticker_back">Back</string>
+    <string name="make_sticker_added">Added to %1$s</string>
+    <string name="make_sticker_share">Share link</string>
+    <string name="make_sticker_done">Done</string>
+    <string name="make_sticker_no_share">No app on this phone can share the link</string>
 </resources>

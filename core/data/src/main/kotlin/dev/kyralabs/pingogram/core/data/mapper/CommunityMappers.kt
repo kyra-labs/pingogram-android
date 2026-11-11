@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.Community
+import dev.kyralabs.pingogram.core.domain.model.CommunityAddChatRequest
 import dev.kyralabs.pingogram.core.domain.model.CommunityChat
 import dev.kyralabs.pingogram.core.domain.model.CommunityDetails
 import dev.kyralabs.pingogram.core.domain.model.CommunityRole
@@ -15,6 +16,7 @@ internal fun TdApi.Community.toCommunity(): Community =
         hasAccess = haveAccess,
         role = status.toCommunityRole(),
         canEditChatList = permissions?.canEditChatList == true,
+        areChatsCollapsed = areChatsCollapsed,
     )
 
 internal fun TdApi.CommunityMemberStatus?.toCommunityRole(): CommunityRole =
@@ -48,4 +50,9 @@ internal fun TdApi.CommunityFullInfo.toCommunityDetails(): CommunityDetails =
         chats =
             chats.orEmpty().map { CommunityChat(it.chatId, it.canViewHistory, it.isHidden) }.toImmutableList(),
         administratorCount = administratorCount,
+        addChatRequestCount = addChatRequestCount,
+        isMuted = notificationSettings?.let { !it.useDefaultMuteFor && it.muteFor > 0 } == true,
     )
+
+internal fun TdApi.CommunityAddChatRequest.toAddChatRequest(): CommunityAddChatRequest =
+    CommunityAddChatRequest(chatId = chatId, isHidden = isHidden, senderUserId = senderUserId, date = date)

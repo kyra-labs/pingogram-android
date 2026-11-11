@@ -10,8 +10,24 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,
+  saying how many are left and, once they are used, when the next one comes.
+- Live photos: photos taken as iOS Live Photos or Android Motion Photos say "LIVE" in the chat and play their motion
+  in the media viewer. Videos sent with a start time open there.
+- Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
+  with their unread messages, which expands to show them; its menu shows the chats separately again.
+- Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
+- Removing reactions: in a group, administrators remove someone's reaction to a message, or all their recent reactions,
+  from the message's Reactions sheet.
+- The welcome messages of a group show to new members at the top of the chat, until "Got it" folds them into a bar.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
+
+- "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
+  with "Show full text" to go back (in the reader's language where they don't read the post's).
+
+- "Message channel" in channels that take direct messages: it opens your private thread with the channel's admins.
+  Where messages cost Telegram Stars, the button shows the price and says Pingogram can't pay yet.
 
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.
@@ -22,6 +38,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   gains "Manage welcome messages".
 - Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
   its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
+  Members add their groups and channels ("Suggest a chat" where admins decide), mute the community and show it as one
+  entry in the chat list; admins answer the requests to add a chat and remove chats.
 - Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
   tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
   their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given
@@ -40,6 +58,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Profile music: a profile with songs shows a player below its header, which plays them one after another while the
   profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
   remove them.
+- Make a sticker: a photo's "More" menu in the media viewer makes it a sticker: crop it to a square, add text and
+  emoji, keep or drop the white outline, then add it to one of your sticker sets with an emoji, or start a new set
+  with it.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -68,6 +89,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
 - On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
   are signed in without a code (or asked for your 2-step verification password).
+
+- Polls: a poll shows its photo or video (tap to open it), its description, links in its answers, how long it stays
+  open ("Ends in 2 h"), whether its results are hidden until the end, and the winning answer once closed. Quizzes may
+  have several correct answers ("You got 1 of 2"). Where the poll allows it, "Add option" adds your own answer.
+- New poll: add a photo and a description, up to 12 options with links, drag options into order, several correct
+  answers in a quiz with an explanation, and settings to hide results, shuffle options, forbid changing votes, let
+  members add options and close the poll after an hour, a day or at a chosen time.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

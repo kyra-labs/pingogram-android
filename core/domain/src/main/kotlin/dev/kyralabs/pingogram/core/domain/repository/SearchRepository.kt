@@ -3,7 +3,9 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -63,6 +65,22 @@ interface SearchRepository {
         offset: String?,
         filter: MessageSearchFilter = MessageSearchFilter.All,
     ): Outcome<FoundMessages>
+
+    /**
+     * How many searches of public channels' posts Telegram allows today, and whether searching [query] is free
+     * (`getPublicPostSearchLimits`), without searching.
+     */
+    suspend fun publicPostSearchLimits(query: String): Outcome<PublicPostSearchLimits>
+
+    /**
+     * A page of the posts of public channels that match [query] (`searchPublicPosts`), the first for a null [offset].
+     * Free searches only: Pingogram never pays Telegram Stars for one, so a search without a free one left finds
+     * nothing ([FoundPublicPosts.areLimitsExceeded]).
+     */
+    suspend fun searchPublicPosts(
+        query: String,
+        offset: String?,
+    ): Outcome<FoundPublicPosts>
 
     /** The chats the user opened from search, the last one first, up to [RECENT_LIMIT]. */
     suspend fun recentChats(): Outcome<ImmutableList<Chat>>

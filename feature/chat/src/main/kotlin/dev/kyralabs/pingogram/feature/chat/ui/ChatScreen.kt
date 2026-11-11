@@ -95,6 +95,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackEvent
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackSlot
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackUi
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableList
@@ -205,6 +208,8 @@ internal fun ChatScreen(
     topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
     onOpenScheduledMessages: (() -> Unit)? = null,
+    welcome: WelcomePackUi? = null,
+    onWelcomeEvent: (WelcomePackEvent) -> Unit = {},
     nextChannel: NextChannel? = null,
     recordMode: RecordModeUiState = RecordModeUiState(),
     videoNotePreview: SurfaceRequest? = null,
@@ -255,6 +260,8 @@ internal fun ChatScreen(
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
+            welcome = welcome,
+            onWelcomeEvent = onWelcomeEvent,
             jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
             // Over the messages, above the composer, while a video message records.
@@ -291,6 +298,8 @@ private fun ChatScaffold(
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onOpenScheduledMessages: (() -> Unit)? = null,
+    welcome: WelcomePackUi? = null,
+    onWelcomeEvent: (WelcomePackEvent) -> Unit = {},
     overlay: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
@@ -336,6 +345,7 @@ private fun ChatScaffold(
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
+                WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
                 Box(Modifier.weight(1f)) {
                     ChatBody(
                         state,
@@ -424,6 +434,7 @@ private fun ChatScreenBottomBar(
                     onSent(SendOptions())
                 },
                 onJoin = { onEvent(ChatEvent.JoinChat) },
+                onOpenChat = { onEvent(ChatEvent.OpenChat(it)) },
                 bots = bots,
                 inline = inline,
             )

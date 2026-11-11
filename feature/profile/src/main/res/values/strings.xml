@@ -272,6 +272,50 @@
     <string name="community_delete_title">Delete %1$s?</string>
     <string name="community_delete_text">The community goes for everyone. Its chats stay as they are.</string>
     <string name="community_delete_confirm">Delete</string>
+    <!-- Adding chats, requests, mute and the chat list's entry (board 19a, TDLib 1.8.70). -->
+    <string name="community_add_chats">Add chats</string>
+    <string name="community_suggest_chat">Suggest a chat</string>
+    <string name="community_mute">Mute</string>
+    <string name="community_unmute">Unmute</string>
+    <string name="community_mute_description">Mute the community\'s chats</string>
+    <string name="community_unmute_description">Unmute the community\'s chats</string>
+    <string name="community_collapse">Show as one entry in the chat list</string>
+    <string name="community_expand">Show its chats separately</string>
+    <string name="community_collapsed_notice">The chat list shows the community as one entry.</string>
+    <string name="community_expanded_notice">The chat list shows the community\'s chats separately.</string>
+    <string name="community_remove_chat">Remove from community</string>
+    <string name="community_remove_title">Remove %1$s from the community?</string>
+    <string name="community_remove_text">The chat stays as it is. Its members leave the community unless they\'re in another of its chats.</string>
+    <string name="community_remove_confirm">Remove</string>
+    <string name="community_chat_removed">Chat removed from the community</string>
+    <plurals name="community_requests">
+        <item quantity="one">%1$s request to add a chat</item>
+        <item quantity="other">%1$s requests to add a chat</item>
+    </plurals>
+    <string name="community_request_from">Suggested by %1$s</string>
+    <string name="community_request_approve">Add</string>
+    <string name="community_request_approve_chat">Add %1$s to the community</string>
+    <string name="community_request_decline_chat">Decline %1$s</string>
+    <string name="community_request_approved">Chat added to the community</string>
+    <string name="community_request_declined">Request declined</string>
+    <string name="community_add_title">Add chats</string>
+    <string name="community_suggest_title">Suggest a chat</string>
+    <string name="community_add_text">Your groups and channels that can join this community. Their members can then see the community\'s other chats.</string>
+    <string name="community_suggest_text">The community\'s admins decide whether to add the chats you suggest.</string>
+    <string name="community_add_hidden">Visible to admins only</string>
+    <string name="community_add_hidden_text">Members of the community won\'t see these chats in its list.</string>
+    <string name="community_add_loading">Loading your chats</string>
+    <string name="community_add_none">You have no groups or channels that can be added.</string>
+    <string name="community_add_send">Add</string>
+    <string name="community_add_suggest">Suggest</string>
+    <plurals name="community_chats_added">
+        <item quantity="one">%1$d chat added to the community</item>
+        <item quantity="other">%1$d chats added to the community</item>
+    </plurals>
+    <plurals name="community_chats_suggested">
+        <item quantity="one">Request sent to the community\'s admins</item>
+        <item quantity="other">%1$d requests sent to the community\'s admins</item>
+    </plurals>
     <!-- The "Set tag" sheet of a member (boards 18a and 18b): the tag shows next to their name in the group. -->
     <string name="chat_info_tag_title">Set tag</string>
     <string name="chat_info_tag_title_own">Your tag</string>

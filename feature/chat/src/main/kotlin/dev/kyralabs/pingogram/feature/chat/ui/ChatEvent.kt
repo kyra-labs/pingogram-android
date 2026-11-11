@@ -248,6 +248,14 @@ sealed interface ChatEvent {
         val options: SendOptions = SendOptions(),
     ) : ChatEvent
 
+    /** The photo picker gave [uri] for the poll form's photo. */
+    data class PickPollPhoto(
+        val uri: String,
+    ) : ChatEvent
+
+    /** The poll form's photo was taken away. */
+    data object RemovePollPhoto : ChatEvent
+
     /** "Checklist" in the attach menu: the form of a new checklist opens. */
     data object OpenChecklist : ChatEvent
 

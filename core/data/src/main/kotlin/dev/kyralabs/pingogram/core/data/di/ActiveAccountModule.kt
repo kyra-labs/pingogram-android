@@ -83,6 +83,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
@@ -343,6 +344,9 @@ object ActiveAccountModule {
     @Provides
     fun stickerSetCreationRepository(accounts: Accounts): StickerSetCreationRepository =
         accounts.active.stickerSetCreationRepository()
+
+    @Provides
+    fun stickerMakerRepository(accounts: Accounts): StickerMakerRepository = accounts.active.stickerMakerRepository()
 
     @Provides
     fun welcomeMessageRepository(accounts: Accounts): WelcomeMessageRepository =

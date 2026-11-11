@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -133,6 +134,10 @@ internal fun ConversationRoute(
     interactionsViewModel: MessageInteractionsViewModel = hiltViewModel(key = "interactions-$chatId-$topic"),
     sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
     doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
+    welcomeViewModel: WelcomePackViewModel =
+        hiltViewModel<WelcomePackViewModel, WelcomePackViewModel.Factory>(key = "welcome-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -212,6 +217,13 @@ internal fun ConversationRoute(
             topicAction = topicActions?.button,
             connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
             onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+            // A topic's or thread's conversation is not where a new member lands.
+            welcome =
+                welcomeViewModel.pack
+                    .collectAsStateWithLifecycle()
+                    .value
+                    .takeIf { topic == null },
+            onWelcomeEvent = welcomeViewModel::onEvent,
             nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
             recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
             videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
@@ -295,7 +307,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
-                    is ChatEffect.SponsoredNotice,
+                    ChatEffect.PollPhotoOnly, is ChatEffect.SponsoredNotice,
                     is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
@@ -447,6 +459,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
+        ChatEffect.PollPhotoOnly -> R.string.poll_photo_only
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed

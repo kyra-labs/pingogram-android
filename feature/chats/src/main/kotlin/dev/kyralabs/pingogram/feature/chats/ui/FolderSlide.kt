@@ -320,7 +320,6 @@ internal class FolderPositions private constructor(
     ): Pair<Int, Int> {
         val position = positions[state.selectedFolderId] ?: return 0 to 0
         val content = state.content as? ChatListContent.Content
-        val items = content?.items.orEmpty()
         val hasPinned = (content?.pinnedCount ?: 0) > 0
         val storyRows = if (hasStories) 1 else 0
         val headerRows = storyRows + if (state.archive != null) 1 else 0
@@ -330,7 +329,7 @@ internal class FolderPositions private constructor(
                 STORIES_ROW -> 0.takeIf { hasStories }
                 ARCHIVE_ROW -> storyRows.takeIf { state.archive != null }
                 PINNED_HEADER -> headerRows.takeIf { hasPinned }
-                else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
+                else -> content?.rowIndexOf(key)?.plus(rowsAbove)
             }
         return if (index != null) index to position.offset else position.index to 0
     }

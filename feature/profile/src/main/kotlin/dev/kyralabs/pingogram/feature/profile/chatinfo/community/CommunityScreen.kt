@@ -45,8 +45,10 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -75,9 +77,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The page of a community (`docs/DESIGN_SYSTEM.md` §6 "Community page", the owner's board 19a): a settings-style page
  * ([InfoPageScaffold], "Community") whose header shows the community's photo on `MaterialShapes.Sunny`, its name and
- * what the user is in it; then "Chats in this community" with their count over the chats as one segmented group
- * ([CommunityChatRow]) and a footer. "Community options" in the top bar (where the user may rename or delete it) opens
- * an expressive menu. Loading is a delayed indicator, a failure an [EmptyState] on `Cookie4Sided` with "Try again".
+ * what the user is in it, then for its members [CommunityActions]; then, for those who may change the list, the
+ * requests to add a chat ([AddChatRequestRow]); then "Chats in this community" with their count over the chats as one
+ * segmented group ([CommunityChatRow]) and a footer. "Community options" in the top bar opens an expressive menu, and
+ * [CommunityAddChatsSheet] adds chats. Loading is a delayed indicator, a failure an [EmptyState] on `Cookie4Sided` with
+ * "Try again".
  */
 @Composable
 internal fun CommunityScreen(
@@ -114,7 +118,10 @@ internal fun CommunityScreen(
             }
         }
     }
-    (state as? CommunityUiState.Content)?.let { CommunityDialogs(it, onEvent) }
+    (state as? CommunityUiState.Content)?.let { content ->
+        CommunityDialogs(content, onEvent)
+        content.addChats?.let { CommunityAddChatsSheet(it, content.header.canEditChatList, onEvent) }
+    }
 }
 
 /** Why the community could not be read, with "Try again". */
@@ -157,6 +164,12 @@ private fun CommunityContent(
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         item(key = HEADER, contentType = HEADER) { CommunityHeaderBlock(state.header, rowModifier) }
+        if (state.header.isJoined) {
+            item(key = ACTIONS, contentType = ACTIONS) {
+                CommunityActions(state.header, onEvent, rowModifier.padding(bottom = spacing.medium))
+            }
+        }
+        requestItems(state.requests, numbers, rowModifier, onEvent)
         item(key = TITLE, contentType = TITLE) {
             ProfileSectionHeader(
                 title =
@@ -174,6 +187,7 @@ private fun CommunityContent(
                 shapes = ListItemDefaults.segmentedShapes(index, state.chats.size),
                 onEvent = onEvent,
                 modifier = rowModifier.animateItem(),
+                canRemove = state.header.canEditChatList,
             )
         }
         item(key = FOOTER, contentType = FOOTER) {
@@ -237,155 +251,9 @@ private fun CommunityHeaderBlock(
 }
 
 /**
- * A chat of the community: its avatar in its kind's shape, its title (user content), "Hidden · administrators only"
- * for a hidden one and what it is ("Group · 1,120 members"), and at its end "Joined" (a tonal label with a check) or
- * "Join" (a filled button, a [LoadingIndicator] in its place while Telegram answers). A tap opens the chat. Screen
- * readers hear the row as one ("Pingogram Beta, Group · 1,120 members, Joined"), and "Join" as a button of its own.
+ * "Community options": an expressive menu of showing the community as one entry in the chat list (for its members),
+ * renaming and, in a group of its own in `error`, deleting.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-internal fun CommunityChatRow(
-    chat: CommunityChatItem,
-    shapes: ListItemShapes,
-    onEvent: (CommunityEvent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val resources = LocalResources.current
-    val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
-    val kind = chat.kindText(numbers)
-    val hidden = stringResource(R.string.community_hidden)
-    val joined = stringResource(R.string.community_joined)
-    SegmentedListItem(
-        onClick = { onEvent(CommunityEvent.OpenChat(chat.chatId)) },
-        shapes = shapes,
-        colors = profileRowColors(),
-        modifier =
-            modifier.semantics {
-                contentDescription =
-                    spokenList(
-                        resources,
-                        listOf(
-                            chat.title,
-                            hidden.takeIf { chat.isHidden },
-                            kind,
-                            joined.takeIf { chat.membership == Membership.Joined },
-                        ),
-                    )
-            },
-        leadingContent = {
-            Avatar(
-                photo = chat.photo,
-                name = chat.title,
-                id = chat.chatId,
-                size = MaterialTheme.sizes.avatarRow,
-                shape = chat.shape,
-            )
-        },
-        supportingContent = {
-            // The hidden label and what the chat is wrap rather than cut each other off.
-            FlowRow(
-                modifier = Modifier.clearAndSetSemantics {},
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (chat.isHidden) HiddenLabel(hidden)
-                Text(kind, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        trailingContent = { MembershipAction(chat, onEvent, joined) },
-    ) {
-        Text(
-            text = chat.title,
-            modifier = Modifier.clearAndSetSemantics {},
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyLarge.userContent,
-        )
-    }
-}
-
-/** "Hidden · administrators only" on a tonal pill, after the visibility-off symbol. */
-@Composable
-private fun HiddenLabel(text: String) {
-    val colors = MaterialTheme.colorScheme
-    val spacing = MaterialTheme.spacing
-    Row(
-        modifier =
-            Modifier
-                .background(colors.surfaceContainerHighest, CircleShape)
-                .padding(horizontal = spacing.small, vertical = spacing.extraSmall),
-        horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_visibility_off),
-            contentDescription = null,
-            modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
-            tint = colors.onSurfaceVariant,
-        )
-        Text(
-            text = text,
-            color = colors.onSurfaceVariant,
-            maxLines = 1,
-            style = MaterialTheme.typography.labelMediumEmphasized,
-        )
-    }
-}
-
-/** "Joined", "Join", or Telegram answering a join; nothing for a chat there is nothing to join. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun MembershipAction(
-    chat: CommunityChatItem,
-    onEvent: (CommunityEvent) -> Unit,
-    joined: String,
-) {
-    when (chat.membership) {
-        Membership.Joined -> {
-            val colors = MaterialTheme.colorScheme
-            val spacing = MaterialTheme.spacing
-            Row(
-                modifier =
-                    Modifier
-                        .clearAndSetSemantics {}
-                        .background(colors.secondaryContainer, CircleShape)
-                        .padding(horizontal = spacing.medium, vertical = spacing.small),
-                horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_check),
-                    contentDescription = null,
-                    modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
-                    tint = colors.onSecondaryContainer,
-                )
-                Text(joined, color = colors.onSecondaryContainer, style = MaterialTheme.typography.labelLarge)
-            }
-        }
-
-        Membership.CanJoin, Membership.Joining -> {
-            val busy = chat.membership == Membership.Joining
-            val label = stringResource(R.string.community_join_chat, chat.title.bidiIsolated())
-            Button(
-                onClick = { onEvent(CommunityEvent.Join(chat.chatId)) },
-                enabled = !busy,
-                shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.semantics { contentDescription = label },
-            ) {
-                if (busy) {
-                    LoadingIndicator(Modifier.size(MaterialTheme.sizes.inlineIcon))
-                } else {
-                    Text(stringResource(R.string.community_join), style = MaterialTheme.typography.labelLargeEmphasized)
-                }
-            }
-        }
-
-        Membership.None -> {}
-    }
-}
-
-/** "Community options": an expressive menu of renaming and, in a group of its own in `error`, deleting. */
 @Composable
 private fun CommunityOptions(
     header: CommunityHeader,
@@ -401,7 +269,10 @@ private fun CommunityOptions(
         }
         val groups =
             listOfNotNull(
-                listOf(CommunityEvent.Rename).takeIf { header.canRename },
+                listOfNotNull(
+                    CommunityEvent.ToggleCollapsed.takeIf { header.isJoined },
+                    CommunityEvent.Rename.takeIf { header.canRename },
+                ).ifEmpty { null },
                 listOf(CommunityEvent.Delete).takeIf { header.canDelete },
             )
         DropdownMenuPopup(expanded = open, onDismissRequest = { open = false }) {
@@ -414,13 +285,7 @@ private fun CommunityOptions(
                                 open = false
                                 onEvent(event)
                             },
-                            text = {
-                                Text(
-                                    stringResource(
-                                        if (isDelete) R.string.community_delete else R.string.community_rename,
-                                    ),
-                                )
-                            },
+                            text = { Text(stringResource(optionText(event, header))) },
                             shape = MenuDefaults.itemShape(index, group.size).shape,
                             colors =
                                 if (isDelete) {
@@ -436,7 +301,26 @@ private fun CommunityOptions(
     }
 }
 
-/** The dialog the page shows: renaming, or the question before deleting. */
+/** The text of [event] in the options menu. */
+private fun optionText(
+    event: CommunityEvent,
+    header: CommunityHeader,
+): Int =
+    when (event) {
+        CommunityEvent.Delete -> {
+            R.string.community_delete
+        }
+
+        CommunityEvent.ToggleCollapsed -> {
+            if (header.areChatsCollapsed) R.string.community_expand else R.string.community_collapse
+        }
+
+        else -> {
+            R.string.community_rename
+        }
+    }
+
+/** The dialog the page shows: renaming, or the question before deleting or removing a chat. */
 @Composable
 private fun CommunityDialogs(
     state: CommunityUiState.Content,
@@ -458,42 +342,22 @@ private fun CommunityDialogs(
             )
         }
 
+        is CommunityDialog.RemoveChat -> {
+            ConfirmationDialog(
+                title = stringResource(R.string.community_remove_title, dialog.title.bidiIsolated()).bidiIsolated(),
+                text = stringResource(R.string.community_remove_text),
+                confirm = stringResource(R.string.community_remove_confirm),
+                onConfirm = { onEvent(CommunityEvent.Confirm) },
+                onDismiss = { onEvent(CommunityEvent.DismissDialog) },
+            )
+        }
+
         null -> {}
-    }
-}
-
-/** What a chat of the community is, with its members or subscribers where known. */
-@Composable
-private fun CommunityChatItem.kindText(numbers: NumberFormat): String {
-    val count = memberCount
-    return when (kind) {
-        CommunityChatKind.Group -> {
-            if (count == null) {
-                stringResource(R.string.community_kind_group)
-            } else {
-                pluralStringResource(R.plurals.community_group_members, count, numbers.format(count))
-            }
-        }
-
-        CommunityChatKind.Channel -> {
-            if (count == null) {
-                stringResource(R.string.community_kind_channel)
-            } else {
-                pluralStringResource(R.plurals.community_channel_subscribers, count, numbers.format(count))
-            }
-        }
-
-        CommunityChatKind.Bot -> {
-            stringResource(R.string.community_kind_bot)
-        }
-
-        CommunityChatKind.Chat -> {
-            stringResource(R.string.community_kind_chat)
-        }
     }
 }
 
 private const val HEADER = "header"
 private const val TITLE = "title"
+private const val ACTIONS = "actions"
 private const val ROW = "row"
 private const val FOOTER = "footer"

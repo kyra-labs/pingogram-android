@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.NewPollOption
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
@@ -639,10 +640,9 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                 assertEquals(
                     NewPoll(
                         "Lunch?",
-                        persistentListOf("Pizza", "Sushi", "Salad"),
+                        persistentListOf(NewPollOption("Pizza"), NewPollOption("Sushi"), NewPollOption("Salad")),
                         isAnonymous = false,
                         allowsMultipleAnswers = true,
-                        correctOptionIndex = null,
                     ),
                     sent.poll,
                 )
@@ -666,14 +666,14 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.SendPoll())
                 assertTrue(attachments.sentPolls.isEmpty())
 
-                editor.correctOption = editor.options[1].key
+                editor.setCorrect(editor.options[1].key, true)
                 send(viewModel, ChatEvent.SendPoll())
 
                 assertEquals(
-                    1,
+                    listOf(1),
                     attachments.sentPolls
                         .single()
-                        .poll.correctOptionIndex,
+                        .poll.correctOptionIndexes,
                 )
             }
 

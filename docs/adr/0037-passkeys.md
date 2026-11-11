@@ -1,6 +1,6 @@
 # 0037 — Passkeys through Android's own Credential Manager, no library
 
-Status: proposed (owner decisions to confirm, 2026-11-10) ·
+Status: accepted (the owner took the recommended choices, 2026-11-11) ·
 Date: 2026-11-10 ·
 Milestone: after `v2.0.0` (`docs/ROADMAP.md`; the owner's boards 17a and 17b, Session C)
 
@@ -61,7 +61,7 @@ the `gms` APK has about 1.6 MB left of its budget (`docs/PERFORMANCE.md` §8).
 4. **Digital Asset Links**: Telegram's relying party (`telegram.org`) has to list Pingogram's signing certificates for
    Android to hand Telegram's passkeys to Pingogram. Until it does, password managers refuse; Pingogram then says
    "Passkeys aren't available to Pingogram yet" in a snackbar rather than hiding a feature the owner can take up with
-   Telegram. Owner decision to confirm (2026-11-10).
+   Telegram. Owner decision (2026-11-11).
 5. **Privacy**: nothing goes anywhere but to Telegram (through TDLib) and to the user's own password manager, on the
    user's tap. No passkey, credential id or response is logged or kept.
 6. **The demo** answers the passkey functions with sample passkeys and never opens Android's sheet; "Add passkey" and

@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.reactionType
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -112,6 +113,15 @@ class MessageInteractionsViewModel internal constructor(
     /** The profiles and chats to open, once each. */
     val effects: Flow<InteractionsEffect> = effectChannel.receiveAsFlow()
 
+    private val removal =
+        ReactionRemoval(
+            repository = repository,
+            savedState = savedState,
+            scope = viewModelScope,
+            onRemoved = ::dropReactionsOf,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     /** The open sheet; null while none is. */
     val sheet: StateFlow<MessageInteractionsSheet?> =
         combine(
@@ -119,7 +129,8 @@ class MessageInteractionsViewModel internal constructor(
             lookedUp,
             userRepository.users,
             clock.minutes,
-        ) { opened, lookedUp, users, now -> opened.toSheet(lookedUp, users, now) }
+            removal.question,
+        ) { opened, lookedUp, users, now, question -> opened.toSheet(lookedUp, users, now, question) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
     init {
@@ -145,6 +156,9 @@ class MessageInteractionsViewModel internal constructor(
             InteractionsEvent.Retry -> selected.value?.let(::retry)
             is InteractionsEvent.Open -> openSender(event.sender)
             InteractionsEvent.Dismiss -> close()
+            is InteractionsEvent.AskRemove -> removal.ask(event.sender, event.all)
+            InteractionsEvent.ConfirmRemove -> request.value?.let { removal.confirm(it.chatId, it.reactionsMessageId) }
+            InteractionsEvent.DismissRemove -> removal.dismiss()
         }
     }
 
@@ -294,7 +308,24 @@ class MessageInteractionsViewModel internal constructor(
         )
     }
 
+    /** Drops [sender]'s rows from the reactions' tabs, once Telegram removed their reactions. */
+    private fun dropReactionsOf(sender: MessageSender) {
+        lists.update { current ->
+            current
+                .mapValues { (tab, list) ->
+                    if (tab ==
+                        InteractionsTab.Seen
+                    ) {
+                        list
+                    } else {
+                        list.copy(entries = list.entries.filterNot { it.sender == sender })
+                    }
+                }.toPersistentMap()
+        }
+    }
+
     private fun close() {
+        removal.clear()
         loads.values.forEach { it.cancel() }
         loads.clear()
         request.value = null
@@ -308,6 +339,7 @@ class MessageInteractionsViewModel internal constructor(
         lookedUp: LookedUp,
         users: Map<Long, User>,
         now: Instant,
+        question: AskedRemoval?,
     ): MessageInteractionsSheet? {
         val opened = request
         val tab = selected
@@ -317,6 +349,11 @@ class MessageInteractionsViewModel internal constructor(
             tabs = opened.tabItems(viewerCount = lists[InteractionsTab.Seen]?.takeIf { it.isLoaded }?.entries?.size),
             selected = tab,
             content = lists[tab]?.toContent(rows::row) ?: InteractionsContent.Loading,
+            canRemoveReactions = opened.canDeleteReactions && tab != InteractionsTab.Seen,
+            removal =
+                question?.let {
+                    ReactionRemovalDialog(rows.row(Entry(it.sender, 0, null)).name, it.all, it.isRemoving)
+                },
         )
     }
 
@@ -339,6 +376,7 @@ class MessageInteractionsViewModel internal constructor(
         const val KEY_COUNTS = "interactions.counts"
         const val KEY_OPENS_REACTIONS = "interactions.opensReactions"
         const val KEY_TAB = "interactions.tab"
+        const val KEY_DELETES_REACTIONS = "interactions.deletesReactions"
 
         val KEYS =
             listOf(
@@ -350,6 +388,7 @@ class MessageInteractionsViewModel internal constructor(
                 KEY_COUNTS,
                 KEY_OPENS_REACTIONS,
                 KEY_TAB,
+                KEY_DELETES_REACTIONS,
             )
 
         fun SavedStateHandle.save(request: MessageInteractionsRequest) {
@@ -366,6 +405,7 @@ class MessageInteractionsViewModel internal constructor(
                     .toIntArray(),
             )
             set(KEY_OPENS_REACTIONS, request.opensReactions)
+            set(KEY_DELETES_REACTIONS, request.canDeleteReactions)
         }
 
         fun SavedStateHandle.restoredRequest(): MessageInteractionsRequest? {
@@ -386,6 +426,7 @@ class MessageInteractionsViewModel internal constructor(
                 canGetViewers = get<Boolean>(KEY_VIEWERS) == true,
                 reactions = reactions.toImmutableList(),
                 opensReactions = get<Boolean>(KEY_OPENS_REACTIONS) == true,
+                canDeleteReactions = get<Boolean>(KEY_DELETES_REACTIONS) == true,
             )
         }
     }
