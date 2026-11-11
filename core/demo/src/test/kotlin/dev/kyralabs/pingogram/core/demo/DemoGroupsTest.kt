@@ -65,6 +65,25 @@ class DemoGroupsTest {
         }
 
     @Test
+    fun `a member's tag is kept across a restart, with the action recorded`() =
+        runTest {
+            val (client, _) = client()
+
+            client.ask(TdApi.SetChatMemberTag(DemoData.FORUM_CHAT, DemoData.BEN, "Beta tester"))
+            val (restarted, _) = client()
+
+            val members =
+                restarted.ask(TdApi.GetSupergroupMembers(DemoData.FORUM, null, 0, 50))
+            val ben = members.members.single { (it.memberId as TdApi.MessageSenderUser).userId == DemoData.BEN }
+            assertEquals("Beta tester", ben.tag)
+            val actions =
+                restarted
+                    .ask(TdApi.GetChatEventLog(DemoData.FORUM_CHAT, "", 0, 10, null, longArrayOf()))
+                    .events
+            assertInstanceOf(TdApi.ChatEventMemberTagChanged::class.java, actions.first().action)
+        }
+
+    @Test
     fun `invite links are created, and revoking the primary one makes a new one`() =
         runTest {
             val (client, _) = client()

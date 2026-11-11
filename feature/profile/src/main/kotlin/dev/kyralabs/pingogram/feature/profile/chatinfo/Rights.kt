@@ -99,6 +99,7 @@ enum class Permission(
     SendPolls(R.string.chat_info_permission_send_polls),
     AddLinkPreviews(R.string.chat_info_permission_link_previews),
     React(R.string.chat_info_permission_react),
+    EditTag(R.string.chat_info_permission_edit_tag),
     AddMembers(R.string.chat_info_permission_add_members),
     PinMessages(R.string.chat_info_permission_pin_messages),
     ChangeInfo(R.string.chat_info_permission_change_info),
@@ -117,6 +118,7 @@ enum class Permission(
             SendPolls -> permissions.canSendPolls
             AddLinkPreviews -> permissions.canAddLinkPreviews
             React -> permissions.canReactToMessages
+            EditTag -> permissions.canEditTag
             AddMembers -> permissions.canInviteUsers
             PinMessages -> permissions.canPinMessages
             ChangeInfo -> permissions.canChangeInfo
@@ -138,6 +140,7 @@ enum class Permission(
             SendPolls -> permissions.copy(canSendPolls = on)
             AddLinkPreviews -> permissions.copy(canAddLinkPreviews = on)
             React -> permissions.copy(canReactToMessages = on)
+            EditTag -> permissions.copy(canEditTag = on)
             AddMembers -> permissions.copy(canInviteUsers = on)
             PinMessages -> permissions.copy(canPinMessages = on)
             ChangeInfo -> permissions.copy(canChangeInfo = on)

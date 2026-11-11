@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MemberTagLimits
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 
@@ -14,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
  * Each fails with a `DomainError`: `AdminRightsRequired` for a change the current user's rights do not allow,
  * `FloodWait`, `Network` for a request that gets no answer in time, …
  */
+@Suppress("TooManyFunctions") // One function per kind of change an administrator makes, each one request.
 interface GroupAdministrationRepository {
     /** Renames chat [chatId]; [title] must not be blank (`DomainError.TitleInvalid`). */
     suspend fun setTitle(
@@ -62,6 +64,18 @@ interface GroupAdministrationRepository {
         chatId: Long,
         member: MessageSender,
         role: MemberRole,
+    ): Outcome<Unit>
+
+    /**
+     * Gives user [userId] of group [chatId] [tag], shown next to their name in its messages and lists
+     * (td_api.tl `setChatMemberTag`); an empty tag removes it. At most [MemberTagLimits.LENGTH_MAX] characters, trimmed
+     * (`DomainError.InputRejected` for a longer one). Administrators need `canManageTags` for other people's tags; a
+     * member changes their own where the group's permissions allow it (`MemberPermissions.canEditTag`).
+     */
+    suspend fun setMemberTag(
+        chatId: Long,
+        userId: Long,
+        tag: String,
     ): Outcome<Unit>
 
     /** Deletes the history of chat [chatId] for the current user only, keeping the chat in the lists. */
