@@ -101,6 +101,9 @@ object ProfilePreviewData {
                 ),
         )
 
+    /** A private chat with "Disable sharing" on: the Info group says so. */
+    val sharingDisabled = content.copy(info = content.info.copy(isSharingDisabled = true))
+
     /** A contact without a note: the row offers to add one. */
     val withoutNote = content.copy(info = content.info.copy(note = ContactNote("", "Ada")))
 

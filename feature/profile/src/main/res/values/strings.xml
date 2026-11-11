@@ -112,6 +112,9 @@
     <string name="profile_block_text">They won\'t be able to send you messages or call you, and won\'t see when you were last online or your profile photo changes.</string>
     <string name="profile_block_confirm">Block</string>
     <string name="profile_dialog_dismiss">Cancel</string>
+    <!-- A private chat with "Disable sharing" on (Telegram Premium), shown on the profile as information. -->
+    <string name="profile_sharing">Sharing</string>
+    <string name="profile_sharing_disabled">Messages in this chat can\'t be forwarded, copied or saved</string>
     <!-- Snackbars after blocking. %1$s is the person's name. -->
     <string name="profile_blocked">%1$s blocked</string>
     <string name="profile_unblocked">%1$s unblocked</string>

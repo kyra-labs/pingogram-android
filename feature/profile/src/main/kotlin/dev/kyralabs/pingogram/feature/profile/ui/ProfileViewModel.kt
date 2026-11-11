@@ -572,6 +572,8 @@ class ProfileViewModel internal constructor(
                     personalChannel = personalChannel?.let { PersonalChannel(it.id, it.title) },
                     birthdaySuggestion = info?.let { birthdaySuggestionOf(user, it, overlay) },
                     note = info?.let { contactNoteOf(user, it) },
+                    // The chat's "Disable sharing" (Telegram Premium), as it is: forwarding, copying and saving off.
+                    isSharingDisabled = chat?.hasProtectedContent == true && user.id != myUserId,
                 ),
             actions = actions(user, overlay),
             dialog = overlay.dialog,

@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
+- A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
 - Leaving a group or channel you own: choose which administrator owns it next, with your 2-step verification password,
   or let Telegram choose, whose choice is named.
 - Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,

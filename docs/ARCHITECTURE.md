@@ -466,6 +466,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   while it is on (`ProfileInfo.id`, `ChatInfoUiState.Content.id`), which the Info group shows as a row that copies it
   (`IdRow`). td_api.tl tells no user's or chat's data center, so none shows. `feature:settings`' `IdVisibilityViewModel`
   holds the switch.
+- **Frozen account** (`docs/audit/feature-gaps-telegram-2026.md`, "Safety"): `core:domain`'s `AccountFreezeRepository`
+  (`TdlibAccountFreezeRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of `updateFreezeState`, which TDLib
+  only announces) holds the account's `AccountFreeze` (when it was frozen, when Telegram deletes it, the appeal link)
+  while it is frozen. `feature:settings`' `SettingsHomeViewModel` follows it into `SettingsHomeSummaries.freeze`, which
+  Settings home shows as `FrozenAccountBanner` above the account card. A private chat's "Disable sharing"
+  (`Chat.hasProtectedContent`) reaches the profile as `ProfileInfo.isSharingDisabled`, shown as information.
 - **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
   (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
   logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,

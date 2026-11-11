@@ -107,6 +107,35 @@ class ProfileScreenScreenshotTest {
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
     fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
 
+    /** "Disable sharing" on in the private chat: the Info group says so. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun sharingDisabledLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun sharingDisabledDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun sharingDisabledAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun sharingDisabledHighContrast() = capture(ScreenshotVariant.HighContrast, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun sharingDisabledRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun sharingDisabledMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.sharingDisabled)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun sharingDisabledFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.sharingDisabled)
+
     /** A contact's note closes the Info group, on its tinted container. */
     @Test
     @Config(qualifiers = TALL)

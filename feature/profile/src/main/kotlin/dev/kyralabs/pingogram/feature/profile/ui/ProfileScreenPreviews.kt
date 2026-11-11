@@ -69,7 +69,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 @Composable
-private fun ProfileScreenPreviewContent(
+internal fun ProfileScreenPreviewContent(
     state: ProfileUiState,
     media: SharedMediaUiState = ProfilePreviewData.media,
     twoPanes: Boolean = false,

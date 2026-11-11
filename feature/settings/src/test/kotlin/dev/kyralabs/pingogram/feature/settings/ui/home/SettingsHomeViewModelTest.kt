@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui.home
 
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
+import dev.kyralabs.pingogram.core.domain.model.AccountFreeze
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
@@ -38,8 +40,12 @@ class SettingsHomeViewModelTest {
 
     // Through the real TDLib repositories on FakeTdlibClient, as the app wires them.
     private fun TestScope.viewModel(): SettingsHomeViewModel =
-        SettingsHomeViewModel(TdlibSessionRepository(client), TdlibStorageRepository(client), language)
-            .also { runCurrent() }
+        SettingsHomeViewModel(
+            TdlibSessionRepository(client),
+            TdlibStorageRepository(client),
+            language,
+            TdlibAccountFreezeRepository(client, backgroundScope),
+        ).also { runCurrent() }
 
     private fun session(id: Long) =
         TdApi.Session(
@@ -94,5 +100,23 @@ class SettingsHomeViewModelTest {
 
             assertNull(summaries.sessionCount)
             assertNull(summaries.storageBytes)
+        }
+
+    @Test
+    fun `the home shows the account's freeze while Telegram keeps it frozen`() =
+        runTest {
+            val viewModel = viewModel()
+            assertNull(viewModel.summaries.value.freeze)
+
+            client.emit(TdApi.UpdateFreezeState(true, 1_700_000_000, 1_702_592_000, "https://t.me/spambot"))
+            runCurrent()
+            assertEquals(
+                AccountFreeze(1_700_000_000, 1_702_592_000, "https://t.me/spambot"),
+                viewModel.summaries.value.freeze,
+            )
+
+            client.emit(TdApi.UpdateFreezeState(false, 0, 0, ""))
+            runCurrent()
+            assertNull(viewModel.summaries.value.freeze)
         }
 }
