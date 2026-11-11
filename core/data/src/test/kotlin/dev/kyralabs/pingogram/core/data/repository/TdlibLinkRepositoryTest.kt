@@ -346,6 +346,18 @@ class TdlibLinkRepositoryTest {
         }
 
     @Test
+    fun `a login request keeps the link TDLib names, reading nothing more`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeOauth("https://oauth.telegram.org/auth?bot_id=1"))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.OauthLogin("https://oauth.telegram.org/auth?bot_id=1")),
+                repository.resolve("https://oauth.telegram.org/auth?bot_id=1"),
+            )
+            assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
+        }
+
+    @Test
     fun `a boost link opens the boosts of the chat it names`() =
         runTest {
             linkType(TdApi.InternalLinkTypeChatBoost("https://t.me/news?boost"))

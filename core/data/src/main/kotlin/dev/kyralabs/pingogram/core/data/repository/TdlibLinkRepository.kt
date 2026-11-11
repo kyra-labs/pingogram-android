@@ -270,6 +270,11 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
             LinkTarget.GroupCall(inviteLink)
         }
 
+        // "Log in with Telegram": its sheet asks before anything is shared.
+        is TdApi.InternalLinkTypeOauth -> {
+            LinkTarget.OauthLogin(url)
+        }
+
         is TdApi.InternalLinkTypeMessageDraft -> {
             LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
         }
