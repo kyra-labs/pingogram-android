@@ -31,12 +31,13 @@ class ItemMotion internal constructor(
     )
 }
 
-/** The theme's [ItemMotion], made once per motion scheme. */
+/**
+ * The [ItemMotion] of [motionScheme], the theme's by default, made once per scheme. A screen that holds its motion
+ * still (the call screens with power saving) passes its own.
+ */
 @Composable
-fun rememberItemMotion(): ItemMotion {
-    val motionScheme = MaterialTheme.motionScheme
-    return remember(motionScheme) { ItemMotion(motionScheme) }
-}
+fun rememberItemMotion(motionScheme: MotionScheme = MaterialTheme.motionScheme): ItemMotion =
+    remember(motionScheme) { ItemMotion(motionScheme) }
 
 /**
  * Animates this item of a lazy list as it comes, moves and goes, on [motion]'s specs; [placement] false leaves its
