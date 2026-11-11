@@ -5,7 +5,6 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +43,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -60,11 +58,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.selectionBackground
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.ui.callMotionScheme
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -245,22 +247,27 @@ private fun Candidates(
     state: InvitePeopleUiState.Content,
     onToggle: (Long) -> Unit,
 ) {
+    val motion = rememberItemMotion(callMotionScheme())
     LazyColumn(Modifier.fillMaxWidth()) {
         items(state.candidates, key = { it.userId }, contentType = { "candidate" }) { candidate ->
-            CandidateRow(candidate, onToggle = { onToggle(candidate.userId) })
+            // People come and go as the search filters them.
+            Box(Modifier.animateItem(this, motion)) {
+                CandidateRow(candidate, onToggle = { onToggle(candidate.userId) })
+            }
         }
     }
 }
 
-/** A contact: their avatar (a check while picked) and name; the whole row toggles them, as a checkbox. */
+/**
+ * A contact: their avatar (a check while picked) and name; the whole row toggles them, as a checkbox. Picked, it takes
+ * the list item's selected colors and shape (`large`), morphing to it on the fast spatial spring.
+ */
 @Composable
 private fun CandidateRow(
     candidate: InviteCandidate,
     onToggle: () -> Unit,
 ) {
     val picked = candidate.isPicked
-    val shape = if (picked) MaterialTheme.shapes.large else MaterialTheme.shapes.extraSmall
-    val color = if (picked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
     val name = candidate.name.ifBlank { stringResource(R.string.call_someone) }
     ListItem(
         leadingContent = {
@@ -278,8 +285,8 @@ private fun CandidateRow(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.small)
-                .clip(shape)
-                .background(color)
+                // The list item's selected shape and color, morphing in as it is picked (§4).
+                .selectionBackground(picked)
                 .toggleable(value = picked, role = Role.Checkbox, onValueChange = { onToggle() }),
     ) {
         Text(

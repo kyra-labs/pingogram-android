@@ -73,6 +73,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
@@ -554,6 +556,9 @@ private fun Participants(
     onAddPeople: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
+    // Rows and videos come, move and go on the theme's item motion, still while power saving holds the call screens
+    // still; the videos' bounds do not animate (Q-15).
+    val motion = rememberItemMotion(callMotionScheme())
     LazyColumn(
         modifier =
             Modifier.fillMaxSize().windowInsetsPadding(
@@ -570,6 +575,7 @@ private fun Participants(
                     videos.self,
                     onEvent,
                     Modifier
+                        .animateItem(this, motion, placement = false)
                         .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                         .padding(horizontal = spacing.small, vertical = spacing.small),
                 )
@@ -577,11 +583,17 @@ private fun Participants(
         }
         if (state.canInvite) {
             item(key = "add", contentType = "add") {
-                AddPeopleRow(onAddPeople, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
+                AddPeopleRow(
+                    onAddPeople,
+                    Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem(this, motion),
+                )
             }
         }
         items(state.participants, key = { it.key }, contentType = { "participant" }) { participant ->
-            ParticipantRow(participant, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
+            ParticipantRow(
+                participant,
+                Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem(this, motion),
+            )
         }
     }
 }

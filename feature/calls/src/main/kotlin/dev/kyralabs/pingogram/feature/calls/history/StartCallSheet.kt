@@ -62,6 +62,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -216,9 +218,11 @@ private fun People(
     state: StartCallUiState.Content,
     onChoose: (StartCallChoice) -> Unit,
 ) {
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.fillMaxWidth()) {
         items(state.people, key = { it.userId }, contentType = { "person" }) { person ->
-            PersonRow(person, state.canVideoCall, onChoose)
+            // People come and go as the search filters them.
+            Box(Modifier.animateItem(this, motion)) { PersonRow(person, state.canVideoCall, onChoose) }
         }
     }
 }
