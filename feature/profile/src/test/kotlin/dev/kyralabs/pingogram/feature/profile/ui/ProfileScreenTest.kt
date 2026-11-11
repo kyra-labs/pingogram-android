@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -47,6 +48,7 @@ class ProfileScreenTest {
         media: SharedMediaUiState = ProfilePreviewData.media,
         withContactEditor: Boolean = true,
         numbersHidden: Boolean = false,
+        storyAlbums: StoryAlbumsSlot? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -64,6 +66,7 @@ class ProfileScreenTest {
                                 onOpenUrl = { opened += "url:$it" },
                             ),
                         onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
+                        storyAlbums = storyAlbums,
                     )
                 }
             }
@@ -76,6 +79,22 @@ class ProfileScreenTest {
 
     private fun scrollTo(text: String) {
         composeRule.onNodeWithTag(PROFILE_GRID_TEST_TAG).performScrollToNode(hasText(text))
+    }
+
+    @Test
+    fun `the story albums slot shows above the shared media, for the profile's chat`() {
+        val asked = mutableListOf<Long>()
+        setScreen(
+            storyAlbums = { chatId, modifier ->
+                asked += chatId
+                Text("Albums of $chatId", modifier)
+            },
+        )
+
+        val chatId = ProfilePreviewData.media.chatId
+        scrollTo("Albums of $chatId")
+        composeRule.onNodeWithText("Albums of $chatId").assertIsDisplayed()
+        assertEquals(chatId, asked.distinct().single())
     }
 
     @Test

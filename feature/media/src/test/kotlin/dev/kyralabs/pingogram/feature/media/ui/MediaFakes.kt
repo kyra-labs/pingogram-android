@@ -317,6 +317,8 @@ class FakeTimePatterns : TimePatterns {
                 "yMMMdhm" to "MMM d, y, h:mm a",
                 "MMMdHm" to "MMM d, HH:mm",
                 "yMMMdHm" to "MMM d, y, HH:mm",
+                "MMMd" to "MMM d",
+                "yMMMd" to "MMM d, y",
             )
     }
 }

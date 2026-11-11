@@ -86,6 +86,8 @@ interface AccountRepositories {
 
     fun storyPostRepository(): StoryPostRepository
 
+    fun storyAlbumRepository(): StoryAlbumRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository

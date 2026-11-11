@@ -519,6 +519,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
+- **Story albums** (boards 11a, 11b, read only): `core:domain`'s `StoryAlbumRepository` (`TdlibStoryAlbumRepository`,
+  `core:data`, account-scoped, no cache: td_api.tl announces no change to albums) reads a chat's albums
+  (`getChatStoryAlbums`, a `StoryAlbum` with its cover) and pages an album's stories (`getStoryAlbumStories`, with the
+  album's total). `feature:media`'s `storyalbum/`: `StoryAlbumsSection` (`StoryAlbumsViewModel`, keyed by the chat) is
+  the covers a profile shows through a slot `:app` fills, as features share no code; `StoryAlbumRoute(chatId, albumId)`
+  of `core:navigation` (`storyAlbumScreen`, `StoryAlbumViewModel`: 30 stories a page, their days in the zone and
+  language of the moment) is an opened album, whose tap opens `StoryViewerRoute(chatId, storyId, albumId)`: the stories
+  viewer then plays that album's first 100 stories instead of the chat's active ones, and no other chat.
 - **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
   stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
   opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),

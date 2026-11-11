@@ -31,8 +31,6 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
-import dev.kyralabs.pingogram.core.navigation.NewStoryRoute
-import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
@@ -54,8 +52,6 @@ import dev.kyralabs.pingogram.feature.media.navigation.ReturnFromPictureInPictur
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStory
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
-import dev.kyralabs.pingogram.feature.media.navigation.newStoryScreen
-import dev.kyralabs.pingogram.feature.media.navigation.storyViewerScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
 /**
@@ -277,9 +273,7 @@ private fun NavGraphBuilder.mainGraph(
         chatInvite(navController)
         chatFolderInvite(navController)
         mediaViewer(navController)
-        // The viewer and nothing below it: a second close, e.g. a swipe while its exit plays, does nothing.
-        storyViewerScreen(onClose = { navController.popBackStack<StoryViewerRoute>(inclusive = true) })
-        newStoryScreen(onClose = { navController.popBackStack<NewStoryRoute>(inclusive = true) })
+        stories(navController)
         share(navController)
     }
 }
