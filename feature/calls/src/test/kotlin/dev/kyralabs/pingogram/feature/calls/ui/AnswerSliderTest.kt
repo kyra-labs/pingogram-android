@@ -77,7 +77,7 @@ class AnswerSliderTest {
 
         composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
             down(center)
-            moveBy(Offset(travel * 0.8f, 0f), delayMillis = SLOW_MOVE_MILLIS)
+            moveBy(Offset(travel * PAST_THRESHOLD, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
         }
         // The frames the release is handled in, as a spring back starts in them; the handle needs more to finish.
@@ -174,6 +174,9 @@ class AnswerSliderTest {
         const val FLICK_MILLIS = 50L
         const val MILLIS_PER_SECOND = 1_000f
         const val SLOW_MOVE_MILLIS = 600L
+
+        /** Well past the 70% threshold, after the touch slop the drag takes first. */
+        const val PAST_THRESHOLD = 0.95f
         const val SPRING_FRAMES = 3
         const val HELD_FRAMES = 10
         const val POSITION_TOLERANCE = 1f
