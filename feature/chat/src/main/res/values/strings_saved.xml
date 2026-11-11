@@ -9,4 +9,23 @@
     <string name="saved_tab_unknown_chat">Deleted chat</string>
     <!-- In place of the composer in a tab of messages saved from another chat. -->
     <string name="composer_saved_topic">New messages go to My Notes</string>
+
+    <!-- Saved Messages' tags (the owner's board 8): reactions on saved messages that label and filter them. -->
+    <string name="saved_tags_title">Saved Messages</string>
+    <!-- %1$d: how many saved messages the tag holds; %2$s: the tag, its emoji and label ("❤ Ideas"). -->
+    <plurals name="saved_tags_tagged">
+        <item quantity="one">%1$d tagged “%2$s”</item>
+        <item quantity="other">%1$d tagged “%2$s”</item>
+    </plurals>
+    <string name="saved_tags_show_all">Show all saved messages</string>
+    <string name="saved_tags_rename">Rename tag</string>
+    <string name="saved_tags_rename_title">Rename tag</string>
+    <string name="saved_tags_label">Label</string>
+    <string name="saved_tags_save">Save</string>
+    <string name="saved_tags_cancel">Cancel</string>
+    <string name="saved_tags_retry">Try again</string>
+    <string name="saved_tags_empty">No saved messages have this tag any more.</string>
+    <string name="saved_tags_renamed">Tag renamed</string>
+    <!-- Stands in for a tag's custom emoji, which only shows as a picture. -->
+    <string name="saved_tags_custom_emoji">Custom emoji</string>
 </resources>

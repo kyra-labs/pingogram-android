@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+
+- Saved Messages tags: your tags show as chips under the tabs. A tag filters your saved messages, and you can rename
+  its label.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 

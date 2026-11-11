@@ -178,6 +178,8 @@ interface AccountRepositories {
 
     fun savedGifRepository(): SavedGifRepository
 
+    fun savedMessagesTagRepository(): SavedMessagesTagRepository
+
     fun stickerSetRepository(): StickerSetRepository
 
     fun linkRepository(): LinkRepository
