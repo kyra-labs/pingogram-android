@@ -128,6 +128,15 @@ internal object GroupCallPreviewStates {
 
     val ended = connected.copy(stage = GroupCallStage.Ended(GroupCallEndReason.Ended))
 
+    /** A chat's live story being watched (board 12): the poster's stream under its header, the comments below. */
+    val liveStory =
+        stream.copy(
+            chat = GroupCallChat(chatId = 7, title = "Arjun Mehta", photo = null),
+            isLiveStory = true,
+            isStream = false,
+            participantCount = 1_204,
+        )
+
     val microphone = GroupCallUiState.NeedsMicrophone(chat, canAsk = true)
 
     val unavailable = GroupCallUiState.Unavailable(chat, isBusy = true)
@@ -214,6 +223,15 @@ private fun Preview(
 ) {
     PingogramPreview { GroupCallScreen(state, {}, {}, {}, {}, comments = previewComments(comments)) }
 }
+
+@PingogramPreviews
+@PingogramVariantPreviews
+@Composable
+private fun GroupCallLiveStoryPreview() = Preview(GroupCallPreviewStates.liveStory, GroupCallPreviewStates.comments)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallLiveStoryNoCommentsPreview() = Preview(GroupCallPreviewStates.liveStory)
 
 @PingogramPreviews
 @Composable

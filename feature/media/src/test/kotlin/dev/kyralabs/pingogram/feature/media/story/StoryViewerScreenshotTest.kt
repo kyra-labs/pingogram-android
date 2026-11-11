@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.feature.media.ui.COMPACT
 import dev.kyralabs.pingogram.feature.media.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.media.ui.EXPANDED
@@ -71,7 +72,10 @@ class StoryViewerScreenshotTest(
     ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
-            CompositionLocalProvider(LocalInspectionMode provides true) {
+            CompositionLocalProvider(
+                LocalInspectionMode provides true,
+                LocalVoiceChats provides RecordingVoiceChats(),
+            ) {
                 ScreenshotTheme(variant) {
                     PreviewImages {
                         StoryViewerScreen(state = state, onEvent = {}, onClose = {}, replyText = TextFieldState())
@@ -93,6 +97,7 @@ class StoryViewerScreenshotTest(
                 "photo" to StoryViewerPreviewData.photo,
                 "video" to StoryViewerPreviewData.video,
                 "reacting" to StoryViewerPreviewData.reacting,
+                "live" to StoryViewerPreviewData.live,
                 "unsupported" to StoryViewerPreviewData.unsupported,
                 "failed" to StoryViewerPreviewData.failed,
             )

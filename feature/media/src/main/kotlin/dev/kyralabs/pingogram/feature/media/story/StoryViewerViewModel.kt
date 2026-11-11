@@ -499,8 +499,8 @@ class StoryViewerViewModel internal constructor(
                 }
             }
 
-            StoryContent.Live -> {
-                flowOf(Shown.still(key, story, StoryMedia.Live))
+            is StoryContent.Live -> {
+                flowOf(Shown.still(key, story, StoryMedia.Live(key.chatId, content.groupCallId)))
             }
 
             StoryContent.Unsupported -> {

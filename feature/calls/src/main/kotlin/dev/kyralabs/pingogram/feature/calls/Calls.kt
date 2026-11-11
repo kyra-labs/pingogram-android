@@ -45,12 +45,12 @@ class Calls
         private val notifications: CallNotifications,
         private val profiles: UserProfileRepository,
         private val camera: CameraAccess,
-        private val groupCalls: GroupCallRepository,
-        private val groupCallManager: GroupCallManager,
+        groupCalls: GroupCallRepository,
+        groupCallManager: GroupCallManager,
         private val demo: DemoRepository,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) : CallStarter,
-        VoiceChats {
+        VoiceChats by GroupCallScreens(context, groupCalls, groupCallManager) {
         fun start() {
             manager.start()
             notifications.start()
@@ -74,21 +74,6 @@ class Calls
         override fun receiveDemoCall(userId: Long) {
             scope.launch { demo.receiveCall(userId) }
         }
-
-        override fun voiceChat(chatId: Long): Flow<VoiceChatSummary?> =
-            voiceChatSummary(chatId, groupCalls, groupCallManager.call)
-
-        /** Opens the voice chat's screen, which asks for the microphone if needed, then joins. */
-        override fun join(chatId: Long) = GroupCallActivity.open(context, chatId)
-
-        override fun start(chatId: Long) = GroupCallActivity.open(context, chatId, start = true)
-
-        override fun joinConference(link: String) = GroupCallActivity.openConference(context, link)
-
-        override fun joinInvitation(
-            chatId: Long,
-            messageId: Long,
-        ) = GroupCallActivity.openInvitation(context, chatId, messageId)
     }
 
 /**

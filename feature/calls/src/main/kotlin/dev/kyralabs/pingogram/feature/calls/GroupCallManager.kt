@@ -135,6 +135,28 @@ class GroupCallManager
         }
 
         /**
+         * Watches chat [chatId]'s live story, its group call [groupCallId] (board 12), muted, as a listener.
+         * [JoinResult.Busy] while the user is in another call; [JoinResult.Joining] when it is this one already.
+         */
+        @Suppress("ReturnCount") // Guards under the lock: this live story already, another call.
+        suspend fun joinLiveStory(
+            chatId: Long,
+            groupCallId: Int,
+        ): JoinResult {
+            val call =
+                mutex.withLock {
+                    live?.let { current ->
+                        val same = current.groupCallId == groupCallId && current.phase !is GroupCallPhase.Ended
+                        return if (same) JoinResult.Joining else JoinResult.Busy
+                    }
+                    if (!line.take(this)) return JoinResult.Busy
+                    Live(chatId, groupCallId, joinAs = null, scope = callScope(), isLiveStory = true).also { start(it) }
+                }
+            connect(call)
+            return JoinResult.Joining
+        }
+
+        /**
          * Joins the conference call of [target] (`docs/adr/0025-conference-calls.md`: a `t.me/call` link, an
          * invitation), [muted] (muted unless it continues a one-to-one call). [JoinResult.Busy] while the user is in
          * another call; [from], the one-to-one call that became this conference call, hands its line over.
@@ -806,7 +828,11 @@ class GroupCallManager
         ): Outcome<String> {
             val target = call.conference
             if (!call.isConference) {
-                return repository.join(call.groupCallId, call.joinAs, session.audioSourceId, session.joinPayload, true)
+                return if (call.isLiveStory) {
+                    repository.joinLiveStory(call.groupCallId, session.audioSourceId, session.joinPayload)
+                } else {
+                    repository.join(call.groupCallId, call.joinAs, session.audioSourceId, session.joinPayload, true)
+                }
             }
             val parameters = ConferenceJoinParameters(session.audioSourceId, session.joinPayload, call.muted, false)
             val joined = if (target != null) conferences.join(target, parameters) else conferences.create(parameters)
@@ -882,6 +908,8 @@ class GroupCallManager
             val conference: ConferenceTarget? = null,
             /** A new conference call, which the user starts (`createGroupCall`) as a one-to-one call becomes it. */
             val startsConference: Boolean = false,
+            /** A chat's live story (board 12), joined with `joinLiveStory` to watch it. */
+            val isLiveStory: Boolean = false,
         ) {
             /** A conference call: end-to-end encrypted, outside any chat. */
             val isConference: Boolean get() = conference != null || startsConference
@@ -958,6 +986,7 @@ class GroupCallManager
                     chatId = chatId,
                     groupCallId = groupCallId,
                     isConference = isConference,
+                    isLiveStory = isLiveStory,
                     phase = phase,
                     isStream = isStream,
                     isMuted = muted,

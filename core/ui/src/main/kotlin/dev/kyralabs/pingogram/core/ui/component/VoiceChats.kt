@@ -76,6 +76,15 @@ interface VoiceChats {
         chatId: Long,
         messageId: Long,
     )
+
+    /**
+     * Watches chat [chatId]'s live story, its group call [groupCallId] (board 12), on the voice chat screen, which
+     * joins it as a listener.
+     */
+    fun watchLiveStory(
+        chatId: Long,
+        groupCallId: Int,
+    )
 }
 
 /** What a chat's screens show of its voice chat. */

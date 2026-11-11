@@ -22,6 +22,9 @@ import kotlinx.coroutines.flow.map
 /** The voice chat of the fakes: chat [CHAT_ID]'s group call [CALL_ID], the user [SELF_ID] its default participant. */
 const val CHAT_ID = -100L
 const val CALL_ID = 5
+
+/** A live story's group call (board 12). */
+const val LIVE_CALL_ID = 11
 const val SELF_ID = 42L
 
 data class Join(
@@ -102,6 +105,9 @@ class FakeGroupCallRepository : GroupCallRepository {
         return Outcome.Success(CALL_ID)
     }
 
+    /** The live story calls joined, by id. */
+    val liveStoryJoins = mutableListOf<Int>()
+
     override suspend fun join(
         id: Int,
         participant: MessageSender?,
@@ -110,6 +116,15 @@ class FakeGroupCallRepository : GroupCallRepository {
         isMuted: Boolean,
     ): Outcome<String> {
         joins += Join(id, participant, audioSourceId, payload, isMuted)
+        return joinResult
+    }
+
+    override suspend fun joinLiveStory(
+        id: Int,
+        audioSourceId: Int,
+        payload: String,
+    ): Outcome<String> {
+        liveStoryJoins += id
         return joinResult
     }
 

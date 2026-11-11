@@ -95,8 +95,9 @@
     <!-- %1$s is the emoji the user reacted with. -->
     <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>
     <string name="story_playback_failed">This video can\'t be played</string>
-    <string name="story_live_title">Live stream</string>
-    <string name="story_live_body">Pingogram can\'t join live streams from stories yet.</string>
+    <string name="story_live_title">Live now</string>
+    <string name="story_live_body">Watch it on the voice chat screen. Others watching may see that you joined.</string>
+    <string name="story_live_watch">Watch live</string>
     <string name="story_unsupported_title">Can\'t show this story</string>
     <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
     <string name="story_unavailable_title">Story unavailable</string>

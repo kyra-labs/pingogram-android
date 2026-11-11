@@ -38,6 +38,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -91,6 +93,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -260,13 +263,8 @@ private fun StoryMediaContent(
                 if (!media.isReady) indicator()
             }
 
-            StoryMedia.Live -> {
-                StoryNotice(
-                    R.string.story_live_title,
-                    R.string.story_live_body,
-                    MaterialShapes.Cookie9Sided,
-                    UiR.drawable.ic_web_stories_filled,
-                )
+            is StoryMedia.Live -> {
+                LiveStoryNotice(media)
             }
 
             StoryMedia.Unsupported -> {
@@ -292,6 +290,34 @@ private fun StoryMediaContent(
             }
         }
     }
+}
+
+/**
+ * A live story (board 12): "Live now" over what watching does, and a default `Button` "Watch live" that opens the voice
+ * chat screen on the poster's call ([LocalVoiceChats]); without them (previews), the notice alone. The button takes its
+ * own taps, so the story's tap zones below it do not.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LiveStoryNotice(media: StoryMedia.Live) {
+    val voiceChats = LocalVoiceChats.current
+    EmptyState(
+        illustration = MaterialShapes.Cookie9Sided,
+        icon = UiR.drawable.ic_live_tv,
+        title = stringResource(R.string.story_live_title),
+        body = stringResource(R.string.story_live_body),
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        action =
+            voiceChats?.let { chats ->
+                {
+                    Button(
+                        onClick = { chats.watchLiveStory(media.chatId, media.groupCallId) },
+                        shapes = ButtonDefaults.shapes(),
+                    ) { Text(stringResource(R.string.story_live_watch)) }
+                }
+            },
+    )
 }
 
 /** What a story that cannot be shown says instead: [title] and [body] under [illustration] with [icon]. */

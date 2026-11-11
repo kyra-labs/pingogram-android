@@ -16,6 +16,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.testing.assertAccessible
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
+import dev.kyralabs.pingogram.core.ui.component.VoiceChats
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.COMPACT
@@ -62,10 +65,14 @@ class StoryViewerScreenTest {
     private fun setScreen(
         initial: StoryViewerUiState = StoryViewerPreviewData.photo,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+        voiceChats: VoiceChats? = null,
     ) {
         state = initial
         composeRule.setContent {
-            CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+            CompositionLocalProvider(
+                LocalLayoutDirection provides layoutDirection,
+                LocalVoiceChats provides voiceChats,
+            ) {
                 PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
                     StoryViewerScreen(
                         state = state,
@@ -80,6 +87,17 @@ class StoryViewerScreenTest {
     }
 
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
+
+    @Test
+    fun `a live story's Watch live opens its group call, and takes the tap from the story`() {
+        val voiceChats = RecordingVoiceChats()
+        setScreen(StoryViewerPreviewData.live, voiceChats = voiceChats)
+
+        composeRule.onNodeWithText(string(R.string.story_live_watch)).performClick()
+
+        assertEquals(listOf(42L to 11), voiceChats.watched)
+        assertTrue(events.none { it is StoryViewerEvent.Next || it is StoryViewerEvent.Previous })
+    }
 
     /** The story, by its description: where it is among the chat's stories, and whose it is. */
     private fun story(): SemanticsNodeInteraction =

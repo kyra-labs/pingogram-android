@@ -75,6 +75,12 @@ class GroupCallAccessibilityChecksTest {
     fun commentsOff() = check(GroupCallPreviewStates.connected, GroupCallPreviewStates.commentsOff)
 
     @Test
+    fun liveStory() = check(GroupCallPreviewStates.liveStory, GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryWithoutComments() = check(GroupCallPreviewStates.liveStory)
+
+    @Test
     fun conferenceComments() = check(GroupCallPreviewStates.conferenceVideos, GroupCallPreviewStates.comments)
 
     private fun check(

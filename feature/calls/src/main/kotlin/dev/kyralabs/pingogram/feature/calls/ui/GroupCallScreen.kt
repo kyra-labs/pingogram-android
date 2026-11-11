@@ -200,6 +200,8 @@ private fun BoxScope.GroupCallContent(
             } else if (pictureInPicture && first != null) {
                 // The pinned video, or the first: the one the grid shows first.
                 videos.participants(first.endpointId, first.isScreen, Modifier.fillMaxSize())
+            } else if (state.isLiveStory) {
+                InLiveStory(state, onEvent, videos, extras)
             } else {
                 InGroupCall(state, onEvent, onMinimize, videos, extras)
             }
@@ -272,6 +274,43 @@ private fun InGroupCall(
             extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
         }
         if (state.hasControls) Controls(state, onEvent)
+    }
+}
+
+/** A live story being watched (board 12): its own layout ([LiveStoryCall]). */
+@Composable
+private fun InLiveStory(
+    state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
+    videos: GroupCallVideos,
+    extras: GroupCallExtras,
+) {
+    Column(Modifier.fillMaxSize()) {
+        LiveStoryCall(
+            state = state,
+            onEvent = onEvent,
+            stream = { modifier -> LiveStoryStream(state, videos, modifier) },
+            comments = extras.comments,
+            snackbarHost = extras.snackbarHostState?.let { host -> { modifier -> SnackbarHost(host, modifier) } },
+        )
+    }
+}
+
+/**
+ * A live story's video: an RTMP live story's stream, else the poster's camera, the first video Telegram sends;
+ * nothing until it comes (the header says where the call is).
+ */
+@Composable
+private fun LiveStoryStream(
+    state: GroupCallUiState.InCall,
+    videos: GroupCallVideos,
+    modifier: Modifier,
+) {
+    val first = state.video.remote.firstOrNull()
+    when {
+        state.isStream -> videos.stream(modifier)
+        first != null -> videos.participants(first.endpointId, first.isScreen, modifier)
+        else -> Box(modifier)
     }
 }
 
@@ -437,11 +476,15 @@ private fun GroupCallChat.displayTitle(): String =
 
 /** "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05". */
 @Composable
-private fun statusText(state: GroupCallUiState.InCall): String {
+internal fun statusText(state: GroupCallUiState.InCall): String {
     val count =
         state.participantCount?.let {
             pluralStringResource(
-                if (state.isStream) UiR.plurals.voice_chat_bar_watching else UiR.plurals.voice_chat_bar_participants,
+                if (state.isStream || state.isLiveStory) {
+                    UiR.plurals.voice_chat_bar_watching
+                } else {
+                    UiR.plurals.voice_chat_bar_participants
+                },
                 it,
                 NumberFormat.getIntegerInstance().format(it),
             )

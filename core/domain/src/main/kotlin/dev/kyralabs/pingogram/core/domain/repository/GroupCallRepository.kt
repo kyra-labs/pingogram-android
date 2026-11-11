@@ -61,6 +61,16 @@ interface GroupCallRepository {
         isMuted: Boolean,
     ): Outcome<String>
 
+    /**
+     * Joins live story group call [id] (board 12, `joinLiveStory`) to watch it, muted, with the engine's join [payload]
+     * and [audioSourceId]; returns the call's connection parameters for the engine (JSON).
+     */
+    suspend fun joinLiveStory(
+        id: Int,
+        audioSourceId: Int,
+        payload: String,
+    ): Outcome<String>
+
     /** Leaves group call [id]; it goes on for the others. */
     suspend fun leave(id: Int): Outcome<Unit>
 
