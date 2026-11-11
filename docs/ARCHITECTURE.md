@@ -631,7 +631,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   rescheduling the same with `messageSchedulingStateSendAtDate` (keeping the repeat period), deleting `deleteMessages`;
   td_api.tl has no update for a new scheduling state, so each change made there loads the collections' lists again.
   `Chat.hasScheduledMessages` (`updateChatHasScheduledMessages`, kept by `TdlibChatRepository`) says whether to ask at
-  all. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
+  all. `SendOptions.repeatPeriod` (one of `SendOptions.REPEAT_PERIODS`) repeats a scheduled message
+  (`messageSchedulingStateSendAtDate.repeat_period`, with `disable_notification` where it is silent too);
+  `ComposerUiState.Available.canRepeat` offers it to Telegram Premium subscribers from the composer's schedule dialog. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
   the bar its count and the first time (`ChatUiState.scheduledBar`); the bar opens `ScheduledMessagesRoute(chatId)` of
   `core:navigation` (`scheduledMessagesScreen`, pushed by `:app` above the conversation, also from the detail pane).
   `ScheduledMessagesViewModel` maps the messages with the conversation's own mapping (`inputsOf`, `toItem`, so the
