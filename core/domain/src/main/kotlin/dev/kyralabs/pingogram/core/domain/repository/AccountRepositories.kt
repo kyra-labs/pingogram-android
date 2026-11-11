@@ -88,6 +88,8 @@ interface AccountRepositories {
 
     fun storyAlbumRepository(): StoryAlbumRepository
 
+    fun profileMusicRepository(): ProfileMusicRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository

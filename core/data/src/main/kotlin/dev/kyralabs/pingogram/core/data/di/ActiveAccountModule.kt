@@ -66,6 +66,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
@@ -231,6 +232,9 @@ object ActiveAccountModule {
 
     @Provides
     fun storyAlbumRepository(accounts: Accounts): StoryAlbumRepository = accounts.active.storyAlbumRepository()
+
+    @Provides
+    fun profileMusicRepository(accounts: Accounts): ProfileMusicRepository = accounts.active.profileMusicRepository()
 
     @Provides
     fun sharedMediaRepository(accounts: Accounts): SharedMediaRepository = accounts.active.sharedMediaRepository()
