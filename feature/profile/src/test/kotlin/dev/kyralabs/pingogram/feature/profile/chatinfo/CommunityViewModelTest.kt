@@ -87,12 +87,12 @@ class CommunityViewModelTest : GroupViewModelTest() {
     }
 
     private fun community(status: TdApi.CommunityMemberStatus) =
-        TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, status, TdApi.CommunityPermissions(false))
+        TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, status, TdApi.CommunityPermissions(false), false)
 
     private fun answerChats(vararg chats: TdApi.CommunityChat) =
         client.on(
             TdApi.GetCommunityFullInfo::class,
-            TdResult.Success(TdApi.CommunityFullInfo(null, arrayOf(*chats), 1, 0, 0)),
+            TdResult.Success(TdApi.CommunityFullInfo(null, arrayOf(*chats), 1, 0, 0, null)),
         )
 
     private fun TestScope.effectsOf(viewModel: CommunityViewModel): List<CommunityEffect> {

@@ -891,6 +891,32 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
   media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
   Forward, "Show in chat", saving and deletions, leaving Delete out.
+- **Paid media** (FR-C4, §1.2): `MessageContent.PaidMedia` (td_api.tl `messagePaidMedia`: the price, the media as
+  `PaidMediaItem`s, previews of their sizes while not paid for and the photos and videos once paid for, `isUnlocked`)
+  is mapped by `core:data`'s `PaidMediaMappers.kt`. Pingogram offers no purchase: a locked post shows its blurred
+  previews, its price and a note. A post paid for opens in the media viewer the way a rich message's media do:
+  `Message.richMediaMessages()` (`core:domain`'s `RichMedia.kt`) turns its photos and videos into messages of their
+  own with the ids `richMediaId` gives them (by their index in the post), which `ChatMediaRepository.richMedia`
+  pages and the viewer loads unchanged; `MessageContent.PaidMedia.mediaContents()` is what the viewer pages and the
+  export copies. `feature:chat`'s `MessagePaidMedia` draws it edge to edge like an album (`isEdgeToEdge`; a locked
+  post's note is the bubble's footer, `showsNoteBelowMedia`), and `richMediaToOpen` checks a tapped id against the
+  post's media as against a rich message's.
+- **Giveaways** (FR-C4, §1.2): `MessageContent.Giveaway` and `MessageContent.GiveawayWinners` (td_api.tl
+  `messageGiveaway`, `messageGiveawayWinners`; `GiveawayParameters`, `GiveawayPrize`) are mapped by `core:data`'s
+  `GiveawayMappers.kt`, a prize of a kind a newer TDLib added keeping the message unsupported. `core:domain`'s
+  `GiveawayRepository` (`TdlibGiveawayRepository`, `core:data`, no cache) asks `getGiveawayInfo` into `GiveawayInfo`
+  (ongoing with the user's `GiveawayParticipantStatus`, or completed with whether they won), only when the user opens
+  the details. The item mapper looks the participating channels up with the chats messages refer to
+  (`chatIdsOf`, `referencedChatIds`, `ItemInputs.chats`) and the winners with the users (`memberIdsOf`), into
+  `ChatItem.Bubble.giveaway` (`GiveawayUi`, `giveawayUi`). `feature:chat`'s `ChatGiveaways` (a part of
+  `ChatViewModel`, `giveaway/`) holds the details sheet (`giveawayInfoSheet`, kept out of `ChatUiState`; its message
+  in the saved state, opened again once the history holds it), loads the info, again on "Try again", and names the
+  chat whose administrators do not take part; a channel's chip is `ChatEvent.OpenChat` → `ChatEffect.OpenChat`, a
+  winner's tile `ChatEvent.OpenProfile`. Nothing enters or buys.
+- **Unsupported messages**: `MessageContent.Unsupported` shows `feature:chat`'s `MessageUnsupported`, with "Update
+  Pingogram" (`ChatEvent.OpenUpdatePage` → `ChatEffect.OpenUrl` of the latest GitHub release) unless the build came
+  from an app store: `ChatViewModel` takes `AppInfo` and puts `!isFromAppStore` into `ChatUiState.showsUpdateLink`,
+  which the bubbles read through `BubbleResources`.
 - **Dates in messages** (td_api.tl `textEntityTypeDateTime`, `TextEntityType.DateTime`): `feature:chat`'s bubble
   mapping words each date for its reader before anything else marks the text (`withReaderDates`, `dates/`):
   `ChatTimeFormatter.dateTimeText` in the reader's zone, language and clock, relative ones through `core:ui`'s
@@ -1102,7 +1128,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
     (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
     `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
-    message's own kept by its largest size's file), deleting one or all. td_api.tl (a94b83d) cannot reorder them.
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (1.8.70) cannot reorder them.
     `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
     message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
     for administrators with `AdministratorRights.canSendWelcomeMessages`.
@@ -1490,7 +1516,7 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per
   start, `updateReactionNotificationSettings`, and has no function to read them) sets whom the account hears of
   reactions and poll votes from (`setReactionNotificationSettings`, the sound Telegram keeps sent back as it was). TDLib
-  (a94b83d) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
+  (1.8.70) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
   `NotificationRenderer`: the settings serve the account's other apps until TDLib passes them on.
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service

@@ -181,6 +181,7 @@ internal fun rememberChatBubbleResources(
         state.mediaDownloads,
         lift,
         vivid,
+        showsUpdateLink = state.showsUpdateLink,
         onDateTime = { unixTime -> onEvent(DateTimeEvent.Open(unixTime)) },
     ) { target -> onEvent(ChatEvent.OpenMention(target)) }
 }

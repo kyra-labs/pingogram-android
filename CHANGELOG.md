@@ -52,6 +52,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the call.
 - Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
   all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
+- Paid posts: a post whose photos and videos unlock for Telegram Stars shows its blurred previews, its price and how
+  many photos and videos it holds, with a note that Pingogram can't pay yet; a post you paid for shows its album and
+  opens in the media viewer.
+- Giveaways: a channel's giveaway shows its prize, the participating channels (tap one to open it), when the winners
+  are picked and who takes part; the winners message shows who won (tap to open a profile); "Learn more" tells
+  whether you take part or won.
+- A message this version of Pingogram can't show says so and offers "Update Pingogram", a link to the latest
+  release (left out when an app store installed Pingogram).
 - A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
   know it), and Telegram asks them whether to keep it.
 - Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
@@ -62,6 +70,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
   update it themselves.
+- TDLib 1.8.70 (`23383ae`), up from 1.8.68: what Telegram added since, among it the functions to add chats to a
+  community and to list the communities you joined. Nothing changes on screen yet. Its larger library raises the APK
+  size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ## [2.0.0] - 2026-11-08
 

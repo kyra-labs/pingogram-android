@@ -407,9 +407,10 @@ internal class DemoAccount : DemoArea {
             TdApi.UserLink(
                 "https://t.me/$username",
                 0,
+                false,
             )
         } else {
-            TdApi.UserLink(TEMPORARY_LINK, DAY)
+            TdApi.UserLink(TEMPORARY_LINK, DAY, false)
         }
     }
 

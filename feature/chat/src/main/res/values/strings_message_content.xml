@@ -28,6 +28,9 @@
     <string name="content_file_unavailable">This file isn\'t available</string>
     <!-- A snackbar after tapping a location when no app on the device shows maps. -->
     <string name="content_no_maps_app">No app on this device can show this location</string>
+    <!-- A message of a kind this version of Pingogram cannot show, and the link to the latest release below it. -->
+    <string name="content_unsupported_body">This version of Pingogram can\'t show this message yet.</string>
+    <string name="content_update_app">Update Pingogram</string>
     <!-- A snackbar when the file of a voice message or song cannot be played (damaged, or in a format the device lacks). -->
     <string name="content_playback_failed">This can\'t be played</string>
     <!-- An album of photos and videos, for screen readers: %1$d is how many it holds. -->
