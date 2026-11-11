@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -52,13 +51,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.component.floatingNavigationBarHeight
+import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -322,21 +321,6 @@ private fun Modifier.tabIndicator(
             cornerRadius = CornerRadius(size.height / 2),
             alpha = alpha().coerceIn(0f, 1f),
         )
-    }
-
-/**
- * Shows this content at [fraction] of its width (0 hides it, values past 1 leave room after it), clipped, the fraction
- * read in the layout phase. Unlike `AnimatedVisibility`'s horizontal expand and shrink, whose intrinsic width stays
- * the content's full width, its intrinsic width is the width it takes: [HorizontalFloatingToolbar] sizes itself from
- * its content's intrinsic width and aligns the content to its end, so while one tab's icon shrank and another's grew
- * the toolbar was wider than its content and pushed it towards the search button, moving the whole bar until the
- * shrinking icon was gone.
- */
-private fun Modifier.revealHorizontally(fraction: () -> Float): Modifier =
-    clipToBounds().layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints.copy(minWidth = 0))
-        val width = (placeable.width * fraction()).roundToInt().coerceAtLeast(0)
-        layout(width, placeable.height) { placeable.placeRelative(0, 0) }
     }
 
 @PingogramPreviews

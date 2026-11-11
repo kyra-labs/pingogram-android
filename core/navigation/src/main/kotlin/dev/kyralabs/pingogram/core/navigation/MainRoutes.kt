@@ -422,11 +422,14 @@ data class ChatRoute(
  * The full-screen media viewer (`REQUIREMENTS.md` FR-C10), `:feature:media`, opened on the photo, video or GIF
  * [messageId] of chat [chatId] from the conversation, and paging through the chat's media of that kind. It is pushed
  * above everything: no navigation bar or rail, and full screen on top of the list-detail layout of the Chats tab.
+ * [startSeconds], from a message link's `?t=` (td_api.tl `messageLinkInfo.media_timestamp`), starts the video
+ * [messageId] there, in place of the time its sender marked.
  */
 @Serializable
 data class MediaViewerRoute(
     val chatId: Long,
     val messageId: Long,
+    val startSeconds: Int? = null,
 )
 
 /**
@@ -593,6 +596,16 @@ data class ChatStatisticsRoute(
     val chatId: Long,
 )
 
+/**
+ * The statistics of the poll of message [messageId] in chat [chatId]: its votes over time and its totals, which
+ * Telegram gives the chat's administrators (`MessageProperties.canGetPollVoteStatistics`).
+ */
+@Serializable
+data class PollStatisticsRoute(
+    val chatId: Long,
+    val messageId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(
@@ -649,6 +662,17 @@ data class QrLoginRoute(
     val link: String,
 ) {
     override fun toString() = "QrLoginRoute(…)"
+}
+
+/**
+ * A request to log in to a website or an app with the Telegram account ("Log in with Telegram", `:feature:settings`):
+ * a dialog destination whose sheet asks before anything is shared. `toString()` leaves out the request's link.
+ */
+@Serializable
+data class OauthLoginRoute(
+    val url: String,
+) {
+    override fun toString() = "OauthLoginRoute(…)"
 }
 
 /** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */

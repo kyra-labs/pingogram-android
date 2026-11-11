@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.birthday
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
@@ -42,6 +43,7 @@ internal fun ItemInputs.toItem(): ChatItem {
             callIsVideo = (content.action as? ServiceAction.Call)?.isVideo == true,
             groupCallChatId = message.chatId.takeIf { (content.action as? ServiceAction.GroupCall)?.isActive == true },
             canWave = canWave(content.action),
+            birthday = (content.action as? ServiceAction.BirthdateSuggested)?.let(::birthday),
         )
     } else {
         toBubble(content)

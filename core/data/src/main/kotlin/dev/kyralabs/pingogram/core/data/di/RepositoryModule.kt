@@ -72,6 +72,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkUsageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibOauthLoginRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPasskeyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPersonalChannelRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeRepository
@@ -177,6 +178,7 @@ import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
@@ -391,6 +393,9 @@ interface RepositoryModule {
 
     @Binds
     fun accountFreezeRepository(repository: TdlibAccountFreezeRepository): AccountFreezeRepository
+
+    @Binds
+    fun oauthLoginRepository(repository: TdlibOauthLoginRepository): OauthLoginRepository
 
     @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
