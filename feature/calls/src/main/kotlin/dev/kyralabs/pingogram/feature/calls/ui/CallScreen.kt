@@ -1092,7 +1092,10 @@ private class SliderState(
             }
         pastThreshold = false
         when (outcome) {
-            null -> position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
+            null -> {
+                position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
+            }
+
             else -> {
                 committed = true
                 val end = if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction
