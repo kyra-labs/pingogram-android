@@ -32,7 +32,7 @@ internal data class SearchCounts(
 
 /**
  * The chip whose count a search under this filter gives: All searches every message, as Messages does; Media and
- * Links count their own; Chats and Contacts search no messages.
+ * Links count their own; Chats and Contacts search no messages, and TDLib counts no public posts.
  */
 internal val SearchFilter.countedChip: SearchFilter?
     get() =
@@ -40,7 +40,7 @@ internal val SearchFilter.countedChip: SearchFilter?
             SearchFilter.All, SearchFilter.Messages -> SearchFilter.Messages
             SearchFilter.Media -> SearchFilter.Media
             SearchFilter.Links -> SearchFilter.Links
-            SearchFilter.Chats, SearchFilter.Contacts -> null
+            SearchFilter.Chats, SearchFilter.Contacts, SearchFilter.Posts -> null
         }
 
 /** What the query was for [this] state: empty for the suggestions. */

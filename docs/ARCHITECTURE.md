@@ -788,7 +788,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   deleting in saved state, the toggles, their effects) is a part of both the list's `ForumTopicsViewModel` (which also
   keeps a hidden General for those who may show it, and a dragged order until Telegram takes or refuses it) and
   `TopicActionsViewModel`, a view model of the topic's conversation apart from `ChatViewModel`
-  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic".
+  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic". A forum that shows its topics as tabs
+  (`Supergroup.hasForumTabs`, td_api.tl `has_forum_tabs`) opens as `ChatOpening.ForumTabs` instead: `ForumTabsConversation`
+  shows the selected tab's conversation, "All" or a topic, each in a view model store of its own, and
+  `ForumTabsViewModel` hands its tabs (from `ForumTopicRepository`, in the shape of Saved Messages' `SavedTabsUiState`)
+  to the top bar through `LocalConversationTabs`.
 - **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
   `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
   whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first
@@ -1092,6 +1096,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   search, whether it shows, and the account's avatar's taps: the Settings tab, and the account menu
   (`AccountMenuAnchor`) on a long press. The header's status line reads `ChatListViewModel.summary`, a flow of its own
   beside the list's state, so a count changing recomposes the header alone.
+  Its Posts chip searches public channels' posts: `SearchRepository.publicPostSearchLimits` (`getPublicPostSearchLimits`)
+  as the query is typed, and `searchPublicPosts` (no Telegram Stars, ever) only on `SearchEvent.SearchPosts`, the
+  card's button; `QuerySearch` keeps where it stands (`PostGate`, the limits read) beside the sections, the posts paging
+  as the messages' pages do.
 
 ## Profiles
 

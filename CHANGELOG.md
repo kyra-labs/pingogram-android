@@ -10,10 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,
+  saying how many are left and, once they are used, when the next one comes.
 - Live photos: photos taken as iOS Live Photos or Android Motion Photos say "LIVE" in the chat and play their motion
   in the media viewer. Videos sent with a start time open there.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
+- Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 
