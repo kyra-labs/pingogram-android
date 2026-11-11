@@ -79,6 +79,8 @@ sealed interface PrivacySecurityPage {
 
     data object Websites : PrivacySecurityPage
 
+    data object Passkeys : PrivacySecurityPage
+
     data object TwoStepVerification : PrivacySecurityPage
 
     data object PasscodeLock : PrivacySecurityPage

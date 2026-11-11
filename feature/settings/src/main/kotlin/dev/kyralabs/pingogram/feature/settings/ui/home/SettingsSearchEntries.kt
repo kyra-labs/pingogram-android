@@ -75,6 +75,7 @@ private fun subPageTitle(subPage: SettingsSubPage): Int =
         SettingsSubPage.NewChats -> R.string.settings_privacy_new_chats_question
         SettingsSubPage.BlockedUsers -> R.string.settings_blocked_users
         SettingsSubPage.Websites -> R.string.settings_websites
+        SettingsSubPage.Passkeys -> R.string.settings_passkeys
         SettingsSubPage.TwoStepVerification -> R.string.settings_two_step_verification
         SettingsSubPage.PasscodeLock -> R.string.settings_passcode_lock
         SettingsSubPage.LockedChats -> R.string.locked_chats_title

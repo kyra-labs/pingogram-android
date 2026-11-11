@@ -1322,6 +1322,47 @@
     <string name="settings_website_dialog_title">Log out of this website?</string>
     <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
     <string name="settings_website_parts">%1$s · %2$s</string>
+    <string name="settings_passkeys">Passkeys</string>
+    <string name="settings_passkeys_summary">Sign in with your fingerprint, face or screen lock</string>
+    <string name="settings_passkeys_loading">Loading passkeys</string>
+    <string name="settings_passkeys_card_title">Sign in without SMS codes</string>
+    <string name="settings_passkeys_card_summary">Use your fingerprint, face or screen lock on a device you trust.</string>
+    <string name="settings_passkeys_off">Off</string>
+    <!-- %1$s is a number such as "2", formatted for the language. -->
+    <plurals name="settings_passkeys_on">
+        <item quantity="one">On · %1$s passkey</item>
+        <item quantity="other">On · %1$s passkeys</item>
+    </plurals>
+    <string name="settings_section_passkeys">Your passkeys</string>
+    <string name="settings_passkeys_none">You have no passkeys yet.</string>
+    <string name="settings_passkeys_footer">Passkeys are kept by your password manager, not by Pingogram. Removing one here stops it from signing in to this account.</string>
+    <string name="settings_passkeys_footer_old_android">Passkeys are kept by your password manager, not by Pingogram. Removing one here stops it from signing in to this account. Adding a passkey needs Android 14 or later.</string>
+    <string name="settings_passkey_add">Add passkey</string>
+    <string name="settings_passkey_adding">Adding a passkey</string>
+    <!-- %1$s is a short date such as "Oct 14". -->
+    <string name="settings_passkey_added_on">Added %1$s</string>
+    <!-- %1$s is a short date or time such as "9:41 AM" or "Oct 14". -->
+    <string name="settings_passkey_used_on">used %1$s</string>
+    <string name="settings_passkey_never_used">never used</string>
+    <!-- Joins when a passkey was added and when it was used, e.g. "Added Oct 14 · used 9:41 AM". -->
+    <string name="settings_passkey_dates">%1$s · %2$s</string>
+    <string name="settings_passkey_remove_button">Remove</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_remove">Remove %1$s</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_removing">Removing %1$s</string>
+    <string name="settings_passkey_dialog_title">Remove this passkey?</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_dialog_text">The passkey in %1$s can no longer sign in to your account. Your password manager keeps it until you delete it there.</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_added">Passkey added to %1$s</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_removed">Removed %1$s</string>
+    <string name="settings_passkey_unavailable">Passkeys aren’t available to Pingogram yet</string>
+    <string name="settings_passkey_failed">Couldn’t add a passkey. Try again.</string>
+    <string name="settings_section_passkeys_also">Also protecting this account</string>
+    <string name="settings_passkeys_two_step_on">On</string>
+    <string name="settings_passkeys_two_step_off">Off</string>
     <string name="settings_contact_joined">Contact joined Telegram</string>
     <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
     <string name="settings_personal_channel">Personal channel</string>
