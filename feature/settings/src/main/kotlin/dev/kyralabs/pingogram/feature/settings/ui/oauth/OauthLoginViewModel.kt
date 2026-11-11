@@ -102,9 +102,10 @@ sealed interface OauthLoginEffect {
 /**
  * The sheet of a "Log in with Telegram" request (`docs/DESIGN_SYSTEM.md` §6 "Log in with Telegram"): reads the request
  * ([OauthLoginRepository.request]), asks for the code the website shows where Telegram wants one first, then shows what
- * is shared. Nothing is sent before "Allow", which checks the code first, and nothing is shared and then only what the user turned on: the phone number and the bot's
- * messages are off at first, and the TON wallet is never shared. "Decline", and closing the sheet without answering
- * ([onDismissed]), decline the request in the app's scope, as the sheet's destination leaves with it.
+ * is shared. Nothing is sent before "Allow", which checks the code first, and then only what the user turned on is
+ * shared: the phone number and the bot's messages are off at first, and the TON wallet is never shared. "Decline",
+ * and closing the sheet without answering ([onDismissed]), decline the request in the app's scope, as the sheet's
+ * destination leaves with it.
  *
  * The code the user picked and the two switches are kept in the [SavedStateHandle]; a picked code is not asked for
  * again.
