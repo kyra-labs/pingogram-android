@@ -197,4 +197,20 @@
     <string name="new_story_limit_live">Your live story is on. You can post again once it ends.</string>
     <string name="new_story_limit_other">Telegram doesn\'t let you post a story now.</string>
     <string name="new_story_checking">Checking whether you can post…</string>
+    <!-- Story albums (boards 11a, 11b) -->
+    <string name="story_albums_header">Albums · %1$d</string>
+    <string name="story_album_cover_description">%1$s, story album</string>
+    <string name="story_album_open">Open album</string>
+    <string name="story_album_back">Back</string>
+    <plurals name="story_album_subtitle">
+        <item quantity="one">%1$s · %2$d story</item>
+        <item quantity="other">%1$s · %2$d stories</item>
+    </plurals>
+    <string name="story_album_story_description">Story from %1$s</string>
+    <string name="story_album_video_description">Video story from %1$s</string>
+    <string name="story_album_play">Play story</string>
+    <string name="story_album_empty">No stories here yet</string>
+    <string name="story_album_empty_body">Stories added to this album show here.</string>
+    <string name="story_album_error">Couldn\'t load this album</string>
+    <string name="story_album_try_again">Try again</string>
 </resources>

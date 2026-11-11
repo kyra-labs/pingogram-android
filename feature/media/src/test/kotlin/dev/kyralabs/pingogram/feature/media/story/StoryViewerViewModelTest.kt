@@ -22,8 +22,10 @@ import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.core.testing.FakeStoryRepository
+import dev.kyralabs.pingogram.feature.media.storyalbum.FakeStoryAlbumRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeFileRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeUserRepository
@@ -68,6 +70,7 @@ class StoryViewerViewModelTest {
     private val users = FakeUserRepository()
     private val player = FakeVideoPlayer()
     private val created = mutableListOf<StoryViewerViewModel>()
+    private val albums = FakeStoryAlbumRepository()
 
     @BeforeEach
     fun setUp() {
@@ -150,6 +153,7 @@ class StoryViewerViewModelTest {
         route: StoryViewerRoute = StoryViewerRoute(ADA),
         handle: SavedStateHandle = SavedStateHandle(),
         started: Boolean = true,
+        albums: StoryAlbumRepository? = null,
     ): StoryViewerViewModel {
         val viewModel =
             StoryViewerViewModel(
@@ -163,6 +167,7 @@ class StoryViewerViewModelTest {
                 timeSource = testScheduler.timeSource,
                 applicationScope = backgroundScope,
                 videoPlayer = player,
+                albumRepository = albums,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
@@ -200,6 +205,22 @@ class StoryViewerViewModelTest {
 
             assertEquals(listOf(7L), viewModel.content.posters.map { it.chatId })
             assertEquals(7L to 71, viewModel.shownStory)
+        }
+
+    @Test
+    fun `an album plays its stories alone, from the route's story, and moves through them`() =
+        runViewModelTest {
+            albums.stories = listOf(10, 12, 30).map { FakeStoryAlbumRepository.story(it, 0) }
+            stories.setStory(photoStory(30, ADA))
+
+            val viewModel = viewModel(StoryViewerRoute(ADA, storyId = 12, albumId = 5), albums = albums)
+
+            assertEquals(listOf(ADA), viewModel.content.posters.map { it.chatId })
+            assertEquals(ADA to 12, viewModel.shownStory)
+            assertEquals(3, viewModel.content.story.count)
+            viewModel.onEvent(StoryViewerEvent.Next)
+            runCurrent()
+            assertEquals(ADA to 30, viewModel.shownStory)
         }
 
     @Test

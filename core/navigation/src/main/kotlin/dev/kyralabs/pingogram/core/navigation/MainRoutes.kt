@@ -423,13 +423,25 @@ data class MediaViewerRoute(
 /**
  * The full-screen stories viewer, read only (`docs/ROADMAP.md` M6), `:feature:media`, opened on the active stories of
  * chat [chatId] from the rings above the chat list: at story [storyId], or without one at the first the user has not
- * seen. Swiping sideways moves to the other chats of the stories list. Like the media viewer, it is pushed above
- * everything, without the navigation bar or rail.
+ * seen. Swiping sideways moves to the other chats of the stories list. With [albumId] (board 11b), it plays that
+ * story album of the chat instead, alone, from story [storyId]. Like the media viewer, it is pushed above everything,
+ * without the navigation bar or rail.
  */
 @Serializable
 data class StoryViewerRoute(
     val chatId: Long,
     val storyId: Int? = null,
+    val albumId: Int? = null,
+)
+
+/**
+ * Story album [albumId] of chat [chatId] opened (board 11b), `:feature:media`: its stories in a grid, a tap playing
+ * them in the stories viewer ([StoryViewerRoute] with the album). Pushed above the profile it opens from.
+ */
+@Serializable
+data class StoryAlbumRoute(
+    val chatId: Long,
+    val albumId: Int,
 )
 
 /**

@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NewStoryRoute
+import dev.kyralabs.pingogram.core.navigation.StoryAlbumRoute
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
@@ -53,8 +54,10 @@ import dev.kyralabs.pingogram.feature.feedback.navigation.feedbackScreen
 import dev.kyralabs.pingogram.feature.media.navigation.ReturnFromPictureInPictureEffect
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStory
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbumViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
 import dev.kyralabs.pingogram.feature.media.navigation.newStoryScreen
+import dev.kyralabs.pingogram.feature.media.navigation.storyAlbumScreen
 import dev.kyralabs.pingogram.feature.media.navigation.storyViewerScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
@@ -280,6 +283,10 @@ private fun NavGraphBuilder.mainGraph(
         // The viewer and nothing below it: a second close, e.g. a swipe while its exit plays, does nothing.
         storyViewerScreen(onClose = { navController.popBackStack<StoryViewerRoute>(inclusive = true) })
         newStoryScreen(onClose = { navController.popBackStack<NewStoryRoute>(inclusive = true) })
+        storyAlbumScreen(
+            onBack = { navController.popBackStack<StoryAlbumRoute>(inclusive = true) },
+            onOpenStory = navController::navigateToStoryAlbumViewer,
+        )
         share(navController)
     }
 }
