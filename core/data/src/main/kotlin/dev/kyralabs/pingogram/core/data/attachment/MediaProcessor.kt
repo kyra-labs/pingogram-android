@@ -63,6 +63,18 @@ internal interface MediaProcessor {
         height: Int,
         target: File,
     ): Boolean
+
+    /** The length and tags of the audio in [file]; null when Android cannot read it as audio without video. */
+    fun audioInfo(file: File): AudioInfo? = null
+}
+
+/** A song as stored: [durationMillis] long, with its [title] and [artist] tags, empty where it has none. */
+internal data class AudioInfo(
+    val durationMillis: Long,
+    val title: String,
+    val artist: String,
+) {
+    override fun toString() = "AudioInfo(durationMillis=$durationMillis, …)"
 }
 
 /** An image as stored: [width] × [height] pixels, seen in [orientation]. */
@@ -163,7 +175,7 @@ internal class AndroidMediaProcessor : MediaProcessor {
 
     override fun videoInfo(file: File): VideoInfo? =
         retrieving(file) { retriever ->
-            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_VIDEO
+            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_TRACK
             val width = retriever.metadataInt(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
             val height = retriever.metadataInt(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
             if (!hasVideo || width <= 0 || height <= 0) return@retrieving null
@@ -201,6 +213,20 @@ internal class AndroidMediaProcessor : MediaProcessor {
             }
         } == true
 
+    override fun audioInfo(file: File): AudioInfo? =
+        retrieving(file) { retriever ->
+            val hasAudio = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO) == HAS_TRACK
+            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_TRACK
+            val duration =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            if (!hasAudio || hasVideo || duration <= 0L) return@retrieving null
+            AudioInfo(
+                durationMillis = duration,
+                title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE).orEmpty().trim(),
+                artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST).orEmpty().trim(),
+            )
+        }
+
     /**
      * EXIF's orientation tag of [file]; upright when it has none or cannot be read.
      *
@@ -226,8 +252,6 @@ internal class AndroidMediaProcessor : MediaProcessor {
             getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         }
 
-    private fun MediaMetadataRetriever.metadataInt(key: Int): Int = extractMetadata(key)?.toIntOrNull() ?: 0
-
     /** [block] with a retriever on [file], released after; null when Android cannot open the file. */
     @Suppress("TooGenericExceptionCaught") // The retriever throws IllegalArgumentException and RuntimeException.
     private inline fun <T> retrieving(
@@ -246,7 +270,8 @@ internal class AndroidMediaProcessor : MediaProcessor {
     }
 
     private companion object {
-        const val HAS_VIDEO = "yes"
+        /** What the retriever answers when a file has a track of the kind asked about. */
+        const val HAS_TRACK = "yes"
 
         /** How many bytes start a JPEG ([JpegMetadata.isJpeg]). */
         const val JPEG_HEADER = 3
@@ -255,6 +280,9 @@ internal class AndroidMediaProcessor : MediaProcessor {
         const val FRAME_SIDE = MAX_THUMBNAIL_SIDE * 2
     }
 }
+
+/** The metadata [key] of the file as a number; 0 when it has none. */
+private fun MediaMetadataRetriever.metadataInt(key: Int): Int = extractMetadata(key)?.toIntOrNull() ?: 0
 
 /** This bitmap mirrored and turned as [orientation] says, then scaled to [width] × [height]; itself if unchanged. */
 private fun Bitmap.transformed(

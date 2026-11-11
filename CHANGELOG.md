@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
+  or yearly, for Telegram Premium subscribers.
 
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.
@@ -35,6 +37,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   its comments below.
 - Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
   and tap a story to play the album from there.
+- Profile music: a profile with songs shows a player below its header, which plays them one after another while the
+  profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
+  remove them.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".

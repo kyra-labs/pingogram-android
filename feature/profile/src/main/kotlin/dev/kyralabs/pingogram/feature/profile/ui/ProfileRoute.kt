@@ -56,6 +56,7 @@ internal fun ProfileRoute(
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
     storyAlbums: StoryAlbumsSlot? = null,
+    profileMusic: ProfileMusicSlot? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,6 +94,7 @@ internal fun ProfileRoute(
             onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
             snackbarHostState = snackbarHostState,
             storyAlbums = storyAlbums,
+            profileMusic = profileMusic,
         )
     }
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)
