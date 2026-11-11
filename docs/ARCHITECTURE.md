@@ -1251,6 +1251,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `ChatJoining` (a part of `ChatViewModel`) puts "Join" in the composer's place of a public supergroup or channel the
   user left or never joined (`ComposerUiState.Join`, `Supergroup.joinByRequest`); TDLib's `updateSupergroup` then
   turns the composer back on by itself.
+- **A channel's direct messages, the subscriber's side** (the owner's boards 7a and 7b): `Supergroup` carries
+  `hasDirectMessages`, `isDirectMessages`, `isAdministeredDirectMessages` and `paidMessageStarCount` (td_api.tl
+  `supergroup`), and `ChatJoinRepository.directMessagesChat` finds a channel's direct messages chat
+  (`getSupergroupFullInfo`'s `direct_messages_chat_id`, then `getChat`, so TDLib knows it) as a `DirectMessagesChat`.
+  `feature:chat`'s `messageChannelButton` (`directmessages/`) looks it up once a channel the user reads shows, follows
+  its supergroup's price through `GroupRepository`, and puts `ComposerUiState.MessageChannel` where the composer
+  would be hidden (`withMessageChannel`); the button sends `ChatEvent.OpenChat`. In the direct messages chat a
+  subscriber writes without being a member (`writeAccess` follows the chat's permissions there), and where messages
+  cost Telegram Stars `composerState` shows the price and that Pingogram can't pay instead of the composer.
 - **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
   `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
   page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost
