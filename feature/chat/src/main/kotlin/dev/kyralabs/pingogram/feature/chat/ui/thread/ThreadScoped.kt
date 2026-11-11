@@ -122,7 +122,9 @@ internal class TopicAttachmentRepository(
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyTo)
+        caption: FormattedText?,
+        captionAbove: Boolean,
+    ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyTo, caption, captionAbove)
 
     override suspend fun sendGreetingSticker(
         chatId: Long,

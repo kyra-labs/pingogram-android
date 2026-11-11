@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
@@ -590,6 +591,59 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                     assertEquals(ChatEffect.ShowError(DomainError.FloodWait(30)), awaitItem())
                 }
                 assertEquals(1L, viewModel.replyTo)
+            }
+
+        private val cat =
+            Animation(2, 320, 240, "video/mp4", minithumbnail = null, thumbnail = null, file = FileRef(10, 100))
+
+        @Test
+        fun `a GIF takes the composer's text as its caption, above it where chosen`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+                viewModel.composerText.state.edit { replace(0, length, "Monday mood") }
+
+                send(viewModel, ChatEvent.SendAnimation(cat, captionAbove = true))
+
+                assertEquals(
+                    listOf("Monday mood" to true),
+                    attachments.animationCaptions.map {
+                        it.first?.text to
+                            it.second
+                    },
+                )
+                assertTrue(viewModel.composerText.isEmpty)
+            }
+
+        @Test
+        fun `a GIF without text in the composer goes without a caption`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.SendAnimation(cat, captionAbove = true))
+
+                assertEquals(
+                    listOf<Pair<String?, Boolean>>(null to true),
+                    attachments.animationCaptions.map {
+                        it.first?.text to
+                            it.second
+                    },
+                )
+            }
+
+        @Test
+        fun `a refused GIF gives its caption back to the composer`() =
+            runViewModelTest {
+                attachments.animationResult = Outcome.Failure(DomainError.Network)
+                val viewModel = privateChat()
+                viewModel.composerText.state.edit { replace(0, length, "Monday mood") }
+
+                send(viewModel, ChatEvent.SendAnimation(cat))
+
+                assertEquals(
+                    "Monday mood",
+                    viewModel.composerText.state.text
+                        .toString(),
+                )
             }
     }
 

@@ -1460,7 +1460,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
   first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
   `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
-  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply and its
+  text as the caption (`ChatComposer.takeCaption`, given back by `restoreCaption` on a refusal), below the GIF or
+  above it as the tab's `GifCaptionBar` says (`GifCaptionChoice`, saved with the composer). While
   the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
   stays above it instead of giving way.
 - Storage clean-up (`docs/PERFORMANCE.md` §3, owner decision 2026-10-27): `core:notifications`' `StorageOptimization`
