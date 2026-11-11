@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,
+  saying how many are left and, once they are used, when the next one comes.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
 - Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.

@@ -203,6 +203,7 @@
     <string name="search_filter_messages">Messages</string>
     <string name="search_filter_media">Media</string>
     <string name="search_filter_links">Links</string>
+    <string name="search_filter_posts">Posts</string>
     <!-- A filter chip with how many messages, photos and videos, or links match the query, for screen readers: "Messages, 42 results". -->
     <plurals name="search_filter_count">
         <item quantity="one">%1$s, %2$d result</item>
@@ -218,6 +219,24 @@
     <!-- The messages section under the Media and Links filters. -->
     <string name="search_section_media">Photos and videos</string>
     <string name="search_section_links">Links</string>
+    <string name="search_section_posts">Posts in public channels</string>
+    <!-- Global search's Posts chip, before searching: Telegram allows a few free searches of public posts a day. -->
+    <string name="search_posts_title">Search posts in public channels</string>
+    <plurals name="search_posts_offer">
+        <item quantity="one">Each search uses one of your free searches for the day. %1$d of %2$d is left.</item>
+        <item quantity="other">Each search uses one of your free searches for the day. %1$d of %2$d are left.</item>
+    </plurals>
+    <string name="search_posts_search">Search posts</string>
+    <plurals name="search_posts_exhausted_title">
+        <item quantity="one">You used today\'s free search</item>
+        <item quantity="other">You used today\'s %1$d free searches</item>
+    </plurals>
+    <!-- %1$s: when the next free search comes, as the chat list words times ("6:40 PM", "Thu"). -->
+    <string name="search_posts_exhausted_body">Your next free search is at %1$s. Telegram offers more searches for Telegram Stars, which Pingogram can\'t pay.</string>
+    <plurals name="search_posts_left">
+        <item quantity="one">%1$d of %2$d free searches left today</item>
+        <item quantity="other">%1$d of %2$d free searches left today</item>
+    </plurals>
     <!-- Recent searches: the button that empties them, and the button that removes one (%1$s is its name). -->
     <string name="search_clear_recents">Clear all</string>
     <string name="search_remove_recent">Remove %1$s from recent searches</string>

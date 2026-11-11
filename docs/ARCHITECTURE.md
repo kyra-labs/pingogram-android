@@ -1101,6 +1101,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   search, whether it shows, and the account's avatar's taps: the Settings tab, and the account menu
   (`AccountMenuAnchor`) on a long press. The header's status line reads `ChatListViewModel.summary`, a flow of its own
   beside the list's state, so a count changing recomposes the header alone.
+  Its Posts chip searches public channels' posts: `SearchRepository.publicPostSearchLimits` (`getPublicPostSearchLimits`)
+  as the query is typed, and `searchPublicPosts` (no Telegram Stars, ever) only on `SearchEvent.SearchPosts`, the
+  card's button; `QuerySearch` keeps where it stands (`PostGate`, the limits read) beside the sections, the posts paging
+  as the messages' pages do.
 
 ## Profiles
 
