@@ -8,7 +8,12 @@ import io.gitlab.arturbosch.detekt.api.Entity
 import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
+import org.jetbrains.kotlin.KtNodeTypes
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
@@ -21,16 +26,20 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtValueArgument
+import org.jetbrains.kotlin.psi.psiUtil.anyDescendantOfType
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import kotlin.io.path.invariantSeparatorsPathString
 
 /**
- * Reports animations in the production sources of `:feature:*` modules that leave their spec to Compose
- * (`docs/plans/motion-expressive-plan.md` §4, `docs/DESIGN_SYSTEM.md` §5): a missing spec is not the theme's motion
- * but Compose's own default, which no theme changes. Features pass specs from `MaterialTheme.motionScheme` or use
- * `core:ui`'s motion helpers (`StateCrossfade`, `GrowingVisibility`, `animateItem(scope, motion)`…).
+ * Reports animations in the production sources of `:feature:*` modules and `:app` that leave their spec to Compose
+ * (`docs/plans/motion-expressive-plan.md` §4, `docs/DESIGN_SYSTEM.md` §5 and §5.1, Q-26): a missing spec is not the
+ * theme's motion but Compose's own default, which no theme changes. They pass specs from `MaterialTheme.motionScheme`
+ * or use `core:ui`'s motion helpers (`StateCrossfade`, `GrowingVisibility`, `animateItem(scope, motion)`…).
+ *
+ * `core:ui`, where the helpers build their specs from the scheme, is checked for literal tweens, durations and easings
+ * only ([LITERALS]), as is `:app`; the features have [PingogramHardcodedToken] for those.
  *
  * It matches by name and arguments, as [PingogramHardcodedToken] does. Each check has a name, and the configuration's
  * `checks` lists those that run, so they are turned on in steps.
@@ -48,9 +57,33 @@ class PingogramMotionDefault(
 
     private val checks: Set<String> by lazy { valueOrDefault(CHECKS, DEFAULT_CHECKS).toSet() }
 
-    override fun visitCondition(root: KtFile): Boolean =
-        super.visitCondition(root) &&
-            FEATURE_PRODUCTION_SOURCE.containsMatchIn(root.absolutePath().invariantSeparatorsPathString)
+    /** Which checks apply to the file being visited, by where it is. */
+    private var scope = Scope.None
+
+    override fun visitCondition(root: KtFile): Boolean {
+        val path = root.absolutePath().invariantSeparatorsPathString
+        scope =
+            when {
+                FEATURE_PRODUCTION_SOURCE.containsMatchIn(path) -> Scope.Defaults
+                APP_PRODUCTION_SOURCE.containsMatchIn(path) -> Scope.DefaultsAndLiterals
+                CORE_UI_PRODUCTION_SOURCE.containsMatchIn(path) -> Scope.Literals
+                else -> Scope.None
+            }
+        return super.visitCondition(root) && scope != Scope.None
+    }
+
+    override fun visitArgument(argument: KtValueArgument) {
+        super.visitArgument(argument)
+        val name = argument.getArgumentName()?.asName?.asString()
+        if (name in TIMING_NAMES && argument.getArgumentExpression().hasNumberLiteral()) report(argument, LITERALS)
+    }
+
+    override fun visitBinaryExpression(expression: KtBinaryExpression) {
+        super.visitBinaryExpression(expression)
+        // `durationMillis = 300` inside a keyframes-style builder.
+        val isTimingAssignment = expression.operationToken == KtTokens.EQ && expression.left?.text in TIMING_NAMES
+        if (isTimingAssignment && expression.right.hasNumberLiteral()) report(expression, LITERALS)
+    }
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
@@ -73,6 +106,7 @@ class PingogramMotionDefault(
                 name == "animateScrollToPage" && !expression.hasSpec("animationSpec", 3) -> PAGER_SCROLL
                 name == "AnimatedPane" && !expression.hasSpec("boundsAnimationSpec", 4) -> PANES
                 name == "crossfade" -> COIL
+                name in LITERAL_MOTION -> LITERALS
                 else -> null
             }
         if (check != null) report(expression, check)
@@ -83,6 +117,8 @@ class PingogramMotionDefault(
         val receiver = (expression.receiverExpression as? KtNameReferenceExpression)?.getReferencedName()
         val function = (expression.selectorExpression as? KtCallExpression)?.calleeExpression?.text
         if (receiver == "MotionScheme" && function in SCHEMES) report(expression, SCHEME_DIRECT)
+        // A View animator built to animate (`ValueAnimator.ofFloat(…)`); reading the duration scale is no animation.
+        if (receiver in VIEW_ANIMATORS && function.orEmpty().startsWith("of")) report(expression, OTHER_ANIMATORS_CHECK)
     }
 
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
@@ -90,7 +126,15 @@ class PingogramMotionDefault(
         val isDirective =
             expression.getStrictParentOfType<KtImportDirective>() != null ||
                 expression.getStrictParentOfType<KtPackageDirective>() != null
-        if (expression.getReferencedName() in OTHER_ANIMATORS && !isDirective) report(expression, OTHER_ANIMATORS_CHECK)
+        if (isDirective) return
+        val name = expression.getReferencedName()
+        when {
+            // A view's animator, or a View animator made with its constructor.
+            name == "ViewPropertyAnimator" -> report(expression, OTHER_ANIMATORS_CHECK)
+            name in VIEW_ANIMATORS && (expression.parent as? KtCallExpression)?.calleeExpression == expression ->
+                report(expression, OTHER_ANIMATORS_CHECK)
+            NAMED_EASING.matches(name) -> report(expression, LITERALS)
+        }
     }
 
     override fun visitProperty(property: KtProperty) {
@@ -110,7 +154,7 @@ class PingogramMotionDefault(
         element: KtElement,
         check: String,
     ) {
-        if (check !in checks) return
+        if (check !in checks || !scope.covers(check)) return
         val code = element.text.replace(WHITESPACE, " ")
         val snippet = if (code.length > MAX_SNIPPET_LENGTH) code.take(MAX_SNIPPET_LENGTH - 1) + "…" else code
         report(CodeSmell(issue, Entity.from(element), "$check: `$snippet` ${MESSAGES.getValue(check)}"))
@@ -167,6 +211,32 @@ class PingogramMotionDefault(
 
     private fun asStatePositional(name: String): Int = if (name == "animateValueAsState") 3 else 2
 
+    private fun PsiElement?.hasNumberLiteral(): Boolean =
+        this != null && anyDescendantOfType<KtConstantExpression> { it.node.elementType in NUMBER_LITERALS }
+
+    /** Where a file is, and so which checks apply to it. */
+    private enum class Scope {
+        None,
+
+        /** The features: every check but [LITERALS], which [PingogramHardcodedToken] covers there. */
+        Defaults,
+
+        /** `:app`: every check. */
+        DefaultsAndLiterals,
+
+        /** `core:ui`: [LITERALS] only. */
+        Literals,
+        ;
+
+        fun covers(check: String): Boolean =
+            when (this) {
+                None -> false
+                Defaults -> check != LITERALS
+                DefaultsAndLiterals -> true
+                Literals -> check == LITERALS
+            }
+    }
+
     companion object {
         /** The configuration key listing the checks that run. */
         const val CHECKS = "checks"
@@ -187,6 +257,7 @@ class PingogramMotionDefault(
         const val PANES = "panes"
         const val COIL = "coil"
         const val COMPOSITION_READ = "compositionRead"
+        const val LITERALS = "literals"
 
         /** The checks that run without configuration: those nothing in the features breaks (the plan's §4). */
         val DEFAULT_CHECKS =
@@ -201,6 +272,7 @@ class PingogramMotionDefault(
                 LOOPS_CHECK,
                 SCHEME_DIRECT,
                 OTHER_ANIMATORS_CHECK,
+                LITERALS,
             )
 
         /** The checks `chore/motion-lint-strict` turns on, once the findings they would report are fixed. */
@@ -209,7 +281,7 @@ class PingogramMotionDefault(
         private val MESSAGES =
             mapOf(
                 VISIBILITY to
-                    "needs enter and exit: core:ui's GrowingVisibility, or transitions from MaterialTheme.motionScheme.",
+                    "needs enter and exit: core:ui's GrowingVisibility, or transitions from the motion scheme.",
                 CONTENT to "needs a transitionSpec: core:ui's StateCrossfade or stateCrossfade(motionScheme).",
                 CROSSFADE to "needs an animationSpec from MaterialTheme.motionScheme, or core:ui's StateCrossfade.",
                 CONTENT_SIZE to "needs an animationSpec from MaterialTheme.motionScheme.",
@@ -228,10 +300,29 @@ class PingogramMotionDefault(
                 COIL to "is Coil's tween: fade the image on MaterialTheme.motionScheme, as core:ui's Avatar does.",
                 COMPOSITION_READ to
                     "is read in composition, so it recomposes every frame: keep the State and read it in a lambda.",
+                LITERALS to
+                    "is a literal tween, duration or easing: Material 3 Expressive moves on the scheme's springs.",
             )
 
         /** `feature/<module>/src/<source set>/`, except test source sets (`test`, `androidTest`, `testFixtures`…). */
         private val FEATURE_PRODUCTION_SOURCE = Regex("""(^|/)feature/[^/]+/src/(?![^/]*[Tt]est)[^/]+/""")
+
+        /** `app/src/<source set>/`, its flavors' included, except test source sets. */
+        private val APP_PRODUCTION_SOURCE = Regex("""(^|/)app/src/(?![^/]*[Tt]est)[^/]+/""")
+
+        /** `core/ui/src/<source set>/`, except test source sets. */
+        private val CORE_UI_PRODUCTION_SOURCE = Regex("""(^|/)core/ui/src/(?![^/]*[Tt]est)[^/]+/""")
+
+        /** Duration-based specs and custom curves, as [PingogramHardcodedToken] names them. */
+        private val LITERAL_MOTION =
+            setOf("tween", "TweenSpec", "keyframes", "KeyframesSpec", "keyframesWithSpline", "CubicBezierEasing")
+        private val TIMING_NAMES = setOf("durationMillis", "delayMillis")
+        private val NAMED_EASING =
+            Regex(
+                "(Linear|FastOutSlowIn|LinearOutSlowIn|FastOutLinearIn)Easing|" +
+                    "Ease(In|Out|InOut)?(Sine|Cubic|Quint|Circ|Quad|Quart|Expo|Back|Elastic|Bounce)?",
+            )
+        private val NUMBER_LITERALS = setOf(KtNodeTypes.INTEGER_CONSTANT, KtNodeTypes.FLOAT_CONSTANT)
 
         private val ANIMATE_AS_STATE = Regex("""animate\w*AsState""")
 
@@ -263,7 +354,7 @@ class PingogramMotionDefault(
         private val DECAYS = setOf("exponentialDecay", "splineBasedDecay")
         private val LOOPS = setOf("infiniteRepeatable", "repeatable", "rememberInfiniteTransition")
         private val SCHEMES = setOf("standard", "expressive")
-        private val OTHER_ANIMATORS = setOf("ValueAnimator", "ObjectAnimator", "ViewPropertyAnimator")
+        private val VIEW_ANIMATORS = setOf("ValueAnimator", "ObjectAnimator")
         private val ITEM_SPECS = setOf("fadeInSpec", "placementSpec", "fadeOutSpec")
 
         /** `AnimatedVisibility(visible, modifier, enter, exit, …)`: both given by position from the fourth on. */

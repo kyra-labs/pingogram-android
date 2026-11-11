@@ -48,7 +48,55 @@ class PingogramMotionDefaultTest {
     }
 
     @Test
-    fun `runs the first ten checks without configuration`() {
+    fun `checks the app as it checks the features`() {
+        val findings = lint("val size = Modifier.animateContentSize()", path = APP_SOURCE)
+
+        assertThat(findings).singleElement()
+        assertThat(findings.single().message).startsWith("contentSize: ")
+    }
+
+    @Test
+    fun `checks the app's flavors`() {
+        assertThat(lint("val size = Modifier.animateContentSize()", path = APP_FLAVOR_SOURCE)).hasSize(1)
+    }
+
+    @Test
+    fun `reports literal tweens, durations and easings in core ui and the app`() {
+        val code =
+            """
+            val spec = tween<Float>(300)
+            val curve = CubicBezierEasing(0.1f, 0.1f, 0f, 1f)
+            val linear = LinearEasing
+            val keyed = keyframes<Float> { durationMillis = 300 }
+            val delayed = snapSpec(delayMillis = 100)
+            """
+
+        listOf(CORE_SOURCE, APP_SOURCE).forEach { path ->
+            val findings = lint(code, path = path)
+            assertThat(findings).hasSize(EXPECTED_LITERALS)
+            assertThat(findings).allMatch { it.message.startsWith("literals: ") }
+        }
+    }
+
+    @Test
+    fun `checks core ui for literals only`() {
+        assertThat(lint("val size = Modifier.animateContentSize()", path = CORE_SOURCE)).isEmpty()
+    }
+
+    @Test
+    fun `leaves literals in the features to PingogramHardcodedToken`() {
+        assertThat(lint("val spec = tween<Float>(300)")).isEmpty()
+    }
+
+    @Test
+    fun `allows reading the system's animator duration scale`() {
+        val code = "val scale = ValueAnimator.getDurationScale(); val on = ValueAnimator.areAnimatorsEnabled()"
+
+        assertThat(lint(code, path = APP_SOURCE)).isEmpty()
+    }
+
+    @Test
+    fun `runs the first checks without configuration`() {
         val rule = PingogramMotionDefault()
         val code =
             """
@@ -85,10 +133,15 @@ class PingogramMotionDefaultTest {
     }
 
     @Test
-    fun `does not check core modules`() {
-        val findings = lint("val size = Modifier.animateContentSize()", path = CORE_SOURCE)
+    fun `does not check other core modules`() {
+        val findings = lint("val spec = tween<Float>(300)", path = CORE_DATA_SOURCE)
 
         assertThat(findings).isEmpty()
+    }
+
+    @Test
+    fun `does not check the app's tests`() {
+        assertThat(lint("val spec = tween<Float>(300)", path = APP_TEST_SOURCE)).isEmpty()
     }
 
     @Test
@@ -101,6 +154,13 @@ class PingogramMotionDefaultTest {
         const val FEATURE_TEST_SOURCE =
             "feature/chat/src/test/kotlin/dev/kyralabs/pingogram/feature/chat/ChatScreenTest.kt"
         const val CORE_SOURCE = "core/ui/src/main/kotlin/dev/kyralabs/pingogram/core/ui/component/Motion.kt"
+        const val CORE_DATA_SOURCE = "core/data/src/main/kotlin/dev/kyralabs/pingogram/core/data/Motion.kt"
+        const val APP_SOURCE = "app/src/main/kotlin/dev/kyralabs/pingogram/ui/PingogramApp.kt"
+        const val APP_FLAVOR_SOURCE = "app/src/gms/kotlin/dev/kyralabs/pingogram/Push.kt"
+        const val APP_TEST_SOURCE = "app/src/test/kotlin/dev/kyralabs/pingogram/ui/PingogramAppTest.kt"
+
+        /** tween, CubicBezierEasing, LinearEasing, keyframes, its durationMillis = 300 and delayMillis = 100. */
+        const val EXPECTED_LITERALS = 6
 
         val ALL_CHECKS =
             TestConfig(
@@ -133,6 +193,8 @@ class PingogramMotionDefaultTest {
                 arrayOf("schemeDirect", "val scheme = MotionScheme.expressive()"),
                 arrayOf("schemeDirect", "val scheme = MotionScheme.standard()"),
                 arrayOf("otherAnimators", "val animator = ValueAnimator.ofFloat(0f, 1f)"),
+                arrayOf("otherAnimators", "val animator = ObjectAnimator()"),
+                arrayOf("otherAnimators", "fun fade(animator: ViewPropertyAnimator) = animator"),
                 arrayOf("items", "val row = Modifier.animateItem()"),
                 arrayOf("items", "val row = Modifier.animateItem(fadeInSpec = spec)"),
                 arrayOf("sizeTransform", "val size = SizeTransform(clip = false)"),
