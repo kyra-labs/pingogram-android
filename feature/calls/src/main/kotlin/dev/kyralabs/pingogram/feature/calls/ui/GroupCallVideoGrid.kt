@@ -1,7 +1,8 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,9 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -135,6 +139,13 @@ private fun VideoTile(
         stringResource(if (video.isScreen) R.string.call_remote_screen else R.string.call_remote_video, name)
     val pinned = stringResource(R.string.group_call_video_pinned)
     val action = stringResource(if (video.isPinned) R.string.group_call_unpin else R.string.group_call_pin)
+    // The "speaking" outline fades as the avatar rings beside it do: on the fast effects spring, read in the draw
+    // phase, at once while power saving holds the call screens still.
+    val outlineSpec =
+        if (LocalStillCallAnimations.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val outline = animateFloatAsState(if (video.isSpeaking) 1f else 0f, outlineSpec, label = "speakingOutline")
+    val outlineColor = MaterialTheme.colorScheme.primary
+    val outlineWidth = MaterialTheme.sizes.avatarRing
     Box(
         modifier
             .clip(shape)
@@ -143,13 +154,16 @@ private fun VideoTile(
                 role = Role.Button,
                 onClickLabel = action,
                 onClick = onTogglePin,
-            ).then(
-                if (video.isSpeaking) {
-                    Modifier.border(MaterialTheme.sizes.avatarRing, MaterialTheme.colorScheme.primary, shape)
-                } else {
-                    Modifier
-                },
-            ).semantics {
+            ).drawWithCache {
+                val path = shape.createOutline(size, layoutDirection, this)
+                // Twice the width, centred on the clipped edge: as wide inside as a border.
+                val stroke = Stroke(outlineWidth.toPx() * 2)
+                onDrawWithContent {
+                    drawContent()
+                    val alpha = outline.value.coerceIn(0f, 1f)
+                    if (alpha > 0f) drawOutline(path, outlineColor, alpha = alpha, style = stroke)
+                }
+            }.semantics {
                 contentDescription = description
                 if (video.isPinned) stateDescription = pinned
             },

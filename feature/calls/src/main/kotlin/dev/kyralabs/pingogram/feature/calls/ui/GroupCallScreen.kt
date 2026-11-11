@@ -57,6 +57,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,10 +78,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
+import dev.kyralabs.pingogram.core.ui.theme.effectsExit
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.R
@@ -239,42 +244,72 @@ private fun InGroupCall(
             )
         }
         val camera = state.video.camera
-        if (camera != null && !state.isStream && state.video.remote.isEmpty()) {
-            // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md); with the others'
-            // videos it joins their grid.
+        val shownCamera = rememberLastNonNull(camera)
+        // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md), growing in and
+        // shrinking away as the sharing pill above it does; with the others' videos it joins their grid.
+        GrowingVisibility(
+            visible = camera != null && !state.isStream && state.video.remote.isEmpty(),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
             SelfView(
-                mirror = camera == CameraFacing.Front,
+                mirror = shownCamera == CameraFacing.Front,
                 canSwitch = state.video.canSwitchCamera,
                 aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
                 video = videos.self,
                 onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
                 modifier =
                     Modifier
-                        .align(Alignment.CenterHorizontally)
                         .padding(vertical = spacing.small)
                         .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
                         .fillMaxWidth(SELF_VIEW_WIDTH),
             )
         }
-        if (commenting) {
-            CommentingBody(state, onEvent, videos, extras)
-            return@Column
-        }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (state.isStream) {
-                videos.stream(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = spacing.medium, vertical = spacing.small)
-                        .clip(MaterialTheme.shapes.large),
-                )
-            } else {
-                Participants(state, videos, onEvent, extras.onAddPeople)
+        // With or without the comments pane: a large layout change, so the two layouts crossfade on the effects springs
+        // while the space they take changes on the slow spatial spring (docs/DESIGN_SYSTEM.md §5).
+        val motion = MaterialTheme.motionScheme
+        AnimatedContent(
+            targetState = commenting,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            transitionSpec = {
+                (effectsEnter(motion) togetherWith effectsExit(motion))
+                    .using(SizeTransform(clip = false) { _, _ -> motion.slowSpatialSpec() })
+            },
+            label = "voiceChatBody",
+        ) { withComments ->
+            Column(Modifier.fillMaxSize()) {
+                if (withComments) {
+                    CommentingBody(state, onEvent, videos, extras)
+                } else {
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        if (state.isStream) {
+                            videos.stream(
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = spacing.medium, vertical = spacing.small)
+                                    .clip(MaterialTheme.shapes.large),
+                            )
+                        } else {
+                            Participants(state, videos, onEvent, extras.onAddPeople)
+                        }
+                        extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
+                    }
+                    // The docked panel goes when the call ends, shrinking away as it came.
+                    GrowingVisibility(visible = state.hasControls, expandFrom = Alignment.Bottom) {
+                        Controls(state, onEvent)
+                    }
+                }
             }
-            extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
         }
-        if (state.hasControls) Controls(state, onEvent)
     }
+}
+
+/** [value], or the last one that was not null: what content that is leaving goes on showing. */
+@Composable
+private fun <T : Any> rememberLastNonNull(value: T?): T? {
+    val last = remember { arrayOfNulls<Any>(1) }
+    if (value != null) last[0] = value
+    @Suppress("UNCHECKED_CAST") // Only ever set to a T above.
+    return value ?: last[0] as T?
 }
 
 /** A live story being watched (board 12): its own layout ([LiveStoryCall]). */
@@ -364,18 +399,25 @@ private fun CompactControls(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (state.canUnmute) {
-            Toggle(
-                checked = state.isMuted,
-                icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
-                label = R.string.call_mute,
-            ) { onEvent(GroupCallEvent.ToggleMute) }
-        } else {
-            Toggle(
-                checked = state.isHandRaised,
-                icon = R.drawable.ic_back_hand,
-                label = R.string.group_call_raise_hand,
-            ) { onEvent(GroupCallEvent.ToggleHand) }
+        // Mute and Raise hand swap as the docked panel's do.
+        AnimatedContent(
+            targetState = state.canUnmute,
+            transitionSpec = stateCrossfade(MaterialTheme.motionScheme),
+            label = "compactMicrophone",
+        ) { canUnmute ->
+            if (canUnmute) {
+                Toggle(
+                    checked = state.isMuted,
+                    icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
+                    label = R.string.call_mute,
+                ) { onEvent(GroupCallEvent.ToggleMute) }
+            } else {
+                Toggle(
+                    checked = state.isHandRaised,
+                    icon = R.drawable.ic_back_hand,
+                    label = R.string.group_call_raise_hand,
+                ) { onEvent(GroupCallEvent.ToggleHand) }
+            }
         }
         RouteButton(state.route, state.routes, labeled = false) { onEvent(GroupCallEvent.SelectRoute(it)) }
         if (state.video.canSend) {
@@ -678,11 +720,7 @@ private fun Controls(
                 if (!state.isStream) {
                     AnimatedContent(
                         targetState = state.canUnmute,
-                        transitionSpec = {
-                            fadeIn(motion.defaultEffectsSpec())
-                                .togetherWith(fadeOut(motion.fastEffectsSpec()))
-                                .using(SizeTransform(clip = false))
-                        },
+                        transitionSpec = stateCrossfade(motion),
                         label = "microphone",
                     ) { canUnmute ->
                         if (canUnmute) {

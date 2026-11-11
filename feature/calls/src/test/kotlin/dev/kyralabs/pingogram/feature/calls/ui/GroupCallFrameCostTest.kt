@@ -134,6 +134,22 @@ class GroupCallFrameCostTest {
     }
 
     @Test
+    fun `turning comments on crossfades the layouts without recomposing each frame`() {
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(GroupCallPreviewStates.comments.copy(isShown = false))
+        show(call, comments)
+
+        comments.value = GroupCallPreviewStates.comments
+        frame()
+        frame()
+        counter.reset()
+        repeat(CROSSFADE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
+        composeRule.onNodeWithContentDescription("Comment", substring = true).assertExists()
+    }
+
+    @Test
     fun `frame cost of a connected voice chat`() = measure(comments = null)
 
     @Test
@@ -263,6 +279,9 @@ class GroupCallFrameCostTest {
 
         /** As many reactions as the view model keeps (`GroupCallCommentsViewModel`). */
         const val REACTIONS_KEPT = 6
+
+        /** Enough frames for the layouts' crossfade and their resize on the slow spatial spring. */
+        const val CROSSFADE_FRAMES = 30
 
         /** Enough frames for a reaction to rise and fade on the slow springs. */
         const val RISE_FRAMES = 60
