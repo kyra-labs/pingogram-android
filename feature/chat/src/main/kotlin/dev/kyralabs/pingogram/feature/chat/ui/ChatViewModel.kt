@@ -959,6 +959,7 @@ class ChatViewModel internal constructor(
 
     /** A giveaway's details ("Learn more"); null while the sheet is closed. Kept out of [uiState]. */
     val giveawayInfoSheet: StateFlow<GiveawayInfoSheet?> get() = giveaways.sheet
+
     private val dateTimes =
         ChatDateTimes(
             describe = { unixTime ->

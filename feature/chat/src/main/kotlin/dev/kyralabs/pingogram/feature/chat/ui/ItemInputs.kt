@@ -11,8 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
-import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 import dev.kyralabs.pingogram.feature.chat.ui.dates.hasRelativeDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 
 /**
  * Everything one item is made from: the message and its place, what it refers to (its sender, the members a service
