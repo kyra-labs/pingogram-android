@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.profile.chatinfo.stats
+package dev.kyralabs.pingogram.core.ui.chart
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,11 +30,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.ChartStyle
+import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.feature.profile.R
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -43,10 +43,11 @@ import kotlinx.collections.immutable.persistentListOf
  * once per size: lines, stacked bars, or stacked areas of shares of the whole, over `outlineVariant` grid lines, each
  * series in a color role of [ChartColors]. The highest value is labelled above it and the x axis's first, middle and
  * last values below it (`labelSmall`, `onSurfaceVariant`), then a legend where there are several series. Screen
- * readers hear each series' first, last and highest value.
+ * readers hear each series' first, last and highest value. In `core:ui`, as statistics pages of several features draw
+ * charts (features share no code); [ChartFormat] makes the [ChartUi] it draws.
  */
 @Composable
-internal fun StatisticsChart(
+fun StatisticsChart(
     chart: ChartUi,
     modifier: Modifier = Modifier,
 ) {
@@ -96,7 +97,7 @@ private fun ChartPlot(
                 contentDescription =
                     chart.series.joinToString("\n") { series ->
                         resources.getString(
-                            R.string.statistics_chart_series,
+                            R.string.chart_series,
                             series.name,
                             series.first,
                             series.last,
