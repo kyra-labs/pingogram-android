@@ -637,6 +637,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   chats of a page (`UserRepository`, `ChatRepository`) before it shows, words the times as the conversation does
   (`ChatTimeFormatter.dayAndTime`), and keeps the request and the selected tab in its saved state, loading that tab again
   after process death. A row opens the profile through the route's `onOpenProfile`, a channel through `onOpenChatInfo`.
+  Where TDLib allows it (`MessageProperties.canDeleteReactions`, carried in the request), the reactions' rows remove a
+  sender's reaction to the message (`MessageInteractionRepository.removeReactions`, `deleteMessageReactionsFromSender`)
+  or all their recent ones in the chat (`removeAllRecentReactions`, `deleteAllRecentMessageReactionsFromSender`):
+  `ReactionRemoval`, a part of the view model, keeps the question in the saved state, and on success drops the
+  sender's rows from the loaded reactions' tabs.
 - **Scheduled messages** (FR-C5): sending with a time (`SendOptions.scheduledAt`) holds a message on Telegram's servers,
   outside the history (`HistoryCache` leaves every message with a scheduling state out). `core:domain`'s
   `ScheduledMessageRepository` (`TdlibScheduledMessageRepository`, `core:data`, no cache, as the pinned messages) loads a
@@ -1102,6 +1107,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   search, whether it shows, and the account's avatar's taps: the Settings tab, and the account menu
   (`AccountMenuAnchor`) on a long press. The header's status line reads `ChatListViewModel.summary`, a flow of its own
   beside the list's state, so a count changing recomposes the header alone.
+  Its Posts chip searches public channels' posts: `SearchRepository.publicPostSearchLimits` (`getPublicPostSearchLimits`)
+  as the query is typed, and `searchPublicPosts` (no Telegram Stars, ever) only on `SearchEvent.SearchPosts`, the
+  card's button; `QuerySearch` keeps where it stands (`PostGate`, the limits read) beside the sections, the posts paging
+  as the messages' pages do.
 
 ## Profiles
 
@@ -1329,6 +1338,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
   it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
   stream. The seek bar shows the player's buffered position.
+- Live photos and start times: `MessageContent.Photo.motion` (td_api.tl `messagePhoto.video`) and
+  `MessageContent.Video.startSeconds` (`messageVideo.start_timestamp`). The media viewer's `ViewerMedia.Image` carries
+  the motion, which `MediaDownloads` downloads after the still (`motion`) and `MediaPlayback` plays as a GIF once on the
+  device; `MediaViewerViewModel` starts a video at its sender's time once (`startAtSendersTime`), never over
+  picture-in-picture's return.
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

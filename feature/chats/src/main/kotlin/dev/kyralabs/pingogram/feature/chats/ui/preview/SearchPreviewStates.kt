@@ -15,6 +15,9 @@ internal class SearchPreviewStates : PreviewParameterProvider<SearchUiState> {
             "No results" to SearchPreviewData.noResults,
             "Media" to SearchPreviewData.media,
             "No media" to SearchPreviewData.noMedia,
+            "Posts offered" to SearchPreviewData.postsOffer,
+            "Posts used up" to SearchPreviewData.postsExhausted,
+            "Posts found" to SearchPreviewData.postsFound,
         )
 
     override val values: Sequence<SearchUiState> = states.asSequence().map { it.second }

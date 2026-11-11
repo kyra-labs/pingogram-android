@@ -54,4 +54,17 @@
 
     <!-- Screen readers: the list on its way. -->
     <string name="interactions_loading">Loading</string>
+
+    <!-- Removing others' reactions, as a group's administrators may. %1$s: a person's or chat's name. -->
+    <string name="interactions_options_for">Options for %1$s</string>
+    <string name="interactions_remove_one">Remove reaction</string>
+    <string name="interactions_remove_all">Remove all recent reactions</string>
+    <string name="interactions_remove_one_title">Remove %1$s\'s reaction?</string>
+    <string name="interactions_remove_all_title">Remove all of %1$s\'s recent reactions?</string>
+    <string name="interactions_remove_one_text">It goes from this message for everyone.</string>
+    <string name="interactions_remove_all_text">Their recent reactions go from every message in this chat, for everyone.</string>
+    <string name="interactions_remove">Remove</string>
+    <string name="interactions_remove_cancel">Cancel</string>
+    <string name="interactions_removed_one">Reaction removed</string>
+    <string name="interactions_removed_all">Recent reactions removed</string>
 </resources>

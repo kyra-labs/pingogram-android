@@ -154,6 +154,24 @@ class MessageContentMappersTest {
     }
 
     @Test
+    fun `a live photo carries its motion, a still photo none`() {
+        val live = TdApiFixtures.messagePhoto().apply { video = TdApiFixtures.messageVideo().video }
+
+        val mapped = live.map() as MessageContent.Photo
+
+        assertEquals(FileRef(21, 5_000_000), mapped.motion?.file)
+        assertNull((TdApiFixtures.messagePhoto().map() as MessageContent.Photo).motion)
+    }
+
+    @Test
+    fun `a video keeps where its sender marked it to start`() {
+        val content = TdApiFixtures.messageVideo().apply { startTimestamp = 83 }
+
+        assertEquals(83, (content.map() as MessageContent.Video).startSeconds)
+        assertEquals(0, (TdApiFixtures.messageVideo().map() as MessageContent.Video).startSeconds)
+    }
+
+    @Test
     fun `an animation keeps its MIME type`() {
         val content =
             TdApi.MessageAnimation(

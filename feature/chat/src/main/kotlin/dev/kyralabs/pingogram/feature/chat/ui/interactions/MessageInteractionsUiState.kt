@@ -25,6 +25,8 @@ data class MessageInteractionsRequest(
     val canGetViewers: Boolean,
     val reactions: ImmutableList<Reaction>,
     val opensReactions: Boolean,
+    /** The user may remove others' reactions to it (td_api.tl `messageProperties.can_delete_reactions`). */
+    val canDeleteReactions: Boolean = false,
 )
 
 /** A tab of the sheet: who saw the message, every reaction, or the reactions of one kind ([label]). */
@@ -58,6 +60,21 @@ data class MessageInteractionsSheet(
     val tabs: ImmutableList<InteractionsTabItem>,
     val selected: InteractionsTab,
     val content: InteractionsContent,
+    /** The rows offer removing someone's reactions, as the group's administrators may; never on the viewers' tab. */
+    val canRemoveReactions: Boolean = false,
+    /** The question before removing reactions; null while none is asked. */
+    val removal: ReactionRemovalDialog? = null,
+)
+
+/**
+ * The question before removing [name]'s reaction to the message, or all their recent reactions in the chat ([all]);
+ * waiting for Telegram while [isRemoving].
+ */
+@Immutable
+data class ReactionRemovalDialog(
+    val name: UiText,
+    val all: Boolean,
+    val isRemoving: Boolean = false,
 )
 
 /** What the selected tab shows. */

@@ -565,6 +565,137 @@ class MessageInteractionsViewModelTest {
             }
     }
 
+    @Nested
+    inner class Removing {
+        private fun TestScope.opened(): MessageInteractionsViewModel {
+            repository.onReactions = { _, _ -> page("", added(ADA), added(GRACE, thumbsUp)) }
+            val viewModel = viewModel()
+            open(viewModel, request(opensReactions = true).copy(canDeleteReactions = true))
+            return viewModel
+        }
+
+        private fun TestScope.effectsOf(viewModel: MessageInteractionsViewModel): List<InteractionsEffect> {
+            val effects = mutableListOf<InteractionsEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
+            return effects
+        }
+
+        @Test
+        fun `only where TDLib allows it, and never on the viewers' tab`() =
+            runTest {
+                val viewModel = opened()
+                assertEquals(true, viewModel.sheet.value?.canRemoveReactions)
+
+                send(viewModel, InteractionsEvent.SelectTab(InteractionsTab.Seen))
+                assertEquals(false, viewModel.sheet.value?.canRemoveReactions)
+
+                val other = viewModel(SavedStateHandle())
+                open(other, request(opensReactions = true))
+                assertEquals(false, other.sheet.value?.canRemoveReactions)
+            }
+
+        @Test
+        fun `asking names the sender and sends nothing until Remove`() =
+            runTest {
+                val viewModel = opened()
+                repository.requests.clear()
+
+                send(viewModel, InteractionsEvent.AskRemove(MessageSender.User(ADA), all = false))
+
+                assertEquals(
+                    ReactionRemovalDialog(UiText.Plain("Ada Lovelace"), all = false),
+                    viewModel.sheet.value?.removal,
+                )
+                assertEquals(emptyList<String>(), repository.requests)
+
+                send(viewModel, InteractionsEvent.DismissRemove)
+                assertNull(viewModel.sheet.value?.removal)
+                assertEquals(emptyList<String>(), repository.requests)
+            }
+
+        @Test
+        fun `Remove takes the sender's reaction off the message and their rows off the sheet`() =
+            runTest {
+                val viewModel = opened()
+                val effects = effectsOf(viewModel)
+                repository.requests.clear()
+
+                send(viewModel, InteractionsEvent.AskRemove(MessageSender.User(ADA), all = false))
+                send(viewModel, InteractionsEvent.ConfirmRemove)
+
+                assertEquals(listOf("remove:$REACTIONS_MESSAGE:${MessageSender.User(ADA)}"), repository.requests)
+                assertEquals(listOf(UiText.Plain("Grace Hopper")), viewModel.rows.map { it.name })
+                assertNull(viewModel.sheet.value?.removal)
+                assertEquals(listOf<InteractionsEffect>(InteractionsEffect.ReactionsRemoved(all = false)), effects)
+            }
+
+        @Test
+        fun `all recent reactions go chat-wide, and Telegram answering shows`() =
+            runTest {
+                val answer = CompletableDeferred<Outcome<Unit>>()
+                repository.onRemove = { answer.await() }
+                val viewModel = opened()
+                val effects = effectsOf(viewModel)
+                repository.requests.clear()
+
+                send(viewModel, InteractionsEvent.AskRemove(MessageSender.User(GRACE), all = true))
+                send(viewModel, InteractionsEvent.ConfirmRemove)
+                assertEquals(
+                    true,
+                    viewModel.sheet.value
+                        ?.removal
+                        ?.isRemoving,
+                )
+                send(viewModel, InteractionsEvent.ConfirmRemove)
+                send(viewModel, InteractionsEvent.DismissRemove)
+
+                answer.complete(Outcome.Success(Unit))
+                runCurrent()
+
+                assertEquals(listOf("removeAll:${MessageSender.User(GRACE)}"), repository.requests)
+                assertEquals(listOf(UiText.Plain("Ada Lovelace")), viewModel.rows.map { it.name })
+                assertEquals(listOf<InteractionsEffect>(InteractionsEffect.ReactionsRemoved(all = true)), effects)
+            }
+
+        @Test
+        fun `a refusal keeps the rows and says why`() =
+            runTest {
+                repository.onRemove = { Outcome.Failure(DomainError.AdminRightsRequired) }
+                val viewModel = opened()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, InteractionsEvent.AskRemove(MessageSender.User(ADA), all = false))
+                send(viewModel, InteractionsEvent.ConfirmRemove)
+
+                assertEquals(2, viewModel.rows.size)
+                assertNull(viewModel.sheet.value?.removal)
+                assertEquals(
+                    listOf<InteractionsEffect>(InteractionsEffect.RemovalFailed(DomainError.AdminRightsRequired)),
+                    effects,
+                )
+            }
+
+        @Test
+        fun `the question survives process death, and closing forgets it`() =
+            runTest {
+                val first = opened()
+                send(first, InteractionsEvent.AskRemove(MessageSender.User(ADA), all = true))
+
+                val handle = SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) })
+                val restored = viewModel(handle)
+                runCurrent()
+
+                assertEquals(
+                    ReactionRemovalDialog(UiText.Plain("Ada Lovelace"), all = true),
+                    restored.sheet.value?.removal,
+                )
+                assertEquals(true, restored.sheet.value?.canRemoveReactions)
+
+                send(restored, InteractionsEvent.Dismiss)
+                assertNull(handle.get<String>("interactions.removeSender"))
+            }
+    }
+
     private companion object {
         const val MESSAGE = 42L
         const val REACTIONS_MESSAGE = 43L

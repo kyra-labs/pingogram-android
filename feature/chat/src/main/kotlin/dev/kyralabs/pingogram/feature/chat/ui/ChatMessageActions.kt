@@ -288,6 +288,7 @@ internal class ChatMessageActions(
                 canGetViewers = properties.canGetViewers,
                 reactions = reactionsMessage.listedReactions.toImmutableList(),
                 opensReactions = reactions,
+                canDeleteReactions = properties.canDeleteReactions,
             )
         onEffect(ChatEffect.OpenInteractions(request))
     }

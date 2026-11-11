@@ -65,8 +65,8 @@ internal class ContentSample(
 )
 
 /**
- * Every component of this package in its states, named for the screenshot goldens: photo loading and loaded, waiting
- * for a tap on its download button, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps),
+ * Every component of this package in its states, named for the screenshot goldens: photo loading and loaded (and a
+ * live photo), waiting for a tap on its download button, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps),
  * video, GIF, stickers (still, animated, and one without an emoji still loading), voice messages idle, playing and
  * downloading, a video message, music, files in their three download states, location, venue, contact, polls before
  * and after voting, a quiz answered right and wrong, a closed poll, answers checked before "Vote" (a vote on its
@@ -100,6 +100,11 @@ internal val ContentSamples: List<ContentSample> =
                 onOpen = {},
                 downloads = TapToDownload,
             )
+        },
+        ContentSample("livePhoto", SampleBubbles.Incoming, edgeToEdge = true) { _, _ ->
+            val minithumbnail = rememberSampleMinithumbnail()
+            val photo = ContentPreviewData.photo(minithumbnail)
+            MessagePhoto(photo.copy(motion = ContentPreviewData.video(minithumbnail).video), onOpen = {})
         },
         ContentSample("video", SampleBubbles.Incoming, edgeToEdge = true) { _, _ ->
             MessageVideo(ContentPreviewData.video(rememberSampleMinithumbnail()), onOpen = {})
