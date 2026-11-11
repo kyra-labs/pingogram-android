@@ -64,7 +64,7 @@ class MotionContainersTest {
 
         composeRule.onNodeWithText(PROGRESS).assertDoesNotExist()
         visible = true
-        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.framesUntil(limit = 1) { false }
         composeRule.onNodeWithText(PROGRESS).assertExists()
     }
 

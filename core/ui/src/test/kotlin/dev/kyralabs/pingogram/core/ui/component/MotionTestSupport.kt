@@ -34,6 +34,8 @@ internal fun ComposeTestRule.framesUntil(
     limit: Int = 200,
     settled: () -> Boolean,
 ): Int {
+    // Applies what the test changed first, so the first frame sees it.
+    waitForIdle()
     var frames = 0
     while (frames < limit) {
         mainClock.advanceTimeByFrame()

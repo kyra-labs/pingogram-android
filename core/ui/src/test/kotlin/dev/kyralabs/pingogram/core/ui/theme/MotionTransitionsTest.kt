@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.ComponentActivityRegistration
 import dev.kyralabs.pingogram.core.ui.component.TestDurationScale
 import dev.kyralabs.pingogram.core.ui.component.framesUntil
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -55,11 +54,12 @@ class MotionTransitionsTest {
     }
 
     @Test
-    fun `with animations off each enter and exit ends in its next frame`() {
+    fun `with animations off each enter and exit ends at once`() {
         durationScale.scaleFactor = 0f
         transitions.forEach { (name, transition) ->
             val (enter, exit) = transition
-            assertEquals("$name", 1 to 1, framesToShowAndHide(enter, exit))
+            val frames = framesToShowAndHide(enter, exit)
+            assertTrue("$name took $frames frames", frames.first <= AT_ONCE && frames.second <= AT_ONCE)
         }
     }
 
@@ -72,11 +72,13 @@ class MotionTransitionsTest {
     }
 
     @Test
-    fun `a state crossfade runs to its end, and with animations off ends in its next frame`() {
-        assertTrue(framesToSwap() in 2 until FRAME_LIMIT)
+    fun `a state crossfade runs to its end, and with animations off ends at once`() {
+        val frames = framesToSwap()
+        assertTrue("$frames frames", frames in AT_ONCE + 1 until FRAME_LIMIT)
 
         durationScale.scaleFactor = 0f
-        assertEquals(1, framesToSwap())
+        val still = framesToSwap()
+        assertTrue("$still frames", still <= AT_ONCE)
     }
 
     /** How many frames [enter] takes to show a box, then [exit] to hide it. */
@@ -129,6 +131,11 @@ class MotionTransitionsTest {
     private companion object {
         val BOX = 100.dp
         const val FRAME_LIMIT = 120
+
+        /**
+         * With animations off a transition ends in the frame that starts it, or the one after, which removes what left.
+         */
+        const val AT_ONCE = 2
 
         val transitions: List<Pair<String, Pair<(MotionScheme) -> EnterTransition, (MotionScheme) -> ExitTransition>>> =
             listOf(

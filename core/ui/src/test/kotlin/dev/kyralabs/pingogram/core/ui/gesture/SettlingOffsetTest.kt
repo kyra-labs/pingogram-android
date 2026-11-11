@@ -75,9 +75,13 @@ class SettlingOffsetTest {
 
         // Flung on past START while the target is behind it: the first frames still move on.
         offset.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity = FLING)
-        frames(1)
+        val firstFrames =
+            List(FIRST_FRAMES) {
+                frames(1)
+                offset.value
+            }
 
-        assertTrue("first frame at ${offset.value}", offset.value > START)
+        assertTrue("first frames at $firstFrames", firstFrames.max() > START)
     }
 
     @Test
@@ -115,12 +119,17 @@ class SettlingOffsetTest {
     }
 
     private fun frames(count: Int) {
+        // Applies what the test changed first, so the frame sees it.
+        composeRule.waitForIdle()
         repeat(count) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
     }
 
     private companion object {
         const val START = 200f
+
+        /** The frames a fling's carry-on shows in: the spring's first frame is at its start. */
+        const val FIRST_FRAMES = 4
         const val DRAG = 10f
         const val FLING = 20_000f
         const val SETTLE_FRAMES = 120
