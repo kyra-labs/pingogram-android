@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -24,9 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearWavyProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -43,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
@@ -51,7 +46,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -59,9 +53,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -334,83 +326,6 @@ private fun Confirm(
     )
 }
 
-/** Where the request comes from: the browser and its system, and the place its address points to. */
-@Composable
-private fun Details(state: OauthLoginUiState) {
-    val request = state.request ?: return
-    val colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-    val browser = listOf(request.browser, request.platform).filter { it.isNotBlank() }.joinToString(" · ")
-    Column(Modifier.fillMaxWidth()) {
-        if (browser.isNotEmpty()) {
-            ListItem(
-                headlineContent = { Text(browser, style = MaterialTheme.typography.bodyLarge.userContent) },
-                supportingContent = { Text(stringResource(R.string.settings_oauth_browser)) },
-                colors = colors,
-            )
-        }
-        if (request.location.isNotBlank()) {
-            ListItem(
-                headlineContent = { Text(request.location, style = MaterialTheme.typography.bodyLarge.userContent) },
-                supportingContent = { Text(stringResource(R.string.settings_oauth_location)) },
-                colors = colors,
-            )
-        }
-    }
-}
-
-/** The switches for what the website or app asks for: letting its bot write, sharing the phone number; off at first. */
-@Composable
-private fun Toggles(
-    state: OauthLoginUiState,
-    onEvent: (OauthLoginEvent) -> Unit,
-) {
-    val request = state.request ?: return
-    Column(Modifier.fillMaxWidth()) {
-        if (request.asksToMessage) {
-            ToggleRow(
-                title =
-                    state.botName
-                        ?.let { stringResource(R.string.settings_oauth_messages_bot, it.bidiIsolated()) }
-                        ?: stringResource(R.string.settings_oauth_messages),
-                checked = state.allowMessages,
-                enabled = !state.isBusy,
-                onChange = { onEvent(OauthLoginEvent.SetAllowMessages(it)) },
-            )
-        }
-        if (request.asksForPhoneNumber) {
-            ToggleRow(
-                title = stringResource(R.string.settings_oauth_phone),
-                checked = state.sharePhoneNumber,
-                enabled = !state.isBusy,
-                onChange = { onEvent(OauthLoginEvent.SetSharePhoneNumber(it)) },
-            )
-        }
-    }
-}
-
-/** A switch row: the row toggles it, and screen readers hear the row as the switch. */
-@Composable
-private fun ToggleRow(
-    title: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    val haptics = LocalHapticFeedback.current
-    ListItem(
-        headlineContent = { Text(title) },
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .toggleable(value = checked, enabled = enabled, role = Role.Switch) {
-                    haptics.performToggle(it)
-                    onChange(it)
-                },
-        trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
-}
-
 /** Logged in: the badge with a check, that the website opened to go on, and "Done". */
 @Composable
 private fun ColumnScope.Done(
@@ -437,14 +352,6 @@ private fun ColumnScope.Done(
     Button(onClick = onClose, modifier = Modifier.align(Alignment.End), shapes = ButtonDefaults.shapes()) {
         Text(stringResource(R.string.settings_oauth_close), style = MaterialTheme.typography.labelLargeEmphasized)
     }
-}
-
-/** A wavy line while Telegram answers, which screen readers hear. */
-@Composable
-private fun Progress(visible: Boolean) {
-    if (!visible) return
-    val description = stringResource(R.string.settings_oauth_working)
-    LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = description })
 }
 
 /** A `TextButton` [secondary] at the start where there is one, the [primary] action at the end. */
