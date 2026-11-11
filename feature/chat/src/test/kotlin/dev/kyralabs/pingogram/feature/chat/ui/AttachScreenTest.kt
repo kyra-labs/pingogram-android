@@ -164,11 +164,12 @@ class AttachScreenTest {
             editor.options[0].text.setTextAndPlaceCursorAtEnd("Pizza")
             editor.options[1].text.setTextAndPlaceCursorAtEnd("Sushi")
         }
-        composeRule
-            .onNodeWithContentDescription("Send")
-            .assertIsEnabled()
-            .performClick()
-        composeRule.waitForIdle()
+        // The sheet hides before the event goes; the frames after it are stepped, as a closing sheet keeps the
+        // Robolectric screen busy (the checklist form's does too).
+        val send = composeRule.onNodeWithContentDescription("Send").assertIsEnabled()
+        composeRule.mainClock.autoAdvance = false
+        send.performClick()
+        composeRule.mainClock.advanceTimeBy(SHEET_HIDE_MILLIS)
 
         assertEquals(listOf(ChatEvent.SendPoll(SendOptions())), events.filterIsInstance<ChatEvent.SendPoll>())
     }
@@ -227,5 +228,10 @@ class AttachScreenTest {
         val bubble = composeRule.onNodeWithContentDescription("9:46 AM", substring = true).fetchSemanticsNode()
 
         assertTrue(bubble.config[SemanticsActions.CustomActions].none { it.label == "Cancel upload" })
+    }
+
+    private companion object {
+        /** Longer than the sheet's hide on the motion scheme's springs. */
+        const val SHEET_HIDE_MILLIS = 2_000L
     }
 }
