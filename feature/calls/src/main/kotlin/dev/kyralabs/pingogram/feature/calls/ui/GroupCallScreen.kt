@@ -78,7 +78,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
@@ -243,30 +242,11 @@ private fun InGroupCall(
                 modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
             )
         }
-        val camera = state.video.camera
-        val shownCamera = rememberLastNonNull(camera)
-        // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md), growing in and
-        // shrinking away as the sharing pill above it does; with the others' videos it joins their grid.
-        GrowingVisibility(
-            visible = camera != null && !state.isStream && state.video.remote.isEmpty(),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            SelfView(
-                mirror = shownCamera == CameraFacing.Front,
-                canSwitch = state.video.canSwitchCamera,
-                aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
-                video = videos.self,
-                onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
-                modifier =
-                    Modifier
-                        .padding(vertical = spacing.small)
-                        .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
-                        .fillMaxWidth(SELF_VIEW_WIDTH),
-            )
-        }
+        OwnCamera(state, videos, onEvent)
         // With or without the comments pane: a large layout change, so the two layouts crossfade on the effects springs
-        // while the space they take changes on the slow spatial spring (docs/DESIGN_SYSTEM.md §5).
-        val motion = MaterialTheme.motionScheme
+        // while the space they take changes on the slow spatial spring (docs/DESIGN_SYSTEM.md §5); at once while power
+        // saving holds the call screens still.
+        val motion = callMotionScheme()
         AnimatedContent(
             targetState = commenting,
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -294,12 +274,44 @@ private fun InGroupCall(
                         extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
                     }
                     // The docked panel goes when the call ends, shrinking away as it came.
-                    GrowingVisibility(visible = state.hasControls, expandFrom = Alignment.Bottom) {
+                    CallGrowingVisibility(visible = state.hasControls, expandFrom = Alignment.Bottom) {
                         Controls(state, onEvent)
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md), growing in and shrinking away
+ * as the sharing pill above it does; with the others' videos it joins their grid.
+ */
+@Composable
+private fun ColumnScope.OwnCamera(
+    state: GroupCallUiState.InCall,
+    videos: GroupCallVideos,
+    onEvent: (GroupCallEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    val camera = state.video.camera
+    val shownCamera = rememberLastNonNull(camera)
+    CallGrowingVisibility(
+        visible = camera != null && !state.isStream && state.video.remote.isEmpty(),
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+    ) {
+        SelfView(
+            mirror = shownCamera == CameraFacing.Front,
+            canSwitch = state.video.canSwitchCamera,
+            aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
+            video = videos.self,
+            onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
+            modifier =
+                Modifier
+                    .padding(vertical = spacing.small)
+                    .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
+                    .fillMaxWidth(SELF_VIEW_WIDTH),
+        )
     }
 }
 
@@ -402,7 +414,7 @@ private fun CompactControls(
         // Mute and Raise hand swap as the docked panel's do.
         AnimatedContent(
             targetState = state.canUnmute,
-            transitionSpec = stateCrossfade(MaterialTheme.motionScheme),
+            transitionSpec = stateCrossfade(callMotionScheme()),
             label = "compactMicrophone",
         ) { canUnmute ->
             if (canUnmute) {
@@ -715,7 +727,7 @@ private fun Controls(
                     .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val motion = MaterialTheme.motionScheme
+            val motion = callMotionScheme()
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 if (!state.isStream) {
                     AnimatedContent(

@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -146,6 +147,29 @@ class GroupCallFrameCostTest {
         repeat(CROSSFADE_FRAMES) { frame() }
 
         assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
+        composeRule.onNodeWithContentDescription("Comment", substring = true).assertExists()
+    }
+
+    @Test
+    fun `while power saving holds the call screens still, turning comments on swaps the layouts at once`() {
+        still.value = true
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(GroupCallPreviewStates.comments.copy(isShown = false))
+        show(call, comments)
+        val name =
+            call.value.participants
+                .first()
+                .name
+
+        comments.value = GroupCallPreviewStates.comments
+        frame()
+        frame()
+        // While the layouts crossfade, both show the participant: here only the new one is left.
+        val atOnce = composeRule.onAllNodesWithContentDescription(name, substring = true).fetchSemanticsNodes().size
+        repeat(CROSSFADE_FRAMES) { frame() }
+
+        val settled = composeRule.onAllNodesWithContentDescription(name, substring = true).fetchSemanticsNodes().size
+        assertEquals(settled, atOnce)
         composeRule.onNodeWithContentDescription("Comment", substring = true).assertExists()
     }
 
