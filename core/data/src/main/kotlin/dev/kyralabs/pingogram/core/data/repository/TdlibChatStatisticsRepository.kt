@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 /**
  * [ChatStatisticsRepository] on TDLib's `getChatStatistics` and `getStatisticalGraph` (the graphs it gives only as a
- * token) and `getPollVoteStatistics` (a poll's votes over time). Telegram's colors for light and dark (`is_dark`) are not used: the theme colors the charts.
+ * token) and `getPollVoteStatistics` (a poll's votes over time). Telegram's colors for light and dark (`is_dark`)
+ * are not used: the theme colors the charts.
  */
 @AccountScoped
 class TdlibChatStatisticsRepository
