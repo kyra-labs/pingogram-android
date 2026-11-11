@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.navigation.ProfileRoute
 import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.avatarTransformTarget
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileMusicSlot
 import dev.kyralabs.pingogram.feature.profile.ui.StoryAlbumsSlot
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRoute
 
@@ -19,7 +20,8 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
  * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
  * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out.
- * [storyAlbums], where given, shows the user's story albums above the shared media. It grows
+ * [storyAlbums], where given, shows the user's story albums above the shared media, and [profileMusic] their profile
+ * music below the header. It grows
  * out of the conversation's avatar that opened it, and shrinks back into it (`docs/DESIGN_SYSTEM.md` §5,
  * [avatarTransformTarget]).
  */
@@ -32,6 +34,7 @@ fun NavGraphBuilder.profileScreen(
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
     storyAlbums: StoryAlbumsSlot? = null,
+    profileMusic: ProfileMusicSlot? = null,
 ) {
     composable<ProfileRoute> { entry ->
         val userId = entry.toRoute<ProfileRoute>().userId
@@ -47,6 +50,7 @@ fun NavGraphBuilder.profileScreen(
                 onEditContact = onEditContact,
                 onExportChat = onExportChat,
                 storyAlbums = storyAlbums,
+                profileMusic = profileMusic,
             )
         }
     }
