@@ -1055,6 +1055,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `CommunityRepository` (`TdlibCommunityRepository`, a `TdlibUpdateCache`: TDLib announces each community only with
+    `updateCommunity`): a community the account knows (`Community`: its name, photo and the user's `CommunityRole`), what
+    it holds (`getCommunityFullInfo`, then `updateCommunityFullInfo` while collected: its chats, hidden ones for its
+    administrators), renaming (`setCommunityName`) and deleting (`deleteCommunity`). A supergroup's or channel's
+    community is `GroupDetails.communityId` (`supergroupFullInfo.community_id`), which the info page names and opens
+    (`ChatInfoUiState.Content.community`, `ChatInfoEffect.OpenCommunity`); `feature:profile`'s `CommunityRoute(communityId)`
+    (`CommunityViewModel`: each chat from `ChatRepository`, `getChat` once where TDLib has not announced it, the user's
+    membership from `GroupRepository`, joining through `ChatJoinRepository.join`, the rename dialog in saved state) is
+    a page of the info pages' graph. td_api.tl (a94b83d) has no function to add a chat to a community or to list the
+    user's communities, so neither is offered.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 

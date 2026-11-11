@@ -36,7 +36,7 @@ internal fun AvatarShape.kindIcon(): Int? =
     when (this) {
         AvatarShape.Group, AvatarShape.RoundedSquare -> R.drawable.ic_group
         AvatarShape.Channel -> R.drawable.ic_campaign
-        AvatarShape.Circle, AvatarShape.SavedMessages -> null
+        AvatarShape.Circle, AvatarShape.SavedMessages, AvatarShape.Community -> null
     }
 
 /**

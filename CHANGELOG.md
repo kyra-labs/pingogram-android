@@ -11,6 +11,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
+  its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
 - Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
   tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
   their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given

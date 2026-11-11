@@ -66,6 +66,7 @@ enum class GroupKind {
  * @property primaryInviteLink the primary invite link, for administrators who may invite; null otherwise.
  * @property canGetStatistics Telegram gives the user the chat's statistics (`ChatStatisticsRepository`): its
  *   administrators, where the supergroup or channel is large enough.
+ * @property communityId the community the supergroup or channel belongs to (`CommunityRepository`); 0 for none.
  */
 data class GroupDetails(
     val description: FormattedText,
@@ -79,6 +80,7 @@ data class GroupDetails(
     val members: ImmutableList<GroupMember>,
     val primaryInviteLink: InviteLink?,
     val canGetStatistics: Boolean = false,
+    val communityId: Long = 0,
 ) {
     override fun toString() =
         "GroupDetails(memberCount=$memberCount, administratorCount=$administratorCount, members=${members.size}, …)"

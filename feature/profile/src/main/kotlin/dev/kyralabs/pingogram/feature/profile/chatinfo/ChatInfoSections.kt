@@ -137,7 +137,8 @@ private fun VoiceChatPill(
  * description with its links and mentions (selectable; a mention opens who it names; "Copy" for screen readers), then
  * the link ("t.me/rustberlin", or the invite link for administrators of a private group), which a tap copies and the
  * trailing button shares, and "QR code", which shows it as one; then, while Privacy and security's "Show IDs" is
- * on, the chat's [id], which a tap copies.
+ * on, the chat's [id], which a tap copies; and the [community] the chat belongs to, its name over "Community", which a
+ * tap opens, ending in a chevron.
  */
 @Composable
 internal fun ChatInfoGroup(
@@ -146,6 +147,7 @@ internal fun ChatInfoGroup(
     onEvent: (ChatInfoEvent) -> Unit,
     modifier: Modifier = Modifier,
     id: Long? = null,
+    community: CommunityLink? = null,
 ) {
     val rows = mutableListOf<ProfileRow>()
     description?.let { text -> rows += ProfileRow("description") { DescriptionRow(text, it, onEvent) } }
@@ -160,6 +162,7 @@ internal fun ChatInfoGroup(
                 )
             }
     }
+    community?.let { link -> rows += ProfileRow("community") { CommunityRow(link, it, onEvent) } }
     id?.let { chatId -> rows += ProfileRow("id") { shapes -> IdRow(chatId, shapes) { onEvent(ChatInfoEvent.CopyId) } } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
 }
@@ -199,6 +202,31 @@ private fun DescriptionRow(
         SelectionContainer {
             Text(annotated, style = MaterialTheme.typography.bodyLarge.userContent)
         }
+    }
+}
+
+/** The community the chat belongs to: its name over "Community", opening its page. */
+@Composable
+private fun CommunityRow(
+    community: CommunityLink,
+    shapes: ListItemShapes,
+    onEvent: (ChatInfoEvent) -> Unit,
+) {
+    val label = stringResource(R.string.community_label)
+    SegmentedListItem(
+        onClick = { onEvent(ChatInfoEvent.OpenCommunity) },
+        shapes = shapes,
+        colors = profileRowColors(),
+        supportingContent = { Text(label.takeIf { community.name.isNotEmpty() }.orEmpty()) },
+        trailingContent = {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+    ) {
+        Text(community.name.ifEmpty { label }, style = MaterialTheme.typography.bodyLarge.userContent)
     }
 }
 

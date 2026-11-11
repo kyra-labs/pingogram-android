@@ -42,6 +42,9 @@ enum class AvatarShape {
 
     /** Saved Messages: `Clover4Leaf`. */
     SavedMessages,
+
+    /** A community (td_api.tl `community`): `Sunny`, as the owner's board 19a draws it. */
+    Community,
     ;
 
     companion object {
@@ -110,6 +113,7 @@ private fun AvatarShape.kindPolygon(): RoundedPolygon? =
         AvatarShape.Group -> MaterialShapes.Cookie9Sided
         AvatarShape.Channel -> MaterialShapes.Cookie6Sided
         AvatarShape.SavedMessages -> MaterialShapes.Clover4Leaf
+        AvatarShape.Community -> MaterialShapes.Sunny
         AvatarShape.Circle, AvatarShape.RoundedSquare -> null
     }
 

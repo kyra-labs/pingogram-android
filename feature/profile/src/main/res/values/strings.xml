@@ -228,6 +228,50 @@
     <string name="chat_info_member_remove">Remove</string>
     <string name="chat_info_member_unban">Allow back</string>
     <string name="chat_info_member_set_tag">Set tag</string>
+    <!-- A community (board 19a): chats gathered under one name. -->
+    <string name="community_label">Community</string>
+    <string name="community_title">Community</string>
+    <string name="community_loading">Loading the community</string>
+    <string name="community_error_title">Couldn\'t load the community</string>
+    <string name="community_kind">Community</string>
+    <string name="community_role_owner">Community · you own it</string>
+    <string name="community_role_admin">Community · you\'re an admin</string>
+    <plurals name="community_chats">
+        <item quantity="one">%1$s chat in this community</item>
+        <item quantity="other">%1$s chats in this community</item>
+    </plurals>
+    <string name="community_footer">Hidden chats show only to the community\'s administrators.</string>
+    <string name="community_no_chats">This community has no chats you can see.</string>
+    <string name="community_hidden">Hidden · admins only</string>
+    <string name="community_joined">Joined</string>
+    <string name="community_join">Join</string>
+    <!-- What screen readers hear for "Join" on a chat's row: the chat's name. -->
+    <string name="community_join_chat">Join %1$s</string>
+    <string name="community_join_requested">Request sent. An administrator decides.</string>
+    <string name="community_join_bot">This chat checks new members in a Mini App, which Pingogram can\'t open yet.</string>
+    <string name="community_join_declined">Telegram didn\'t let you join this chat.</string>
+    <string name="community_kind_group">Group</string>
+    <string name="community_kind_channel">Channel</string>
+    <string name="community_kind_bot">Bot</string>
+    <string name="community_kind_chat">Chat</string>
+    <plurals name="community_group_members">
+        <item quantity="one">Group · %1$s member</item>
+        <item quantity="other">Group · %1$s members</item>
+    </plurals>
+    <plurals name="community_channel_subscribers">
+        <item quantity="one">Channel · %1$s subscriber</item>
+        <item quantity="other">Channel · %1$s subscribers</item>
+    </plurals>
+    <string name="community_options">Community options</string>
+    <string name="community_rename">Rename</string>
+    <string name="community_delete">Delete community</string>
+    <string name="community_rename_title">Rename community</string>
+    <string name="community_name">Name</string>
+    <string name="community_cancel">Cancel</string>
+    <string name="community_save">Save</string>
+    <string name="community_delete_title">Delete %1$s?</string>
+    <string name="community_delete_text">The community goes for everyone. Its chats stay as they are.</string>
+    <string name="community_delete_confirm">Delete</string>
     <!-- The "Set tag" sheet of a member (boards 18a and 18b): the tag shows next to their name in the group. -->
     <string name="chat_info_tag_title">Set tag</string>
     <string name="chat_info_tag_title_own">Your tag</string>

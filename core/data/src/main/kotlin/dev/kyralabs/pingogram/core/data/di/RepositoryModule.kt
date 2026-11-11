@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatStatisticsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChecklistRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
@@ -127,6 +128,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
@@ -411,6 +413,9 @@ interface RepositoryModule {
 
     @Binds
     fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository
+
+    @Binds
+    fun communityRepository(repository: TdlibCommunityRepository): CommunityRepository
 
     @Binds
     fun storyRepository(repository: TdlibStoryRepository): StoryRepository

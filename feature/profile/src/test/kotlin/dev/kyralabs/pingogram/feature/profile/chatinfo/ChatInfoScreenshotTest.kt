@@ -61,6 +61,15 @@ class ChatInfoScreenshotTest {
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
     fun idShownFontScale200() = info(ScreenshotVariant.Light, ChatInfoPreviewData.group.copy(id = -1001234567890))
 
+    /** A chat of a community: "Kyra Labs Community" over "Community" in the Info group. */
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun communityLight() =
+        info(
+            ScreenshotVariant.Light,
+            ChatInfoPreviewData.group.copy(community = CommunityLink(77, "Kyra Labs Community")),
+        )
+
     @Test
     fun error() = info(ScreenshotVariant.Light, ChatInfoUiState.Error(DomainError.NotFound))
 

@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
@@ -317,6 +318,9 @@ object ActiveAccountModule {
 
     @Provides
     fun secretChatRepository(accounts: Accounts): SecretChatRepository = accounts.active.secretChatRepository()
+
+    @Provides
+    fun communityRepository(accounts: Accounts): CommunityRepository = accounts.active.communityRepository()
 
     @Provides
     fun storyRepository(accounts: Accounts): StoryRepository = accounts.active.storyRepository()
