@@ -94,5 +94,8 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
     }
 }
 
-/** The heap of each test JVM: room for the tallest goldens, and four such JVMs beside the 4 GB Gradle daemon on CI. */
-private const val TEST_HEAP = "1536m"
+/**
+ * The heap of each test JVM: twice Gradle's default, room for the tallest goldens. Four such JVMs and the 4 GB Gradle
+ * daemon still leave CI's 16 GB runners room; with 1.5 GB each, the build ran past its time limit.
+ */
+private const val TEST_HEAP = "1g"
