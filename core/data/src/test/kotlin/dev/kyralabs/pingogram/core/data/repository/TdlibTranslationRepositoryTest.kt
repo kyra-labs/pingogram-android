@@ -130,6 +130,17 @@ class TdlibTranslationRepositoryTest {
             assertFalse(chats.chat(CHAT).first()?.isTranslatable == true)
         }
 
+    @Test
+    fun `a chat comes with has_welcome_messages and follows updateChatHasWelcomeMessages`() =
+        runTest {
+            val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
+            client.emit(updateNewChat(chat(id = CHAT).apply { hasWelcomeMessages = true }))
+            assertTrue(chats.chat(CHAT).first()?.hasWelcomeMessages == true)
+
+            client.emit(TdApi.UpdateChatHasWelcomeMessages(CHAT, false))
+            assertFalse(chats.chat(CHAT).first()?.hasWelcomeMessages == true)
+        }
+
     private fun TdApi.Error.toTdError() = TdError(code, message)
 
     private companion object {
