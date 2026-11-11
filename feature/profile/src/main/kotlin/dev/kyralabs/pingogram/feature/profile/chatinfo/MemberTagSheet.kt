@@ -96,8 +96,8 @@ internal fun MemberTagPill(
 }
 
 /**
- * The "Set tag" sheet of a member (the owner's board 18b), a `ModalBottomSheet` that opens expanded: [MemberTagContent].
- * Back, dragging it away and the scrim close it as nothing saved.
+ * The "Set tag" sheet of a member (the owner's board 18b), a `ModalBottomSheet` that opens expanded:
+ * [MemberTagContent]. Back, dragging it away and the scrim close it as nothing saved.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -292,40 +292,52 @@ private fun TagPreview(editor: MemberTagEditor) {
                 size = MaterialTheme.sizes.avatarExtraSmall,
                 placeholderIcon = member.placeholderIcon,
             )
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f, fill = false)
-                        .background(colors.surfaceContainerHigh, MaterialTheme.shapes.extraLarge)
-                        .padding(horizontal = spacing.medium, vertical = spacing.small),
-                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-            ) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(spacing.small),
-                    itemVerticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = name,
-                        color = colors.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.labelLargeEmphasized.userContent,
-                    )
-                    editor.text.trim().takeIf { it.isNotEmpty() }?.let { tag ->
-                        MemberTagPill(tag, editor.isAdministrator)
-                    }
-                }
-                Text(
-                    text = stringResource(R.string.chat_info_tag_preview_message),
-                    color = colors.onSurface,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+            PreviewBubble(name, editor, Modifier.weight(1f, fill = false))
         }
         Text(
             text = stringResource(R.string.chat_info_tag_colors),
             color = colors.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+/** A sample incoming bubble: the member's [name] and the tag as typed, over a sample message. */
+@Composable
+private fun PreviewBubble(
+    name: String,
+    editor: MemberTagEditor,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val spacing = MaterialTheme.spacing
+    Column(
+        modifier =
+            modifier
+                .background(colors.surfaceContainerHigh, MaterialTheme.shapes.extraLarge)
+                .padding(horizontal = spacing.medium, vertical = spacing.small),
+        verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+    ) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(spacing.small),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = name,
+                color = colors.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLargeEmphasized.userContent,
+            )
+            editor.text
+                .trim()
+                .takeIf { it.isNotEmpty() }
+                ?.let { tag -> MemberTagPill(tag, editor.isAdministrator) }
+        }
+        Text(
+            text = stringResource(R.string.chat_info_tag_preview_message),
+            color = colors.onSurface,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

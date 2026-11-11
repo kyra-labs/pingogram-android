@@ -388,21 +388,7 @@ class ChatMembersViewModel internal constructor(
                 )
             }
         val removingItem = removing?.let { sender -> items.firstOrNull { it.sender == sender } }
-        val taggingEditor =
-            tagging?.let { draft ->
-                val sender = MessageSender.User(draft.userId)
-                items.firstOrNull { it.sender == sender }?.let { item ->
-                    MemberTagEditor(
-                        member = item,
-                        isAdministrator = item.isAdministrator,
-                        isOwn = draft.userId == myUserId,
-                        text = draft.text,
-                        saved = draft.saved,
-                        isSaving = draft.isSaving,
-                        error = draft.error,
-                    )
-                }
-            }
+
         return ChatMembersUiState(
             kind = kind,
             filter = filter,
@@ -427,7 +413,7 @@ class ChatMembersViewModel internal constructor(
                     }
                 },
             removing = removingItem,
-            tagging = taggingEditor,
+            tagging = tagging?.editorIn(items, myUserId),
         )
     }
 
@@ -459,6 +445,24 @@ class ChatMembersViewModel internal constructor(
 
         val NO_RIGHTS = AdministratorRights.None
     }
+}
+
+/** The "Set tag" sheet of this draft, for its member among [items]; null while the member is not loaded. */
+private fun TagDraft.editorIn(
+    items: List<MemberItem>,
+    myUserId: Long?,
+): MemberTagEditor? {
+    val sender = MessageSender.User(userId)
+    val item = items.firstOrNull { it.sender == sender } ?: return null
+    return MemberTagEditor(
+        member = item,
+        isAdministrator = item.isAdministrator,
+        isOwn = userId == myUserId,
+        text = text,
+        saved = saved,
+        isSaving = isSaving,
+        error = error,
+    )
 }
 
 /**

@@ -99,20 +99,7 @@ internal fun MemberRow(
                     { MemberText(role.resolve(), style = MaterialTheme.typography.labelMedium.userContent) }
                 },
         ) {
-            val tag = item.tag
-            if (tag == null) {
-                MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
-            } else {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.weight(1f, fill = false)) {
-                        MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
-                    }
-                    MemberTagPill(tag, isAdministrator = item.isAdministrator, Modifier.clearAndSetSemantics {})
-                }
-            }
+            MemberName(name, item)
         }
         if (onAction != null) {
             MemberMenu(
@@ -125,6 +112,28 @@ internal fun MemberRow(
                 },
             )
         }
+    }
+}
+
+/** The member's name, followed by their tag where they have one. */
+@Composable
+private fun MemberName(
+    name: String,
+    item: MemberItem,
+) {
+    val tag = item.tag
+    if (tag == null) {
+        MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
+        return
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f, fill = false)) {
+            MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
+        }
+        MemberTagPill(tag, isAdministrator = item.isAdministrator, Modifier.clearAndSetSemantics {})
     }
 }
 

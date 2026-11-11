@@ -26,6 +26,7 @@ import javax.inject.Inject
  * rights itself and Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow
  * mode delay Telegram does not accept are refused before anything is sent.
  */
+@Suppress("TooManyFunctions") // One function per kind of change an administrator makes, each one request.
 @AccountScoped
 class TdlibGroupAdministrationRepository
     @Inject
