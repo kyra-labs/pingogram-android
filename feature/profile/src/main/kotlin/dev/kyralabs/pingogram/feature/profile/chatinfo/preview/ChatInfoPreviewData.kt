@@ -29,6 +29,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersList
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersPreview
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MoreMembers
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveSheet
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveStep
 import dev.kyralabs.pingogram.feature.profile.chatinfo.Permission
 import dev.kyralabs.pingogram.feature.profile.chatinfo.RightSwitch
 import dev.kyralabs.pingogram.feature.profile.chatinfo.TransferDialog
@@ -192,6 +194,27 @@ object ChatInfoPreviewData {
 
     /** Telegram transfers the ownership. */
     val transferring = transferDialog.copy(isTransferring = true)
+
+    /** The owner leaving a group with two other administrators, letting Telegram choose (which names Ada). */
+    val ownerLeave =
+        OwnerLeaveSheet(
+            kind = GroupKind.Supergroup,
+            heir = UiText.Plain("Ada Lovelace"),
+            candidates =
+                persistentListOf(
+                    member(2, "Ada Lovelace", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                    member(3, "Alan Turing", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                ),
+        )
+
+    /** The owner chose Alan, and types the 2-step verification password. */
+    val ownerLeavePassword = ownerLeave.copy(chosen = 3, step = OwnerLeaveStep.Password)
+
+    /** The password was wrong. */
+    val ownerLeaveWrongPassword = ownerLeavePassword.copy(error = DomainError.PasswordInvalid)
+
+    /** A basic group without other administrators, while Telegram has not said who it would choose. */
+    val ownerLeaveNoAdmins = OwnerLeaveSheet(kind = GroupKind.BasicGroup, candidates = persistentListOf())
 
     val restrictions =
         MemberRightsUiState.Content(

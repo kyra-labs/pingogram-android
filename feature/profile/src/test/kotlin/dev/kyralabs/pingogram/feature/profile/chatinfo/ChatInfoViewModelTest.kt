@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -195,6 +196,157 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
             assertNull(viewModel.content.dialog)
             assertEquals(CHAT, client.sentOf<TdApi.LeaveChat>().single().chatId)
             assertEquals(listOf(ChatInfoEffect.Left), effects)
+        }
+
+    /** The owner of supergroup [CHAT] with Ada as administrator; Telegram would make Ada the owner. */
+    private fun TestScope.answerOwnedGroup() {
+        answerSupergroup(
+            status = TdApiFixtures.creatorStatus(),
+            members =
+                arrayOf(
+                    member(ME, TdApiFixtures.creatorStatus()),
+                    member(ADA, TdApi.ChatMemberStatusAdministrator(true, adminRights)),
+                ),
+        )
+        client.on(
+            TdApi.GetChatOwnerAfterLeaving::class,
+            TdResult.Success(TdApiFixtures.user(id = ADA, firstName = "Ada", lastName = "Lovelace")),
+        )
+        client.on(TdApi.LeaveChat::class, TdResult.Success(TdApi.Ok()))
+        runCurrent()
+    }
+
+    private fun TestScope.leave(
+        viewModel: ChatInfoViewModel,
+        vararg events: OwnerLeaveEvent,
+    ) {
+        events.forEach {
+            viewModel.onOwnerLeaveEvent(it)
+            runCurrent()
+        }
+    }
+
+    @Test
+    fun `the owner leaving chooses the next owner, Telegram's choice named first`() =
+        runTest {
+            answerOwnedGroup()
+            val viewModel = viewModel()
+
+            send(viewModel, ChatInfoEvent.Leave)
+
+            assertNull(viewModel.content.dialog)
+            val sheet = checkNotNull(viewModel.ownerLeaveSheet.value)
+            assertEquals(GroupKind.Supergroup, sheet.kind)
+            assertEquals(UiText.Plain("Ada Lovelace"), sheet.heir)
+            assertEquals(listOf(MessageSender.User(ADA)), sheet.candidates?.map { it.sender })
+            assertEquals(0L, sheet.chosen)
+            val asked = client.sentOf<TdApi.GetSupergroupMembers>().last().filter
+            assertInstanceOf(TdApi.SupergroupMembersFilterAdministrators::class.java, asked)
+        }
+
+    @Test
+    fun `letting Telegram choose leaves at once and closes the page`() =
+        runTest {
+            answerOwnedGroup()
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatInfoEvent.Leave)
+            leave(viewModel, OwnerLeaveEvent.Continue)
+
+            assertEquals(CHAT, client.sentOf<TdApi.LeaveChat>().single().chatId)
+            assertTrue(client.sentOf<TdApi.TransferChatOwnership>().isEmpty())
+            assertNull(viewModel.ownerLeaveSheet.value)
+            assertEquals(listOf(ChatInfoEffect.Left), effects)
+        }
+
+    @Test
+    fun `choosing an administrator transfers the ownership with the password, then leaves`() =
+        runTest {
+            answerOwnedGroup()
+            client.on(TdApi.CanTransferOwnership::class, TdResult.Success(TdApi.CanTransferOwnershipResultOk()))
+            client.on(
+                TdApi.TransferChatOwnership::class,
+                TdResult.Failure(TdError(400, "PASSWORD_HASH_INVALID")),
+            )
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatInfoEvent.Leave)
+            leave(viewModel, OwnerLeaveEvent.Choose(ADA), OwnerLeaveEvent.Continue)
+            assertEquals(OwnerLeaveStep.Password, viewModel.ownerLeaveSheet.value?.step)
+            viewModel.ownerLeavePassword.edit { append("wrong") }
+            leave(viewModel, OwnerLeaveEvent.Confirm)
+
+            // A refused password stays in the sheet, and nobody left.
+            assertEquals(DomainError.PasswordInvalid, viewModel.ownerLeaveSheet.value?.error)
+            assertTrue(client.sentOf<TdApi.LeaveChat>().isEmpty())
+
+            client.on(TdApi.TransferChatOwnership::class, TdResult.Success(TdApi.Ok()))
+            viewModel.ownerLeavePassword.edit { replace(0, length, "hunter2") }
+            leave(viewModel, OwnerLeaveEvent.Confirm)
+
+            with(client.sentOf<TdApi.TransferChatOwnership>().last()) {
+                assertEquals(CHAT, chatId)
+                assertEquals(ADA, userId)
+                assertEquals("hunter2", password)
+            }
+            assertEquals(CHAT, client.sentOf<TdApi.LeaveChat>().single().chatId)
+            assertEquals(listOf(ChatInfoEffect.Left), effects)
+            assertEquals("", viewModel.ownerLeavePassword.text.toString())
+        }
+
+    @Test
+    fun `a transfer Telegram does not allow yet is a snackbar, and the sheet stays at choosing`() =
+        runTest {
+            answerOwnedGroup()
+            client.on(
+                TdApi.CanTransferOwnership::class,
+                TdResult.Success(TdApi.CanTransferOwnershipResultSessionTooFresh(3_600)),
+            )
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatInfoEvent.Leave)
+            leave(viewModel, OwnerLeaveEvent.Choose(ADA), OwnerLeaveEvent.Continue)
+
+            assertEquals(OwnerLeaveStep.Choose, viewModel.ownerLeaveSheet.value?.step)
+            assertEquals(
+                listOf(ChatInfoEffect.TransferUnavailable(OwnershipTransferCheck.SessionTooNew(3_600))),
+                effects,
+            )
+            leave(viewModel, OwnerLeaveEvent.Dismiss)
+            assertNull(viewModel.ownerLeaveSheet.value)
+            assertTrue(client.sentOf<TdApi.LeaveChat>().isEmpty())
+        }
+
+    @Test
+    fun `the owner's sheet and choice survive process death, the password never`() =
+        runTest {
+            answerOwnedGroup()
+            val handle = SavedStateHandle()
+            val first = viewModel(handle)
+            send(first, ChatInfoEvent.Leave)
+            leave(first, OwnerLeaveEvent.Choose(ADA))
+
+            val restored = viewModel(SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }))
+
+            val sheet = checkNotNull(restored.ownerLeaveSheet.value)
+            assertEquals(ADA, sheet.chosen)
+            assertEquals(OwnerLeaveStep.Choose, sheet.step)
+        }
+
+    @Test
+    fun `members who are not the owner confirm leaving in a dialog`() =
+        runTest {
+            answerSupergroup()
+            val viewModel = viewModel()
+
+            send(viewModel, ChatInfoEvent.Leave)
+
+            assertEquals(ChatInfoDialog.Leave, viewModel.content.dialog)
+            assertNull(viewModel.ownerLeaveSheet.value)
+            assertTrue(client.sentOf<TdApi.GetChatOwnerAfterLeaving>().isEmpty())
         }
 
     @Test

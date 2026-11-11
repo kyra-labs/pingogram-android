@@ -1171,8 +1171,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     sheet's member and text in its saved state and shows the new tag in the row once Telegram took it, as TDLib
     announces no member list), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
-    model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
-    deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+    model's memory), who becomes the owner if the owner leaves without choosing (`ownerAfterLeaving`,
+    `getChatOwnerAfterLeaving`), and clearing the history (`deleteChatHistory` for the user only). Leaving and
+    deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do. The owner leaves through
+    `feature:profile`'s `OwnerLeaving` (a part of `ChatInfoViewModel`): a sheet that names Telegram's choice and lists
+    the other administrators (people only); choosing one runs the transfer above (its check's refusals as snackbars,
+    the password in memory only) before leaving. Whether the sheet shows and who is chosen are in the saved state.
   - `WelcomeMessageRepository` (`TdlibWelcomeMessageRepository`, no cache: TDLib keeps them and announces them with
     `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
     (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option

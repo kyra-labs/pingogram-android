@@ -169,6 +169,10 @@ internal class DemoGroups : DemoArea {
                 transfer(world, function)
             }
 
+            is TdApi.GetChatOwnerAfterLeaving -> {
+                heir(world, function.chatId)
+            }
+
             else -> {
                 null
             }
@@ -652,6 +656,19 @@ internal class DemoGroups : DemoArea {
             TdApi.ChatEventMemberPromoted(function.userId, TdApi.ChatMemberStatusMember(0), list[index].status),
         )
         return okChanged(groups.setMembers(function.chatId, list) + TdApi.UpdateSupergroup(group))
+    }
+
+    /** Who Telegram would make the owner: the first administrator, else the first person who is no bot. */
+    private fun heir(
+        world: DemoWorld,
+        chatId: Long,
+    ): DemoAnswer {
+        val people =
+            world.groups
+                .membersOf(chatId)
+                .filter { userOf(it) != DemoData.ME && world.users[userOf(it)]?.type is TdApi.UserTypeRegular }
+        val heir = people.firstOrNull { it.status is TdApi.ChatMemberStatusAdministrator } ?: people.firstOrNull()
+        return heir?.let { world.users[userOf(it)] }?.let(::ok) ?: notFound()
     }
 
     private fun deleteHistory(

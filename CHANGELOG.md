@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Leaving a group or channel you own: choose which administrator owns it next, with your 2-step verification password,
+  or let Telegram choose, whose choice is named.
 - Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,
   saying how many are left and, once they are used, when the next one comes.
 - Live photos: photos taken as iOS Live Photos or Android Motion Photos say "LIVE" in the chat and play their motion

@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
  * The info page of the route's group or channel: hoists its [ChatInfoViewModel] and handles its [ChatInfoEffect]s
  * through [navigation]. Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar
  * before Android 13, which confirms copies itself), a link to the system's share sheet. The dialogs and the QR code's
- * sheet show over the page while the view model has one.
+ * sheet show over the page while the view model has one, and so does the owner's sheet before leaving.
  */
 @Composable
 internal fun ChatInfoRoute(
@@ -61,8 +61,11 @@ internal fun ChatInfoRoute(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     )
+    val ownerLeave by viewModel.ownerLeaveSheet.collectAsStateWithLifecycle()
     (state as? ChatInfoUiState.Content)?.let { content ->
-        ChatInfoDialogs(content.dialog, content.header.name.resolve(), content.kind, viewModel::onEvent)
+        val title = content.header.name.resolve()
+        ChatInfoDialogs(content.dialog, title, content.kind, viewModel::onEvent)
+        ownerLeave?.let { OwnerLeaveBottomSheet(it, title, viewModel.ownerLeavePassword, viewModel::onOwnerLeaveEvent) }
     }
 }
 
@@ -93,6 +96,10 @@ internal fun ChatInfoEffects(
 
                     effect is ChatInfoEffect.HistoryCleared -> {
                         resources.getString(R.string.chat_info_history_cleared)
+                    }
+
+                    effect is ChatInfoEffect.TransferUnavailable -> {
+                        transferUnavailableText(resources, effect.check)
                     }
 
                     effect is ChatInfoEffect.ShowError -> {
