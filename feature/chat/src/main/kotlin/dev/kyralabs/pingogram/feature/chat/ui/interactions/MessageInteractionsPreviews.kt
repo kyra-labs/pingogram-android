@@ -22,6 +22,18 @@ private fun AllReactionsPreview() {
 
 @PingogramPreviews
 @Composable
+private fun AdminReactionsPreview() {
+    PingogramPreview { MessageInteractionsContent(InteractionsPreviewData.adminReactions, onEvent = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun RemoveReactionsDialogPreview() {
+    PingogramPreview { RemoveReactionsDialog(InteractionsPreviewData.removeAll, onEvent = {}) }
+}
+
+@PingogramPreviews
+@Composable
 private fun OneReactionPreview() {
     PingogramPreview { MessageInteractionsContent(InteractionsPreviewData.oneReaction, onEvent = {}) }
 }
