@@ -106,9 +106,20 @@ internal fun ProfileScreen(
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
     storyAlbums: StoryAlbumsSlot? = null,
+    profileMusic: ProfileMusicSlot? = null,
 ) {
     val page =
-        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact, onExportChat, storyAlbums)
+        ProfilePageParts(
+            state,
+            media,
+            onEvent,
+            onMediaEvent,
+            mediaActions,
+            onEditContact,
+            onExportChat,
+            storyAlbums,
+            profileMusic,
+        )
     if (twoPanes) {
         ProfilePanes(page, onBack, snackbarHostState, modifier, gridState)
     } else {
@@ -126,6 +137,7 @@ internal class ProfilePageParts(
     val onEditContact: (() -> Unit)?,
     val onExportChat: (() -> Unit)? = null,
     val storyAlbums: StoryAlbumsSlot? = null,
+    val profileMusic: ProfileMusicSlot? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
@@ -243,6 +255,13 @@ private fun LazyGridScope.profileItems(
     page: ProfilePageParts,
     inset: Dp,
 ) {
+    val music = page.profileMusic
+    if (music != null) {
+        // Nothing shows for another user without songs, so the section adds its own space above it.
+        fullWidth(key = MUSIC, inset = inset) {
+            music(state.header.userId, state.actions.isSelf, Modifier)
+        }
+    }
     fullWidth(key = ACTIONS, inset = inset) {
         ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
     }
@@ -333,4 +352,5 @@ private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
 private const val STORY_ALBUMS = "story-albums"
+private const val MUSIC = "music"
 private const val MEDIA_HEADER = "media-header"

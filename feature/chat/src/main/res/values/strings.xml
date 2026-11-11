@@ -164,6 +164,8 @@
     <string name="composer_schedule_back">Back</string>
     <string name="composer_schedule_confirm">Schedule</string>
     <string name="composer_schedule_past">Choose a time in the future</string>
+    <string name="composer_schedule_repeat">Repeat</string>
+    <string name="composer_schedule_repeat_never">Never</string>
     <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
     <string name="composer_scheduled">Message scheduled for %1$s</string>
     <!-- The bar above the text field while replying: its close button. -->

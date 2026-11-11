@@ -365,9 +365,11 @@ class MediaViewerViewModel internal constructor(
             }
 
             MediaViewerEvent.ShowInChat -> {
-                viewer.value.loadedCurrentId?.let {
-                    effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, messageIdOf(it)))
-                }
+                showInChat()
+            }
+
+            is MediaViewerEvent.MakeSticker -> {
+                makeSticker(event.fileId)
             }
 
             MediaViewerEvent.Forward -> {
@@ -387,6 +389,18 @@ class MediaViewerViewModel internal constructor(
                 sharing.permission.onResult(event.granted)
             }
         }
+    }
+
+    /** Opens the conversation at the current item's message. */
+    private fun showInChat() {
+        val current = viewer.value.loadedCurrentId ?: return
+        effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, messageIdOf(current)))
+    }
+
+    /** Opens the sticker maker on the photo of file [fileId], only where Telegram lets its content leave the chat. */
+    private fun makeSticker(fileId: Int) {
+        val content = uiState.value as? MediaViewerUiState.Content
+        if (content?.actions?.canSave == true) effectChannel.trySend(MediaViewerEffect.MakeSticker(fileId))
     }
 
     /**

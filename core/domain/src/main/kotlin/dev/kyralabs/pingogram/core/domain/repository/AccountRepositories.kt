@@ -88,6 +88,8 @@ interface AccountRepositories {
 
     fun storyAlbumRepository(): StoryAlbumRepository
 
+    fun profileMusicRepository(): ProfileMusicRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository
@@ -153,6 +155,8 @@ interface AccountRepositories {
     fun welcomeMessageRepository(): WelcomeMessageRepository
 
     fun stickerSetCreationRepository(): StickerSetCreationRepository
+
+    fun stickerMakerRepository(): StickerMakerRepository
 
     fun accentColorRepository(): AccentColorRepository
 

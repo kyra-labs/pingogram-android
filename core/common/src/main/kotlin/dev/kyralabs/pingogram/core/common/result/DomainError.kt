@@ -195,6 +195,9 @@ sealed interface DomainError {
     /** The group has as many members as Telegram allows (`USERS_TOO_MUCH`). */
     data object ChatFull : DomainError
 
+    /** The community has as many chats as Telegram allows (`COMMUNITY_PEERS_TOO_MUCH`). */
+    data object CommunityFull : DomainError
+
     /**
      * The QR code of a login on another device expired, was used already, or is no login code
      * (`AUTH_TOKEN_EXPIRED`, `AUTH_TOKEN_INVALID`, `AUTH_TOKEN_ALREADY_ACCEPTED`): the other device shows a new one.

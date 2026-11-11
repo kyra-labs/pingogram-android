@@ -49,6 +49,7 @@ class ProfileScreenTest {
         withContactEditor: Boolean = true,
         numbersHidden: Boolean = false,
         storyAlbums: StoryAlbumsSlot? = null,
+        profileMusic: ProfileMusicSlot? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -67,6 +68,7 @@ class ProfileScreenTest {
                             ),
                         onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
                         storyAlbums = storyAlbums,
+                        profileMusic = profileMusic,
                     )
                 }
             }
@@ -95,6 +97,21 @@ class ProfileScreenTest {
         scrollTo("Albums of $chatId")
         composeRule.onNodeWithText("Albums of $chatId").assertIsDisplayed()
         assertEquals(chatId, asked.distinct().single())
+    }
+
+    @Test
+    fun `the profile music slot shows for the profile's user, saying whether it is the user's own`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        setScreen(
+            profileMusic = { userId, isSelf, modifier ->
+                asked += userId to isSelf
+                Text("Music of $userId", modifier)
+            },
+        )
+
+        val content = ProfilePreviewData.content
+        composeRule.onNodeWithText("Music of ${content.header.userId}").assertIsDisplayed()
+        assertEquals(content.header.userId to content.actions.isSelf, asked.distinct().single())
     }
 
     @Test

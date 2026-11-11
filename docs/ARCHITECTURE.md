@@ -299,6 +299,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
   (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
   emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
+- **Making a sticker from a photo** (boards 14a, 14b): `core:domain`'s `StickerMakerRepository` (`TdlibStickerMakerRepository`,
+  `core:data`, account-scoped, no cache) lists the user's own sets that can take a sticker (`getOwnedStickerSets`: regular
+  stickers, fewer than 120), writes the editor's drawing (a PNG) as a sticker in the upload cache (`MediaProcessor.writeSticker`,
+  `stickerPlan`, 512 px) and adds it to a set as the signed-in user (`addStickerToSet`); a new set is
+  `StickerSetCreationRepository.create` with that one sticker. `feature:media`'s `stickermaker/`: the media viewer's "Make a
+  sticker" (a photo's More menu, where Telegram lets its content leave the chat) opens `MakeStickerRoute(fileId)` of
+  `core:navigation` in the viewer's place (`makeStickerScreen`, full screen). `MakeStickerViewModel` downloads the photo at
+  visible priority and keeps the editor (the crop, the outline, the text and emoji layers) in its saved state
+  (`MakeStickerSaving`); the screen draws it into a `GraphicsLayer` (`StickerCanvas`), which "Next" reads back as a bitmap
+  and encodes off the main thread, and `AddToSet` (a part of the view model) runs the sheet: the sets, the sticker's emoji,
+  adding it, or a new set's name and link, checked as Settings' sets are. The sticker's copy goes once Telegram has it, or
+  with the sheet or the screen. Its colors are artwork, the same in every theme (`core:ui`'s `StickerInk`).
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
@@ -534,6 +546,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   of `core:navigation` (`storyAlbumScreen`, `StoryAlbumViewModel`: 30 stories a page, their days in the zone and
   language of the moment) is an opened album, whose tap opens `StoryViewerRoute(chatId, storyId, albumId)`: the stories
   viewer then plays that album's first 100 stories instead of the chat's active ones, and no other chat.
+- **Profile music** (boards 13a, 13b): `core:domain`'s `ProfileMusicRepository` (`TdlibProfileMusicRepository`,
+  `core:data`, account-scoped, no cache: td_api.tl announces no change to the list) reads a user's songs
+  (`getUserProfileAudios`, the first 100, with the total) and edits the user's own (`addProfileAudio`,
+  `removeProfileAudio`, `setProfileAudioPosition`). A picked file becomes a song on the device: `PickedSongRepository`
+  (`AndroidPickedSongRepository`, `core:data`, a singleton beside `PickedPhotoRepository`) copies it into the upload
+  cache (`AttachmentPreparer`, as a document) and reads its length, title and artist with Android's media retriever
+  (`MediaProcessor.audioInfo`), refusing what is no audio; the copy is deleted once TDLib answered. `feature:media`'s
+  `profilemusic/`: `ProfileMusicSection` (`ProfileMusicViewModel`, keyed by the user, with `MusicPlayback` and
+  `MusicEditing` as its parts) is the card a profile shows through a slot `:app` fills (`ProfileMusicSlot`, as features
+  share no code) and its playlist sheet. Songs stream from TDLib as they download (`PlaySource.Stream`, the viewers'
+  `VideoPlayer`, one per view model), only while the profile is started, one after another; how far one played is
+  snapshot state ticked while it plays. Adding runs in the app's scope; moves and removals show at once and come back
+  when Telegram refuses them.
 - **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
   stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
   opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
@@ -618,7 +643,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   rescheduling the same with `messageSchedulingStateSendAtDate` (keeping the repeat period), deleting `deleteMessages`;
   td_api.tl has no update for a new scheduling state, so each change made there loads the collections' lists again.
   `Chat.hasScheduledMessages` (`updateChatHasScheduledMessages`, kept by `TdlibChatRepository`) says whether to ask at
-  all. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
+  all. `SendOptions.repeatPeriod` (one of `SendOptions.REPEAT_PERIODS`) repeats a scheduled message
+  (`messageSchedulingStateSendAtDate.repeat_period`, with `disable_notification` where it is silent too);
+  `ComposerUiState.Available.canRepeat` offers it to Telegram Premium subscribers from the composer's schedule dialog. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
   the bar its count and the first time (`ChatUiState.scheduledBar`); the bar opens `ScheduledMessagesRoute(chatId)` of
   `core:navigation` (`scheduledMessagesScreen`, pushed by `:app` above the conversation, also from the detail pane).
   `ScheduledMessagesViewModel` maps the messages with the conversation's own mapping (`inputsOf`, `toItem`, so the
@@ -1137,8 +1164,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     (`ChatInfoUiState.Content.community`, `ChatInfoEffect.OpenCommunity`); `feature:profile`'s `CommunityRoute(communityId)`
     (`CommunityViewModel`: each chat from `ChatRepository`, `getChat` once where TDLib has not announced it, the user's
     membership from `GroupRepository`, joining through `ChatJoinRepository.join`, the rename dialog in saved state) is
-    a page of the info pages' graph. td_api.tl (a94b83d) has no function to add a chat to a community or to list the
-    user's communities, so neither is offered.
+    a page of the info pages' graph. Since TDLib 1.8.70 it also lists the communities the user joined
+    (`getJoinedCommunities`, then the store), adds chats (`getSuitableCommunityChats`, `addCommunityChat`, whose
+    `COMMUNITY_REQUEST_CREATED` is a request sent to the administrators, `CommunityAddResult`), removes them, reads and
+    answers the requests to add a chat (`getCommunityAddChatRequests`, `processCommunityAddChatRequest`), mutes
+    (`setCommunityNotificationSettings`, the other settings sent back as Telegram has them) and shows the community as
+    one entry in the chat list (`toggleCommunityAreChatsCollapsed`). The page's sheet that adds chats is
+    `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
+    saved state).
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 

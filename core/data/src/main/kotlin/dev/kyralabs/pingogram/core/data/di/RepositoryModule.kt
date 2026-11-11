@@ -76,6 +76,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeReposit
 import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPollRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibProfileMusicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
@@ -91,6 +92,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibShareRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStickerMakerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetCreationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
@@ -178,6 +180,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
@@ -194,6 +197,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
@@ -341,6 +345,9 @@ interface RepositoryModule {
     fun storyAlbumRepository(repository: TdlibStoryAlbumRepository): StoryAlbumRepository
 
     @Binds
+    fun profileMusicRepository(repository: TdlibProfileMusicRepository): ProfileMusicRepository
+
+    @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository
 
     @Binds
@@ -438,6 +445,9 @@ interface RepositoryModule {
 
     @Binds
     fun stickerSetCreationRepository(repository: TdlibStickerSetCreationRepository): StickerSetCreationRepository
+
+    @Binds
+    fun stickerMakerRepository(repository: TdlibStickerMakerRepository): StickerMakerRepository
 
     @Binds
     fun welcomeMessageRepository(repository: TdlibWelcomeMessageRepository): WelcomeMessageRepository
