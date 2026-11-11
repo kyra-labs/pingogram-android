@@ -251,6 +251,7 @@ class ChatMappersTest {
         val quote =
             TdApi.InputTextQuote(
                 TdApi.FormattedText("on tonight", arrayOf(TdApi.TextEntity(0, 2, TdApi.TextEntityTypeBold()))),
+                emptyArray(),
                 18,
             )
         val draft =

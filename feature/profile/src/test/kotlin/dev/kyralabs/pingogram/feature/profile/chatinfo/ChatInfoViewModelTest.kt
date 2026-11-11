@@ -276,7 +276,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
 
             client.emit(
                 TdApi.UpdateCommunity(
-                    TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, TdApi.CommunityMemberStatusMember(), null),
+                    TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, TdApi.CommunityMemberStatusMember(), null, false),
                 ),
             )
             runCurrent()

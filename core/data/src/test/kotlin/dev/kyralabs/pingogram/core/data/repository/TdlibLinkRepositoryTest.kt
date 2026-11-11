@@ -57,7 +57,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a person's username opens their profile`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
             client.on(
                 TdApi.SearchPublicChat::class,
                 TdResult.Success(chat(id = CHAT, type = TdApi.ChatTypePrivate(USER))),
@@ -71,7 +71,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a bot's username opens its chat`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("helper_bot", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("helper_bot", "", false, ""))
             client.on(
                 TdApi.SearchPublicChat::class,
                 TdResult.Success(chat(id = CHAT, type = TdApi.ChatTypePrivate(USER))),
@@ -131,7 +131,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a username with a text opens the person's chat with the text`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "Hello", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "Hello", false, ""))
             client.on(
                 TdApi.SearchPublicChat::class,
                 TdResult.Success(chat(id = CHAT, type = TdApi.ChatTypePrivate(USER))),
@@ -147,7 +147,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a bot's username with profile opens its profile`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("helper_bot", "", true))
+            linkType(TdApi.InternalLinkTypePublicChat("helper_bot", "", true, ""))
             client.on(
                 TdApi.SearchPublicChat::class,
                 TdResult.Success(chat(id = CHAT, type = TdApi.ChatTypePrivate(USER))),
@@ -163,7 +163,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a channel's username opens its chat, with the text`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("news", "Hi", false))
+            linkType(TdApi.InternalLinkTypePublicChat("news", "Hi", false, ""))
             client.on(TdApi.SearchPublicChat::class, TdResult.Success(chat(id = CHANNEL, type = channelType())))
 
             assertEquals(
@@ -175,7 +175,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a channel's username with profile opens its info`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("news", "", true))
+            linkType(TdApi.InternalLinkTypePublicChat("news", "", true, ""))
             client.on(TdApi.SearchPublicChat::class, TdResult.Success(chat(id = CHANNEL, type = channelType())))
 
             assertEquals(Outcome.Success(LinkTarget.ChatInfo(CHANNEL)), repository.resolve("https://t.me/news?profile"))
@@ -184,7 +184,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a username nobody has is not found`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("nobody", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("nobody", "", false, ""))
             client.on(TdApi.SearchPublicChat::class, TdResult.Failure(TdError(400, "USERNAME_NOT_OCCUPIED")))
 
             assertEquals(
@@ -196,7 +196,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a lookup without network fails`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
             client.on(TdApi.SearchPublicChat::class, TdResult.Failure(TdError(500, "Network is unreachable")))
 
             assertEquals(Outcome.Failure(DomainError.Network), repository.resolve("https://t.me/ada"))
@@ -205,7 +205,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a flood wait fails with its time`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
             client.on(
                 TdApi.SearchPublicChat::class,
                 TdResult.Failure(TdError(429, "Too Many Requests: retry after 30")),
@@ -217,7 +217,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a phone number opens the person's profile`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "", false))
+            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "", false, ""))
             client.on(TdApi.SearchUserByPhoneNumber::class, TdResult.Success(user(id = USER)))
 
             assertEquals(Outcome.Success(LinkTarget.UserProfile(USER)), repository.resolve("https://t.me/+15551234567"))
@@ -229,7 +229,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a phone number with a text opens the chat with the person`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "Hello", false))
+            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "Hello", false, ""))
             client.on(TdApi.SearchUserByPhoneNumber::class, TdResult.Success(user(id = USER)))
             client.on(TdApi.CreatePrivateChat::class, TdResult.Success(chat(id = CHAT)))
 
@@ -243,7 +243,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a phone number nobody has is not found`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "", false))
+            linkType(TdApi.InternalLinkTypeUserPhoneNumber("15551234567", "", false, ""))
             client.on(TdApi.SearchUserByPhoneNumber::class, TdResult.Failure(TdError(404, "Not Found")))
 
             assertEquals(
@@ -255,7 +255,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `a contact token opens the person's profile`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeUserToken("token"))
+            linkType(TdApi.InternalLinkTypeUserToken("token", ""))
             client.on(TdApi.SearchUserByToken::class, TdResult.Success(user(id = USER, type = TdApi.UserTypeBot())))
 
             assertEquals(
@@ -268,7 +268,7 @@ class TdlibLinkRepositoryTest {
     @Test
     fun `an expired contact token is not found`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeUserToken("token"))
+            linkType(TdApi.InternalLinkTypeUserToken("token", ""))
             client.on(TdApi.SearchUserByToken::class, TdResult.Failure(TdError(400, "CONTACT_TOKEN_INVALID")))
 
             assertEquals(

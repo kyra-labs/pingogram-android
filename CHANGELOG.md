@@ -55,6 +55,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
   update it themselves.
+- TDLib 1.8.70 (`23383ae`), up from 1.8.68: what Telegram added since, among it the functions to add chats to a
+  community and to list the communities you joined. Nothing changes on screen yet.
 
 ## [2.0.0] - 2026-11-08
 

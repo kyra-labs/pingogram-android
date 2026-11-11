@@ -174,7 +174,7 @@ class DemoTopicsTest {
         runTest {
             val (client, _) = client()
 
-            client.ask(TdApi.ToggleSupergroupIsForum(DemoData.DISCUSSION, true, false))
+            client.ask(TdApi.ToggleSupergroupIsForum(DemoData.DISCUSSION, true, false, false))
             val topics = client.ask(TdApi.GetForumTopics(DemoData.DISCUSSION_CHAT, "", 0, 0, 0, 20)).topics
 
             assertTrue(client.ask(TdApi.GetSupergroup(DemoData.DISCUSSION)).isForum)
