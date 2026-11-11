@@ -34,13 +34,14 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.repeatLabel
+import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * "Repeat" in [ScheduleDialog]'s time step (td_api.tl `messageSchedulingStateSendAtDate.repeat_period`): the repeat
  * symbol, "Repeat" and the chosen period ("Never", "Weekly") in `primary`, a row of at least 48 dp that opens an
- * expressive menu of Never and [SendOptions.REPEAT_PERIODS], the chosen one with a check. Screen readers hear one drop-down
- * list, "Repeat", with the period as its state.
+ * expressive menu of Never and [SendOptions.REPEAT_PERIODS], the chosen one with a check. Screen readers hear one
+ * drop-down list, "Repeat", with the period as its state.
  */
 @Composable
 internal fun ScheduleRepeat(
@@ -108,20 +109,41 @@ private fun RepeatMenu(
                     text = { Text(label(choice)) },
                     modifier = Modifier.semantics { selected = choice == period },
                     shape = MenuDefaults.itemShape(index, choices.size).shape,
-                    trailingIcon =
+                    trailingIcon = {
                         if (choice == period) {
-                            {
-                                Icon(
-                                    painter = painterResource(UiR.drawable.ic_check),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
-                                )
-                            }
-                        } else {
-                            null
-                        },
+                            Icon(
+                                painter = painterResource(UiR.drawable.ic_check),
+                                contentDescription = null,
+                                modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
+                            )
+                        }
+                    },
                 )
             }
         }
     }
+}
+
+/**
+ * The composer's [ScheduleDialog]: the moment picked goes to [onSend] as a scheduled send, repeating at the period
+ * chosen where the composer [canRepeat] (a Telegram Premium subscriber).
+ */
+@Composable
+internal fun ComposerScheduleDialog(
+    canRepeat: Boolean,
+    now: () -> Instant,
+    onDismiss: () -> Unit,
+    onSend: (SendOptions) -> Unit,
+) {
+    ScheduleDialog(
+        now = now,
+        onDismiss = onDismiss,
+        onSchedule = { at -> onSend(SendOptions(scheduledAt = at.epochSecond)) },
+        onScheduleRepeating =
+            if (canRepeat) {
+                { at, period -> onSend(SendOptions(scheduledAt = at.epochSecond, repeatPeriod = period)) }
+            } else {
+                null
+            },
+    )
 }

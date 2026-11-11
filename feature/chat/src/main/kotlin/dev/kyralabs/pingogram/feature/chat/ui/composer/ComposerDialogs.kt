@@ -182,13 +182,8 @@ internal fun ScheduleDialog(
             }
         },
     ) {
-        if (pickingTime) {
-            TimeStep(timeState, inThePast) {
-                if (onScheduleRepeating != null) ScheduleRepeat(repeatPeriod, onChoose = { repeatPeriod = it })
-            }
-        } else {
-            DateStep(dateState)
-        }
+        val repeat = repeatPeriod.takeIf { onScheduleRepeating != null }
+        if (pickingTime) TimeStep(timeState, inThePast, repeat) { repeatPeriod = it } else DateStep(dateState)
     }
 }
 
@@ -202,12 +197,16 @@ private fun DateStep(state: DatePickerState) {
     )
 }
 
-/** The second step of [ScheduleDialog]: the time, why it cannot be [inThePast], then what else it asks ([extra]). */
+/**
+ * The second step of [ScheduleDialog]: the time, why it cannot be [inThePast], then how often it repeats where [repeat]
+ * is given ([ScheduleRepeat], [onRepeat]).
+ */
 @Composable
 private fun TimeStep(
     state: TimePickerState,
     inThePast: Boolean,
-    extra: @Composable () -> Unit,
+    repeat: Int?,
+    onRepeat: (Int) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     Column(
@@ -230,7 +229,7 @@ private fun TimeStep(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        extra()
+        repeat?.let { ScheduleRepeat(it, onRepeat) }
     }
 }
 

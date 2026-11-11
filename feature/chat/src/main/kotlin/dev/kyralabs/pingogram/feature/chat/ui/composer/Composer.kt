@@ -345,23 +345,10 @@ private fun Composer(
     }
     linking?.let { selection -> TextLinkDialog(text, selection, onDone = { linking = null }) }
     if (scheduling) {
-        ScheduleDialog(
-            now = now,
-            onDismiss = { scheduling = false },
-            onSchedule = { at ->
-                scheduling = false
-                send(SendOptions(scheduledAt = at.epochSecond))
-            },
-            onScheduleRepeating =
-                if (composer.canRepeat) {
-                    { at, period ->
-                        scheduling = false
-                        send(SendOptions(scheduledAt = at.epochSecond, repeatPeriod = period))
-                    }
-                } else {
-                    null
-                },
-        )
+        ComposerScheduleDialog(composer.canRepeat, now, onDismiss = { scheduling = false }) { options ->
+            scheduling = false
+            send(options)
+        }
     }
 }
 

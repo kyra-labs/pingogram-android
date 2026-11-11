@@ -1466,8 +1466,8 @@ class ChatViewModel internal constructor(
             composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
                 .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
-        val me = people.myUserId?.let(people.users::get)
-        val options = attachOptions(chat, user, people.myUserId, isPremium = me?.isPremium == true)
+        val premium = people.myUserId?.let(people.users::get)?.isPremium == true
+        val options = attachOptions(chat, user, people.myUserId, isPremium = premium)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
         return ChatUiState(
             header = header,
@@ -1476,12 +1476,7 @@ class ChatViewModel internal constructor(
             unreadMentionCount = chat.unreadMentionCount,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer =
-                if (canWrite) {
-                    composer.withBar(overlays.bar(chat, history, people), options, canRepeat = me?.isPremium == true)
-                } else {
-                    composer
-                },
+            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options, premium) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
