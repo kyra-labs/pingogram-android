@@ -70,6 +70,10 @@ data class StickersRoute(
     val emoji: Boolean = false,
 )
 
+/** Making a sticker set of the user's own (the owner's boards 21a–c), pushed above Settings → Stickers. */
+@Serializable
+data object NewStickerSetRoute
+
 /**
  * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
  * [StickersRoute].
@@ -641,3 +645,13 @@ data object FeedbackRoute
  */
 @Serializable
 data object RecentCallsRoute
+
+/** The welcome messages of group [chatId] (the owner's board 20), pushed above its info page. */
+@Serializable
+data class WelcomeMessagesRoute(
+    val chatId: Long,
+)
+
+/** The user's name color (the owner's board 22b), pushed above Edit profile. */
+@Serializable
+data object ProfileColorRoute

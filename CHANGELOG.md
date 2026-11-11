@@ -11,6 +11,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
+  information. Profiles show a user's emoji status after their name and their profile color in the header.
+- New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
+  with an emoji each, moved and removed, then published to share.
+- Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,
+  a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a preview; the rights page
+  gains "Manage welcome messages".
 - Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
   its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
 - Group members show their tags after their names, administrators' in the accent color. Administrators who may edit

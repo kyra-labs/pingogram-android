@@ -291,6 +291,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`LinkTarget.StickerSet`). The custom emoji sets have the same pages (`StickersRoute(emoji)`,
   `StickerSetListRoute(archived, emoji)`, the view models taking the kind from their route), opened from the Stickers
   page's "Emoji" row; `StickerSetSummary.kind` words a set as stickers or emoji (`StickerKindTexts`).
+- **Making sticker sets** (boards 21a–c): `core:domain`'s `StickerSetCreationRepository` (`TdlibStickerSetCreationRepository`,
+  `core:data`, account-scoped, no cache) suggests a link name for a title (`getSuggestedStickerSetName`), checks one
+  (`StickerSetLimits.isNameWellFormed` on the device, then `checkStickerSetName`), prepares a sticker from a picked photo
+  (`AttachmentPreparer.prepareSticker`: copied, written anew upright as a WebP whose longer side is 512 px, through
+  `MediaProcessor.writeSticker` and `stickerPlan`) and publishes the set as the signed-in user (`createNewStickerSet`, static WebP
+  stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
+  (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
+  emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
@@ -412,6 +420,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Name color** (Edit profile, boards 22a/22b): `core:domain`'s `AccentColorRepository` (`TdlibAccentColorRepository`,
+  `core:data`, a `TdlibUpdateCache` of `updateAccentColors`, which TDLib sends once per start) lists the colors Telegram offers
+  (`AccentColorOption`: the id and the built-in color it is drawn like) and sets the user's (`setAccentColor`, no background
+  emoji). `feature:settings`' `ProfileColorRoute` (`ProfileColorViewModel`: the signed-in user from `UserRepository`, the pick in
+  saved state) sits above Edit profile. `User.profileAccentColorId` and `User.emojiStatusId` reach the profile header
+  (`ProfileHeader.profileColor`, `emojiStatusId`); `feature:profile`'s `EmojiStatusViewModel` loads the status's custom emoji
+  through `CustomEmojiRepository` for the route's `LocalCustomEmoji`.
 - **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
   no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
   (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
@@ -1055,6 +1070,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `WelcomeMessageRepository` (`TdlibWelcomeMessageRepository`, no cache: TDLib keeps them and announces them with
+    `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
+    (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
+    `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (a94b83d) cannot reorder them.
+    `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
+    message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
+    for administrators with `AdministratorRights.canSendWelcomeMessages`.
   - `CommunityRepository` (`TdlibCommunityRepository`, a `TdlibUpdateCache`: TDLib announces each community only with
     `updateCommunity`): a community the account knows (`Community`: its name, photo and the user's `CommunityRole`), what
     it holds (`getCommunityFullInfo`, then `updateCommunityFullInfo` while collected: its chats, hidden ones for its

@@ -55,11 +55,15 @@ internal fun PhoneNumberSection(
     }
 }
 
-/** "Personal channel", a row of its own that opens which channel the profile shows ([onOpen]). */
+/**
+ * "Personal channel", which opens which channel the profile shows ([onOpen]), and "Your color", which opens the name
+ * color's page ([onOpenColor]).
+ */
 @Composable
 internal fun PersonalChannelSection(
     enabled: Boolean,
     onOpen: () -> Unit,
+    onOpenColor: () -> Unit = {},
 ) {
     SettingsGroup {
         item { shapes ->
@@ -68,6 +72,15 @@ internal fun PersonalChannelSection(
                 shapes = shapes,
                 supportingContent = { Text(stringResource(R.string.settings_personal_channel_summary)) },
                 onClick = onOpen,
+                enabled = enabled,
+            )
+        }
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_profile_color),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_profile_color_summary)) },
+                onClick = onOpenColor,
                 enabled = enabled,
             )
         }

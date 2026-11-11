@@ -146,6 +146,12 @@ interface AccountRepositories {
 
     fun communityRepository(): CommunityRepository
 
+    fun welcomeMessageRepository(): WelcomeMessageRepository
+
+    fun stickerSetCreationRepository(): StickerSetCreationRepository
+
+    fun accentColorRepository(): AccentColorRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

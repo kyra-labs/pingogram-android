@@ -90,6 +90,7 @@ internal class StickerPages(
     val texts: StickerKindTexts,
     val onOpenList: (archived: Boolean) -> Unit,
     val onOpenEmoji: (() -> Unit)?,
+    val onCreateSet: (() -> Unit)? = null,
 )
 
 /** The words for sets of [kind]. */

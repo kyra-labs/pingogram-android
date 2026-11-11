@@ -54,6 +54,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorScreen
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstPreviewStates
@@ -61,9 +63,14 @@ import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstScre
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ShownFirstPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.EmojiChoices
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetUiState
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -381,6 +388,21 @@ class SettingsAccessibilityChecksTest {
     fun proxyLinkConnected() = check { ProxyLinkContent(ProxyPreviewStates.linkConnected, onEvent = {}, onClose = {}) }
 
     @Test
+    fun profileColor() = check { ProfileColorScreen(ProfileColorPreviewData.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun newStickerSetName() = check { NewStickerSet(NewStickerSetPreviewData.name) }
+
+    @Test
+    fun newStickerSetStickers() = check { NewStickerSet(NewStickerSetPreviewData.stickers) }
+
+    @Test
+    fun newStickerSetPublished() = check { NewStickerSet(NewStickerSetPreviewData.published) }
+
+    @Test
+    fun newStickerSetEmoji() = check { EmojiChoices(index = 0, groups = NewStickerSetPreviewData.emoji, onEvent = {}) }
+
+    @Test
     fun stickerSet() =
         check {
             StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
@@ -483,4 +505,15 @@ class SettingsAccessibilityChecksTest {
         composeRule.setContent { PingogramTheme(dynamicColor = false) { content() } }
         composeRule.assertAccessible()
     }
+}
+
+@Composable
+private fun NewStickerSet(state: NewStickerSetUiState) {
+    NewStickerSetScreen(
+        state = state,
+        emoji = persistentListOf(),
+        onEvent = {},
+        onShare = {},
+        onOpenSet = {},
+    )
 }

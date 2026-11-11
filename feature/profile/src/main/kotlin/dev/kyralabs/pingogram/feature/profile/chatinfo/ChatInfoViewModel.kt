@@ -505,6 +505,7 @@ class ChatInfoViewModel internal constructor(
                     // Every administrator of a supergroup or channel may read its recent actions.
                     canViewRecentActions = info.kind != GroupKind.BasicGroup,
                     canViewStatistics = details?.canGetStatistics == true,
+                    canManageWelcomeMessages = rights.canSendWelcomeMessages && info.kind == GroupKind.Supergroup,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

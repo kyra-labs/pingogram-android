@@ -96,7 +96,8 @@ data class MembersPreview(
 
 /**
  * The rows administrators get, each where their rights allow it: editing the title and description, the default
- * permissions and slow mode (groups), the administrators, the invite links, and the removed users.
+ * permissions and slow mode (groups), the administrators, the invite links, the removed users, and a supergroup's
+ * welcome messages.
  */
 @Immutable
 data class ChatAdministration(
@@ -112,12 +113,13 @@ data class ChatAdministration(
     val joinRequestCount: Int? = null,
     val canViewRecentActions: Boolean = false,
     val canViewStatistics: Boolean = false,
+    val canManageWelcomeMessages: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
-                joinRequestCount == null && !canViewRecentActions && !canViewStatistics
+                joinRequestCount == null && !canViewRecentActions && !canViewStatistics && !canManageWelcomeMessages
 }
 
 /**
@@ -276,6 +278,9 @@ enum class ChatInfoPage {
 
     /** The people waiting for an administrator to let them join. */
     JoinRequests,
+
+    /** What each new member of a supergroup sees once, right after joining (the owner's board 20). */
+    WelcomeMessages,
 
     /** What administrators and members did in the last 48 hours, for supergroups and channels. */
     RecentActions,

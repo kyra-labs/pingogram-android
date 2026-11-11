@@ -26,6 +26,9 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsScre
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.DiscussionPickerContent
 import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeEditorContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeMessagesPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeMessagesScreen
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -138,6 +141,12 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun community() = check { CommunityScreen(CommunityPreviewData.owner, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun welcomeMessages() = check { WelcomeMessagesScreen(WelcomeMessagesPreviewData.on, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun welcomeEditor() = check { WelcomeEditorContent(WelcomeMessagesPreviewData.photoEditor, onEvent = {}) }
 
     @Test
     fun memberTagSheet() = check { MemberTagContent(MemberTagPreviewData.administrator, onEvent = {}) }

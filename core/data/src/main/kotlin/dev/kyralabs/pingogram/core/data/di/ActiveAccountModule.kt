@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -81,6 +82,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
@@ -92,6 +94,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
  * The active account's repositories (`docs/adr/0031-multiple-accounts.md`), for everything outside [AccountComponent]:
@@ -321,6 +324,17 @@ object ActiveAccountModule {
 
     @Provides
     fun communityRepository(accounts: Accounts): CommunityRepository = accounts.active.communityRepository()
+
+    @Provides
+    fun accentColorRepository(accounts: Accounts): AccentColorRepository = accounts.active.accentColorRepository()
+
+    @Provides
+    fun stickerSetCreationRepository(accounts: Accounts): StickerSetCreationRepository =
+        accounts.active.stickerSetCreationRepository()
+
+    @Provides
+    fun welcomeMessageRepository(accounts: Accounts): WelcomeMessageRepository =
+        accounts.active.welcomeMessageRepository()
 
     @Provides
     fun storyRepository(accounts: Accounts): StoryRepository = accounts.active.storyRepository()

@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -72,6 +73,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun secretChatCache(repository: TdlibSecretChatRepository): TdlibUpdateCache
+
+    /** TDLib announces the name colors only with `updateAccentColors`, once per start. */
+    @Binds
+    @IntoSet
+    fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
 
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds

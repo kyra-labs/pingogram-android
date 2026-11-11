@@ -36,6 +36,7 @@ enum class AdminRight(
     DeleteStories(R.string.chat_info_right_delete_stories, inGroups = true, inChannels = true),
     ManageDirectMessages(R.string.chat_info_right_manage_direct_messages, inGroups = false, inChannels = true),
     ManageTags(R.string.chat_info_right_manage_tags, inGroups = true, inChannels = false),
+    SendWelcomeMessages(R.string.chat_info_right_send_welcome_messages, inGroups = true, inChannels = false),
     PromoteMembers(R.string.chat_info_right_promote_members, inGroups = true, inChannels = true),
     Anonymous(R.string.chat_info_right_anonymous, inGroups = true, inChannels = false),
     ;
@@ -57,6 +58,7 @@ enum class AdminRight(
             DeleteStories -> rights.canDeleteStories
             ManageDirectMessages -> rights.canManageDirectMessages
             ManageTags -> rights.canManageTags
+            SendWelcomeMessages -> rights.canSendWelcomeMessages
             PromoteMembers -> rights.canPromoteMembers
             Anonymous -> rights.isAnonymous
         }
@@ -79,6 +81,7 @@ enum class AdminRight(
             DeleteStories -> rights.copy(canDeleteStories = on)
             ManageDirectMessages -> rights.copy(canManageDirectMessages = on)
             ManageTags -> rights.copy(canManageTags = on)
+            SendWelcomeMessages -> rights.copy(canSendWelcomeMessages = on)
             PromoteMembers -> rights.copy(canPromoteMembers = on)
             Anonymous -> rights.copy(isAnonymous = on)
         }
