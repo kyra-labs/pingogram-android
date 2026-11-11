@@ -21,6 +21,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
 - Removing reactions: in a group, administrators remove someone's reaction to a message, or all their recent reactions,
   from the message's Reactions sheet.
+- The welcome messages of a group show to new members at the top of the chat, until "Got it" folds them into a bar.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 

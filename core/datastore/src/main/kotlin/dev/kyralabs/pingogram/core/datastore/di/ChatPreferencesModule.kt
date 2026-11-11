@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreStickerSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreWelcomePackRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatsShownFirstRepository
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.WelcomePackRepository
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that conversations and the chat list read: the composer's,
@@ -49,6 +51,9 @@ interface ChatPreferencesModule {
 
     @Binds
     fun hiddenTranslateBarsRepository(repository: DataStoreHiddenTranslateBarsRepository): HiddenTranslateBarsRepository
+
+    @Binds
+    fun welcomePackRepository(repository: DataStoreWelcomePackRepository): WelcomePackRepository
 
     @Binds
     fun chatListSettingsRepository(repository: DataStoreChatListSettingsRepository): ChatListSettingsRepository

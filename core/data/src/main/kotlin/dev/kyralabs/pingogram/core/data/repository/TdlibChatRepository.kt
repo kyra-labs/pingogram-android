@@ -419,6 +419,10 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(isTranslatable = update.isTranslatable) }
         }
 
+        is TdApi.UpdateChatHasWelcomeMessages -> {
+            ChatChange(update.chatId) { it.copy(hasWelcomeMessages = update.hasWelcomeMessages) }
+        }
+
         is TdApi.UpdateChatHasScheduledMessages -> {
             ChatChange(update.chatId) { it.copy(hasScheduledMessages = update.hasScheduledMessages) }
         }
