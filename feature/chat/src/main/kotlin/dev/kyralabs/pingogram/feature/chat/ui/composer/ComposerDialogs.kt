@@ -29,6 +29,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -114,7 +115,9 @@ internal fun LinkDialog(
  * [DatePickerDialog]): a day from today up to a year ahead, as Telegram allows, then a time, on the device's 12- or
  * 24-hour clock, an hour from [now] at first, or [initial] where it is given and in the future (a scheduled message's
  * time, which rescheduling changes). A time that is not in the future asks for another. [onSchedule] gets the moment
- * in the device's time zone.
+ * in the device's time zone. Where [onScheduleRepeating] is given (the composer's own send, for a Telegram Premium
+ * subscriber), the time step also offers "Repeat" ([ScheduleRepeat]), and the moment goes there with the period chosen
+ * (0 for never) instead.
  */
 @Composable
 internal fun ScheduleDialog(
@@ -122,6 +125,7 @@ internal fun ScheduleDialog(
     onDismiss: () -> Unit,
     onSchedule: (Instant) -> Unit,
     initial: Instant? = null,
+    onScheduleRepeating: ((Instant, Int) -> Unit)? = null,
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val opened = remember { now().atZone(zone) }
@@ -145,6 +149,7 @@ internal fun ScheduleDialog(
         )
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     var inThePast by rememberSaveable { mutableStateOf(false) }
+    var repeatPeriod by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(timeState.hour, timeState.minute) { inThePast = false }
     val confirm = {
         val at =
@@ -156,7 +161,7 @@ internal fun ScheduleDialog(
         when {
             at == null -> Unit
             !pickingTime -> pickingTime = true
-            at.isAfter(now()) -> onSchedule(at)
+            at.isAfter(now()) -> onScheduleRepeating?.invoke(at, repeatPeriod) ?: onSchedule(at)
             else -> inThePast = true
         }
     }
@@ -177,7 +182,13 @@ internal fun ScheduleDialog(
             }
         },
     ) {
-        if (pickingTime) TimeStep(timeState, inThePast) else DateStep(dateState)
+        if (pickingTime) {
+            TimeStep(timeState, inThePast) {
+                if (onScheduleRepeating != null) ScheduleRepeat(repeatPeriod, onChoose = { repeatPeriod = it })
+            }
+        } else {
+            DateStep(dateState)
+        }
     }
 }
 
@@ -191,11 +202,12 @@ private fun DateStep(state: DatePickerState) {
     )
 }
 
-/** The second step of [ScheduleDialog]: the time, and why it cannot be [inThePast]. */
+/** The second step of [ScheduleDialog]: the time, why it cannot be [inThePast], then what else it asks ([extra]). */
 @Composable
 private fun TimeStep(
     state: TimePickerState,
     inThePast: Boolean,
+    extra: @Composable () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     Column(
@@ -218,6 +230,7 @@ private fun TimeStep(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        extra()
     }
 }
 

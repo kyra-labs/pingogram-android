@@ -352,6 +352,15 @@ private fun Composer(
                 scheduling = false
                 send(SendOptions(scheduledAt = at.epochSecond))
             },
+            onScheduleRepeating =
+                if (composer.canRepeat) {
+                    { at, period ->
+                        scheduling = false
+                        send(SendOptions(scheduledAt = at.epochSecond, repeatPeriod = period))
+                    }
+                } else {
+                    null
+                },
         )
     }
 }

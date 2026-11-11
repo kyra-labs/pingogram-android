@@ -55,7 +55,8 @@ sealed interface ComposerUiState {
      * attach button offers, as the chat allows; empty hides the button, as while editing. [sendAs] who new messages go
      * out as, where the user can choose (its avatar opens the send-as picker); null hides it, as while editing. [bot]
      * the button of the chat's bots at the start of the pill, where they offer commands or a menu; null hides it, as
-     * while editing.
+     * while editing. [canRepeat] whether scheduling offers to repeat the message (`SendOptions.repeatPeriod`), which
+     * Telegram allows Telegram Premium subscribers only.
      */
     data class Available(
         val canSchedule: Boolean,
@@ -63,6 +64,7 @@ sealed interface ComposerUiState {
         val attachOptions: ImmutableList<AttachOption> = persistentListOf(),
         val sendAs: SendAsChoice? = null,
         val bot: ComposerBotButton? = null,
+        val canRepeat: Boolean = false,
     ) : ComposerUiState
 }
 

@@ -1476,7 +1476,12 @@ class ChatViewModel internal constructor(
             unreadMentionCount = chat.unreadMentionCount,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
+            composer =
+                if (canWrite) {
+                    composer.withBar(overlays.bar(chat, history, people), options, canRepeat = me?.isPremium == true)
+                } else {
+                    composer
+                },
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
@@ -1680,8 +1685,14 @@ private data class ChatGroup(
 private fun ComposerUiState.Available.withBar(
     bar: ComposerBar?,
     attachOptions: ImmutableList<AttachOption>,
+    canRepeat: Boolean,
 ): ComposerUiState.Available =
-    copy(bar = bar, attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions)
+    copy(
+        bar = bar,
+        attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions,
+        // A Telegram Premium subscriber may repeat what they schedule; an edit schedules nothing.
+        canRepeat = canRepeat && canSchedule && bar !is ComposerBar.Edit,
+    )
 
 /** The state with [sendAs] on the composer, where the user can write and is not editing: an edit keeps its sender. */
 private fun ChatUiState.withSendAs(sendAs: SendAsChoice?): ChatUiState {
