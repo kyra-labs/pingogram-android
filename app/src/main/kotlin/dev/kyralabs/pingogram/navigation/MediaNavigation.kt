@@ -6,8 +6,10 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ForwardRoute
 import dev.kyralabs.pingogram.core.navigation.MakeStickerRoute
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
+import dev.kyralabs.pingogram.core.navigation.TextStyleRoute
 import dev.kyralabs.pingogram.feature.chat.navigation.ForwardNotices
 import dev.kyralabs.pingogram.feature.chat.navigation.forwardSheet
+import dev.kyralabs.pingogram.feature.chat.navigation.textStyleSheet
 import dev.kyralabs.pingogram.feature.media.navigation.makeStickerScreen
 import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
 
@@ -36,5 +38,6 @@ internal fun NavGraphBuilder.mediaViewer(navController: NavHostController) {
         },
     )
     forwardSheet(onClose = { navController.popBackStack<ForwardRoute>(inclusive = true) })
+    textStyleSheet(onClose = { navController.popBackStack<TextStyleRoute>(inclusive = true) })
     makeStickerScreen(onClose = { navController.popBackStack<MakeStickerRoute>(inclusive = true) })
 }

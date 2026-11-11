@@ -558,6 +558,10 @@ class TdlibLinkRepositoryTest {
                 Arguments.of(TdApi.InternalLinkTypeStickerSet("garden", false), LinkTarget.StickerSet("garden")),
                 Arguments.of(TdApi.InternalLinkTypeStickerSet("hearts", true), LinkTarget.StickerSet("hearts")),
                 Arguments.of(
+                    TdApi.InternalLinkTypeTextCompositionStyle("pirate"),
+                    LinkTarget.TextCompositionStyle("pirate"),
+                ),
+                Arguments.of(
                     TdApi.InternalLinkTypeProxy(TdApi.Proxy("proxy.example", 443, TdApi.ProxyTypeMtproto("dd00"))),
                     LinkTarget.ProxyServer(Proxy("proxy.example", 443, ProxyType.Mtproto("dd00"))),
                 ),
