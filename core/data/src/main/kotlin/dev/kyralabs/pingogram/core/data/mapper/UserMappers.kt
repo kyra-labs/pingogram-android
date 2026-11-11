@@ -26,6 +26,8 @@ internal fun TdApi.User.toUser(): User {
         type = type.toUserType(),
         haveAccess = haveAccess,
         accentColorId = accentColorId,
+        profileAccentColorId = profileAccentColorId,
+        emojiStatusId = (emojiStatus?.type as? TdApi.EmojiStatusTypeCustomEmoji)?.customEmojiId ?: 0,
     )
 }
 

@@ -291,6 +291,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`LinkTarget.StickerSet`). The custom emoji sets have the same pages (`StickersRoute(emoji)`,
   `StickerSetListRoute(archived, emoji)`, the view models taking the kind from their route), opened from the Stickers
   page's "Emoji" row; `StickerSetSummary.kind` words a set as stickers or emoji (`StickerKindTexts`).
+- **Making sticker sets** (boards 21a–c): `core:domain`'s `StickerSetCreationRepository` (`TdlibStickerSetCreationRepository`,
+  `core:data`, account-scoped, no cache) suggests a link name for a title (`getSuggestedStickerSetName`), checks one
+  (`StickerSetLimits.isNameWellFormed` on the device, then `checkStickerSetName`), prepares a sticker from a picked photo
+  (`AttachmentPreparer.prepareSticker`: copied, written anew upright as a WebP whose longer side is 512 px, through
+  `MediaProcessor.writeSticker` and `stickerPlan`) and publishes the set as the signed-in user (`createNewStickerSet`, static WebP
+  stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
+  (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
+  emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
@@ -412,6 +420,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Name color** (Edit profile, boards 22a/22b): `core:domain`'s `AccentColorRepository` (`TdlibAccentColorRepository`,
+  `core:data`, a `TdlibUpdateCache` of `updateAccentColors`, which TDLib sends once per start) lists the colors Telegram offers
+  (`AccentColorOption`: the id and the built-in color it is drawn like) and sets the user's (`setAccentColor`, no background
+  emoji). `feature:settings`' `ProfileColorRoute` (`ProfileColorViewModel`: the signed-in user from `UserRepository`, the pick in
+  saved state) sits above Edit profile. `User.profileAccentColorId` and `User.emojiStatusId` reach the profile header
+  (`ProfileHeader.profileColor`, `emojiStatusId`); `feature:profile`'s `EmojiStatusViewModel` loads the status's custom emoji
+  through `CustomEmojiRepository` for the route's `LocalCustomEmoji`.
 - **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
   no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
   (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
@@ -445,6 +460,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
   again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
   pushed above Privacy and security.
+- **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
+  (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
+  account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds
+  the password manager's answer (`addLoginPasskey`) and removes one (`removeLoginPasskey`). The password managers are
+  reached through `core:ui`'s `PasskeyCredentials` (`PlatformPasskeyCredentials`: the platform's Credential Manager,
+  Android 14+, no library; `rememberPasskeyCredentials` gives null before), which needs the screen's activity, so the
+  route calls it: `feature:settings`' `PasskeysViewModel` (the list loaded again whenever the page shows, with
+  2-step verification and the session count; the removal's question in saved state) sends
+  `PasskeysEffect.CreatePasskey` with Telegram's request, and `PasskeysRoute` hands the answer back as
+  `PasskeysEvent.Created`. Signing in (board 17b) is `AuthRepository.passkeySignInRequest`
+  (`getAuthenticationPasskeyParameters`, while TDLib waits for a phone number) and `checkPasskey`
+  (`checkAuthenticationPasskey`, waiting as long as authentication requests): `feature:auth`'s `AuthViewModel` sends
+  `AuthEffect.GetPasskey`, `AuthRoute` hands it to `PasskeyCredentials.get` and the answer back as
+  `AuthEvent.PasskeyAnswered` (a cancelled wait as cancelled, so the button never stays busy), and TDLib moves on as
+  after a code. Nothing is logged or kept; the demo lists a sample passkey and says adding one needs an account.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
@@ -1041,10 +1071,31 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
     `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
     to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
-    restricting, banning, lifting), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
+    restricting, banning, lifting), members' tags (`setChatMemberTag`, at most `MemberTagLimits.LENGTH_MAX` characters,
+    an empty one removing it; `feature:profile`'s `MemberTagging`, a part of `ChatMembersViewModel`, keeps the "Set tag"
+    sheet's member and text in its saved state and shows the new tag in the row once Telegram took it, as TDLib
+    announces no member list), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `WelcomeMessageRepository` (`TdlibWelcomeMessageRepository`, no cache: TDLib keeps them and announces them with
+    `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
+    (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
+    `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (a94b83d) cannot reorder them.
+    `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
+    message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
+    for administrators with `AdministratorRights.canSendWelcomeMessages`.
+  - `CommunityRepository` (`TdlibCommunityRepository`, a `TdlibUpdateCache`: TDLib announces each community only with
+    `updateCommunity`): a community the account knows (`Community`: its name, photo and the user's `CommunityRole`), what
+    it holds (`getCommunityFullInfo`, then `updateCommunityFullInfo` while collected: its chats, hidden ones for its
+    administrators), renaming (`setCommunityName`) and deleting (`deleteCommunity`). A supergroup's or channel's
+    community is `GroupDetails.communityId` (`supergroupFullInfo.community_id`), which the info page names and opens
+    (`ChatInfoUiState.Content.community`, `ChatInfoEffect.OpenCommunity`); `feature:profile`'s `CommunityRoute(communityId)`
+    (`CommunityViewModel`: each chat from `ChatRepository`, `getChat` once where TDLib has not announced it, the user's
+    membership from `GroupRepository`, joining through `ChatJoinRepository.join`, the rename dialog in saved state) is
+    a page of the info pages' graph. td_api.tl (a94b83d) has no function to add a chat to a community or to list the
+    user's communities, so neither is offered.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 

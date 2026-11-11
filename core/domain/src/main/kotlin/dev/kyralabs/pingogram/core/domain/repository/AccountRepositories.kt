@@ -114,6 +114,8 @@ interface AccountRepositories {
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
 
+    fun passkeyRepository(): PasskeyRepository
+
     fun contactJoinedRepository(): ContactJoinedRepository
 
     fun dataOptionsRepository(): DataOptionsRepository
@@ -143,6 +145,14 @@ interface AccountRepositories {
     fun inlineBotRepository(): InlineBotRepository
 
     fun secretChatRepository(): SecretChatRepository
+
+    fun communityRepository(): CommunityRepository
+
+    fun welcomeMessageRepository(): WelcomeMessageRepository
+
+    fun stickerSetCreationRepository(): StickerSetCreationRepository
+
+    fun accentColorRepository(): AccentColorRepository
 
     fun storyRepository(): StoryRepository
 

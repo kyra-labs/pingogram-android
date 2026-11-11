@@ -50,9 +50,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Settings → Stickers, or its Emoji page ([kind]): hoists [StickersViewModel], shows what it did and its failures in
  * snackbars (archiving and removing with "Undo") and shares a set's link through Android's share sheet. [onOpenList]
  * opens the kind's trending (false) or archived sets (true), [onOpenSet] a set's sheet, [onOpenEmoji] the Emoji page
- * from the stickers'; [onBack] leaves the page.
+ * from the stickers', [onCreateSet] making a sticker set; [onBack] leaves the page.
  */
-@Suppress("LongParameterList") // The page's kind, its four ways out, and its hoisted view model.
+@Suppress("LongParameterList") // The page's kind, its five ways out, and its hoisted view model.
 @Composable
 internal fun StickersRoute(
     onOpenList: (archived: Boolean) -> Unit,
@@ -61,6 +61,7 @@ internal fun StickersRoute(
     modifier: Modifier = Modifier,
     kind: StickerSetKind = StickerSetKind.Stickers,
     onOpenEmoji: () -> Unit = {},
+    onCreateSet: () -> Unit = {},
     viewModel: StickersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,11 +112,13 @@ internal fun StickersRoute(
         kind = kind,
         onOpenEmoji = onOpenEmoji,
         query = query,
+        onCreateSet = onCreateSet,
     )
 }
 
 /**
- * Stickers (`REQUIREMENTS.md` FR-C5): Trending stickers, Archived stickers and Emoji ([onOpenEmoji]), then the user's
+ * Stickers (`REQUIREMENTS.md` FR-C5): Trending stickers, Archived stickers, Emoji ([onOpenEmoji]) and New sticker set
+ * ([onCreateSet]), then the user's
  * sticker sets in the order the sticker panel shows them, each with its cover, title and count, moved by dragging its
  * handle or after a long press (screen readers: "Move up", "Move down"); a tap opens its menu: Show stickers
  * ([onOpenSet]), Share link, Archive, Remove (asked first with an `AlertDialog`). For [kind] Emoji, the same page of
@@ -137,6 +140,7 @@ internal fun StickersScreen(
     kind: StickerSetKind = StickerSetKind.Stickers,
     onOpenEmoji: () -> Unit = {},
     query: String = "",
+    onCreateSet: () -> Unit = {},
 ) {
     val texts = stickerKindTexts(kind)
     var removing by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -173,7 +177,7 @@ internal fun StickersScreen(
                 }
 
                 is StickersUiState.Content -> {
-                    val pages = StickerPages(texts, onOpenList, onOpenEmoji.takeIf { kind == StickerSetKind.Stickers })
+                    val pages = stickerPages(kind, texts, onOpenList, onOpenEmoji, onCreateSet)
                     StickersList(state, onEvent, pages, actions, listState, contentPadding, query)
                 }
             }
@@ -295,4 +299,16 @@ private fun StickersScreenErrorPreview() {
             onBack = {},
         )
     }
+}
+
+/** The page rows of [kind]'s page: Emoji and New sticker set on the stickers' page only. */
+private fun stickerPages(
+    kind: StickerSetKind,
+    texts: StickerKindTexts,
+    onOpenList: (archived: Boolean) -> Unit,
+    onOpenEmoji: () -> Unit,
+    onCreateSet: () -> Unit,
+): StickerPages {
+    val stickers = kind == StickerSetKind.Stickers
+    return StickerPages(texts, onOpenList, onOpenEmoji.takeIf { stickers }, onCreateSet.takeIf { stickers })
 }

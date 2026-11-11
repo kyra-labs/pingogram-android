@@ -12,8 +12,12 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.EditChatInfoScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberTagContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberTagPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsScreen
@@ -22,6 +26,9 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsScre
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.DiscussionPickerContent
 import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeEditorContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeMessagesPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeMessagesScreen
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -131,6 +138,18 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun members() = check { ChatMembersScreen(ChatInfoPreviewData.membersPage, {}, {}) }
+
+    @Test
+    fun community() = check { CommunityScreen(CommunityPreviewData.owner, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun welcomeMessages() = check { WelcomeMessagesScreen(WelcomeMessagesPreviewData.on, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun welcomeEditor() = check { WelcomeEditorContent(WelcomeMessagesPreviewData.photoEditor, onEvent = {}) }
+
+    @Test
+    fun memberTagSheet() = check { MemberTagContent(MemberTagPreviewData.administrator, onEvent = {}) }
 
     @Test
     fun memberRights() = check { MemberRightsScreen(ChatInfoPreviewData.adminRights, {}, {}) }

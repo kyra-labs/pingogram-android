@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
+import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
+
 /**
  * What the user does on the login screens, sent to [AuthViewModel.onEvent]. Events carrying what the user typed
  * leave it out of `toString()`, so they can be logged.
@@ -63,6 +66,16 @@ sealed interface AuthEvent {
 
     /** FR-A6: log in by scanning a QR code with another device instead. */
     data object LogInWithQrCode : AuthEvent
+
+    /** Sign in with a passkey the user added in Privacy and security (`docs/adr/0037-passkeys.md`). */
+    data object SignInWithPasskey : AuthEvent
+
+    /** What the password manager answered to [AuthEffect.GetPasskey]. */
+    data class PasskeyAnswered(
+        val result: PasskeyResult<PasskeyAssertion>,
+    ) : AuthEvent {
+        override fun toString() = "PasskeyAnswered(…)"
+    }
 
     // QR code
 

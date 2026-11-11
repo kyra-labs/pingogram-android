@@ -43,6 +43,10 @@ sealed interface ProfileUiState {
  * @property isOnline the user is online now: the status shows in `primary`.
  * @property avatarShape the avatar's shape while the bar is expanded: a forum's info page has a rounded square
  *   ([AvatarShape.ofChat]), everything else a circle.
+ * @property emojiStatusId the custom emoji the user shows beside their name (td_api.tl `user.emoji_status`), 0 for
+ *   none.
+ * @property profileColor the color of the user's profile header (td_api.tl `user.profile_accent_color_id`), -1 for
+ *   none.
  */
 @Immutable
 data class ProfileHeader(
@@ -56,6 +60,8 @@ data class ProfileHeader(
     val isPremium: Boolean = false,
     val warning: ProfileWarning? = null,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val emojiStatusId: Long = 0,
+    val profileColor: Int = -1,
 ) {
     override fun toString() = "ProfileHeader(userId=$userId, …)"
 }

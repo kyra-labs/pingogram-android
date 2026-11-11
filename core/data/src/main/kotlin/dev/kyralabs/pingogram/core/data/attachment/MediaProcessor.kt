@@ -40,6 +40,16 @@ internal interface MediaProcessor {
         target: File,
     ): Boolean
 
+    /**
+     * Decodes the image in [source] and writes it to [target] as [plan] says (upright, scaled) as a lossy WebP that
+     * keeps its transparency, for a sticker. False when it cannot be decoded or written.
+     */
+    fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean
+
     /** The size, rotation and length of the video in [file]; null when Android cannot read it as a video. */
     fun videoInfo(file: File): VideoInfo?
 
@@ -107,6 +117,24 @@ internal class AndroidMediaProcessor : MediaProcessor {
             photo.writeJpeg(target, quality)
         } finally {
             photo.recycle()
+        }
+    }
+
+    override fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean {
+        val options = BitmapFactory.Options().apply { inSampleSize = plan.sampleSize }
+        val decoded = BitmapFactory.decodeFile(source.path, options) ?: return false
+        val sticker = decoded.transformed(plan.orientation, plan.width, plan.height)
+        if (sticker !== decoded) decoded.recycle()
+        return try {
+            target.outputStream().use { sticker.compress(webp(), STICKER_QUALITY, it) }
+        } catch (_: IOException) {
+            false
+        } finally {
+            sticker.recycle()
         }
     }
 
@@ -245,6 +273,18 @@ private fun Bitmap.transformed(
         }
     return Bitmap.createBitmap(this, 0, 0, this.width, this.height, matrix, true)
 }
+
+/** Lossy WebP, which keeps transparency: its own name from Android 11, the deprecated one before. */
+private fun webp(): Bitmap.CompressFormat =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        Bitmap.CompressFormat.WEBP_LOSSY
+    } else {
+        @Suppress("DEPRECATION") // WEBP_LOSSY exists from Android 11 only; WEBP is lossy until then.
+        Bitmap.CompressFormat.WEBP
+    }
+
+/** The WebP quality of a sticker: small enough for Telegram's 512 KB, without visible artifacts. */
+private const val STICKER_QUALITY = 90
 
 /** This bitmap on a white background if it has transparency (recycling it), else itself. */
 private fun Bitmap.opaque(): Bitmap {

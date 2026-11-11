@@ -70,6 +70,10 @@ data class StickersRoute(
     val emoji: Boolean = false,
 )
 
+/** Making a sticker set of the user's own (the owner's boards 21a–c), pushed above Settings → Stickers. */
+@Serializable
+data object NewStickerSetRoute
+
 /**
  * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
  * [StickersRoute].
@@ -232,6 +236,10 @@ data object ActiveSessionsRoute
 /** The websites logged in with the account, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object ConnectedWebsitesRoute
+
+/** The account's passkeys (`docs/adr/0037-passkeys.md`), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object PasskeysRoute
 
 /**
  * The chats kept behind the passcode (`docs/adr/0029-locked-chats.md`), pushed above [PrivacySecurityRoute], above the
@@ -598,6 +606,12 @@ data class ChatInviteRoute(
     override fun toString() = "ChatInviteRoute(…)"
 }
 
+/** The page of community [communityId] (the owner's board 19a), pushed above the info page of one of its chats. */
+@Serializable
+data class CommunityRoute(
+    val communityId: Long,
+)
+
 /** The boosts of channel or supergroup [chatId], read only (`REQUIREMENTS.md` FR-P5), pushed above its info page. */
 @Serializable
 data class ChatBoostRoute(
@@ -643,3 +657,13 @@ data object FeedbackRoute
  */
 @Serializable
 data object RecentCallsRoute
+
+/** The welcome messages of group [chatId] (the owner's board 20), pushed above its info page. */
+@Serializable
+data class WelcomeMessagesRoute(
+    val chatId: Long,
+)
+
+/** The user's name color (the owner's board 22b), pushed above Edit profile. */
+@Serializable
+data object ProfileColorRoute

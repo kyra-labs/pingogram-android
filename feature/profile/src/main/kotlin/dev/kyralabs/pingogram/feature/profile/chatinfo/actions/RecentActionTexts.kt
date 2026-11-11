@@ -86,6 +86,15 @@ private fun memberText(
             UiText.resource(roleChange(action.old, action.new), name(action.member))
         }
 
+        is ChatEventAction.MemberTagChanged -> {
+            val member = name(MessageSender.User(action.userId))
+            if (action.new.isEmpty()) {
+                UiText.resource(R.string.recent_actions_tag_removed, member)
+            } else {
+                UiText.resource(R.string.recent_actions_tag_set, member, UiText.Plain(action.new).bidiIsolated())
+            }
+        }
+
         else -> {
             null
         }
@@ -275,6 +284,7 @@ internal fun ChatEventAction.senders(): Set<MessageSender> =
         is ChatEventAction.MemberJoined -> setOfNotNull(approverUserId.takeIf { it != 0L }?.let(MessageSender::User))
         is ChatEventAction.MemberInvited -> setOf(MessageSender.User(userId))
         is ChatEventAction.MemberRoleChanged -> setOf(member)
+        is ChatEventAction.MemberTagChanged -> setOf(MessageSender.User(userId))
         is ChatEventAction.LinkedChatChanged -> setOfNotNull(chatId.takeIf { it != 0L }?.let(MessageSender::Chat))
         else -> emptySet()
     }

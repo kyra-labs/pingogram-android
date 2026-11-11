@@ -39,12 +39,13 @@ class TdlibChatEventLogRepositoryTest {
             client.on(TdApi.GetChatEventLog::class, TdResult.Success(TdApi.ChatEvents(emptyArray())))
 
             repository.events(CHAT, fromEventId = 0, filters = emptySet())
-            repository.events(CHAT, fromEventId = 42, filters = setOf(ChatEventFilter.MemberPromotions), limit = 10)
+            val filters = setOf(ChatEventFilter.MemberPromotions, ChatEventFilter.MemberTagChanges)
+            repository.events(CHAT, fromEventId = 42, filters = filters, limit = 10)
 
             val (all, some) = client.sentOf<TdApi.GetChatEventLog>()
             assertNull(all.filters)
             assertEquals(Triple(CHAT, 42L, 10), Triple(some.chatId, some.fromEventId, some.limit))
-            assertTrue(some.filters.memberPromotions)
+            assertTrue(some.filters.memberPromotions && some.filters.memberTagChanges)
             assertFalse(some.filters.memberJoins)
         }
 
@@ -92,6 +93,10 @@ class TdlibChatEventLogRepositoryTest {
                 mapped(TdApi.ChatEventHasProtectedContentToggled(true)),
             )
             assertEquals(ChatEventAction.SlowModeChanged(30), mapped(TdApi.ChatEventSlowModeDelayChanged(0, 30)))
+            assertEquals(
+                ChatEventAction.MemberTagChanged(7, "", "Beta tester"),
+                mapped(TdApi.ChatEventMemberTagChanged(7, "", "Beta tester")),
+            )
             assertEquals(ChatEventAction.Other, mapped(TdApi.ChatEventAccentColorChanged()))
         }
 

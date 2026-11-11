@@ -31,6 +31,7 @@ import kotlin.math.roundToInt
  * Blocking IO: call it on the IO dispatcher. Cancelling it stops a copy at the next buffer; a failed or cancelled
  * preparation leaves nothing behind.
  */
+@Suppress("TooManyFunctions") // A function per kind of preparation, and the copying and directories they share.
 internal class AttachmentPreparer(
     private val files: UploadFiles,
     private val content: ContentSource,
@@ -98,10 +99,50 @@ internal class AttachmentPreparer(
     }
 
     /**
+     * The image at [uri] as a static sticker ([stickerPlan]): upright, its longer side exactly [side] pixels, written
+     * anew as a WebP with its transparency, so no metadata goes with it. Its path; `DomainError.PhotoInvalid` for what
+     * Android cannot decode as an image.
+     */
+    suspend fun prepareSticker(
+        uri: String,
+        side: Int,
+    ): Outcome<String> {
+        val info = content.describe(uri)
+        if ((info.size ?: 0) > MAX_FILE_SIZE) return Outcome.Failure(DomainError.FileTooLarge)
+        return inNewDirectory { directory ->
+            val copy = File(directory, safeFileName(info.displayName))
+            when (copy(uri, copy)) {
+                Copy.Unreadable -> {
+                    Outcome.Failure(DomainError.FileUnavailable)
+                }
+
+                Copy.TooLarge -> {
+                    Outcome.Failure(DomainError.FileTooLarge)
+                }
+
+                is Copy.Done -> {
+                    val image = media.imageInfo(copy)
+                    val target = File(directory, STICKER_NAME)
+                    val written =
+                        image != null &&
+                            media.writeSticker(
+                                copy,
+                                stickerPlan(image.width, image.height, image.orientation, side),
+                                target,
+                            ) &&
+                            target.length() > 0
+                    copy.delete()
+                    if (written) Outcome.Success(target.path) else Outcome.Failure(DomainError.PhotoInvalid)
+                }
+            }
+        }
+    }
+
+    /**
      * [block] with a new directory of [files], which is deleted unless [block] succeeds, also when it throws or is
      * cancelled.
      */
-    private inline fun inNewDirectory(block: (File) -> Outcome<Attachment>): Outcome<Attachment> {
+    private inline fun <T> inNewDirectory(block: (File) -> Outcome<T>): Outcome<T> {
         val directory =
             try {
                 files.newUploadDirectory()
@@ -255,6 +296,7 @@ internal class AttachmentPreparer(
     private companion object {
         const val BUFFER_SIZE = 64 * 1024
         const val PHOTO_PREFIX = "photo"
+        const val STICKER_NAME = "sticker.webp"
 
         /** Where a file sent without its metadata is written, so it keeps its own name beside the picked copy. */
         const val ORIGINAL_DIRECTORY = "original"

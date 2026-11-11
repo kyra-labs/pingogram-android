@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -47,6 +48,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
     private val idVisibility = FakeIdVisibilityRepository()
 
     private suspend fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): ChatInfoViewModel {
+        val communityRepository = TdlibCommunityRepository(client, backgroundScope)
         val users = TdlibUserRepository(client, backgroundScope)
         val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
         runCurrent()
@@ -69,6 +71,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 sharedMediaRepository = TdlibSharedMediaRepository(client),
                 searchRepository = TdlibSearchRepository(client, chats),
                 idVisibility = idVisibility,
+                communityRepository = communityRepository,
                 clock = clock,
                 timePatterns = patterns,
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -120,6 +123,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                     assertEquals(3, administratorCount)
                     assertEquals(2, bannedCount)
                     assertEquals(1, restrictedCount)
+                    assertFalse(canManageWelcomeMessages)
                 }
                 assertTrue(actions.canLeave && actions.canClearHistory)
                 assertFalse(actions.canDelete)
@@ -128,6 +132,17 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
             val preview = client.sentOf<TdApi.GetSupergroupMembers>().single()
             assertInstanceOf(TdApi.SupergroupMembersFilterRecent::class.java, preview.filter)
             assertEquals(ChatInfoViewModel.MEMBERS_PREVIEW, preview.limit)
+        }
+
+    @Test
+    fun `an administrator who may send welcome messages gets their row in a supergroup, not in a channel`() =
+        runTest {
+            val rights = TdApi.ChatAdministratorRights().also { it.canSendWelcomeMessages = true }
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, rights))
+            assertTrue(checkNotNull(viewModel().content.administration).canManageWelcomeMessages)
+
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, rights), isChannel = true)
+            assertFalse(viewModel().content.administration?.canManageWelcomeMessages == true)
         }
 
     @Test
@@ -252,6 +267,26 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
         }
 
     @Test
+    fun `a chat of a community names it, and opens its page`() =
+        runTest {
+            answerSupergroup(full = TdResult.Success(fullInfo().also { it.communityId = COMMUNITY }))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertEquals(CommunityLink(COMMUNITY, ""), viewModel.content.community)
+
+            client.emit(
+                TdApi.UpdateCommunity(
+                    TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, TdApi.CommunityMemberStatusMember(), null),
+                ),
+            )
+            runCurrent()
+            assertEquals(CommunityLink(COMMUNITY, "Kyra Labs"), viewModel.content.community)
+
+            send(viewModel, ChatInfoEvent.OpenCommunity)
+            assertEquals(listOf(ChatInfoEffect.OpenCommunity(COMMUNITY)), effects)
+        }
+
+    @Test
     fun `muting mutes the chat`() =
         runTest {
             answerSupergroup()
@@ -333,3 +368,5 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
             assertEquals(SharedMediaKind.Links, restored.media.value.selected)
         }
 }
+
+private const val COMMUNITY = 77L

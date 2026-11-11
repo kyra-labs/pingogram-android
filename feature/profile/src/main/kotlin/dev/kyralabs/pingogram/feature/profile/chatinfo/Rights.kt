@@ -36,6 +36,7 @@ enum class AdminRight(
     DeleteStories(R.string.chat_info_right_delete_stories, inGroups = true, inChannels = true),
     ManageDirectMessages(R.string.chat_info_right_manage_direct_messages, inGroups = false, inChannels = true),
     ManageTags(R.string.chat_info_right_manage_tags, inGroups = true, inChannels = false),
+    SendWelcomeMessages(R.string.chat_info_right_send_welcome_messages, inGroups = true, inChannels = false),
     PromoteMembers(R.string.chat_info_right_promote_members, inGroups = true, inChannels = true),
     Anonymous(R.string.chat_info_right_anonymous, inGroups = true, inChannels = false),
     ;
@@ -57,6 +58,7 @@ enum class AdminRight(
             DeleteStories -> rights.canDeleteStories
             ManageDirectMessages -> rights.canManageDirectMessages
             ManageTags -> rights.canManageTags
+            SendWelcomeMessages -> rights.canSendWelcomeMessages
             PromoteMembers -> rights.canPromoteMembers
             Anonymous -> rights.isAnonymous
         }
@@ -79,6 +81,7 @@ enum class AdminRight(
             DeleteStories -> rights.copy(canDeleteStories = on)
             ManageDirectMessages -> rights.copy(canManageDirectMessages = on)
             ManageTags -> rights.copy(canManageTags = on)
+            SendWelcomeMessages -> rights.copy(canSendWelcomeMessages = on)
             PromoteMembers -> rights.copy(canPromoteMembers = on)
             Anonymous -> rights.copy(isAnonymous = on)
         }
@@ -99,6 +102,7 @@ enum class Permission(
     SendPolls(R.string.chat_info_permission_send_polls),
     AddLinkPreviews(R.string.chat_info_permission_link_previews),
     React(R.string.chat_info_permission_react),
+    EditTag(R.string.chat_info_permission_edit_tag),
     AddMembers(R.string.chat_info_permission_add_members),
     PinMessages(R.string.chat_info_permission_pin_messages),
     ChangeInfo(R.string.chat_info_permission_change_info),
@@ -117,6 +121,7 @@ enum class Permission(
             SendPolls -> permissions.canSendPolls
             AddLinkPreviews -> permissions.canAddLinkPreviews
             React -> permissions.canReactToMessages
+            EditTag -> permissions.canEditTag
             AddMembers -> permissions.canInviteUsers
             PinMessages -> permissions.canPinMessages
             ChangeInfo -> permissions.canChangeInfo
@@ -138,6 +143,7 @@ enum class Permission(
             SendPolls -> permissions.copy(canSendPolls = on)
             AddLinkPreviews -> permissions.copy(canAddLinkPreviews = on)
             React -> permissions.copy(canReactToMessages = on)
+            EditTag -> permissions.copy(canEditTag = on)
             AddMembers -> permissions.copy(canInviteUsers = on)
             PinMessages -> permissions.copy(canPinMessages = on)
             ChangeInfo -> permissions.copy(canChangeInfo = on)

@@ -90,6 +90,30 @@ class RecentActionsViewModelTest : GroupViewModelTest() {
         }
 
     @Test
+    fun `a member's tag given or taken away names the member and the tag`() =
+        runTest {
+            answer(
+                event(2, TdApi.ChatEventMemberTagChanged(GRACE, "Beta tester", "")),
+                event(1, TdApi.ChatEventMemberTagChanged(GRACE, "", "Beta tester")),
+            )
+
+            val (removed, given) = viewModel().content.actions
+
+            assertEquals(
+                UiText.resource(R.string.recent_actions_tag_removed, UiText.Plain("\u2068Grace\u2069")),
+                removed.text,
+            )
+            assertEquals(
+                UiText.resource(
+                    R.string.recent_actions_tag_set,
+                    UiText.Plain("\u2068Grace\u2069"),
+                    UiText.Plain("\u2068Beta tester\u2069"),
+                ),
+                given.text,
+            )
+        }
+
+    @Test
     fun `the chips picked go to TDLib as filters, and survive process death`() =
         runTest {
             answer()
@@ -101,7 +125,7 @@ class RecentActionsViewModelTest : GroupViewModelTest() {
             runCurrent()
 
             val filters = client.sentOf<TdApi.GetChatEventLog>().last().filters
-            assertTrue(filters.memberPromotions)
+            assertTrue(filters.memberPromotions && filters.memberTagChanges)
             assertFalse(filters.messageEdits)
             assertEquals(setOf(RecentActionsFilter.Admins), viewModel(handle).content.filters)
         }

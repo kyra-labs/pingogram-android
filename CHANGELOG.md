@@ -10,6 +10,20 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+
+- Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
+  information. Profiles show a user's emoji status after their name and their profile color in the header.
+- New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
+  with an emoji each, moved and removed, then published to share.
+- Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,
+  a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a preview; the rights page
+  gains "Manage welcome messages".
+- Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
+  its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
+- Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
+  tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
+  their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given
+  and taken away.
 - Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator
   allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
 - Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the
@@ -35,6 +49,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
 - A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
   know it), and Telegram asks them whether to keep it.
+- Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
+  Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
+- On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
+  are signed in without a code (or asked for your 2-step verification password).
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
