@@ -17,7 +17,7 @@ regresses by more than 10%.
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | `SendMessageBenchmark`: `TraceSectionMetric("sendMessage")`, an async section from the composer's send (`feature:chat`'s `ChatComposer`) to the frame after the bubble on its way shows (`SendMessageTraceEffect`), sending to Saved Messages and deleting each message after |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
-| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 123 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`) | CI on every pull request and release (§8) |
+| APK size (arm64-v8a) | ≤ 51 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`; raised by 1 and 2 MB for TDLib 1.8.70 by the owner, 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`) | CI on every pull request and release (§8) |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
@@ -327,9 +327,13 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - Compressing the native libraries (`useLegacyPackaging = true`) would bring arm64-v8a to about 28 MB. Android
     would then extract them at install, about 37 MB more on the device, and load them more slowly; `docs/TDLIB.md`
     keeps them uncompressed.
-  - arm64-v8a has 1.8 MB left and universal 1.9 MB, about 1.6 MB for `gms`. The owner set the universal
+  - arm64-v8a had 1.8 MB left and universal 1.9 MB, about 1.6 MB for `gms`. The owner set the universal
     budget from these sizes (2026-10-23); the next addition that grows the native libraries (group video,
     `docs/adr/0019-video-and-group-calls-scope.md`) needs the budget looked at again.
+  - TDLib 1.8.70 (2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`) grows `libtdjni.so` by 0.36 MB on
+    arm64-v8a, 0.33 MB on armeabi-v7a and 0.43 MB on x86_64. `main` before it measured arm64-v8a about 49.5 MB,
+    armeabi-v7a 40.7 MB, universal 122.5 MB and x86_64 56.8 MB; with it, 49.9, 41.1, 123.6 and 57.2 MB. The owner
+    raised the budgets to 51 MB (arm64-v8a) and 125 MB (universal), leaving about 1.1 and 1.4 MB.
   - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
     code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
     its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
@@ -562,6 +566,33 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   behind the text from its layout, added over the cached text of the bubbles that mention the user only. Measuring it
   found a crash on `main` (vivid bubbles with their name above them, text drawn with blocks), fixed by `WithNameAbove`
   and kept by `VividBubbleScrollTest`.
+- Voice chat comments (2026-11-10, `docs/DESIGN_SYSTEM.md` §6 "Voice chat comments"): `feature:calls`'
+  `GroupCallFrameCostTest` steps the voice chat's screen frame by frame, the timer and the speaker changing every frame
+  (a stress case: on a phone they change once a second), and prints the main thread's CPU time per frame and how many
+  of Pingogram's composables recompose per frame, with `-Ppingogram.scrollCost`. Its checks always run: a comment
+  recomposes the comments pane alone (`GroupCallCommentsViewModel` keeps them out of `GroupCallUiState`, and the screen
+  reads only the pane's derived visibility), a comment while the pane is hidden recomposes nothing, and a new comment
+  shows at the bottom. Three runs each on the shared 4-core machine:
+  - **Before** (`main` at fe6cac5, the same scenario): P50 12.7–13.0 ms, P90 15.4–16.6 ms, P99 20.3–21.6 ms, 14.0
+    composables recomposed per frame.
+  - **After, comments hidden or unavailable**: P50 12.4–13.3 ms, P90 15.6–16.9 ms, P99 18.6–21.8 ms, 14.0 per frame:
+    unchanged.
+  - **After, comments shown, 10 a second**: P50 8.5–9.0 ms, P90 18.0–18.7 ms, P99 26.2–28.4 ms, 16.7 per frame. The
+    participants' tiles cost less than the rows at most frames; a frame with a new comment composes and places one row
+    and moves the list, which the P90 and P99 show. The rows already on screen skip; the pane's field and floating
+    reactions take only what they show, so they skip too.
+  - **On the owner's phone**: install `fossBenchmarkRelease` (§9 above), join a busy voice chat with comments on (or
+    have a few people comment and react from Telegram's apps), keep the voice chat's screen in front with the comments
+    showing, and run `tools/perfetto/video-call.sh` (it records the main thread's and the RenderThread's frames, `gfx` and
+    `view`, for 5 minutes); then once more with the comments hidden. Send back both folders' `device.txt` and
+    `video-call.perfetto-trace`. The frames' durations against the display's period tell whether the pane holds.
+- Live stories (2026-11-10, board 12): watching one adds a way into the voice chat screen and a layout of its own for
+  it, and changes nothing the voice chat's frames do. `GroupCallFrameCostTest` on the branch, twice on the shared
+  4-core machine, against the numbers above: comments hidden P50 12.3–12.6 ms, P90 15.0–15.4 ms, P99 18.8–20.2 ms,
+  14.0 composables recomposed per frame; comments shown P50 7.4–8.4 ms, P90 15.0–17.1 ms, P99 20.6–21.6 ms, 16.7 per
+  frame: the same within the machine's noise. On the owner's phone: install `fossBenchmarkRelease` (§9), open a live
+  story with "Watch live" and keep its screen in front with the comments showing, run
+  `tools/perfetto/video-call.sh` (5 minutes), and send back its folder's `device.txt` and `video-call.perfetto-trace`.
 - Folder slide (2026-11-07, owner decision: chat folders slide like a pager, the neighbouring folders' first page loaded
   ahead): `ChatListScrollCostTest` with the list's own state, three runs each on the shared 4-core machine, before
   P50 0.92–1.03 ms, P90 8.7–9.6 ms, P99 12.3–12.4 ms, mean 2.40–2.62 ms; after P50 0.90–1.02 ms, P90 8.5–9.7 ms, P99

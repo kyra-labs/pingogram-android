@@ -12,6 +12,8 @@ import dev.kyralabs.pingogram.core.navigation.ProfileRoute
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbum
+import dev.kyralabs.pingogram.feature.media.storyalbum.StoryAlbumsSection
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
@@ -23,7 +25,7 @@ import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
  * ([besideList], [navigateToChat]) and is pushed above the profile on others, so back returns to the profile. Another
  * profile and a photo, video or GIF in the media viewer are pushed above it. "Add to contacts" and "Edit contact" push
  * the contact editor (`EditContactRoute`, `feature:contacts`) above it, "Export chat" the export page
- * (`ChatExportRoute`, `feature:chat`).
+ * (`ChatExportRoute`, `feature:chat`). Its story albums are `feature:media`'s section, an album pushed above it.
  */
 internal fun NavGraphBuilder.profile(
     navController: NavHostController,
@@ -39,6 +41,13 @@ internal fun NavGraphBuilder.profile(
         },
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
         onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
+        storyAlbums = { chatId, modifier ->
+            StoryAlbumsSection(
+                chatId = chatId,
+                onOpenAlbum = { albumId -> navController.navigateToStoryAlbum(chatId, albumId) },
+                modifier = modifier,
+            )
+        },
     )
 }
 

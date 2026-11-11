@@ -10,8 +10,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -22,7 +25,10 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsUiState
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadSheet
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryUploadSheetEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -33,7 +39,8 @@ import kotlinx.coroutines.launch
  * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive, and the "New chat" buttons [onOpenNewChat].
  * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
  * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
- * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat. The
+ * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat, and
+ * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
  * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary].
@@ -45,6 +52,7 @@ internal fun ChatListRoute(
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenStory: (chatId: Long) -> Unit = {},
+    onNewStory: () -> Unit = {},
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
@@ -59,6 +67,8 @@ internal fun ChatListRoute(
     val rings = storyRings.uiState.collectAsStateWithLifecycle()
     val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
     val currentOnOpenStory by rememberUpdatedState(onOpenStory)
+    val currentOnNewStory by rememberUpdatedState(onNewStory)
+    var uploadShown by rememberSaveable { mutableStateOf(false) }
     // Reads the rings in the row's own composition, not here.
     val stories: @Composable (Modifier) -> Unit =
         remember(storyRings, rings) {
@@ -68,9 +78,19 @@ internal fun ChatListRoute(
                     onOpen = { currentOnOpenStory(it) },
                     onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
                     modifier = rowModifier,
+                    onAddStory = { currentOnNewStory() },
+                    onShowUpload = { uploadShown = true },
                 )
             }
         }
+    if (uploadShown) {
+        StoryUploadHost(
+            state = rings.value,
+            onEvent = storyRings::onEvent,
+            onOpenStory = { currentOnOpenStory(it) },
+            onClose = { uploadShown = false },
+        )
+    }
     ChatListDestination(
         state = state,
         viewModel = viewModel,
@@ -246,3 +266,39 @@ private fun archivedMessage(
     } else {
         resources.getQuantityString(R.plurals.chat_list_archived_many, count, count)
     }
+
+/**
+ * The sheet of the user's stories being posted, while there are some ([StoryUploadSheet]); it closes by itself once
+ * none are left, as when they were all posted or stopped.
+ */
+@Composable
+private fun StoryUploadHost(
+    state: StoryRingsUiState,
+    onEvent: (StoryRingsEvent) -> Unit,
+    onOpenStory: (chatId: Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    val own = state.rings.firstOrNull { it.isMine }
+    val upload = own?.upload
+    if (own == null || upload == null) {
+        LaunchedEffect(Unit) { onClose() }
+        return
+    }
+    StoryUploadSheet(upload, state.cancel, canView = own.storyCount > 0) { event ->
+        when (event) {
+            StoryUploadSheetEvent.Stop -> {
+                onEvent(StoryRingsEvent.CancelUploads)
+            }
+
+            StoryUploadSheetEvent.View -> {
+                onClose()
+                onOpenStory(own.chatId)
+            }
+
+            StoryUploadSheetEvent.Dismiss -> {
+                onEvent(StoryRingsEvent.CancelErrorShown)
+                onClose()
+            }
+        }
+    }
+}

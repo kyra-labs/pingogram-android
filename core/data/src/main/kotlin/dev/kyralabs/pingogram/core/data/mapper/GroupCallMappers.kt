@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
+import dev.kyralabs.pingogram.core.domain.model.GroupCallComment
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallSpeaker
@@ -46,7 +48,26 @@ internal fun TdApi.GroupCall.toGroupCall(): GroupCall =
         canEnableVideo = canEnableVideo,
         isMyVideoEnabled = isMyVideoEnabled,
         inviteLink = inviteLink.orEmpty(),
+        areCommentsAllowed = areMessagesAllowed,
+        canComment = canSendMessages,
+        canToggleComments = canToggleAreMessagesAllowed,
+        canDeleteComments = canDeleteMessages,
+        commentStarCount = paidMessageStarCount,
     )
+
+/** Null for a sender type added by a newer TDLib. */
+internal fun TdApi.GroupCallMessage.toGroupCallComment(): GroupCallComment? {
+    val sender = senderId?.toMessageSender() ?: return null
+    return GroupCallComment(
+        id = messageId,
+        sender = sender,
+        date = date.toLong(),
+        text = text?.toFormattedText() ?: FormattedText.Empty,
+        paidStarCount = paidMessageStarCount,
+        isFromOwner = isFromOwner,
+        canBeDeleted = canBeDeleted,
+    )
+}
 
 /** Null for a participant type added by a newer TDLib. */
 internal fun TdApi.GroupCallParticipant.toGroupCallParticipant(): GroupCallParticipant? {

@@ -15,12 +15,17 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
+import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import java.time.Instant
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 // What one item of the conversation shows (REQUIREMENTS.md FR-C2–C4), from its ItemInputs alone.
@@ -55,7 +60,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
     val senderName = senderName()
     val newest = album.lastOrNull() ?: message
-    val text = content.text
+    val text = content.text.withReaderDates(timeFormatter, relativeNow?.let(Instant::ofEpochSecond))
     return ChatItem.Bubble(
         id = message.id,
         isOutgoing = message.isOutgoing,
@@ -78,10 +83,8 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
             when {
                 album.isNotEmpty() -> albumLabel(album)
 
-                content is MessageContent.Text -> null
-
-                // The bubble shows its blocks, and screen readers hear them (richDescription).
-                content is MessageContent.RichMessage -> null
+                // Rich messages' blocks, paid posts and giveaways say what they are in their own description.
+                content.describesItself -> null
 
                 else -> contentKindText(content)
             },
@@ -111,8 +114,23 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
+        checklist = checklistUi(content),
+        giveaway = giveawayUi(content),
     )
 }
+
+private val MessageContent.describesItself: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Text,
+            is MessageContent.RichMessage,
+            is MessageContent.PaidMedia,
+            is MessageContent.Giveaway,
+            is MessageContent.GiveawayWinners,
+            -> true
+
+            else -> false
+        }
 
 /** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
 private fun albumLabel(album: List<Message>): UiText {
@@ -193,6 +211,9 @@ internal fun Message.reactionChips(): ImmutableList<ReactionChip> =
         ?.reactions
         ?.map { ReactionChip(label = it.type.label, count = it.totalCount, isChosen = it.isChosen) }
         ?.toImmutableList() ?: persistentListOf()
+
+/** The text or caption of [this] content as its sender wrote it, before [withReaderDates]. */
+internal val MessageContent.textOrCaption: FormattedText get() = text
 
 /** The text or caption of [this] content; a poll's description; empty for content without one. */
 private val MessageContent.text: FormattedText

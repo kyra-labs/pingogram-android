@@ -126,9 +126,28 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                 users.setUsers(user(ChatFixtures.GRACE, type = UserType.Bot))
 
                 // Each chat is checked while it is the only one the fake knows.
-                assertEquals(AttachOption.entries, showing(groupChat, history()).options)
-                assertEquals(AttachOption.entries, showing(chat(id = ChatFixtures.GRACE), history()).options)
-                assertEquals(AttachOption.entries, showing(chat(id = ME), history()).options)
+                val everything = AttachOption.entries - AttachOption.Checklist
+                assertEquals(everything, showing(groupChat, history()).options)
+                assertEquals(everything, showing(chat(id = ChatFixtures.GRACE), history()).options)
+                assertEquals(everything, showing(chat(id = ME), history()).options)
+            }
+
+        @Test
+        fun `checklists are offered to Telegram Premium subscribers only, never in secret chats`() =
+            runViewModelTest {
+                users.setUsers(user(ME).copy(isPremium = true), user(ADA))
+                secretChats.setSecretChats(ChatFixtures.secretChat())
+
+                // Each chat is checked while it is the only one the fake knows.
+                val privateOptions = showing(chat(), history()).options
+                val secretOptions =
+                    showing(
+                        chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)),
+                        history(),
+                    ).options
+
+                assertEquals(AttachOption.entries - AttachOption.Poll, privateOptions)
+                assertTrue(AttachOption.Checklist !in secretOptions)
             }
 
         @Test

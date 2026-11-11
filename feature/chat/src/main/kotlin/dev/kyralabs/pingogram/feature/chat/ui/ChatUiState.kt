@@ -16,8 +16,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
@@ -50,6 +53,7 @@ import kotlinx.collections.immutable.persistentSetOf
  *   of an album by its own); messages not being sent are missing.
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
+ * @property checklistForm the form of a new checklist; null while it is closed.
  * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
  * @property selection selection mode: the selected messages and the toolbar's actions; null outside it.
  * @property report the sheet that reports messages; null while it is closed.
@@ -62,6 +66,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   bar; null while there is none.
  * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
  *   null while the chat has none.
+ * @property showsUpdateLink whether a message Pingogram cannot show offers "Update Pingogram", a link to the latest
+ *   release; false in builds an app store installed (`AppInfo.isFromAppStore`).
  */
 @Immutable
 data class ChatUiState(
@@ -83,6 +89,7 @@ data class ChatUiState(
     val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
+    val checklistForm: ChecklistSheet? = null,
     val sponsoredSheet: SponsoredSheet? = null,
     val selection: MessageSelection? = null,
     val report: ReportSheet? = null,
@@ -91,6 +98,7 @@ data class ChatUiState(
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
     val scheduledBar: ScheduledBar? = null,
+    val showsUpdateLink: Boolean = false,
 )
 
 /**
@@ -321,6 +329,8 @@ sealed interface ChatItem {
      *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
+     * @property checklist how its checklist shows beyond the message: who ticked each task, the tasks whose change is
+     *   on its way, the inline field for a new task (`ChecklistEvent`); null for every other bubble.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
      *   scheduled messages, [time] then being its send time; null for messages of the history.
      * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
@@ -370,6 +380,7 @@ sealed interface ChatItem {
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val checklist: ChecklistUi? = null,
         val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
@@ -379,6 +390,7 @@ sealed interface ChatItem {
         val myMentions: ImmutableList<IntRange> = persistentListOf(),
         val isChannelPost: Boolean = false,
         val views: Int = 0,
+        val giveaway: GiveawayUi? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

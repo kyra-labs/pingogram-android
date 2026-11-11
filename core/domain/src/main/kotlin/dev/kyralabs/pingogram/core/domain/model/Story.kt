@@ -85,8 +85,11 @@ sealed interface StoryContent {
         val file: FileRef,
     ) : StoryContent
 
-    /** A live stream: a group call Pingogram does not join from a story. */
-    data object Live : StoryContent
+    /** A live story: the poster streams in a group call, which the viewer offers to watch on the voice chat screen. */
+    data class Live(
+        /** The poster's group call (td_api.tl `storyContentLive.group_call_id`), which the user may watch. */
+        val groupCallId: Int,
+    ) : StoryContent
 
     /** Content TDLib knows but this version of Telegram's API, or Pingogram, does not show. */
     data object Unsupported : StoryContent

@@ -94,8 +94,11 @@ sealed interface StoryMedia {
         val hasSound: Boolean,
     ) : StoryMedia
 
-    /** A live stream, which Pingogram does not join from a story. */
-    data object Live : StoryMedia
+    /** A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen. */
+    data class Live(
+        val chatId: Long,
+        val groupCallId: Int,
+    ) : StoryMedia
 
     /** Content Pingogram can't show yet. */
     data object Unsupported : StoryMedia

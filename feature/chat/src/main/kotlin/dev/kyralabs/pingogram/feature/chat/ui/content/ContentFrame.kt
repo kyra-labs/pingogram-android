@@ -40,10 +40,18 @@ internal val MessageContent.isEdgeToEdge: Boolean
             is MessageContent.Photo,
             is MessageContent.Video,
             is MessageContent.Animation,
+            is MessageContent.PaidMedia,
             -> true
 
             else -> false
         }
+
+/**
+ * Edge-to-edge content that ends in a note below its media (a paid post not paid for: why Pingogram cannot unlock
+ * it), so the media meets a footer and the time shows below the note rather than over the media.
+ */
+internal val MessageContent.showsNoteBelowMedia: Boolean
+    get() = this is MessageContent.PaidMedia && !isUnlocked
 
 /**
  * A photo, video or GIF that is not self-destructing: what the media viewer shows, and what grows into it from the

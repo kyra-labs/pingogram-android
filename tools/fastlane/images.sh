@@ -44,7 +44,7 @@ render "$work/icon.html" 512 512 "$images/icon.png"
 render "$work/feature.html" 1024 500 "$images/featureGraphic.png"
 
 # Light screenshots, in the order a store shows them.
-shots=(welcome chats chat reactions composer search settings appearance)
+shots=(welcome chats chat channel contacts search settings appearance)
 rm -f "$images/phoneScreenshots"/*.png "$images/tenInchScreenshots"/*.png
 for i in "${!shots[@]}"; do
   cp "$root/docs/screenshots/${shots[$i]}-light.png" "$images/phoneScreenshots/$((i + 1)).png"

@@ -132,6 +132,8 @@ data class PingogramSizes(
     val avatarExtraSmall: Dp = 32.dp,
     val avatarRing: Dp = 2.dp,
     val avatarBadge: Dp = 24.dp,
+    /** An avatar in a line of text: who ticked a checklist's task. */
+    val avatarInline: Dp = 24.dp,
     val inlineIcon: Dp = 18.dp,
     val inlineIconSmall: Dp = 16.dp,
     val badgeIcon: Dp = 12.dp,

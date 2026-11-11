@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.dates.hasRelativeDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 
 /**
  * Everything one item is made from: the message and its place, what it refers to (its sender, the members a service
@@ -40,6 +42,13 @@ internal data class ItemInputs(
     val senderRole: UiText? = null,
     /** The user's own usernames, lowercase and without `@`, which `@username` mentions of the user name. */
     val myUsernames: Set<String> = emptySet(),
+    /** The chats the content names ([chatIdsOf]: a giveaway's participating channels), as looked up, in that order. */
+    val chats: List<ChatRef?> = emptyList(),
+    /**
+     * The current minute (Unix time) for a text with dates worded relative to now ("in 3 days"), so the item is mapped
+     * again each minute; null for every other text, whose item stays reused.
+     */
+    val relativeNow: Long? = null,
 )
 
 /** What kind of chat it is, as far as bubbles show: sender names and avatars in groups, no checks in channels. */
@@ -74,6 +83,7 @@ internal fun ItemSources.inputsOf(
         kind = chatKind,
         sender = refOf(message.sender),
         members = memberIdsOf(message.content).map(users::get),
+        chats = chatIdsOf(message.content).map(::chatRefOf),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
         isRead = newest.isOutgoing && newest.id <= chat.lastReadOutboxMessageId,
@@ -88,6 +98,10 @@ internal fun ItemSources.inputsOf(
                 ?.usernames
                 .orEmpty()
                 .mapTo(HashSet()) { it.lowercase() },
+        relativeNow =
+            now?.takeIf { message.content.textOrCaption.hasRelativeDates }?.let {
+                it.epochSecond / SECONDS_PER_MINUTE * SECONDS_PER_MINUTE
+            },
     )
 }
 
@@ -148,12 +162,34 @@ private fun ItemSources.refOf(origin: MessageOrigin): Any? =
 private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
     if (chatId == chat.id) ChatRef(chat.id, chat.title, chat.photo) else people.chats[chatId]
 
-/** The users a service message names besides its sender, whose names its text may show. */
-private fun memberIdsOf(content: MessageContent): List<Long> =
-    when (val action = (content as? MessageContent.Service)?.action) {
-        is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
-        is ServiceAction.MemberRemoved -> listOf(action.userId)
-        else -> emptyList()
+/**
+ * The users the content names besides its sender, whose names it shows: a service message's member, who ticked a
+ * checklist's tasks, a giveaway's winners.
+ */
+internal fun memberIdsOf(content: MessageContent): List<Long> =
+    when (content) {
+        is MessageContent.Service -> {
+            when (val action = content.action) {
+                is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
+                is ServiceAction.MemberRemoved -> listOf(action.userId)
+                else -> emptyList()
+            }
+        }
+
+        // Who ticked each task, for the avatars at their ends.
+        is MessageContent.Checklist -> {
+            content.list.tasks
+                .mapNotNull { (it.completedBy as? MessageSender.User)?.userId }
+                .distinct()
+        }
+
+        is MessageContent.GiveawayWinners -> {
+            content.winnerUserIds
+        }
+
+        else -> {
+            emptyList()
+        }
     }
 
 /**
@@ -220,3 +256,5 @@ internal fun ItemInputs.canWave(action: ServiceAction): Boolean {
         }
     return kind == ChatKind.Group && joined.isNotEmpty() && myUserId !in joined
 }
+
+private const val SECONDS_PER_MINUTE = 60L

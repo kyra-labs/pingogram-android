@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.text
 
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -145,8 +146,20 @@ private class Actor(
                 UiText.resource(R.string.preview_contact_registered, name)
             }
 
+            is ServiceAction.BirthdateSuggested -> {
+                did(R.string.preview_you_suggested_birthday, R.string.preview_suggested_birthday)
+            }
+
             is ServiceAction.VideoChatInvited -> {
                 did(R.string.preview_you_invited_to_video_chat, R.string.preview_invited_to_video_chat)
+            }
+
+            is ServiceAction.ChecklistTasksDone -> {
+                tasksChanged(action)
+            }
+
+            is ServiceAction.ChecklistTasksAdded -> {
+                counted(R.plurals.preview_you_added_tasks, R.plurals.preview_added_tasks, action.count)
             }
 
             // Worded by the other functions of this file.
@@ -156,6 +169,37 @@ private class Actor(
         }
 
     fun joined(): UiText = did(R.string.preview_you_joined, R.string.preview_joined)
+
+    /** Tasks marked as done, as not done, or both at once ("changed 3 tasks"). */
+    private fun tasksChanged(action: ServiceAction.ChecklistTasksDone): UiText =
+        when {
+            action.notDoneCount == 0 -> {
+                counted(R.plurals.preview_you_marked_tasks_done, R.plurals.preview_marked_tasks_done, action.doneCount)
+            }
+
+            action.doneCount == 0 -> {
+                counted(
+                    R.plurals.preview_you_marked_tasks_not_done,
+                    R.plurals.preview_marked_tasks_not_done,
+                    action.notDoneCount,
+                )
+            }
+
+            else -> {
+                counted(
+                    R.plurals.preview_you_changed_tasks,
+                    R.plurals.preview_changed_tasks,
+                    action.doneCount + action.notDoneCount,
+                )
+            }
+        }
+
+    /** [mine] with [count] for the current user's action; [theirs] with the name, then [count], for anyone else's. */
+    private fun counted(
+        @PluralsRes mine: Int,
+        @PluralsRes theirs: Int,
+        count: Int,
+    ): UiText = if (byMe) UiText.plural(mine, count, count) else UiText.plural(theirs, count, name, count)
 
     fun left(): UiText = did(R.string.preview_you_left, R.string.preview_left)
 

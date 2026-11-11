@@ -29,6 +29,31 @@ sealed interface AuthEffect {
     /** Telegram rejected a code or password as wrong or expired: a `Reject` haptic (`docs/DESIGN_SYSTEM.md` §5). */
     data object InputRejected : AuthEffect
 
+    /**
+     * Hands Telegram's sign-in request [requestJson] to the user's password manager; the answer goes back as
+     * [AuthEvent.PasskeyAnswered].
+     */
+    data class GetPasskey(
+        val requestJson: String,
+    ) : AuthEffect
+
+    /** Signing in with a passkey did not happen, because of [problem]: a snackbar. */
+    data class PasskeyNotUsed(
+        val problem: PasskeyProblem,
+    ) : AuthEffect
+
     /** The account is logged in: leave the login flow. */
     data object Authorized : AuthEffect
+}
+
+/** Why signing in with a passkey did not happen, as the snackbar says it. */
+enum class PasskeyProblem {
+    /** No password manager has a passkey for this account. */
+    NotFound,
+
+    /** No password manager may use Telegram's passkeys for Pingogram (`docs/adr/0037-passkeys.md`). */
+    Unavailable,
+
+    /** Anything else went wrong. */
+    Failed,
 }

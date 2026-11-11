@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+
 /**
  * What a message shows (`REQUIREMENTS.md` FR-C2–C4). Captions are empty when there are none. Content Pingogram does
  * not show yet is [Unsupported], so the message keeps its place in the history.
@@ -98,6 +100,11 @@ sealed interface MessageContent {
         val description: FormattedText,
     ) : MessageContent
 
+    /** A checklist, whose tasks people in the chat tick off and add to (td_api.tl `messageChecklist`). */
+    data class Checklist(
+        val list: dev.kyralabs.pingogram.core.domain.model.Checklist,
+    ) : MessageContent
+
     /** A die thrown by Telegram: [value] is the result for [emoji] (🎲, 🎯, 🏀, …), 0 while it is still rolling. */
     data class Dice(
         val emoji: String,
@@ -146,12 +153,55 @@ sealed interface MessageContent {
         val action: ServiceAction,
     ) : MessageContent
 
+    /**
+     * A post whose photos and videos unlock for [starCount] Telegram Stars (td_api.tl `messagePaidMedia`): previews
+     * of their sizes while not paid for, the media themselves once they are ([isUnlocked]). Pingogram shows what it
+     * is given and offers no purchase (`REQUIREMENTS.md` §1.2): another Telegram app unlocks it.
+     */
+    data class PaidMedia(
+        val starCount: Long,
+        val media: ImmutableList<PaidMediaItem>,
+        val caption: FormattedText,
+        val showCaptionAboveMedia: Boolean,
+    ) : MessageContent {
+        /** The user paid: the media are photos and videos rather than previews. */
+        val isUnlocked: Boolean get() = media.any { it !is PaidMediaItem.Preview }
+    }
+
+    /** A giveaway a channel runs (td_api.tl `messageGiveaway`): [winnerCount] winners get [prize]. */
+    data class Giveaway(
+        val parameters: GiveawayParameters,
+        val winnerCount: Int,
+        val prize: GiveawayPrize,
+        /** The sticker the channel chose for it, if TDLib gave one; the bubble shows its own badge instead. */
+        val sticker: dev.kyralabs.pingogram.core.domain.model.Sticker?,
+    ) : MessageContent
+
+    /** The winners of a giveaway (td_api.tl `messageGiveawayWinners`), in the chat that ran it. */
+    data class GiveawayWinners(
+        val boostedChatId: Long,
+        /** The [Giveaway] message in [boostedChatId]. */
+        val giveawayMessageId: Long,
+        /** How many other chats took part besides the boosted one. */
+        val additionalChatCount: Int,
+        val actualWinnersSelectionDate: Long,
+        val onlyNewMembers: Boolean,
+        val wasRefunded: Boolean,
+        val prize: GiveawayPrize,
+        val prizeDescription: String,
+        val winnerCount: Int,
+        /** Up to the first 100 winners, as Telegram names them. */
+        val winnerUserIds: ImmutableList<Long>,
+        /** Prizes nobody took, which go back to the channel. */
+        val unclaimedPrizeCount: Int,
+    ) : MessageContent
+
     /** A rich message, as channels post them: headings, collapsible sections, photos, lists, tables. */
     data class RichMessage(
         val message: dev.kyralabs.pingogram.core.domain.model.RichMessage,
     ) : MessageContent
 
-    /** Content Pingogram cannot show (yet): paid media, giveaways, checklists, …. */
+    /** Content Pingogram cannot show (yet): paid media, giveaways, …. */
     data object Unsupported : MessageContent
 }
 

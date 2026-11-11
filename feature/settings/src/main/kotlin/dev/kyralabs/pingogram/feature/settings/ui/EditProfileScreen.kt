@@ -56,6 +56,7 @@ internal fun EditProfileRoute(
     onChangeNumber: () -> Unit = {},
     onOpenBirthdatePrivacy: () -> Unit = {},
     onOpenPersonalChannel: () -> Unit = {},
+    onOpenProfileColor: () -> Unit = {},
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,6 +95,7 @@ internal fun EditProfileRoute(
         onChangeNumber = onChangeNumber,
         onOpenBirthdatePrivacy = onOpenBirthdatePrivacy,
         onOpenPersonalChannel = onOpenPersonalChannel,
+        onOpenProfileColor = onOpenProfileColor,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -122,6 +124,7 @@ internal fun EditProfileScreen(
     onChangeNumber: () -> Unit = {},
     onOpenBirthdatePrivacy: () -> Unit = {},
     onOpenPersonalChannel: () -> Unit = {},
+    onOpenProfileColor: () -> Unit = {},
 ) {
     val content = state as? EditProfileUiState.Content
     SettingsPageScaffold(
@@ -171,7 +174,7 @@ internal fun EditProfileScreen(
                     onPick = { onEvent(EditProfileEvent.BirthdateChanged(it)) },
                     onOpenPrivacy = onOpenBirthdatePrivacy,
                 )
-                PersonalChannelSection(enabled = !state.isSaving, onOpen = onOpenPersonalChannel)
+                PersonalChannelSection(!state.isSaving, onOpenPersonalChannel, onOpenProfileColor)
                 PhoneNumberSection(state.account?.phoneNumber.orEmpty(), onChangeNumber)
             }
         }

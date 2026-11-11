@@ -291,6 +291,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`LinkTarget.StickerSet`). The custom emoji sets have the same pages (`StickersRoute(emoji)`,
   `StickerSetListRoute(archived, emoji)`, the view models taking the kind from their route), opened from the Stickers
   page's "Emoji" row; `StickerSetSummary.kind` words a set as stickers or emoji (`StickerKindTexts`).
+- **Making sticker sets** (boards 21a–c): `core:domain`'s `StickerSetCreationRepository` (`TdlibStickerSetCreationRepository`,
+  `core:data`, account-scoped, no cache) suggests a link name for a title (`getSuggestedStickerSetName`), checks one
+  (`StickerSetLimits.isNameWellFormed` on the device, then `checkStickerSetName`), prepares a sticker from a picked photo
+  (`AttachmentPreparer.prepareSticker`: copied, written anew upright as a WebP whose longer side is 512 px, through
+  `MediaProcessor.writeSticker` and `stickerPlan`) and publishes the set as the signed-in user (`createNewStickerSet`, static WebP
+  stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
+  (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
+  emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
@@ -412,6 +420,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Name color** (Edit profile, boards 22a/22b): `core:domain`'s `AccentColorRepository` (`TdlibAccentColorRepository`,
+  `core:data`, a `TdlibUpdateCache` of `updateAccentColors`, which TDLib sends once per start) lists the colors Telegram offers
+  (`AccentColorOption`: the id and the built-in color it is drawn like) and sets the user's (`setAccentColor`, no background
+  emoji). `feature:settings`' `ProfileColorRoute` (`ProfileColorViewModel`: the signed-in user from `UserRepository`, the pick in
+  saved state) sits above Edit profile. `User.profileAccentColorId` and `User.emojiStatusId` reach the profile header
+  (`ProfileHeader.profileColor`, `emojiStatusId`); `feature:profile`'s `EmojiStatusViewModel` loads the status's custom emoji
+  through `CustomEmojiRepository` for the route's `LocalCustomEmoji`.
 - **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
   no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
   (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
@@ -445,6 +460,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
   again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
   pushed above Privacy and security.
+- **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
+  (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
+  account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds
+  the password manager's answer (`addLoginPasskey`) and removes one (`removeLoginPasskey`). The password managers are
+  reached through `core:ui`'s `PasskeyCredentials` (`PlatformPasskeyCredentials`: the platform's Credential Manager,
+  Android 14+, no library; `rememberPasskeyCredentials` gives null before), which needs the screen's activity, so the
+  route calls it: `feature:settings`' `PasskeysViewModel` (the list loaded again whenever the page shows, with
+  2-step verification and the session count; the removal's question in saved state) sends
+  `PasskeysEffect.CreatePasskey` with Telegram's request, and `PasskeysRoute` hands the answer back as
+  `PasskeysEvent.Created`. Signing in (board 17b) is `AuthRepository.passkeySignInRequest`
+  (`getAuthenticationPasskeyParameters`, while TDLib waits for a phone number) and `checkPasskey`
+  (`checkAuthenticationPasskey`, waiting as long as authentication requests): `feature:auth`'s `AuthViewModel` sends
+  `AuthEffect.GetPasskey`, `AuthRoute` hands it to `PasskeyCredentials.get` and the answer back as
+  `AuthEvent.PasskeyAnswered` (a cancelled wait as cancelled, so the button never stays busy), and TDLib moves on as
+  after a code. Nothing is logged or kept; the demo lists a sample passkey and says adding one needs an account.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
@@ -489,6 +519,47 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
+- **Live stories** (board 12, watched only): a story whose content is live (`StoryContent.Live`, td_api.tl
+  `storyContentLive.group_call_id`) shows "Live now" in the stories viewer, whose "Watch live" calls `core:ui`'s
+  `VoiceChats.watchLiveStory`. `feature:calls`' `GroupCallScreens` (the `VoiceChats` `Calls` delegates to) opens
+  `GroupCallActivity` with `ACTION_WATCH_LIVE_STORY`; `GroupCallManager.joinLiveStory` joins muted through
+  `GroupCallRepository.joinLiveStory` (`joinLiveStory`), the rest as a voice chat's (the poster's video, the stream of an
+  RTMP one, comments, picture-in-picture), and the screen draws it in a layout of its own (`LiveStoryCall`). Starting a
+  live story and paid live reactions are not offered.
+- **Story albums** (boards 11a, 11b, read only): `core:domain`'s `StoryAlbumRepository` (`TdlibStoryAlbumRepository`,
+  `core:data`, account-scoped, no cache: td_api.tl announces no change to albums) reads a chat's albums
+  (`getChatStoryAlbums`, a `StoryAlbum` with its cover) and pages an album's stories (`getStoryAlbumStories`, with the
+  album's total). `feature:media`'s `storyalbum/`: `StoryAlbumsSection` (`StoryAlbumsViewModel`, keyed by the chat) is
+  the covers a profile shows through a slot `:app` fills, as features share no code; `StoryAlbumRoute(chatId, albumId)`
+  of `core:navigation` (`storyAlbumScreen`, `StoryAlbumViewModel`: 30 stories a page, their days in the zone and
+  language of the moment) is an opened album, whose tap opens `StoryViewerRoute(chatId, storyId, albumId)`: the stories
+  viewer then plays that album's first 100 stories instead of the chat's active ones, and no other chat.
+- **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
+  stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
+  opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
+  `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
+  (`PickStoryMedia`, the multiple picker for more than one place left) opens as the screen first shows, the camera app
+  takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`), and every pick is
+  copied into the upload cache as it arrives (`AttachmentRepository.prepare` as media; anything but a photo or video is
+  deleted and refused). The items, their order and the shown one are in its saved state; the copies are deleted when
+  the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
+  second step (`NewStoryStep`, in saved state): `StoryComposer`, a part of the view model, holds the caption
+  (`CaptionText`, copied from `feature:chat`'s composer with its entity edits and formatting transformation, as features
+  share no code), the audience and whether the user may post, and posts in the `@ApplicationScope`. "Selected people"
+  is a sheet with a view model of its own (`StoryPeopleSheet`, `StoryPeopleViewModel`: the contacts of
+  `ContactRepository`, people only, filtered on the device, the query and the picks in its saved state while it shows),
+  whose picks the composer keeps in its saved state and posts as `StoryPrivacy.Selected`.
+  Posting: `core:domain`'s `StoryPostRepository` (`TdlibStoryPostRepository`, `core:data`, account-scoped, no cache)
+  asks `canPostStory` of the user's Saved Messages chat (`StoryPostAbility`), counts the close friends
+  (`getCloseFriends`) and posts each item with `postStory` (24 h, the chosen `StoryPrivacy`, the caption on the
+  first). A video longer than 60 s is cut first by `MediaStoryVideoCutter` (the platform's `MediaExtractor` and
+  `MediaMuxer`, at the key frames `storyVideoCuts` plans, nothing encoded again). Copies are deleted once TDLib reports
+  them posted (`updateStoryPostSucceeded`); when posting fails, the items' copies stay the caller's. Until then each
+  story TDLib took is followed (`StoryPostings`: its file's `updateFile`, `updateStoryPostFailed`) as
+  `StoryPostRepository.uploads`, which `cancel` stops (`deleteStory`, its copy deleted); `feature:chats`'
+  `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
+  them, with "Stop posting". `TdlibTransferRepository` counts those still sending as uploads, so the background
+  transfers' service keeps posting them with the app in the background, and its "Cancel" stops them too.
 - **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
@@ -766,6 +837,22 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+- **Checklists** (FR-C4): `core:domain`'s `ChecklistRepository` (`TdlibChecklistRepository`, `core:data`, no cache)
+  marks tasks as done or not done (`markChecklistTasksAsDone`) and adds tasks (`addChecklistTasks`, each with the id
+  after the checklist's highest, which td_api.tl leaves to the client); TDLib answers both with `updateMessageContent`
+  of the checklist's message, which `HistoryCache` applies, so the bubble follows Telegram, never a guess. `Checklist`
+  carries TDLib's say on what the user may do (`canMarkTasksAsDone`, `canAddTasks`); `ChecklistTask.completedBy` is a
+  `MessageSender`. `AttachmentRepository.sendChecklist` sends `inputMessageChecklist` (`NewChecklist`: plain title and
+  tasks numbered from 1, who else may mark and add). `feature:chat`'s `ChatChecklists` (a part of `ChatViewModel`,
+  `checklist/`) sends each mark with the task pending in its bubble alone (`withChecklists`, like `withPollChoices`),
+  keeps which bubbles' inline field is open in the saved state and adds the task typed there (its text is the field's
+  own state); `ChecklistUi` on `ChatItem.Bubble.checklist` holds the completers' avatars, looked up with the item's
+  members (`memberIdsOf`, so a completer TDLib has not announced is asked for as a member is). The form is
+  `ChatAttachments`' `ChecklistEditor` (its draft in the saved state, as the poll's) behind `ChecklistFormSheet`, which
+  the attach menu offers to Telegram Premium subscribers only (`attachOptions(isPremium)`, from the signed-in user's
+  `isPremium`), never to anyone else. The service messages `messageChecklistTasksDone` and `messageChecklistTasksAdded`
+  are `ServiceAction.ChecklistTasksDone` / `ChecklistTasksAdded`, worded by `core:ui`'s `ServicePreview` with their
+  counts.
 - **Rich messages** (td_api.tl `messageRichMessage`, the posts channels write with headings, collapsible sections,
   photos, lists and tables): `core:domain`'s `MessageContent.RichMessage` holds a `RichMessage`, its `RichBlock`s (each
   text a `FormattedText`, its formatting and links as the entities of a text message, with `Marked`, `Subscript` and
@@ -791,6 +878,43 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   changes; it keys the bubble's shared bounds too. The viewer then loads `ChatMediaRepository.richMedia` (the message's
   media as messages of their own, `richMediaMessages`, both ends reached) and maps those ids back to the message for
   Forward, "Show in chat", saving and deletions, leaving Delete out.
+- **Paid media** (FR-C4, §1.2): `MessageContent.PaidMedia` (td_api.tl `messagePaidMedia`: the price, the media as
+  `PaidMediaItem`s, previews of their sizes while not paid for and the photos and videos once paid for, `isUnlocked`)
+  is mapped by `core:data`'s `PaidMediaMappers.kt`. Pingogram offers no purchase: a locked post shows its blurred
+  previews, its price and a note. A post paid for opens in the media viewer the way a rich message's media do:
+  `Message.richMediaMessages()` (`core:domain`'s `RichMedia.kt`) turns its photos and videos into messages of their
+  own with the ids `richMediaId` gives them (by their index in the post), which `ChatMediaRepository.richMedia`
+  pages and the viewer loads unchanged; `MessageContent.PaidMedia.mediaContents()` is what the viewer pages and the
+  export copies. `feature:chat`'s `MessagePaidMedia` draws it edge to edge like an album (`isEdgeToEdge`; a locked
+  post's note is the bubble's footer, `showsNoteBelowMedia`), and `richMediaToOpen` checks a tapped id against the
+  post's media as against a rich message's.
+- **Giveaways** (FR-C4, §1.2): `MessageContent.Giveaway` and `MessageContent.GiveawayWinners` (td_api.tl
+  `messageGiveaway`, `messageGiveawayWinners`; `GiveawayParameters`, `GiveawayPrize`) are mapped by `core:data`'s
+  `GiveawayMappers.kt`, a prize of a kind a newer TDLib added keeping the message unsupported. `core:domain`'s
+  `GiveawayRepository` (`TdlibGiveawayRepository`, `core:data`, no cache) asks `getGiveawayInfo` into `GiveawayInfo`
+  (ongoing with the user's `GiveawayParticipantStatus`, or completed with whether they won), only when the user opens
+  the details. The item mapper looks the participating channels up with the chats messages refer to
+  (`chatIdsOf`, `referencedChatIds`, `ItemInputs.chats`) and the winners with the users (`memberIdsOf`), into
+  `ChatItem.Bubble.giveaway` (`GiveawayUi`, `giveawayUi`). `feature:chat`'s `ChatGiveaways` (a part of
+  `ChatViewModel`, `giveaway/`) holds the details sheet (`giveawayInfoSheet`, kept out of `ChatUiState`; its message
+  in the saved state, opened again once the history holds it), loads the info, again on "Try again", and names the
+  chat whose administrators do not take part; a channel's chip is `ChatEvent.OpenChat` → `ChatEffect.OpenChat`, a
+  winner's tile `ChatEvent.OpenProfile`. Nothing enters or buys.
+- **Unsupported messages**: `MessageContent.Unsupported` shows `feature:chat`'s `MessageUnsupported`, with "Update
+  Pingogram" (`ChatEvent.OpenUpdatePage` → `ChatEffect.OpenUrl` of the latest GitHub release) unless the build came
+  from an app store: `ChatViewModel` takes `AppInfo` and puts `!isFromAppStore` into `ChatUiState.showsUpdateLink`,
+  which the bubbles read through `BubbleResources`.
+- **Dates in messages** (td_api.tl `textEntityTypeDateTime`, `TextEntityType.DateTime`): `feature:chat`'s bubble
+  mapping words each date for its reader before anything else marks the text (`withReaderDates`, `dates/`):
+  `ChatTimeFormatter.dateTimeText` in the reader's zone, language and clock, relative ones through `core:ui`'s
+  `TimePatterns.relativeTime` (the platform's `RelativeDateTimeFormatter`; null on the JVM, which shows the date in
+  full). `core:domain`'s `FormattedText.replacingEntities` writes the parts anew and moves every other entity with
+  them, so mentions, search highlights, custom emoji and a headline mark the text as shown. An item with a relative
+  date carries the current minute in its inputs (`ItemInputs.relativeNow`), so it alone is mapped again each minute.
+  `core:ui`'s `toAnnotatedString` makes a date a `LinkAnnotation.Clickable` (`dateTimeOf`) handed the mention
+  listener; `DateTimeEvent.Open` opens `ChatDateTimes`' sheet (a part of `ChatViewModel`, `dateTimeSheet`, kept out of
+  `ChatUiState`, its moment in the saved state), whose "Add to calendar" is `ChatEffect.AddToCalendar` (the route's
+  `ACTION_INSERT` of `CalendarContract.Events`, no permission) and "Copy" `ChatEffect.CopyText`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -938,6 +1062,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecretChatRepository.createSecretChat` (`createNewSecretChat`, Secret chats above), profile photos through
   `UserProfileRepository.profilePhotos` (`getUserProfilePhotos`, paged), and a mention's `@username` through
   `SearchRepository.publicChat` (`searchPublicChat`), which the conversation uses too.
+- Contact notes (`docs/DESIGN_SYSTEM.md` §6 "Contact note"): the note the user keeps about a contact, which only they
+  see and Telegram keeps with their contacts, is `UserFullInfo.note` (td_api.tl `userFullInfo.note`), set with
+  `UserProfileRepository.setNote` (`setUserNote`, plain text of at most `ProfileLimits.NOTE_LENGTH_MAX`, 140,
+  characters). `ProfileViewModel` puts it last in the information rows of a contact (`ProfileInfo.note`) and holds its
+  dialog in `ProfileNote` (`noteEditor`, what is typed in the saved state); TDLib's `updateUserFullInfo` then shows the
+  new note. Edit contact sends a changed note with the names (`ContactRepository.save`'s `note`, as
+  `importedContact.note` of `addContact`), and keeps the contact's own, formatting included, where it did not change.
+  The demo keeps notes on the phone (`DemoAccount`).
+- Birthday suggestions (`docs/DESIGN_SYSTEM.md` §6 "Birthday suggestions"): a contact without a birthday on their
+  profile (`UserFullInfo.birthdate` null) gets the offer (`ProfileInfo.birthdaySuggestion`), whose pick
+  `UserProfileRepository.suggestBirthdate` sends (`suggestUserBirthdate`; the birthday's year 0 when left out,
+  `BirthdateMappers.kt`). Telegram then sends the contact a `messageSuggestBirthdate`, which `core:data` maps to
+  `ServiceAction.BirthdateSuggested` and the chat list's previews word; `core:ui`'s `BirthdaySuggestionCard` draws it
+  for `feature:chat`, and its "Accept" is `ProfileRepository.setBirthdate`. The birthday picker is `core:ui`'s
+  `BirthdateDialog`, shared with Edit profile. The demo answers no suggestion (`NOT_AVAILABLE_IN_DEMO`).
 - Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
   messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
   `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`
@@ -965,10 +1104,31 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
     `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
     to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
-    restricting, banning, lifting), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
+    restricting, banning, lifting), members' tags (`setChatMemberTag`, at most `MemberTagLimits.LENGTH_MAX` characters,
+    an empty one removing it; `feature:profile`'s `MemberTagging`, a part of `ChatMembersViewModel`, keeps the "Set tag"
+    sheet's member and text in its saved state and shows the new tag in the row once Telegram took it, as TDLib
+    announces no member list), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `WelcomeMessageRepository` (`TdlibWelcomeMessageRepository`, no cache: TDLib keeps them and announces them with
+    `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
+    (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
+    `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (1.8.70) cannot reorder them.
+    `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
+    message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
+    for administrators with `AdministratorRights.canSendWelcomeMessages`.
+  - `CommunityRepository` (`TdlibCommunityRepository`, a `TdlibUpdateCache`: TDLib announces each community only with
+    `updateCommunity`): a community the account knows (`Community`: its name, photo and the user's `CommunityRole`), what
+    it holds (`getCommunityFullInfo`, then `updateCommunityFullInfo` while collected: its chats, hidden ones for its
+    administrators), renaming (`setCommunityName`) and deleting (`deleteCommunity`). A supergroup's or channel's
+    community is `GroupDetails.communityId` (`supergroupFullInfo.community_id`), which the info page names and opens
+    (`ChatInfoUiState.Content.community`, `ChatInfoEffect.OpenCommunity`); `feature:profile`'s `CommunityRoute(communityId)`
+    (`CommunityViewModel`: each chat from `ChatRepository`, `getChat` once where TDLib has not announced it, the user's
+    membership from `GroupRepository`, joining through `ChatJoinRepository.join`, the rename dialog in saved state) is
+    a page of the info pages' graph. td_api.tl (a94b83d) has no function to add a chat to a community or to list the
+    user's communities, so neither is offered.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 
@@ -1179,14 +1339,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Background transfers (FR-N4, `docs/adr/0009-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
-  its deletion, progress from `updateFile`), and the downloads asked for with `DownloadPriority.Requested` (a document
+  its deletion, progress from `updateFile`), the stories being posted that TDLib has not given up on
+  (`StoryPostRepository.uploads`), and the downloads asked for with `DownloadPriority.Requested` (a document
   or a photo tapped in a bubble, files saved from a selection), which `TdlibFileRepository` hands it. Automatic downloads
   (prefetch) and what is on screen (visible) never count. `:app`'s `TransfersController` starts `core:notifications`'
   `TransfersWorker` (unique expedited work) as transfers begin while the app is in the foreground, or when the user
   comes back to them; the worker runs in WorkManager's foreground service with type `dataSync`, shows their progress
   in the "Transfers" channel (`TransferNotificationBuilder`, `ProgressStyle` on Android 16) with "Cancel"
-  (`TransferCancelReceiver` → `cancelAll`: `cancelDownloadFile`, `deleteMessages` of the messages being sent), and ends
-  2 s after the last one. Android 15's daily `dataSync` limit reaches it through WorkManager's `onTimeout`.
+  (`TransferCancelReceiver` → `cancelAll`: `cancelDownloadFile`, `deleteMessages` of the messages being sent,
+  `StoryPostRepository.cancel` of the stories), and ends 2 s after the last one. Android 15's daily `dataSync` limit reaches it through WorkManager's `onTimeout`.
 - Send-as (FR-C5): the chat's `Chat.messageSender` (`updateChatMessageSender`, kept by `TdlibChatRepository`) is who new
   messages go out as; `SendAsRepository` (`TdlibSendAsRepository`, `core:data`, no cache) lists who the user can send as
   (`getChatAvailableMessageSenders`) and changes it (`setChatMessageSender`). `feature:chat`'s `ChatSendAs` (a part of
@@ -1342,7 +1503,7 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per
   start, `updateReactionNotificationSettings`, and has no function to read them) sets whom the account hears of
   reactions and poll votes from (`setReactionNotificationSettings`, the sound Telegram keeps sent back as it was). TDLib
-  (a94b83d) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
+  (1.8.70) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
   `NotificationRenderer`: the settings serve the account's other apps until TDLib passes them on.
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
@@ -1502,6 +1663,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   chats: `messageGroupCall` maps to `ServiceAction.GroupCall` (`core:ui`'s previews word it), and `feature:chat`'s
   service pill of one that goes on (`ChatItem.Service.groupCallChatId`) opens it through `core:ui`'s
   `VoiceChats.joinInvitation`, which asks before it joins (`ConferenceTarget.Invitation`).
+- **Comments in group calls** (`REQUIREMENTS.md` FR-V2, `docs/DESIGN_SYSTEM.md` §6 "Voice chat comments"):
+  `GroupCallRepository` also keeps each joined call's comments (`comments`: `updateNewGroupCallMessage`,
+  `updateGroupCallMessagesDeleted`, `updateGroupCallMessageSendFailed`, the newest 200, dropped when the user leaves or
+  the call ends), sends them free (`sendComment`, `sendGroupCallMessage` with no Stars: a call whose comments cost Stars
+  only says so), deletes them (`deleteComments`, `deleteCommentsBy`) and turns them on or off (`setCommentsAllowed`);
+  `GroupCall` carries `are_messages_allowed`, `can_send_messages` (Telegram's limit of participants for comments),
+  `can_toggle_are_messages_allowed`, `can_delete_messages` and `paid_message_star_count`. The screen's
+  `GroupCallCommentsViewModel` (`feature:calls` `ui/comments/`, beside `GroupCallViewModel`, so a comment recomposes
+  the pane alone) names the senders, keeps whether the pane shows in its saved state, and announces new comments to
+  screen readers at most every 5 s; `GroupCallActivity` hands both to `GroupCallScreen` as a `GroupCallCommentsHost`,
+  whose derived visibility is all the rest of the screen reads.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.passkeysItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -276,6 +277,7 @@ private fun SecuritySection(
                 onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
         }
+        passkeysItem { onOpen(PrivacySecurityPage.Passkeys) }
         item { shapes ->
             TwoStepVerificationItem(
                 summary = state.twoStepVerification,

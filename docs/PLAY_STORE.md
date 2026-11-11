@@ -155,7 +155,7 @@ description (`REQUIREMENTS.md` §2). Play's metadata policy forbids implying an 
 - **Screenshots**: Play takes 2–8 phone screenshots, PNG or JPEG, 320–3840 px on each side, the long side at most
   twice the short side. `docs/screenshots/` are 540 × 1171 (2.17:1) and must be padded to 9:16 first: run
   `python3 tools/play/screenshots.py` (writes `build/play/screenshots/`: each centred on its own background at 9:16,
-  659 × 1171, nothing scaled). Phone set, in this order: `chats-light`, `chat-light`, `composer-light`, `reactions-dark`,
+  659 × 1171, nothing scaled). Phone set, in this order: `chats-light`, `chat-light`, `channel-light`, `contacts-dark`,
   `search-light`, `appearance-light`, `settings-dark`, `welcome-light`; a call screen once a device capture exists
   (`feature/calls` goldens are 411 dp phones: capture from a device for the listing). Tablet (7" and 10"):
   `tablet-light`, `tablet-dark` (1080 × 1146, already within 2:1).

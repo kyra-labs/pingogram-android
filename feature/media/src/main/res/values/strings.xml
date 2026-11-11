@@ -95,10 +95,123 @@
     <!-- %1$s is the emoji the user reacted with. -->
     <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>
     <string name="story_playback_failed">This video can\'t be played</string>
-    <string name="story_live_title">Live stream</string>
-    <string name="story_live_body">Pingogram can\'t join live streams from stories yet.</string>
+    <string name="story_live_title">Live now</string>
+    <string name="story_live_body">Watch it on the voice chat screen. Others watching may see that you joined.</string>
+    <string name="story_live_watch">Watch live</string>
     <string name="story_unsupported_title">Can\'t show this story</string>
     <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
     <string name="story_unavailable_title">Story unavailable</string>
     <string name="story_unavailable_body">This story was deleted or has expired.</string>
+    <!-- Posting a story, picking its photos and videos (docs/adr/0036-posting-stories.md). -->
+    <string name="new_story_title">New story</string>
+    <string name="new_story_close">Close</string>
+    <!-- How many photos and videos are picked: "4 selected". -->
+    <plurals name="new_story_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="new_story_in_this_story">In this story</string>
+    <string name="new_story_drag_to_reorder">Drag to reorder</string>
+    <string name="new_story_add_more">Add more</string>
+    <string name="new_story_camera">Camera</string>
+    <string name="new_story_next">Next</string>
+    <string name="new_story_remove">Remove from story</string>
+    <string name="new_story_move_earlier">Move earlier</string>
+    <string name="new_story_move_later">Move later</string>
+    <!-- Read by screen readers for a picked item: "Photo 1 of 4", "Video 3 of 4, 0:14". -->
+    <string name="new_story_a11y_photo">Photo %1$d of %2$d</string>
+    <string name="new_story_a11y_video">Video %1$d of %2$d, %3$s</string>
+    <string name="new_story_a11y_preparing">Adding a photo or video</string>
+    <!-- Under the picked items; Pingogram never asks for the storage permission. -->
+    <plurals name="new_story_picker_note">
+        <item quantity="one">Picked with Android\'s photo picker. Pingogram can only see this item.</item>
+        <item quantity="other">Picked with Android\'s photo picker. Pingogram can only see these %1$d items.</item>
+    </plurals>
+    <string name="new_story_not_postable">Only photos and videos can go into a story</string>
+    <string name="new_story_no_picker">No app on this device can pick photos</string>
+    <string name="new_story_no_camera_app">No camera app on this device can take a photo</string>
+    <!-- Composing a story (board 10b). -->
+    <string name="new_story_back_to_picking">Back to picking</string>
+    <string name="new_story_caption">Caption</string>
+    <string name="new_story_formatting">Formatting</string>
+    <string name="new_story_bold">Bold</string>
+    <string name="new_story_italic">Italic</string>
+    <string name="new_story_link">Link</string>
+    <string name="new_story_spoiler">Spoiler</string>
+    <string name="new_story_link_title">Link</string>
+    <string name="new_story_link_address">Address</string>
+    <string name="new_story_link_apply">Apply</string>
+    <string name="new_story_link_remove">Remove</string>
+    <string name="new_story_link_cancel">Cancel</string>
+    <string name="new_story_audience_everyone">Everyone</string>
+    <string name="new_story_audience_contacts">Contacts</string>
+    <string name="new_story_audience_close_friends">Close friends</string>
+    <string name="new_story_audience_selected">Selected people</string>
+    <!-- The chip once the story is for picked people: "3 people". -->
+    <plurals name="new_story_audience_people">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
+    <!-- The chip that opens who the story is for: "Who can see it: Close friends". -->
+    <string name="new_story_audience_a11y">Who can see it: %1$s</string>
+    <string name="new_story_stays">Stays for 24 h</string>
+    <string name="new_story_post">Post</string>
+    <string name="new_story_posting">Posting…</string>
+    <!-- Who sees the story and which item shows: "Shown to 14 close friends · 1 of 4 items". -->
+    <string name="new_story_shown_to_everyone">Shown to everyone</string>
+    <string name="new_story_shown_to_contacts">Shown to your contacts</string>
+    <plurals name="new_story_shown_to_close_friends">
+        <item quantity="one">Shown to %1$d close friend</item>
+        <item quantity="other">Shown to %1$d close friends</item>
+    </plurals>
+    <string name="new_story_shown_to_close_friends_unknown">Shown to your close friends</string>
+    <plurals name="new_story_shown_to_people">
+        <item quantity="one">Shown to %1$d person</item>
+        <item quantity="other">Shown to %1$d people</item>
+    </plurals>
+    <!-- "Selected people": picking who sees a story among the user's contacts. -->
+    <string name="new_story_people_title">Who can see this story</string>
+    <string name="new_story_people_text">Only the people you pick here see it. Telegram shows it to no one else.</string>
+    <string name="new_story_people_search">Search contacts</string>
+    <string name="new_story_people_clear">Clear search</string>
+    <string name="new_story_people_cancel">Cancel</string>
+    <string name="new_story_people_done">Done</string>
+    <!-- "Done" once people are picked: "Done (3)". -->
+    <plurals name="new_story_people_done_count">
+        <item quantity="one">Done (%1$d)</item>
+        <item quantity="other">Done (%1$d)</item>
+    </plurals>
+    <string name="new_story_people_no_matches">No contacts match</string>
+    <string name="new_story_people_no_contacts">You have no contacts to pick yet. Add them in the Contacts tab.</string>
+    <string name="new_story_people_someone">Deleted account</string>
+    <!-- %1$d is the shown item's place, %2$d how many there are: "1 of 4 items". -->
+    <plurals name="new_story_item_of">
+        <item quantity="one">%1$d of %2$d item</item>
+        <item quantity="other">%1$d of %2$d items</item>
+    </plurals>
+    <string name="new_story_summary">%1$s · %2$s</string>
+    <!-- Why Telegram does not let the user post a story now; never an offer of Telegram Premium (CLAUDE.md rule 3). -->
+    <string name="new_story_limit_active">You have as many active stories as Telegram allows. Post again when one expires.</string>
+    <string name="new_story_limit_weekly">You reached this week\'s limit of stories. You can post again in %1$s.</string>
+    <string name="new_story_limit_monthly">You reached this month\'s limit of stories. You can post again in %1$s.</string>
+    <string name="new_story_limit_premium">Telegram doesn\'t let this account post stories.</string>
+    <string name="new_story_limit_live">Your live story is on. You can post again once it ends.</string>
+    <string name="new_story_limit_other">Telegram doesn\'t let you post a story now.</string>
+    <string name="new_story_checking">Checking whether you can post…</string>
+    <!-- Story albums (boards 11a, 11b) -->
+    <string name="story_albums_header">Albums · %1$d</string>
+    <string name="story_album_cover_description">%1$s, story album</string>
+    <string name="story_album_open">Open album</string>
+    <string name="story_album_back">Back</string>
+    <plurals name="story_album_subtitle">
+        <item quantity="one">%1$s · %2$d story</item>
+        <item quantity="other">%1$s · %2$d stories</item>
+    </plurals>
+    <string name="story_album_story_description">Story from %1$s</string>
+    <string name="story_album_video_description">Video story from %1$s</string>
+    <string name="story_album_play">Play story</string>
+    <string name="story_album_empty">No stories here yet</string>
+    <string name="story_album_empty_body">Stories added to this album show here.</string>
+    <string name="story_album_error">Couldn\'t load this album</string>
+    <string name="story_album_try_again">Try again</string>
 </resources>

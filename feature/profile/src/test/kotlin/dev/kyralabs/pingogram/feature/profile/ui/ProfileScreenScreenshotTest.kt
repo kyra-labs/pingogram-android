@@ -26,6 +26,14 @@ class ProfileScreenScreenshotTest {
     @Test
     fun dark() = capture(ScreenshotVariant.Dark)
 
+    /** The header tinted with a profile color (the owner's board 22a). */
+    @Test
+    fun profileColorDark() =
+        capture(
+            ScreenshotVariant.Dark,
+            ProfilePreviewData.content.copy(header = ProfilePreviewData.content.header.copy(profileColor = 7)),
+        )
+
     @Test
     fun amoled() = capture(ScreenshotVariant.Amoled)
 
@@ -98,6 +106,70 @@ class ProfileScreenScreenshotTest {
     @Test
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
     fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
+
+    /** A contact's note closes the Info group, on its tinted container. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteHighContrast() = capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun noteRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun noteMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withNote)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun noteFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withNote)
+
+    /** A contact without a note: the row offers to add one. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun noNote() = capture(ScreenshotVariant.Light, ProfilePreviewData.withoutNote)
+
+    /** A contact without a birthday: the offer to suggest one, on `tertiaryContainer`. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionHighContrast() =
+        capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun birthdaySuggestionRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun birthdaySuggestionMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withBirthdaySuggestion)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun birthdaySuggestionFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withBirthdaySuggestion)
 
     private fun capture(
         variant: ScreenshotVariant,

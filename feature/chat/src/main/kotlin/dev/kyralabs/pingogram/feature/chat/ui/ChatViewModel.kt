@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
@@ -39,9 +40,11 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
@@ -59,6 +62,7 @@ import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ChatAttachments
+import dev.kyralabs.pingogram.feature.chat.ui.attach.ChecklistEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewDraft
@@ -77,6 +81,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChatChecklists
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.withChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -85,10 +92,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
+import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
+import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.ChatGiveaways
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
@@ -170,6 +181,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Locale
 
 /**
@@ -348,7 +360,9 @@ class ChatViewModel internal constructor(
     searchRepositories: ChatSearchRepositories,
     customEmojiRepository: CustomEmojiRepository,
     pollRepository: PollRepository,
+    checklistRepository: ChecklistRepository,
     scheduledMessageRepository: ScheduledMessageRepository,
+    giveawayRepository: GiveawayRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -356,6 +370,7 @@ class ChatViewModel internal constructor(
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
+    private val appInfo: AppInfo = AppInfo(versionName = ""),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -394,8 +409,11 @@ class ChatViewModel internal constructor(
         searchRepositories: ChatSearchRepositories,
         customEmojiRepository: CustomEmojiRepository,
         pollRepository: PollRepository,
+        checklistRepository: ChecklistRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
+        giveawayRepository: GiveawayRepository,
         targetPreferences: TargetPreferences,
+        appInfo: AppInfo,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -435,13 +453,16 @@ class ChatViewModel internal constructor(
         searchRepositories,
         customEmojiRepository,
         pollRepository,
+        checklistRepository,
         scheduledMessageRepository,
+        giveawayRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
+        appInfo = appInfo,
     )
 
     /**
@@ -835,6 +856,9 @@ class ChatViewModel internal constructor(
     /** What the form of a new poll holds, for its fields; kept like [composerText]. */
     val pollEditor: PollEditor get() = attachments.poll
 
+    /** What the form of a new checklist holds, for its fields; kept like [composerText]. */
+    val checklistEditor: ChecklistEditor get() = attachments.checklist
+
     private val chat: Flow<ChatLookup> =
         chatAttempts
             .flatMapLatest {
@@ -898,6 +922,21 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val checklists =
+        ChatChecklists(
+            chatId = chatId,
+            repository = checklistRepository,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     private val richMessages =
         ChatRichMessages(
             chatId = chatId,
@@ -906,6 +945,36 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    private val giveaways =
+        ChatGiveaways(
+            chatId = chatId,
+            repository = giveawayRepository,
+            chats = chatRepository,
+            history = history,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** A giveaway's details ("Learn more"); null while the sheet is closed. Kept out of [uiState]. */
+    val giveawayInfoSheet: StateFlow<GiveawayInfoSheet?> get() = giveaways.sheet
+
+    private val dateTimes =
+        ChatDateTimes(
+            describe = { unixTime ->
+                DateTimeSheet(
+                    unixTime = unixTime,
+                    text = timeFormatter().dates.full(unixTime),
+                    zoneName = clock.zone().getDisplayName(TextStyle.FULL, locale()),
+                )
+            },
+            savedState = savedStateHandle,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** A tapped date in a message, in the reader's time zone; null while its sheet is closed. Kept out of [uiState]. */
+    val dateTimeSheet: StateFlow<DateTimeSheet?> get() = dateTimes.sheet
 
     /** Who voted for each answer of a public poll; null while the sheet is closed. Kept out of [uiState]. */
     val pollVotersSheet: StateFlow<PollVotersSheet?> get() = polls.votersSheet
@@ -1110,9 +1179,9 @@ class ChatViewModel internal constructor(
             messageActions.sheet,
             messageActions.deleteDialog,
             attachments.preview,
-            attachments.isPollOpen,
-        ) { composerTargetState, sheet, deleteDialog, preview, pollOpen ->
-            Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen)
+            combine(attachments.isPollOpen, attachments.isChecklistOpen, ::Pair),
+        ) { composerTargetState, sheet, deleteDialog, preview, (pollOpen, checklistOpen) ->
+            Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen, checklistOpen)
         }
 
     val uiState: StateFlow<ChatUiState> =
@@ -1134,6 +1203,7 @@ class ChatViewModel internal constructor(
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
             .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
@@ -1161,6 +1231,7 @@ class ChatViewModel internal constructor(
             autoDownloads.start()
             customEmojis.start(composer.text)
             translation.start()
+            giveaways.restore()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
@@ -1188,6 +1259,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
+            is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
+            ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
             is ChatEvent.OpenMention -> mentions.open(event.target)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
@@ -1210,6 +1283,9 @@ class ChatViewModel internal constructor(
             is TranslationEvent -> translation.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
+            is GiveawayEvent -> giveaways.onEvent(event)
+            is DateTimeEvent -> dateTimes.onEvent(event)
+            is ChecklistEvent -> checklists.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
@@ -1285,6 +1361,12 @@ class ChatViewModel internal constructor(
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
+
+            ChatEvent.OpenChecklist -> attachments.openChecklist()
+
+            ChatEvent.DismissChecklist -> attachments.dismissChecklist()
+
+            is ChatEvent.SendChecklist -> attachments.sendChecklist(event.options)
 
             is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
 
@@ -1412,13 +1494,15 @@ class ChatViewModel internal constructor(
             composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
                 .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
-        val options = attachOptions(chat, user, people.myUserId)
+        val me = people.myUserId?.let(people.users::get)
+        val options = attachOptions(chat, user, people.myUserId, isPremium = me?.isPremium == true)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
         return ChatUiState(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
             unreadMentionCount = chat.unreadMentionCount,
+            showsUpdateLink = !appInfo.isFromAppStore,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
             composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
@@ -1438,10 +1522,8 @@ class ChatViewModel internal constructor(
                         isReplacement = preview.replacing != null,
                     )
                 },
-            poll =
-                PollSheet(chat.isChannel, canSchedule).takeIf {
-                    canWrite && overlays.pollOpen && AttachOption.Poll in options
-                },
+            poll = overlays.pollSheet(chat, canWrite, canSchedule, options),
+            checklistForm = overlays.checklistSheet(canWrite, canSchedule, options),
         )
     }
 
@@ -1457,6 +1539,9 @@ class ChatViewModel internal constructor(
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
+
+        /** Where "Update Pingogram" leads from a message this version cannot show: the latest GitHub release. */
+        const val LATEST_RELEASE_URL = "https://github.com/kyra-labs/pingogram-android/releases/latest"
 
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
@@ -1504,6 +1589,7 @@ private fun ChatItemMapper.content(
                         unreadAfterId = unreadAfterId,
                         today = now.atZone(formatter.zone).toLocalDate(),
                         timeFormatter = formatter,
+                        now = now,
                     ),
                 )
             ChatContent.Content(
@@ -1547,8 +1633,29 @@ private class Overlays(
     val deleteDialog: DeleteMessagesDialog?,
     val preview: PreviewDraft?,
     val pollOpen: Boolean,
+    val checklistOpen: Boolean,
 ) {
     val mode: ComposerMode get() = composerTargets.mode
+
+    /** The poll form while it is open, where the user may write and the chat takes polls. */
+    fun pollSheet(
+        chat: Chat,
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: ImmutableList<AttachOption>,
+    ): PollSheet? =
+        PollSheet(chat.isChannel, canSchedule).takeIf { canWrite && pollOpen && AttachOption.Poll in options }
+
+    /** The checklist form while it is open, where the user may write and the chat takes checklists. */
+    fun checklistSheet(
+        canWrite: Boolean,
+        canSchedule: Boolean,
+        options: ImmutableList<AttachOption>,
+    ): ChecklistSheet? =
+        ChecklistSheet(canSchedule).takeIf {
+            canWrite && checklistOpen &&
+                AttachOption.Checklist in options
+        }
 
     fun bar(
         chat: Chat,

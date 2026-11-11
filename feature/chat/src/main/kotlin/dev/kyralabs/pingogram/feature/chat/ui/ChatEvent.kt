@@ -123,6 +123,14 @@ sealed interface ChatEvent {
         val userId: Long,
     ) : ChatEvent
 
+    /** A chat a message names was tapped (a giveaway's participating channel): open it. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatEvent
+
+    /** "Update Pingogram" on a message this version cannot show: open the latest release's page. */
+    data object OpenUpdatePage : ChatEvent
+
     /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
     data class OpenMention(
         val target: MentionTarget,
@@ -237,6 +245,17 @@ sealed interface ChatEvent {
 
     /** Send the poll of the form as [options] say. */
     data class SendPoll(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** "Checklist" in the attach menu: the form of a new checklist opens. */
+    data object OpenChecklist : ChatEvent
+
+    /** The checklist form was dismissed: nothing is sent, the form empties. */
+    data object DismissChecklist : ChatEvent
+
+    /** Send the checklist of the form as [options] say. */
+    data class SendChecklist(
         val options: SendOptions = SendOptions(),
     ) : ChatEvent
 

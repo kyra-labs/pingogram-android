@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.chats.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.chats.ui.goldenPath
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import kotlinx.collections.immutable.ImmutableList
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,10 +52,28 @@ class StoryRingsScreenshotTest {
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() = capture("fontScale200", ScreenshotVariant.Light)
 
+    /** The user's own ring without a story: no ring, an add badge, for posting one. */
+    @Test
+    fun addStory() = capture("addStory", ScreenshotVariant.Light, StoryRingsPreviewData.withoutOwnStory)
+
+    @Test
+    fun addStoryDark() = capture("addStoryDark", ScreenshotVariant.Dark, StoryRingsPreviewData.withoutOwnStory)
+
+    /** The user's stories being posted, 62% sent, then one TDLib gave up on (board 10c). */
+    @Test
+    fun posting() = capture("posting", ScreenshotVariant.Light, StoryRingsPreviewData.posting)
+
+    @Test
+    fun postingDark() = capture("postingDark", ScreenshotVariant.Dark, StoryRingsPreviewData.posting)
+
+    @Test
+    fun notPosted() = capture("notPosted", ScreenshotVariant.Light, StoryRingsPreviewData.failed)
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         name: String,
         variant: ScreenshotVariant,
+        rings: ImmutableList<StoryRing> = StoryRingsPreviewData.rings,
     ) {
         composeRule.setContent {
             ScreenshotTheme(variant) {
@@ -63,7 +82,7 @@ class StoryRingsScreenshotTest {
                     onEvent = {},
                     stories = { modifier ->
                         StoryRingsRow(
-                            rings = StoryRingsPreviewData.rings,
+                            rings = rings,
                             onOpen = {},
                             onNearEnd = {},
                             modifier = modifier,

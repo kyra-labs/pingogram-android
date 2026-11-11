@@ -5,6 +5,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.mapper.toBirthdate
+import dev.kyralabs.pingogram.core.data.mapper.toTdBirthdate
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
@@ -83,7 +85,7 @@ class TdlibProfileRepository
 
         override suspend fun setBirthdate(birthdate: Birthdate?): Outcome<Unit> =
             client
-                .request(TdApi.SetBirthdate(birthdate?.let { TdApi.Birthdate(it.day, it.month, it.year ?: 0) }))
+                .request(TdApi.SetBirthdate(birthdate?.toTdBirthdate()))
                 .map {}
 
         override suspend fun setProfilePhoto(
@@ -142,6 +144,3 @@ private data class ProfileOptions(
 
 private const val MY_ID_OPTION = "my_id"
 private const val BIO_LENGTH_MAX_OPTION = "bio_length_max"
-
-/** TDLib's birthday as Pingogram's: a year of 0 means the user left it out. */
-private fun TdApi.Birthdate.toBirthdate() = Birthdate(day, month, year.takeIf { it > 0 })

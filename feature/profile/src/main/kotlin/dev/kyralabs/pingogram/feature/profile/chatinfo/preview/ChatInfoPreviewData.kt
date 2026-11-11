@@ -53,6 +53,7 @@ object ChatInfoPreviewData {
         name: String,
         status: UiText? = UiText.resource(UiR.string.user_status_online),
         role: UiText? = null,
+        tag: String? = null,
         actions: List<MemberAction> = listOf(MemberAction.Promote, MemberAction.Restrict, MemberAction.Remove),
     ) = MemberItem(
         sender = MessageSender.User(id),
@@ -62,14 +63,22 @@ object ChatInfoPreviewData {
         status = status,
         isOnline = status == UiText.resource(UiR.string.user_status_online),
         role = role,
+        tag = tag,
+        isAdministrator = role != null,
         actions = actions.toImmutableList(),
     )
 
     val members =
         persistentListOf(
             member(1, "Grace Hopper", role = UiText.resource(R.string.chat_info_role_owner), actions = emptyList()),
-            member(2, "Ada Lovelace", role = UiText.Plain("Moderator"), actions = listOf(MemberAction.EditRights)),
-            member(3, "Alan Turing", status = UiText.Plain("last seen 5 minutes ago")),
+            member(
+                2,
+                "Ada Lovelace",
+                role = UiText.resource(R.string.chat_info_role_admin),
+                tag = "Moderator",
+                actions = listOf(MemberAction.SetTag, MemberAction.EditRights),
+            ),
+            member(3, "Alan Turing", status = UiText.Plain("last seen 5 minutes ago"), tag = "Beta tester"),
             member(4, "Katherine Johnson", status = UiText.Plain("last seen yesterday at 9:41 PM")),
             member(5, "Edsger Dijkstra", status = UiText.Plain("last seen recently")),
         )

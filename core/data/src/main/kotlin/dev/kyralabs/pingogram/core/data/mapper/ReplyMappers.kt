@@ -10,7 +10,7 @@ import org.drinkless.tdlib.TdApi
  * one; no checklist task, no poll option.
  */
 internal fun ReplyTarget.toInputMessageReplyTo(): TdApi.InputMessageReplyTo {
-    val tdQuote = quote?.let { TdApi.InputTextQuote(it.text.toTdFormattedText(), it.position) }
+    val tdQuote = quote?.let { TdApi.InputTextQuote(it.text.toTdFormattedText(), emptyArray(), it.position) }
     val otherChat = chatId
     return if (otherChat == null) {
         TdApi.InputMessageReplyToMessage(messageId, tdQuote, 0, "")

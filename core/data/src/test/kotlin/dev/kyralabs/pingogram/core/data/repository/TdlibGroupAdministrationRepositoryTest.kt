@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AdministratorRights
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MemberTagLimits
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -99,6 +100,26 @@ class TdlibGroupAdministrationRepositoryTest {
             val result = repository.setMemberRole(CHAT, MessageSender.User(7), MemberRole.Member)
 
             assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), result)
+        }
+
+    @Test
+    fun `a member's tag goes trimmed to TDLib, and an empty one removes it`() =
+        runTest {
+            repository.setMemberTag(CHAT, 7, "  Beta tester ")
+            repository.setMemberTag(CHAT, 7, "")
+
+            val (set, removed) = client.sentOf<TdApi.SetChatMemberTag>()
+            assertEquals(Triple(CHAT, 7L, "Beta tester"), Triple(set.chatId, set.userId, set.tag))
+            assertEquals("", removed.tag)
+        }
+
+    @Test
+    fun `a tag longer than Telegram takes is refused before TDLib`() =
+        runTest {
+            val result = repository.setMemberTag(CHAT, 7, "x".repeat(MemberTagLimits.LENGTH_MAX + 1))
+
+            assertEquals(Outcome.Failure(DomainError.InputRejected), result)
+            assertTrue(client.sentOf<TdApi.SetChatMemberTag>().isEmpty())
         }
 
     @Test

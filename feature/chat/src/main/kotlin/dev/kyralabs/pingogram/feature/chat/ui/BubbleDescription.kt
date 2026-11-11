@@ -7,6 +7,9 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistDescription
+import dev.kyralabs.pingogram.feature.chat.ui.content.paidMediaDescription
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayDescription
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
@@ -16,7 +19,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 /**
  * What screen readers say for a bubble, which they read as one (`docs/DESIGN_SYSTEM.md` §9): "{sender}, {time}:
  * {content}, {status}", the status only for outgoing messages. The content is the forward's origin, the reply, the
- * kind of media, a poll's answers with their shares and marks ([pollDescription]), a translation's label, the text
+ * kind of media, a poll's answers with their shares and marks ([pollDescription]), a checklist's tasks
+ * ([checklistDescription]), a translation's label, the text
  * (hidden spoilers read "spoiler"; a translation once shown), the link preview's title, the reactions, a self-destruct
  * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. A scheduled
  * message's time is when it goes out, with how often it repeats. Built in the bubble's `semantics` block, so only when
@@ -54,6 +58,9 @@ private fun bubbleContent(
         },
         bubble.contentLabel?.resolve(resources),
         pollDescription(resources, bubble),
+        paidMediaDescription(resources, bubble),
+        giveawayDescription(resources, bubble),
+        checklistDescription(resources, bubble),
         bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
         bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),
         (bubble.content as? MessageContent.RichMessage)?.let { content ->

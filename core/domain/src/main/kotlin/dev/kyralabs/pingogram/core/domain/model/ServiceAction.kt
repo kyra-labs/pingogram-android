@@ -103,6 +103,16 @@ sealed interface ServiceAction {
     /** The sender, one of the user's contacts, joined Telegram. */
     data object ContactRegistered : ServiceAction
 
+    /**
+     * The sender suggested [birthdate] as the other user's birthday (td_api.tl `messageSuggestBirthdate`), which the
+     * receiver may keep on their profile. `toString()` leaves the date out.
+     */
+    data class BirthdateSuggested(
+        val birthdate: Birthdate,
+    ) : ServiceAction {
+        override fun toString() = "BirthdateSuggested(…)"
+    }
+
     /** A video chat starts at [startDate] (Unix seconds). */
     data class VideoChatScheduled(
         val startDate: Long,
@@ -118,6 +128,22 @@ sealed interface ServiceAction {
     /** The sender invited these users to the video chat. */
     data class VideoChatInvited(
         val userIds: ImmutableList<Long>,
+    ) : ServiceAction
+
+    /**
+     * The sender marked [doneCount] tasks of the checklist of message [checklistMessageId] as done, and
+     * [notDoneCount] as not done again.
+     */
+    data class ChecklistTasksDone(
+        val checklistMessageId: Long,
+        val doneCount: Int,
+        val notDoneCount: Int,
+    ) : ServiceAction
+
+    /** The sender added [count] tasks to the checklist of message [checklistMessageId]. */
+    data class ChecklistTasksAdded(
+        val checklistMessageId: Long,
+        val count: Int,
     ) : ServiceAction
 
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */

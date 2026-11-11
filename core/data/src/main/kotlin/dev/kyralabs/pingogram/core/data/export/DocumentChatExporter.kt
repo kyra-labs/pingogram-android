@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
+import dev.kyralabs.pingogram.core.domain.model.mediaContents
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportOutcome
 import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
@@ -469,14 +470,21 @@ private fun MessageContent.text(): FormattedText =
         is MessageContent.Audio -> caption
         is MessageContent.Document -> caption
         is MessageContent.Poll -> description
+        is MessageContent.PaidMedia -> caption
+        is MessageContent.Checklist -> list.title
         is MessageContent.RichMessage -> message.fullText()
         else -> FormattedText.Empty
     }
 
-/** The files of a message: its one file, or a rich message's photos, videos and GIFs. */
+/**
+ * The files of a message: its one file, a rich message's photos, videos and GIFs, or a paid post's photos and videos
+ * once paid for.
+ */
 private fun MessageContent.files(): List<MediaFile> =
     if (this is MessageContent.RichMessage) {
         message.media().mapNotNull { it.file() }
+    } else if (this is MessageContent.PaidMedia) {
+        mediaContents().mapNotNull { (_, media) -> media.file() }
     } else {
         listOfNotNull(file())
     }

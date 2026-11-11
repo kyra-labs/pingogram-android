@@ -101,6 +101,18 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
             ServiceAction.VideoChatEnded(duration)
         }
 
+        is TdApi.MessageChecklistTasksDone -> {
+            ServiceAction.ChecklistTasksDone(
+                checklistMessageId,
+                doneCount = markedAsDoneTaskIds.size,
+                notDoneCount = markedAsNotDoneTaskIds.size,
+            )
+        }
+
+        is TdApi.MessageChecklistTasksAdded -> {
+            ServiceAction.ChecklistTasksAdded(checklistMessageId, count = tasks.size)
+        }
+
         is TdApi.MessageInviteVideoChatParticipants -> {
             ServiceAction.VideoChatInvited(userIds.asList().toImmutableList())
         }
@@ -111,6 +123,10 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
 
         is TdApi.MessageContactRegistered -> {
             ServiceAction.ContactRegistered
+        }
+
+        is TdApi.MessageSuggestBirthdate -> {
+            birthdate?.let { ServiceAction.BirthdateSuggested(it.toBirthdate()) } ?: ServiceAction.Other
         }
 
         is TdApi.MessageCustomServiceAction -> {
@@ -159,8 +175,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageChatSetBackground::class.java,
         TdApi.MessageChatSetTheme::class.java,
         TdApi.MessageChatShared::class.java,
-        TdApi.MessageChecklistTasksAdded::class.java,
-        TdApi.MessageChecklistTasksDone::class.java,
         TdApi.MessageDirectMessagePriceChanged::class.java,
         TdApi.MessageForumTopicCreated::class.java,
         TdApi.MessageForumTopicEdited::class.java,
@@ -187,7 +201,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessagePremiumGiftCode::class.java,
         TdApi.MessageProximityAlertTriggered::class.java,
         TdApi.MessageRefundedUpgradedGift::class.java,
-        TdApi.MessageSuggestBirthdate::class.java,
         TdApi.MessageSuggestProfilePhoto::class.java,
         TdApi.MessageSuggestedPostApprovalFailed::class.java,
         TdApi.MessageSuggestedPostApproved::class.java,
@@ -196,6 +209,7 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageSuggestedPostRefunded::class.java,
         TdApi.MessageTonConnectRequest::class.java,
         TdApi.MessageTonWalletTransfer::class.java,
+        TdApi.MessageUnpaidMessagesAllowedByLink::class.java,
         TdApi.MessageUpgradedGift::class.java,
         TdApi.MessageUpgradedGiftPurchaseOffer::class.java,
         TdApi.MessageUpgradedGiftPurchaseOfferRejected::class.java,

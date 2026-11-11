@@ -30,9 +30,12 @@ import kotlin.time.Duration.Companion.seconds
  *
  * - **Loading**: [ContactRepository.editableContact], after the screen's first frame; a failure shows its error until
  *   [EditContactEvent.Retry]. The fields start with the contact's names (for a user who is no contact yet, the user's
- *   own), and "Share my phone number" off, offered only where the user cannot see the number yet.
+ *   own) and the note the current user keeps about them, and "Share my phone number" off, offered only where the user
+ *   cannot see the number yet.
  * - **Fields** are kept in the [SavedStateHandle] as they are typed, and so is the delete question, so they survive
- *   process death; names at most Telegram's 64 characters.
+ *   process death; names at most Telegram's 64 characters, the note `ProfileLimits.NOTE_LENGTH_MAX`.
+ * - **The note** goes with the names only where it was changed, as plain text; unchanged, the contact keeps theirs,
+ *   formatting included.
  * - **Saving** needs a first name ([ContactRepository.save]); **deleting** asks first ([ContactRepository.delete]).
  *   Either closes the screen when done ([EditContactEffect.Done]). Wrong names show at the field; `FLOOD_WAIT` counts
  *   down while "Save" waits; anything else is a snackbar.
@@ -74,6 +77,10 @@ class EditContactViewModel internal constructor(
 
             is EditContactEvent.LastNameChanged -> {
                 editName(KEY_LAST_NAME, event.value) { copy(lastName = it) }
+            }
+
+            is EditContactEvent.NoteChanged -> {
+                editNote(event.value)
             }
 
             is EditContactEvent.SharePhoneNumberChanged -> {
@@ -131,6 +138,8 @@ class EditContactViewModel internal constructor(
             firstName = savedStateHandle.get<String>(KEY_FIRST_NAME) ?: user.firstName,
             lastName = savedStateHandle.get<String>(KEY_LAST_NAME) ?: user.lastName,
             sharePhoneNumber = canSharePhoneNumber && savedStateHandle.get<Boolean>(KEY_SHARE) == true,
+            note = savedStateHandle.get<String>(KEY_NOTE) ?: note,
+            savedNote = note,
             showsDeleteDialog = user.isContact && savedStateHandle.get<Boolean>(KEY_DELETE) == true,
         )
 
@@ -144,6 +153,14 @@ class EditContactViewModel internal constructor(
         val name = value.limitedToCodePoints(ProfileLimits.NAME_LENGTH_MAX)
         savedStateHandle[key] = name
         mutableUiState.value = content.transform(name).copy(fieldError = null)
+    }
+
+    private fun editNote(value: String) {
+        val content = content ?: return
+        if (content.isWorking) return
+        val note = value.limitedToCodePoints(ProfileLimits.NOTE_LENGTH_MAX)
+        savedStateHandle[KEY_NOTE] = note
+        mutableUiState.value = content.copy(note = note)
     }
 
     private fun setSharePhoneNumber(share: Boolean) {
@@ -161,7 +178,10 @@ class EditContactViewModel internal constructor(
 
     private fun save() {
         val content = content ?: return
-        request { contactRepository.save(userId, content.firstName, content.lastName, content.sharePhoneNumber) }
+        val note = content.note.takeIf { it.trim() != content.savedNote.trim() }
+        request {
+            contactRepository.save(userId, content.firstName, content.lastName, content.sharePhoneNumber, note)
+        }
     }
 
     private fun delete() {
@@ -232,6 +252,7 @@ class EditContactViewModel internal constructor(
         const val KEY_FIRST_NAME = "editContact.firstName"
         const val KEY_LAST_NAME = "editContact.lastName"
         const val KEY_SHARE = "editContact.share"
+        const val KEY_NOTE = "editContact.note"
         const val KEY_DELETE = "editContact.delete"
     }
 }

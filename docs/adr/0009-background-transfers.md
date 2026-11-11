@@ -41,6 +41,9 @@ Options considered:
   permission granted at install, which Pingogram requests (approved by the owner on 2026-10-21); the user can turn Live
   Updates off for the app in Android's settings.
 
+Amendment (2026-11-10, `docs/adr/0036-posting-stories.md`): the stories being posted count too, each one TDLib has not
+given up on as an upload (`StoryPostRepository.uploads`); "Cancel" stops them (`deleteStory`, their copies deleted).
+
 ## Consequences
 
 - No new library. WorkManager initializes at the first transfer, not at start.

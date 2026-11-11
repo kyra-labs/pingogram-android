@@ -155,7 +155,10 @@ object TdApiFixtures {
         data: ByteArray = byteArrayOf(1, 2, 3),
     ) = TdApi.Minithumbnail(width, height, data)
 
-    /** A regular user with a test-DC phone number (digits only, as TDLib reports it), no photo and no status. */
+    /**
+     * A regular user with a test-DC phone number (digits only, as TDLib reports it), no photo, no status and no profile
+     * color (-1, as TDLib reports none).
+     */
     fun user(
         id: Long = 1,
         firstName: String = "Ada",
@@ -187,6 +190,7 @@ object TdApiFixtures {
         it.haveAccess = haveAccess
         it.type = type
         it.languageCode = "en"
+        it.profileAccentColorId = -1
     }
 
     /** [active] usernames, the first one editable. */

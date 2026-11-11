@@ -40,6 +40,13 @@ data class User(
      * the experimental look picks a sender's hue from it. -1 while unknown.
      */
     val accentColorId: Int = -1,
+    /**
+     * The color of the user's profile header (td_api.tl `user.profile_accent_color_id`), which Telegram Premium
+     * subscribers set; -1 for none.
+     */
+    val profileAccentColorId: Int = -1,
+    /** The custom emoji the user shows beside their name (td_api.tl `user.emoji_status`); 0 for none. */
+    val emojiStatusId: Long = 0,
 ) {
     override fun toString() = "User(id=$id, type=$type, status=$status, …)"
 }

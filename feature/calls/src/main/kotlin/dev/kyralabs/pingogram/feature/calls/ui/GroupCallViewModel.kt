@@ -342,6 +342,11 @@ class GroupCallViewModel
                         return
                     }
 
+                    action == GroupCallActivity.ACTION_WATCH_LIVE_STORY -> {
+                        val groupCallId = savedStateHandle.get<Int>(GroupCallActivity.EXTRA_GROUP_CALL_ID) ?: 0
+                        if (groupCallId == 0) JoinResult.NoVoiceChat else manager.joinLiveStory(chatId, groupCallId)
+                    }
+
                     action == GroupCallActivity.ACTION_START -> {
                         // A refusal (rights, a flood wait) reads as no voice chat: there is none to join.
                         (manager.startVoiceChat(chatId) as? Outcome.Success)?.value ?: JoinResult.NoVoiceChat
@@ -400,7 +405,13 @@ class GroupCallViewModel
                             duration(ids.second),
                             conferences.verification(ids.first),
                         ) { info, rows, duration, verification ->
-                            Details(info?.participantCount, rows, duration, verification?.emojis ?: persistentListOf())
+                            Details(
+                                info?.participantCount,
+                                rows,
+                                duration,
+                                verification?.emojis ?: persistentListOf(),
+                                info?.inviteLink?.takeIf { it.isNotEmpty() },
+                            )
                         }
                     }
                 }
@@ -474,6 +485,8 @@ class GroupCallViewModel
             val duration: String? = null,
             /** A conference call's emojis to compare; empty for a voice chat, and until the call is verified. */
             val emojis: ImmutableList<String> = persistentListOf(),
+            /** A conference call's link, which "Invite link" shares. */
+            val inviteLink: String? = null,
         )
 
         private fun ActiveGroupCall.toUiState(
@@ -482,6 +495,7 @@ class GroupCallViewModel
         ) = GroupCallUiState.InCall(
             chat = chat,
             isConference = isConference,
+            isLiveStory = isLiveStory,
             emojis = details.emojis,
             stage =
                 when (val phase = phase) {
@@ -499,6 +513,7 @@ class GroupCallViewModel
             isHandRaised = isHandRaised,
             canEnd = canEnd,
             canInvite = canInvite,
+            inviteLink = details.inviteLink,
             route = audio.route,
             routes = audio.available,
             video =
@@ -538,6 +553,7 @@ class GroupCallViewModel
                     GroupCallActivity.ACTION_START,
                     GroupCallActivity.ACTION_JOIN_CONFERENCE,
                     GroupCallActivity.ACTION_JOIN_INVITATION,
+                    GroupCallActivity.ACTION_WATCH_LIVE_STORY,
                 )
 
             const val KEY_DONE = "group_call_action_done"

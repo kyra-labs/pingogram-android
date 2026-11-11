@@ -181,4 +181,31 @@
         <item quantity="one">%d person couldn\'t be invited.</item>
         <item quantity="other">%d people couldn\'t be invited.</item>
     </plurals>
+    <!-- Comments in voice chats and conference calls (docs/DESIGN_SYSTEM.md §6, "Voice chat comments"). -->
+    <string name="group_call_comments">Comments</string>
+    <string name="group_call_comments_count">Comments · %1$s</string>
+    <plurals name="group_call_comments_new">
+        <item quantity="one">%1$d new comment. %2$s: %3$s</item>
+        <item quantity="other">%1$d new comments. Newest from %2$s: %3$s</item>
+    </plurals>
+    <string name="group_call_comments_options">Comment options</string>
+    <string name="group_call_comments_turn_off">Turn off comments</string>
+    <string name="group_call_comments_turn_on">Turn on comments</string>
+    <string name="group_call_comments_empty">No comments yet</string>
+    <string name="group_call_comments_off">Comments are off</string>
+    <string name="group_call_comments_paid">Comments here cost Telegram Stars. Pingogram can\'t pay yet.</string>
+    <string name="group_call_comments_too_large">Too many people are here for comments</string>
+    <string name="group_call_comment_hint">Add a comment</string>
+    <string name="group_call_comment_send">Send comment</string>
+    <string name="group_call_comment_react">React</string>
+    <string name="group_call_comment_send_reaction">Send %1$s</string>
+    <string name="group_call_comment_stars">★ %1$d</string>
+    <string name="group_call_comment_not_sent">Not sent</string>
+    <string name="group_call_comment_delete">Delete</string>
+    <string name="group_call_comment_report">Delete and report spam</string>
+    <string name="group_call_comment_delete_all">Delete all from %1$s</string>
+    <string name="group_call_invite_link">Invite link</string>
+    <!-- Live stories (board 12) -->
+    <string name="live_story_badge">LIVE</string>
+    <string name="live_story_close">Leave live story</string>
 </resources>

@@ -29,9 +29,9 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
 > [!NOTE]
-> Pingogram is an **early beta** (0.4.0). Everyday messaging works, with notifications,
-> voice messages and stickers, contacts, profiles, groups and channels, forum topics and secret
-> chats; calls are not there yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
+> Pingogram 2.0 brings a bolder Material 3 Expressive look to chats, contacts and Settings. Everyday messaging
+> works, with notifications, voice and video messages, stickers, groups and channels, forum topics, secret chats,
+> and voice, video and group calls. See [what works today](#what-works-today) and [what is missing](#not-yet).
 
 ## Screenshots
 
@@ -42,53 +42,53 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
     <td align="center" width="25%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chats-dark.png">
-        <img src="docs/screenshots/chats-light.png" alt="Chat list with folder tabs" width="200">
+        <img src="docs/screenshots/chats-light.png" alt="Chat list with its large header, folder chips and pinned chats" width="200">
       </picture>
-      <br><sub>Chat list with folders</sub>
+      <br><sub>Chat list with folders and pinned chats</sub>
     </td>
     <td align="center" width="25%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chat-dark.png">
-        <img src="docs/screenshots/chat-light.png" alt="Group conversation with replies, a link preview and reactions" width="200">
+        <img src="docs/screenshots/chat-light.png" alt="Group conversation with each person's messages in their own color, role labels, replies and reactions" width="200">
       </picture>
-      <br><sub>Replies, link previews, reactions</sub>
+      <br><sub>Group chats in each person's color</sub>
     </td>
     <td align="center" width="25%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/reactions-dark.png">
-        <img src="docs/screenshots/reactions-light.png" alt="Conversation with large emoji and reaction badges" width="200">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/channel-dark.png">
+        <img src="docs/screenshots/channel-light.png" alt="Channel with a post, an unread divider and a group of files" width="200">
       </picture>
-      <br><sub>Expressive bubbles and emoji</sub>
+      <br><sub>Channels and files</sub>
     </td>
     <td align="center" width="25%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/composer-dark.png">
-        <img src="docs/screenshots/composer-light.png" alt="Composer with formatted text and the send button" width="200">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/contacts-dark.png">
+        <img src="docs/screenshots/contacts-light.png" alt="Contacts with who is online now and alphabetical sections" width="200">
       </picture>
-      <br><sub>Formatting in the composer</sub>
+      <br><sub>Contacts and who is online</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="25%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
-        <img src="docs/screenshots/search-light.png" alt="Search results for chats, contacts and messages" width="200">
+        <img src="docs/screenshots/search-light.png" alt="Search with the people you write to most, filter chips with counts and results" width="200">
       </picture>
-      <br><sub>Search chats and messages</sub>
+      <br><sub>Search chats, people and messages</sub>
     </td>
     <td align="center" width="25%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-        <img src="docs/screenshots/settings-light.png" alt="Settings with the account card" width="200">
+        <img src="docs/screenshots/settings-light.png" alt="Settings with the account card and grouped pages" width="200">
       </picture>
       <br><sub>Settings</sub>
     </td>
     <td align="center" width="25%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/appearance-dark.png">
-        <img src="docs/screenshots/appearance-light.png" alt="Appearance settings: theme, AMOLED black, dynamic color, contrast" width="200">
+        <img src="docs/screenshots/appearance-light.png" alt="Appearance settings: a live preview, light and dark modes, AMOLED black, color themes, contrast" width="200">
       </picture>
-      <br><sub>Theme, dynamic color, contrast</sub>
+      <br><sub>Live preview, themes, contrast</sub>
     </td>
     <td align="center" width="25%">
       <picture>
@@ -117,7 +117,10 @@ light or dark theme.</sub>
 
 - **Sign-in:** phone number with country picker, every login code type, two-step verification
   with password recovery, new-account registration, QR code login and email verification.
-- **Chat list:** folders as tabs, unread, mention and reaction badges, typing and online status,
+- **The look:** Material 3 Expressive throughout: large headers that shrink as you scroll, folder chips that slide
+  with your finger, pinned chats grouped at the top, avatars shaped by the kind of chat, a floating navigation bar
+  with "New chat" beside it.
+- **Chat list:** folders, unread, mention and reaction badges, typing and online status,
   drafts, swipe to archive or mark as read, multi-select with a floating toolbar (pin, mute,
   archive, mark as read, delete) and the archive.
 - **Conversations:** paged history that opens at the first unread message, Material 3 Expressive
@@ -142,14 +145,18 @@ light or dark theme.</sub>
   description, leaving and deleting, as far as your rights allow; creating groups and channels.
 - **Bots:** command menus and suggestions, the buttons bots put under their messages, bot keyboards, inline bots
   ("@gif cats") and a Start button for bots you have not used yet. Mini Apps, games and payments are not there yet.
-- **Voice calls:** end-to-end encrypted, with the four emojis to compare; they ring like phone calls, on the lock
-  screen too, and work with your headset, car and watch.
+- **Calls:** end-to-end encrypted voice and video calls, with the four emojis to compare; they ring like phone
+  calls, on the lock screen too, and work with your headset, car and watch. Picture-in-picture, screen sharing,
+  group voice chats with video, live streams, and group calls by link or started from Recent calls.
+- **Channels and groups in color:** each person's messages in their own hue (vivid or tinted), role labels, a
+  "Jump to mention" button, and rich channel posts with headings, sections, photos, lists and tables.
 - **Inside chats:** secret chats (end-to-end encrypted, on this phone only, with a self-destruct
   timer and the encryption key to compare), forum topics, comment threads under channel posts and
   a pinned messages bar.
 - **Sharing into Pingogram:** text, links, photos, videos and files shared from other apps go to the
   chats you pick, or straight to one from Android's share sheet.
-- **Search** across your chats, contacts, public chats and channels, and messages.
+- **Search** across your chats, contacts, public chats and channels, and messages, with the people you write to
+  most and counts on the Messages, Media and Links chips. Settings has a search of its own.
 - **Telegram links:** `tg://`, `t.me`, `telegram.me` and `telegram.dog` links from other apps
   and in messages open in Pingogram (usernames, phone numbers, message links, invite links,
   Saved Messages, settings pages and more); on Android 12 and later, turn on "Open supported
@@ -173,19 +180,19 @@ light or dark theme.</sub>
 
 Pingogram asks for each permission only when you use what needs it, and says why first:
 notifications (Android 13+), the microphone for voice messages and calls, the location you send, your
-contacts only if you turn on contacts sync, and the camera only for the QR code scanner. The
-scanner reads codes on your phone: nothing the camera sees is kept or sent, only the Telegram
-link a code holds is opened through TDLib. There are no analytics, ads or trackers.
+contacts only if you turn on contacts sync, and the camera for the QR code scanner, video calls and video
+messages. The scanner reads codes on your phone: nothing the camera sees is kept or sent, only the Telegram
+link a code holds is opened through TDLib. Installing apps is used only when you tap an APK someone sent you,
+and Android asks first. There are no analytics, ads or trackers.
 
 ### Not yet
 
-- Recording video messages; creating and editing forum topics
-- Video calls (a video call reaches you as a voice call) and group calls, planned next
-  ([ADR 0019](docs/adr/0019-video-and-group-calls-scope.md))
+- Mini Apps, games and payments
+- Posting stories (viewing them works), and sending custom emoji
+- Image wallpapers for chats
 
-The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster
-start-up and smoother scrolling than the official app on the same device
-([performance budgets](docs/PERFORMANCE.md)).
+The [roadmap](docs/ROADMAP.md) lists what is left, and Pingogram also aims for faster start-up and smoother
+scrolling than the official app on the same device ([performance budgets](docs/PERFORMANCE.md)).
 
 ## Translations
 

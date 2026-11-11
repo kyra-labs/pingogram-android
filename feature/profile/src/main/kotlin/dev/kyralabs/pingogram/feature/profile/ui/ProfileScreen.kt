@@ -105,9 +105,10 @@ internal fun ProfileScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
+    storyAlbums: StoryAlbumsSlot? = null,
 ) {
     val page =
-        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact, onExportChat)
+        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact, onExportChat, storyAlbums)
     if (twoPanes) {
         ProfilePanes(page, onBack, snackbarHostState, modifier, gridState)
     } else {
@@ -124,6 +125,7 @@ internal class ProfilePageParts(
     val mediaActions: SharedMediaActions,
     val onEditContact: (() -> Unit)?,
     val onExportChat: (() -> Unit)? = null,
+    val storyAlbums: StoryAlbumsSlot? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
@@ -276,6 +278,14 @@ private fun LazyGridScope.profileItems(
             )
         }
     }
+    val albums = page.storyAlbums
+    val chatId = page.media.chatId
+    if (albums != null && chatId != null) {
+        // Nothing shows for a chat without albums, so the section adds its own space above it.
+        fullWidth(key = STORY_ALBUMS, inset = inset) {
+            albums(chatId, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
+        }
+    }
 }
 
 /** A full-width item of the grid, inset by [inset] at its sides and [top] above it. */
@@ -322,4 +332,5 @@ private const val ACTIONS = "actions"
 private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
+private const val STORY_ALBUMS = "story-albums"
 private const val MEDIA_HEADER = "media-header"

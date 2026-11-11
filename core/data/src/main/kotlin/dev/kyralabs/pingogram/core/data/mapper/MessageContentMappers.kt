@@ -47,6 +47,10 @@ internal fun TdApi.MessageContent.toMessageContent(
             MessageContent.Poll(poll.toPoll(), description.toFormattedText())
         }
 
+        is TdApi.MessageChecklist -> {
+            MessageContent.Checklist(list.toChecklist())
+        }
+
         is TdApi.MessageDice -> {
             MessageContent.Dice(emoji, value)
         }
@@ -89,6 +93,7 @@ internal fun TdApi.MessageContent.toMessageContent(
 
         else -> {
             toMediaContent()
+                ?: toOfferContent()
                 ?: toServiceAction(sender, isChannelPost)?.let(MessageContent::Service)
                 ?: MessageContent.Unsupported
         }

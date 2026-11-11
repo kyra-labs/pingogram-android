@@ -212,8 +212,11 @@ internal const val LANDSCAPE_PHONE = "spec:width=891dp,height=411dp,orientation=
 
 /** An [AuthScreen] in the preview theme. */
 @Composable
-internal fun AuthScreenPreview(state: AuthUiState) {
+internal fun AuthScreenPreview(
+    state: AuthUiState,
+    canUsePasskeys: Boolean = false,
+) {
     PingogramPreview {
-        AuthScreen(state = state, onEvent = {})
+        AuthScreen(state = state, onEvent = {}, canUsePasskeys = canUsePasskeys)
     }
 }

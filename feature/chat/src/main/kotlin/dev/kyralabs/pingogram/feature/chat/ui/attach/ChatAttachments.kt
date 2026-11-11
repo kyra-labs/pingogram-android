@@ -73,6 +73,9 @@ internal class ChatAttachments(
     /** The form of a new poll. */
     val poll = PollEditor(savedState.restoredPoll())
 
+    /** The form of a new checklist. */
+    val checklist = ChecklistEditor(savedState.restoredChecklist())
+
     private var nextKey = 0L
 
     private val mutablePreview =
@@ -90,6 +93,11 @@ internal class ChatAttachments(
 
     /** Whether the poll form is open. */
     val isPollOpen: StateFlow<Boolean> = mutablePollOpen.asStateFlow()
+
+    private val mutableChecklistOpen = MutableStateFlow(savedState.restoredChecklistOpen())
+
+    /** Whether the checklist form is open. */
+    val isChecklistOpen: StateFlow<Boolean> = mutableChecklistOpen.asStateFlow()
 
     /** The jobs preparing picked files, which closing the preview stops. */
     private val preparing = mutableSetOf<Job>()
@@ -109,6 +117,9 @@ internal class ChatAttachments(
             }
         }
         scope.launch { snapshotFlow { poll.draft }.collect { savedState.savePoll(isPollOpen.value, it) } }
+        scope.launch {
+            snapshotFlow { checklist.draft }.collect { savedState.saveChecklist(isChecklistOpen.value, it) }
+        }
     }
 
     /** Photos and videos from the Photo Picker, by their URIs. */
@@ -330,6 +341,32 @@ internal class ChatAttachments(
         }
     }
 
+    /** Opens the checklist form. */
+    fun openChecklist() {
+        setChecklistOpen(true)
+    }
+
+    /** Closes the checklist form, emptying it. */
+    fun dismissChecklist() {
+        setChecklistOpen(false)
+        checklist.clear()
+    }
+
+    /**
+     * Sends the checklist as [options] say, if it is complete: the form closes at once, and empties once the checklist
+     * is sent; a refused checklist opens again as it was.
+     */
+    fun sendChecklist(options: SendOptions) {
+        val newChecklist = checklist.checklist() ?: return
+        setChecklistOpen(false)
+        val replyTo = replies.takeReply()
+        scope.launch {
+            val result = repository.sendChecklist(chatId, newChecklist, options, replyTo)
+            if (result is Outcome.Success) checklist.clear() else setChecklistOpen(true)
+            report(result, options, replyTo)
+        }
+    }
+
     /** Stops sending the messages [messageIds], still being sent, which deletes them. */
     fun cancelUpload(messageIds: List<Long>) {
         if (messageIds.isEmpty()) return
@@ -448,6 +485,11 @@ internal class ChatAttachments(
     private fun setPollOpen(open: Boolean) {
         mutablePollOpen.value = open
         savedState.savePoll(open, poll.draft)
+    }
+
+    private fun setChecklistOpen(open: Boolean) {
+        mutableChecklistOpen.value = open
+        savedState.saveChecklist(open, checklist.draft)
     }
 
     private companion object {

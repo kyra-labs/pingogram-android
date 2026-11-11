@@ -63,6 +63,20 @@ internal class FakeMediaProcessor : MediaProcessor {
         return true
     }
 
+    /** The plans of the stickers written. */
+    val stickerPlans = mutableListOf<PhotoPlan>()
+
+    override fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean {
+        stickerPlans += plan
+        if (!canWritePhotos) return false
+        target.writeBytes(writtenBytes)
+        return true
+    }
+
     override fun copyJpegWithoutMetadata(
         source: File,
         target: File,

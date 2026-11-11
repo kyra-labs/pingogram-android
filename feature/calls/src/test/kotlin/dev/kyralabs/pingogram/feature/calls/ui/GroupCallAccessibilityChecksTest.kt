@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsUiState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
@@ -67,8 +68,30 @@ class GroupCallAccessibilityChecksTest {
     @Test
     fun conference() = check(GroupCallPreviewStates.conference)
 
-    private fun check(state: GroupCallUiState) {
-        composeRule.setContent { PingogramTheme(dynamicColor = false) { GroupCallScreen(state, {}, {}, {}, {}) } }
+    @Test
+    fun comments() = check(GroupCallPreviewStates.connected, GroupCallPreviewStates.comments)
+
+    @Test
+    fun commentsOff() = check(GroupCallPreviewStates.connected, GroupCallPreviewStates.commentsOff)
+
+    @Test
+    fun liveStory() = check(GroupCallPreviewStates.liveStory, GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryWithoutComments() = check(GroupCallPreviewStates.liveStory)
+
+    @Test
+    fun conferenceComments() = check(GroupCallPreviewStates.conferenceVideos, GroupCallPreviewStates.comments)
+
+    private fun check(
+        state: GroupCallUiState,
+        comments: GroupCallCommentsUiState = GroupCallCommentsUiState.Unavailable,
+    ) {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                GroupCallScreen(state, {}, {}, {}, {}, comments = previewComments(comments))
+            }
+        }
         composeRule.assertAccessible()
     }
 }

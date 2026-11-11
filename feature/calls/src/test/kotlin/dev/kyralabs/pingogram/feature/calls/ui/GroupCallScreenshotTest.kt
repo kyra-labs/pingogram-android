@@ -7,6 +7,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsUiState
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -322,6 +323,95 @@ class GroupCallScreenshotTest {
     @Config(qualifiers = "w427dp-h240dp-xxhdpi")
     fun streamPictureInPicture() = capture(GroupCallPreviewStates.stream, ThemeMode.Dark, pictureInPicture = true)
 
+    @Test
+    fun liveStoryLight() = capture(GroupCallPreviewStates.liveStory, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryDark() =
+        capture(GroupCallPreviewStates.liveStory, ThemeMode.Dark, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryAmoled() =
+        capture(
+            GroupCallPreviewStates.liveStory,
+            ThemeMode.Dark,
+            amoled = true,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    fun liveStoryHighContrast() =
+        capture(GroupCallPreviewStates.liveStory, contrast = Contrast.High, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryRtl() =
+        capture(
+            GroupCallPreviewStates.liveStory,
+            layoutDirection = LayoutDirection.Rtl,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    @Config(fontScale = 2f)
+    fun liveStoryFontScale200() = capture(GroupCallPreviewStates.liveStory, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun liveStoryNoCommentsLight() = capture(GroupCallPreviewStates.liveStory)
+
+    @Test
+    fun commentsLight() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun commentsDark() =
+        capture(GroupCallPreviewStates.connected, ThemeMode.Dark, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun commentsAmoled() =
+        capture(
+            GroupCallPreviewStates.connected,
+            ThemeMode.Dark,
+            amoled = true,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    fun commentsHighContrast() =
+        capture(GroupCallPreviewStates.connected, contrast = Contrast.High, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun commentsRtl() =
+        capture(
+            GroupCallPreviewStates.connected,
+            layoutDirection = LayoutDirection.Rtl,
+            comments = GroupCallPreviewStates.comments,
+        )
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun commentsMedium() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun commentsFontScale200() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun commentsHiddenLight() =
+        capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.comments.copy(isShown = false))
+
+    @Test
+    fun commentsOffLight() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.commentsOff)
+
+    @Test
+    fun commentsPaidLight() = capture(GroupCallPreviewStates.connected, comments = GroupCallPreviewStates.commentsPaid)
+
+    @Test
+    fun conferenceCommentsLight() =
+        capture(GroupCallPreviewStates.conferenceVideos, comments = GroupCallPreviewStates.comments)
+
+    @Test
+    fun conferenceCommentsDark() =
+        capture(GroupCallPreviewStates.conferenceVideos, ThemeMode.Dark, comments = GroupCallPreviewStates.comments)
+
     private fun capture(
         state: GroupCallUiState,
         themeMode: ThemeMode = ThemeMode.Light,
@@ -329,10 +419,19 @@ class GroupCallScreenshotTest {
         contrast: Contrast = Contrast.Standard,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
         pictureInPicture: Boolean = false,
+        comments: GroupCallCommentsUiState = GroupCallCommentsUiState.Unavailable,
     ) = captureRoboImage {
         CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
             PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, contrast = contrast) {
-                GroupCallScreen(state, {}, {}, {}, {}, pictureInPicture = pictureInPicture)
+                GroupCallScreen(
+                    state,
+                    {},
+                    {},
+                    {},
+                    {},
+                    pictureInPicture = pictureInPicture,
+                    comments = previewComments(comments),
+                )
             }
         }
     }

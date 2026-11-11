@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui.stories
 
+import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
@@ -7,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeStoryRepository
@@ -28,13 +30,17 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-/** The story rings above the chat list: their order, names, read state, loading once, paging and hiding them. */
+/**
+ * The story rings above the chat list: their order, names, read state, loading once, paging and hiding them, and the
+ * user's stories being posted on their own ring.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoryRingsViewModelTest {
     private val stories = FakeStoryRepository()
     private val chats = FakeChatRepository()
     private val users = FakeUserRepository()
     private val chatListSettings = FakeChatListSettingsRepository()
+    private val posts = FakeStoryPostRepository()
 
     @BeforeEach
     fun setUp() {
@@ -46,7 +52,7 @@ class StoryRingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = StoryRingsViewModel(stories, chats, users, chatListSettings)
+    private fun viewModel() = StoryRingsViewModel(stories, chats, users, chatListSettings, posts)
 
     private fun active(
         chatId: Long,
@@ -115,6 +121,52 @@ class StoryRingsViewModelTest {
                 assertTrue(ring.isMine)
             }
         }
+
+    @Test
+    fun `without a story of their own, the user's ring comes first for posting one`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            users.setUsers(ChatListFixtures.user(ChatListFixtures.ME, firstName = "Me"))
+            chats.setChats(ChatListType.Main, ChatListFixtures.chat(id = 2, title = "Ada"))
+            stories.setActive(active(chatId = 2, order = 5))
+
+            viewModel().uiState.test {
+                val rings = awaitRings { it.size == 2 }
+                assertEquals(listOf(ChatListFixtures.ME, 2L), rings.map { it.chatId })
+                val own = rings.first()
+                assertTrue(own.isMine)
+                assertEquals(0, own.storyCount)
+            }
+        }
+
+    @Test
+    fun `the user's own ring comes first however TDLib orders it`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            chats.setChats(
+                ChatListType.Main,
+                ChatListFixtures.chat(id = ChatListFixtures.ME, title = "Me"),
+                ChatListFixtures.chat(id = 2, title = "Ada"),
+            )
+            stories.setActive(active(chatId = 2, order = 9))
+            stories.setActive(active(chatId = ChatListFixtures.ME, order = 1))
+
+            viewModel().uiState.test {
+                val rings = awaitRings { it.size == 2 }
+                assertEquals(listOf(ChatListFixtures.ME, 2L), rings.map { it.chatId })
+                assertEquals(2, rings.first().storyCount)
+            }
+        }
+
+    /** The rings once they are as [done] says. */
+    private suspend fun ReceiveTurbine<StoryRingsUiState>.awaitRings(
+        done: (List<StoryRing>) -> Boolean,
+    ): List<StoryRing> {
+        while (true) {
+            val rings = awaitItem().rings
+            if (done(rings)) return rings
+        }
+    }
 
     @Test
     fun `loads the first chats with stories once the rings are collected`() =
@@ -204,4 +256,62 @@ class StoryRingsViewModelTest {
                 assertTrue(awaitItem().rings.isEmpty())
             }
         }
+
+    @Test
+    fun `the user's own ring shows the stories being posted, and stopping cancels them`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            users.setUsers(ChatListFixtures.user(ChatListFixtures.ME, firstName = "Me"))
+            posts.setUploads(StoryUpload(-1, 300, 1_000), StoryUpload(-2, 0, 0))
+            val viewModel = viewModel()
+
+            viewModel.uiState.test {
+                val upload = awaitRings { it.firstOrNull()?.upload != null }.first().upload
+                assertEquals(listOf(-1, -2), upload?.storyIds)
+                assertEquals(0.3f, upload?.progress)
+
+                viewModel.onEvent(StoryRingsEvent.CancelUploads)
+                assertEquals(null, awaitRings { it.first().upload == null }.first().upload)
+            }
+            assertEquals(listOf(listOf(-1, -2)), posts.cancelled)
+        }
+
+    @Test
+    fun `stopping that fails says why until seen`() =
+        runTest {
+            users.myUserId.value = ChatListFixtures.ME
+            users.setUsers(ChatListFixtures.user(ChatListFixtures.ME, firstName = "Me"))
+            posts.setUploads(StoryUpload(-1, 0, 1_000))
+            posts.onCancel = { Outcome.Failure(DomainError.Network) }
+            val viewModel = viewModel()
+
+            viewModel.uiState.test {
+                awaitRings { it.firstOrNull()?.upload != null }
+                viewModel.onEvent(StoryRingsEvent.CancelUploads)
+                var state = awaitItem()
+                while (state.cancel.error == null) state = awaitItem()
+                assertEquals(DomainError.Network, state.cancel.error)
+
+                viewModel.onEvent(StoryRingsEvent.CancelErrorShown)
+                state = awaitItem()
+                while (state.cancel.error != null) state = awaitItem()
+            }
+        }
+
+    @Test
+    fun `progress counts the stories still sending, failed ones apart`() {
+        assertEquals(null, uploadOf(emptyList()))
+        val mixed =
+            uploadOf(
+                listOf(
+                    StoryUpload(-1, 500, 1_000),
+                    StoryUpload(-2, 1_500, 1_000),
+                    StoryUpload(-3, 0, 2_000, failure = DomainError.Network),
+                ),
+            )
+        assertEquals(0.75f, mixed?.progress)
+        assertEquals(1, mixed?.failed)
+        assertEquals(DomainError.Network, mixed?.error)
+        assertEquals(null, uploadOf(listOf(StoryUpload(-1, 0, 0)))?.progress)
+    }
 }

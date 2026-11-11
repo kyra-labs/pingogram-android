@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.profile.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
@@ -42,6 +43,10 @@ sealed interface ProfileUiState {
  * @property isOnline the user is online now: the status shows in `primary`.
  * @property avatarShape the avatar's shape while the bar is expanded: a forum's info page has a rounded square
  *   ([AvatarShape.ofChat]), everything else a circle.
+ * @property emojiStatusId the custom emoji the user shows beside their name (td_api.tl `user.emoji_status`), 0 for
+ *   none.
+ * @property profileColor the color of the user's profile header (td_api.tl `user.profile_accent_color_id`), -1 for
+ *   none.
  */
 @Immutable
 data class ProfileHeader(
@@ -55,6 +60,8 @@ data class ProfileHeader(
     val isPremium: Boolean = false,
     val warning: ProfileWarning? = null,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val emojiStatusId: Long = 0,
+    val profileColor: Int = -1,
 ) {
     override fun toString() = "ProfileHeader(userId=$userId, …)"
 }
@@ -77,6 +84,10 @@ enum class ProfileWarning {
  * @property birthday the birthday, formatted ("December 10, 1815", or "December 10" without a year).
  * @property personalChannel the channel the user shows on their profile (td_api.tl `personal_chat_id`).
  * @property id the user's ID, only while Privacy and security's "Show IDs" is on.
+ * @property birthdaySuggestion a contact without a birthday on their profile, to whom one can be suggested; null for
+ *   anyone else, or while the full info is not known.
+ * @property note the note the current user keeps about a contact, which only they see; null where there is none to
+ *   keep (not a contact, oneself, a bot) or the full info is not known yet.
  */
 @Immutable
 data class ProfileInfo(
@@ -87,13 +98,39 @@ data class ProfileInfo(
     val birthday: String? = null,
     val personalChannel: PersonalChannel? = null,
     val id: Long? = null,
+    val birthdaySuggestion: BirthdaySuggestionOffer? = null,
+    val note: ContactNote? = null,
 ) {
     val isEmpty: Boolean
         get() =
             bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
-                id == null
+                id == null && birthdaySuggestion == null && note == null
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
+}
+
+/**
+ * The note about a contact: its [text] (empty without one, when the row offers to add one) and the contact's
+ * [firstName], which the dialog names.
+ */
+@Immutable
+data class ContactNote(
+    val text: String,
+    val firstName: String,
+) {
+    override fun toString() = "ContactNote(…)"
+}
+
+/**
+ * The offer to suggest a birthday to a contact without one (the owner's board 16a): their [firstName], and whether a
+ * suggestion [isSending] to Telegram.
+ */
+@Immutable
+data class BirthdaySuggestionOffer(
+    val firstName: String,
+    val isSending: Boolean = false,
+) {
+    override fun toString() = "BirthdaySuggestionOffer(isSending=$isSending)"
 }
 
 /** A channel a user shows on their profile, by its chat [chatId] and [title]. */
@@ -238,6 +275,27 @@ sealed interface ProfileEvent {
     /** Put the bio (or a bot's description) on the clipboard. */
     data object CopyBio : ProfileEvent
 
+    /** A birthday was picked in "Suggest a birthday": send it to the contact. */
+    data class SuggestBirthdate(
+        val birthdate: Birthdate,
+    ) : ProfileEvent
+
+    /** The note row was tapped: open its dialog. */
+    data object EditNote : ProfileEvent
+
+    /** The note was typed in its dialog. */
+    data class NoteChanged(
+        val text: String,
+    ) : ProfileEvent {
+        override fun toString() = "NoteChanged(…)"
+    }
+
+    /** "Save" in the note dialog. */
+    data object SaveNote : ProfileEvent
+
+    /** "Cancel", back or a tap outside the note dialog. */
+    data object DismissNote : ProfileEvent
+
     /** The carousel reached its last loaded photos. */
     data object LoadMorePhotos : ProfileEvent
 
@@ -296,6 +354,13 @@ sealed interface ProfileEffect {
         val name: UiText,
         val blocked: Boolean,
     ) : ProfileEffect
+
+    /** Telegram sent the birthday suggested to [name]: a snackbar says so. */
+    data class BirthdaySuggested(
+        val name: String,
+    ) : ProfileEffect {
+        override fun toString() = "BirthdaySuggested(…)"
+    }
 
     /** Telegram has the report: a snackbar thanks the user. */
     data object Reported : ProfileEffect

@@ -138,8 +138,8 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
    - moves `Unreleased` items under `## [X.Y.Z] - YYYY-MM-DD`,
    - updates the comparison links at the bottom of `CHANGELOG.md`.
 4. Merge, then tag the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
-5. `release.yml` builds, signs, checksums, checks the APK sizes against `docs/PERFORMANCE.md` §1 (arm64-v8a ≤ 50 MB,
-   universal ≤ 123 MB; over budget fails the release before anything is published), extracts the changelog section
+5. `release.yml` builds, signs, checksums, checks the APK sizes against `docs/PERFORMANCE.md` §1 (arm64-v8a ≤ 51 MB,
+   universal ≤ 125 MB; over budget fails the release before anything is published), extracts the changelog section
    (followed by a link to `docs/API_TERMS.md`) and publishes the GitHub Release. Pre-release if version < 1.0.0 or has
    a suffix.
 6. Install the universal APK on at least two devices (one Android 8–10, one 14+), run the
