@@ -897,8 +897,9 @@ private fun IncomingControls(
  * `TextHandleMove` haptic says it will take; releasing there, or flinging so the handle would land there, answers or
  * declines at once, with its haptic, while the handle finishes the way on the fast spatial spring. Anywhere else it
  * springs back on the default spatial spring from the release's velocity, and a new drag takes the handle from the
- * spring wherever it is. Its phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer", as a
- * hint. Screen readers hear one item with "Answer" and "Decline" as custom actions (Switch Access too).
+ * spring wherever it is; while power saving holds the call screens still, the handle takes its place at once. Its
+ * phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer", as a hint. Screen readers hear
+ * one item with "Answer" and "Decline" as custom actions (Switch Access too).
  */
 @Composable
 private fun AnswerSlider(
@@ -909,7 +910,8 @@ private fun AnswerSlider(
     val scope = rememberCoroutineScope()
     val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     val handleWidth = with(LocalDensity.current) { SliderHandleSize.width.toPx() }
-    val motionScheme = MaterialTheme.motionScheme
+    // Snaps while power saving holds the call screens still.
+    val motionScheme = callMotionScheme()
     // Where a release would let the handle glide to, as a fling's decay projects it: tells a flick toward a side from
     // a release short of it. Not an animation: the handle moves on the motion scheme's springs.
     val decay = rememberSplineBasedDecay<Float>()
@@ -1059,7 +1061,7 @@ private class SliderState(
 
     private fun progress(at: Float): Float = if (maxOffset > 0f) at * direction / maxOffset else 0f
 
-    /** Moves the handle by [delta], taking it from any spring; true as it passes [COMMIT_FRACTION] toward either side. */
+    /** Moves the handle by [delta], taking it from any spring; true as it passes [COMMIT_FRACTION] either way. */
     fun drag(delta: Float): Boolean {
         if (committed) return false
         position.dragBy(delta, -maxOffset..maxOffset)
@@ -1089,13 +1091,14 @@ private class SliderState(
                 else -> null
             }
         pastThreshold = false
-        if (outcome == null) {
-            position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
-            return null
+        when (outcome) {
+            null -> position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
+            else -> {
+                committed = true
+                val end = if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction
+                position.settle(scope, end, motionScheme.fastSpatialSpec(), velocity)
+            }
         }
-        committed = true
-        val end = if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction
-        position.settle(scope, end, motionScheme.fastSpatialSpec(), velocity)
         return outcome
     }
 

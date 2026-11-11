@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls.ui
 import android.content.ComponentName
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -27,8 +28,9 @@ import org.robolectric.annotation.Config
 
 /**
  * The incoming call's answer slider (`docs/DESIGN_SYSTEM.md` §6 "Call screen", motion plan B-1): a flick toward
- * "Answer" answers, the answer comes as the finger lifts, a drag takes the handle from its spring back, and with a
- * screen reader exploring by touch the buttons show instead.
+ * "Answer" answers, the answer comes as the finger lifts, a drag takes the handle from its spring back, nothing springs
+ * while power saving holds the call screens still, and with a screen reader exploring by touch the buttons show
+ * instead.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -102,6 +104,24 @@ class AnswerSliderTest {
     }
 
     @Test
+    fun `while power saving holds the call screens still, a short slide is back at once`() {
+        setScreen(still = true)
+        val start = handleLeft()
+        composeRule.mainClock.autoAdvance = false
+        val travel = travel()
+
+        composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE).performTouchInput {
+            down(center)
+            moveBy(Offset(travel * 0.4f, 0f), delayMillis = SLOW_MOVE_MILLIS)
+            up()
+        }
+        repeat(2) { composeRule.mainClock.advanceTimeByFrame() }
+        composeRule.waitForIdle()
+
+        assertEquals(start.value, handleLeft().value, POSITION_TOLERANCE)
+    }
+
+    @Test
     fun `with a screen reader exploring by touch the buttons show instead of the slider`() {
         val manager = RuntimeEnvironment.getApplication().getSystemService(AccessibilityManager::class.java)
         shadowOf(manager).setEnabled(true)
@@ -126,10 +146,12 @@ class AnswerSliderTest {
 
     private fun slideDescription(): String = composeRule.activity.getString(R.string.call_slide_description)
 
-    private fun setScreen() {
+    private fun setScreen(still: Boolean = false) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CallScreen(CallPreviewStates.incoming, { events += it }, {}, {}, {})
+                CompositionLocalProvider(LocalStillCallAnimations provides still) {
+                    CallScreen(CallPreviewStates.incoming, { events += it }, {}, {}, {})
+                }
             }
         }
         composeRule.waitForIdle()
