@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
@@ -33,13 +34,50 @@ class TdlibVoiceNoteRepositoryTest {
     private val client = FakeTdlibClient()
     private val files by lazy { UploadFiles { cacheDir } }
 
+    /** The parts cut, and whether cutting works. */
+    private val cuts = mutableListOf<Triple<String, Long, Long>>()
+    private var cuttable = true
+
     private fun TestScope.repository() =
         TdlibVoiceNoteRepository(
             client = client,
             files = files,
+            cutter = { source, target, startUs, endUs ->
+                cuts += Triple(source, startUs, endUs)
+                File(target).writeText("cut")
+                cuttable
+            },
             io = StandardTestDispatcher(testScheduler),
             scope = backgroundScope,
         )
+
+    @Test
+    fun `a trimmed voice note is cut into a new file of its format, the recording deleted`() =
+        runTest {
+            val recorded = (repository().newVoiceNoteFile("ogg") as Outcome.Success).value
+
+            val trimmed = (repository().trimVoiceNote(recorded, 1_000, 3_000) as Outcome.Success).value
+
+            assertEquals(listOf(Triple(recorded, 1_000_000L, 3_000_000L)), cuts)
+            assertEquals("voice.ogg", File(trimmed).name)
+            assertTrue(files.isUpload(trimmed))
+            assertTrue(File(trimmed).exists())
+            assertFalse(File(recorded).exists())
+        }
+
+    @Test
+    fun `a voice note that cannot be cut keeps the recording and leaves nothing behind`() =
+        runTest {
+            cuttable = false
+            val recorded = (repository().newVoiceNoteFile("m4a") as Outcome.Success).value
+            val before = cacheDir.walk().count()
+
+            val result = repository().trimVoiceNote(recorded, 1_000, 3_000)
+
+            assertEquals(Outcome.Failure(DomainError.FileUnavailable), result)
+            assertTrue(File(recorded).exists())
+            assertEquals(before, cacheDir.walk().count())
+        }
 
     private fun answerSends() {
         client.on(TdApi.SendMessage::class, TdResult.Success(message(id = -1)))

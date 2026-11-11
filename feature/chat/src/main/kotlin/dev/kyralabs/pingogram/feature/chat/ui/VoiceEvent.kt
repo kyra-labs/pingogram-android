@@ -27,7 +27,17 @@ sealed interface VoiceEvent : ChatEvent {
 
     data object Pause : VoiceEvent
 
+    /** Resumes a paused recording, which keeps all of it again: a trim ends. */
     data object Resume : VoiceEvent
+
+    /**
+     * A paused recording keeps only its part from [startMillis] to [endMillis] when sent: its trim handles were moved.
+     * The recorder keeps the part at least a second long and within the recording.
+     */
+    data class Trim(
+        val startMillis: Long,
+        val endMillis: Long,
+    ) : VoiceEvent
 
     /** Released while holding, or the send button while locked: the voice message is sent, unless it is too short. */
     data object Send : VoiceEvent

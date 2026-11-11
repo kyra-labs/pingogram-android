@@ -93,6 +93,7 @@ class VoiceRecordingScreenshotTest(
                 "held" to VoiceRecordingUiState(),
                 "locked" to VoiceRecordingUiState(isLocked = true),
                 "paused" to VoiceRecordingUiState(isLocked = true, isPaused = true),
+                "trimmed" to VoiceRecordingUiState(isLocked = true, isPaused = true, trim = previewTrim()),
             )
 
         @JvmStatic

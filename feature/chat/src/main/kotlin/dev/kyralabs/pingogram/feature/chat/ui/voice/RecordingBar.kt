@@ -179,7 +179,7 @@ private fun RowScope.LockedContent(
         )
     }
     RecordingDot(recording)
-    RecordingLength(recording.meter)
+    RecordingLength(recording.meter, keptMillis = recording.trim?.keptMillis)
     val video = recording.video
     if (video?.isStopped == true) {
         Text(
@@ -192,7 +192,8 @@ private fun RowScope.LockedContent(
         )
         return
     }
-    LiveWaveform(recording, Modifier.weight(1f))
+    val trim = recording.trim
+    if (trim != null) TrimWaveform(trim, onEvent, Modifier.weight(1f)) else LiveWaveform(recording, Modifier.weight(1f))
     if (video?.canFlip == true) {
         IconButton(onClick = { onVideoEvent(VideoNoteEvent.FlipCamera) }, shapes = IconButtonDefaults.shapes()) {
             Icon(
@@ -240,10 +241,17 @@ private fun RecordingDot(recording: VoiceRecordingUiState) {
     )
 }
 
-/** How long it has recorded, "0:07" or "1:02:03", recomposed once a second. */
+/**
+ * How long it has recorded, "0:07" or "1:02:03", recomposed once a second; while trimmed, how long the part sent is
+ * ([keptMillis]).
+ */
 @Composable
-private fun RecordingLength(meter: RecordingMeter) {
-    val seconds by remember(meter) { derivedStateOf { meter.elapsedMillis / MILLIS_PER_SECOND } }
+private fun RecordingLength(
+    meter: RecordingMeter,
+    keptMillis: Long? = null,
+) {
+    val recorded by remember(meter) { derivedStateOf { meter.elapsedMillis / MILLIS_PER_SECOND } }
+    val seconds = keptMillis?.let { it / MILLIS_PER_SECOND } ?: recorded
     Text(
         text = recordingLength(seconds),
         color = MaterialTheme.colorScheme.onSurface,
