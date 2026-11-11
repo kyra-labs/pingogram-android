@@ -90,24 +90,73 @@ class PingogramMotionDefault(
         val name = expression.calleeExpression?.text ?: return
         val check =
             when {
-                name == "AnimatedVisibility" && !expression.hasEnterAndExit() -> VISIBILITY
-                name == "AnimatedContent" && !expression.hasSpec("transitionSpec", expression.positional(3)) -> CONTENT
-                name == "Crossfade" && !expression.hasSpec("animationSpec", expression.positional(3)) -> CROSSFADE
-                name == "animateContentSize" && !expression.hasSpec("animationSpec", 1) -> CONTENT_SIZE
-                ANIMATE_AS_STATE.matches(name) && !expression.hasSpec("animationSpec", asStatePositional(name)) ->
+                name == "AnimatedVisibility" && !expression.hasEnterAndExit() -> {
+                    VISIBILITY
+                }
+
+                name == "AnimatedContent" && !expression.hasSpec("transitionSpec", expression.positional(3)) -> {
+                    CONTENT
+                }
+
+                name == "Crossfade" && !expression.hasSpec("animationSpec", expression.positional(3)) -> {
+                    CROSSFADE
+                }
+
+                name == "animateContentSize" && !expression.hasSpec("animationSpec", 1) -> {
+                    CONTENT_SIZE
+                }
+
+                ANIMATE_AS_STATE.matches(name) && !expression.hasSpec("animationSpec", asStatePositional(name)) -> {
                     AS_STATE
-                name in CONTAINER_SLIDES && !expression.hasSpec("animationSpec", 2) -> TRANSITIONS
-                name in TRANSITIONS_WITH_SPEC_FIRST && !expression.hasSpec("animationSpec", 1) -> TRANSITIONS
-                name in SPRINGS && expression.hasOnlyDefaults() -> SPRING_DEFAULT
-                name in DECAYS -> SPRING_DEFAULT
-                name in LOOPS -> LOOPS_CHECK
-                name == "animateItem" && !expression.hasItemSpecs() -> ITEMS
-                name == "SizeTransform" && !expression.hasSizeSpec() -> SIZE_TRANSFORM
-                name == "animateScrollToPage" && !expression.hasSpec("animationSpec", 3) -> PAGER_SCROLL
-                name == "AnimatedPane" && !expression.hasSpec("boundsAnimationSpec", 4) -> PANES
-                name == "crossfade" -> COIL
-                name in LITERAL_MOTION -> LITERALS
-                else -> null
+                }
+
+                name in CONTAINER_SLIDES && !expression.hasSpec("animationSpec", 2) -> {
+                    TRANSITIONS
+                }
+
+                name in TRANSITIONS_WITH_SPEC_FIRST && !expression.hasSpec("animationSpec", 1) -> {
+                    TRANSITIONS
+                }
+
+                name in SPRINGS && expression.hasOnlyDefaults() -> {
+                    SPRING_DEFAULT
+                }
+
+                name in DECAYS -> {
+                    SPRING_DEFAULT
+                }
+
+                name in LOOPS -> {
+                    LOOPS_CHECK
+                }
+
+                name == "animateItem" && !expression.hasItemSpecs() -> {
+                    ITEMS
+                }
+
+                name == "SizeTransform" && !expression.hasSizeSpec() -> {
+                    SIZE_TRANSFORM
+                }
+
+                name == "animateScrollToPage" && !expression.hasSpec("animationSpec", 3) -> {
+                    PAGER_SCROLL
+                }
+
+                name == "AnimatedPane" && !expression.hasSpec("boundsAnimationSpec", 4) -> {
+                    PANES
+                }
+
+                name == "crossfade" -> {
+                    COIL
+                }
+
+                name in LITERAL_MOTION -> {
+                    LITERALS
+                }
+
+                else -> {
+                    null
+                }
             }
         if (check != null) report(expression, check)
     }
@@ -130,10 +179,17 @@ class PingogramMotionDefault(
         val name = expression.getReferencedName()
         when {
             // A view's animator, or a View animator made with its constructor.
-            name == "ViewPropertyAnimator" -> report(expression, OTHER_ANIMATORS_CHECK)
-            name in VIEW_ANIMATORS && (expression.parent as? KtCallExpression)?.calleeExpression == expression ->
+            name == "ViewPropertyAnimator" -> {
                 report(expression, OTHER_ANIMATORS_CHECK)
-            NAMED_EASING.matches(name) -> report(expression, LITERALS)
+            }
+
+            name in VIEW_ANIMATORS && (expression.parent as? KtCallExpression)?.calleeExpression == expression -> {
+                report(expression, OTHER_ANIMATORS_CHECK)
+            }
+
+            NAMED_EASING.matches(name) -> {
+                report(expression, LITERALS)
+            }
         }
     }
 
@@ -290,7 +346,7 @@ class PingogramMotionDefault(
                 SPRING_DEFAULT to "is not the theme's motion: take a spec from MaterialTheme.motionScheme.",
                 LOOPS_CHECK to
                     "loops: suppress it with a comment that says how it stops with reduced motion " +
-                        "(core:ui's isReducedMotion).",
+                    "(core:ui's isReducedMotion).",
                 SCHEME_DIRECT to "builds a motion scheme outside the theme: read MaterialTheme.motionScheme.",
                 OTHER_ANIMATORS_CHECK to "is a View animator: animate with Compose and MaterialTheme.motionScheme.",
                 ITEMS to "needs its three specs: core:ui's animateItem(scope, rememberItemMotion()).",
