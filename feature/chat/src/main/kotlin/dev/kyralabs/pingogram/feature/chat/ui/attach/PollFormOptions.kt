@@ -84,7 +84,12 @@ internal fun LazyListScope.pollOptionItems(
         item(key = ADD) {
             TextButton(
                 onClick = { editor.addOption() },
-                modifier = Modifier.springPlacement(this, MaterialTheme.motionScheme).padding(horizontal = MaterialTheme.spacing.small),
+                modifier =
+                    Modifier
+                        .springPlacement(
+                            this,
+                            MaterialTheme.motionScheme,
+                        ).padding(horizontal = MaterialTheme.spacing.small),
                 shapes = ButtonDefaults.shapes(),
             ) {
                 Icon(
