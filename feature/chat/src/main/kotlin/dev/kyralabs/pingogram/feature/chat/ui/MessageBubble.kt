@@ -65,6 +65,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
@@ -320,6 +322,7 @@ private fun bubbleActions(
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
     val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val giveaway = giveawayActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
         (bubble.content as? MessageContent.RichMessage)
             ?.let { content ->
@@ -344,7 +347,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + checklist + rich + buttons + reactions + allReactions +
+    } + original + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
@@ -449,7 +452,15 @@ private fun PaddedBubble(
                     if (content is MessageContent.RichMessage) {
                         RichMessageBody(bubble, content.message, style, resources, onEvent)
                     } else {
-                        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                        MessageContentBody(
+                            bubble = bubble,
+                            fileState = fileState,
+                            playback = playback,
+                            colors = style.colors,
+                            onEvent = onEvent,
+                            uploads = uploads,
+                            showsUpdateLink = resources.showsUpdateLink,
+                        )
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
@@ -480,7 +491,8 @@ private fun MediaBubble(
 ) {
     val colors = style.colors
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
-    val captionless = bubble.text.text.isEmpty() && bubble.linkPreview == null
+    val captionless =
+        bubble.text.text.isEmpty() && bubble.linkPreview == null && !bubble.content.showsNoteBelowMedia
     val mediaShape = remember(shape, hasHeader, captionless) { shape.mediaCorners(hasHeader, hasFooter = !captionless) }
     val textLayout = remember { TextLayoutHolder() }
     Layout(

@@ -88,6 +88,8 @@ interface AccountRepositories {
 
     fun storyAlbumRepository(): StoryAlbumRepository
 
+    fun profileMusicRepository(): ProfileMusicRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository
@@ -137,6 +139,8 @@ interface AccountRepositories {
     fun botButtonRepository(): BotButtonRepository
 
     fun pollRepository(): PollRepository
+
+    fun giveawayRepository(): GiveawayRepository
 
     fun checklistRepository(): ChecklistRepository
 

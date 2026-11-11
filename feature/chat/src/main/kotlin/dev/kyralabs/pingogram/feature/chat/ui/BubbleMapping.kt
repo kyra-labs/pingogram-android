@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -82,10 +83,8 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
             when {
                 album.isNotEmpty() -> albumLabel(album)
 
-                content is MessageContent.Text -> null
-
-                // The bubble shows its blocks, and screen readers hear them (richDescription).
-                content is MessageContent.RichMessage -> null
+                // Rich messages' blocks, paid posts and giveaways say what they are in their own description.
+                content.describesItself -> null
 
                 else -> contentKindText(content)
             },
@@ -116,8 +115,22 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
         checklist = checklistUi(content),
+        giveaway = giveawayUi(content),
     )
 }
+
+private val MessageContent.describesItself: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Text,
+            is MessageContent.RichMessage,
+            is MessageContent.PaidMedia,
+            is MessageContent.Giveaway,
+            is MessageContent.GiveawayWinners,
+            -> true
+
+            else -> false
+        }
 
 /** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
 private fun albumLabel(album: List<Message>): UiText {

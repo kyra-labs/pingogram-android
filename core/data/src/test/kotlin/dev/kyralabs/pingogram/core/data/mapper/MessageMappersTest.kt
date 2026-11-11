@@ -132,7 +132,7 @@ class MessageMappersTest {
             TdApi.MessageReplyToMessage(
                 100,
                 4,
-                TdApi.TextQuote(TdApiFixtures.formattedText("quoted part"), 6, true),
+                TdApi.TextQuote(TdApiFixtures.formattedText("quoted part"), emptyArray(), 6, true),
                 0,
                 "",
                 null,

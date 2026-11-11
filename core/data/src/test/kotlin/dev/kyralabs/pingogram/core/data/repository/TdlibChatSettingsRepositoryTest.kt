@@ -33,6 +33,7 @@ class TdlibChatSettingsRepositoryTest {
     private fun answerChannel(
         reactions: TdApi.ChatAvailableReactions = TdApi.ChatAvailableReactionsAll(11),
         linkedChatId: Long = 0,
+        hasForumSidebar: Boolean = false,
     ) {
         val chat =
             TdApiFixtures.chat(id = CHAT, type = TdApi.ChatTypeSupergroup(SUPERGROUP, true)).also {
@@ -42,6 +43,7 @@ class TdlibChatSettingsRepositoryTest {
         val supergroup =
             TdApiFixtures.supergroup(id = SUPERGROUP, isChannel = true, status = TdApiFixtures.creatorStatus()).also {
                 it.signMessages = true
+                it.hasForumSidebar = hasForumSidebar
             }
         client.on(TdApi.GetSupergroup::class, TdResult.Success(supergroup))
         client.on(
@@ -145,6 +147,21 @@ class TdlibChatSettingsRepositoryTest {
             )
             val forum = client.sentOf<TdApi.ToggleSupergroupIsForum>().single()
             assertEquals(Triple(SUPERGROUP, true, true), Triple(forum.supergroupId, forum.isForum, forum.hasForumTabs))
+        }
+
+    @Test
+    fun `topics without tabs keep a sidebar another app turned on`() =
+        runTest {
+            answerChannel(hasForumSidebar = true)
+            client.on(TdApi.ToggleSupergroupIsForum::class, TdResult.Success(TdApi.Ok()))
+            val repository = repository()
+
+            repository.setForum(CHAT, isForum = true, hasTabs = false)
+            repository.setForum(CHAT, isForum = true, hasTabs = true)
+
+            val sent = client.sentOf<TdApi.ToggleSupergroupIsForum>()
+            assertEquals(listOf(true, false), sent.map { it.hasForumSidebar })
+            assertEquals(listOf(false, true), sent.map { it.hasForumTabs })
         }
 
     @Test

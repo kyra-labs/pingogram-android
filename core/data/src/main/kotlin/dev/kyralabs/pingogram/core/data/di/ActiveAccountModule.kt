@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -66,6 +67,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
@@ -233,6 +235,9 @@ object ActiveAccountModule {
     fun storyAlbumRepository(accounts: Accounts): StoryAlbumRepository = accounts.active.storyAlbumRepository()
 
     @Provides
+    fun profileMusicRepository(accounts: Accounts): ProfileMusicRepository = accounts.active.profileMusicRepository()
+
+    @Provides
     fun sharedMediaRepository(accounts: Accounts): SharedMediaRepository = accounts.active.sharedMediaRepository()
 
     @Provides
@@ -316,6 +321,9 @@ object ActiveAccountModule {
 
     @Provides
     fun checklistRepository(accounts: Accounts): ChecklistRepository = accounts.active.checklistRepository()
+
+    @Provides
+    fun giveawayRepository(accounts: Accounts): GiveawayRepository = accounts.active.giveawayRepository()
 
     @Provides
     fun botInfoRepository(accounts: Accounts): BotInfoRepository = accounts.active.botInfoRepository()

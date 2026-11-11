@@ -31,7 +31,7 @@ Builds:
     gradle:
       - foss
     srclibs:
-      - tdlib@a94b83d67ab4c8397c6245e541b31a4131ea2f79
+      - tdlib@23383aef218a3123f02b744bfa91bde21056a814
     output: build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk
     prebuild:
       # The Telegram API values (docs/TDLIB.md): a public recipe has to carry them in clear text.

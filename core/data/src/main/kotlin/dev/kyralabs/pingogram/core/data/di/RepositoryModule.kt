@@ -53,6 +53,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFrequentContactsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGiveawayRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
@@ -75,6 +76,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeReposit
 import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPollRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibProfileMusicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
@@ -151,6 +153,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -176,6 +179,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
@@ -339,6 +343,9 @@ interface RepositoryModule {
     fun storyAlbumRepository(repository: TdlibStoryAlbumRepository): StoryAlbumRepository
 
     @Binds
+    fun profileMusicRepository(repository: TdlibProfileMusicRepository): ProfileMusicRepository
+
+    @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository
 
     @Binds
@@ -415,6 +422,9 @@ interface RepositoryModule {
 
     @Binds
     fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
+
+    @Binds
+    fun giveawayRepository(repository: TdlibGiveawayRepository): GiveawayRepository
 
     @Binds
     fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository

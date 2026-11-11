@@ -137,7 +137,20 @@ class TdlibStoryPostRepository internal constructor(
     ): Outcome<Unit> {
         contents.forEachIndexed { index, file ->
             val text = if (index == 0) caption.toTdFormattedText() else TdApi.FormattedText("", emptyArray())
-            val story = TdApi.PostStory(chat, file.content, null, text, privacy, IntArray(0), DAY, null, true, false)
+            val story =
+                TdApi.PostStory(
+                    chat,
+                    file.content,
+                    null,
+                    text,
+                    null,
+                    privacy,
+                    IntArray(0),
+                    DAY,
+                    null,
+                    true,
+                    false,
+                )
             when (val posted = client.request(story)) {
                 is Outcome.Success -> {
                     val story = posted.value

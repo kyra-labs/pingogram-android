@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbum
+import dev.kyralabs.pingogram.feature.media.profilemusic.ProfileMusicSection
 import dev.kyralabs.pingogram.feature.media.storyalbum.StoryAlbumsSection
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
@@ -48,6 +49,7 @@ internal fun NavGraphBuilder.profile(
                 modifier = modifier,
             )
         },
+        profileMusic = { userId, isSelf, modifier -> ProfileMusicSection(userId, isSelf, modifier) },
     )
 }
 

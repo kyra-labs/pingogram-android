@@ -214,4 +214,32 @@
     <string name="story_album_empty_body">Stories added to this album show here.</string>
     <string name="story_album_error">Couldn\'t load this album</string>
     <string name="story_album_try_again">Try again</string>
+    <!-- Profile music (boards 13a, 13b) -->
+    <string name="profile_music_header">Profile music</string>
+    <string name="profile_music_open_playlist">Open playlist</string>
+    <string name="profile_music_play">Play</string>
+    <string name="profile_music_pause">Pause</string>
+    <string name="profile_music_next">Next song</string>
+    <string name="profile_music_position">Playback position</string>
+    <string name="profile_music_place">%1$d of %2$d</string>
+    <string name="profile_music_by_place">%1$s · %2$d of %3$d</string>
+    <string name="profile_music_cannot_play">This song can\'t be played</string>
+    <string name="profile_music_empty_body">Add songs that anyone who sees your profile can play.</string>
+    <string name="profile_music_add">Add music</string>
+    <plurals name="profile_music_count">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <plurals name="profile_music_own_count">
+        <item quantity="one">%d song · anyone who sees your profile can play it</item>
+        <item quantity="other">%d songs · anyone who sees your profile can play them</item>
+    </plurals>
+    <string name="profile_music_options">Options for %1$s</string>
+    <string name="profile_music_move_up">Move up</string>
+    <string name="profile_music_move_down">Move down</string>
+    <string name="profile_music_remove">Remove</string>
+    <string name="profile_music_playing">Playing</string>
+    <string name="profile_music_track_line">%1$s · %2$s</string>
+    <string name="profile_music_play_song">Play %1$s</string>
+    <string name="profile_music_no_picker">No app on this phone can pick a song</string>
 </resources>

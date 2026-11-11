@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
+  or yearly, for Telegram Premium subscribers.
 
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
   with "Show full text" to go back (in the reader's language where they don't read the post's).
@@ -38,6 +40,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   its comments below.
 - Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
   and tap a story to play the album from there.
+- Profile music: a profile with songs shows a player below its header, which plays them one after another while the
+  profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
+  remove them.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
@@ -52,6 +57,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the call.
 - Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
   all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
+- Paid posts: a post whose photos and videos unlock for Telegram Stars shows its blurred previews, its price and how
+  many photos and videos it holds, with a note that Pingogram can't pay yet; a post you paid for shows its album and
+  opens in the media viewer.
+- Giveaways: a channel's giveaway shows its prize, the participating channels (tap one to open it), when the winners
+  are picked and who takes part; the winners message shows who won (tap to open a profile); "Learn more" tells
+  whether you take part or won.
+- A message this version of Pingogram can't show says so and offers "Update Pingogram", a link to the latest
+  release (left out when an app store installed Pingogram).
 - A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
   know it), and Telegram asks them whether to keep it.
 - Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
@@ -62,6 +75,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
   update it themselves.
+- TDLib 1.8.70 (`23383ae`), up from 1.8.68: what Telegram added since, among it the functions to add chats to a
+  community and to list the communities you joined. Nothing changes on screen yet. Its larger library raises the APK
+  size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ## [2.0.0] - 2026-11-08
 
