@@ -116,6 +116,8 @@ interface AccountRepositories {
 
     fun accountFreezeRepository(): AccountFreezeRepository
 
+    fun oauthLoginRepository(): OauthLoginRepository
+
     fun quickReactionRepository(): QuickReactionRepository
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository

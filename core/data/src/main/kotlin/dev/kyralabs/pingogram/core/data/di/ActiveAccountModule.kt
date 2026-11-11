@@ -63,6 +63,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
@@ -282,6 +283,9 @@ object ActiveAccountModule {
 
     @Provides
     fun accountFreezeRepository(accounts: Accounts): AccountFreezeRepository = accounts.active.accountFreezeRepository()
+
+    @Provides
+    fun oauthLoginRepository(accounts: Accounts): OauthLoginRepository = accounts.active.oauthLoginRepository()
 
     @Provides
     fun quickReactionRepository(accounts: Accounts): QuickReactionRepository = accounts.active.quickReactionRepository()

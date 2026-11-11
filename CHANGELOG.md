@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Log in with Telegram: a website or app that asks to log in with your account opens a sheet that says who asks and
+  from where, asks for the code the website shows where Telegram wants it, and shares your phone number or lets its bot
+  write only if you turn them on.
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
 - A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
 - Leaving a group or channel you own: choose which administrator owns it next, with your 2-step verification password,

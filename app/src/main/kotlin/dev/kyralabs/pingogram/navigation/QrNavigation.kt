@@ -6,9 +6,11 @@ import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.navigation.ChatFolderInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.core.navigation.OauthLoginRoute
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInviteSheet
 import dev.kyralabs.pingogram.feature.scanner.navigation.qrScannerScreen
 import dev.kyralabs.pingogram.feature.settings.navigation.chatFolderInviteSheet
+import dev.kyralabs.pingogram.feature.settings.navigation.oauthLoginSheet
 
 /**
  * The QR code scanner (`REQUIREMENTS.md` FR-P5), full screen above the screen it was opened from. A Telegram link it
@@ -45,4 +47,9 @@ internal fun NavGraphBuilder.chatInvite(navController: NavHostController) {
 /** The sheet of a shared folder's link (`t.me/addlist/…`), a dialog destination above the screen it was opened from. */
 internal fun NavGraphBuilder.chatFolderInvite(navController: NavHostController) {
     chatFolderInviteSheet(onClose = { navController.popBackStack<ChatFolderInviteRoute>(inclusive = true) })
+}
+
+/** The sheet of a "Log in with Telegram" request, a dialog destination above the screen it was opened from. */
+internal fun NavGraphBuilder.oauthLogin(navController: NavHostController) {
+    oauthLoginSheet(onClose = { navController.popBackStack<OauthLoginRoute>(inclusive = true) })
 }
