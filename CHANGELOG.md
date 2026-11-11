@@ -131,6 +131,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- Reactions in voice chats no longer replay.
 - The answer slider responds to quick slides and flicks.
 
 ## [2.0.0] - 2026-11-08

@@ -54,6 +54,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -85,7 +88,10 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.ui.LocalStillCallAnimations
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -436,17 +442,28 @@ private fun CommentMenu(
 }
 
 /**
- * The newest reactions, each rising from the bottom end and fading as it goes, in its graphics layer: the draw phase
- * only (`docs/PERFORMANCE.md` §4). Decorative; none with reduced motion, where the comment itself says it.
+ * The newest reactions, each rising from the bottom end on the slow spatial spring and fading on the slow effects one
+ * (`docs/DESIGN_SYSTEM.md` §5.1), in its graphics layer: the draw phase only (`docs/PERFORMANCE.md` §4). Each keeps
+ * its animation by its id, so a new reaction starts only its own, and one that has risen is not composed again.
+ * Decorative; none with reduced motion, where the comment itself says it, nor while power saving holds the call
+ * screens still ([LocalStillCallAnimations]).
  */
 @Composable
 private fun FloatingReactions(
     reactions: ImmutableList<FloatingReaction>,
     modifier: Modifier = Modifier,
 ) {
-    if (isReducedMotion()) return
-    Box(modifier.clearAndSetSemantics {}) {
-        reactions.forEach { reaction -> FloatingEmoji(reaction, MaterialTheme.sizes.reactionTile) }
+    if (isReducedMotion() || LocalStillCallAnimations.current) return
+    val risen = remember { mutableStateListOf<Int>() }
+    LaunchedEffect(reactions) { risen.retainAll { id -> reactions.any { it.id == id } } }
+    Box(modifier.testTag(FLOATING_REACTIONS).clearAndSetSemantics {}) {
+        reactions.forEach { reaction ->
+            if (reaction.id !in risen) {
+                key(reaction.id) {
+                    FloatingEmoji(reaction, MaterialTheme.sizes.reactionTile, onRisen = { risen += reaction.id })
+                }
+            }
+        }
     }
 }
 
@@ -454,18 +471,25 @@ private fun FloatingReactions(
 private fun BoxScope.FloatingEmoji(
     reaction: FloatingReaction,
     rise: Dp,
+    onRisen: () -> Unit,
 ) {
-    val progress = remember(reaction.id) { Animatable(0f) }
+    val height = remember { Animatable(0f) }
+    val opacity = remember { Animatable(1f) }
     val motion = MaterialTheme.motionScheme
-    LaunchedEffect(reaction.id) { progress.animateTo(1f, motion.slowSpatialSpec()) }
+    LaunchedEffect(Unit) {
+        coroutineScope {
+            launch { height.animateTo(1f, motion.slowSpatialSpec()) }
+            launch { opacity.animateTo(0f, motion.slowEffectsSpec()) }
+        }
+        onRisen()
+    }
     Text(
         reaction.emoji,
         style = MaterialTheme.typography.headlineMedium,
         modifier =
             Modifier.align(Alignment.BottomCenter).graphicsLayer {
-                val value = progress.value
-                translationY = -rise.toPx() * RISE_SCREENS * value
-                alpha = (1f - value).coerceIn(0f, 1f)
+                translationY = -rise.toPx() * RISE_SCREENS * height.value
+                alpha = opacity.value.coerceIn(0f, 1f)
             },
     )
 }
@@ -620,3 +644,6 @@ private fun ReactionButton(onEvent: (CommentEvent) -> Unit) {
 private const val RISE_SCREENS = 3f
 
 private const val MAX_FIELD_LINES = 4
+
+/** The floating reactions' layer, for tests. */
+internal const val FLOATING_REACTIONS = "floating_reactions"

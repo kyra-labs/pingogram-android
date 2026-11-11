@@ -2,14 +2,18 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.calls.ui.comments.CommentUi
+import dev.kyralabs.pingogram.feature.calls.ui.comments.FLOATING_REACTIONS
+import dev.kyralabs.pingogram.feature.calls.ui.comments.FloatingReaction
 import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsHost
 import dev.kyralabs.pingogram.feature.calls.ui.comments.GroupCallCommentsUiState
 import kotlinx.collections.immutable.toPersistentList
@@ -53,6 +57,9 @@ class GroupCallFrameCostTest {
 
     private val counter = RecompositionCounter()
 
+    /** Power saving's "Stop call screen animations". */
+    private val still = mutableStateOf(false)
+
     @Test
     fun `a new comment recomposes the comments pane alone`() {
         val call = mutableStateOf(GroupCallPreviewStates.connected)
@@ -95,6 +102,35 @@ class GroupCallFrameCostTest {
         frame()
 
         assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
+    }
+
+    @Test
+    fun `a new reaction starts its own animation alone`() {
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(withReactions(1..REACTIONS_KEPT))
+        show(call, comments)
+        repeat(RISE_FRAMES) { frame() }
+        counter.reset()
+
+        // The view model keeps the newest six: the seventh pushes the first out and every other one moves up a place.
+        comments.value = withReactions(2..REACTIONS_KEPT + 1)
+        repeat(RISE_FRAMES) { frame() }
+
+        val restarted = counter.recomposedOwnFunctions.filter { "FloatingEmoji" in it }
+        assertEquals("no reaction that had risen starts again", emptyList<String>(), restarted)
+    }
+
+    @Test
+    fun `reactions float up, but not while power saving holds the call screens still`() {
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(withReactions(1..1))
+        show(call, comments)
+        composeRule.onNodeWithTag(FLOATING_REACTIONS, useUnmergedTree = true).assertExists()
+
+        still.value = true
+        frame()
+
+        composeRule.onNodeWithTag(FLOATING_REACTIONS, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -146,7 +182,9 @@ class GroupCallFrameCostTest {
         val shown = mutableStateOf(false)
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                if (shown.value) GroupCallScreen(call.value, {}, {}, {}, {}, comments = host)
+                CompositionLocalProvider(LocalStillCallAnimations provides still.value) {
+                    if (shown.value) GroupCallScreen(call.value, {}, {}, {}, {}, comments = host)
+                }
             }
         }
         composeRule.waitForIdle()
@@ -202,6 +240,12 @@ class GroupCallFrameCostTest {
         )
     }
 
+    /** The comments shown, with the reactions of [ids] floating. */
+    private fun withReactions(ids: IntRange): GroupCallCommentsUiState =
+        GroupCallPreviewStates.comments.copy(
+            reactions = ids.map { FloatingReaction(id = it, emoji = "❤") }.toPersistentList(),
+        )
+
     private fun List<Long>.percentile(percent: Int) = this[(size - 1) * percent / PERCENT]
 
     private companion object {
@@ -216,5 +260,11 @@ class GroupCallFrameCostTest {
         const val SECONDS_PER_MINUTE = 60
         const val NANOS_PER_MICRO = 1_000L
         const val PERCENT = 100
+
+        /** As many reactions as the view model keeps (`GroupCallCommentsViewModel`). */
+        const val REACTIONS_KEPT = 6
+
+        /** Enough frames for a reaction to rise and fade on the slow springs. */
+        const val RISE_FRAMES = 60
     }
 }
