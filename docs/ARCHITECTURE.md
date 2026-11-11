@@ -870,6 +870,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+  Since 2026: `MessageContent.Poll` carries the poll's photo or video (`PollMedia`, td_api.tl `pollMedia`, shown in the
+  media viewer by `richMediaId(messageId, 0)`, as rich messages' media are) and `canAddOption`; `Poll` its `closeDate`,
+  `openPeriod` and whether its results stay hidden (`hidesResults`); `PollOption` its `id`, `media` (a link) and
+  `author`. `PollRepository.addOption` sends `addPollOption`, `limits` reads TDLib's options `poll_answer_count_max` and
+  `poll_open_period_max` (`PollLimits`). `feature:chat`'s `PollOptionAdding` (a part of `ChatViewModel`, `poll/`) keeps
+  which polls' inline field is open in the saved state and copies it into their bubble only (`withPollAdding`); a
+  closing poll's bubble carries `pollClosesIn` from the minute tick (`ItemInputs.relativeNow`). The form's
+  `PollEditor` (`attach/`, its draft in the saved state through `PollSaving.kt`) builds the `NewPoll`
+  (`inputMessagePoll`: description, a picked photo as `inputPollMediaPhoto`, answers' links as `inputPollMediaLink`,
+  several correct answers, the settings and `open_period` or `close_date`), its photo prepared by `ChatAttachments`.
 - **Checklists** (FR-C4): `core:domain`'s `ChecklistRepository` (`TdlibChecklistRepository`, `core:data`, no cache)
   marks tasks as done or not done (`markChecklistTasksAsDone`) and adds tasks (`addChecklistTasks`, each with the id
   after the checklist's highest, which td_api.tl leaves to the client); TDLib answers both with `updateMessageContent`

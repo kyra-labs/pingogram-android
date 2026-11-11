@@ -79,6 +79,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
   are signed in without a code (or asked for your 2-step verification password).
 
+- Polls: a poll shows its photo or video (tap to open it), its description, links in its answers, how long it stays
+  open ("Ends in 2 h"), whether its results are hidden until the end, and the winning answer once closed. Quizzes may
+  have several correct answers ("You got 1 of 2"). Where the poll allows it, "Add option" adds your own answer.
+- New poll: add a photo and a description, up to 12 options with links, drag options into order, several correct
+  answers in a quiz with an explanation, and settings to hide results, shuffle options, forbid changing votes, let
+  members add options and close the poll after an hour, a day or at a chosen time.
+
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
   update it themselves.

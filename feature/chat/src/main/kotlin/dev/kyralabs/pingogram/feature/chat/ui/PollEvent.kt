@@ -54,6 +54,13 @@ sealed interface PollEvent : ChatEvent {
 
     /** The voters' sheet was dismissed. */
     data object DismissVoters : PollEvent
+
+    /** Open [url], an answer's link, for screen readers, who reach it through the bubble's custom actions. */
+    data class OpenLink(
+        val url: String,
+    ) : PollEvent {
+        override fun toString() = "OpenLink(…)"
+    }
 }
 
 /** One-off effects of polls. */

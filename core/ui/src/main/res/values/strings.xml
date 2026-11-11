@@ -187,6 +187,10 @@
     <string name="preview_removed_you">%1$s removed you</string>
     <string name="preview_pinned">%1$s pinned a message</string>
     <string name="preview_you_pinned">You pinned a message</string>
+    <string name="preview_added_poll_option">%1$s added “%2$s” to the poll</string>
+    <string name="preview_you_added_poll_option">You added “%1$s” to the poll</string>
+    <string name="preview_removed_poll_option">%1$s removed “%2$s” from the poll</string>
+    <string name="preview_you_removed_poll_option">You removed “%1$s” from the poll</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>

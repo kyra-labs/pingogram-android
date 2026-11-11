@@ -295,7 +295,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
-                    is ChatEffect.SponsoredNotice,
+                    ChatEffect.PollPhotoOnly, is ChatEffect.SponsoredNotice,
                     is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
@@ -447,6 +447,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
+        ChatEffect.PollPhotoOnly -> R.string.poll_photo_only
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed
