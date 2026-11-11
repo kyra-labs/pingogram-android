@@ -82,4 +82,14 @@ sealed interface ChatListEvent {
 
     /** The delete dialog was cancelled or dismissed. */
     data object DismissDelete : ChatListEvent
+
+    /** A community's entry was tapped: shows its chats below it, or hides them. */
+    data class ToggleCommunity(
+        val communityId: Long,
+    ) : ChatListEvent
+
+    /** "Show chats separately" on a community's entry: its chats take their own places in the list again. */
+    data class ShowCommunityChatsSeparately(
+        val communityId: Long,
+    ) : ChatListEvent
 }

@@ -102,7 +102,42 @@ sealed interface ChatListContent {
          * header (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner decision 2026-11-06). 0 shows neither.
          */
         val pinnedCount: Int = 0,
-    ) : ChatListContent
+        /**
+         * The communities whose chats show as one entry (`docs/DESIGN_SYSTEM.md` §6 "Community entry"), in the order
+         * of their places: each stands before the row of [items] at [CommunityEntry.before], and its chats are not in
+         * [items]. Empty outside the main list.
+         */
+        val communities: ImmutableList<CommunityEntry> = persistentListOf(),
+    ) : ChatListContent {
+        /** Every chat of the list: [items], then the chats of [communities]. */
+        val allRows: List<ChatListItemModel>
+            get() = if (communities.isEmpty()) items else items + communities.flatMap { it.chats }
+    }
+}
+
+/**
+ * A community the user joined whose chats show as one entry in the main list (td_api.tl
+ * `community.are_chats_collapsed`; the owner's board 19b), in the place of its newest chat.
+ *
+ * @property name the community's name, as plain text.
+ * @property chats its chats in the main list, in TDLib's order, mapped as any row; pinned chats stay pinned instead.
+ * @property unreadCount the unread messages of [chats], for the entry's badge; 0 shows none.
+ * @property isMuted the community's notifications are muted: the badge takes the muted style.
+ * @property isExpanded its chats show below it, inset; kept on this device.
+ * @property before the index in [ChatListContent.Content.items] of the row the entry stands before.
+ */
+@Immutable
+data class CommunityEntry(
+    val id: Long,
+    val name: String,
+    val photo: ProfilePhoto?,
+    val chats: ImmutableList<ChatListItemModel>,
+    val unreadCount: Int,
+    val isMuted: Boolean,
+    val isExpanded: Boolean,
+    val before: Int,
+) {
+    override fun toString() = "CommunityEntry(id=$id, chats=${chats.size}, isExpanded=$isExpanded, …)"
 }
 
 /** A tab above the chat list. */

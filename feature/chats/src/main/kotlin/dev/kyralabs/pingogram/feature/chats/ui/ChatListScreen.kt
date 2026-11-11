@@ -347,6 +347,7 @@ private fun FolderListContent(args: FolderListArgs) {
             ChatList(
                 items = content.items,
                 pinnedCount = content.pinnedCount,
+                communities = content.communities,
                 state = state,
                 stories = args.stories,
                 listState = args.listState,
@@ -361,7 +362,8 @@ private fun FolderListContent(args: FolderListArgs) {
 }
 
 /**
- * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]), keyed by id, each row
+ * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]) with the entries of
+ * [communities] among them ([chatsWithCommunities]), keyed by id, each row
  * animating to its new place when the order changes and fading out when it leaves (archived, deleted). Outside
  * selection mode, [openChatId]'s row is open. While it is the list shown ([active]), it reports to
  * [ChatListEvent.NearEndChanged] whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh
@@ -374,6 +376,7 @@ private fun FolderListContent(args: FolderListArgs) {
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
     pinnedCount: Int,
+    communities: ImmutableList<CommunityEntry>,
     state: ChatListUiState,
     stories: (@Composable (Modifier) -> Unit)?,
     listState: LazyListState,
@@ -383,7 +386,6 @@ private fun ChatList(
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val archive = state.archive
     val selection = state.selection
     val folderId = state.selectedFolderId
     val selectedIds = selection?.chatIds
@@ -398,32 +400,62 @@ private fun ChatList(
         leadingRows(stories, state, hasPinned = pinnedCount > 0, onEvent) {
             Modifier.listRow(this, maxWidth, rowMotion)
         }
-        itemsIndexed(items, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { index, item ->
+        val row: @Composable LazyItemScope.(
+            ChatListItemModel,
+            RowSegment?,
+            Modifier,
+        ) -> Unit = { item, segment, extra ->
             ChatRow(
                 item = item,
                 selected = selectedIds?.contains(item.id) == true,
                 selectionMode = selection != null,
                 open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
-                segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null,
-                modifier =
-                    Modifier
-                        .listRow(this, maxWidth, rowMotion)
-                        .then(if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier),
+                segment = segment,
+                modifier = Modifier.listRow(this, maxWidth, rowMotion).then(extra),
             )
         }
+        chatsWithCommunities(
+            items = items,
+            communities = communities,
+            enabled = selection == null,
+            onEvent = onEvent,
+            rowModifier = { Modifier.listRow(this, maxWidth, rowMotion) },
+            chatRows = { rows, firstIndex ->
+                itemsIndexed(rows, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { offset, item ->
+                    val index = firstIndex + offset
+                    val segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null
+                    row(
+                        item,
+                        segment,
+                        if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier,
+                    )
+                }
+            },
+            chatRow = { item, segment, isLast ->
+                row(item, segment, Modifier.groupGap(top = false, bottom = isLast).communityChatInset())
+            },
+        )
         if (state.hasLockedChats) lockedChatsRow(selection == null) { Modifier.listRow(this, maxWidth, rowMotion) }
     }
     KeepTopShown(
         listState,
-        firstKey =
-            when {
-                stories != null -> STORIES_ROW
-                archive != null -> ARCHIVE_ROW
-                pinnedCount > 0 -> PINNED_HEADER
-                else -> items.firstOrNull()?.id
-            },
+        firstKey = firstRowKey(stories != null, state.archive != null, pinnedCount, items, communities),
     )
+    ReportNearEnd(listState, folderId, active, onEvent)
+}
+
+/**
+ * While the list is the one shown ([active]), tells [onEvent] whether its end is within [LOAD_MORE_THRESHOLD] rows:
+ * at once, on every change, afresh for another folder ([folderId]), and false when it stops.
+ */
+@Composable
+private fun ReportNearEnd(
+    listState: LazyListState,
+    folderId: Int?,
+    active: Boolean,
+    onEvent: (ChatListEvent) -> Unit,
+) {
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId, active) {
         if (!active) return@LaunchedEffect
