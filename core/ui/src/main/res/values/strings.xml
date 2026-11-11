@@ -51,6 +51,7 @@
     <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
     <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
     <string name="error_chat_full">This group is full.</string>
+    <string name="error_community_full">This community has as many chats as Telegram allows.</string>
     <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>

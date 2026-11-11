@@ -7,7 +7,9 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
 /** Sample community pages for previews and goldens. */
 internal object CommunityPreviewData {
@@ -21,6 +23,24 @@ internal object CommunityPreviewData {
                     role = CommunityRoleLabel.Owner,
                     canRename = true,
                     canDelete = true,
+                    isJoined = true,
+                    canEditChatList = true,
+                ),
+            requests =
+                persistentListOf(
+                    AddChatRequestItem(
+                        chat =
+                            CommunityChatItem(
+                                chatId = 6,
+                                title = "Kyra Labs Design",
+                                photo = null,
+                                shape = AvatarShape.Group,
+                                kind = CommunityChatKind.Group,
+                                memberCount = 48,
+                                isHidden = true,
+                            ),
+                        senderName = UiText.Plain("Riya Sharma"),
+                    ),
                 ),
             chats =
                 persistentListOf(
@@ -71,9 +91,35 @@ internal object CommunityPreviewData {
                 ),
         )
 
+    val addChats =
+        AddChatsSheet(
+            chats =
+                persistentListOf(
+                    CommunityChatItem(
+                        chatId = 7,
+                        title = "Kyra Labs Jobs",
+                        photo = null,
+                        shape = AvatarShape.Channel,
+                        kind = CommunityChatKind.Channel,
+                        memberCount = 812,
+                    ),
+                    CommunityChatItem(
+                        chatId = 8,
+                        title = "Pingogram Translators",
+                        photo = null,
+                        shape = AvatarShape.Group,
+                        kind = CommunityChatKind.Group,
+                        memberCount = 37,
+                    ),
+                ),
+            picked = persistentSetOf(8),
+            isHidden = true,
+        )
+
     val member =
         owner.copy(
-            header = owner.header.copy(role = null, canRename = false, canDelete = false),
+            header = owner.header.copy(role = null, canRename = false, canDelete = false, canEditChatList = false),
+            requests = persistentListOf(),
             chats =
                 persistentListOf(
                     owner.chats[0],
@@ -106,4 +152,23 @@ private fun CommunityScreenPreview(
 @Composable
 private fun RenameCommunityDialogPreview() {
     PingogramPreview { RenameCommunityDialog("Kyra Labs Community", isBusy = false, onEvent = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun AddChatsContentPreview(
+    @PreviewParameter(AddChatsStates::class) sheet: AddChatsSheet,
+) {
+    PingogramPreview { AddChatsContent(sheet, isDirect = true, onEvent = {}) }
+}
+
+/** The sheet that adds chats: two chats with one picked, loading, none to add and a failure. */
+internal class AddChatsStates : PreviewParameterProvider<AddChatsSheet> {
+    override val values: Sequence<AddChatsSheet> =
+        sequenceOf(
+            CommunityPreviewData.addChats,
+            AddChatsSheet(),
+            AddChatsSheet(chats = persistentListOf()),
+            AddChatsSheet(error = DomainError.Network),
+        )
 }

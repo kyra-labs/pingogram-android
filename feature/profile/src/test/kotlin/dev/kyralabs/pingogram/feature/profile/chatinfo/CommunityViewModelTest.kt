@@ -89,11 +89,13 @@ class CommunityViewModelTest : GroupViewModelTest() {
     private fun community(status: TdApi.CommunityMemberStatus) =
         TdApi.Community(COMMUNITY, true, "Kyra Labs", null, 0, status, TdApi.CommunityPermissions(false), false)
 
-    private fun answerChats(vararg chats: TdApi.CommunityChat) =
-        client.on(
-            TdApi.GetCommunityFullInfo::class,
-            TdResult.Success(TdApi.CommunityFullInfo(null, arrayOf(*chats), 1, 0, 0, null)),
-        )
+    private fun answerChats(
+        vararg chats: TdApi.CommunityChat,
+        requests: Int = 0,
+    ) = client.on(
+        TdApi.GetCommunityFullInfo::class,
+        TdResult.Success(TdApi.CommunityFullInfo(null, arrayOf(*chats), 1, 0, requests, null)),
+    )
 
     private fun TestScope.effectsOf(viewModel: CommunityViewModel): List<CommunityEffect> {
         val effects = mutableListOf<CommunityEffect>()
@@ -201,8 +203,132 @@ class CommunityViewModelTest : GroupViewModelTest() {
 
             with(viewModel.content.header) {
                 assertNull(role)
-                assertEquals(false, hasOptions)
+                assertEquals(false, canRename || canDelete)
+                // A member still shows the community as one entry in the chat list, or not, from the menu.
+                assertTrue(isJoined && hasOptions)
+                assertEquals(false, canEditChatList)
             }
+        }
+
+    @Test
+    fun `mutes and shows the community as one entry, each one request`() =
+        runTest {
+            answerChats()
+            client.on(TdApi.SetCommunityNotificationSettings::class, TdResult.Success(TdApi.Ok()))
+            client.on(TdApi.ToggleCommunityAreChatsCollapsed::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, CommunityEvent.ToggleMute, CommunityEvent.ToggleCollapsed)
+
+            assertEquals(
+                Int.MAX_VALUE,
+                client
+                    .sentOf<TdApi.SetCommunityNotificationSettings>()
+                    .single()
+                    .notificationSettings.muteFor,
+            )
+            assertEquals(true, client.sentOf<TdApi.ToggleCommunityAreChatsCollapsed>().single().areChatsCollapsed)
+            assertEquals(listOf(CommunityEffect.Notice(R.string.community_collapsed_notice)), effects)
+        }
+
+    @Test
+    fun `an administrator answers the requests to add a chat, read again once answered`() =
+        runTest {
+            answerChats(requests = 1)
+            client.on(
+                TdApi.GetCommunityAddChatRequests::class,
+                TdResult.Success(
+                    TdApi.CommunityAddChatRequests(
+                        1,
+                        arrayOf(TdApi.CommunityAddChatRequest(OTHER_CHAT, true, 42, 1_700_000_000)),
+                        "",
+                    ),
+                ),
+            )
+            client.on(TdApi.ProcessCommunityAddChatRequest::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            with(viewModel.content.requests.single()) {
+                assertEquals(
+                    Triple(OTHER_CHAT, "Spenzia Waitlist", true),
+                    Triple(chat.chatId, chat.title, chat.isHidden),
+                )
+            }
+            send(viewModel, CommunityEvent.AnswerRequest(OTHER_CHAT, approve = true))
+
+            with(client.sentOf<TdApi.ProcessCommunityAddChatRequest>().single()) {
+                assertEquals(Triple(COMMUNITY, OTHER_CHAT, true), Triple(communityId, chatId, approve))
+            }
+            assertEquals(2, client.sentOf<TdApi.GetCommunityAddChatRequests>().size)
+            assertEquals(listOf(CommunityEffect.Notice(R.string.community_request_approved)), effects)
+        }
+
+    @Test
+    fun `the sheet adds the chats picked, kept across process death, leaving out those in the community`() =
+        runTest {
+            answerChats(TdApi.CommunityChat(CHAT, true, false))
+            client.on(
+                TdApi.GetSuitableCommunityChats::class,
+                TdResult.Success(TdApi.Chats(2, longArrayOf(CHAT, OTHER_CHAT))),
+            )
+            client.on(TdApi.AddCommunityChat::class, TdResult.Success(TdApi.Ok()))
+            val handle = SavedStateHandle()
+            val first = viewModel(handle)
+            send(
+                first,
+                CommunityEvent.AddChats,
+                CommunityEvent.PickChat(OTHER_CHAT),
+                CommunityEvent.HiddenChanged(true),
+            )
+
+            val viewModel = viewModel(handle)
+            val effects = effectsOf(viewModel)
+            with(viewModel.content.addChats!!) {
+                assertEquals(listOf(OTHER_CHAT), chats!!.map { it.chatId })
+                assertEquals(setOf(OTHER_CHAT), picked)
+                assertTrue(isHidden)
+            }
+            send(viewModel, CommunityEvent.SendChats)
+
+            with(client.sentOf<TdApi.AddCommunityChat>().single()) {
+                assertEquals(Triple(COMMUNITY, OTHER_CHAT, true), Triple(communityId, chatId, isHidden))
+            }
+            assertNull(viewModel.content.addChats)
+            assertEquals(listOf(CommunityEffect.CountNotice(R.plurals.community_chats_added, 1)), effects)
+        }
+
+    @Test
+    fun `a member suggests a chat, which Telegram turns into a request`() =
+        runTest {
+            answerChats()
+            client.on(TdApi.GetSuitableCommunityChats::class, TdResult.Success(TdApi.Chats(1, longArrayOf(OTHER_CHAT))))
+            client.on(TdApi.AddCommunityChat::class, TdResult.Failure(TdError(400, "COMMUNITY_REQUEST_CREATED")))
+            val viewModel = viewModel()
+            client.emit(TdApi.UpdateCommunity(community(TdApi.CommunityMemberStatusMember())))
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, CommunityEvent.AddChats, CommunityEvent.PickChat(OTHER_CHAT), CommunityEvent.SendChats)
+
+            assertEquals(listOf(CommunityEffect.CountNotice(R.plurals.community_chats_suggested, 1)), effects)
+        }
+
+    @Test
+    fun `removing a chat asks first, then takes it out`() =
+        runTest {
+            answerChats(TdApi.CommunityChat(CHAT, true, false))
+            client.on(TdApi.RemoveCommunityChat::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, CommunityEvent.RemoveChat(CHAT))
+            assertInstanceOf(CommunityDialog.RemoveChat::class.java, viewModel.content.dialog)
+            send(viewModel, CommunityEvent.Confirm)
+
+            assertEquals(CHAT, client.sentOf<TdApi.RemoveCommunityChat>().single().chatId)
+            assertNull(viewModel.content.dialog)
+            assertEquals(listOf(CommunityEffect.Notice(R.string.community_chat_removed)), effects)
         }
 
     private companion object {
