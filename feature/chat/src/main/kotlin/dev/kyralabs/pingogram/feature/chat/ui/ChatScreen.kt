@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionRow
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntroArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyUiState
@@ -640,6 +641,10 @@ private fun ChatItemRow(
             )
         }
 
+        is ChatItem.Service if item.birthday != null -> {
+            BirthdaySuggestionRow(item.id, item.birthday, modifier)
+        }
+
         is ChatItem.Service -> {
             // "Wave", where the user can write and nothing is being selected (§13.6).
             val canWave =
@@ -693,7 +698,7 @@ internal val ChatItem.contentType: Any
     get() =
         when (this) {
             is ChatItem.Bubble -> BubbleContentType.of(this)
-            is ChatItem.Service -> SERVICE
+            is ChatItem.Service -> if (birthday != null) BIRTHDAY else SERVICE
             is ChatItem.DateSeparator -> DATE
             is ChatItem.UnreadDivider -> UNREAD
             is ChatItem.Sponsored -> SPONSORED
@@ -726,6 +731,7 @@ private enum class BubbleContentType {
 }
 
 private const val SERVICE = "service"
+private const val BIRTHDAY = "birthday"
 private const val DATE = "date"
 private const val UNREAD = "unread"
 private const val SPONSORED = "sponsored"

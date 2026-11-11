@@ -37,6 +37,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdayErrorsEffect
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.LocalBirthdaySuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
@@ -138,6 +141,10 @@ internal fun ConversationRoute(
         hiltViewModel<WelcomePackViewModel, WelcomePackViewModel.Factory>(key = "welcome-$chatId") {
             it.create(chatId)
         },
+    birthdaysViewModel: BirthdaySuggestionsViewModel =
+        hiltViewModel<BirthdaySuggestionsViewModel, BirthdaySuggestionsViewModel.Factory>(key = "birthdays-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -181,6 +188,7 @@ internal fun ConversationRoute(
         },
         onPickReplacement = launchers::replace,
     )
+    BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -192,6 +200,7 @@ internal fun ConversationRoute(
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,
+        LocalBirthdaySuggestions provides birthdaysViewModel,
     ) {
         ChatScreen(
             state = state,

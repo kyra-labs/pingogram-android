@@ -13,6 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Log in with Telegram: a website or app that asks to log in with your account opens a sheet that says who asks, from
   where and what it gets, asks for the code the website shows where Telegram wants it, and shares your phone number
   only if you turn it on. Nothing is sent before "Allow"; the website is then listed in Privacy and security → Websites.
+- Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your
+  profile and "Decline".
 - GIFs from the panel take the text you typed as their caption, below or above the GIF.
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
 - A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
