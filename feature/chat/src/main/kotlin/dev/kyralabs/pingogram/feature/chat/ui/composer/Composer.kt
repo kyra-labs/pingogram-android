@@ -152,6 +152,7 @@ internal fun ChatBottomBar(
     onSendAnimation: (Animation) -> Unit = {},
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
+    onOpenChat: (chatId: Long) -> Unit = {},
     bots: BotInput = BotInput(),
     inline: InlineBotInput = InlineBotInput(),
 ) {
@@ -172,6 +173,10 @@ internal fun ChatBottomBar(
 
             is ComposerUiState.BotStart -> {
                 BotStartButton(composer, bots.onStart)
+            }
+
+            is ComposerUiState.MessageChannel -> {
+                MessageChannelButton(composer) { onOpenChat(composer.chatId) }
             }
 
             is ComposerUiState.Available -> {

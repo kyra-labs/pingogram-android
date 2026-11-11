@@ -31,6 +31,10 @@ internal fun TdApi.Supergroup.toSupergroup(): Supergroup {
         isFake = verification?.isFake == true,
         joinByRequest = joinByRequest,
         joinToSendMessages = joinToSendMessages,
+        hasDirectMessages = hasDirectMessagesGroup,
+        isDirectMessages = isDirectMessagesGroup,
+        isAdministeredDirectMessages = isAdministeredDirectMessagesGroup,
+        paidMessageStarCount = paidMessageStarCount,
     )
 }
 
