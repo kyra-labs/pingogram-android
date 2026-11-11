@@ -85,6 +85,11 @@ data class Chat(
      * user has open, and not right away; 0 while unknown and for other chats.
      */
     val onlineMemberCount: Int = 0,
+    /**
+     * What TDLib suggests doing about the chat at the top of its conversation (td_api.tl `chat.action_bar`,
+     * `updateChatActionBar`); null for none.
+     */
+    val actionBar: ChatActionBar? = null,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

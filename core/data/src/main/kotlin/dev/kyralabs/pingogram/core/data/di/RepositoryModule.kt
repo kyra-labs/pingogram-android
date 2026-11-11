@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBotButtonRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallHistoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionBarRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
@@ -126,6 +127,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -441,6 +443,9 @@ interface RepositoryModule {
 
     @Binds
     fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
+
+    @Binds
+    fun chatActionBarRepository(repository: TdlibChatActionBarRepository): ChatActionBarRepository
 
     @Binds
     fun giveawayRepository(repository: TdlibGiveawayRepository): GiveawayRepository

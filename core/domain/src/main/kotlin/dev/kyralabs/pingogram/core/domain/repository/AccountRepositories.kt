@@ -150,6 +150,8 @@ interface AccountRepositories {
 
     fun checklistRepository(): ChecklistRepository
 
+    fun chatActionBarRepository(): ChatActionBarRepository
+
     fun botInfoRepository(): BotInfoRepository
 
     fun inlineBotRepository(): InlineBotRepository

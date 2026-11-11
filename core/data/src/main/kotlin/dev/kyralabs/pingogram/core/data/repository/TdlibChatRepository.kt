@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
 import dev.kyralabs.pingogram.core.data.mapper.toChat
+import dev.kyralabs.pingogram.core.data.mapper.toChatActionBar
 import dev.kyralabs.pingogram.core.data.mapper.toChatDraft
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolder
 import dev.kyralabs.pingogram.core.data.mapper.toChatListType
@@ -425,6 +426,10 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
 
         is TdApi.UpdateChatHasScheduledMessages -> {
             ChatChange(update.chatId) { it.copy(hasScheduledMessages = update.hasScheduledMessages) }
+        }
+
+        is TdApi.UpdateChatActionBar -> {
+            ChatChange(update.chatId) { it.copy(actionBar = update.actionBar?.toChatActionBar()) }
         }
 
         else -> {

@@ -16,6 +16,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your
   profile and "Decline".
 - A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
+- A chat someone new started opens with a card to block them, report the chat or add them to your contacts, with
+  what Telegram tells of their account (when they joined, their number's country, recent name and photo changes).
 - A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
 - Leaving a group or channel you own: choose which administrator owns it next, with your 2-step verification password,
   or let Telegram choose, whose choice is named.
