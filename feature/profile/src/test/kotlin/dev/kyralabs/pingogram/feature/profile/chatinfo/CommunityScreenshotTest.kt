@@ -1,15 +1,19 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.Surface
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityUiState
-import dev.kyralabs.pingogram.feature.profile.chatinfo.community.RenameCommunityDialog
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.Membership
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.RenameCommunityContent
 import dev.kyralabs.pingogram.feature.profile.ui.COMPACT
 import dev.kyralabs.pingogram.feature.profile.ui.MEDIUM
 import dev.kyralabs.pingogram.feature.profile.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.profile.ui.ScreenshotVariant
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,7 +21,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of a community's page (`docs/DESIGN_SYSTEM.md` §6 "Community page", the owner's board 19a): the owner's in
- * every look the audit asks for, at a 700 dp width and at 200% font, a member's while a join is on its way, the
+ * every look the audit asks for, at a 700 dp width and at 200% font, a member's, the
  * error, and the rename dialog's content.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -46,8 +50,25 @@ class CommunityScreenshotTest {
     @Config(qualifiers = "w411dp-h1800dp-xxhdpi", fontScale = 2f)
     fun fontScale200() = capture(ScreenshotVariant.Light)
 
+    /** A member's page; "Join" rather than its spinner, which animates. */
     @Test
-    fun memberJoiningDark() = capture(ScreenshotVariant.Dark, CommunityPreviewData.member)
+    fun memberDark() =
+        capture(
+            ScreenshotVariant.Dark,
+            CommunityPreviewData.member.copy(
+                chats =
+                    CommunityPreviewData.member.chats
+                        .map {
+                            if (it.membership ==
+                                Membership.Joining
+                            ) {
+                                it.copy(membership = Membership.CanJoin)
+                            } else {
+                                it
+                            }
+                        }.toImmutableList(),
+            ),
+        )
 
     @Test
     fun error() = capture(ScreenshotVariant.Light, CommunityUiState.Error(DomainError.Network))
@@ -56,7 +77,14 @@ class CommunityScreenshotTest {
     fun renameDialog() =
         captureRoboImage {
             ScreenshotTheme(ScreenshotVariant.Light) {
-                RenameCommunityDialog("Kyra Labs Community", isBusy = false, onEvent = {})
+                // The dialog's content on its surface: a dialog window takes the focus on some runs and not others.
+                Surface(
+                    shape = AlertDialogDefaults.shape,
+                    color = AlertDialogDefaults.containerColor,
+                    tonalElevation = AlertDialogDefaults.TonalElevation,
+                ) {
+                    RenameCommunityContent("Kyra Labs Community", isBusy = false, onEvent = {})
+                }
             }
         }
 

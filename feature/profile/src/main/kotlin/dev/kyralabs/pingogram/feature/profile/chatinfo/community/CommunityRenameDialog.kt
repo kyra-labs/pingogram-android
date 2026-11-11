@@ -48,59 +48,69 @@ internal fun RenameCommunityDialog(
     isBusy: Boolean,
     onEvent: (CommunityEvent) -> Unit,
 ) {
-    val spacing = MaterialTheme.spacing
-    val text = rememberTextFieldState(name)
-    val currentOnEvent by rememberUpdatedState(onEvent)
-    LaunchedEffect(text) {
-        snapshotFlow { text.text.toString() }.drop(1).collect { currentOnEvent(CommunityEvent.NameChanged(it)) }
-    }
     BasicAlertDialog(onDismissRequest = { onEvent(CommunityEvent.DismissDialog) }) {
         Surface(
             shape = AlertDialogDefaults.shape,
             color = AlertDialogDefaults.containerColor,
             tonalElevation = AlertDialogDefaults.TonalElevation,
         ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()).padding(spacing.large),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            RenameCommunityContent(name, isBusy, onEvent)
+        }
+    }
+}
+
+/** What the rename dialog holds: its title, the name's field, progress and the buttons. */
+@Composable
+internal fun RenameCommunityContent(
+    name: String,
+    isBusy: Boolean,
+    onEvent: (CommunityEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    val text = rememberTextFieldState(name)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(text) {
+        snapshotFlow { text.text.toString() }.drop(1).collect { currentOnEvent(CommunityEvent.NameChanged(it)) }
+    }
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()).padding(spacing.large),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    ) {
+        Text(
+            text = stringResource(R.string.community_rename_title),
+            modifier = Modifier.semantics { heading() },
+            color = AlertDialogDefaults.titleContentColor,
+            style = MaterialTheme.typography.titleLargeEmphasized,
+        )
+        TextField(
+            state = text,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isBusy,
+            textStyle = MaterialTheme.typography.bodyLarge.userContent,
+            label = { Text(stringResource(R.string.community_name)) },
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+            lineLimits = TextFieldLineLimits.SingleLine,
+        )
+        if (isBusy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
+        ) {
+            TextButton(
+                onClick = { onEvent(CommunityEvent.DismissDialog) },
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(R.string.community_cancel), style = MaterialTheme.typography.labelLarge)
+            }
+            Button(
+                onClick = { onEvent(CommunityEvent.Confirm) },
+                enabled = !isBusy && name.isNotBlank(),
+                shapes = ButtonDefaults.shapes(),
             ) {
                 Text(
-                    text = stringResource(R.string.community_rename_title),
-                    modifier = Modifier.semantics { heading() },
-                    color = AlertDialogDefaults.titleContentColor,
-                    style = MaterialTheme.typography.titleLargeEmphasized,
+                    stringResource(R.string.community_save),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
                 )
-                TextField(
-                    state = text,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isBusy,
-                    textStyle = MaterialTheme.typography.bodyLarge.userContent,
-                    label = { Text(stringResource(R.string.community_name)) },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                )
-                if (isBusy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
-                ) {
-                    TextButton(
-                        onClick = { onEvent(CommunityEvent.DismissDialog) },
-                        shapes = ButtonDefaults.shapes(),
-                    ) {
-                        Text(stringResource(R.string.community_cancel), style = MaterialTheme.typography.labelLarge)
-                    }
-                    Button(
-                        onClick = { onEvent(CommunityEvent.Confirm) },
-                        enabled = !isBusy && name.isNotBlank(),
-                        shapes = ButtonDefaults.shapes(),
-                    ) {
-                        Text(
-                            stringResource(R.string.community_save),
-                            style = MaterialTheme.typography.labelLargeEmphasized,
-                        )
-                    }
-                }
             }
         }
     }
