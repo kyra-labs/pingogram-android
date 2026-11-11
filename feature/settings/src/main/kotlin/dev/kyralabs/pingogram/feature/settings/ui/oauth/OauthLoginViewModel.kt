@@ -10,7 +10,6 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
-import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.OauthLoginRoute
@@ -107,7 +106,8 @@ sealed interface OauthLoginEffect {
  * messages are off at first, and the TON wallet is never shared. "Decline", and closing the sheet without answering
  * ([onDismissed]), decline the request in the app's scope, as the sheet's destination leaves with it.
  *
- * The code the user picked and the two switches are kept in the [SavedStateHandle]; a picked code is not asked for again.
+ * The code the user picked and the two switches are kept in the [SavedStateHandle]; a picked code is not asked for
+ * again.
  */
 @HiltViewModel
 class OauthLoginViewModel internal constructor(
@@ -185,8 +185,8 @@ class OauthLoginViewModel internal constructor(
                                     OauthLoginStep.Confirm
                                 },
                             request = request,
-                            accountName = myName(),
-                            botName = botName(request.botUserId),
+                            accountName = userRepository.myUserId.value?.let { userRepository.nameOf(it) },
+                            botName = request.botUserId.takeIf { it != 0L }?.let { userRepository.nameOf(it, preferUsername = true) },
                         )
                     }
                 }
@@ -263,22 +263,19 @@ class OauthLoginViewModel internal constructor(
         if (close) effectChannel.trySend(OauthLoginEffect.Close)
     }
 
-    private suspend fun myName(): String? {
-        val me = userRepository.myUserId.value ?: return null
-        return (userRepository.getUser(me) as? Outcome.Success)?.value?.displayName()
-    }
-
-    private suspend fun botName(botUserId: Long): String? {
-        if (botUserId == 0L) return null
-        val bot = (userRepository.getUser(botUserId) as? Outcome.Success)?.value ?: return null
-        return bot.usernames.firstOrNull()?.let { "@$it" } ?: bot.displayName()
-    }
-
-    private fun User.displayName(): String = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ")
-
     private companion object {
         const val KEY_CODE = "oauth_login_code"
         const val KEY_ALLOW_MESSAGES = "oauth_login_allow_messages"
         const val KEY_SHARE_PHONE = "oauth_login_share_phone"
     }
 }
+
+/** The name of the user [id], or `@username` with [preferUsername] where they have one; null where TDLib cannot say. */
+private suspend fun UserRepository.nameOf(
+    id: Long,
+    preferUsername: Boolean = false,
+): String? =
+    (getUser(id) as? Outcome.Success)?.value?.let { user ->
+        user.usernames.firstOrNull()?.takeIf { preferUsername }?.let { "@$it" }
+            ?: listOf(user.firstName, user.lastName).filter { it.isNotBlank() }.joinToString(" ")
+    }
