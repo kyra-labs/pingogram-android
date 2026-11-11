@@ -135,6 +135,11 @@
     <string name="preview_game">Game</string>
     <string name="preview_invoice">Invoice</string>
     <string name="preview_story">Story</string>
+    <!-- A post whose photos and videos unlock for Telegram Stars. -->
+    <string name="preview_paid_media">Paid media</string>
+    <!-- A channel's giveaway of Telegram Premium or Telegram Stars, and the message that names its winners. -->
+    <string name="preview_giveaway">Giveaway</string>
+    <string name="preview_giveaway_winners">Giveaway winners</string>
     <string name="preview_expired_photo">Photo expired</string>
     <string name="preview_expired_video">Video expired</string>
     <string name="preview_expired_voice_message">Voice message expired</string>

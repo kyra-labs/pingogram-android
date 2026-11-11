@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
@@ -65,6 +66,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   bar; null while there is none.
  * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
  *   null while the chat has none.
+ * @property showsUpdateLink whether a message Pingogram cannot show offers "Update Pingogram", a link to the latest
+ *   release; false in builds an app store installed (`AppInfo.isFromAppStore`).
  */
 @Immutable
 data class ChatUiState(
@@ -95,6 +98,7 @@ data class ChatUiState(
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
     val scheduledBar: ScheduledBar? = null,
+    val showsUpdateLink: Boolean = false,
 )
 
 /**
@@ -386,6 +390,7 @@ sealed interface ChatItem {
         val myMentions: ImmutableList<IntRange> = persistentListOf(),
         val isChannelPost: Boolean = false,
         val views: Int = 0,
+        val giveaway: GiveawayUi? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

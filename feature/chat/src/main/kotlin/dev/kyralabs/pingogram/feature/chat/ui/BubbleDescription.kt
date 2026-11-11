@@ -8,6 +8,8 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistDescription
+import dev.kyralabs.pingogram.feature.chat.ui.content.paidMediaDescription
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayDescription
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
@@ -56,6 +58,8 @@ private fun bubbleContent(
         },
         bubble.contentLabel?.resolve(resources),
         pollDescription(resources, bubble),
+        paidMediaDescription(resources, bubble),
+        giveawayDescription(resources, bubble),
         checklistDescription(resources, bubble),
         bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
         bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),

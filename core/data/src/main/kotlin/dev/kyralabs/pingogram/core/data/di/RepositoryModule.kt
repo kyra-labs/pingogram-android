@@ -53,6 +53,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFrequentContactsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGiveawayRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
@@ -151,6 +152,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -415,6 +417,9 @@ interface RepositoryModule {
 
     @Binds
     fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
+
+    @Binds
+    fun giveawayRepository(repository: TdlibGiveawayRepository): GiveawayRepository
 
     @Binds
     fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository
