@@ -256,6 +256,11 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
             LinkTarget.StickerSet(stickerSetName)
         }
 
+        // A shared style of the AI editor: its sheet asks searchTextCompositionStyle, and adds it only on a tap.
+        is TdApi.InternalLinkTypeTextCompositionStyle -> {
+            LinkTarget.TextCompositionStyle(styleName)
+        }
+
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.
         is TdApi.InternalLinkTypeQrCodeAuthentication -> {
             LinkTarget.QrCodeLogin(link)

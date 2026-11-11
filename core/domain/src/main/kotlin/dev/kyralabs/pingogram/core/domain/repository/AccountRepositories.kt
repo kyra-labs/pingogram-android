@@ -166,6 +166,8 @@ interface AccountRepositories {
 
     fun accentColorRepository(): AccentColorRepository
 
+    fun aiTextRepository(): AiTextRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

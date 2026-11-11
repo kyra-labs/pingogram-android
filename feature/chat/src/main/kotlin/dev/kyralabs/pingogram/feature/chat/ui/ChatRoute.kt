@@ -33,6 +33,8 @@ import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorHost
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
@@ -145,6 +147,10 @@ internal fun ConversationRoute(
         hiltViewModel<BirthdaySuggestionsViewModel, BirthdaySuggestionsViewModel.Factory>(key = "birthdays-$chatId") {
             it.create(chatId)
         },
+    aiEditorViewModel: AiEditorViewModel =
+        hiltViewModel<AiEditorViewModel, AiEditorViewModel.Factory>(key = "ai-editor-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -202,41 +208,43 @@ internal fun ConversationRoute(
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
     ) {
-        ChatScreen(
-            state = state,
-            onEvent = viewModel::onEvent,
-            onBack = onBack,
-            modifier = modifier,
-            snackbarHostState = snackbarHostState,
-            jumpState = jumpState,
-            composerText = viewModel.composerText,
-            composerFocus = composerFocus,
-            attach = attach,
-            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-            reportComment = viewModel.reportComment,
-            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-            onEmojiPanelEvent = panelViewModel::onEvent,
-            onOpenProfile = onOpenProfile,
-            onOpenChatInfo = onOpenChatInfo,
-            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-            search = viewModel.searchState.collectAsStateWithLifecycle().value,
-            searchQuery = viewModel.searchQuery,
-            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-            topicAction = topicActions?.button,
-            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
-            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
-            // A topic's or thread's conversation is not where a new member lands.
-            welcome =
-                welcomeViewModel.pack
-                    .collectAsStateWithLifecycle()
-                    .value
-                    .takeIf { topic == null },
-            onWelcomeEvent = welcomeViewModel::onEvent,
-            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
-            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
-            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
-        )
+        AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
+            ChatScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onBack = onBack,
+                modifier = modifier,
+                snackbarHostState = snackbarHostState,
+                jumpState = jumpState,
+                composerText = viewModel.composerText,
+                composerFocus = composerFocus,
+                attach = attach,
+                recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+                reportComment = viewModel.reportComment,
+                emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+                onEmojiPanelEvent = panelViewModel::onEvent,
+                onOpenProfile = onOpenProfile,
+                onOpenChatInfo = onOpenChatInfo,
+                commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+                inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+                search = viewModel.searchState.collectAsStateWithLifecycle().value,
+                searchQuery = viewModel.searchQuery,
+                botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+                topicAction = topicActions?.button,
+                connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+                onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+                // A topic's or thread's conversation is not where a new member lands.
+                welcome =
+                    welcomeViewModel.pack
+                        .collectAsStateWithLifecycle()
+                        .value
+                        .takeIf { topic == null },
+                onWelcomeEvent = welcomeViewModel::onEvent,
+                nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+                recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+                videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
+            )
+        }
         ChatSheets(viewModel)
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
