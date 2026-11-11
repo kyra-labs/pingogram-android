@@ -53,8 +53,15 @@ class AnswerSliderTest {
     fun `a quick flick toward Answer answers`() {
         setScreen()
 
+        // Short of the threshold, but fast: the handle would glide past it.
+        val distance = travel() * FLICK_FRACTION
         composeRule.onNodeWithTag(ANSWER_SLIDER_HANDLE, useUnmergedTree = true).performTouchInput {
-            swipeWithVelocity(center, center + Offset(width * 0.6f, 0f), endVelocity = FLICK_VELOCITY)
+            swipeWithVelocity(
+                center,
+                center + Offset(distance, 0f),
+                endVelocity = distance * MILLIS_PER_SECOND / FLICK_MILLIS,
+                durationMillis = FLICK_MILLIS,
+            )
         }
         composeRule.waitForIdle()
 
@@ -72,6 +79,9 @@ class AnswerSliderTest {
             moveBy(Offset(travel * 0.8f, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
         }
+        // The frame the release is handled in; the handle needs many more to finish its way.
+        composeRule.waitForIdle()
+        composeRule.mainClock.advanceTimeByFrame()
         composeRule.waitForIdle()
 
         assertEquals(listOf(CallEvent.Answer), events)
@@ -157,8 +167,10 @@ class AnswerSliderTest {
     }
 
     private companion object {
-        /** Pixels per second: a flick, far faster than a slide. */
-        const val FLICK_VELOCITY = 8_000f
+        /** A flick: 40% of the way in 50 ms, far faster than a slide. */
+        const val FLICK_FRACTION = 0.4f
+        const val FLICK_MILLIS = 50L
+        const val MILLIS_PER_SECOND = 1_000f
         const val SLOW_MOVE_MILLIS = 600L
         const val SPRING_FRAMES = 3
         const val HELD_FRAMES = 10
