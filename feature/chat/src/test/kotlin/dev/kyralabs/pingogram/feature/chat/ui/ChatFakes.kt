@@ -20,12 +20,14 @@ import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
@@ -665,6 +667,13 @@ class FakeSearchRepository : SearchRepository {
         offset: String?,
         filter: MessageSearchFilter,
     ): Outcome<FoundMessages> = unused()
+
+    override suspend fun publicPostSearchLimits(query: String): Outcome<PublicPostSearchLimits> = unused()
+
+    override suspend fun searchPublicPosts(
+        query: String,
+        offset: String?,
+    ): Outcome<FoundPublicPosts> = unused()
 
     override suspend fun recentChats(): Outcome<ImmutableList<Chat>> = unused()
 
