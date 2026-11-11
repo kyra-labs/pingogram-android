@@ -26,6 +26,7 @@ internal fun TdApi.Supergroup.toSupergroup(): Supergroup {
         status = status.toChatMemberStatus(),
         isChannel = isChannel,
         isForum = isForum,
+        hasForumTabs = hasForumTabs,
         isVerified = verification?.isVerified == true,
         isScam = verification?.isScam == true,
         isFake = verification?.isFake == true,

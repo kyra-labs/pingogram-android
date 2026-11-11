@@ -9,4 +9,7 @@
     <string name="saved_tab_unknown_chat">Deleted chat</string>
     <!-- In place of the composer in a tab of messages saved from another chat. -->
     <string name="composer_saved_topic">New messages go to My Notes</string>
+
+    <!-- A forum that shows its topics as tabs: the tab of the whole chat. -->
+    <string name="forum_tab_all">All</string>
 </resources>
