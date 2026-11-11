@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
+import dev.kyralabs.pingogram.core.domain.repository.DirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
@@ -159,6 +160,10 @@ object ActiveAccountModule {
     @Provides
     fun savedMessagesTopicRepository(accounts: Accounts): SavedMessagesTopicRepository =
         accounts.active.savedMessagesTopicRepository()
+
+    @Provides
+    fun directMessagesTopicRepository(accounts: Accounts): DirectMessagesTopicRepository =
+        accounts.active.directMessagesTopicRepository()
 
     @Provides
     fun messageThreadRepository(accounts: Accounts): MessageThreadRepository = accounts.active.messageThreadRepository()

@@ -148,7 +148,9 @@ fun ChatPane(
 /** The forum topic or message thread of a [ChatDestination]; null for the whole chat. */
 private val ChatDestination.topic: MessageTopic?
     get() =
-        topicId?.let(MessageTopic::Forum) ?: threadId?.let(MessageTopic::Thread)
+        topicId?.let(MessageTopic::Forum)
+            ?: threadId?.let(MessageTopic::Thread)
+            ?: directMessagesTopicId?.let(MessageTopic::DirectMessages)
 
 /** The destination of [topic] of chat [chatId]. */
 private fun destinationOf(
@@ -161,6 +163,8 @@ private fun destinationOf(
 
     // Saved Messages shows its topics as tabs of its own conversation.
     is MessageTopic.SavedMessages -> ChatDestination(chatId)
+
+    is MessageTopic.DirectMessages -> ChatDestination(chatId, directMessagesTopicId = topic.topicId)
 }
 
 /** A forum topic or message thread [topic] of chat [chatId], opened in the detail pane. */
@@ -178,7 +182,10 @@ private data class PaneThreads(
     fun popped() = PaneThreads(entries.dropLast(1))
 
     companion object {
-        /** Saves them as a flat list of chat id, kind (0 topic, 1 thread, 2 Saved Messages topic) and id. */
+        /**
+         * Saves them as a flat list of chat id, kind (0 topic, 1 thread, 2 Saved Messages topic, 3 direct messages
+         * topic) and id.
+         */
         val Saver: Saver<PaneThreads, LongArray> =
             Saver(
                 save = { threads ->
@@ -188,6 +195,7 @@ private data class PaneThreads(
                                 is MessageTopic.Forum -> listOf(chatId, KIND_TOPIC, topic.topicId.toLong())
                                 is MessageTopic.Thread -> listOf(chatId, KIND_THREAD, topic.threadId)
                                 is MessageTopic.SavedMessages -> listOf(chatId, KIND_SAVED, topic.topicId)
+                                is MessageTopic.DirectMessages -> listOf(chatId, KIND_DIRECT, topic.topicId)
                             }
                         }.toLongArray()
                 },
@@ -198,6 +206,7 @@ private data class PaneThreads(
                                 when (kind) {
                                     KIND_TOPIC -> MessageTopic.Forum(id.toInt())
                                     KIND_SAVED -> MessageTopic.SavedMessages(id)
+                                    KIND_DIRECT -> MessageTopic.DirectMessages(id)
                                     else -> MessageTopic.Thread(id)
                                 }
                             PaneThread(chatId, topic)
@@ -209,6 +218,7 @@ private data class PaneThreads(
         private const val KIND_TOPIC = 0L
         private const val KIND_THREAD = 1L
         private const val KIND_SAVED = 2L
+        private const val KIND_DIRECT = 3L
         private const val SAVED_FIELDS = 3
     }
 }

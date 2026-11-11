@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -83,6 +84,11 @@ abstract class ChatViewModelHarness {
     protected val forumTopics = FakeForumTopicRepository()
     protected val threads = FakeMessageThreadRepository()
     protected val savedTopics = FakeSavedMessagesTopicRepository()
+    protected val directTopics = FakeDirectMessagesTopicRepository()
+
+    private fun threadRepositories() =
+        ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads, savedTopics, directTopics, users, chats)
+
     protected val shareInbox = ShareInbox()
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
@@ -159,7 +165,7 @@ abstract class ChatViewModelHarness {
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
                 chatJoinRepository = joins,
-                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads, savedTopics),
+                threadRepositories = threadRepositories(),
                 shareInbox = shareInbox,
                 botButtonRepository = botButtons,
                 botInfoRepository = bots,

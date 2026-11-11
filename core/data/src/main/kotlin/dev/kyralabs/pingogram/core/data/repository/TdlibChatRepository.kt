@@ -228,6 +228,8 @@ class TdlibChatRepository
 
                     // td_api.tl has no source of its own for a Saved Messages topic: it is the chat's history.
                     is MessageTopic.SavedMessages -> TdApi.MessageSourceChatHistory()
+
+                    is MessageTopic.DirectMessages -> TdApi.MessageSourceDirectMessagesChatTopicHistory()
                 }
             return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
         }
