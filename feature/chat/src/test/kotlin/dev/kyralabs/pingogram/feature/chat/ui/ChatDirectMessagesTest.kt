@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DirectMessagesChat
+import dev.kyralabs.pingogram.core.domain.model.SuggestedPost
+import dev.kyralabs.pingogram.core.domain.model.SuggestedPostPrice
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
@@ -146,6 +148,49 @@ class ChatDirectMessagesTest : ChatViewModelHarness() {
                 ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted)),
                 thread(stars = 0, canSend = false).state.composer,
             )
+        }
+
+    @Test
+    fun `a subscriber's thread offers to suggest a post, the administrators' does not`() =
+        runViewModelTest {
+            assertEquals(true, (thread(stars = 0).state.composer as ComposerUiState.Available).canSuggestPost)
+
+            groups.supergroupMap.value =
+                mapOf(
+                    DM_GROUP to
+                        directMessagesGroup(0, administered = true).copy(
+                            status = ChatMemberStatus.Administrator(canPostMessages = true),
+                        ),
+                )
+            val chat = channelChat.copy(id = DM_CHAT, type = ChatType.Supergroup(DM_GROUP, isChannel = false))
+            val composer = showing(chat, history(message(1, DM_CHAT))).state.composer as ComposerUiState.Available
+            assertEquals(false, composer.canSuggestPost)
+        }
+
+    @Test
+    fun `a suggested post shows its card, which a free one's administrator can approve`() =
+        runViewModelTest {
+            val post =
+                message(2, DM_CHAT).copy(
+                    suggestedPost = SuggestedPost(sendDate = 0, canBeApproved = true, canBeDeclined = true),
+                )
+            val paid =
+                message(3, DM_CHAT).copy(
+                    suggestedPost =
+                        SuggestedPost(SuggestedPostPrice.Stars(50), canBeApproved = true, canBeDeclined = true),
+                )
+            groups.supergroupMap.value = mapOf(DM_GROUP to directMessagesGroup(0))
+            val chat = channelChat.copy(id = DM_CHAT, type = ChatType.Supergroup(DM_GROUP, isChannel = false))
+            val viewModel = showing(chat, history(message(1, DM_CHAT), post, paid))
+
+            val free = viewModel.bubble(2).suggestedPost!!
+            assertEquals(true to true, free.canApprove to free.canDecline)
+            assertEquals(false, free.approvesElsewhere)
+            val offer = viewModel.bubble(3).suggestedPost!!
+            assertEquals(false to true, offer.canApprove to offer.canDecline)
+            assertEquals(true, offer.approvesElsewhere)
+            assertEquals(UiText.plural(R.plurals.suggested_post_offers_stars, 50, 50L), offer.price)
+            assertEquals(null, viewModel.bubble(1).suggestedPost)
         }
 
     private companion object {

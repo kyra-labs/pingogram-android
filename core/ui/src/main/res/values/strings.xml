@@ -149,6 +149,14 @@
     <!-- A rich message (a channel's post with headings and sections) that has no text or media to name it by. -->
     <string name="preview_rich_message">Message</string>
     <!-- A service message of a kind Pingogram does not describe yet (gifts, payments, forum topics, …). -->
+    <!-- What became of a post a subscriber suggested to a channel through its direct messages. -->
+    <string name="preview_suggested_post_approved">Suggested post approved</string>
+    <string name="preview_suggested_post_declined">Suggested post declined</string>
+    <!-- %1$s is the administrators' comment. -->
+    <string name="preview_suggested_post_declined_comment">Suggested post declined: %1$s</string>
+    <string name="preview_suggested_post_failed">The suggested post couldn\'t be published</string>
+    <string name="preview_suggested_post_paid">Suggested post paid for</string>
+    <string name="preview_suggested_post_refunded">Suggested post refunded</string>
     <string name="preview_service_other">Chat event</string>
 
     <!-- Service messages: %1$s is who did it (a first name or a chat's title); "you" strings are the current user's. -->

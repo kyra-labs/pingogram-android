@@ -142,7 +142,7 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
         }
 
         else -> {
-            if (javaClass in OTHER_SERVICE_CONTENTS) ServiceAction.Other else null
+            suggestedPostAnswerOf(this) ?: if (javaClass in OTHER_SERVICE_CONTENTS) ServiceAction.Other else null
         }
     }
 
@@ -208,11 +208,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageProximityAlertTriggered::class.java,
         TdApi.MessageRefundedUpgradedGift::class.java,
         TdApi.MessageSuggestProfilePhoto::class.java,
-        TdApi.MessageSuggestedPostApprovalFailed::class.java,
-        TdApi.MessageSuggestedPostApproved::class.java,
-        TdApi.MessageSuggestedPostDeclined::class.java,
-        TdApi.MessageSuggestedPostPaid::class.java,
-        TdApi.MessageSuggestedPostRefunded::class.java,
         TdApi.MessageTonConnectRequest::class.java,
         TdApi.MessageTonWalletTransfer::class.java,
         TdApi.MessageUnpaidMessagesAllowedByLink::class.java,

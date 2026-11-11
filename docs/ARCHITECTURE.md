@@ -1315,6 +1315,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   administered direct messages chat (`Supergroup.isAdministeredDirectMessages`) as `ChatOpening.DirectMessages`
   (`DirectMessagesRoute`, `DirectMessagesViewModel`: the filter and the search in saved state), a found message as its
   conversation; `ChatRoute.directMessagesTopicId` pushes one.
+- **Suggested posts** (td_api.tl `suggestedPostInfo`): `Message.suggestedPost` (`SuggestedPost`: the price, the time,
+  the state, whether the user may approve or decline), replaced by `updateMessageSuggestedPostInfo` in the history
+  (`HistoryCache`); `SendOptions.suggestAsPost` sends a message as a free suggestion (`inputSuggestedPostInfo` without
+  a price), which the composer's send menu offers a subscriber in a channel's direct messages
+  (`ComposerUiState.Available.canSuggestPost`); `core:domain`'s `SuggestedPostRepository` (`TdlibSuggestedPostRepository`,
+  `core:data`, account-scoped, no cache) approves (`approveSuggestedPost`) and declines (`declineSuggestedPost`) them;
+  what became of one is `ServiceAction.SuggestedPostAnswered`. `feature:chat`'s `suggested/`: the bubble's
+  `SuggestedPostUi` in its footer (`SuggestedPostCard`, with the bot buttons and the comments link), whose answers go
+  to `SuggestedPostsViewModel` (keyed by the chat, hoisted by `ConversationRoute`, which hands it the
+  `SuggestedPostEvent`s instead of `ChatViewModel`): the question before answering, the open one in its saved state. A
+  paid suggestion is never approved here: Pingogram takes no payments (`REQUIREMENTS.md` §1.2).
 - **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
   `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
   page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost

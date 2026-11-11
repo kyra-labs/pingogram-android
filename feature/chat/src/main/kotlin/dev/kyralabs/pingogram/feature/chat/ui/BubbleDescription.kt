@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostDescription
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 
 /**
@@ -80,6 +81,7 @@ private fun bubbleContent(
             resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
         },
         bubble.thread?.let { threadLinkText(resources, it) },
+        bubble.suggestedPost?.let { suggestedPostDescription(resources, it) },
         bubble.keyboard?.let { keyboard ->
             val count = keyboard.rows.sumOf { it.size }
             resources.getQuantityString(R.plurals.bot_buttons_count, count, count)

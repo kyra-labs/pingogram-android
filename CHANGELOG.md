@@ -24,6 +24,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Message links with a time (`t.me/channel/7?t=83`) open the chat at the video and play it from that time.
 - A channel's direct messages, for its administrators: who wrote, with search, All / Unread / Paid filters and unread
   counts; a long press marks a conversation read or unread, and a tap opens it.
+- Suggested posts in a channel's direct messages: subscribers suggest a post from the send button's menu, and the
+  channel's administrators approve or decline it, with an optional comment, from a card below it. Offers of Telegram
+  Stars or Toncoin are shown, never paid or taken.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
 - Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.

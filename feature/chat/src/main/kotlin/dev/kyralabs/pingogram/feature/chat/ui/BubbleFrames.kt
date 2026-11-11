@@ -43,6 +43,8 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardButtons
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostCard
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
 import kotlin.math.max
 
 // The frames of a message without a bubble (emoji only, bare content), and the reaction badges on a bubble's corner and
@@ -143,12 +145,12 @@ internal fun BubbleStack(
             )
         }
 
-        thread != null || keyboard != null -> {
+        thread != null || keyboard != null || bubble.suggestedPost != null -> {
             WithFooter(
                 isOutgoing = bubble.isOutgoing,
                 modifier = stackModifier,
                 bubble = { withBadges(Modifier) },
-                footer = { KeyboardAndThread(bubble.isOutgoing, keyboard, thread, onEvent) },
+                footer = { KeyboardAndThread(bubble.isOutgoing, keyboard, thread, onEvent, bubble.suggestedPost) },
             )
         }
 
@@ -159,8 +161,9 @@ internal fun BubbleStack(
 }
 
 /**
- * Below a bubble: the bot's [keyboard], as wide as a bubble can be, then the link to the [thread], on the bubble's
- * side, `spacing.small` apart, so their touch targets do not overlap; either may be missing.
+ * Below a bubble: the card of the post it suggests to a channel ([suggestedPost]), the bot's [keyboard], as wide as a
+ * bubble can be, then the link to the [thread], on the bubble's side, `spacing.small` apart, so their touch targets do
+ * not overlap; any may be missing.
  */
 @Composable
 private fun KeyboardAndThread(
@@ -168,11 +171,13 @@ private fun KeyboardAndThread(
     keyboard: BotKeyboard?,
     thread: ThreadLink?,
     onEvent: (ChatEvent) -> Unit,
+    suggestedPost: SuggestedPostUi? = null,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start,
     ) {
+        if (suggestedPost != null) SuggestedPostCard(suggestedPost, onEvent)
         if (keyboard != null) {
             BotKeyboardButtons(keyboard, onPress = { onEvent(BotButtonEvent.Press(keyboard.messageId, it)) })
         }
