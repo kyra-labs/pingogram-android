@@ -71,6 +71,7 @@ class AnswerSliderTest {
     @Test
     fun `releasing past the threshold answers as the finger lifts, before the handle has finished`() {
         setScreen()
+        val start = handleLeft()
         composeRule.mainClock.autoAdvance = false
         val travel = travel()
 
@@ -79,12 +80,13 @@ class AnswerSliderTest {
             moveBy(Offset(travel * 0.8f, 0f), delayMillis = SLOW_MOVE_MILLIS)
             up()
         }
-        // The frame the release is handled in; the handle needs many more to finish its way.
-        composeRule.waitForIdle()
-        composeRule.mainClock.advanceTimeByFrame()
+        // The frames the release is handled in, as a spring back starts in them; the handle needs more to finish.
+        repeat(SPRING_FRAMES) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
 
         assertEquals(listOf(CallEvent.Answer), events)
+        val end = start + with(composeRule.density) { travel.toDp() }
+        assertTrue("the handle is still on its way: ${handleLeft()} of $end", handleLeft() < end)
     }
 
     @Test
