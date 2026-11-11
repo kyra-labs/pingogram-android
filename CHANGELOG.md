@@ -128,6 +128,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   community and to list the communities you joined. Nothing changes on screen yet. Its larger library raises the APK
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
+### Fixed
+- The answer slider responds to quick slides and flicks.
+
 ## [2.0.0] - 2026-11-08
 
 Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts and Settings, now the only look.

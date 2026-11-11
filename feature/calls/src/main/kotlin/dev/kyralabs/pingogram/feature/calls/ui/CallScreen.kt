@@ -9,12 +9,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -66,6 +66,7 @@ import androidx.compose.material3.IconButtonDefaults.IconButtonWidthOption
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -102,6 +103,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -110,6 +112,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -123,8 +126,8 @@ import dev.kyralabs.pingogram.feature.calls.CallEndReason
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -891,9 +894,12 @@ private fun IncomingControls(
 /**
  * A pill with "Decline" at its start and "Answer" at its end and a handle between them, which the user slides toward
  * either (mirrored right to left), on the gesture in the layout phase. Past [COMMIT_FRACTION] of the way a
- * `TextHandleMove` haptic says it will take; releasing there answers or declines, anywhere else the handle springs back
- * on the default spatial spring. Its phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer",
- * as a hint. Screen readers hear one item with "Answer" and "Decline" as custom actions (Switch Access too).
+ * `TextHandleMove` haptic says it will take; releasing there, or flinging so the handle would land there, answers or
+ * declines at once, with its haptic, while the handle finishes the way on the fast spatial spring. Anywhere else it
+ * springs back on the default spatial spring from the release's velocity, and a new drag takes the handle from the
+ * spring wherever it is; while power saving holds the call screens still, the handle takes its place at once. Its
+ * phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer", as a hint. Screen readers hear
+ * one item with "Answer" and "Decline" as custom actions (Switch Access too).
  */
 @Composable
 private fun AnswerSlider(
@@ -904,8 +910,11 @@ private fun AnswerSlider(
     val scope = rememberCoroutineScope()
     val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     val handleWidth = with(LocalDensity.current) { SliderHandleSize.width.toPx() }
-    val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-    val fast = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    // Snaps while power saving holds the call screens still.
+    val motionScheme = callMotionScheme()
+    // Where a release would let the handle glide to, as a fling's decay projects it: tells a flick toward a side from
+    // a release short of it. Not an animation: the handle moves on the motion scheme's springs.
+    val decay = rememberSplineBasedDecay<Float>()
     val slider = remember(direction) { SliderState(direction) }
     val dragState =
         rememberDraggableState { delta ->
@@ -927,7 +936,9 @@ private fun AnswerSlider(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.large)
-                .graphicsLayer { alpha = 1f - abs(slider.progress()) },
+                .graphicsLayer { alpha = 1f - abs(slider.progress()) }
+                // The labels are the slider's custom actions for screen readers.
+                .clearAndSetSemantics {},
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.call_decline), style = MaterialTheme.typography.bodyLarge)
@@ -937,8 +948,9 @@ private fun AnswerSlider(
         SliderHandle(
             slider = slider,
             dragState = dragState,
-            onRelease = {
-                when (slider.release(fast, settle)) {
+            onRelease = { velocity ->
+                val landing = decay.calculateTargetValue(slider.offset, velocity)
+                when (slider.release(velocity, landing, scope, motionScheme)) {
                     SliderOutcome.Answer -> {
                         onAnswer()
                     }
@@ -951,12 +963,15 @@ private fun AnswerSlider(
                     null -> {}
                 }
             },
-            onTap = { scope.launch { slider.nudge(fast, settle) } },
+            onTap = { slider.nudge(scope, motionScheme) },
         )
     }
 }
 
-/** The slider's semantics: one item, answered and declined through its custom actions. */
+/**
+ * The slider's semantics: one item, answered and declined through its custom actions. Its children merge into it: the
+ * labels and the handle say nothing of their own, the handle keeping only its test tag.
+ */
 @Composable
 private fun Modifier.answerActions(
     onAnswer: () -> Unit,
@@ -965,7 +980,7 @@ private fun Modifier.answerActions(
     val answer = stringResource(R.string.call_answer)
     val decline = stringResource(R.string.call_decline)
     val description = stringResource(R.string.call_slide_description)
-    return clearAndSetSemantics {
+    return semantics(mergeDescendants = true) {
         contentDescription = description
         customActions =
             listOf(
@@ -986,7 +1001,7 @@ private fun Modifier.answerActions(
 private fun SliderHandle(
     slider: SliderState,
     dragState: DraggableState,
-    onRelease: suspend () -> Unit,
+    onRelease: (velocity: Float) -> Unit,
     onTap: () -> Unit,
 ) {
     Box(
@@ -995,8 +1010,16 @@ private fun SliderHandle(
             .size(SliderHandleSize)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceBright)
-            .draggable(dragState, Orientation.Horizontal, onDragStopped = { onRelease() })
-            .clickable(onClick = onTap),
+            // Its drag and tap are the slider's custom actions for screen readers: only the tag, for tests.
+            .clearAndSetSemantics { testTag = ANSWER_SLIDER_HANDLE }
+            .draggable(
+                dragState,
+                Orientation.Horizontal,
+                // A touch on a handle that is still springing catches it at once, where it is.
+                startDragImmediately = slider.isSettling,
+                onDragStarted = { slider.hold() },
+                onDragStopped = { velocity -> onRelease(velocity) },
+            ).clickable(onClick = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -1019,65 +1042,84 @@ private enum class SliderOutcome { Answer, Decline }
 
 /**
  * Where the slider's handle is, in pixels from the middle (physical: right is positive), and how far it may go;
- * [direction] is -1 right to left, where "Answer" is on the left.
+ * [direction] is -1 right to left, where "Answer" is on the left. The offset is a [SettlingOffset]: a drag takes it
+ * from a spring that is still running, and the springs start at the release's velocity.
  */
 private class SliderState(
     private val direction: Float,
 ) {
-    var offset by mutableFloatStateOf(0f)
+    private val position = SettlingOffset()
+    val offset: Float get() = position.value
     var maxOffset by mutableFloatStateOf(0f)
     private var committed = false
     private var pastThreshold = false
 
-    /** -1 at "Decline", 1 at "Answer", whatever the layout's direction. */
-    fun progress(): Float = if (maxOffset > 0f) offset * direction / maxOffset else 0f
+    /** Whether the handle is springing: to its end, back, or in a nudge. */
+    val isSettling: Boolean get() = position.isSettling
 
-    /** Moves the handle by [delta]; true as it passes [COMMIT_FRACTION] toward either side. */
+    /** -1 at "Decline", 1 at "Answer", whatever the layout's direction. */
+    fun progress(): Float = progress(offset)
+
+    /** A finger took the handle: it stops where it is, whatever spring was moving it. */
+    fun hold() {
+        if (!committed) position.snapTo(offset)
+    }
+
+    private fun progress(at: Float): Float = if (maxOffset > 0f) at * direction / maxOffset else 0f
+
+    /** Moves the handle by [delta], taking it from any spring; true as it passes [COMMIT_FRACTION] either way. */
     fun drag(delta: Float): Boolean {
         if (committed) return false
-        offset = (offset + delta).coerceIn(-maxOffset, maxOffset)
+        position.dragBy(delta, -maxOffset..maxOffset)
         val past = abs(progress()) >= COMMIT_FRACTION
         val crossed = past && !pastThreshold
         pastThreshold = past
         return crossed
     }
 
-    /** Past the threshold, slides to its end and answers or declines; anywhere else, springs back. */
-    suspend fun release(
-        fast: FiniteAnimationSpec<Float>,
-        settle: FiniteAnimationSpec<Float>,
+    /**
+     * The finger lifted at [velocity] (pixels per second), and the handle would have glided on to [landing]: a landing
+     * past the threshold (released there, or flung toward it) gives the outcome now, while the handle finishes the way
+     * on the fast spatial spring; anywhere else it springs back on the default spatial spring from the release's
+     * velocity.
+     */
+    fun release(
+        velocity: Float,
+        landing: Float,
+        scope: CoroutineScope,
+        motionScheme: MotionScheme,
     ): SliderOutcome? {
+        if (committed) return null
         val outcome =
             when {
-                committed -> null
-                progress() >= COMMIT_FRACTION -> SliderOutcome.Answer
-                progress() <= -COMMIT_FRACTION -> SliderOutcome.Decline
+                progress(landing) >= COMMIT_FRACTION -> SliderOutcome.Answer
+                progress(landing) <= -COMMIT_FRACTION -> SliderOutcome.Decline
                 else -> null
             }
-        if (outcome == null) {
-            if (!committed) animateTo(0f, settle)
-            return null
+        pastThreshold = false
+        when (outcome) {
+            null -> {
+                position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
+            }
+
+            else -> {
+                committed = true
+                val end = if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction
+                position.settle(scope, end, motionScheme.fastSpatialSpec(), velocity)
+            }
         }
-        committed = true
-        animateTo(if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction, fast)
         return outcome
     }
 
-    /** A tap's hint: a little toward "Answer" and back. */
-    suspend fun nudge(
-        fast: FiniteAnimationSpec<Float>,
-        settle: FiniteAnimationSpec<Float>,
+    /** A tap's hint: a little toward "Answer" and back, as one settle that a drag or another tap takes over. */
+    fun nudge(
+        scope: CoroutineScope,
+        motionScheme: MotionScheme,
     ) {
         if (committed) return
-        animateTo(maxOffset * NUDGE_FRACTION * direction, fast)
-        animateTo(0f, settle)
-    }
-
-    private suspend fun animateTo(
-        target: Float,
-        spec: FiniteAnimationSpec<Float>,
-    ) {
-        animate(offset, target, animationSpec = spec) { value, _ -> offset = value }
+        position.settle(scope, maxOffset * NUDGE_FRACTION * direction, motionScheme.fastSpatialSpec()) {
+            position.settle(scope, 0f, motionScheme.defaultSpatialSpec())
+        }
     }
 }
 
@@ -1287,6 +1329,9 @@ private const val FULL_TURN = 360f
 /** How far the handle goes before releasing answers or declines, and how far a tap nudges it. */
 private const val COMMIT_FRACTION = 0.7f
 private const val NUDGE_FRACTION = 0.25f
+
+/** The answer slider's handle, for tests. */
+internal const val ANSWER_SLIDER_HANDLE = "answer_slider_handle"
 
 /** The phone's turn into a hang-up at "Decline". */
 private const val HANG_UP_ROTATION = 135f
