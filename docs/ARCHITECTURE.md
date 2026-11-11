@@ -712,6 +712,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   language where they do not read the post's, else its own) answers only that tap, and the summary reaches the bubble as
   a `BubbleTranslation.Summary` over any translation (`withSummaries`); the messages chosen are in the saved state and
   summarized again after process death or an edit, the summaries kept in memory for the view model's life.
+- **AI text editor** (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): `core:domain`'s `AiTextRepository`
+  (`TdlibAiTextRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of `updateTextCompositionStyles`) fixes
+  (`fixTextWithAi`, with its `DiffText`), rewrites and translates (`composeTextWithAi`, the style, the language among those
+  of message translation, `TelegramLanguages.kt`, and emoji), finds, adds and removes shared custom styles
+  (`searchTextCompositionStyle`, `addTextCompositionStyle`, `removeTextCompositionStyle`) and reads how many may be added
+  (option `added_text_composition_style_count_max`); `AICOMPOSE_FLOOD_PREMIUM` and `TONES_SAVED_TOO_MANY` are
+  `DomainError.AiEditLimitReached` and `TooManyTextStyles`. `AiEditorConsentRepository` (`DataStoreAiEditorConsentRepository`,
+  the settings file) keeps the one-time explanation read. `feature:chat`'s `ai/`: `AiEditorViewModel` (keyed by the chat,
+  hoisted by `ConversationRoute`; never in a secret chat) holds the sheet, sends the text only on the action's tap, and hands
+  the result to `AiEditorHost`, which puts it in the composer's `ComposerText` with "Undo"; `LocalAiEditor` offers it to the
+  main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
+  (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
+  `TextStyleViewModel`), which adds the style only on a tap.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
