@@ -2,3 +2,16 @@ pingogram:
   active: true
   PingogramHardcodedToken:
     active: true
+  PingogramMotionDefault:
+    active: true
+    checks:
+      - visibility
+      - content
+      - crossfade
+      - contentSize
+      - asState
+      - transitions
+      - springDefault
+      - loops
+      - schemeDirect
+      - otherAnimators
