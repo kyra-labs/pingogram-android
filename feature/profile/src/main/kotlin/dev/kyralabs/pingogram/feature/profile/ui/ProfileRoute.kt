@@ -52,6 +52,7 @@ internal fun ProfileRoute(
     modifier: Modifier = Modifier,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
+    storyAlbums: StoryAlbumsSlot? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,6 +85,7 @@ internal fun ProfileRoute(
         onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
         onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
         snackbarHostState = snackbarHostState,
+        storyAlbums = storyAlbums,
     )
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)
     reportSheet?.let { ReportProfileSheet(it, viewModel.reportComment, viewModel::onEvent) }

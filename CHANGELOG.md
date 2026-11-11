@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   contacts, your close friends or the contacts you pick. Videos longer than a minute are cut into several stories on
   the phone. While they post, "Your story" shows how far it is; tap it to see the progress or stop posting.
   They go on posting with Pingogram in the background, under the "Transfers" notification.
+- Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
+  and tap a story to play the album from there.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
