@@ -101,6 +101,12 @@ data class GroupMember(
     override fun toString() = "GroupMember(sender=$sender, role=$role, …)"
 }
 
+/** The limits of a member's tag ([GroupMember.tag]). */
+object MemberTagLimits {
+    /** The longest tag, in characters (code points), as Telegram's apps take it. */
+    const val LENGTH_MAX = 16
+}
+
 /** A page of members, and how many there are in all for the filter asked for. */
 data class GroupMembersPage(
     val members: ImmutableList<GroupMember>,

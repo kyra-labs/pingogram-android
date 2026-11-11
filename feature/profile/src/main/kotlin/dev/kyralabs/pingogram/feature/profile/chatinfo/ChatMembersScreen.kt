@@ -80,7 +80,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * container (not for administrators), the filters as `FilterChip`s in a row that scrolls sideways where they do not
  * fit, then the members as one segmented group ([MemberRow]) under their count, more loading as the end comes near.
  * Loading is a delayed indicator, nobody found an [EmptyState] on `Cookie9Sided`, a failure one on `Cookie4Sided` with
- * "Try again". Removing a member asks with an `AlertDialog`.
+ * "Try again". Removing a member asks with an `AlertDialog`; setting a tag opens [MemberTagSheet].
  */
 @Composable
 internal fun ChatMembersScreen(
@@ -118,6 +118,7 @@ internal fun ChatMembersScreen(
             onDismiss = { onEvent(ChatMembersEvent.DismissDialog) },
         )
     }
+    state.tagging?.let { editor -> MemberTagSheet(editor, onEvent) }
 }
 
 /** The search field and the filters at the top, the list (or its state) below them, as wide as a column gets. */

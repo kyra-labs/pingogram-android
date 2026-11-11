@@ -227,6 +227,30 @@
     <string name="chat_info_member_unrestrict">Lift restrictions</string>
     <string name="chat_info_member_remove">Remove</string>
     <string name="chat_info_member_unban">Allow back</string>
+    <string name="chat_info_member_set_tag">Set tag</string>
+    <!-- The "Set tag" sheet of a member (boards 18a and 18b): the tag shows next to their name in the group. -->
+    <string name="chat_info_tag_title">Set tag</string>
+    <string name="chat_info_tag_title_own">Your tag</string>
+    <!-- Who the tag is for: the member's name, then their role ("Owen Park · Admin"). -->
+    <string name="chat_info_tag_for">%1$s · %2$s</string>
+    <string name="chat_info_tag_label">Tag</string>
+    <string name="chat_info_tag_where">Shown next to their name in this group</string>
+    <string name="chat_info_tag_where_own">Shown next to your name in this group</string>
+    <string name="chat_info_tag_counter">%1$d / %2$d</string>
+    <plurals name="chat_info_tag_counter_description">
+        <item quantity="one">%1$d of %2$d character</item>
+        <item quantity="other">%1$d of %2$d characters</item>
+    </plurals>
+    <string name="chat_info_tag_preview">Preview</string>
+    <!-- A sample message in the preview of how the tag shows; no one sent it. -->
+    <string name="chat_info_tag_preview_message">Hello, everyone!</string>
+    <string name="chat_info_tag_colors">Administrators\' tags show in the accent color, members\' tags in a quieter one.</string>
+    <string name="chat_info_tag_remove">Remove tag</string>
+    <string name="chat_info_tag_save">Save</string>
+    <string name="chat_info_tag_saved">Tag saved for %1$s</string>
+    <string name="chat_info_tag_removed">Tag removed from %1$s</string>
+    <!-- What screen readers hear of a member's tag in their row: "tag Beta tester". -->
+    <string name="chat_info_tag_spoken">tag %1$s</string>
     <!-- Snackbars after a change. %1$s is the member's name. -->
     <string name="chat_info_member_dismissed">%1$s is no longer an admin</string>
     <string name="chat_info_member_unrestricted">%1$s\'s restrictions were lifted</string>
@@ -310,6 +334,7 @@
     <string name="chat_info_permission_send_polls">Send polls</string>
     <string name="chat_info_permission_link_previews">Add link previews</string>
     <string name="chat_info_permission_react">React to messages</string>
+    <string name="chat_info_permission_edit_tag">Set their own tag</string>
     <string name="chat_info_permission_add_members">Add members</string>
     <string name="chat_info_permission_pin_messages">Pin messages</string>
     <string name="chat_info_permission_change_info">Change chat info</string>
@@ -569,6 +594,9 @@
     <string name="recent_actions_banned">Removed %1$s</string>
     <string name="recent_actions_restricted">Restricted %1$s</string>
     <string name="recent_actions_unrestricted">Lifted the restrictions of %1$s</string>
+    <!-- A member's tag set or changed: the member's name, then the tag in quotes. -->
+    <string name="recent_actions_tag_set">Gave %1$s the tag “%2$s”</string>
+    <string name="recent_actions_tag_removed">Removed the tag of %1$s</string>
     <string name="recent_actions_unbanned">Let %1$s back</string>
     <string name="recent_actions_title">Changed the name to “%1$s”</string>
     <string name="recent_actions_description">Changed the description</string>

@@ -285,6 +285,10 @@ internal class DemoGroupAdmin : DemoArea {
                 filters.memberRestrictions
             }
 
+            is TdApi.ChatEventMemberTagChanged -> {
+                filters.memberTagChanges
+            }
+
             is TdApi.ChatEventTitleChanged, is TdApi.ChatEventDescriptionChanged, is TdApi.ChatEventPhotoChanged,
             is TdApi.ChatEventUsernameChanged,
             -> {

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MemberTagLimits
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.SlowModeDelays
@@ -75,6 +76,18 @@ class TdlibGroupAdministrationRepository
             client
                 .request(TdApi.SetChatMemberStatus(chatId, member.toTdMessageSender(), role.toTdChatMemberStatus()))
                 .map {}
+
+        override suspend fun setMemberTag(
+            chatId: Long,
+            userId: Long,
+            tag: String,
+        ): Outcome<Unit> {
+            val trimmed = tag.trim()
+            if (trimmed.codePointCount(0, trimmed.length) > MemberTagLimits.LENGTH_MAX) {
+                return Outcome.Failure(DomainError.InputRejected)
+            }
+            return client.request(TdApi.SetChatMemberTag(chatId, userId, trimmed)).map {}
+        }
 
         /** `deleteChatHistory` without removing the chat from the lists and without revoking for others. */
         override suspend fun clearHistory(chatId: Long): Outcome<Unit> =

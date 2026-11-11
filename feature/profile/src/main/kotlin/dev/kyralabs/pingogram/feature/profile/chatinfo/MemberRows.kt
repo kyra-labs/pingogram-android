@@ -2,7 +2,9 @@ package dev.kyralabs.pingogram.feature.profile.chatinfo
 
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
@@ -18,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
@@ -36,17 +39,20 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
 
 /**
  * A member of a group or channel, a row of a segmented group ([shapes]), as Blocked users lists people: the 40 dp
- * circular avatar with its online dot, the name as user content, the status below it ("online" in `primary`), and the
- * role's label at the end in `labelMedium` ("Owner", "Admin", a tag, "Restricted", "Removed"). A tap opens the member
+ * circular avatar with its online dot, the name as user content followed by the member's tag ([MemberTagPill]: an
+ * administrator's in the accent color, a member's tonal), the status below it ("online" in `primary`), and the role's
+ * label at the end in `labelMedium` ("Owner", "Admin", "Restricted", "Removed"). A tap opens the member
  * ([onClick]); where [onAction] is given and the member has actions, a long press opens an expressive
  * [DropdownMenuPopup] of them, removing in `error` in a group of its own, the row taking the list item's selected
  * colors while it is open. Screen readers hear the row as one ("Ada Lovelace, online, Admin"), with the actions as
- * custom actions, built only when something reads the semantics tree.
+ * custom actions, built only when something reads the semantics tree. Screen readers hear the tag after the name
+ * ("Owen Park, tag Beta tester, online").
  */
 @Composable
 internal fun MemberRow(
@@ -93,7 +99,20 @@ internal fun MemberRow(
                     { MemberText(role.resolve(), style = MaterialTheme.typography.labelMedium.userContent) }
                 },
         ) {
-            MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
+            val tag = item.tag
+            if (tag == null) {
+                MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.weight(1f, fill = false)) {
+                        MemberText(name, style = MaterialTheme.typography.bodyLarge.userContent)
+                    }
+                    MemberTagPill(tag, isAdministrator = item.isAdministrator, Modifier.clearAndSetSemantics {})
+                }
+            }
         }
         if (onAction != null) {
             MemberMenu(
@@ -146,7 +165,15 @@ private fun Modifier.memberSemantics(
 ): Modifier =
     semantics {
         contentDescription =
-            spokenList(resources, listOf(name, item.status?.resolve(resources), item.role?.resolve(resources)))
+            spokenList(
+                resources,
+                listOf(
+                    name,
+                    item.tag?.let { resources.getString(R.string.chat_info_tag_spoken, it) },
+                    item.status?.resolve(resources),
+                    item.role?.resolve(resources),
+                ),
+            )
         if (onAction != null && actions.isNotEmpty()) {
             customActions =
                 actions.map { action ->
@@ -194,6 +221,7 @@ private fun MemberMenu(
 internal val MemberAction.label: Int
     get() =
         when (this) {
+            MemberAction.SetTag -> R.string.chat_info_member_set_tag
             MemberAction.Promote -> R.string.chat_info_member_promote
             MemberAction.EditRights -> R.string.chat_info_member_edit_rights
             MemberAction.Dismiss -> R.string.chat_info_member_dismiss

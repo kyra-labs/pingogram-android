@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+
+- Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
+  tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
+  their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given
+  and taken away.
 - Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator
   allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
 - Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the

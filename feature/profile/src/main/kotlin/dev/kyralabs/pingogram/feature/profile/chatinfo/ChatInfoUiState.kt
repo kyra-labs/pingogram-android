@@ -124,8 +124,9 @@ data class ChatAdministration(
  *
  * @property name the user's full name ("Deleted Account" for a deleted one), or a chat's title.
  * @property status "online", "last seen …", "bot"; null for chats.
- * @property role what the trailing label says: "Owner", "Admin" or the member's tag, "Restricted", "Removed"; null for
- *   other members.
+ * @property role what the trailing label says: "Owner", "Admin", "Restricted", "Removed"; null for other members.
+ * @property tag the member's tag (td_api.tl `chatMember.tag`), shown as a pill after the name; null without one.
+ * @property isAdministrator the member is the owner or an administrator: their tag shows in the accent color.
  * @property actions what the current user may do to the member, from the row's menu; empty for none.
  */
 @Immutable
@@ -138,6 +139,8 @@ data class MemberItem(
     val status: UiText? = null,
     val isOnline: Boolean = false,
     val role: UiText? = null,
+    val tag: String? = null,
+    val isAdministrator: Boolean = false,
     val actions: ImmutableList<MemberAction> = persistentListOf(),
 ) {
     /** The row's key in a list: users and chats have ids of their own kinds. */
@@ -153,6 +156,9 @@ data class MemberItem(
 
 /** What an administrator may do to a member, from the row's menu. */
 enum class MemberAction {
+    /** Set, change or remove the member's tag, in the "Set tag" sheet; the user's own where the group allows it. */
+    SetTag,
+
     /** Make the member an administrator, choosing their rights. */
     Promote,
 

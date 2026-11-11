@@ -1048,7 +1048,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
     `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
     to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
-    restricting, banning, lifting), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
+    restricting, banning, lifting), members' tags (`setChatMemberTag`, at most `MemberTagLimits.LENGTH_MAX` characters,
+    an empty one removing it; `feature:profile`'s `MemberTagging`, a part of `ChatMembersViewModel`, keeps the "Set tag"
+    sheet's member and text in its saved state and shows the new tag in the row once Telegram took it, as TDLib
+    announces no member list), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
     with the 2-step verification password, waiting as long as authentication requests; the password only in the view
     model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
