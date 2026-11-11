@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.NewPollOption
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.PollVoter
 import dev.kyralabs.pingogram.core.domain.model.PollVoters
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -17,7 +19,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
-/** Voting, taking a vote back, stopping a poll and listing its voters, each one request to TDLib. */
+/**
+ * Voting, taking a vote back, stopping a poll, listing its voters and adding an answer, each one request to TDLib, and
+ * the limits of new polls.
+ */
 class TdlibPollRepositoryTest {
     private val client = FakeTdlibClient()
     private val repository = TdlibPollRepository(client)
@@ -118,6 +123,44 @@ class TdlibPollRepositoryTest {
                 listOf(CHAT, MESSAGE, 1L, 20L, 20L),
                 listOf(sent.chatId, sent.messageId, sent.optionId.toLong(), sent.offset.toLong(), sent.limit.toLong()),
             )
+        }
+
+    @Test
+    fun `an added answer goes with its link`() =
+        runTest {
+            client.on(TdApi.AddPollOption::class, TdResult.Success(TdApi.Ok()))
+
+            val result = repository.addOption(CHAT, MESSAGE, NewPollOption("Piranesi", link = "https://example.org"))
+
+            assertEquals(Outcome.Success(Unit), result)
+            val sent = client.sentOf<TdApi.AddPollOption>().single()
+            assertEquals(
+                listOf<Any>(CHAT, MESSAGE, "Piranesi"),
+                listOf(sent.chatId, sent.messageId, sent.option.text.text),
+            )
+            assertEquals("https://example.org", (sent.option.media as TdApi.InputPollMediaLink).url)
+        }
+
+    @Test
+    fun `the limits are TDLib's options`() =
+        runTest {
+            client.on(TdApi.GetOption::class) { function ->
+                when (function.name) {
+                    "poll_answer_count_max" -> TdResult.Success(TdApi.OptionValueInteger(12))
+                    "poll_open_period_max" -> TdResult.Success(TdApi.OptionValueInteger(2_678_400))
+                    else -> TdResult.Success(TdApi.OptionValueEmpty())
+                }
+            }
+
+            assertEquals(PollLimits(maxOptions = 12, maxOpenPeriod = 2_678_400), repository.limits())
+        }
+
+    @Test
+    fun `limits TDLib does not know are the defaults`() =
+        runTest {
+            client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
+
+            assertEquals(PollLimits(), repository.limits())
         }
 
     private companion object {

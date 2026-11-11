@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListSummary
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListUiState
 import dev.kyralabs.pingogram.feature.chats.ui.ChatPreview
 import dev.kyralabs.pingogram.feature.chats.ui.ChatSelection
+import dev.kyralabs.pingogram.feature.chats.ui.CommunityEntry
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteDialog
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteForEveryone
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
@@ -223,6 +224,75 @@ internal object ChatListPreviewData {
                 ),
         )
 
+    /** Two communities whose chats show as one entry each (the owner's board 19b): one expanded, one muted. */
+    val withCommunities: ChatListUiState =
+        run {
+            val pinned = items.count { it.isPinned }
+            val kyraLabs =
+                persistentListOf(
+                    row(
+                        id = 41,
+                        title = "Kyra Labs Updates",
+                        preview = message("Pingogram 1.2 beta is out"),
+                        time = "9:30 AM",
+                        unreadCount = 1,
+                        avatarShape = AvatarShape.Channel,
+                    ),
+                    row(
+                        id = 42,
+                        title = "Pingogram Beta",
+                        preview = message("Pager swipe feels great", UiText.Plain("Riya")),
+                        time = "9:02 AM",
+                        unreadCount = 4,
+                        avatarShape = AvatarShape.Group,
+                    ),
+                    row(
+                        id = 43,
+                        title = "Moderators",
+                        preview = message("Approved 3 join requests", UiText.Plain("Sahil")),
+                        time = "Yesterday",
+                        avatarShape = AvatarShape.Group,
+                    ),
+                )
+            val androidDevs =
+                (ANDROID_DEVS_FIRST_CHAT until ANDROID_DEVS_FIRST_CHAT + ANDROID_DEVS_CHATS)
+                    .map { id ->
+                        row(
+                            id = id,
+                            title = "Android Devs $id",
+                            preview = message("Compose 1.12 is stable"),
+                            time = "Mon",
+                            unreadCount = 3,
+                            isMuted = true,
+                            avatarShape = AvatarShape.Group,
+                        )
+                    }.toImmutableList()
+            val communities =
+                persistentListOf(
+                    CommunityEntry(
+                        id = 40,
+                        name = "Kyra Labs Community",
+                        photo = null,
+                        chats = kyraLabs,
+                        unreadCount = 5,
+                        isMuted = false,
+                        isExpanded = true,
+                        before = pinned,
+                    ),
+                    CommunityEntry(
+                        id = 50,
+                        name = "Android Devs",
+                        photo = null,
+                        chats = androidDevs,
+                        unreadCount = 12,
+                        isMuted = true,
+                        isExpanded = false,
+                        before = pinned + 2,
+                    ),
+                )
+            content.copy(content = mainList.copy(communities = communities))
+        }
+
     val connecting = content.copy(connection = ConnectionStatus.Connecting)
 
     /** The Chats tab header's status line and avatar: 12 unread chats, 3 of them mentioning the user. */
@@ -294,4 +364,6 @@ internal object ChatListPreviewData {
 
     /** The archive shows the rows from Orbital Mechanics Weekly on. */
     private const val ARCHIVED_FROM = 4
+    private const val ANDROID_DEVS_FIRST_CHAT = 51L
+    private const val ANDROID_DEVS_CHATS = 4
 }

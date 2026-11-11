@@ -685,6 +685,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   on, and the messages chosen or kept in the original, are in the saved state. A translated bubble that is the result
   the search in the chat shows marks the query's words in the translation it shows (`withSearchMatch` after
   `withTranslations`); words only its original has stay unmarked there, and "Show original" marks them.
+  Summaries go the same way (`ChatSummaries`, a part of `ChatViewModel` beside `ChatTranslation`):
+  `Message.summaryLanguage` (td_api.tl `message.summary_language_code`, null where Telegram offers none) offers
+  "Summarize" in the message's actions, `TranslationRepository.summarizeMessage` (`summarizeMessage`, into the reader's
+  language where they do not read the post's, else its own) answers only that tap, and the summary reaches the bubble as
+  a `BubbleTranslation.Summary` over any translation (`withSummaries`); the messages chosen are in the saved state and
+  summarized again after process death or an edit, the summaries kept in memory for the view model's life.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
@@ -870,6 +876,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
   `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
   phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
+  Since 2026: `MessageContent.Poll` carries the poll's photo or video (`PollMedia`, td_api.tl `pollMedia`, shown in the
+  media viewer by `richMediaId(messageId, 0)`, as rich messages' media are) and `canAddOption`; `Poll` its `closeDate`,
+  `openPeriod` and whether its results stay hidden (`hidesResults`); `PollOption` its `id`, `media` (a link) and
+  `author`. `PollRepository.addOption` sends `addPollOption`, `limits` reads TDLib's options `poll_answer_count_max` and
+  `poll_open_period_max` (`PollLimits`). `feature:chat`'s `PollOptionAdding` (a part of `ChatViewModel`, `poll/`) keeps
+  which polls' inline field is open in the saved state and copies it into their bubble only (`withPollAdding`); a
+  closing poll's bubble carries `pollClosesIn` from the minute tick (`ItemInputs.relativeNow`). The form's
+  `PollEditor` (`attach/`, its draft in the saved state through `PollSaving.kt`) builds the `NewPoll`
+  (`inputMessagePoll`: description, a picked photo as `inputPollMediaPhoto`, answers' links as `inputPollMediaLink`,
+  several correct answers, the settings and `open_period` or `close_date`), its photo prepared by `ChatAttachments`.
 - **Checklists** (FR-C4): `core:domain`'s `ChecklistRepository` (`TdlibChecklistRepository`, `core:data`, no cache)
   marks tasks as done or not done (`markChecklistTasksAsDone`) and adds tasks (`addChecklistTasks`, each with the id
   after the checklist's highest, which td_api.tl leaves to the client); TDLib answers both with `updateMessageContent`
@@ -1167,7 +1183,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     (`setCommunityNotificationSettings`, the other settings sent back as Telegram has them) and shows the community as
     one entry in the chat list (`toggleCommunityAreChatsCollapsed`). The page's sheet that adds chats is
     `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
-    saved state).
+    saved state). The chat list shows those entries (board 19b): `feature:chats`' `ChatListCommunities`, a part of
+    `ChatListViewModel` for the Chats tab, follows `joined()` and, for the communities that collapse their chats, their
+    `details()`; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
+    `ChatListContent.Content.communities`, each `CommunityEntry` before the row its newest chat preceded, as td_api.tl
+    keeps no place for a community in the chat list. Which entries are expanded is in the view model's saved state;
+    `chatsWithCommunities` (`CommunityRows.kt`) lays the entries and their chats among the rows, keyed as before, so a
+    chat moves between its place and its community's group with the list's item animations.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 

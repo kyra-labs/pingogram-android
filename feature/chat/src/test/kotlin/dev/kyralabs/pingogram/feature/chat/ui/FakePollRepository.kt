@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.NewPollOption
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.PollVoters
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 
@@ -48,4 +50,23 @@ class FakePollRepository : PollRepository {
         voterRequests += Triple(optionIndex, offset, limit)
         return onVoters(optionIndex, offset)
     }
+
+    var onAddOption: suspend (NewPollOption) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** What [limits] answers. */
+    var pollLimits = PollLimits()
+
+    /** The message and answer of every [addOption]. */
+    val addedOptions = mutableListOf<Pair<Long, NewPollOption>>()
+
+    override suspend fun addOption(
+        chatId: Long,
+        messageId: Long,
+        option: NewPollOption,
+    ): Outcome<Unit> {
+        addedOptions += messageId to option
+        return onAddOption(option)
+    }
+
+    override suspend fun limits(): PollLimits = pollLimits
 }

@@ -78,6 +78,21 @@
         <item quantity="other">%d unread chats</item>
     </plurals>
 
+    <!-- A community's entry in the main list (board 19b): its chats show as one entry there. -->
+    <plurals name="chat_list_community_chats">
+        <item quantity="one">Community · %s chat you joined</item>
+        <item quantity="other">Community · %s chats you joined</item>
+    </plurals>
+    <plurals name="chat_list_community_chats_muted">
+        <item quantity="one">Community · %s chat · muted</item>
+        <item quantity="other">Community · %s chats · muted</item>
+    </plurals>
+    <string name="chat_list_community_expanded">Expanded</string>
+    <string name="chat_list_community_collapsed">Collapsed</string>
+    <!-- The long press on a community's entry, for screen readers. -->
+    <string name="chat_list_community_menu">Open the community\'s menu</string>
+    <string name="chat_list_community_separately">Show chats separately</string>
+
     <!-- Actions on a chat (ChatRowAction): screen reader actions on a row, the selection toolbar's buttons. -->
     <string name="chat_list_action_mark_read">Mark as read</string>
     <string name="chat_list_action_mark_unread">Mark as unread</string>

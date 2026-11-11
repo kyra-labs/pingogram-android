@@ -10,10 +10,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-
+- Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
+  with their unread messages, which expands to show them; its menu shows the chats separately again.
 - The welcome messages of a group show to new members at the top of the chat, until "Got it" folds them into a bar.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
+
+- "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
+  with "Show full text" to go back (in the reader's language where they don't read the post's).
 
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.
@@ -75,6 +79,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
 - On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
   are signed in without a code (or asked for your 2-step verification password).
+
+- Polls: a poll shows its photo or video (tap to open it), its description, links in its answers, how long it stays
+  open ("Ends in 2 h"), whether its results are hidden until the end, and the winning answer once closed. Quizzes may
+  have several correct answers ("You got 1 of 2"). Where the poll allows it, "Add option" adds your own answer.
+- New poll: add a photo and a description, up to 12 options with links, drag options into order, several correct
+  answers in a quiz with an explanation, and settings to hide results, shuffle options, forbid changing votes, let
+  members add options and close the poll after an hour, a day or at a chosen time.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which

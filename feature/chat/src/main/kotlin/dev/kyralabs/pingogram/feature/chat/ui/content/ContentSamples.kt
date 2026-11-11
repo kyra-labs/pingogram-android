@@ -202,7 +202,7 @@ internal val ContentSamples: List<ContentSample> =
             MessagePoll(
                 ContentPreviewData.poll(voted = false, multipleAnswers = true),
                 colors = colors,
-                choices = persistentSetOf(1, 2),
+                ui = PollUi(choices = persistentSetOf(1, 2)),
             )
         },
         ContentSample("pollPublicResults", SampleBubbles.Both) { colors, _ ->

@@ -146,6 +146,22 @@ sealed interface ServiceAction {
         val count: Int,
     ) : ServiceAction
 
+    /** The sender added the answer [text] to the poll of message [pollMessageId]. `toString()` leaves the text out. */
+    data class PollOptionAdded(
+        val pollMessageId: Long,
+        val text: String,
+    ) : ServiceAction {
+        override fun toString() = "PollOptionAdded($pollMessageId, …)"
+    }
+
+    /** The sender removed the answer [text] from the poll of message [pollMessageId]. */
+    data class PollOptionDeleted(
+        val pollMessageId: Long,
+        val text: String,
+    ) : ServiceAction {
+        override fun toString() = "PollOptionDeleted($pollMessageId, …)"
+    }
+
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */
     data class Custom(
         val text: String,

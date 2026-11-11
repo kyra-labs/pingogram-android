@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.mediaContent
 import dev.kyralabs.pingogram.core.domain.model.mediaContents
 import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
@@ -163,8 +164,8 @@ internal fun ChatUiState.withRichMessages(states: PersistentMap<Long, RichMessag
 }
 
 /**
- * The media viewer's effect for a rich message's media [id] ([richMediaId]), or a paid post's once paid for, where a
- * bubble shows that message with that media; null otherwise.
+ * The media viewer's effect for a rich message's media [id] ([richMediaId]), a poll's photo or video, or a paid post's
+ * once paid for, where a bubble shows that message with that media; null otherwise.
  */
 internal fun ChatUiState.richMediaToOpen(id: Long): ChatEffect.OpenMedia? {
     val messageId = richMediaMessageId(id)
@@ -179,10 +180,11 @@ internal fun ChatUiState.richMediaToOpen(id: Long): ChatEffect.OpenMedia? {
             }
 
             is MessageContent.PaidMedia -> {
-                content.mediaContents().any { (index, _) ->
-                    richMediaId(messageId, index) ==
-                        id
-                }
+                content.mediaContents().any { (index, _) -> richMediaId(messageId, index) == id }
+            }
+
+            is MessageContent.Poll -> {
+                content.mediaContent() != null && id == richMediaId(messageId, 0)
             }
 
             else -> {
