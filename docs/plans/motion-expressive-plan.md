@@ -261,7 +261,8 @@ name and arguments, as the existing rule does, on feature production sources and
 check only, literal tweens, durations and easings, as it is where the helpers build their specs. Its checks are
 listed in the configuration, so they can be turned on in two steps.
 
-Turned on in `refactor/motion-helpers` (nothing in the features breaks them today, counted on 2026-11-11):
+Turned on in `refactor/motion-helpers`, with the scope above from the start (Q-26; nothing in the features or `:app`
+breaks them today, counted on 2026-11-11; `:app`'s splash exit keeps its scheme with a commented suppression):
 
 | Check | Reports |
 |---|---|
@@ -310,7 +311,8 @@ Paths below are relative to the module's `src/main/kotlin/dev/kyralabs/pingogram
 ### 5.1 Shared: `core:ui` and `:app`
 
 **S-1 `refactor/motion-helpers`** (first; no severity of its own)
-- Adds: §3.1–3.5 and §3.7, and the rule of §4 with its first ten checks on.
+- Adds: §3.1–3.5 and §3.7, and the rule of §4 with its first ten checks on, on the features and `:app`, and the
+  literal-spec check (`literals`) on `:app` and `core:ui` (Q-26, owner 2026-11-11).
 - Moves `revealHorizontally` from `:app`'s `ui/PingogramNavigationBar.kt:335` to `core:ui`.
 - Verify: the new tests; `./gradlew check` (the rule's first checks report nothing today). No golden changes. No
   CHANGELOG line.
@@ -376,9 +378,8 @@ speed (Q-03)
   §8's checklist to §12.
 
 **S-8 `chore/motion-lint-strict`** (last)
-- Turns on the six remaining checks of §4, adds `:app` to the rule's scope and the literal-spec check for
-  `core:ui` (Q-26), and updates
-  `docs/TESTING.md` "Static analysis".
+- Turns on the six remaining checks of §4 and updates `docs/TESTING.md` "Static analysis". `:app` and the
+  literal-spec check for `core:ui` are in the rule's scope from S-1 on (Q-26).
 - Verify: `./gradlew check` on `main` after every other pull request has merged.
 
 ### 5.2 Session A: `feature:chats` and `feature:chat`
@@ -641,7 +642,7 @@ M-078
 
 | Pull request | Session | Severity | Findings |
 |---|---|---|---|
-| S-1 `refactor/motion-helpers` | Shared | – | helpers, lint rule |
+| S-1 `refactor/motion-helpers` | Shared | – | helpers, lint rule ✓ (#434) |
 | S-2 `fix/motion-reorder-drop` | Shared | High | M-002, M-038, M-104 |
 | S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 |
 | S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 |
