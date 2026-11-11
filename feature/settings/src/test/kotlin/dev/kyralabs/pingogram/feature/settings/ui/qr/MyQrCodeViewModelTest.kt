@@ -60,7 +60,7 @@ class MyQrCodeViewModelTest {
     @Test
     fun `shows the code of the profile link once TDLib gave it`() =
         runTest {
-            val viewModel = viewModel(TdResult.Success(TdApi.UserLink("https://t.me/ada", 0)))
+            val viewModel = viewModel(TdResult.Success(TdApi.UserLink("https://t.me/ada", 0, false)))
             assertEquals(MyQrCodeUiState.Loading, viewModel.uiState.value)
 
             runCurrent()
@@ -73,7 +73,7 @@ class MyQrCodeViewModelTest {
     @Test
     fun `without a username the link is temporary`() =
         runTest {
-            val viewModel = viewModel(TdResult.Success(TdApi.UserLink("https://t.me/contact/abc", 3_600)))
+            val viewModel = viewModel(TdResult.Success(TdApi.UserLink("https://t.me/contact/abc", 3_600, false)))
             runCurrent()
 
             assertEquals(true, (viewModel.uiState.value as MyQrCodeUiState.Content).link.isTemporary)
@@ -86,7 +86,7 @@ class MyQrCodeViewModelTest {
             runCurrent()
             assertEquals(MyQrCodeUiState.Error(DomainError.Network), viewModel.uiState.value)
 
-            client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/ada", 0)))
+            client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/ada", 0, false)))
             viewModel.onEvent(MyQrCodeEvent.Retry)
             runCurrent()
 

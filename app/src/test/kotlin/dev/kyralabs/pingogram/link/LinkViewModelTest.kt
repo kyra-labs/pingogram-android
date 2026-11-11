@@ -53,7 +53,7 @@ class LinkViewModelTest {
         chat: TdApi.Chat,
         draftText: String = "",
     ) {
-        linkType(TdApi.InternalLinkTypePublicChat("ada", draftText, false))
+        linkType(TdApi.InternalLinkTypePublicChat("ada", draftText, false, ""))
         client.on(TdApi.SearchPublicChat::class, TdResult.Success(chat))
         client.on(TdApi.GetUser::class, TdResult.Success(user(id = USER)))
     }
@@ -124,7 +124,7 @@ class LinkViewModelTest {
     @Test
     fun `cancelling opens nothing`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
             client.on(TdApi.SearchPublicChat::class) { awaitCancellation() }
 
             viewModel.effects.test {
@@ -141,7 +141,7 @@ class LinkViewModelTest {
     @Test
     fun `a new link replaces one still being looked up`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
             client.on(TdApi.SearchPublicChat::class) { awaitCancellation() }
 
             viewModel.effects.test {
@@ -193,7 +193,7 @@ class LinkViewModelTest {
     @Test
     fun `a username nobody has says so`() =
         runTest {
-            linkType(TdApi.InternalLinkTypePublicChat("nobody", "", false))
+            linkType(TdApi.InternalLinkTypePublicChat("nobody", "", false, ""))
             client.on(TdApi.SearchPublicChat::class, TdResult.Failure(TdError(400, "USERNAME_NOT_OCCUPIED")))
 
             viewModel.effects.test {
@@ -217,7 +217,7 @@ class LinkViewModelTest {
         tdError: TdError,
         error: DomainError,
     ) = runTest {
-        linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))
+        linkType(TdApi.InternalLinkTypePublicChat("ada", "", false, ""))
         client.on(TdApi.SearchPublicChat::class, TdResult.Failure(tdError))
 
         viewModel.effects.test {

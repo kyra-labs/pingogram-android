@@ -209,6 +209,7 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageSuggestedPostRefunded::class.java,
         TdApi.MessageTonConnectRequest::class.java,
         TdApi.MessageTonWalletTransfer::class.java,
+        TdApi.MessageUnpaidMessagesAllowedByLink::class.java,
         TdApi.MessageUpgradedGift::class.java,
         TdApi.MessageUpgradedGiftPurchaseOffer::class.java,
         TdApi.MessageUpgradedGiftPurchaseOfferRejected::class.java,

@@ -1089,7 +1089,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `updateChatWelcomeMessages` once `loadChatWelcomeMessages` asked and after each change): a supergroup's welcome messages
     (`WelcomeMessage`: a text, or a photo with its caption; other kinds kept by their id only), their limit (TDLib's option
     `welcome_message_count_max`), adding and editing a `WelcomeDraft` (a picked photo as `PickedPhotoRepository` prepared it, or the
-    message's own kept by its largest size's file), deleting one or all. td_api.tl (a94b83d) cannot reorder them.
+    message's own kept by its largest size's file), deleting one or all. td_api.tl (1.8.70) cannot reorder them.
     `feature:profile`'s `WelcomeMessagesRoute(chatId)` (`WelcomeMessagesViewModel`: the editor's text, picked photo and the
     message it edits in saved state; a message's formatting kept while its text is unchanged) is a page of the info pages' graph,
     for administrators with `AdministratorRights.canSendWelcomeMessages`.
@@ -1477,7 +1477,7 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per
   start, `updateReactionNotificationSettings`, and has no function to read them) sets whom the account hears of
   reactions and poll votes from (`setReactionNotificationSettings`, the sound Telegram keeps sent back as it was). TDLib
-  (a94b83d) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
+  (1.8.70) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
   `NotificationRenderer`: the settings serve the account's other apps until TDLib passes them on.
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
