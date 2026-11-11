@@ -99,6 +99,19 @@ class ChatOpeningViewModelTest {
         }
 
     @Test
+    fun `a forum that shows its topics as tabs opens with them, at a found message's topic`() =
+        runTest {
+            chats.setChats(forumChat)
+            groups.supergroupMap.value =
+                mapOf(SUPERGROUP_ID to supergroup(10, isChannel = false, isForum = true).copy(hasForumTabs = true))
+            assertEquals(ChatOpening.ForumTabs(null), opening(FORUM_CHAT))
+
+            messages.onMessage =
+                { _, id -> Outcome.Success(message(id, chatId = FORUM_CHAT).copy(topic = MessageTopic.Forum(4))) }
+            assertEquals(ChatOpening.ForumTabs(MessageTopic.Forum(4)), opening(FORUM_CHAT, messageId = 12))
+        }
+
+    @Test
     fun `nothing is decided while the supergroup is unknown`() =
         runTest {
             chats.setChats(forumChat)

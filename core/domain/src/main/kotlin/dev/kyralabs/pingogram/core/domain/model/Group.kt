@@ -39,6 +39,8 @@ data class Supergroup(
     val isChannel: Boolean,
     /** A group with topics. */
     val isForum: Boolean,
+    /** A forum that shows its topics as tabs above its messages, not as a list (td_api.tl `has_forum_tabs`). */
+    val hasForumTabs: Boolean = false,
     /** Verified by Telegram; shown as a badge. */
     val isVerified: Boolean,
     /** Many users reported it as a scam; shown as a warning badge. */

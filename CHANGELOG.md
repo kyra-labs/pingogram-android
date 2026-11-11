@@ -12,6 +12,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
+- Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
   or yearly, for Telegram Premium subscribers.
 

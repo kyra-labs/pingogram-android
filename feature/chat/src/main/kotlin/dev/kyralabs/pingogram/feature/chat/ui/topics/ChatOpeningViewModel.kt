@@ -26,8 +26,9 @@ import kotlinx.coroutines.flow.stateIn
 
 /**
  * What opening chat [chatId] shows (`REQUIREMENTS.md` FR-C9): its conversation, or for a forum (a supergroup with
- * topics) its topic list; a message search found in a forum ([messageId]) opens the conversation of its topic. Saved
- * Messages opens its conversation with its tabs. Decided
+ * topics) its topic list, or its conversation with the topics as tabs where it shows them so; a message search found
+ * in a forum ([messageId]) opens the conversation of its topic. Saved Messages opens its conversation with its tabs.
+ * Decided
  * from TDLib's memory (the chat and its supergroup, which TDLib announces before the chat), so it takes a frame or
  * two; meanwhile [opening] is [ChatOpening.Unknown], and the destination draws what the conversation draws first.
  */
@@ -68,19 +69,28 @@ class ChatOpeningViewModel
                         groups
                             .supergroup(type.supergroupId)
                             .filterNotNull()
-                            .map { it.isForum }
+                            .map { it.isForum to it.hasForumTabs }
                             .distinctUntilChanged()
-                            .map { isForum -> if (isForum) forumOpening() else ChatOpening.Conversation },
+                            .map { (isForum, tabs) ->
+                                when {
+                                    !isForum -> ChatOpening.Conversation
+                                    tabs -> ChatOpening.ForumTabs(topicOf(messageId))
+                                    else -> forumOpening()
+                                }
+                            },
                     )
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatOpening.Unknown)
 
         /** The topic list, or the topic of the message the forum opens at. */
         private suspend fun forumOpening(): ChatOpening {
-            val messageId = messageId ?: return ChatOpening.Topics
-            val topic = messages.message(chatId, messageId).getOrNull()?.topic as? MessageTopic.Forum
-            return ChatOpening.Topic(topic ?: MessageTopic.Forum(MessageTopic.GENERAL_TOPIC_ID))
+            if (messageId == null) return ChatOpening.Topics
+            return ChatOpening.Topic(topicOf(messageId) ?: MessageTopic.Forum(MessageTopic.GENERAL_TOPIC_ID))
         }
+
+        /** The topic of message [messageId]; null without one, or for a message TDLib does not know. */
+        private suspend fun topicOf(messageId: Long?): MessageTopic.Forum? =
+            messageId?.let { messages.message(chatId, it).getOrNull()?.topic as? MessageTopic.Forum }
 
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L
@@ -99,6 +109,14 @@ sealed interface ChatOpening {
 
     /** A forum's topic list. */
     data object Topics : ChatOpening
+
+    /**
+     * A forum that shows its topics as tabs (td_api.tl `supergroup.has_forum_tabs`): its whole conversation with the
+     * topics as tabs above it, at [topic]'s tab where the message it opens at is in one.
+     */
+    data class ForumTabs(
+        val topic: MessageTopic.Forum?,
+    ) : ChatOpening
 
     /** The conversation of a forum topic, at the message the forum was opened at. */
     data class Topic(
