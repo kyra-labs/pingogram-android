@@ -86,6 +86,15 @@ class WriteAccessTest {
     }
 
     @Test
+    fun `a subscriber writes to a channel's direct messages chat without being a member, as its permissions allow`() {
+        val directMessages = supergroup(status = ChatMemberStatus.Left).copy(isDirectMessages = true)
+
+        assertEquals(WriteAccess.Allowed, chat(group).access(supergroup = directMessages))
+        assertEquals(WriteAccess.Restricted, chat(group, ChatPermissions.None).access(supergroup = directMessages))
+        assertEquals(WriteAccess.NotMember, chat(group).access(supergroup = supergroup(ChatMemberStatus.Left)))
+    }
+
+    @Test
     fun `a deleted account cannot be written to`() {
         assertEquals(WriteAccess.Restricted, chat(private).access(user(UserType.Deleted)))
     }

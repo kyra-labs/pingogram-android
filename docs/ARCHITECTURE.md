@@ -794,7 +794,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   deleting in saved state, the toggles, their effects) is a part of both the list's `ForumTopicsViewModel` (which also
   keeps a hidden General for those who may show it, and a dragged order until Telegram takes or refuses it) and
   `TopicActionsViewModel`, a view model of the topic's conversation apart from `ChatViewModel`
-  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic".
+  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic". A forum that shows its topics as tabs
+  (`Supergroup.hasForumTabs`, td_api.tl `has_forum_tabs`) opens as `ChatOpening.ForumTabs` instead: `ForumTabsConversation`
+  shows the selected tab's conversation, "All" or a topic, each in a view model store of its own, and
+  `ForumTabsViewModel` hands its tabs (from `ForumTopicRepository`, in the shape of Saved Messages' `SavedTabsUiState`)
+  to the top bar through `LocalConversationTabs`.
 - **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
   `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
   whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first
@@ -1253,6 +1257,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `ChatJoining` (a part of `ChatViewModel`) puts "Join" in the composer's place of a public supergroup or channel the
   user left or never joined (`ComposerUiState.Join`, `Supergroup.joinByRequest`); TDLib's `updateSupergroup` then
   turns the composer back on by itself.
+- **A channel's direct messages, the subscriber's side** (the owner's boards 7a and 7b): `Supergroup` carries
+  `hasDirectMessages`, `isDirectMessages`, `isAdministeredDirectMessages` and `paidMessageStarCount` (td_api.tl
+  `supergroup`), and `ChatJoinRepository.directMessagesChat` finds a channel's direct messages chat
+  (`getSupergroupFullInfo`'s `direct_messages_chat_id`, then `getChat`, so TDLib knows it) as a `DirectMessagesChat`.
+  `feature:chat`'s `messageChannelButton` (`directmessages/`) looks it up once a channel the user reads shows, follows
+  its supergroup's price through `GroupRepository`, and puts `ComposerUiState.MessageChannel` where the composer
+  would be hidden (`withMessageChannel`); the button sends `ChatEvent.OpenChat`. In the direct messages chat a
+  subscriber writes without being a member (`writeAccess` follows the chat's permissions there), and where messages
+  cost Telegram Stars `composerState` shows the price and that Pingogram can't pay instead of the composer.
 - **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
   `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
   page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost
