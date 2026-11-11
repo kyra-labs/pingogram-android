@@ -534,6 +534,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   of `core:navigation` (`storyAlbumScreen`, `StoryAlbumViewModel`: 30 stories a page, their days in the zone and
   language of the moment) is an opened album, whose tap opens `StoryViewerRoute(chatId, storyId, albumId)`: the stories
   viewer then plays that album's first 100 stories instead of the chat's active ones, and no other chat.
+- **Profile music** (boards 13a, 13b): `core:domain`'s `ProfileMusicRepository` (`TdlibProfileMusicRepository`,
+  `core:data`, account-scoped, no cache: td_api.tl announces no change to the list) reads a user's songs
+  (`getUserProfileAudios`, the first 100, with the total) and edits the user's own (`addProfileAudio`,
+  `removeProfileAudio`, `setProfileAudioPosition`). A picked file becomes a song on the device: `PickedSongRepository`
+  (`AndroidPickedSongRepository`, `core:data`, a singleton beside `PickedPhotoRepository`) copies it into the upload
+  cache (`AttachmentPreparer`, as a document) and reads its length, title and artist with Android's media retriever
+  (`MediaProcessor.audioInfo`), refusing what is no audio; the copy is deleted once TDLib answered. `feature:media`'s
+  `profilemusic/`: `ProfileMusicSection` (`ProfileMusicViewModel`, keyed by the user, with `MusicPlayback` and
+  `MusicEditing` as its parts) is the card a profile shows through a slot `:app` fills (`ProfileMusicSlot`, as features
+  share no code) and its playlist sheet. Songs stream from TDLib as they download (`PlaySource.Stream`, the viewers'
+  `VideoPlayer`, one per view model), only while the profile is started, one after another; how far one played is
+  snapshot state ticked while it plays. Adding runs in the app's scope; moves and removals show at once and come back
+  when Telegram refuses them.
 - **Posting stories** (`docs/adr/0036-posting-stories.md`, built in steps): `feature:media`'s `storypost/` beside the
   stories viewer. Picking (board 10a): `NewStoryRoute` of `core:navigation` (`newStoryScreen`, in `:app`'s `NavHost`,
   opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),

@@ -35,6 +35,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   its comments below.
 - Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
   and tap a story to play the album from there.
+- Profile music: a profile with songs shows a player below its header, which plays them one after another while the
+  profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
+  remove them.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
