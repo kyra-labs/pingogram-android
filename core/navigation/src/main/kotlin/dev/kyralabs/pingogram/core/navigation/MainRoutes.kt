@@ -486,6 +486,15 @@ data class ForwardRoute(
 )
 
 /**
+ * A shared style of Telegram's AI editor by its [name] (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"),
+ * `:feature:chat`: a dialog destination above the screen it is opened from, whose sheet adds the style only on a tap.
+ */
+@Serializable
+data class TextStyleRoute(
+    val name: String,
+)
+
+/**
  * The share sheet (`REQUIREMENTS.md` FR-N2, direct share) for what another app shared, or a `t.me/share` link, kept in
  * memory under [shareId] (`ShareInbox` of `:feature:chat`): a dialog destination above the screen it is opened from,
  * which picks the chat or chats it goes to. After process death the share is gone and the sheet closes at once.
@@ -594,6 +603,16 @@ data class RecentActionsRoute(
 @Serializable
 data class ChatStatisticsRoute(
     val chatId: Long,
+)
+
+/**
+ * The statistics of the poll of message [messageId] in chat [chatId]: its votes over time and its totals, which
+ * Telegram gives the chat's administrators (`MessageProperties.canGetPollVoteStatistics`).
+ */
+@Serializable
+data class PollStatisticsRoute(
+    val chatId: Long,
+    val messageId: Long,
 )
 
 /** The invite links of group or channel [chatId], pushed above its info page. */

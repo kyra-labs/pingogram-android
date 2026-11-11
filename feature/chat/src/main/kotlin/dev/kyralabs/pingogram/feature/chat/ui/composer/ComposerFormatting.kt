@@ -4,11 +4,13 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.text.contextmenu.builder.TextContextMenuBuilderScope
 import androidx.compose.foundation.text.contextmenu.builder.item
+import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
 import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -18,6 +20,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -92,6 +96,7 @@ private class FormattingTransformation(
 internal class FormattingLabels(
     val formats: Map<TextFormat, String>,
     val link: String,
+    val ai: String,
 )
 
 @Composable
@@ -101,6 +106,7 @@ internal fun rememberFormattingLabels(): FormattingLabels {
         FormattingLabels(
             formats = TextFormat.entries.associateWith { resources.getString(it.label) },
             link = resources.getString(R.string.composer_format_link),
+            ai = resources.getString(R.string.ai_editor_menu),
         )
     }
 }
@@ -175,4 +181,66 @@ internal fun formattingShortcut(
     return handled
 }
 
+/** What the field's menu and screen readers' actions offer: the formatting, a link, and the AI editor. */
+internal class FieldMenus(
+    val text: ComposerText,
+    val labels: FormattingLabels,
+    val onLink: (TextRange) -> Unit,
+    val onAiEdit: (() -> Unit)?,
+)
+
+/**
+ * The formatting in the selection menu and, once the text runs past three lines, "Edit with AI" ([aiItem]); the same as
+ * screen readers' actions, the formatting while text [hasSelection].
+ */
+internal fun Modifier.fieldMenus(
+    menus: FieldMenus,
+    lineCount: () -> Int,
+    hasSelection: Boolean,
+): Modifier =
+    appendTextContextMenuComponents {
+        formattingItems(menus.text, menus.labels, menus.onLink)
+        aiItem(lineCount(), menus.labels, menus.onAiEdit)
+    }.semantics {
+        val ai = aiAction(lineCount(), menus.labels, menus.onAiEdit)
+        val formats = if (hasSelection) formattingActions(menus.text, menus.labels, menus.onLink) else emptyList()
+        if (ai != null || formats.isNotEmpty()) customActions = formats + listOfNotNull(ai)
+    }
+
+/**
+ * "Edit with AI" in the field's menu, with or without a selection, once the text runs to more than [AI_MIN_LINES]
+ * lines ([lineCount]) where the conversation offers the AI editor ([onAiEdit]); it opens the editor, nothing more.
+ */
+internal fun TextContextMenuBuilderScope.aiItem(
+    lineCount: Int,
+    labels: FormattingLabels,
+    onAiEdit: (() -> Unit)?,
+) {
+    if (onAiEdit == null || lineCount <= AI_MIN_LINES) return
+    separator()
+    item(key = AI_ITEM, label = labels.ai, leadingIcon = UiR.drawable.ic_edit) {
+        onAiEdit()
+        close()
+    }
+}
+
+/** "Edit with AI" for screen readers, under the same condition as [aiItem]. */
+internal fun aiAction(
+    lineCount: Int,
+    labels: FormattingLabels,
+    onAiEdit: (() -> Unit)?,
+): CustomAccessibilityAction? =
+    if (onAiEdit == null || lineCount <= AI_MIN_LINES) {
+        null
+    } else {
+        CustomAccessibilityAction(labels.ai) {
+            onAiEdit()
+            true
+        }
+    }
+
+/** How many lines the text must run beyond before the AI editor is offered: short texts need no rewriting. */
+internal const val AI_MIN_LINES = 3
+
 private const val LINK_ITEM = "link"
+private const val AI_ITEM = "ai"

@@ -718,6 +718,54 @@
     <string name="welcome_pack_title">Welcome message</string>
     <string name="welcome_pack_got_it">Got it</string>
     <string name="welcome_pack_open">Open the welcome message</string>
+    <!-- The AI text editor of the composer: Telegram's AI fixes, rewrites or translates the message being written. -->
+    <string name="ai_editor_menu">Edit with AI</string>
+    <string name="ai_editor_title">Edit with AI</string>
+    <string name="ai_editor_consent_text">Telegram\'s AI can fix, rewrite or translate what you write. Your text is sent to Telegram\'s AI only when you tap Fix, Rewrite or Translate. Nothing is sent to the chat until you send it yourself.</string>
+    <string name="ai_editor_not_now">Not now</string>
+    <string name="ai_editor_continue">Continue</string>
+    <string name="ai_editor_mode_fix">Fix</string>
+    <string name="ai_editor_mode_rewrite">Rewrite</string>
+    <string name="ai_editor_mode_translate">Translate</string>
+    <string name="ai_editor_action_fix">Fix text</string>
+    <string name="ai_editor_action_rewrite">Rewrite</string>
+    <string name="ai_editor_action_translate">Translate</string>
+    <string name="ai_editor_style">Style</string>
+    <string name="ai_editor_keep_style">Keep its style</string>
+    <!-- A style a user made: %1$s is its title. -->
+    <string name="ai_editor_custom_style">%1$s · custom</string>
+    <string name="ai_editor_no_styles">Telegram hasn\'t sent its styles yet.</string>
+    <string name="ai_editor_language">Translate into</string>
+    <string name="ai_editor_add_emoji">Add emoji</string>
+    <string name="ai_editor_working">Telegram\'s AI is working…</string>
+    <string name="ai_editor_note">Nothing is sent to the chat until you send it. \"Use\" puts the result in the message field.</string>
+    <string name="ai_editor_cancel">Cancel</string>
+    <string name="ai_editor_use">Use</string>
+    <!-- Screen readers: %1$s is the text Telegram's AI gave. -->
+    <string name="ai_editor_result_description">Result: %1$s</string>
+    <plurals name="ai_editor_changes">
+        <item quantity="one">%d change</item>
+        <item quantity="other">%d changes</item>
+    </plurals>
+    <string name="ai_editor_used">Text replaced</string>
+    <string name="ai_editor_undo">Undo</string>
+    <!-- A style of the AI editor that someone shared by a link. -->
+    <string name="ai_style_custom">Custom style</string>
+    <plurals name="ai_style_used_by">
+        <item quantity="one">Custom style · used by %1$s person</item>
+        <item quantity="other">Custom style · used by %1$s people</item>
+    </plurals>
+    <plurals name="ai_style_limit">
+        <item quantity="one">You can add %d custom style. Telegram Premium allows more.</item>
+        <item quantity="other">You can add up to %d custom styles. Telegram Premium allows more.</item>
+    </plurals>
+    <string name="ai_style_before">Before</string>
+    <string name="ai_style_after">After</string>
+    <string name="ai_style_add">Add style</string>
+    <string name="ai_style_remove">Remove style</string>
+    <string name="ai_style_close">Close</string>
+    <string name="ai_style_not_found">Style not found</string>
+    <string name="ai_style_try_again">Try again</string>
     <!-- The chat action bar: what Telegram suggests about a chat someone new started. %1$s is the other person's first name. -->
     <string name="action_bar_not_contact_named">%1$s isn\'t in your contacts</string>
     <string name="action_bar_not_contact">Not in your contacts</string>

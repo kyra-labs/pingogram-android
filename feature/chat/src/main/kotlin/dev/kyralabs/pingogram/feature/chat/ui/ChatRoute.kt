@@ -35,6 +35,8 @@ import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarHost
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorHost
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
@@ -151,6 +153,10 @@ internal fun ConversationRoute(
         hiltViewModel<ChatActionBarViewModel, ChatActionBarViewModel.Factory>(key = "actionbar-$chatId") {
             it.create(chatId)
         },
+    aiEditorViewModel: AiEditorViewModel =
+        hiltViewModel<AiEditorViewModel, AiEditorViewModel.Factory>(key = "ai-editor-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -210,6 +216,7 @@ internal fun ConversationRoute(
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, viewModel::onEvent, snackbarHostState, shown = topic == null) {
+        AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
             ChatScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
@@ -245,6 +252,7 @@ internal fun ConversationRoute(
                 recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
                 videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
             )
+        }
         }
         ChatSheets(viewModel)
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }

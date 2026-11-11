@@ -61,6 +61,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VideoNoteEvent
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ai.LocalAiEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartButton
@@ -444,6 +445,8 @@ private fun ComposerPill(
         },
         onKeyEvent = onFieldKey,
         hint = hint,
+        // The AI editor rewrites the message being written, never a caption or a comment.
+        onAiEdit = LocalAiEditor.current?.let { open -> { open(text.content) } },
     )
 }
 
