@@ -124,9 +124,8 @@ class SavedTagsViewModel
         /** Sets the label of the tag being renamed to [label]; the dialog closes once Telegram took it. */
         fun rename(label: String) {
             // The key from the saved state, which startRename sets at once; the ui state follows it a frame later.
-            val key = renamingKey.value ?: return
-            val tag = uiState.value.tags.firstOrNull { it.key == key } ?: return
-            if (saving.value) return
+            val tag = renamingKey.value?.let { key -> uiState.value.tags.firstOrNull { it.key == key } }
+            if (tag == null || saving.value) return
             saving.value = true
             viewModelScope.launch {
                 val result = repository.setLabel(tag.reaction, label.take(SavedMessagesTagRepository.LABEL_LENGTH_MAX))
