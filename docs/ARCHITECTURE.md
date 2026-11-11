@@ -454,8 +454,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   route calls it: `feature:settings`' `PasskeysViewModel` (the list loaded again whenever the page shows, with
   2-step verification and the session count; the removal's question in saved state) sends
   `PasskeysEffect.CreatePasskey` with Telegram's request, and `PasskeysRoute` hands the answer back as
-  `PasskeysEvent.Created`. Nothing is logged or kept; the demo lists a sample passkey and says adding one needs an
-  account.
+  `PasskeysEvent.Created`. Signing in (board 17b) is `AuthRepository.passkeySignInRequest`
+  (`getAuthenticationPasskeyParameters`, while TDLib waits for a phone number) and `checkPasskey`
+  (`checkAuthenticationPasskey`, waiting as long as authentication requests): `feature:auth`'s `AuthViewModel` sends
+  `AuthEffect.GetPasskey`, `AuthRoute` hands it to `PasskeyCredentials.get` and the answer back as
+  `AuthEvent.PasskeyAnswered` (a cancelled wait as cancelled, so the button never stays busy), and TDLib moves on as
+  after a code. Nothing is logged or kept; the demo lists a sample passkey and says adding one needs an account.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

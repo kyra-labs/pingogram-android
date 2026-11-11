@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
@@ -37,6 +38,15 @@ interface AuthRepository {
      * over and reports [AuthStep.WaitPhoneNumber].
      */
     suspend fun cancelQrCode(): Outcome<Unit>
+
+    /**
+     * Telegram's WebAuthn request for signing in with a passkey (`docs/adr/0037-passkeys.md`), as TDLib gives it while
+     * it waits for a phone number; the user's password manager answers it.
+     */
+    suspend fun passkeySignInRequest(): Outcome<String>
+
+    /** Signs in with the password manager's answer to [passkeySignInRequest]; TDLib then moves on as after a code. */
+    suspend fun checkPasskey(assertion: PasskeyAssertion): Outcome<Unit>
 
     suspend fun checkPassword(password: String): Outcome<Unit>
 

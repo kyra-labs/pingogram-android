@@ -20,3 +20,16 @@ class PasskeyRegistration(
     val clientData: String,
     val attestationObject: ByteArray,
 )
+
+/**
+ * What the user's password manager answered to Telegram's sign-in request, as TDLib's `checkAuthenticationPasskey`
+ * takes it: the passkey's [credentialId] (base64url, as WebAuthn writes it), the client data as its JSON text
+ * ([clientData]), and the authenticator's data, signature and user handle.
+ */
+class PasskeyAssertion(
+    val credentialId: String,
+    val clientData: String,
+    val authenticatorData: ByteArray,
+    val signature: ByteArray,
+    val userHandle: ByteArray,
+)

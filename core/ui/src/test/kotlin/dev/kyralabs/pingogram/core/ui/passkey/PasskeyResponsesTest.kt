@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.passkey
 
 import android.credentials.CreateCredentialException
+import android.credentials.GetCredentialException
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -27,6 +28,44 @@ class PasskeyResponsesTest {
 
         assertEquals(clientData, registration.clientData)
         assertArrayEquals(attestation, registration.attestationObject)
+    }
+
+    @Test
+    fun `decodes a sign-in answer into what TDLib checks, keeping the credential's id as written`() {
+        val clientData = """{"type":"webauthn.get","challenge":"abc"}"""
+        val response =
+            """
+            {"id":"Y3JlZA","rawId":"Y3JlZA","type":"public-key","response":{
+              "clientDataJSON":"${unpadded(clientData.toByteArray())}",
+              "authenticatorData":"${unpadded(byteArrayOf(1, 2))}",
+              "signature":"${unpadded(byteArrayOf(3))}",
+              "userHandle":"${unpadded(byteArrayOf(4, 5))}"}}
+            """.trimIndent()
+
+        val assertion = assertionOf(response)!!
+
+        assertEquals("Y3JlZA", assertion.credentialId)
+        assertEquals(clientData, assertion.clientData)
+        assertArrayEquals(byteArrayOf(1, 2), assertion.authenticatorData)
+        assertArrayEquals(byteArrayOf(3), assertion.signature)
+        assertArrayEquals(byteArrayOf(4, 5), assertion.userHandle)
+    }
+
+    @Test
+    fun `a sign-in answer without a user handle sends none, and one without a signature is no answer`() {
+        val clientData = unpadded("{}".toByteArray())
+        val withoutHandle =
+            """{"id":"c","response":{"clientDataJSON":"$clientData","authenticatorData":"AQ","signature":"Ag"}}"""
+
+        assertArrayEquals(ByteArray(0), assertionOf(withoutHandle)!!.userHandle)
+        assertNull(assertionOf("""{"id":"c","response":{"clientDataJSON":"$clientData","authenticatorData":"AQ"}}"""))
+    }
+
+    @Test
+    fun `words Android's sign-in errors`() {
+        assertEquals(PasskeyResult.Cancelled, signInFailure(GetCredentialException.TYPE_USER_CANCELED))
+        assertEquals(PasskeyResult.NotFound, signInFailure(GetCredentialException.TYPE_NO_CREDENTIAL))
+        assertEquals(PasskeyResult.Failed, signInFailure(GetCredentialException.TYPE_UNKNOWN))
     }
 
     @Test

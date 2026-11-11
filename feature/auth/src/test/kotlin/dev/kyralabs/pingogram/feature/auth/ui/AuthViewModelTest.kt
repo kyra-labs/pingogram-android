@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
 import dev.kyralabs.pingogram.core.ui.phone.matching
 import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.UK_CALLING_CODE
 import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.UK_INTERNATIONAL
@@ -1018,6 +1020,69 @@ class AuthViewModelTest {
     }
 
     @Nested
+    inner class Passkey {
+        private val assertion = PasskeyAssertion("cred", "{}", byteArrayOf(1), byteArrayOf(2), byteArrayOf(3))
+
+        @Test
+        fun `hands Telegram's request to the password manager, then sends its answer and moves on`() =
+            runTest {
+                client.on(TdApi.GetAuthenticationPasskeyParameters::class, TdResult.Success(TdApi.Text(REQUEST)))
+                client.on(TdApi.CheckAuthenticationPasskey::class, ok())
+                val viewModel = onPhoneNumberEntry()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.SignInWithPasskey)
+                val asked = effects.toList()
+                send(viewModel, AuthEvent.PasskeyAnswered(PasskeyResult.Done(assertion)))
+                val waiting = viewModel.state.pendingAction
+                tdlib(TdApiFixtures.waitPassword())
+
+                assertEquals(listOf(AuthEffect.GetPasskey(REQUEST)), asked)
+                assertEquals("cred", client.sentOf<TdApi.CheckAuthenticationPasskey>().single().credentialId)
+                assertEquals(AuthAction.SignInWithPasskey, waiting)
+                assertNull(viewModel.state.pendingAction)
+                assertTrue(viewModel.state.step is AuthStepUiState.Password)
+                assertTrue(AuthEffect.InputAccepted in effects)
+            }
+
+        @Test
+        fun `a closed sheet sends nothing, and no passkey found says so`() =
+            runTest {
+                client.on(TdApi.GetAuthenticationPasskeyParameters::class, TdResult.Success(TdApi.Text(REQUEST)))
+                val viewModel = onPhoneNumberEntry()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.SignInWithPasskey)
+                send(viewModel, AuthEvent.PasskeyAnswered(PasskeyResult.Cancelled))
+                val afterCancel = viewModel.state.pendingAction
+                send(viewModel, AuthEvent.SignInWithPasskey)
+                send(viewModel, AuthEvent.PasskeyAnswered(PasskeyResult.NotFound))
+
+                assertNull(afterCancel)
+                assertNull(viewModel.state.pendingAction)
+                assertTrue(client.sentOf<TdApi.CheckAuthenticationPasskey>().isEmpty())
+                assertEquals(AuthEffect.PasskeyNotUsed(PasskeyProblem.NotFound), effects.last())
+            }
+
+        @Test
+        fun `a refused request says why, and an answer nobody asked for is ignored`() =
+            runTest {
+                client.on(
+                    TdApi.GetAuthenticationPasskeyParameters::class,
+                    TdResult.Failure(TdError(429, "Too Many Requests: retry after 30")),
+                )
+                val viewModel = onPhoneNumberEntry()
+
+                send(viewModel, AuthEvent.SignInWithPasskey)
+                send(viewModel, AuthEvent.PasskeyAnswered(PasskeyResult.Done(assertion)))
+
+                assertEquals(30L, viewModel.state.floodWaitSeconds)
+                assertNull(viewModel.state.pendingAction)
+                assertTrue(client.sentOf<TdApi.CheckAuthenticationPasskey>().isEmpty())
+            }
+    }
+
+    @Nested
     inner class QrCodeLeaving {
         @Test
         fun `a login arriving while leaving QR login does not count`() =
@@ -1808,3 +1873,6 @@ class AuthViewModelTest {
             }
     }
 }
+
+/** Telegram's WebAuthn request for signing in, as TDLib answers it in these tests. */
+private const val REQUEST = """{"challenge":"abc"}"""
