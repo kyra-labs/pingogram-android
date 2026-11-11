@@ -90,6 +90,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibShareRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetCreationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryPostRepository
@@ -189,6 +190,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
@@ -418,6 +420,9 @@ interface RepositoryModule {
 
     @Binds
     fun communityRepository(repository: TdlibCommunityRepository): CommunityRepository
+
+    @Binds
+    fun stickerSetCreationRepository(repository: TdlibStickerSetCreationRepository): StickerSetCreationRepository
 
     @Binds
     fun welcomeMessageRepository(repository: TdlibWelcomeMessageRepository): WelcomeMessageRepository

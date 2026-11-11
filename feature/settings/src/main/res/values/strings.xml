@@ -1474,4 +1474,51 @@
     <string name="settings_home_auto_download_mobile">Automatic download on mobile data</string>
     <string name="settings_home_auto_download_wifi">Automatic download on Wi-Fi</string>
     <string name="settings_home_auto_download_roaming">Automatic download when roaming</string>
+    <!-- A new sticker set (the owner's boards 21a–c) -->
+    <string name="settings_new_sticker_set">New sticker set</string>
+    <string name="settings_new_sticker_set_summary">Make a set of your own from your photos</string>
+    <string name="settings_new_sticker_set_step_name">Step 1 of 2</string>
+    <string name="settings_new_sticker_set_name_text">Give it a name and a link people can open to add it.</string>
+    <string name="settings_new_sticker_set_title_label">Name</string>
+    <string name="settings_new_sticker_set_link_label">Link</string>
+    <string name="settings_new_sticker_set_link_prefix">t.me/addstickers/</string>
+    <string name="settings_new_sticker_set_checking">Checking…</string>
+    <string name="settings_new_sticker_set_available">%1$s is available</string>
+    <string name="settings_new_sticker_set_occupied">Another set has this link</string>
+    <string name="settings_new_sticker_set_invalid">Telegram doesn\'t take this link</string>
+    <string name="settings_new_sticker_set_link_rules">Letters, digits and underscores, starting with a letter, 5 to 64 characters.</string>
+    <string name="settings_new_sticker_set_next">Next</string>
+    <plurals name="settings_new_sticker_set_step_stickers">
+        <item quantity="one">Step 2 of 2 · %1$s sticker</item>
+        <item quantity="other">Step 2 of 2 · %1$s stickers</item>
+    </plurals>
+    <string name="settings_new_sticker_set_stickers_text">Tap a sticker to change its emoji. Long-press it to move or remove it.</string>
+    <string name="settings_new_sticker_set_sticker">Sticker %1$d, emoji %2$s</string>
+    <string name="settings_new_sticker_set_preparing">Making a sticker</string>
+    <string name="settings_new_sticker_set_add">Add sticker</string>
+    <string name="settings_new_sticker_set_move_earlier">Move earlier</string>
+    <string name="settings_new_sticker_set_move_later">Move later</string>
+    <string name="settings_new_sticker_set_remove">Remove</string>
+    <string name="settings_new_sticker_set_footer">Add sticker picks a photo, which becomes a sticker as it is, without being cut out. Up to 120 stickers in a set; anyone with the link can add it.</string>
+    <string name="settings_new_sticker_set_publish">Publish set</string>
+    <string name="settings_new_sticker_set_publishing">Publishing the set</string>
+    <string name="settings_new_sticker_set_published_title">%1$s is live</string>
+    <plurals name="settings_new_sticker_set_published_text">
+        <item quantity="one">%1$s sticker · %2$s</item>
+        <item quantity="other">%1$s stickers · %2$s</item>
+    </plurals>
+    <string name="settings_new_sticker_set_share">Share link</string>
+    <string name="settings_new_sticker_set_open">Open set</string>
+    <string name="settings_new_sticker_set_done">Done</string>
+    <string name="settings_new_sticker_set_emoji_title">Emoji for sticker %1$d</string>
+    <string name="settings_new_sticker_set_emoji_loading">Loading the emoji</string>
+    <string name="settings_new_sticker_set_emoji_smileys">Smileys and emotion</string>
+    <string name="settings_new_sticker_set_emoji_people">People and body</string>
+    <string name="settings_new_sticker_set_emoji_animals">Animals and nature</string>
+    <string name="settings_new_sticker_set_emoji_food">Food and drink</string>
+    <string name="settings_new_sticker_set_emoji_travel">Travel and places</string>
+    <string name="settings_new_sticker_set_emoji_activities">Activities</string>
+    <string name="settings_new_sticker_set_emoji_objects">Objects</string>
+    <string name="settings_new_sticker_set_emoji_symbols">Symbols</string>
+    <string name="settings_new_sticker_set_emoji_flags">Flags</string>
 </resources>

@@ -291,6 +291,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`LinkTarget.StickerSet`). The custom emoji sets have the same pages (`StickersRoute(emoji)`,
   `StickerSetListRoute(archived, emoji)`, the view models taking the kind from their route), opened from the Stickers
   page's "Emoji" row; `StickerSetSummary.kind` words a set as stickers or emoji (`StickerKindTexts`).
+- **Making sticker sets** (boards 21a–c): `core:domain`'s `StickerSetCreationRepository` (`TdlibStickerSetCreationRepository`,
+  `core:data`, account-scoped, no cache) suggests a link name for a title (`getSuggestedStickerSetName`), checks one
+  (`StickerSetLimits.isNameWellFormed` on the device, then `checkStickerSetName`), prepares a sticker from a picked photo
+  (`AttachmentPreparer.prepareSticker`: copied, written anew upright as a WebP whose longer side is 512 px, through
+  `MediaProcessor.writeSticker` and `stickerPlan`) and publishes the set as the signed-in user (`createNewStickerSet`, static WebP
+  stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
+  (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
+  emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option

@@ -129,7 +129,13 @@ private fun LazyListScope.lists(
     style: SettingsListRowStyle,
     pages: StickerPages,
 ) {
-    val rows = listOfNotNull(TRENDING, ARCHIVED, EMOJI.takeIf { pages.onOpenEmoji != null }).size
+    val rows =
+        listOfNotNull(
+            TRENDING,
+            ARCHIVED,
+            EMOJI.takeIf { pages.onOpenEmoji != null },
+            CREATE.takeIf { pages.onCreateSet != null },
+        ).size
     item(key = TRENDING, contentType = PAGE) {
         val count = state.newTrendingCount
         Box(Modifier.settingsListRow(this, style)) {
@@ -164,7 +170,27 @@ private fun LazyListScope.lists(
             )
         }
     }
-    val onOpenEmoji = pages.onOpenEmoji ?: return
+    pages.onOpenEmoji?.let { onOpenEmoji -> emojiRow(onOpenEmoji, rows, style) }
+    val onCreateSet = pages.onCreateSet ?: return
+    item(key = CREATE, contentType = PAGE) {
+        Box(Modifier.settingsListRow(this, style)) {
+            PageItem(
+                title = stringResource(R.string.settings_new_sticker_set),
+                summary = stringResource(R.string.settings_new_sticker_set_summary),
+                icon = UiR.drawable.ic_add,
+                shapes = ListItemDefaults.segmentedShapes(rows - 1, rows),
+                onClick = onCreateSet,
+            )
+        }
+    }
+}
+
+/** Emoji, the user's custom emoji sets' page, third of the page rows. */
+private fun LazyListScope.emojiRow(
+    onOpenEmoji: () -> Unit,
+    rows: Int,
+    style: SettingsListRowStyle,
+) {
     item(key = EMOJI, contentType = PAGE) {
         Box(Modifier.settingsListRow(this, style)) {
             PageItem(
@@ -361,6 +387,7 @@ private fun stickerSetRowKey(id: Long): String = "set-$id"
 
 private const val TRENDING = "trending"
 private const val ARCHIVED = "archived"
+private const val CREATE = "create"
 private const val EMOJI = "emoji"
 private const val PAGE = "page"
 private const val HEADER = "header"

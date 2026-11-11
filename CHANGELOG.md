@@ -11,6 +11,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 
+- New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
+  with an emoji each, moved and removed, then published to share.
 - Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,
   a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a preview; the rights page
   gains "Manage welcome messages".

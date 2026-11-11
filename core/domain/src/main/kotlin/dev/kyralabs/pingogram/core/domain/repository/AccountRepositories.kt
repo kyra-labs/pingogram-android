@@ -148,6 +148,8 @@ interface AccountRepositories {
 
     fun welcomeMessageRepository(): WelcomeMessageRepository
 
+    fun stickerSetCreationRepository(): StickerSetCreationRepository
+
     fun storyRepository(): StoryRepository
 
     fun callRepository(): CallRepository

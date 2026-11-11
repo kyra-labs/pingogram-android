@@ -70,6 +70,10 @@ data class StickersRoute(
     val emoji: Boolean = false,
 )
 
+/** Making a sticker set of the user's own (the owner's boards 21a–c), pushed above Settings → Stickers. */
+@Serializable
+data object NewStickerSetRoute
+
 /**
  * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
  * [StickersRoute].
