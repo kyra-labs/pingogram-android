@@ -186,7 +186,13 @@ class OauthLoginViewModel internal constructor(
                                 },
                             request = request,
                             accountName = userRepository.myUserId.value?.let { userRepository.nameOf(it) },
-                            botName = request.botUserId.takeIf { it != 0L }?.let { userRepository.nameOf(it, preferUsername = true) },
+                            botName =
+                                request.botUserId.takeIf { it != 0L }?.let {
+                                    userRepository.nameOf(
+                                        it,
+                                        preferUsername = true,
+                                    )
+                                },
                         )
                     }
                 }
@@ -276,6 +282,9 @@ private suspend fun UserRepository.nameOf(
     preferUsername: Boolean = false,
 ): String? =
     (getUser(id) as? Outcome.Success)?.value?.let { user ->
-        user.usernames.firstOrNull()?.takeIf { preferUsername }?.let { "@$it" }
+        user.usernames
+            .firstOrNull()
+            ?.takeIf { preferUsername }
+            ?.let { "@$it" }
             ?: listOf(user.firstName, user.lastName).filter { it.isNotBlank() }.joinToString(" ")
     }
