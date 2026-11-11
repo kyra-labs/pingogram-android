@@ -205,4 +205,7 @@
     <string name="group_call_comment_report">Delete and report spam</string>
     <string name="group_call_comment_delete_all">Delete all from %1$s</string>
     <string name="group_call_invite_link">Invite link</string>
+    <!-- Live stories (board 12) -->
+    <string name="live_story_badge">LIVE</string>
+    <string name="live_story_close">Leave live story</string>
 </resources>

@@ -123,6 +123,15 @@ class TdlibGroupCallRepository
                     ),
                 ).map { it.text.orEmpty() }
 
+        override suspend fun joinLiveStory(
+            id: Int,
+            audioSourceId: Int,
+            payload: String,
+        ): Outcome<String> =
+            client
+                .request(TdApi.JoinLiveStory(id, TdApi.GroupCallJoinParameters(audioSourceId, payload, true, false)))
+                .map { it.text.orEmpty() }
+
         override suspend fun leave(id: Int): Outcome<Unit> =
             client.request(TdApi.LeaveGroupCall(id)).map {
                 // TDLib announces no participant or comment of a call the user left: both would go stale.

@@ -20,6 +20,8 @@ data class ActiveGroupCall(
     val phase: GroupCallPhase,
     /** A conference call: end-to-end encrypted, outside any chat, reached by a link or an invitation. */
     val isConference: Boolean = false,
+    /** A chat's live story (board 12), watched. */
+    val isLiveStory: Boolean = false,
     /** A live stream (or a call too large to speak in): received only, nothing sent. */
     val isStream: Boolean = false,
     val isMuted: Boolean = true,

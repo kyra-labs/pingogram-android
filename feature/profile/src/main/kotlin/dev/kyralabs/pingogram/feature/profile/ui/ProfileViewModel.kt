@@ -625,6 +625,8 @@ class ProfileViewModel internal constructor(
                     user.isFake -> ProfileWarning.Fake
                     else -> null
                 },
+            emojiStatusId = if (isDeleted) 0 else user.emojiStatusId,
+            profileColor = if (isDeleted) -1 else user.profileAccentColorId,
         )
     }
 

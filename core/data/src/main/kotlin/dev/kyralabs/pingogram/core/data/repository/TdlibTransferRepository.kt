@@ -4,11 +4,14 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
 import dev.kyralabs.pingogram.core.domain.model.Transfers
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.minus
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -16,7 +19,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -32,53 +36,83 @@ import javax.inject.Inject
  *   TDLib is asked so no `updateFile` in between is missed; it ends when the file is complete or its download stops
  *   (cancelled, failed), or when TDLib refuses the request.
  *
+ * - **Stories** the user posts (board 10c, `docs/adr/0036-posting-stories.md`): each one [StoryPostRepository] is still
+ *   sending counts as an upload, so a story goes on posting with the app in the background; one TDLib gave up on does
+ *   not, as nothing of it is on its way.
+ *
  * TDLib closing (logout) ends them all ([UpdateStore]).
  */
 @AccountScoped
-class TdlibTransferRepository
+class TdlibTransferRepository private constructor(
+    private val client: TdlibClient,
+    scope: CoroutineScope,
+    private val storyPosts: StoryPostRepository?,
+) : TransferRepository,
+    TdlibUpdateCache {
     @Inject
     constructor(
-        private val client: TdlibClient,
+        client: TdlibClient,
+        storyPosts: StoryPostRepository,
         @ApplicationScope scope: CoroutineScope,
-    ) : TransferRepository,
-        TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, TransferState(), TransferState::reduce)
+    ) : this(client, scope, storyPosts)
 
-        override val transfers: StateFlow<Transfers> =
-            store.state.map { it.summary() }.stateIn(scope, SharingStarted.Eagerly, Transfers.None)
+    /** Follows messages and downloads only, not the stories being posted: for tests that post none. */
+    constructor(
+        client: TdlibClient,
+        scope: CoroutineScope,
+    ) : this(client, scope, null)
 
-        /**
-         * Downloads file [fileId] at TDLib [priority] for the user, as one of the [transfers] until it ends. Succeeds
-         * once TDLib accepted the request.
-         */
-        internal suspend fun download(
-            fileId: Int,
-            priority: Int,
-        ): Outcome<Unit> {
-            store.update { it.requesting(fileId) }
-            // The whole file (offset 0, no limit), answered at once rather than when the download completes.
-            val answer = client.request(TdApi.DownloadFile(fileId, priority, 0, 0, false))
-            store.update { state ->
-                when (answer) {
-                    is Outcome.Success -> state.answered(answer.value)
-                    is Outcome.Failure -> state.copy(downloads = state.downloads.remove(fileId))
-                }
+    private val store = UpdateStore(client, scope, TransferState(), TransferState::reduce)
+
+    override val transfers: StateFlow<Transfers> =
+        combine(store.state, storyPosts?.uploads ?: flowOf(persistentListOf())) { state, stories ->
+            state.summary() + stories.sending()
+        }.stateIn(scope, SharingStarted.Eagerly, Transfers.None)
+
+    /**
+     * Downloads file [fileId] at TDLib [priority] for the user, as one of the [transfers] until it ends. Succeeds
+     * once TDLib accepted the request.
+     */
+    internal suspend fun download(
+        fileId: Int,
+        priority: Int,
+    ): Outcome<Unit> {
+        store.update { it.requesting(fileId) }
+        // The whole file (offset 0, no limit), answered at once rather than when the download completes.
+        val answer = client.request(TdApi.DownloadFile(fileId, priority, 0, 0, false))
+        store.update { state ->
+            when (answer) {
+                is Outcome.Success -> state.answered(answer.value)
+                is Outcome.Failure -> state.copy(downloads = state.downloads.remove(fileId))
             }
-            return answer.map {}
         }
-
-        override suspend fun cancelAll(): Outcome<Unit> {
-            val state = store.state.value
-            val requests =
-                state.downloads.keys.map { fileId -> TdApi.CancelDownloadFile(fileId, false) } +
-                    state.uploads.entries
-                        .groupBy({ it.value.chatId }, { it.key })
-                        .map { (chatId, messageIds) -> TdApi.DeleteMessages(chatId, messageIds.toLongArray(), true) }
-            // All at once, every one tried, so one that fails leaves no other transfer running.
-            val results = coroutineScope { requests.map { async { client.request(it) } }.awaitAll() }
-            return results.firstOrNull { it is Outcome.Failure }?.map {} ?: Outcome.Success(Unit)
-        }
+        return answer.map {}
     }
+
+    override suspend fun cancelAll(): Outcome<Unit> {
+        val state = store.state.value
+        val requests =
+            state.downloads.keys.map { fileId -> TdApi.CancelDownloadFile(fileId, false) } +
+                state.uploads.entries
+                    .groupBy({ it.value.chatId }, { it.key })
+                    .map { (chatId, messageIds) -> TdApi.DeleteMessages(chatId, messageIds.toLongArray(), true) }
+        // All at once, every one tried, so one that fails leaves no other transfer running.
+        val stories =
+            storyPosts
+                ?.uploads
+                ?.value
+                .orEmpty()
+                .sending()
+                .map { it.storyId }
+        val results =
+            coroutineScope {
+                val messages = requests.map { async { client.request(it) } }
+                val posts = storyPosts?.takeIf { stories.isNotEmpty() }?.let { async { it.cancel(stories) } }
+                messages.awaitAll() + listOfNotNull(posts?.await())
+            }
+        return results.firstOrNull { it is Outcome.Failure }?.map {} ?: Outcome.Success(Unit)
+    }
+}
 
 /** How far a transfer is: [transferred] of [size] bytes, 0 while TDLib does not know the size. */
 private data class Progress(
@@ -173,6 +207,19 @@ private data class TransferState(
 
     private fun withoutUploads(messageIds: LongArray): TransferState =
         if (messageIds.none { it in uploads }) this else copy(uploads = uploads - messageIds.asList())
+}
+
+/** The stories still being sent, without those TDLib gave up on. */
+private fun List<StoryUpload>.sending(): List<StoryUpload> = filter { it.failure == null }
+
+/** These transfers with [stories] being sent as more uploads, their sizes counted where TDLib knows them. */
+private operator fun Transfers.plus(stories: List<StoryUpload>): Transfers {
+    val known = stories.filter { it.sizeBytes > 0 }
+    return copy(
+        uploads = uploads + stories.size,
+        transferredSize = transferredSize + known.sumOf { it.uploadedBytes.coerceAtMost(it.sizeBytes) },
+        totalSize = totalSize + known.sumOf { it.sizeBytes },
+    )
 }
 
 /** The file's size, or TDLib's estimate while it does not know it; 0 when it knows neither. */

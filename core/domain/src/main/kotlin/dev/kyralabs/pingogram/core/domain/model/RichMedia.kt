@@ -18,29 +18,68 @@ fun isRichMediaId(id: Long): Boolean = id < 0
 fun richMediaMessageId(id: Long): Long = (-id - 1) / RICH_MEDIA_SPAN * RICH_MEDIA_SPAN
 
 /**
- * The photos, videos and GIFs of this rich message, or a poll's photo or video, as messages of their own, for the
- * media viewer: each a copy of this message (sender, date, chat) with the media as its content, its caption as the
- * caption, and the id [richMediaId] gives it; in the message's order. Empty for a message of any other content.
+ * The photos, videos and GIFs of this rich message, a poll's photo or video, or the unlocked photos and videos of this
+ * paid post, as messages of their own, for the media viewer: each a copy of this message (sender, date, chat) with the
+ * media as its content, its caption (a paid post's for each of its media, none for a poll's) as the caption, and the id
+ * [richMediaId] gives it (a poll's media index 0, a paid post's media by their index in the post); in the message's
+ * order. Empty for a message of any other content, and for a paid post that is not paid for.
  */
-fun Message.richMediaMessages(): List<Message> {
-    val pollMedia = (content as? MessageContent.Poll)?.mediaContent()
-    val rich = (content as? MessageContent.RichMessage)?.message
-    return when {
-        pollMedia != null -> {
-            listOf(copy(id = richMediaId(id, 0), content = pollMedia))
-        }
-
-        rich != null -> {
-            rich.media().map { media ->
+fun Message.richMediaMessages(): List<Message> =
+    when (val content = content) {
+        is MessageContent.RichMessage -> {
+            content.message.media().map { media ->
                 copy(id = richMediaId(id, media.index), content = media.toContent())
             }
+        }
+
+        is MessageContent.PaidMedia -> {
+            content.mediaContents().map { (index, media) -> copy(id = richMediaId(id, index), content = media) }
+        }
+
+        is MessageContent.Poll -> {
+            listOfNotNull(content.mediaContent()?.let { copy(id = richMediaId(id, 0), content = it) })
         }
 
         else -> {
             emptyList()
         }
     }
-}
+
+/**
+ * The photos and videos of this paid post, once it is paid for, as the contents of messages of their own, each with
+ * its index among the post's media: what the viewer pages through and the export copies. Empty while it is not paid
+ * for; previews and media of kinds Pingogram cannot show are left out.
+ */
+fun MessageContent.PaidMedia.mediaContents(): List<Pair<Int, MessageContent>> =
+    media.mapIndexedNotNull { index, item ->
+        when (item) {
+            is PaidMediaItem.Photo -> {
+                index to
+                    MessageContent.Photo(
+                        item.photo,
+                        caption,
+                        hasSpoiler = false,
+                        isSecret = false,
+                        showCaptionAboveMedia,
+                    )
+            }
+
+            is PaidMediaItem.Video -> {
+                index to
+                    MessageContent.Video(
+                        item.video,
+                        caption,
+                        hasSpoiler = false,
+                        isSecret = false,
+                        showCaptionAboveMedia,
+                    )
+            }
+
+            is PaidMediaItem.Preview, PaidMediaItem.Unsupported -> {
+                null
+            }
+        }
+    }
 
 /**
  * A poll's photo or video as the content of a message of its own, which the media viewer shows by [richMediaId] with

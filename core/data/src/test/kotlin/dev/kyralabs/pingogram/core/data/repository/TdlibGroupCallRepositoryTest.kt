@@ -197,6 +197,23 @@ class TdlibGroupCallRepositoryTest {
         }
 
     @Test
+    fun `watching a live story joins its call muted, without video`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.JoinLiveStory::class, TdResult.Success(TdApi.Text("{\"transport\":{}}")))
+
+            val answer = repository.joinLiveStory(11, 1234, "{\"ssrc\":1234}")
+
+            assertEquals(Outcome.Success("{\"transport\":{}}"), answer)
+            val sent = client.sentOf<TdApi.JoinLiveStory>().single()
+            assertEquals(11, sent.groupCallId)
+            assertEquals(1234, sent.joinParameters.audioSourceId)
+            assertEquals("{\"ssrc\":1234}", sent.joinParameters.payload)
+            assertTrue(sent.joinParameters.isMuted)
+            assertEquals(false, sent.joinParameters.isMyVideoEnabled)
+        }
+
+    @Test
     fun `starting a voice chat creates one now and returns its call`() =
         runTest {
             client.on(TdApi.CreateVideoChat::class, TdResult.Success(TdApi.GroupCallId(9)))

@@ -9,6 +9,7 @@ import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.Chat
@@ -19,9 +20,11 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
+import dev.kyralabs.pingogram.core.domain.model.StoryInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
@@ -42,6 +45,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -72,6 +76,8 @@ import kotlin.time.TimeSource
  *   keyboard, or the screen is stopped ([Pause]).
  * - **Reactions**: the emoji TDLib offers for stories without Telegram Premium; a tap sets one or takes it back,
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
+ * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
+ *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat.
  * - **Saved state**: the chats, the one shown and its story, so after process death the viewer opens where it was.
  *   The reply's text is not saved.
  *
@@ -93,6 +99,7 @@ class StoryViewerViewModel internal constructor(
     timeSource: TimeSource,
     private val applicationScope: CoroutineScope,
     private val videoPlayer: VideoPlayer,
+    private val albumRepository: StoryAlbumRepository? = null,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -104,6 +111,7 @@ class StoryViewerViewModel internal constructor(
         clock: WallClock,
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
+        albumRepository: StoryAlbumRepository,
     ) : this(
         savedStateHandle.toRoute<StoryViewerRoute>(),
         savedStateHandle,
@@ -115,6 +123,7 @@ class StoryViewerViewModel internal constructor(
         TimeSource.Monotonic,
         applicationScope,
         videoPlayer,
+        albumRepository,
     )
 
     /** The reply field's text, never saved. */
@@ -170,7 +179,7 @@ class StoryViewerViewModel internal constructor(
     // Shared: the pages and the story choice read it, and it asks TDLib for a chat it has not announced.
     private val currentStories: Flow<Outcome<ActiveStories>?> =
         combine(currentChatId, retries) { chatId, _ -> chatId }
-            .flatMapLatest { chatId -> chatId?.let(storyRepository::activeStoriesOf) ?: flowOf(null) }
+            .flatMapLatest { chatId -> chatId?.let(::storiesOf) ?: flowOf(null) }
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
 
     private val currentKey: Flow<StoryKey?> =
@@ -336,10 +345,42 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
-    /** The chats to swipe between: the main stories list as it is now, or the route's chat alone if it is not in it. */
+    /**
+     * The stories of chat [chatId] to page through: its active stories, or with the route's album, that album's stories
+     * as if they were (none unseen, so the viewer starts at the route's story or the first).
+     */
+    private fun storiesOf(chatId: Long): Flow<Outcome<ActiveStories>> {
+        val albumId = route.albumId
+        val albums = albumRepository
+        if (albumId == null || albums == null) return storyRepository.activeStoriesOf(chatId)
+        return flow {
+            val page = albums.stories(chatId, albumId, offset = 0, limit = ALBUM_STORY_LIMIT)
+            emit(
+                page.map { found ->
+                    ActiveStories(
+                        chatId = chatId,
+                        list = null,
+                        order = 0,
+                        maxReadStoryId = Int.MAX_VALUE,
+                        stories = found.stories.map { StoryInfo(it.id, it.date) }.toImmutableList(),
+                    )
+                },
+            )
+        }
+    }
+
+    /**
+     * The chats to swipe between: the main stories list as it is now, or the route's chat alone if it is not in it or
+     * the viewer plays one of its albums.
+     */
     private suspend fun choosePosters() {
         if (posters.value != null) return
-        val listed = storyRepository.activeStories(StoryList.Main).first().map { it.chatId }
+        val listed =
+            if (route.albumId == null) {
+                storyRepository.activeStories(StoryList.Main).first().map { it.chatId }
+            } else {
+                emptyList()
+            }
         val chosen = if (route.chatId in listed) listed else listOf(route.chatId)
         position.value = Position(chosen.indexOf(route.chatId), route.storyId)
         posters.value = chosen.toImmutableList()
@@ -458,8 +499,8 @@ class StoryViewerViewModel internal constructor(
                 }
             }
 
-            StoryContent.Live -> {
-                flowOf(Shown.still(key, story, StoryMedia.Live))
+            is StoryContent.Live -> {
+                flowOf(Shown.still(key, story, StoryMedia.Live(key.chatId, content.groupCallId)))
             }
 
             StoryContent.Unsupported -> {
@@ -761,6 +802,9 @@ class StoryViewerViewModel internal constructor(
 
         /** Keeps the state through a rotation, as every screen's view model does. */
         const val STOP_TIMEOUT_MILLIS = 5_000L
+
+        /** How many of an album's stories the viewer plays: td_api.tl's most for one request. */
+        const val ALBUM_STORY_LIMIT = 100
 
         val NO_PROGRESS: () -> Float = { 0f }
 

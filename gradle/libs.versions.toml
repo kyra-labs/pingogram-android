@@ -93,12 +93,12 @@ ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f-pingogram1"
 ntgcallsAarSha256 = "9dd9b2fce089bcff8382930a88c377ba224e4ea09dc107063058b55a45193f2c"
 robolectric = "4.17"
 roborazzi = "1.76.0"
-# tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
-tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
+# tdlib/td commit (TDLib 1.8.70); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
+tdlib = "23383aef218a3123f02b744bfa91bde21056a814"
 # SHA-256 of tdlib-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release (docs/TDLIB.md).
 # Not a dependency version: build-logic (pingogram.tdlib) verifies the downloaded AAR against it. "unpinned" (the
 # catalog allows no empty value) fails the build with instructions, unless pingogram.tdlib.aar is set.
-tdlibAarSha256 = "9984a3569df68d2d18a30b0d138021aa464f0fadcf1f0ec32edd19a5b3bccecd"
+tdlibAarSha256 = "3e970c026c8776c8f0dd19d78c5a32b649439a25b62d645baf54a74f3c81f7af"
 turbine = "1.2.1"
 # QR codes on the device: the encoder for the codes Pingogram shows (core:ui) and the decoder of the QR code scanner
 # (feature:scanner). Pure Java, no Android or network code; R8 keeps only what is used.

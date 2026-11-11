@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.feature.calls.FakeGroupCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeNetworkRepository
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
+import dev.kyralabs.pingogram.feature.calls.LIVE_CALL_ID
 import dev.kyralabs.pingogram.feature.calls.MuteRequest
 import dev.kyralabs.pingogram.feature.calls.SELF_ID
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
@@ -135,6 +136,24 @@ class GroupCallViewModelTest {
             runCurrent()
             val connected = viewModel.uiState.value as GroupCallUiState.InCall
             assertEquals(GroupCallStage.Connected, connected.stage)
+        }
+
+    @Test
+    fun `a live story's action watches its group call`() =
+        runTest(dispatcher) {
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        GroupCallActivity.EXTRA_ACTION to GroupCallActivity.ACTION_WATCH_LIVE_STORY,
+                        GroupCallActivity.EXTRA_CHAT_ID to CHAT_ID,
+                        GroupCallActivity.EXTRA_GROUP_CALL_ID to LIVE_CALL_ID,
+                    ),
+                )
+
+            viewModel(manager(), GroupCallActivity.ACTION_WATCH_LIVE_STORY, handle)
+
+            assertEquals(listOf(LIVE_CALL_ID), repository.liveStoryJoins)
+            assertTrue(repository.joins.isEmpty())
         }
 
     @Test

@@ -147,7 +147,7 @@ internal object DemoLinkParser {
         val second = segments.getOrNull(1).orEmpty()
         return when {
             first.startsWith("+") && digits.matches(first.drop(1)) -> {
-                TdApi.InternalLinkTypeUserPhoneNumber(first.drop(1), query["text"].orEmpty(), false)
+                TdApi.InternalLinkTypeUserPhoneNumber(first.drop(1), query["text"].orEmpty(), false, "")
             }
 
             first.startsWith("+") -> {
@@ -217,7 +217,7 @@ internal object DemoLinkParser {
             "start" in query -> TdApi.InternalLinkTypeBotStart(name, query["start"].orEmpty(), false)
             "post" in query -> TdApi.InternalLinkTypeMessage(link)
             "boost" in query -> TdApi.InternalLinkTypeChatBoost(link)
-            else -> TdApi.InternalLinkTypePublicChat(name, query["text"].orEmpty(), "profile" in query)
+            else -> TdApi.InternalLinkTypePublicChat(name, query["text"].orEmpty(), "profile" in query, "")
         }
 
     private fun proxy(

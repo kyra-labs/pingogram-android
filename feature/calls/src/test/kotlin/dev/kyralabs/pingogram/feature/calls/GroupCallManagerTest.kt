@@ -106,6 +106,28 @@ class GroupCallManagerTest {
         }
 
     @Test
+    fun `a live story joins its group call with joinLiveStory, muted, and only once`() =
+        runTest {
+            val manager = manager()
+
+            var result: JoinResult? = null
+            launchNow { result = manager.joinLiveStory(CHAT_ID, LIVE_CALL_ID) }
+            runCurrent()
+
+            assertEquals(JoinResult.Joining, result)
+            assertEquals(listOf(LIVE_CALL_ID), repository.liveStoryJoins)
+            assertTrue(repository.joins.isEmpty())
+            val session = engine.groupSessions.single()
+            assertTrue(session.muted)
+            assertEquals(FakeGroupCallRepository.PARAMS, session.params)
+            assertTrue(line.isBusy)
+
+            assertEquals(JoinResult.Joining, manager.joinLiveStory(CHAT_ID, LIVE_CALL_ID))
+            assertEquals(JoinResult.Busy, manager.joinLiveStory(CHAT_ID, LIVE_CALL_ID + 1))
+            assertEquals(1, engine.groupSessions.size)
+        }
+
+    @Test
     fun `nothing joins while the user is in another call, or where the chat has no voice chat`() =
         runTest {
             val manager = manager()

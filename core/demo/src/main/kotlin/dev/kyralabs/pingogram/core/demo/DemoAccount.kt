@@ -7,7 +7,8 @@ import java.util.Locale
 /**
  * The demo's account and people (`docs/adr/0034-demo-mode-for-store-review.md`): the user's profile (name, bio,
  * username, birthday, photo, personal channel), contacts (added, edited, imported, removed), blocking, privacy rules,
- * sessions and websites (sample ones, never real devices), a sample story of Ada's, and the countries the phone
+ * sessions, websites and passkeys (sample ones, never real devices or password managers; adding a passkey needs a
+ * Telegram account), a sample story of Ada's, and the countries the phone
  * number fields offer. It keeps this state itself; every change goes into the journal like the others.
  *
  * One branch per function, each starting with guard clauses for people that are not the demo's: hence the
@@ -19,6 +20,7 @@ internal class DemoAccount : DemoArea {
     private val privacy = mutableMapOf<String, TdApi.UserPrivacySettingRules>()
     private val sessions = mutableListOf<TdApi.Session>()
     private val websites = mutableListOf<TdApi.ConnectedWebsite>()
+    private val passkeys = mutableListOf<TdApi.Passkey>()
     private val profilePhotos = mutableListOf<TdApi.ChatPhoto>()
     private var readDate = TdApi.ReadDatePrivacySettings(true)
     private var inactiveSessionDays = INACTIVE_SESSION_DAYS
@@ -181,6 +183,14 @@ internal class DemoAccount : DemoArea {
                 okChanged(emptyList()).also { websites.clear() }
             }
 
+            is TdApi.GetLoginPasskeys -> {
+                ok(TdApi.Passkeys(passkeys.toTypedArray()))
+            }
+
+            is TdApi.RemoveLoginPasskey -> {
+                okChanged(emptyList()).also { passkeys.removeAll { it.id == function.passkeyId } }
+            }
+
             is TdApi.GetChatActiveStories -> {
                 ok(chatStories(world, function.chatId))
             }
@@ -223,7 +233,7 @@ internal class DemoAccount : DemoArea {
         }
     }
 
-    /** The sample sessions, websites and Ada's story, made once from the demo's start date. */
+    /** The sample sessions, websites, passkey and Ada's story, made once from the demo's start date. */
     private fun start(world: DemoWorld) {
         started = true
         val since = world.data.channel.date
@@ -251,6 +261,7 @@ internal class DemoAccount : DemoArea {
                 "203.0.113.7",
                 "Sample City",
             )
+        passkeys += TdApi.Passkey("demo-passkey", "Sample password manager", since, since + DAY, 0)
     }
 
     /** A sample session: a made-up device at an address of the documentation range (RFC 5737), never a real one. */
@@ -396,9 +407,10 @@ internal class DemoAccount : DemoArea {
             TdApi.UserLink(
                 "https://t.me/$username",
                 0,
+                false,
             )
         } else {
-            TdApi.UserLink(TEMPORARY_LINK, DAY)
+            TdApi.UserLink(TEMPORARY_LINK, DAY, false)
         }
     }
 

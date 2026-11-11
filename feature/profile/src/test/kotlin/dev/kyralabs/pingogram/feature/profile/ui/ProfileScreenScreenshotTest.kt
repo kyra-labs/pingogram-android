@@ -26,6 +26,14 @@ class ProfileScreenScreenshotTest {
     @Test
     fun dark() = capture(ScreenshotVariant.Dark)
 
+    /** The header tinted with a profile color (the owner's board 22a). */
+    @Test
+    fun profileColorDark() =
+        capture(
+            ScreenshotVariant.Dark,
+            ProfilePreviewData.content.copy(header = ProfilePreviewData.content.header.copy(profileColor = 7)),
+        )
+
     @Test
     fun amoled() = capture(ScreenshotVariant.Amoled)
 

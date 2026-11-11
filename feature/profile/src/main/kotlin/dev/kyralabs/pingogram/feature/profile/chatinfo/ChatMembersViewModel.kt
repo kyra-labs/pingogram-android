@@ -129,13 +129,17 @@ class ChatMembersViewModel internal constructor(
     private val chats = MutableStateFlow<PersistentMap<Long, Chat>>(persistentMapOf())
     private val removing = MutableStateFlow<MessageSender?>(null)
 
+    private val tagging =
+        MemberTagging(administrationRepository, chatId, savedStateHandle, viewModelScope, ::onTagChanged)
+
     private var loadJob: Job? = null
     private var statusFormatter: UserStatusFormatter? = null
 
     val uiState: StateFlow<ChatMembersUiState> =
         combine(filter, query, list, group, removing) { filter, query, list, group, removing ->
             Sources(filter, query, list, group, removing)
-        }.combine(userRepository.users) { sources, users -> sources to users }
+        }.combine(tagging.draft) { sources, draft -> sources.copy(tagging = draft) }
+            .combine(userRepository.users) { sources, users -> sources to users }
             .combine(userRepository.myUserId) { (sources, users), me -> Triple(sources, users, me) }
             .combine(chats) { (sources, users, me), chats -> Pair(Triple(sources, users, me), chats) }
             .combine(clock.minutes) { (parts, chats), now ->
@@ -176,6 +180,10 @@ class ChatMembersViewModel internal constructor(
             is ChatMembersEvent.Act -> act(event.sender, event.action)
             ChatMembersEvent.ConfirmRemove -> confirmRemove()
             ChatMembersEvent.DismissDialog -> removing.value = null
+            is ChatMembersEvent.TagChanged -> tagging.edit(event.text)
+            ChatMembersEvent.SaveTag -> tagging.save()
+            ChatMembersEvent.RemoveTag -> tagging.remove()
+            ChatMembersEvent.DismissTag -> tagging.dismiss()
         }
     }
 
@@ -230,6 +238,7 @@ class ChatMembersViewModel internal constructor(
                         endReached = added.isEmpty() || current.members.size + added.size >= page.value.totalCount,
                     )
                 }
+                restoreTagging()
             }
 
             is Outcome.Failure -> {
@@ -266,6 +275,11 @@ class ChatMembersViewModel internal constructor(
     ) {
         val userId = (sender as? MessageSender.User)?.userId
         when (action) {
+            MemberAction.SetTag -> {
+                val member = list.value.members.firstOrNull { it.sender == sender }
+                if (userId != null && member != null) tagging.open(userId, member.tag)
+            }
+
             MemberAction.Promote, MemberAction.EditRights -> {
                 userId?.let { effectChannel.trySend(ChatMembersEffect.OpenRights(it, restrict = false)) }
             }
@@ -321,6 +335,25 @@ class ChatMembersViewModel internal constructor(
         }
     }
 
+    /** Reopens the "Set tag" sheet that was open before process death, once its member is loaded again. */
+    private fun restoreTagging() {
+        val userId = tagging.savedUserId() ?: return
+        val member = list.value.members.firstOrNull { it.sender == MessageSender.User(userId) } ?: return
+        tagging.restore(member.tag)
+    }
+
+    /** Telegram took member [userId]'s new [tag]: their row shows it, with a snackbar. */
+    private fun onTagChanged(
+        userId: Long,
+        tag: String,
+    ) {
+        val sender = MessageSender.User(userId)
+        val name = itemOf(sender)?.name ?: UiText.resource(UiR.string.user_deleted_account)
+        list.update { current -> current.withTag(sender, tag) }
+        val done = if (tag.isEmpty()) R.string.chat_info_tag_removed else R.string.chat_info_tag_saved
+        effectChannel.trySend(ChatMembersEffect.Done(done, name))
+    }
+
     private fun itemOf(sender: MessageSender): MemberItem? =
         (uiState.value.list as? MembersList.Content)?.items?.firstOrNull { it.sender == sender }
 
@@ -337,6 +370,7 @@ class ChatMembersViewModel internal constructor(
                     it.kind,
                     if (it.myRole.isAdministrator) it.myRights else NO_RIGHTS,
                     myUserId,
+                    canEditOwnTag = it.canEditOwnTag(),
                 )
             }
         val formatter = statusFormatter()
@@ -354,6 +388,7 @@ class ChatMembersViewModel internal constructor(
                 )
             }
         val removingItem = removing?.let { sender -> items.firstOrNull { it.sender == sender } }
+
         return ChatMembersUiState(
             kind = kind,
             filter = filter,
@@ -378,6 +413,7 @@ class ChatMembersViewModel internal constructor(
                     }
                 },
             removing = removingItem,
+            tagging = tagging?.editorIn(items, myUserId),
         )
     }
 
@@ -390,12 +426,13 @@ class ChatMembersViewModel internal constructor(
     }
 
     /** What the page is made from, as of one emission. */
-    private class Sources(
+    private data class Sources(
         val filter: MemberFilter,
         val query: String,
         val list: LoadedMembers,
         val group: GroupInfo?,
         val removing: MessageSender?,
+        val tagging: TagDraft? = null,
     )
 
     private companion object {
@@ -409,6 +446,36 @@ class ChatMembersViewModel internal constructor(
         val NO_RIGHTS = AdministratorRights.None
     }
 }
+
+/** The "Set tag" sheet of this draft, for its member among [items]; null while the member is not loaded. */
+private fun TagDraft.editorIn(
+    items: List<MemberItem>,
+    myUserId: Long?,
+): MemberTagEditor? {
+    val sender = MessageSender.User(userId)
+    val item = items.firstOrNull { it.sender == sender } ?: return null
+    return MemberTagEditor(
+        member = item,
+        isAdministrator = item.isAdministrator,
+        isOwn = userId == myUserId,
+        text = text,
+        saved = saved,
+        isSaving = isSaving,
+        error = error,
+    )
+}
+
+/**
+ * Whether the current user may set their own tag here: with `canManageTags`, or where the group's permissions (their
+ * own, while restricted) allow members to (`MemberPermissions.canEditTag`).
+ */
+private fun GroupInfo.canEditOwnTag(): Boolean =
+    when (val role = myRole) {
+        is MemberRole.Owner, is MemberRole.Administrator -> myRights.canManageTags || defaultPermissions.canEditTag
+        is MemberRole.Restricted -> role.permissions.canEditTag
+        MemberRole.Member -> defaultPermissions.canEditTag
+        MemberRole.Left, is MemberRole.Banned -> false
+    }
 
 /** The filter named [name]; null for a name of no filter. */
 private fun filterOf(name: String): MemberFilter? = MemberFilter.entries.firstOrNull { it.name == name }
@@ -447,6 +514,16 @@ private data class LoadedMembers(
             moreError != null -> MoreMembers.Failed(moreError)
             else -> MoreMembers.Available
         }
+
+    /** [sender] with [tag]. */
+    fun withTag(
+        sender: MessageSender,
+        tag: String,
+    ): LoadedMembers {
+        val index = members.indexOfFirst { it.sender == sender }
+        if (index < 0) return this
+        return copy(members = members.mutate { it[index] = it[index].copy(tag = tag) })
+    }
 
     /** [sender] with [role]: in place where it still matches [filter], out of the list where it does not. */
     fun withRole(

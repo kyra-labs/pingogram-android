@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.content.ChecklistAction
+import dev.kyralabs.pingogram.feature.chat.ui.content.GiveawayAction
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaUploadProgress
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimatedEmoji
@@ -29,12 +30,16 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.MessageDice
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageDocument
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageExpired
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageGame
+import dev.kyralabs.pingogram.feature.chat.ui.content.MessageGiveaway
+import dev.kyralabs.pingogram.feature.chat.ui.content.MessageGiveawayWinners
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageInvoice
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageLocation
+import dev.kyralabs.pingogram.feature.chat.ui.content.MessagePaidMedia
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessagePhoto
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessagePoll
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageSticker
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageStory
+import dev.kyralabs.pingogram.feature.chat.ui.content.MessageUnsupported
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVenue
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVideo
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVideoNote
@@ -46,6 +51,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -92,10 +98,25 @@ internal fun MessageContentBody(
     mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     mediaDownloads: MediaDownloads = MediaDownloads(),
+    showsUpdateLink: Boolean = false,
 ) {
     val album = bubble.album
     val content = bubble.content
     when {
+        content is MessageContent.PaidMedia -> {
+            MessagePaidMedia(
+                content = content,
+                messageId = bubble.id,
+                colors = colors,
+                onOpen = { mediaId -> onEvent(ChatEvent.OpenMedia(mediaId)) },
+                modifier = modifier,
+                shape = mediaShape,
+                downloads = mediaDownloads,
+                onDownload = { fileId -> onEvent(ChatEvent.DownloadFile(fileId)) },
+                onCancelDownload = { fileId -> onEvent(ChatEvent.CancelDownload(fileId)) },
+            )
+        }
+
         album != null -> {
             MediaAlbum(
                 items = album.items,
@@ -129,7 +150,7 @@ internal fun MessageContentBody(
         }
 
         else -> {
-            InfoContent(bubble, colors, onEvent, modifier)
+            InfoContent(bubble, colors, onEvent, modifier, showsUpdateLink)
         }
     }
 }
@@ -254,6 +275,7 @@ private fun InfoContent(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
+    showsUpdateLink: Boolean,
 ) {
     val onOpenLocation = { onEvent(ChatEvent.OpenLocation(bubble.id)) }
     when (val content = bubble.content) {
@@ -305,8 +327,12 @@ private fun InfoContent(
             MessageExpired(content, modifier, colors)
         }
 
+        is MessageContent.Giveaway, is MessageContent.GiveawayWinners -> {
+            GiveawayContent(content, bubble, colors, onEvent, modifier)
+        }
+
         MessageContent.Unsupported -> {
-            bubble.contentLabel?.let { ContentPlaceholder(it.resolve(), colors, modifier) }
+            MessageUnsupported(showsUpdateLink, colors, onUpdate = { onEvent(ChatEvent.OpenUpdatePage) }, modifier)
         }
 
         else -> {
@@ -315,22 +341,31 @@ private fun InfoContent(
     }
 }
 
-/** The kind of content Pingogram cannot show yet, in one line ("Unsupported message"). */
+/** A giveaway or its winners ([content]), their taps as [GiveawayEvent]s and [ChatEvent]s. */
 @Composable
-private fun ContentPlaceholder(
-    label: String,
+private fun GiveawayContent(
+    content: MessageContent,
+    bubble: ChatItem.Bubble,
     colors: BubbleColors,
-    modifier: Modifier = Modifier,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier,
 ) {
-    Text(
-        text = label,
-        modifier = modifier,
-        color = colors.secondaryContent,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodyMedium,
-    )
+    val ui = bubble.giveaway ?: GiveawayUi()
+    val onAction = { action: GiveawayAction -> onEvent(action.eventFor(bubble.id)) }
+    when (content) {
+        is MessageContent.Giveaway -> MessageGiveaway(content, modifier, colors, ui, onAction)
+        is MessageContent.GiveawayWinners -> MessageGiveawayWinners(content, modifier, colors, ui, onAction)
+        else -> Unit
+    }
 }
+
+/** The event of a tap in the giveaway of message [messageId]. */
+private fun GiveawayAction.eventFor(messageId: Long): ChatEvent =
+    when (this) {
+        GiveawayAction.LearnMore -> GiveawayEvent.OpenInfo(messageId)
+        is GiveawayAction.OpenChat -> ChatEvent.OpenChat(chatId)
+        is GiveawayAction.OpenWinner -> ChatEvent.OpenProfile(userId)
+    }
 
 /** The event of a tap in the checklist of message [messageId]. */
 private fun ChecklistAction.eventFor(messageId: Long): ChatEvent =

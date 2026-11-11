@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -213,6 +214,32 @@ class TdlibAuthRepositoryTest {
             repository().checkCode("12345")
 
             assertEquals("12345", client.sentOf<TdApi.CheckAuthenticationCode>().single().code)
+        }
+
+    @Test
+    fun `a passkey sign-in asks for Telegram's request, then sends the password manager's answer`() =
+        runTest {
+            client.on(
+                TdApi.GetAuthenticationPasskeyParameters::class,
+                TdResult.Success(TdApi.Text("{\"challenge\":\"abc\"}")),
+            )
+            client.on(TdApi.CheckAuthenticationPasskey::class, ok())
+            val repository = repository()
+
+            val request = repository.passkeySignInRequest()
+            val checked =
+                repository.checkPasskey(
+                    PasskeyAssertion("cred", "{}", byteArrayOf(1), byteArrayOf(2), byteArrayOf(3)),
+                )
+
+            assertEquals(Outcome.Success("{\"challenge\":\"abc\"}"), request)
+            assertEquals(Outcome.Success(Unit), checked)
+            val sent = client.sentOf<TdApi.CheckAuthenticationPasskey>().single()
+            assertEquals("cred", sent.credentialId)
+            assertEquals("{}", sent.clientData)
+            assertArrayEquals(byteArrayOf(1), sent.authenticatorData)
+            assertArrayEquals(byteArrayOf(2), sent.signature)
+            assertArrayEquals(byteArrayOf(3), sent.userHandle)
         }
 
     @Test

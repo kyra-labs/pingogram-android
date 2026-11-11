@@ -66,6 +66,7 @@ enum class GroupKind {
  * @property primaryInviteLink the primary invite link, for administrators who may invite; null otherwise.
  * @property canGetStatistics Telegram gives the user the chat's statistics (`ChatStatisticsRepository`): its
  *   administrators, where the supergroup or channel is large enough.
+ * @property communityId the community the supergroup or channel belongs to (`CommunityRepository`); 0 for none.
  */
 data class GroupDetails(
     val description: FormattedText,
@@ -79,6 +80,7 @@ data class GroupDetails(
     val members: ImmutableList<GroupMember>,
     val primaryInviteLink: InviteLink?,
     val canGetStatistics: Boolean = false,
+    val communityId: Long = 0,
 ) {
     override fun toString() =
         "GroupDetails(memberCount=$memberCount, administratorCount=$administratorCount, members=${members.size}, …)"
@@ -99,6 +101,12 @@ data class GroupMember(
     val joinedDate: Long = 0,
 ) {
     override fun toString() = "GroupMember(sender=$sender, role=$role, …)"
+}
+
+/** The limits of a member's tag ([GroupMember.tag]). */
+object MemberTagLimits {
+    /** The longest tag, in characters (code points), as Telegram's apps take it. */
+    const val LENGTH_MAX = 16
 }
 
 /** A page of members, and how many there are in all for the filter asked for. */

@@ -61,6 +61,28 @@ class AttachmentPreparerTest {
     }
 
     @Test
+    fun `a sticker is written upright with its longer side 512 pixels, enlarged if smaller, and its copy deleted`() {
+        content.add("content://cat", "cat.png", "image/png", bytes = byteArrayOf(PHOTO))
+        media.images[PHOTO] = ImageInfo(300, 200, Orientation.Normal)
+
+        val path = runBlocking { preparer().prepareSticker("content://cat", 512) }.value()
+
+        with(media.stickerPlans.single()) { assertEquals(listOf(512, 341), listOf(width, height)) }
+        assertEquals("sticker.webp", File(path).name)
+        assertEquals(listOf("sticker.webp"), leftFiles())
+    }
+
+    @Test
+    fun `what Android cannot decode makes no sticker and leaves nothing`() {
+        content.add("content://raw", "IMG_2.dng", "image/x-adobe-dng")
+
+        val result = runBlocking { preparer().prepareSticker("content://raw", 512) }
+
+        assertEquals(Outcome.Failure(DomainError.PhotoInvalid), result)
+        assertEquals(emptyList<String>(), leftFiles())
+    }
+
+    @Test
     fun `an image Android cannot decode goes as a document under its name`() {
         content.add("content://raw", "IMG_2.dng", "image/x-adobe-dng")
 

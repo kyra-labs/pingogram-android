@@ -72,4 +72,13 @@ class PhotoScalingTest {
         assertEquals(180 to 320, fitWithin(1080, 1920, MAX_THUMBNAIL_SIDE))
         assertEquals(200 to 100, fitWithin(200, 100, MAX_THUMBNAIL_SIDE))
     }
+
+    @Test
+    fun `a sticker's longer side is 512 pixels, a small image enlarged and a large one decoded smaller`() {
+        val small = stickerPlan(256, 128, Orientation.Normal, 512)
+        assertEquals(listOf(512, 256, 1), listOf(small.width, small.height, small.sampleSize))
+
+        val turned = stickerPlan(4000, 3000, Orientation.fromExif(6), 512)
+        assertEquals(listOf(384, 512, 4), listOf(turned.width, turned.height, turned.sampleSize))
+    }
 }

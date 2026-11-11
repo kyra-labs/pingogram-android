@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.model.isAdministrator
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -102,6 +104,7 @@ class ChatInfoViewModel internal constructor(
     sharedMediaRepository: SharedMediaRepository,
     private val searchRepository: SearchRepository,
     private val idVisibility: IdVisibilityRepository,
+    private val communityRepository: CommunityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -117,6 +120,7 @@ class ChatInfoViewModel internal constructor(
         sharedMediaRepository: SharedMediaRepository,
         searchRepository: SearchRepository,
         idVisibility: IdVisibilityRepository,
+        communityRepository: CommunityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -130,6 +134,7 @@ class ChatInfoViewModel internal constructor(
         sharedMediaRepository,
         searchRepository,
         idVisibility,
+        communityRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -198,6 +203,19 @@ class ChatInfoViewModel internal constructor(
             }
         }
 
+    /** The community the chat belongs to, named once TDLib announced it; null for none. */
+    private val community: Flow<CommunityLink?> =
+        group
+            .map { lookup -> (lookup as? Lookup.Found)?.value?.details?.communityId ?: 0L }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == 0L) {
+                    flowOf(null)
+                } else {
+                    communityRepository.community(id).map { CommunityLink(id, it?.name.orEmpty()) }
+                }
+            }
+
     val uiState: StateFlow<ChatInfoUiState> =
         combine(chat, group, previewMembers, userRepository.users, userRepository.myUserId) { c, g, m, u, me ->
             Sources(c, g, m, u, me)
@@ -206,6 +224,8 @@ class ChatInfoViewModel internal constructor(
             .combine(overlay) { (sources, now, canDelete), overlay -> sources.toUiState(now, canDelete, overlay) }
             .combine(idVisibility.shown) { state, shown ->
                 if (shown && state is ChatInfoUiState.Content) state.copy(id = chatId) else state
+            }.combine(community) { state, community ->
+                if (community != null && state is ChatInfoUiState.Content) state.copy(community = community) else state
             }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatInfoUiState.Loading)
 
@@ -219,22 +239,75 @@ class ChatInfoViewModel internal constructor(
 
     fun onEvent(event: ChatInfoEvent) {
         when (event) {
-            ChatInfoEvent.Retry -> attempts.update { it + 1 }
-            ChatInfoEvent.ToggleMute -> toggleMute()
-            ChatInfoEvent.Leave -> showDialog(ChatInfoDialog.Leave)
-            ChatInfoEvent.Delete -> showDialog(ChatInfoDialog.Delete)
-            ChatInfoEvent.ClearHistory -> showDialog(ChatInfoDialog.ClearHistory)
-            ChatInfoEvent.Confirm -> confirm()
-            ChatInfoEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
-            ChatInfoEvent.CopyLink -> link()?.let { send(ChatInfoEffect.CopyText(it.url, CopiedChatText.Link)) }
-            ChatInfoEvent.CopyId -> send(ChatInfoEffect.CopyText(chatId.toString(), CopiedChatText.Id))
-            ChatInfoEvent.ShareLink -> link()?.let { send(ChatInfoEffect.Share(it.url)) }
-            ChatInfoEvent.ShowQrCode -> link()?.let { showDialog(ChatInfoDialog.QrCode(it.url)) }
-            ChatInfoEvent.CopyDescription -> copyDescription()
-            is ChatInfoEvent.OpenMention -> openMention(event.target)
-            is ChatInfoEvent.OpenMember -> openMember(event.sender)
-            is ChatInfoEvent.OpenMembers -> send(ChatInfoEffect.OpenMembers(event.filter))
-            is ChatInfoEvent.Open -> send(ChatInfoEffect.Open(event.page))
+            ChatInfoEvent.Retry -> {
+                attempts.update { it + 1 }
+            }
+
+            ChatInfoEvent.ToggleMute -> {
+                toggleMute()
+            }
+
+            ChatInfoEvent.Leave -> {
+                showDialog(ChatInfoDialog.Leave)
+            }
+
+            ChatInfoEvent.Delete -> {
+                showDialog(ChatInfoDialog.Delete)
+            }
+
+            ChatInfoEvent.ClearHistory -> {
+                showDialog(ChatInfoDialog.ClearHistory)
+            }
+
+            ChatInfoEvent.Confirm -> {
+                confirm()
+            }
+
+            ChatInfoEvent.DismissDialog -> {
+                overlay.update { it.copy(dialog = null) }
+            }
+
+            ChatInfoEvent.CopyLink -> {
+                link()?.let { send(ChatInfoEffect.CopyText(it.url, CopiedChatText.Link)) }
+            }
+
+            ChatInfoEvent.CopyId -> {
+                send(ChatInfoEffect.CopyText(chatId.toString(), CopiedChatText.Id))
+            }
+
+            ChatInfoEvent.ShareLink -> {
+                link()?.let { send(ChatInfoEffect.Share(it.url)) }
+            }
+
+            ChatInfoEvent.ShowQrCode -> {
+                link()?.let { showDialog(ChatInfoDialog.QrCode(it.url)) }
+            }
+
+            ChatInfoEvent.CopyDescription -> {
+                copyDescription()
+            }
+
+            is ChatInfoEvent.OpenMention -> {
+                openMention(event.target)
+            }
+
+            is ChatInfoEvent.OpenMember -> {
+                openMember(event.sender)
+            }
+
+            is ChatInfoEvent.OpenMembers -> {
+                send(ChatInfoEffect.OpenMembers(event.filter))
+            }
+
+            is ChatInfoEvent.Open -> {
+                send(ChatInfoEffect.Open(event.page))
+            }
+
+            ChatInfoEvent.OpenCommunity -> {
+                (uiState.value as? ChatInfoUiState.Content)?.community?.let {
+                    send(ChatInfoEffect.OpenCommunity(it.id))
+                }
+            }
         }
     }
 
@@ -432,6 +505,7 @@ class ChatInfoViewModel internal constructor(
                     // Every administrator of a supergroup or channel may read its recent actions.
                     canViewRecentActions = info.kind != GroupKind.BasicGroup,
                     canViewStatistics = details?.canGetStatistics == true,
+                    canManageWelcomeMessages = rights.canSendWelcomeMessages && info.kind == GroupKind.Supergroup,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

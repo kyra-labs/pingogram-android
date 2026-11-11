@@ -70,7 +70,7 @@ private fun TdApi.StoryContent?.toStoryContent(): StoryContent =
         }
 
         is TdApi.StoryContentLive -> {
-            StoryContent.Live
+            StoryContent.Live(groupCallId)
         }
 
         // storyContentUnsupported, and kinds a newer TDLib adds.

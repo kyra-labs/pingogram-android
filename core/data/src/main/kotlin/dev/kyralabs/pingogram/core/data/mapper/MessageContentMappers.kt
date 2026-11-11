@@ -93,6 +93,7 @@ internal fun TdApi.MessageContent.toMessageContent(
 
         else -> {
             toMediaContent()
+                ?: toOfferContent()
                 ?: toServiceAction(sender, isChannelPost)?.let(MessageContent::Service)
                 ?: MessageContent.Unsupported
         }

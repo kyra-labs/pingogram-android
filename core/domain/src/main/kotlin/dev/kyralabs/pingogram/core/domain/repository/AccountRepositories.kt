@@ -86,6 +86,8 @@ interface AccountRepositories {
 
     fun storyPostRepository(): StoryPostRepository
 
+    fun storyAlbumRepository(): StoryAlbumRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository
@@ -112,6 +114,8 @@ interface AccountRepositories {
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
 
+    fun passkeyRepository(): PasskeyRepository
+
     fun contactJoinedRepository(): ContactJoinedRepository
 
     fun dataOptionsRepository(): DataOptionsRepository
@@ -134,6 +138,8 @@ interface AccountRepositories {
 
     fun pollRepository(): PollRepository
 
+    fun giveawayRepository(): GiveawayRepository
+
     fun checklistRepository(): ChecklistRepository
 
     fun botInfoRepository(): BotInfoRepository
@@ -141,6 +147,14 @@ interface AccountRepositories {
     fun inlineBotRepository(): InlineBotRepository
 
     fun secretChatRepository(): SecretChatRepository
+
+    fun communityRepository(): CommunityRepository
+
+    fun welcomeMessageRepository(): WelcomeMessageRepository
+
+    fun stickerSetCreationRepository(): StickerSetCreationRepository
+
+    fun accentColorRepository(): AccentColorRepository
 
     fun storyRepository(): StoryRepository
 

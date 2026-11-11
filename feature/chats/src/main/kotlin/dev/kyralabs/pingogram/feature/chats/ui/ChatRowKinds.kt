@@ -36,7 +36,7 @@ internal fun AvatarShape.kindIcon(): Int? =
     when (this) {
         AvatarShape.Group, AvatarShape.RoundedSquare -> R.drawable.ic_group
         AvatarShape.Channel -> R.drawable.ic_campaign
-        AvatarShape.Circle, AvatarShape.SavedMessages -> null
+        AvatarShape.Circle, AvatarShape.SavedMessages, AvatarShape.Community -> null
     }
 
 /**
@@ -54,6 +54,8 @@ internal fun contentIcon(content: MessageContent): Int? =
         is MessageContent.Document -> R.drawable.ic_description
         is MessageContent.Location, is MessageContent.Venue -> R.drawable.ic_location_on
         is MessageContent.Poll -> R.drawable.ic_poll_filled
+        is MessageContent.PaidMedia -> R.drawable.ic_image
+        is MessageContent.Giveaway, is MessageContent.GiveawayWinners -> R.drawable.ic_redeem
         is MessageContent.Checklist -> R.drawable.ic_checklist
         is MessageContent.Text -> if (content.linkPreview != null) R.drawable.ic_link else null
         else -> null

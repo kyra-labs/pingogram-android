@@ -14,15 +14,18 @@ import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
+import dev.kyralabs.pingogram.core.navigation.PasskeysRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacyExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.PasskeysLink
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsRoute as LockedChatsScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.PasskeysRoute as PasskeysScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsRoute as PrivacyExceptionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyRoute as NewChatPrivacyScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesRoute as ConnectedWebsitesScreenRoute
@@ -62,6 +65,17 @@ internal fun NavGraphBuilder.privacyPages(
     }
     settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
     settingsPage<ConnectedWebsitesRoute> { ConnectedWebsitesScreenRoute(onBack = onBack) }
+    settingsPage<PasskeysRoute> {
+        PasskeysScreenRoute(
+            onOpen = { link ->
+                when (link) {
+                    PasskeysLink.TwoStepVerification -> onOpen(TwoStepVerificationRoute)
+                    PasskeysLink.ActiveSessions -> onOpen(ActiveSessionsRoute)
+                }
+            },
+            onBack = onBack,
+        )
+    }
     settingsPage<LockedChatsRoute> {
         LockedChatsScreenRoute(onOpenPasscodeLock = { onOpen(PasscodeLockRoute) }, onBack = onBack)
     }
@@ -74,6 +88,7 @@ private val PrivacySecurityPage.route: Any
             PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
             PrivacySecurityPage.Websites -> ConnectedWebsitesRoute
+            PrivacySecurityPage.Passkeys -> PasskeysRoute
             PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
             PrivacySecurityPage.LockedChats -> LockedChatsRoute
