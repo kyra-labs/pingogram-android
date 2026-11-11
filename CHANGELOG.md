@@ -10,8 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches,
+  saying how many are left and, once they are used, when the next one comes.
 - Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list,
   with their unread messages, which expands to show them; its menu shows the chats separately again.
+- Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
 - Saved Messages tags: your tags show as chips under the tabs. A tag filters your saved messages, and you can rename
   its label.
 - Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months
@@ -19,6 +22,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 - "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram",
   with "Show full text" to go back (in the reader's language where they don't read the post's).
+
+- "Message channel" in channels that take direct messages: it opens your private thread with the channel's admins.
+  Where messages cost Telegram Stars, the button shows the price and says Pingogram can't pay yet.
 
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.

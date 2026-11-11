@@ -85,6 +85,37 @@ class SearchScreenScreenshotTest {
     fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ScreenshotVariant.Light)
 
     @Test
+    fun postsOfferLight() = capture("postsOfferLight", SearchPreviewData.postsOffer, ScreenshotVariant.Light)
+
+    @Test
+    fun postsOfferDark() = capture("postsOfferDark", SearchPreviewData.postsOffer, ScreenshotVariant.Dark)
+
+    @Test
+    fun postsOfferAmoled() = capture("postsOfferAmoled", SearchPreviewData.postsOffer, ScreenshotVariant.Amoled)
+
+    @Test
+    fun postsOfferHighContrast() =
+        capture("postsOfferHighContrast", SearchPreviewData.postsOffer, ScreenshotVariant.HighContrast)
+
+    @Test
+    fun postsOfferRtl() = capture("postsOfferRtl", SearchPreviewData.postsOffer, ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun postsOfferFontScale200() =
+        capture("postsOfferFontScale200", SearchPreviewData.postsOffer, ScreenshotVariant.Light)
+
+    @Test
+    fun postsExhaustedLight() =
+        capture("postsExhaustedLight", SearchPreviewData.postsExhausted, ScreenshotVariant.Light)
+
+    @Test
+    fun postsFoundLight() = capture("postsFoundLight", SearchPreviewData.postsFound, ScreenshotVariant.Light)
+
+    @Test
+    fun postsFoundDark() = capture("postsFoundDark", SearchPreviewData.postsFound, ScreenshotVariant.Dark)
+
+    @Test
     @Config(fontScale = FONT_SCALE_200)
     fun resultsFontScale200() = capture("resultsFontScale200", SearchPreviewData.results, ScreenshotVariant.Light)
 

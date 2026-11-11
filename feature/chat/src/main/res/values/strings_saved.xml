@@ -10,6 +10,8 @@
     <!-- In place of the composer in a tab of messages saved from another chat. -->
     <string name="composer_saved_topic">New messages go to My Notes</string>
 
+    <!-- A forum that shows its topics as tabs: the tab of the whole chat. -->
+    <string name="forum_tab_all">All</string>
     <!-- Saved Messages' tags (the owner's board 8): reactions on saved messages that label and filter them. -->
     <string name="saved_tags_title">Saved Messages</string>
     <!-- %1$d: how many saved messages the tag holds; %2$s: the tag, its emoji and label ("❤ Ideas"). -->
