@@ -270,6 +270,11 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
             LinkTarget.GroupCall(inviteLink)
         }
 
+        // "Log in with Telegram": its sheet asks before anything is shared.
+        is TdApi.InternalLinkTypeOauth -> {
+            LinkTarget.OauthLogin(url)
+        }
+
         is TdApi.InternalLinkTypeMessageDraft -> {
             LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
         }
@@ -315,10 +320,13 @@ private suspend fun TdlibClient.privateChat(userId: Long): Outcome<Long> =
 
 /**
  * The chat at the linked message; td_api.tl: `chat_id` is 0 when the link is inaccessible, `message` null when it was
- * not found, which opens the chat alone.
+ * not found, which opens the chat alone. A video's `media_timestamp` (the link's `?t=`) opens it at that time.
  */
-private fun TdApi.MessageLinkInfo.toTarget(): LinkTarget =
-    if (chatId == 0L) LinkTarget.NotFound(LinkSubject.Message) else LinkTarget.Chat(chatId, message?.id)
+private fun TdApi.MessageLinkInfo.toTarget(): LinkTarget {
+    if (chatId == 0L) return LinkTarget.NotFound(LinkSubject.Message)
+    val videoSeconds = mediaTimestamp.takeIf { it > 0 && message?.content is TdApi.MessageVideo }
+    return LinkTarget.Chat(chatId, message?.id, videoSeconds = videoSeconds)
+}
 
 private fun unsupported(link: String): Outcome<LinkTarget> = Outcome.Success(LinkTarget.Unsupported(link))
 

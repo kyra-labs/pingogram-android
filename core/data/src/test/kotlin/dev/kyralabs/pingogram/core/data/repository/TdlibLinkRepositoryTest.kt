@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageVideo
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.test.runTest
@@ -288,6 +289,34 @@ class TdlibLinkRepositoryTest {
         }
 
     @Test
+    fun `a message link's time opens its video there`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeMessage("https://t.me/news/7?t=83"))
+            val video = message(id = MESSAGE, content = messageVideo())
+            client.on(TdApi.GetMessageLinkInfo::class, TdResult.Success(linkInfo(CHANNEL, video, seconds = 83)))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.Chat(CHANNEL, MESSAGE, videoSeconds = 83)),
+                repository.resolve("https://t.me/news/7?t=83"),
+            )
+        }
+
+    @Test
+    fun `a message link's time is left out for what is no video`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeMessage("https://t.me/news/7?t=83"))
+            client.on(
+                TdApi.GetMessageLinkInfo::class,
+                TdResult.Success(linkInfo(CHANNEL, message(id = MESSAGE), seconds = 83)),
+            )
+
+            assertEquals(
+                Outcome.Success(LinkTarget.Chat(CHANNEL, MESSAGE)),
+                repository.resolve("https://t.me/news/7?t=83"),
+            )
+        }
+
+    @Test
     fun `a link to a message that is gone opens the chat`() =
         runTest {
             linkType(TdApi.InternalLinkTypeMessage("https://t.me/news/7"))
@@ -343,6 +372,18 @@ class TdlibLinkRepositoryTest {
                 Outcome.Success(LinkTarget.QrCodeLogin("tg://login?token=abc")),
                 repository.resolve("tg://login?token=abc"),
             )
+        }
+
+    @Test
+    fun `a login request keeps the link TDLib names, reading nothing more`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeOauth("https://oauth.telegram.org/auth?bot_id=1"))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.OauthLogin("https://oauth.telegram.org/auth?bot_id=1")),
+                repository.resolve("https://oauth.telegram.org/auth?bot_id=1"),
+            )
+            assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
         }
 
     @Test
@@ -459,7 +500,8 @@ class TdlibLinkRepositoryTest {
     private fun linkInfo(
         chatId: Long,
         message: TdApi.Message?,
-    ) = TdApi.MessageLinkInfo(true, chatId, null, message, 0, 0, "", false)
+        seconds: Int = 0,
+    ) = TdApi.MessageLinkInfo(true, chatId, null, message, seconds, 0, "", false)
 
     companion object {
         private const val LINK = "tg://some_link"

@@ -478,6 +478,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
   again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
   pushed above Privacy and security.
+- **Log in with Telegram** (a website or app logging in with the account): `core:domain`'s `OauthLoginRepository`
+  (`TdlibOauthLoginRepository`, `core:data`, account-scoped, no cache) follows the requests Telegram announces
+  (`updateNewOauthRequest`), reads one (`getOauthLinkInfo`, as a link from outside the app), checks the code the website
+  shows (`checkOauthRequestMatchCode`), accepts with only what the user allowed (`acceptOauthRequest`, never a TON wallet)
+  and declines (`declineOauthRequest`). A link (`internalLinkTypeOauth`) resolves to `LinkTarget.OauthLogin`, which
+  `:app`'s `LinkViewModel` opens only from another app (a tapped one offers the browser, as TDLib asks), and which it
+  opens for every announced request too. `feature:settings`' `OauthLoginRoute` (`oauthLoginSheet`, a dialog destination
+  registered in `:app`'s `NavHost`, `OauthLoginViewModel`: the code and the switches in saved state) sends nothing before
+  "Allow", which checks the code and accepts; closing it unanswered declines the request in the app's scope. Once
+  allowed, the website is among the connected websites (`ConnectedWebsiteRepository`).
 - **Passkeys** (Privacy and security, `docs/adr/0037-passkeys.md`): `core:domain`'s `PasskeyRepository`
   (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache: TDLib announces no changes to them) lists the
   account's passkeys (`getLoginPasskeys`), asks for Telegram's WebAuthn creation request (`getPasskeyParameters`), adds
@@ -1376,7 +1386,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MessageContent.Video.startSeconds` (`messageVideo.start_timestamp`). The media viewer's `ViewerMedia.Image` carries
   the motion, which `MediaDownloads` downloads after the still (`motion`) and `MediaPlayback` plays as a GIF once on the
   device; `MediaViewerViewModel` starts a video at its sender's time once (`startAtSendersTime`), never over
-  picture-in-picture's return.
+  picture-in-picture's return. A message link's `?t=` (`messageLinkInfo.media_timestamp`, of a video only) comes as
+  `LinkTarget.Chat.videoSeconds`; `:app`'s `openLinkedChat` opens the chat at the message, then the viewer above it with
+  `MediaViewerRoute.startSeconds`, which wins over the sender's time.
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

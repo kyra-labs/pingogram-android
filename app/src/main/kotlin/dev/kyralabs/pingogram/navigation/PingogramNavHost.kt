@@ -273,6 +273,7 @@ private fun NavGraphBuilder.mainGraph(
         pollStatistics(navController)
         chatInvite(navController)
         chatFolderInvite(navController)
+        oauthLogin(navController)
         mediaViewer(navController)
         stories(navController)
         share(navController)

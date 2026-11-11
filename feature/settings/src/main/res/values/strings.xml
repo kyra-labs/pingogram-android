@@ -1249,6 +1249,31 @@
     <string name="settings_proxy_link_connected">Proxy turned on</string>
     <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
     <string name="settings_proxy_link_done">Done</string>
+    <!-- Log in with Telegram: a website's or app's login request (docs/DESIGN_SYSTEM.md §6). -->
+    <string name="settings_oauth_loading">Reading the login request</string>
+    <string name="settings_oauth_title">Log in to %1$s with Telegram?</string>
+    <string name="settings_oauth_website">Website</string>
+    <string name="settings_oauth_app">App</string>
+    <string name="settings_oauth_unverified">Unverified app</string>
+    <string name="settings_oauth_gets">%1$s gets</string>
+    <string name="settings_oauth_gets_what">Your name, username and photo</string>
+    <string name="settings_oauth_as">From your account, %1$s</string>
+    <string name="settings_oauth_browser">Browser</string>
+    <string name="settings_oauth_location">Location, by its address</string>
+    <string name="settings_oauth_messages_bot">Let %1$s message me</string>
+    <string name="settings_oauth_messages">Let its bot message me</string>
+    <string name="settings_oauth_phone">Share my phone number</string>
+    <string name="settings_oauth_ton">It also asks for your TON wallet, which Pingogram doesn\'t share.</string>
+    <string name="settings_oauth_code_title">Which code does %1$s show?</string>
+    <string name="settings_oauth_code_text">Pick the code you see on the website. A wrong one cancels the login.</string>
+    <string name="settings_oauth_allow">Allow</string>
+    <string name="settings_oauth_decline">Decline</string>
+    <string name="settings_oauth_working">Asking Telegram</string>
+    <string name="settings_oauth_done">You\'re logged in to %1$s</string>
+    <string name="settings_oauth_done_text">Pingogram opened it in your browser to go on. It\'s listed in Privacy and security, Websites, where you can log out of it.</string>
+    <string name="settings_oauth_failed">Couldn\'t log in</string>
+    <string name="settings_oauth_try_again">Try again</string>
+    <string name="settings_oauth_close">Close</string>
 
     <!-- Data and storage → Network usage -->
     <string name="settings_network_usage">Network usage</string>
