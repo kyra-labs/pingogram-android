@@ -174,7 +174,8 @@ internal fun Modifier.layoutFollowingDismiss(state: DismissState): Modifier =
  * Leaves the viewer with system back while [enabled] (`docs/ARCHITECTURE.md`, Navigation: `PredictiveBackHandler` for
  * the media viewer): the gesture's progress goes into [state], and [onBack] runs once it completes, the content
  * staying as small as the gesture left it while the screen leaves ([DismissState.leaveAtBackScale]), and the media
- * shrinking from there into its bubble. A cancelled gesture springs back on the motion scheme's fast spatial spring.
+ * shrinking from there into its bubble. A cancelled gesture springs back on the motion scheme's default spatial spring
+ * (`docs/DESIGN_SYSTEM.md` §5.1, Q-22), and a new gesture takes over from that return where it is.
  */
 @Composable
 internal fun PredictiveBackDismiss(
@@ -183,18 +184,22 @@ internal fun PredictiveBackDismiss(
     enabled: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
-    val settle = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnBack by rememberUpdatedState(onBack)
+    val returning = remember { arrayOfNulls<Job>(1) }
     PredictiveBackHandler(enabled = enabled && !state.isDismissed) { events ->
+        // A new gesture: the content follows it from where the last one's return left it.
+        returning[0]?.cancel()
         try {
             events.collect { event -> state.followBack(event.progress) }
             state.leaveAtBackScale()
             state.dismiss(currentOnBack)
         } catch (cancelled: CancellationException) {
             // A cancelled gesture, after which this coroutine can no longer animate.
-            scope.launch {
-                animate(state.backProgress, 0f, animationSpec = settle) { value, _ -> state.followBack(value) }
-            }
+            returning[0] =
+                scope.launch {
+                    animate(state.backProgress, 0f, animationSpec = settle) { value, _ -> state.followBack(value) }
+                }
             throw cancelled
         }
     }

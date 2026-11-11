@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.media.ui
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.Orientation
@@ -286,11 +287,14 @@ private fun Chrome(
     afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // The bottom bar waits for the way in to end (rememberEnterSettled); the top bar shows from the start.
+    // The bottom bar waits for the way in to end (rememberEnterSettled), then fades in; the top bar shows from the
+    // start.
     if (afterEnter && !rememberEnterSettled()) return
     val motionScheme = MaterialTheme.motionScheme
+    val visibleState = remember { MutableTransitionState(visible && !afterEnter) }
+    visibleState.targetState = visible
     AnimatedVisibility(
-        visible = visible,
+        visibleState = visibleState,
         modifier = Modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
         enter = fadeIn(motionScheme.defaultEffectsSpec()),
         exit = fadeOut(motionScheme.fastEffectsSpec()),
@@ -314,22 +318,13 @@ private fun MediaPager(
 ) {
     val items = content.items
     val currentItems by rememberUpdatedState(items)
-    val currentOnEvent by rememberUpdatedState(onEvent)
     val zoomed by remember(zoom) { derivedStateOf { zoom.isZoomed } }
     // Not saved: after a rotation or process death the view model's current item is the page to start on.
     val pagerState = remember { PagerState(currentPage = content.currentIndex) { currentItems.size } }
-    LaunchedEffect(pagerState, zoom) {
-        var settledId: Long? = null
-        snapshotFlow { currentItems.getOrNull(pagerState.settledPage)?.messageId }.collect { messageId ->
-            // By id: older media loading in front moves the settled index, not the page.
-            if (messageId != null && messageId != settledId) {
-                settledId = messageId
-                zoom.reset()
-                currentOnEvent(MediaViewerEvent.PageSettled(messageId))
-            }
-        }
-    }
+    SettledPageEffect(pagerState, items, zoom, onEvent)
     val scope = rememberCoroutineScope()
+    // Taps, keys and screen readers turn the page as a swipe settles: on the default spatial spring.
+    val turn = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize().pagesKeys(pagerState, content, zoom, onEvent),
@@ -352,7 +347,9 @@ private fun MediaPager(
             onSideTap =
                 { end: Boolean ->
                     val target = page + if (end) 1 else -1
-                    if (target in items.indices) scope.launch { pagerState.animateScrollToPage(target) }
+                    if (target in items.indices) {
+                        scope.launch { pagerState.animateScrollToPage(target, animationSpec = turn) }
+                    }
                 }.takeIf { !item.isHidden },
             modifier =
                 Modifier.pageSemantics(
@@ -365,7 +362,7 @@ private fun MediaPager(
                             pageZoom,
                             isShown && zoomed,
                             scope,
-                        ) { pagerState.animateScrollToPage(it) },
+                        ) { pagerState.animateScrollToPage(it, animationSpec = turn) },
                     onTap = onTap,
                 ),
             zoom = pageZoom,
