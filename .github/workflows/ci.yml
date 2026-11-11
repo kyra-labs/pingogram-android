@@ -19,7 +19,8 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # ./gradlew check takes about 45 minutes on GitHub's runners (2026-11-11), so some room above it.
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
