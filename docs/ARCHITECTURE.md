@@ -299,6 +299,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   stickers each with one emoji, waiting as long as the uploads take). `feature:settings`' `NewStickerSetRoute`
   (`NewStickerSetViewModel`: the step, the texts and the stickers' copies in saved state, discarded once published or left; the
   emoji sheet's emoji from `EmojiCatalogRepository`, read the first time it opens) is pushed above Settings → Stickers.
+- **Making a sticker from a photo** (boards 14a, 14b): `core:domain`'s `StickerMakerRepository` (`TdlibStickerMakerRepository`,
+  `core:data`, account-scoped, no cache) lists the user's own sets that can take a sticker (`getOwnedStickerSets`: regular
+  stickers, fewer than 120), writes the editor's drawing (a PNG) as a sticker in the upload cache (`MediaProcessor.writeSticker`,
+  `stickerPlan`, 512 px) and adds it to a set as the signed-in user (`addStickerToSet`); a new set is
+  `StickerSetCreationRepository.create` with that one sticker. `feature:media`'s `stickermaker/`: the media viewer's "Make a
+  sticker" (a photo's More menu, where Telegram lets its content leave the chat) opens `MakeStickerRoute(fileId)` of
+  `core:navigation` in the viewer's place (`makeStickerScreen`, full screen). `MakeStickerViewModel` downloads the photo at
+  visible priority and keeps the editor (the crop, the outline, the text and emoji layers) in its saved state
+  (`MakeStickerSaving`); the screen draws it into a `GraphicsLayer` (`StickerCanvas`), which "Next" reads back as a bitmap
+  and encodes off the main thread, and `AddToSet` (a part of the view model) runs the sheet: the sets, the sticker's emoji,
+  adding it, or a new set's name and link, checked as Settings' sets are. The sticker's copy goes once Telegram has it, or
+  with the sheet or the screen. Its colors are artwork, the same in every theme (`core:ui`'s `StickerInk`).
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option

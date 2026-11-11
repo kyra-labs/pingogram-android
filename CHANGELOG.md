@@ -42,6 +42,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Profile music: a profile with songs shows a player below its header, which plays them one after another while the
   profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and
   remove them.
+- Make a sticker: a photo's "More" menu in the media viewer makes it a sticker: crop it to a square, add text and
+  emoji, keep or drop the white outline, then add it to one of your sticker sets with an emoji, or start a new set
+  with it.
 - Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
   folder keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".

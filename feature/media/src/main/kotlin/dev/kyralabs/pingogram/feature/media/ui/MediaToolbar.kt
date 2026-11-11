@@ -50,8 +50,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Forward** where TDLib allows it ([MediaActions.canForward]; never protected content): the forward sheet;
  * - **Share** and **Save** where Telegram lets the content leave it ([MediaActions.canSave]);
  * - **Delete** where TDLib allows it ([MediaActions.canDelete]); it asks first;
- * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo that may leave Telegram ([canCopy]),
- *   "Copy".
+ * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo ([photoFileId]) that may leave
+ *   Telegram, "Copy" and "Make a sticker" (boards 14a, 14b).
  *
  * The button whose action waits for the item's file (More for Copy) shows the download's progress ([file], a
  * determinate wavy indicator) instead of its icon, or a loading indicator while the file is copied into the gallery;
@@ -60,7 +60,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 @Composable
 internal fun ViewerToolbar(
     actions: MediaActions,
-    canCopy: Boolean,
+    photoFileId: Int?,
     file: ItemFile?,
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -104,7 +104,7 @@ internal fun ViewerToolbar(
             )
         }
         MoreMenu(
-            canCopy = canCopy && actions.canSave,
+            photoFileId = photoFileId?.takeIf { actions.canSave },
             copyEnabled = idle,
             copyPending = Pending(actions.pending == MediaAction.Copy, stringResource(R.string.media_copy_pending)),
             file = file,
@@ -114,12 +114,13 @@ internal fun ViewerToolbar(
 }
 
 /**
- * More, and the menu it opens: "Show in chat", then "Copy" where [canCopy] (disabled unless [copyEnabled]). A menu of
- * one group ([DropdownMenuGroup]) whose items take the expressive menu's shapes; choosing one closes it.
+ * More, and the menu it opens: "Show in chat", then for a photo that may leave Telegram ([photoFileId]) "Copy"
+ * (disabled unless [copyEnabled]) and "Make a sticker". A menu of one group ([DropdownMenuGroup]) whose items take the
+ * expressive menu's shapes; choosing one closes it.
  */
 @Composable
 private fun MoreMenu(
-    canCopy: Boolean,
+    photoFileId: Int?,
     copyEnabled: Boolean,
     copyPending: Pending,
     file: ItemFile?,
@@ -135,7 +136,7 @@ private fun MoreMenu(
             file = file,
         )
         DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
-            val count = if (canCopy) 2 else 1
+            val count = if (photoFileId != null) PHOTO_MENU_SIZE else 1
             DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
                 MenuItem(
                     icon = UiR.drawable.ic_chat,
@@ -146,7 +147,7 @@ private fun MoreMenu(
                     expanded = false
                     onEvent(MediaViewerEvent.ShowInChat)
                 }
-                if (canCopy) {
+                if (photoFileId != null) {
                     MenuItem(
                         icon = UiR.drawable.ic_content_copy,
                         label = stringResource(R.string.media_copy),
@@ -156,6 +157,15 @@ private fun MoreMenu(
                     ) {
                         expanded = false
                         onEvent(MediaViewerEvent.Copy)
+                    }
+                    MenuItem(
+                        icon = UiR.drawable.ic_mood,
+                        label = stringResource(R.string.media_make_sticker),
+                        index = 2,
+                        count = count,
+                    ) {
+                        expanded = false
+                        onEvent(MediaViewerEvent.MakeSticker(photoFileId))
                     }
                 }
             }
@@ -260,9 +270,12 @@ private fun ViewerToolbarPreview() {
     PingogramPreview {
         ViewerToolbar(
             actions = MediaActions(canForward = true, canSave = true, canDelete = true),
-            canCopy = true,
+            photoFileId = 1,
             file = null,
             onEvent = {},
         )
     }
 }
+
+/** "Show in chat", "Copy" and "Make a sticker". */
+private const val PHOTO_MENU_SIZE = 3

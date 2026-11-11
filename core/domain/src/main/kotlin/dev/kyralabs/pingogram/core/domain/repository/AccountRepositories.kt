@@ -156,6 +156,8 @@ interface AccountRepositories {
 
     fun stickerSetCreationRepository(): StickerSetCreationRepository
 
+    fun stickerMakerRepository(): StickerMakerRepository
+
     fun accentColorRepository(): AccentColorRepository
 
     fun storyRepository(): StoryRepository
