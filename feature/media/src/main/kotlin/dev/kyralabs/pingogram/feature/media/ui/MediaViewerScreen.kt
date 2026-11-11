@@ -233,7 +233,14 @@ private fun DismissibleContent(
                     enabled = !zoomed && !dismiss.isDismissed,
                     onDragStarted = { dismiss.onDragStarted() },
                     onDragStopped = { velocity ->
-                        dismiss.onDragStopped(velocity, exits.height, settle, scope, exits.onSwipeUp, exits.onBack)
+                        dismiss.onDragStopped(
+                            velocity,
+                            exits.height,
+                            settle,
+                            scope,
+                            exits.onSwipeUp,
+                            onDismiss = exits.onBack,
+                        )
                     },
                 ),
         content = content,
