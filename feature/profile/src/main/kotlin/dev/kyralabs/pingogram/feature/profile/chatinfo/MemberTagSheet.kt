@@ -148,9 +148,7 @@ internal fun MemberTagContent(
         TagHeader(editor)
         TagField(editor, onEvent)
         TagPreview(editor)
-        if (editor.isSaving) {
-            LinearWavyProgressIndicator(Modifier.fillMaxWidth())
-        }
+        SavingIndicator(editor.isSaving)
         TagButtons(editor, onEvent)
     }
 }

@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import kotlinx.coroutines.flow.drop
 import java.io.File
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -119,7 +120,7 @@ internal fun WelcomeEditorContent(
         )
         EditorPhotoArea(editor, onEvent)
         EditorField(editor, onEvent)
-        if (editor.isSaving) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+        SavingIndicator(editor.isSaving)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),

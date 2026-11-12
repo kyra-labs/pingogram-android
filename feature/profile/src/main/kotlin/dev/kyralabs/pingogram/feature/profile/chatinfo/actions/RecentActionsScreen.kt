@@ -54,6 +54,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.InfoPageScaffold
 import dev.kyralabs.pingogram.feature.profile.chatinfo.LoadMoreEffect
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageError
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageLoading
+import dev.kyralabs.pingogram.feature.profile.chatinfo.PageSavingLine
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
 
 /** The recent actions page: hoists [RecentActionsViewModel]; a tap on a person opens their profile. */
@@ -108,6 +109,8 @@ internal fun RecentActionsScreen(
             is RecentActionsUiState.Content -> {
                 InfoPageBody(innerPadding) { contentPadding ->
                     ActionsList(state, onEvent, contentPadding, listState)
+                    // Over the top of the list while the chips' actions load, so the rows below never move.
+                    PageSavingLine(state.isLoading, stringResource(R.string.recent_actions_loading))
                 }
             }
         }
@@ -148,7 +151,6 @@ private fun ActionsList(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                if (state.isLoading) LoadingLine()
             }
         }
         if (state.actions.isEmpty() && !state.isLoading) {
@@ -242,13 +244,6 @@ private fun ActionRow(
             style = MaterialTheme.typography.bodyLarge.userContent,
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun LoadingLine() {
-    val description = stringResource(R.string.recent_actions_loading)
-    LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = description })
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
