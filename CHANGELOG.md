@@ -151,6 +151,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother profile, group info and member lists.
 - A second back swipe during sign-in no longer flickers.
 - Smoother resizing of the third pane on large screens.
+- The back gesture previews the step before in settings flows, Add contact and New story.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
