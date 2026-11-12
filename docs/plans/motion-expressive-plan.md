@@ -665,7 +665,7 @@ M-078
 | B-4 `fix/motion-viewer-swipe-up` | B | High | M-072 ✓ (#451) |
 | B-5 `fix/motion-story-picker` | B | High | M-079, M-084, M-085, M-089 (strip) ✓ (#452) |
 | B-6 `refactor/motion-call-screen` | B | Medium | M-059, M-060, M-066, M-067 (but Recent calls' Try again), M-068 ✓ (#454) |
-| B-7 `refactor/motion-call-lists` | B | Medium | M-057, M-061, M-063, M-064, M-069, M-070 |
+| B-7 `refactor/motion-call-lists` | B | Medium | M-057, M-061, M-063, M-064, M-069, M-070 ✓ (#455) |
 | B-8 `refactor/motion-media-viewer` | B | Medium | M-073, M-074, M-075, M-081, M-082, M-083 |
 | B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 |
 | B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 |
