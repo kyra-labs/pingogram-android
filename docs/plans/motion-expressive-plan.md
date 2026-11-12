@@ -651,7 +651,7 @@ M-078
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
 | A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
-| A-2 `fix/motion-composer-panel` | A | High | M-029 |
+| A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
 | A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 |
 | A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 |
 | A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 |
