@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +52,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroupScope
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -306,17 +306,17 @@ internal fun FolderEditActions(
     onEvent: (ChatFolderEditEvent) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
-        if (state.isBusy) {
-            val description =
+        StepProgress(
+            visible = state.isBusy,
+            description =
                 stringResource(
                     pick(
                         state.isDeleting,
                         R.string.settings_chat_folder_deleting,
                         R.string.settings_chat_folder_saving,
                     ),
-                )
-            LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = description })
-        }
+                ),
+        )
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = if (state.isNew) Arrangement.End else Arrangement.SpaceBetween,

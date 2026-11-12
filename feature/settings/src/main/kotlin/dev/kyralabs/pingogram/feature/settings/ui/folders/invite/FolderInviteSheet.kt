@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -56,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -202,10 +202,7 @@ private fun FolderInviteDetails(
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
             state.addError?.let { AddError(it) }
-            if (state.isAdding) {
-                val adding = stringResource(R.string.folder_invite_adding)
-                LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = adding })
-            }
+            StepProgress(state.isAdding, stringResource(R.string.folder_invite_adding))
             FolderInviteActions(
                 primary = if (state.hasSomethingToAdd) addLabel(state) else null,
                 enabled = state.canAdd,

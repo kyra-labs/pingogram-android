@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,10 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.twostep.FloodWaitNote
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.FloodWaitSlot
 
 // The parts of the account's flows (Change number, Login email), steps on one settings page as 2-step verification's.
 
@@ -42,7 +41,20 @@ internal fun StepText(text: String) {
 }
 
 /**
- * The end of a step: the `FLOOD_WAIT` countdown and the progress of a request, then [secondary], if any, as a
+ * The progress of a step's request, above its buttons (`docs/DESIGN_SYSTEM.md` §5.1): the line's place is kept while
+ * nothing is on its way, so the button just tapped never moves; screen readers hear [description] while it shows.
+ */
+@Composable
+internal fun StepProgress(
+    visible: Boolean,
+    description: String? = null,
+) {
+    ReservedProgressLine(visible = visible, contentDescription = description)
+}
+
+/**
+ * The end of a step: the `FLOOD_WAIT` countdown (growing in and shrinking away) and the progress of a request (in its
+ * kept place), then [secondary], if any, as a
  * [TextButton] at the start and [primary] as a default [Button] at the end, both with the press morph.
  */
 @Suppress("LongParameterList") // The step's state, its two actions and whether the main one can be used.
@@ -55,11 +67,8 @@ internal fun StepActions(
     secondary: String? = null,
     onSecondary: () -> Unit = {},
 ) {
-    state.floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = state.floodWaitTotalSeconds) }
-    if (state.isWorking) {
-        val busy = stringResource(R.string.settings_account_flow_busy)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = busy })
-    }
+    FloodWaitSlot(seconds = state.floodWaitSeconds, totalSeconds = state.floodWaitTotalSeconds)
+    StepProgress(state.isWorking, stringResource(R.string.settings_account_flow_busy))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (secondary != null) Arrangement.SpaceBetween else Arrangement.End,
