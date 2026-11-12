@@ -675,7 +675,7 @@ M-078
 | C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102 ✓ (#473), M-103 (C-9) |
 | C-5 `refactor/motion-settings-rows` | C | Medium | M-108 to M-113 ✓ (#475) |
 | C-6 `refactor/motion-passcode` | C | Medium | M-115 to M-119 ✓ (#477) |
-| C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 |
+| C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 ✓ (#478) |
 | C-8 `fix/motion-auth-back` | C | Medium | M-123, M-124 |
 | C-9 `refactor/motion-step-back` | C | Low | M-122 (with M-028, M-051, M-078, M-103) |
 

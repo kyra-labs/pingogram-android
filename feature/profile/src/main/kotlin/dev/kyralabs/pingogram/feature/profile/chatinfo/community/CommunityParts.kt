@@ -33,6 +33,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
@@ -194,13 +196,14 @@ internal fun LazyListScope.requestItems(
     requests: ImmutableList<AddChatRequestItem>,
     numbers: NumberFormat,
     rowModifier: Modifier,
+    itemMotion: ItemMotion,
     onEvent: (CommunityEvent) -> Unit,
 ) {
     if (requests.isEmpty()) return
     item(key = REQUESTS, contentType = REQUESTS) {
         ProfileSectionHeader(
             title = pluralStringResource(R.plurals.community_requests, requests.size, numbers.format(requests.size)),
-            modifier = rowModifier,
+            modifier = rowModifier.animateItem(this, itemMotion),
         )
     }
     itemsIndexed(
@@ -212,7 +215,7 @@ internal fun LazyListScope.requestItems(
             request = request,
             shapes = ListItemDefaults.segmentedShapes(index, requests.size),
             onEvent = onEvent,
-            modifier = rowModifier.animateItem(),
+            modifier = rowModifier.animateItem(this, itemMotion),
         )
     }
 }

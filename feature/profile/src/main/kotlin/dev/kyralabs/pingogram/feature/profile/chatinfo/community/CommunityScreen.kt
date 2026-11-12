@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -57,7 +58,10 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -157,50 +161,74 @@ private fun CommunityContent(
     val rowModifier =
         Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxWidth().padding(horizontal = windowMargin())
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
+    // Every item moves on the scheme's springs, so the headers and the footer move with the rows.
+    val itemMotion = rememberItemMotion()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = remember(contentPadding, spacing) { contentPadding.plusBottom(spacing.extraLarge) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
-        item(key = HEADER, contentType = HEADER) { CommunityHeaderBlock(state.header, rowModifier) }
+        item(key = HEADER, contentType = HEADER) {
+            CommunityHeaderBlock(state.header, rowModifier.animateItem(this, itemMotion))
+        }
         if (state.header.isJoined) {
             item(key = ACTIONS, contentType = ACTIONS) {
-                CommunityActions(state.header, onEvent, rowModifier.padding(bottom = spacing.medium))
+                CommunityActions(
+                    state.header,
+                    onEvent,
+                    rowModifier.animateItem(this, itemMotion).padding(bottom = spacing.medium),
+                )
             }
         }
-        requestItems(state.requests, numbers, rowModifier, onEvent)
-        item(key = TITLE, contentType = TITLE) {
-            ProfileSectionHeader(
-                title =
-                    pluralStringResource(
-                        R.plurals.community_chats,
-                        state.chats.size,
-                        numbers.format(state.chats.size),
-                    ),
-                modifier = rowModifier,
-            )
-        }
-        itemsIndexed(state.chats, key = { _, chat -> chat.chatId }, contentType = { _, _ -> ROW }) { index, chat ->
-            CommunityChatRow(
-                chat = chat,
-                shapes = ListItemDefaults.segmentedShapes(index, state.chats.size),
-                onEvent = onEvent,
-                modifier = rowModifier.animateItem(),
-                canRemove = state.header.canEditChatList,
-            )
-        }
-        item(key = FOOTER, contentType = FOOTER) {
-            Text(
-                text =
-                    stringResource(
-                        if (state.chats.isEmpty()) R.string.community_no_chats else R.string.community_footer,
-                    ),
-                modifier = rowModifier.padding(horizontal = spacing.medium, vertical = spacing.small),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        requestItems(state.requests, numbers, rowModifier, itemMotion, onEvent)
+        chatItems(state, numbers, rowModifier, itemMotion, onEvent)
+    }
+}
+
+/** The chats under their count, then the footer. */
+private fun LazyListScope.chatItems(
+    state: CommunityUiState.Content,
+    numbers: NumberFormat,
+    rowModifier: Modifier,
+    itemMotion: ItemMotion,
+    onEvent: (CommunityEvent) -> Unit,
+) {
+    item(key = TITLE, contentType = TITLE) {
+        ProfileSectionHeader(
+            title =
+                pluralStringResource(
+                    R.plurals.community_chats,
+                    state.chats.size,
+                    numbers.format(state.chats.size),
+                ),
+            modifier = rowModifier.animateItem(this, itemMotion),
+        )
+    }
+    itemsIndexed(state.chats, key = { _, chat -> chat.chatId }, contentType = { _, _ -> ROW }) { index, chat ->
+        CommunityChatRow(
+            chat = chat,
+            shapes = ListItemDefaults.segmentedShapes(index, state.chats.size),
+            onEvent = onEvent,
+            modifier = rowModifier.animateItem(this, itemMotion),
+            canRemove = state.header.canEditChatList,
+        )
+    }
+    item(key = FOOTER, contentType = FOOTER) {
+        Text(
+            text =
+                stringResource(
+                    if (state.chats.isEmpty()) R.string.community_no_chats else R.string.community_footer,
+                ),
+            modifier =
+                rowModifier
+                    .animateItem(
+                        this,
+                        itemMotion,
+                    ).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

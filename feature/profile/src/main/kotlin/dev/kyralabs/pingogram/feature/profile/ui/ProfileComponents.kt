@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.profile.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -11,11 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.theme.growInVertically
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
+import dev.kyralabs.pingogram.core.ui.theme.shrinkOutVertically
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 
 // The look the profile shares with settings pages (docs/DESIGN_SYSTEM.md §2.2, §6): the page on
@@ -58,13 +63,68 @@ internal fun ProfileGroup(
     title: String? = null,
 ) {
     if (rows.isEmpty()) return
+    val shown = remember { ShownRows() }
+    val entries = shown.update(rows)
+    val motion = MaterialTheme.motionScheme
+    val enter = remember(motion) { growInVertically(motion) }
+    val exit = remember(motion) { shrinkOutVertically(motion) }
     Column(modifier) {
         if (title != null) ProfileSectionHeader(title)
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-            rows.forEachIndexed { index, row ->
-                key(row.key) { row.content(ListItemDefaults.segmentedShapes(index, rows.size)) }
+            entries.forEach { entry ->
+                key(entry.row.key) {
+                    AnimatedVisibility(visibleState = entry.visibility, enter = enter, exit = exit) {
+                        entry.row.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
+                    }
+                }
             }
         }
+    }
+}
+
+/** A row a group shows: one of its rows, or one on its way out, until that way ends. */
+private class ShownRow(
+    var row: ProfileRow,
+    var index: Int,
+    var count: Int,
+    val visibility: MutableTransitionState<Boolean>,
+)
+
+/**
+ * The rows of a [ProfileGroup] as they come and go (`docs/DESIGN_SYSTEM.md` §5.1): a row that comes after the group
+ * first showed (one a switch reveals) grows in, and one that goes shrinks away in its place, on the motion scheme's
+ * springs, so the rows and groups below move rather than jump; the others take the shapes of their place among the rows
+ * that stay.
+ */
+private class ShownRows {
+    private var shown = emptyList<ShownRow>()
+    private var started = false
+
+    fun update(rows: List<ProfileRow>): List<ShownRow> {
+        val previous = shown.associateBy { it.row.key }
+        val current =
+            rows.mapIndexed { index, row ->
+                previous[row.key]?.also {
+                    it.row = row
+                    it.index = index
+                    it.count = rows.size
+                    it.visibility.targetState = true
+                } ?: ShownRow(row, index, rows.size, MutableTransitionState(!started).apply { targetState = true })
+            }
+        val keys = current.mapTo(HashSet()) { it.row.key }
+        val result = current.toMutableList()
+        shown.forEachIndexed { place, entry ->
+            val gone = entry.visibility.isIdle && !entry.visibility.currentState
+            if (entry.row.key !in keys && !gone) {
+                entry.visibility.targetState = false
+                // After the row that was above it, if it stays; at the top otherwise.
+                val above = shown.subList(0, place).lastOrNull { it.row.key in keys || it in result }
+                result.add(above?.let { result.indexOf(it) + 1 } ?: 0, entry)
+            }
+        }
+        shown = result
+        started = true
+        return result
     }
 }
 

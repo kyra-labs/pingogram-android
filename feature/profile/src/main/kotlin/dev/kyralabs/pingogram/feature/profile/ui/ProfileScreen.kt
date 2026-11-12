@@ -53,8 +53,11 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -223,6 +226,8 @@ private fun ProfileGrid(
         val inset = max(margin, (maxWidth - sizes.contentMaxWidth) / 2)
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
+        // Every item moves on the scheme's springs: sections that come after the first frame, and a tab's items.
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             // Below the bar, so what scrolls never shows through the transparent bar, read in the layout phase.
@@ -238,12 +243,12 @@ private fun ProfileGrid(
                     spacing,
                 ) { innerPadding.withTop(0.dp).plusBottom(spacing.extraLarge) },
         ) {
-            profileItems(state, page, inset)
+            profileItems(state, page, inset, motion)
             if (withMedia && page.media.chatId != null) {
-                fullWidth(key = MEDIA_HEADER, inset = inset, top = spacing.extraLarge) {
+                fullWidth(key = MEDIA_HEADER, inset = inset, motion = motion, top = spacing.extraLarge) {
                     ProfileSectionHeader(stringResource(R.string.profile_section_media))
                 }
-                sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, inset)
+                sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, inset, motion)
             }
         }
     }
@@ -254,15 +259,16 @@ private fun LazyGridScope.profileItems(
     state: ProfileUiState.Content,
     page: ProfilePageParts,
     inset: Dp,
+    motion: ItemMotion,
 ) {
     val music = page.profileMusic
     if (music != null) {
         // Nothing shows for another user without songs, so the section adds its own space above it.
-        fullWidth(key = MUSIC, inset = inset) {
+        fullWidth(key = MUSIC, inset = inset, motion = motion) {
             music(state.header.userId, state.actions.isSelf, Modifier)
         }
     }
-    fullWidth(key = ACTIONS, inset = inset) {
+    fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
     }
     if (state.photos.totalCount > 1) {
@@ -276,7 +282,7 @@ private fun LazyGridScope.profileItems(
         }
     }
     if (!state.info.isEmpty) {
-        fullWidth(key = INFO, inset = inset) {
+        fullWidth(key = INFO, inset = inset, motion = motion) {
             ProfileInfoGroup(state.info, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
         }
     }
@@ -287,7 +293,7 @@ private fun LazyGridScope.profileItems(
             actions.isBlocked != null ||
             actions.canReport
     if (hasMore) {
-        fullWidth(key = MORE, inset = inset) {
+        fullWidth(key = MORE, inset = inset, motion = motion) {
             ProfileMoreGroup(
                 actions = actions,
                 onEvent = page.onEvent,
@@ -301,7 +307,7 @@ private fun LazyGridScope.profileItems(
     val chatId = page.media.chatId
     if (albums != null && chatId != null) {
         // Nothing shows for a chat without albums, so the section adds its own space above it.
-        fullWidth(key = STORY_ALBUMS, inset = inset) {
+        fullWidth(key = STORY_ALBUMS, inset = inset, motion = motion) {
             albums(chatId, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
         }
     }
@@ -311,11 +317,14 @@ private fun LazyGridScope.profileItems(
 private fun LazyGridScope.fullWidth(
     key: String,
     inset: Dp,
+    motion: ItemMotion,
     top: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     item(key = key, span = { GridItemSpan(maxLineSpan) }, contentType = key) {
-        Box(Modifier.fillMaxWidth().padding(start = inset, end = inset, top = top)) { content() }
+        Box(Modifier.animateItem(this, motion).fillMaxWidth().padding(start = inset, end = inset, top = top)) {
+            content()
+        }
     }
 }
 
