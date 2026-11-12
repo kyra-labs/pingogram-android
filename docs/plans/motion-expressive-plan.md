@@ -670,7 +670,7 @@ M-078
 | B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460) |
 | B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 ✓ (#462) |
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
-| C-2 `fix/motion-settings-home` | C | High | M-105, M-107 |
+| C-2 `fix/motion-settings-home` | C | High | M-105, M-107 ✓ (#469) |
 | C-3 `fix/motion-profile-progress` | C | High | M-090, M-091 |
 | C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102, M-103 |
 | C-5 `refactor/motion-settings-rows` | C | Medium | M-108 to M-113 |

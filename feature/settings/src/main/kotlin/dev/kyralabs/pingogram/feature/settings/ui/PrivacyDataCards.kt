@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -234,3 +236,29 @@ private const val TAG_ALPHA = 0.12f
 
 /** The least a part of the bar shows, as a share of the total: one fiftieth, so a small part stays visible. */
 private const val MIN_PART_SHARE = 50L
+
+/**
+ * The storage card while the statistics have answered ([usage] is content): it grows in and shrinks away on the motion
+ * scheme's springs, showing the last usage it had on its way out, with the page's gap below it if [gapBelow].
+ */
+@Composable
+internal fun StorageCardSlot(
+    usage: StorageUsageState,
+    gapBelow: Boolean,
+    onClearCache: () -> Unit,
+) {
+    val last = remember { LastUsage() }
+    if (usage is StorageUsageState.Content) last.value = usage.usage
+    GrowingVisibility(visible = usage is StorageUsageState.Content) {
+        last.value?.let { shown ->
+            Box(if (gapBelow) Modifier.padding(bottom = settingsGroupSpacing()) else Modifier) {
+                StorageCard(shown, onClearCache)
+            }
+        }
+    }
+}
+
+/** The usage the card showed last, kept for its way out; not state, as only the leaving card reads it. */
+private class LastUsage {
+    var value: StorageUsage? = null
+}

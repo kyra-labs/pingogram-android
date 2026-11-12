@@ -1,7 +1,10 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -25,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
@@ -129,15 +133,19 @@ internal fun SettingsScreen(
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
         // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
+        // The header and the search bar cross-fade on the effects springs, the height between them on the default
+        // spatial one (docs/DESIGN_SYSTEM.md §6 "In-chat search"), so the page below moves rather than jumps.
         topBar = {
-            if (search.isOpen) {
-                SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
-            } else {
-                TabHeader(
-                    scrollBehavior = scrollBehavior,
-                    title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
-                    actions = { SearchAction(onClick = search::open) },
-                )
+            StateCrossfade(search.isOpen, contentAlignment = Alignment.TopCenter, label = "SettingsTopBar") { open ->
+                if (open) {
+                    SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
+                } else {
+                    TabHeader(
+                        scrollBehavior = scrollBehavior,
+                        title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
+                        actions = { SearchAction(onClick = search::open) },
+                    )
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -147,10 +155,23 @@ internal fun SettingsScreen(
         Box(Modifier.fillMaxSize()) {
             // Without headings between them the groups sit closer, as in the account menus.
             SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-                if (search.isOpen) {
-                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
-                } else {
-                    SettingsHome(state, onEvent, onOpen, selection, summaries)
+                // Home and the results cross-fade as search opens and closes; typing changes the results in place.
+                StateCrossfade(
+                    search.isOpen,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter,
+                    label = "SettingsHomeBody",
+                ) { open ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                    ) {
+                        if (open) {
+                            SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                        } else {
+                            SettingsHome(state, onEvent, onOpen, selection, summaries)
+                        }
+                    }
                 }
             }
             // The page's end fades into its color behind the floating navigation bar, as the Chats tab's list does.
