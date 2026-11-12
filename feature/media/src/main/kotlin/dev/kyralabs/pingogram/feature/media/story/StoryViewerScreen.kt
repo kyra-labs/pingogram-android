@@ -77,8 +77,12 @@ internal fun StoryViewerScreen(
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
         val leave = remember(dismiss, onClose) { { dismiss.dismiss(onClose) } }
-        // Only fades out, so the content keeps its back gesture's scale in the draw phase as it leaves.
-        PredictiveBackDismiss(dismiss, onClose, leaveAtScale = false)
+        // Only fades out, so the content keeps its back gesture's scale in the draw phase as it leaves. The story
+        // pauses for the whole gesture, so it neither plays on nor closes the viewer by itself under the finger.
+        val currentOnEvent by rememberUpdatedState(onEvent)
+        PredictiveBackDismiss(dismiss, onClose, leaveAtScale = false) { active ->
+            currentOnEvent(StoryViewerEvent.BackGesture(active))
+        }
         ImmersiveSystemBars(hidden = false)
         val scrim = MaterialTheme.colorScheme.scrim
         val title = LocalResources.current.getString(R.string.story_viewer_title)

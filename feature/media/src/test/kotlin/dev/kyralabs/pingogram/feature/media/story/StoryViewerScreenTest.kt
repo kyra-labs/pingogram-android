@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.story
 
+import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -177,6 +178,42 @@ class StoryViewerScreenTest {
     }
 
     @Test
+    fun `a predictive back gesture pauses the story while it lasts, and a cancelled one plays on`() {
+        setScreen()
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, HALF_GESTURE, BackEventCompat.EDGE_LEFT))
+        }
+        composeRule.waitForIdle()
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true)), backGestures)
+
+        composeRule.runOnUiThread { dispatcher.dispatchOnBackCancelled() }
+        composeRule.waitForIdle()
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true), StoryViewerEvent.BackGesture(false)), backGestures)
+        assertEquals(0, closes)
+    }
+
+    @Test
+    fun `a completed predictive back gesture closes the viewer without playing the story on`() {
+        setScreen()
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, HALF_GESTURE, BackEventCompat.EDGE_LEFT))
+            dispatcher.onBackPressed()
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(1, closes)
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true)), backGestures)
+    }
+
+    private val backGestures get() = events.filterIsInstance<StoryViewerEvent.BackGesture>()
+
+    @Test
     fun `a swipe down closes the viewer, pausing the story while dragged`() {
         setScreen()
 
@@ -258,3 +295,6 @@ class StoryViewerScreenTest {
         assertTrue(StoryViewerEvent.Retry in events)
     }
 }
+
+/** Half way through a back gesture: far enough to shrink the story, not yet released. */
+private const val HALF_GESTURE = 0.5f
