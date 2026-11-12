@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.chat.R
 

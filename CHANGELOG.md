@@ -145,6 +145,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The answer slider responds to quick slides and flicks.
 - Smoother folder swipes, also when swiping twice quickly.
 - The emoji panel opens smoothly instead of jumping.
+- Smoother start and end of message selection.
 
 ## [2.0.0] - 2026-11-08
 

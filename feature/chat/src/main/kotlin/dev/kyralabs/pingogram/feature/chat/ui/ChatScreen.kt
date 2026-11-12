@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.annotation.StringRes
 import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.background
@@ -86,6 +85,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.saved.ConversationTabsSlot
 import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
@@ -371,18 +371,6 @@ private fun ChatScaffold(
 }
 
 /**
- * The tabs below the conversation's top bar ([tabs], null for none): they grow in on the default spatial spring when
- * they first come (once the topics load) and shrink away as they go, the last tabs showing meanwhile.
- */
-@Composable
-private fun ConversationTabsSlot(tabs: (@Composable () -> Unit)?) {
-    // Kept, not state, so keeping them recomposes nothing.
-    val last = remember { arrayOfNulls<@Composable () -> Unit>(1) }
-    if (tabs != null) last[0] = tabs
-    GrowingVisibility(visible = tabs != null) { last[0]?.invoke() }
-}
-
-/**
  * The bottom of the screen: the composer ([ChatBottomBar]), or in selection mode the selection toolbar in its place
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
@@ -549,13 +537,7 @@ private fun MessageList(
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
-    val selectedIds = state.selection?.messageIds
-    // The checks leave with selection mode as they came, showing the selection they had meanwhile.
-    val reveal = rememberSelectionReveal(selecting = selectedIds != null)
-    val lastSelectedIds = remember { arrayOfNulls<ImmutableSet<Long>>(1) }
-    if (selectedIds != null) lastSelectedIds[0] = selectedIds
-    val checkedIds = selectedIds ?: lastSelectedIds[0]?.takeIf { reveal.showsChecks }
-    val checks = RowChecks(selectedIds, checkedIds, reveal)
+    val checks = rememberRowChecks(state.selection?.messageIds)
     val jumpState = bubbleResources.jump
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
@@ -631,18 +613,6 @@ private fun LazyListScope.pagesState(
         modifier = Modifier.entry(this, MaterialTheme.motionScheme, MaterialTheme.spacing.small),
     )
 }
-
-/**
- * Selection mode as the list's rows show it: the messages selected ([selectedIds], null outside selection mode), those
- * whose checks show ([checkedIds]: the same, and the last selection while the checks leave with it), and how much of
- * the checks shows ([reveal]).
- */
-@Stable
-private data class RowChecks(
-    val selectedIds: ImmutableSet<Long>?,
-    val checkedIds: ImmutableSet<Long>?,
-    val reveal: SelectionReveal,
-)
 
 /**
  * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback

@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -176,3 +177,15 @@ private const val PREVIEW_MY_NOTES = 1L
 private const val PREVIEW_CHANNEL = 2L
 private const val PREVIEW_ADA = 3L
 private const val PREVIEW_HIDDEN = 4L
+
+/**
+ * The tabs below the conversation's top bar ([tabs], null for none): they grow in on the default spatial spring when
+ * they first come (once the topics load) and shrink away as they go, the last tabs showing meanwhile.
+ */
+@Composable
+internal fun ConversationTabsSlot(tabs: (@Composable () -> Unit)?) {
+    // Kept, not state, so keeping them recomposes nothing.
+    val last = remember { arrayOfNulls<@Composable () -> Unit>(1) }
+    if (tabs != null) last[0] = tabs
+    GrowingVisibility(visible = tabs != null) { last[0]?.invoke() }
+}

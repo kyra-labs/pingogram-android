@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import android.content.res.Resources
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,14 +30,10 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.coroutineScope
-import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.Stable
-import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -51,6 +48,7 @@ import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
+import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
@@ -59,6 +57,8 @@ import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -185,43 +185,6 @@ private val UnselectedRow = RowSelection(isSelected = false)
 internal data class RowSelection(
     val isSelected: Boolean,
 )
-
-/**
- * The rows' checks coming and going with selection mode (`docs/DESIGN_SYSTEM.md` §6 "Selection mode"): their width
- * on the motion scheme's fast spatial spring ([width], 0 to 1) and their opacity on its effects springs ([alpha]), one
- * animation for the whole list, read by every row in its layout and draw phases ([selectionReveal]), so entering or
- * leaving selection mode moves the bubbles beside the checks without recomposing a row in any frame.
- */
-@Stable
-internal class SelectionReveal(
-    selecting: Boolean,
-) {
-    val width = Animatable(if (selecting) 1f else 0f)
-    val alpha = Animatable(if (selecting) 1f else 0f)
-
-    /** Whether the rows show their checks: in selection mode, or while they leave with it. */
-    val showsChecks: Boolean by derivedStateOf { width.targetValue > 0f || width.isRunning }
-}
-
-/** The list's [SelectionReveal], following whether it is [selecting]. */
-@Composable
-internal fun rememberSelectionReveal(selecting: Boolean): SelectionReveal {
-    val reveal = remember { SelectionReveal(selecting) }
-    val motionScheme = MaterialTheme.motionScheme
-    LaunchedEffect(selecting) {
-        val target = if (selecting) 1f else 0f
-        val fade = if (selecting) motionScheme.defaultEffectsSpec<Float>() else motionScheme.fastEffectsSpec()
-        coroutineScope {
-            launch { reveal.alpha.animateTo(target, fade) }
-            reveal.width.animateTo(target, motionScheme.fastSpatialSpec())
-        }
-    }
-    return reveal
-}
-
-/** Shows this check as much as [reveal] says: its width in the layout phase, its opacity in the draw phase. */
-internal fun Modifier.selectionReveal(reveal: SelectionReveal): Modifier =
-    revealHorizontally { reveal.width.value }.graphicsLayer { alpha = reveal.alpha.value }
 
 /**
  * The check at the start of a row in selection mode: a ring in `outline`, or, once selected, a filled check in
