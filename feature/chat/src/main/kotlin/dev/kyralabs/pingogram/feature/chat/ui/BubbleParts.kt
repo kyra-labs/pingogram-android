@@ -212,7 +212,7 @@ private fun ReactionBadge(
             scaleX = scale.value
             scaleY = scale.value
         }
-    BadgeFrame(container, onClick, ring, pop) {
+    BadgeFrame(container, onClick, pop, ring) {
         ReactionGlyph(
             reaction.label,
             MaterialTheme.typography.titleMedium,
@@ -256,8 +256,8 @@ private fun MoreReactionsBadge(
 private fun BadgeFrame(
     container: ColorProducer,
     onClick: (() -> Unit)?,
-    ring: ColorProducer? = null,
     modifier: Modifier = Modifier,
+    ring: ColorProducer? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     val surface = MaterialTheme.colorScheme.surface
