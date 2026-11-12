@@ -148,6 +148,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The Add contact button no longer moves while it works.
 - Smoother settings pages when rows appear or go.
 - Smoother passcode screen and theme choices.
+- Smoother profile, group info and member lists.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
