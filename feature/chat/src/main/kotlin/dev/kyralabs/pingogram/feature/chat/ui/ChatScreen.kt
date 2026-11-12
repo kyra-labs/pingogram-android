@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.annotation.StringRes
 import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.background
@@ -330,8 +331,9 @@ private fun ChatScaffold(
                         onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
                     )
                 }
-                // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
-                LocalConversationTabs.current?.invoke()
+                // Saved Messages' and a forum's tabs, below its top bar as the folder tabs below the chat list's; they
+                // grow in once loaded instead of pushing the conversation down at once.
+                ConversationTabsSlot(LocalConversationTabs.current)
             }
         },
         bottomBar = bottomBar,
@@ -366,6 +368,18 @@ private fun ChatScaffold(
             }
         }
     }
+}
+
+/**
+ * The tabs below the conversation's top bar ([tabs], null for none): they grow in on the default spatial spring when
+ * they first come (once the topics load) and shrink away as they go, the last tabs showing meanwhile.
+ */
+@Composable
+private fun ConversationTabsSlot(tabs: (@Composable () -> Unit)?) {
+    // Kept, not state, so keeping them recomposes nothing.
+    val last = remember { arrayOfNulls<@Composable () -> Unit>(1) }
+    if (tabs != null) last[0] = tabs
+    GrowingVisibility(visible = tabs != null) { last[0]?.invoke() }
 }
 
 /**

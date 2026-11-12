@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -169,7 +170,10 @@ private fun rememberTabsSlot(
         {
             Column {
                 if (state.tabs.isNotEmpty()) SavedTabs(state, viewModel::select, viewModel::loadMore)
-                chips?.invoke()
+                // The tags' chips grow in once the tags load, and shrink away on a topic's tab.
+                val lastChips = remember { arrayOfNulls<@Composable () -> Unit>(1) }
+                if (chips != null) lastChips[0] = chips
+                GrowingVisibility(visible = chips != null) { lastChips[0]?.invoke() }
             }
         }
     }
