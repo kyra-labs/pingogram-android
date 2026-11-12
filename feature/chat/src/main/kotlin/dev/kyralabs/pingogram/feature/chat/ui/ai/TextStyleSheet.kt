@@ -12,7 +12,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -39,6 +38,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.TextCompositionExample
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -63,9 +63,9 @@ internal fun TextStyleSheetRoute(
  * opens expanded and scrolls, at most `contentMaxWidth`: the AI badge, the style's title in `titleLargeEmphasized`
  * (a heading) over "Custom style · used by 1,204 people", its example before and after on `surfaceContainerHigh` with
  * `large` corners, how many custom styles the account may add as information, why Telegram refused in `error` (a
- * polite live region), a `LinearWavyProgressIndicator` while it answers, then "Close" and "Add style" (or "Remove
- * style" in `error` once added). Loading shows a `DelayedLoadingIndicator`; a style not found says so with "Try
- * again". Nothing is added before the tap.
+ * polite live region), a `LinearWavyProgressIndicator` while it answers (its place kept, so the sheet's height
+ * stays the same), then "Close" and "Add style" (or "Remove style" in `error` once added). Loading shows a
+ * `DelayedLoadingIndicator`; a style not found says so with "Try again". Nothing is added before the tap.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -159,7 +159,8 @@ private fun StyleContent(
             )
         }
     }
-    if (state.busy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+    // The line keeps its place while Telegram answers and while it does not, so the sheet's height stays the same.
+    ReservedProgressLine(visible = state.busy)
     StyleButtons(state, onEvent, onClose)
 }
 
