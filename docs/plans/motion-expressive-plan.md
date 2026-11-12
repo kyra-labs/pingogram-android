@@ -652,7 +652,7 @@ M-078
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
 | A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
 | A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
-| A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 |
+| A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 ✓ (#463) |
 | A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 |
 | A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 |
 | A-6 `refactor/motion-message-menu` | A | Medium | M-033, M-043 |
@@ -668,7 +668,7 @@ M-078
 | B-7 `refactor/motion-call-lists` | B | Medium | M-057, M-061, M-063, M-064, M-069, M-070 ✓ (#455) |
 | B-8 `refactor/motion-media-viewer` | B | Medium | M-073, M-074, M-075, M-081, M-082, M-083 ✓ (#456) |
 | B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460) |
-| B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 |
+| B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 ✓ (#462) |
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 |
 | C-3 `fix/motion-profile-progress` | C | High | M-090, M-091 |

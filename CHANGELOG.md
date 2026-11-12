@@ -132,6 +132,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- Smoother QR code scanner as the camera is allowed.
 - Smoother stories: New story's steps slide, and the viewer closes on a swipe down only.
 - Smoother media viewer: the bar fades in, zoomed photos glide, page taps match swipes.
 - Smoother lists in calls and in Recent calls.
@@ -147,6 +148,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The answer slider responds to quick slides and flicks.
 - Smoother folder swipes, also when swiping twice quickly.
 - The emoji panel opens smoothly instead of jumping.
+- Smoother start and end of message selection.
 
 ## [2.0.0] - 2026-11-08
 
