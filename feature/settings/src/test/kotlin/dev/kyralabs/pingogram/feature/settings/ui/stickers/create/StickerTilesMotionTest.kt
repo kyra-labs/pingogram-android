@@ -47,8 +47,7 @@ class StickerTilesMotionTest {
         val to = left(SLEEP.emoji)
 
         state = state.copy(stickers = persistentListOf(SLEEP, CAT, LAUGH))
-        frame()
-        frame()
+        repeat(SLIDING_FRAMES) { frame() }
         val between = left(CAT.emoji)
         assertTrue("the tile jumped: $from, $between, $to", between > from && between < to)
 
@@ -95,6 +94,9 @@ class StickerTilesMotionTest {
         val SLEEP = StickerTile("/none/2.webp", "😴")
         val LAUGH = StickerTile("/none/3.webp", "😂")
         const val FRAMES = 20
+
+        /** The frame that moves the tile, the one that starts its spring, and a few of the slide. */
+        const val SLIDING_FRAMES = 5
         const val SETTLE_FRAMES = 120
         const val TOLERANCE = 0.5f
     }
