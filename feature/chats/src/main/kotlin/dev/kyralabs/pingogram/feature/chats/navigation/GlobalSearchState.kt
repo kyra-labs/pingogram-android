@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chats.navigation
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.runtime.Composable
@@ -108,9 +107,9 @@ internal fun Modifier.searchTransform(
  * the detail pane), growing out of the search button where the caller provides an animated visibility scope. A chat it
  * found calls [onOpenChat], a message [onOpenMessage]; the app opens them in the detail pane.
  *
- * Its back arrow, and system back while [backEnabled] (the caller turns it off while back has something else to close
- * first, e.g. the conversation beside it), close it ([GlobalSearchState.isDocked] false). Its view model lives as long
- * as the pane ([rememberViewModelStoreOwner]): closed and opened again, search starts afresh, as the destination does.
+ * Its back arrow closes it ([GlobalSearchState.isDocked] false); system back is its caller's, which shows what is below
+ * search with the back gesture's progress (`core:ui`'s `rememberSeekableSteps`). Its view model lives as long as the
+ * pane ([rememberViewModelStoreOwner]): closed and opened again, search starts afresh, as the destination does.
  */
 @Composable
 fun SearchPane(
@@ -119,10 +118,8 @@ fun SearchPane(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     shape: CornerBasedShape = FullBleedShape,
-    backEnabled: Boolean = true,
 ) {
     val close = { state.isDocked = false }
-    BackHandler(enabled = backEnabled, onBack = close)
     CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
         SearchRoute(
             onBack = close,

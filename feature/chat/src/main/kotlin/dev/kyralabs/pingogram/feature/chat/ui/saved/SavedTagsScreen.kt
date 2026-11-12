@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,7 +90,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * it, then on a `ContentSheet` the tagged messages, newest first, as list items inset like the chat list's rows: what
  * each says (`bodyLarge`, two lines, user content) over the day it was saved; a tap shows it in the conversation
  * ([onOpen]). More load near the end; loading, nothing and a failure (with "Try again") as the other lists show them.
- * Back clears the filter.
+ * Back clears the filter: its caller's ([SavedMessagesConversation]), which previews "All" with the gesture.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +102,6 @@ internal fun SavedTagScreen(
     modifier: Modifier = Modifier,
     snackbars: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler { onEvent(SavedTagEvent.ShowAll) }
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },

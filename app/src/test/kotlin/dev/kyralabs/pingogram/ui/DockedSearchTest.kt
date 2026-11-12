@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.activity.BackEventCompat
+import androidx.activity.OnBackPressedDispatcher
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -171,6 +173,37 @@ class DockedSearchTest {
     }
 
     @Test
+    fun `half a back gesture shows the chat list behind search, and a cancel keeps search`() {
+        setApp()
+        searchButton().performClick()
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(listRow(GRACE_TITLE)).assertCountEquals(0)
+
+        backGesture { dispatcher -> dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF)) }
+        val during = composeRule.onAllNodes(listRow(GRACE_TITLE)).fetchSemanticsNodes().size
+        backGesture(start = false) { dispatcher -> dispatcher.dispatchOnBackCancelled() }
+
+        assertEquals(1, during)
+        composeRule.onAllNodes(listRow(GRACE_TITLE)).assertCountEquals(0)
+        composeRule.onNode(hasSetTextAction()).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a completed back gesture closes search, back to the chat list`() {
+        setApp()
+        searchButton().performClick()
+        composeRule.waitForIdle()
+
+        backGesture { dispatcher ->
+            dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF))
+            dispatcher.onBackPressed()
+        }
+
+        awaitRow(GRACE_TITLE)
+        composeRule.onAllNodes(hasSetTextAction()).assertCountEquals(0)
+    }
+
+    @Test
     fun `search opens from the Chats tab's header only, not from the rail on other tabs`() {
         setApp()
         awaitRow(ADA_TITLE)
@@ -240,6 +273,23 @@ class DockedSearchTest {
         assertTrue(destinations.single().hasRoute<ChatsRoute>())
     }
 
+    private fun listRow(title: String) = hasContentDescription(title, substring = true) and hasClickAction()
+
+    private fun backGesture(
+        start: Boolean = true,
+        gesture: (OnBackPressedDispatcher) -> Unit,
+    ) {
+        composeRule.runOnUiThread {
+            val dispatcher = composeRule.activity.onBackPressedDispatcher
+            if (start) dispatcher.dispatchOnBackStarted(backEvent(progress = 0f))
+            gesture(dispatcher)
+        }
+        composeRule.waitForIdle()
+    }
+
+    private fun backEvent(progress: Float) =
+        BackEventCompat(touchX = 0f, touchY = 0f, progress = progress, swipeEdge = BackEventCompat.EDGE_LEFT)
+
     private fun pressBack() {
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
@@ -269,5 +319,6 @@ class DockedSearchTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
+        const val HALF = 0.5f
     }
 }
