@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.bot
 
-import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
-import dev.kyralabs.pingogram.core.ui.component.animateItem
 import android.view.KeyEvent.FLAG_SOFT_KEYBOARD
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -46,6 +44,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes

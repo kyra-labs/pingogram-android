@@ -1,15 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
-import kotlinx.coroutines.CoroutineScope
-import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.animation.core.AnimationSpec
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
-import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
-import dev.kyralabs.pingogram.core.ui.component.animateItem
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +33,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,9 +51,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.zIndex
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import kotlinx.coroutines.CoroutineScope
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -72,16 +72,18 @@ internal fun LazyListScope.pollOptionItems(
     editor: PollEditor,
     listState: LazyListState,
 ) {
-    item(key = OPTIONS) { FormItem {
-        FormSectionHeader(
-            title = stringResource(R.string.poll_options),
-            note =
-                stringResource(
-                    R.string.poll_choose_correct,
-                ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
-            trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
-        )
-    }}
+    item(key = OPTIONS) {
+        FormItem {
+            FormSectionHeader(
+                title = stringResource(R.string.poll_options),
+                note =
+                    stringResource(
+                        R.string.poll_choose_correct,
+                    ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
+                trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
+            )
+        }
+    }
     itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
         val drag = rememberOptionDrag(editor, listState)
         val motionScheme = MaterialTheme.motionScheme
@@ -113,16 +115,18 @@ internal fun LazyListScope.pollOptionItems(
         }
     }
     if (editor.isQuiz) {
-        item(key = EXPLANATION) { FormItem {
-            OutlinedTextField(
-                state = editor.explanation,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
-                label = { Text(stringResource(R.string.poll_explanation_field)) },
-                supportingText = { Text(stringResource(R.string.poll_explanation_note)) },
-                inputTransformation = InputTransformation.maxLength(NewPoll.MAX_EXPLANATION_LENGTH),
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = EXPLANATION_LINES),
-            )
-        }}
+        item(key = EXPLANATION) {
+            FormItem {
+                OutlinedTextField(
+                    state = editor.explanation,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
+                    label = { Text(stringResource(R.string.poll_explanation_field)) },
+                    supportingText = { Text(stringResource(R.string.poll_explanation_note)) },
+                    inputTransformation = InputTransformation.maxLength(NewPoll.MAX_EXPLANATION_LENGTH),
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = EXPLANATION_LINES),
+                )
+            }
+        }
     }
 }
 

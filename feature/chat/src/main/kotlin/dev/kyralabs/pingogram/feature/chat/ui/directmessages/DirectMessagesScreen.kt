@@ -1,10 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.directmessages
 
-import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
-import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
-import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,9 +43,14 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.ChatTopBar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatSearchField
 import kotlinx.coroutines.flow.distinctUntilChanged

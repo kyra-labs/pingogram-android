@@ -1,8 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +29,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -48,40 +48,48 @@ internal fun LazyListScope.pollSettingItems(
     actions: PollFormActions,
     now: () -> Instant,
 ) {
-    item(key = SETTINGS) { FormItem { FormSectionHeader(stringResource(R.string.poll_settings)) }}
-    item(key = ANONYMOUS) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_anonymous),
-            checked = sheet.isChannel || editor.isAnonymous,
-            onCheckedChange = { editor.isAnonymous = it },
-            enabled = !sheet.isChannel,
-            note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
-        )
-    }}
-    item(key = MULTIPLE) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_multiple),
-            checked = !editor.isQuiz && editor.allowsMultipleAnswers,
-            onCheckedChange = { editor.allowsMultipleAnswers = it },
-            enabled = !editor.isQuiz,
-        )
-    }}
-    item(key = REVOTING) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_revoting),
-            checked = !editor.isQuiz && editor.allowsRevoting,
-            onCheckedChange = { editor.allowsRevoting = it },
-            enabled = !editor.isQuiz,
-        )
-    }}
-    item(key = HIDE_RESULTS) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_hide_results),
-            checked = editor.hidesResults,
-            onCheckedChange = { editor.hidesResults = it },
-            note = stringResource(R.string.poll_hide_results_note),
-        )
-    }}
+    item(key = SETTINGS) { FormItem { FormSectionHeader(stringResource(R.string.poll_settings)) } }
+    item(key = ANONYMOUS) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_anonymous),
+                checked = sheet.isChannel || editor.isAnonymous,
+                onCheckedChange = { editor.isAnonymous = it },
+                enabled = !sheet.isChannel,
+                note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
+            )
+        }
+    }
+    item(key = MULTIPLE) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_multiple),
+                checked = !editor.isQuiz && editor.allowsMultipleAnswers,
+                onCheckedChange = { editor.allowsMultipleAnswers = it },
+                enabled = !editor.isQuiz,
+            )
+        }
+    }
+    item(key = REVOTING) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_revoting),
+                checked = !editor.isQuiz && editor.allowsRevoting,
+                onCheckedChange = { editor.allowsRevoting = it },
+                enabled = !editor.isQuiz,
+            )
+        }
+    }
+    item(key = HIDE_RESULTS) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_hide_results),
+                checked = editor.hidesResults,
+                onCheckedChange = { editor.hidesResults = it },
+                note = stringResource(R.string.poll_hide_results_note),
+            )
+        }
+    }
     answerSettingItems(sheet, editor)
     pollVotersItems(sheet, editor)
     closesItem(editor, actions, now)
@@ -92,40 +100,46 @@ private fun LazyListScope.answerSettingItems(
     sheet: PollSheet,
     editor: PollEditor,
 ) {
-    item(key = SHUFFLE) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_shuffle),
-            checked = editor.shufflesOptions,
-            onCheckedChange = { editor.shufflesOptions = it },
-        )
-    }}
-    item(key = ADDING) { FormItem {
-        val allowed = editor.canAllowAddingOptions(sheet.isChannel)
-        FormSwitchRow(
-            title = stringResource(R.string.poll_adding_options),
-            checked = allowed && editor.allowsAddingOptions,
-            onCheckedChange = { editor.allowsAddingOptions = it },
-            enabled = allowed,
-            note = stringResource(R.string.poll_adding_options_note).takeUnless { allowed },
-        )
-    }}
-    item(key = QUIZ) { FormItem {
-        FormSwitchRow(
-            title = stringResource(R.string.poll_quiz),
-            checked = editor.isQuiz,
-            onCheckedChange = { editor.isQuiz = it },
-            // A bot's keyboard button may ask for a quiz, or for a regular poll.
-            enabled = editor.requiredQuiz == null,
-            note =
-                stringResource(
-                    when (editor.requiredQuiz) {
-                        true -> R.string.poll_quiz_required
-                        false -> R.string.poll_regular_required
-                        null -> R.string.poll_quiz_note
-                    },
-                ),
-        )
-    }}
+    item(key = SHUFFLE) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_shuffle),
+                checked = editor.shufflesOptions,
+                onCheckedChange = { editor.shufflesOptions = it },
+            )
+        }
+    }
+    item(key = ADDING) {
+        FormItem {
+            val allowed = editor.canAllowAddingOptions(sheet.isChannel)
+            FormSwitchRow(
+                title = stringResource(R.string.poll_adding_options),
+                checked = allowed && editor.allowsAddingOptions,
+                onCheckedChange = { editor.allowsAddingOptions = it },
+                enabled = allowed,
+                note = stringResource(R.string.poll_adding_options_note).takeUnless { allowed },
+            )
+        }
+    }
+    item(key = QUIZ) {
+        FormItem {
+            FormSwitchRow(
+                title = stringResource(R.string.poll_quiz),
+                checked = editor.isQuiz,
+                onCheckedChange = { editor.isQuiz = it },
+                // A bot's keyboard button may ask for a quiz, or for a regular poll.
+                enabled = editor.requiredQuiz == null,
+                note =
+                    stringResource(
+                        when (editor.requiredQuiz) {
+                            true -> R.string.poll_quiz_required
+                            false -> R.string.poll_regular_required
+                            null -> R.string.poll_quiz_note
+                        },
+                    ),
+            )
+        }
+    }
 }
 
 /**
@@ -139,22 +153,24 @@ private fun LazyListScope.closesItem(
     now: () -> Instant,
 ) {
     if (editor.limits.maxOpenPeriod <= 0) return
-    item(key = CLOSES) { FormItem {
-        val context = LocalContext.current
-        val closesAt =
-            when (editor.closing) {
-                PollClosing.Never -> null
-                PollClosing.Custom -> editor.customCloseDate
-                else -> now().epochSecond + editor.closing.seconds
+    item(key = CLOSES) {
+        FormItem {
+            val context = LocalContext.current
+            val closesAt =
+                when (editor.closing) {
+                    PollClosing.Never -> null
+                    PollClosing.Custom -> editor.customCloseDate
+                    else -> now().epochSecond + editor.closing.seconds
+                }
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
+                FormSectionHeader(
+                    title = stringResource(R.string.poll_closes),
+                    trailing = closesAt?.let { context.scheduledTime(it) },
+                )
+                ClosingButtons(editor, actions)
             }
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            FormSectionHeader(
-                title = stringResource(R.string.poll_closes),
-                trailing = closesAt?.let { context.scheduledTime(it) },
-            )
-            ClosingButtons(editor, actions)
         }
-    }}
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class) // ToggleButton's connected shapes
@@ -241,7 +257,11 @@ internal fun FormSectionHeader(
         if (note != null) shownNote.value = note
         GrowingVisibility(visible = note != null) {
             shownNote.value?.let {
-                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
     }

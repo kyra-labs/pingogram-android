@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +31,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Attachment
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -48,28 +48,30 @@ internal fun LazyListScope.pollMediaItem(
     editor: PollEditor,
     actions: PollFormActions,
 ) {
-    item(key = MEDIA) { FormItem {
-        val photo = editor.photo
-        val modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large)
-        // Adding, preparing and the picked photo crossfade in place.
-        StateCrossfade(
-            targetState = editor.isPreparingPhoto to photo,
-            contentKey = { (preparing, picked) ->
+    item(key = MEDIA) {
+        FormItem {
+            val photo = editor.photo
+            val modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large)
+            // Adding, preparing and the picked photo crossfade in place.
+            StateCrossfade(
+                targetState = editor.isPreparingPhoto to photo,
+                contentKey = { (preparing, picked) ->
+                    when {
+                        preparing -> 0
+                        picked != null -> 1
+                        else -> 2
+                    }
+                },
+                label = "pollMedia",
+            ) { (preparing, picked) ->
                 when {
-                    preparing -> 0
-                    picked != null -> 1
-                    else -> 2
+                    preparing -> PreparingPhoto(modifier)
+                    picked != null -> PickedPhoto(picked, actions, modifier)
+                    else -> AddMediaButton(actions.onPickPhoto, modifier)
                 }
-            },
-            label = "pollMedia",
-        ) { (preparing, picked) ->
-            when {
-                preparing -> PreparingPhoto(modifier)
-                picked != null -> PickedPhoto(picked, actions, modifier)
-                else -> AddMediaButton(actions.onPickPhoto, modifier)
             }
         }
-    }}
+    }
 }
 
 @Composable

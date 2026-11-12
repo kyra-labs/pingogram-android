@@ -196,24 +196,28 @@ internal fun ColumnScope.PollForm(
         modifier = Modifier.weight(1f, fill = false),
         verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
-        item(key = QUESTION) { FormItem {
-            OutlinedTextField(
-                state = editor.question,
-                modifier = fieldModifier,
-                label = { Text(stringResource(R.string.poll_question)) },
-                inputTransformation = InputTransformation.maxLength(NewPoll.MAX_QUESTION_LENGTH),
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
-            )
-        }}
+        item(key = QUESTION) {
+            FormItem {
+                OutlinedTextField(
+                    state = editor.question,
+                    modifier = fieldModifier,
+                    label = { Text(stringResource(R.string.poll_question)) },
+                    inputTransformation = InputTransformation.maxLength(NewPoll.MAX_QUESTION_LENGTH),
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
+                )
+            }
+        }
         pollMediaItem(editor, actions)
-        item(key = DESCRIPTION) { FormItem {
-            OutlinedTextField(
-                state = editor.description,
-                modifier = fieldModifier,
-                label = { Text(stringResource(R.string.poll_description)) },
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
-            )
-        }}
+        item(key = DESCRIPTION) {
+            FormItem {
+                OutlinedTextField(
+                    state = editor.description,
+                    modifier = fieldModifier,
+                    label = { Text(stringResource(R.string.poll_description)) },
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
+                )
+            }
+        }
         pollOptionItems(editor, listState)
         pollSettingItems(sheet, editor, actions, now)
     }

@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.interactions
 
-import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
-import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -47,6 +45,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -185,7 +185,10 @@ private fun InteractionList(
         }
         when (val more = content.more) {
             MoreInteractions.Loading -> {
-                item(key = KEY_MORE, contentType = KEY_MORE) { Box(Modifier.animateItem(this, motion)) { MoreLoading() } }
+                item(
+                    key = KEY_MORE,
+                    contentType = KEY_MORE,
+                ) { Box(Modifier.animateItem(this, motion)) { MoreLoading() } }
             }
 
             is MoreInteractions.Failed -> {
