@@ -14,8 +14,8 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.StateRestorationTester
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToIndex
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -79,7 +79,11 @@ class ChatListFolderSwitchTest {
         state = allChats
         setScreen()
         composeRule.waitForIdle()
-        val width = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.width
+        val width =
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.width
         val resting = left("Chat 1")
         composeRule.mainClock.autoAdvance = false
 
@@ -88,10 +92,10 @@ class ChatListFolderSwitchTest {
         // Work's list is still a part of the width away from its place when Family is selected.
         state = folder(2, numberedRows(60..70))
         val arriving =
-            List(FEW_FRAMES + 1) {
+            List(SWITCH_FRAMES) {
                 advanceFrames(1)
-                if (exists("Chat 60")) left("Chat 60") else null
-            }.filterNotNull().first { it != 0f }
+                if (exists("Chat 60")) unclippedLeft("Chat 60") else null
+            }.filterNotNull().first()
         composeRule.mainClock.autoAdvance = true
 
         // Family's list starts a width beyond Work's, wherever that was, not a width from the place lists rest in.
@@ -300,6 +304,9 @@ class ChatListFolderSwitchTest {
     private fun top(name: String) = row(name).fetchSemanticsNode().boundsInRoot.top
 
     private fun left(name: String) = row(name).fetchSemanticsNode().boundsInRoot.left
+
+    /** Where a row's left edge is, also beyond the window, whose bounds clip the other measure. */
+    private fun unclippedLeft(name: String) = row(name).fetchSemanticsNode().positionInRoot.x
 
     private fun exists(name: String) = composeRule.onAllNodes(rowMatcher(name)).fetchSemanticsNodes().isNotEmpty()
 
