@@ -148,6 +148,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Group settings no longer jump while a change is saved.
 - The Add contact button no longer moves while it works.
 - Smoother settings pages when rows appear or go.
+- Smoother moves of stickers in a new sticker set.
 - Smoother passcode screen and theme choices.
 - Smoother profile, group info and member lists.
 - A second back swipe during sign-in no longer flickers.
