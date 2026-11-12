@@ -657,7 +657,7 @@ M-078
 | A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 ✓ (#468) |
 | A-6 `refactor/motion-message-menu` | A | Medium | M-033 ✓ (#470), M-043 no change (owner, 2026-11-12) |
 | A-7 `refactor/motion-chat-lists` | A | Low | M-045, M-049 ✓ (#474), M-050 stays (Q-09) |
-| A-8 `refactor/motion-chat-list` | A | Low | M-017 to M-019, M-022 to M-025, M-027 ✓ (#476); M-016, M-021, M-026 stay (Q-10, Q-09); M-028, M-051 go with C-9 |
+| A-8 `refactor/motion-chat-list` | A | Low | M-017 to M-019, M-022 to M-025, M-027 ✓ (#476); M-016, M-021, M-026 stay (Q-10, Q-09); M-051 ✓ (#483), M-028 ✓ (#488) |
 | A-9 `refactor/motion-reaction-badge` | A | Medium | M-036 ✓ (#472) (M-044 is closed by Q-13) |
 | B-1 `fix/motion-answer-slider` | B | High | M-052, M-054, M-062 ✓ (#440) |
 | B-2 `fix/motion-call-reactions` | B | High | M-053 ✓ (#449) |
@@ -677,7 +677,7 @@ M-078
 | C-6 `refactor/motion-passcode` | C | Medium | M-115 to M-119 ✓ (#477) |
 | C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 ✓ (#478) |
 | C-8 `fix/motion-auth-back` | C | Medium | M-123, M-124 ✓ (#479) |
-| C-9 `refactor/motion-step-back` | C | Low | M-122, M-051, M-078, M-103 ✓ (#483); M-028 → #482 |
+| C-9 `refactor/motion-step-back` | C | Low | M-122, M-051, M-078, M-103 ✓ (#483); M-028 ✓ (#488: docked search; the new channel's steps stay, their back opens the channel) |
 
 Every finding from M-001 to M-126 is in one row. A finding listed in two rows (M-089, and the step-backs of C-9) is
 split between them as the entries above say.
