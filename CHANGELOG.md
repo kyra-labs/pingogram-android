@@ -132,6 +132,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- Smoother media viewer: the bar fades in, zoomed photos glide, page taps match swipes.
 - Smoother lists in calls and in Recent calls.
 - Smoother call screen when video turns on or off.
 - Smoother tab changes in the navigation bar.

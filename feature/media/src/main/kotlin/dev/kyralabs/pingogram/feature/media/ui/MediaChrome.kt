@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
@@ -178,7 +179,6 @@ internal fun ViewerBottomBar(
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
     if (item.caption.text.isEmpty() && controls == null && actions == null) return
     val overlay = MaterialTheme.pingogramColors.mediaOverlay
-    val maxWidth = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)
     Column(
         modifier =
             modifier
@@ -189,25 +189,16 @@ internal fun ViewerBottomBar(
                         WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
                     ),
                 ).padding(top = MaterialTheme.spacing.extraLarge, bottom = FloatingToolbarDefaults.ScreenOffset),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (item.caption.text.isNotEmpty()) {
-            ExpandableCaption(
-                caption = item.caption,
-                key = item.messageId,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact).then(maxWidth),
-            )
-        }
-        val media = item.media
-        if (controls != null && media is ViewerMedia.Clip) {
-            VideoControls(
-                playback = controls,
-                durationSeconds = media.video.duration,
-                onEvent = onEvent,
-                canPictureInPicture = canPictureInPicture,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small).then(maxWidth),
-            )
+        // The page's caption and video controls crossfade as the pages change; within a page they follow it.
+        StateCrossfade(
+            targetState = PageBar(item, controls),
+            contentKey = { it.item.messageId },
+            contentAlignment = Alignment.TopCenter,
+            label = "pageBar",
+        ) { bar ->
+            PageBarContent(bar, onEvent, canPictureInPicture, spacedBelow = actions != null)
         }
         actions?.invoke()
     }
@@ -277,7 +268,7 @@ internal fun ExpandableCaption(
  * changes.
  */
 @Composable
-private fun VideoControls(
+internal fun VideoControls(
     playback: VideoPlayback,
     durationSeconds: Int,
     onEvent: (MediaViewerEvent) -> Unit,
