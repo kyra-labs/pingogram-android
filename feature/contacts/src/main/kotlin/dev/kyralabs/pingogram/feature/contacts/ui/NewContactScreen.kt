@@ -54,6 +54,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -193,10 +195,13 @@ private fun NewContactForm(
         enabled = enabled,
     )
     NameFields(state, onEvent, enabled)
-    if (state.method == ContactMethod.Username) {
-        UsernameField(state, onEvent, enabled, submit)
-    } else {
-        PhoneNumberField(state, onEvent, enabled, submit)
+    // The two fields cross-fade as the method changes, the form below moving with the height between them.
+    StateCrossfade(state.method, modifier = Modifier.fillMaxWidth(), label = "ContactMethodField") { method ->
+        if (method == ContactMethod.Username) {
+            UsernameField(state, onEvent, enabled, submit)
+        } else {
+            PhoneNumberField(state, onEvent, enabled, submit)
+        }
     }
     FormEnd(
         floodWaitSeconds = state.floodWaitSeconds,
@@ -342,8 +347,9 @@ private fun ColumnScope.NotOnTelegram(
 }
 
 /**
- * The end of a contact form: the `FLOOD_WAIT` countdown and the progress of a request, then the buttons ([actions]),
- * at the end, wrapping onto more lines when they do not fit side by side.
+ * The end of a contact form: the `FLOOD_WAIT` countdown (growing in and shrinking away) and the progress of a request
+ * (in a place kept while nothing is on its way, so the button just tapped never moves; `docs/DESIGN_SYSTEM.md` §5.1),
+ * then the buttons ([actions]), at the end, wrapping onto more lines when they do not fit side by side.
  */
 @Composable
 internal fun FormEnd(
@@ -354,8 +360,8 @@ internal fun FormEnd(
     arrangement: Arrangement.Horizontal = Arrangement.End,
     actions: @Composable () -> Unit,
 ) {
-    floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = floodWaitTotalSeconds) }
-    if (isWorking) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+    FloodWaitSlot(floodWaitSeconds, floodWaitTotalSeconds)
+    ReservedProgressLine(isWorking)
     FlowRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = arrangement,
