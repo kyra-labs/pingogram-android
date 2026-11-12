@@ -42,7 +42,6 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.InfoPageContent
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InfoPageScaffold
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageError
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageLoading
-import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
@@ -113,7 +112,7 @@ internal fun JoinRequestsScreen(
             }
 
             is JoinRequestsUiState.Content -> {
-                InfoPageContent(innerPadding) { RequestsContent(state, onEvent) }
+                InfoPageContent(innerPadding, saving = state.isProcessingAll) { RequestsContent(state, onEvent) }
             }
         }
     }
@@ -133,7 +132,6 @@ private fun RequestsContent(
     state: JoinRequestsUiState.Content,
     onEvent: (JoinRequestsEvent) -> Unit,
 ) {
-    if (state.isProcessingAll) SavingIndicator()
     if (state.requests.size > 1) AllButtons(state, onEvent)
     val rows =
         state.requests.map { item ->

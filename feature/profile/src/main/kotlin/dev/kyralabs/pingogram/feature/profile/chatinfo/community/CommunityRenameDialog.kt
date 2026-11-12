@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import kotlinx.coroutines.flow.drop
 
 /**
@@ -91,7 +92,7 @@ internal fun RenameCommunityContent(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
             lineLimits = TextFieldLineLimits.SingleLine,
         )
-        if (isBusy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+        SavingIndicator(isBusy)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),

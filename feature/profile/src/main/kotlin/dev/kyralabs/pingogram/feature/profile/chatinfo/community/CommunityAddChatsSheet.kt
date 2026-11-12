@@ -45,6 +45,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import java.text.NumberFormat
 
 /**
@@ -109,7 +110,7 @@ internal fun AddChatsContent(
         }
         AddChatsList(sheet, onEvent)
         HiddenRow(sheet, onEvent)
-        if (sheet.isSending) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+        SavingIndicator(sheet.isSending)
         AddChatsButtons(sheet, isDirect, onEvent)
     }
 }
