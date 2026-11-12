@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.network
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -22,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.DataAmount
 import dev.kyralabs.pingogram.core.domain.model.DataKind
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -126,29 +128,10 @@ private fun UsageContent(
             }
         }
     }
-    val kinds = state.usage.usage[state.network].orEmpty()
-    val total = kinds.values.fold(DataAmount(0, 0), DataAmount::plus)
-    SettingsGroup(
-        title = stringResource(R.string.settings_network_usage_since, sinceDate(state.usage.sinceDate)),
-        footer = stringResource(R.string.settings_network_usage_footer),
-    ) {
-        item { shapes ->
-            SettingsRow(
-                title = stringResource(R.string.settings_network_usage_total),
-                shapes = shapes,
-                supportingContent = { Text(amountText(total)) },
-            )
-        }
-        DataKind.entries.forEach { kind ->
-            val amount = kinds[kind] ?: return@forEach
-            item(key = kind) { shapes ->
-                SettingsRow(
-                    title = dataKindName(kind),
-                    shapes = shapes,
-                    supportingContent = { Text(amountText(amount)) },
-                )
-            }
-        }
+    // Each network's kinds differ: one group cross-fades into the other as the page resizes
+    // (docs/DESIGN_SYSTEM.md §5.1).
+    StateCrossfade(state.network, modifier = Modifier.fillMaxWidth(), label = "NetworkUsage") { network ->
+        UsageGroup(state, network)
     }
     SettingsGroup {
         item { shapes ->
@@ -200,4 +183,36 @@ private fun sinceDate(seconds: Long): String {
         .ofLocalizedDate(FormatStyle.MEDIUM)
         .withLocale(locale)
         .format(Instant.ofEpochSecond(seconds).atZone(ZoneId.systemDefault()))
+}
+
+/** What [network] carried since TDLib began counting: the total and each kind of data. */
+@Composable
+private fun UsageGroup(
+    state: NetworkUsageUiState.Content,
+    network: AutoDownloadNetwork,
+) {
+    val kinds = state.usage.usage[network].orEmpty()
+    val total = kinds.values.fold(DataAmount(0, 0), DataAmount::plus)
+    SettingsGroup(
+        title = stringResource(R.string.settings_network_usage_since, sinceDate(state.usage.sinceDate)),
+        footer = stringResource(R.string.settings_network_usage_footer),
+    ) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_network_usage_total),
+                shapes = shapes,
+                supportingContent = { Text(amountText(total)) },
+            )
+        }
+        DataKind.entries.forEach { kind ->
+            val amount = kinds[kind] ?: return@forEach
+            item(key = kind) { shapes ->
+                SettingsRow(
+                    title = dataKindName(kind),
+                    shapes = shapes,
+                    supportingContent = { Text(amountText(amount)) },
+                )
+            }
+        }
+    }
 }
