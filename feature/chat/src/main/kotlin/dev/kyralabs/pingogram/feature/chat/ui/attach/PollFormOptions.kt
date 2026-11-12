@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -29,9 +32,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,9 +52,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.zIndex
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import kotlinx.coroutines.CoroutineScope
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -66,14 +74,16 @@ internal fun LazyListScope.pollOptionItems(
     listState: LazyListState,
 ) {
     item(key = OPTIONS) {
-        FormSectionHeader(
-            title = stringResource(R.string.poll_options),
-            note =
-                stringResource(
-                    R.string.poll_choose_correct,
-                ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
-            trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
-        )
+        FormItem {
+            FormSectionHeader(
+                title = stringResource(R.string.poll_options),
+                note =
+                    stringResource(
+                        R.string.poll_choose_correct,
+                    ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
+                trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
+            )
+        }
     }
     itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
         val drag = rememberOptionDrag(editor, listState)
@@ -107,16 +117,28 @@ internal fun LazyListScope.pollOptionItems(
     }
     if (editor.isQuiz) {
         item(key = EXPLANATION) {
-            OutlinedTextField(
-                state = editor.explanation,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
-                label = { Text(stringResource(R.string.poll_explanation_field)) },
-                supportingText = { Text(stringResource(R.string.poll_explanation_note)) },
-                inputTransformation = InputTransformation.maxLength(NewPoll.MAX_EXPLANATION_LENGTH),
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = EXPLANATION_LINES),
-            )
+            FormItem {
+                OutlinedTextField(
+                    state = editor.explanation,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
+                    label = { Text(stringResource(R.string.poll_explanation_field)) },
+                    supportingText = { Text(stringResource(R.string.poll_explanation_note)) },
+                    inputTransformation = InputTransformation.maxLength(NewPoll.MAX_EXPLANATION_LENGTH),
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = EXPLANATION_LINES),
+                )
+            }
         }
     }
+}
+
+/**
+ * A row of the poll form that comes, goes and moves on the motion scheme's springs (`docs/DESIGN_SYSTEM.md` §5,
+ * plan §3.3): as the form's choices add and take away rows (a quiz's explanation, the closing time, the countries),
+ * the rows below them slide instead of jumping.
+ */
+@Composable
+internal fun LazyItemScope.FormItem(content: @Composable () -> Unit) {
+    Box(Modifier.animateItem(this, rememberItemMotion())) { content() }
 }
 
 /** The row being dragged follows the finger above the rest; the others slide into their places on springs. */
@@ -203,9 +225,21 @@ private fun OptionRow(
                 }
             }
         }
-        option.link?.let { link ->
+        OptionLinkField(option.link)
+    }
+}
+
+/** The field of an option's [link], which grows in under the option and shrinks away, keeping its last state. */
+@Composable
+private fun OptionLinkField(link: TextFieldState?) {
+    val spacing = MaterialTheme.spacing
+    // The link's field grows in under the option and shrinks away, keeping its last state meanwhile.
+    val shownLink = remember { mutableStateOf(link) }
+    if (link != null) shownLink.value = link
+    GrowingVisibility(visible = link != null) {
+        shownLink.value?.let { field ->
             OutlinedTextField(
-                state = link,
+                state = field,
                 modifier = Modifier.fillMaxWidth().padding(start = spacing.extraExtraLarge, end = spacing.small),
                 label = { Text(stringResource(R.string.poll_option_link_field)) },
                 textStyle = MaterialTheme.typography.bodyLarge.numericContent,
@@ -262,23 +296,34 @@ private fun DragHandle(
 private fun rememberOptionDrag(
     editor: PollEditor,
     listState: LazyListState,
-): OptionDrag = remember(editor, listState) { OptionDrag(editor, listState) }
+): OptionDrag {
+    val scope = rememberCoroutineScope()
+    val motionScheme = MaterialTheme.motionScheme
+    return remember(editor, listState, scope, motionScheme) {
+        OptionDrag(editor, listState, scope, motionScheme.defaultSpatialSpec())
+    }
+}
 
 /**
  * The option being dragged ([draggedKey]) and how far it moved from its place ([offset], read in the graphics
  * layer). Passing the middle of a neighbouring option moves it there ([PollEditor.moveOption]), the offset taking
- * back what the new place moved, with a `SegmentTick`.
+ * back what the new place moved, with a `SegmentTick`. Let go, it settles into its place on [settle] (the default
+ * spatial spring) instead of jumping there, still above the rest until it is; a new drag takes it where it is.
  */
 @Stable
 private class OptionDrag(
     private val editor: PollEditor,
     private val listState: LazyListState,
+    private val scope: CoroutineScope,
+    private val settle: AnimationSpec<Float>,
 ) {
     var draggedKey by mutableStateOf<Long?>(null)
         private set
 
-    var offset by mutableFloatStateOf(0f)
-        private set
+    private val settling = SettlingOffset()
+
+    /** How far the option is from its place, also while it settles. */
+    val offset: Float get() = settling.value
 
     private var haptics: HapticFeedback? = null
 
@@ -286,19 +331,21 @@ private class OptionDrag(
         key: Long,
         feedback: HapticFeedback,
     ) {
+        // Another option still settling lands where it was going at once.
+        if (draggedKey != key) settling.snapTo(0f)
         draggedKey = key
-        offset = 0f
+        settling.snapTo(settling.value)
         haptics = feedback
     }
 
     fun stop() {
-        draggedKey = null
-        offset = 0f
+        val key = draggedKey ?: return
+        settling.settle(scope, 0f, settle) { if (draggedKey == key) draggedKey = null }
     }
 
     fun by(delta: Float) {
         val key = draggedKey ?: return
-        offset += delta
+        settling.dragBy(delta)
         val items = listState.layoutInfo.visibleItemsInfo
         val current = items.firstOrNull { it.key == key }
         val keys = editor.options.map { it.key }
@@ -312,7 +359,7 @@ private class OptionDrag(
             }
         if (current != null && target != null) {
             editor.moveOption(keys.indexOf(key), keys.indexOf(target.key))
-            offset += current.offset - target.offset
+            settling.dragBy((current.offset - target.offset).toFloat())
             haptics?.performHapticFeedback(HapticFeedbackType.SegmentTick)
         }
     }

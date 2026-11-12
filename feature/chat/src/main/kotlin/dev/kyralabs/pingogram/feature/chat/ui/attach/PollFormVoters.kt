@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.intl.Locale
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.phone.CountryPickerSheet
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -55,12 +56,14 @@ internal fun LazyListScope.pollVotersItems(
 ) {
     if (!sheet.isChannel) return
     item(key = VOTERS) {
-        Column(Modifier.selectableGroup()) {
-            FormSectionHeader(stringResource(R.string.poll_voters))
-            PollVoters.entries.forEach { option -> VotersRow(option, editor) }
+        FormItem {
+            Column(Modifier.selectableGroup()) {
+                FormSectionHeader(stringResource(R.string.poll_voters))
+                PollVoters.entries.forEach { option -> VotersRow(option, editor) }
+            }
         }
     }
-    if (editor.voters == PollVoters.Countries) item(key = COUNTRIES) { CountryChips(editor) }
+    if (editor.voters == PollVoters.Countries) item(key = COUNTRIES) { FormItem { CountryChips(editor) } }
 }
 
 @Composable
@@ -126,7 +129,7 @@ private fun CountryChips(editor: PollEditor) {
                 },
             )
         }
-        if (editor.countries.isEmpty()) {
+        GrowingVisibility(visible = editor.countries.isEmpty()) {
             Text(
                 text = stringResource(R.string.poll_country_none),
                 style = MaterialTheme.typography.bodyMedium,

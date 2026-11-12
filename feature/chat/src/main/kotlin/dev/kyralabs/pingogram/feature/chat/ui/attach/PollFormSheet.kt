@@ -197,22 +197,26 @@ internal fun ColumnScope.PollForm(
         verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
         item(key = QUESTION) {
-            OutlinedTextField(
-                state = editor.question,
-                modifier = fieldModifier,
-                label = { Text(stringResource(R.string.poll_question)) },
-                inputTransformation = InputTransformation.maxLength(NewPoll.MAX_QUESTION_LENGTH),
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
-            )
+            FormItem {
+                OutlinedTextField(
+                    state = editor.question,
+                    modifier = fieldModifier,
+                    label = { Text(stringResource(R.string.poll_question)) },
+                    inputTransformation = InputTransformation.maxLength(NewPoll.MAX_QUESTION_LENGTH),
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
+                )
+            }
         }
         pollMediaItem(editor, actions)
         item(key = DESCRIPTION) {
-            OutlinedTextField(
-                state = editor.description,
-                modifier = fieldModifier,
-                label = { Text(stringResource(R.string.poll_description)) },
-                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
-            )
+            FormItem {
+                OutlinedTextField(
+                    state = editor.description,
+                    modifier = fieldModifier,
+                    label = { Text(stringResource(R.string.poll_description)) },
+                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
+                )
+            }
         }
         pollOptionItems(editor, listState)
         pollSettingItems(sheet, editor, actions, now)

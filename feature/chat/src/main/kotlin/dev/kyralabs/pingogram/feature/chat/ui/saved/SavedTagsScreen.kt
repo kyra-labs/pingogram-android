@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -63,6 +64,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -161,6 +165,16 @@ private fun TagTitle(
     }
 }
 
+/** Which of [TaggedContent]'s states [this] is, the content the crossfade tells apart. */
+private val TaggedResults.kind: Int
+    get() =
+        when {
+            items.isNotEmpty() -> 0
+            error != null -> 1
+            isLoading -> 2
+            else -> 3
+        }
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TaggedList(
@@ -178,6 +192,21 @@ private fun TaggedList(
             .filter { it >= listState.layoutInfo.totalItemsCount - LOAD_AHEAD }
             .collect { onEvent(SavedTagEvent.LoadMore) }
     }
+    // An error, loading, nothing tagged and the list crossfade in place; pages within the list do not.
+    StateCrossfade(targetState = results, contentKey = { it.kind }, label = "taggedList") { shown ->
+        TaggedContent(shown, onEvent, contentPadding, listState)
+    }
+}
+
+/** What [TaggedList] shows for [results]: its error, loading, nothing tagged, or the list in [listState]. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TaggedContent(
+    results: TaggedResults,
+    onEvent: (SavedTagEvent) -> Unit,
+    contentPadding: PaddingValues,
+    listState: LazyListState,
+) {
     when {
         results.items.isEmpty() && results.error != null -> {
             ErrorRow(results, onEvent, Modifier.padding(MaterialTheme.spacing.medium))
@@ -197,16 +226,22 @@ private fun TaggedList(
         }
 
         else -> {
+            // Pages that load, and messages untagged meanwhile, come and go on the scheme's springs.
+            val motion = rememberItemMotion()
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
                 items(results.items, key = { it.messageId }, contentType = { "tagged" }) { item ->
-                    TaggedRow(item) { onEvent(SavedTagEvent.Open(item.messageId)) }
+                    TaggedRow(item, Modifier.animateItem(this, motion)) { onEvent(SavedTagEvent.Open(item.messageId)) }
                 }
                 if (results.isLoading) {
                     item(key = "loading", contentType = "loading") {
-                        LoadingIndicator(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small))
+                        LoadingIndicator(
+                            Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.small),
+                        )
                     }
                 } else if (results.error != null) {
-                    item(key = "error", contentType = "error") { ErrorRow(results, onEvent) }
+                    item(key = "error", contentType = "error") {
+                        ErrorRow(results, onEvent, Modifier.animateItem(this, motion))
+                    }
                 }
             }
         }
@@ -216,6 +251,7 @@ private fun TaggedList(
 @Composable
 private fun TaggedRow(
     item: TaggedItem,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val date =
@@ -226,7 +262,7 @@ private fun TaggedRow(
         }
     ListItem(
         onClick = onClick,
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+        modifier = modifier.padding(horizontal = MaterialTheme.spacing.small),
         supportingContent = { Text(date, style = MaterialTheme.typography.bodyMedium.userContent) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
