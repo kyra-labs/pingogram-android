@@ -646,14 +646,14 @@ M-078
 | S-2 `fix/motion-reorder-drop` | Shared | High | M-002, M-038, M-104 ✓ (#457) |
 | S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 |
 | S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 ✓ (#453) |
-| S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 |
+| S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 ✓ (#465) |
 | S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 |
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
 | A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
 | A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
 | A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 ✓ (#463) |
-| A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 |
+| A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 ✓ (#466) |
 | A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 |
 | A-6 `refactor/motion-message-menu` | A | Medium | M-033, M-043 |
 | A-7 `refactor/motion-chat-lists` | A | Low | M-045, M-049, M-050 |

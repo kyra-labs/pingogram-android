@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.animate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,12 +43,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Velocity
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.preview.NextChannelPreviewData
+import kotlinx.coroutines.CoroutineScope
 
 // Pulling a read channel up past its newest post opens the next unread channel (docs/DESIGN_SYSTEM.md §6).
 
@@ -57,8 +59,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.NextChannelPreviewData
  * How far the conversation of a read channel is pulled up past its newest post ([pull], in pixels), toward [next], and
  * what the pull does: the list's [connection] takes what the list leaves of an upward drag at its newest post, at
  * [RESISTANCE], and gives it back first as the drag turns down; [isArmed] once past [threshold], with a
- * `TextHandleMove` haptic as it crosses; released there, [onOpen] opens the channel, and the pull settles back on
- * [settle] either way. A fling of a pull goes nowhere else. Read in the layout and draw phases ([pullAway],
+ * `TextHandleMove` haptic as the finger crosses it either way; released there, [onOpen] opens the channel, and the
+ * pull settles back on [settle] in [scope] either way, from the fling's speed. A fling of a pull goes nowhere else, and
+ * a new pull takes the list where the settle has it. Read in the layout and draw phases ([pullAway],
  * [NextChannelIndicator]), so a pull recomposes nothing but the indicator's text as it arms. Previews start at
  * [initialPull].
  */
@@ -68,15 +71,17 @@ internal class NextChannelPullState(
     private val threshold: Float,
     private val haptics: HapticFeedback,
     private val settle: AnimationSpec<Float>,
+    private val scope: CoroutineScope,
     private val onOpen: (chatId: Long) -> Unit,
     initialPull: Float = 0f,
 ) {
     /** The channel a release past [threshold] opens. */
     var next: NextChannel by mutableStateOf(next)
 
-    /** How far the list is pulled, in pixels, at most [MAX_PULL] times [threshold]. */
-    var pull: Float by mutableFloatStateOf(initialPull)
-        private set
+    private val offset = SettlingOffset(initialPull)
+
+    /** How far the list is pulled, in pixels, at most [MAX_PULL] times [threshold], also while it settles. */
+    val pull: Float get() = offset.value.coerceIn(0f, threshold * MAX_PULL)
 
     /** How far toward [threshold] the list is pulled, 0 to 1. */
     val progress: Float get() = (pull / threshold).coerceIn(0f, 1f)
@@ -87,10 +92,11 @@ internal class NextChannelPullState(
     /** Opens [next] at once, for screen readers, which do not pull. */
     fun openNow() = onOpen(next.chatId)
 
+    /** Moves the pull to [value], stopping a settle that runs: the finger takes the list where it is. */
     private fun pullTo(value: Float) {
         val wasArmed = pull >= threshold
-        pull = value.coerceIn(0f, threshold * MAX_PULL)
-        if (!wasArmed && pull >= threshold) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        offset.snapTo(value.coerceIn(0f, threshold * MAX_PULL))
+        if (wasArmed != (pull >= threshold)) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
     val connection: NestedScrollConnection =
@@ -118,9 +124,11 @@ internal class NextChannelPullState(
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity {
-                if (pull <= 0f) return Velocity.Zero
+                if (pull <= 0f || offset.isSettling) return Velocity.Zero
                 if (isArmed) onOpen(next.chatId)
-                animate(pull, 0f, animationSpec = settle) { value, _ -> pull = value }
+                // Upward (negative) flings pull; the settle starts at the pull's speed and runs on its own.
+                offset.snapTo(pull)
+                offset.settle(scope, 0f, settle, velocity = -available.y * RESISTANCE)
                 return available
             }
         }
@@ -147,14 +155,16 @@ internal fun rememberNextChannelPull(
     val threshold = with(LocalDensity.current) { MaterialTheme.sizes.nextChatPullDistance.toPx() }
     val haptics = LocalHapticFeedback.current
     val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val scope = rememberCoroutineScope()
     val currentOnEvent by rememberUpdatedState(onEvent)
     val state =
-        remember(threshold, haptics, settle) {
+        remember(threshold, haptics, settle, scope) {
             NextChannelPullState(
                 next,
                 threshold,
                 haptics,
                 settle,
+                scope,
                 onOpen = { currentOnEvent(ChatEvent.OpenNextChannel(it)) },
             )
         }
@@ -226,14 +236,16 @@ internal fun NextChannelIndicator(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text =
-                        stringResource(
-                            if (pull.isArmed) R.string.chat_next_channel_release else R.string.chat_next_channel_pull,
-                        ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                StateCrossfade(pull.isArmed, label = "NextChannelHint") { armed ->
+                    Text(
+                        text =
+                            stringResource(
+                                if (armed) R.string.chat_next_channel_release else R.string.chat_next_channel_pull,
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -246,9 +258,11 @@ private fun NextChannelIndicatorPreview() {
         val threshold = with(LocalDensity.current) { MaterialTheme.sizes.nextChatPullDistance.toPx() }
         val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
         val haptics = LocalHapticFeedback.current
+        val scope = rememberCoroutineScope()
         Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
             listOf(threshold / 2, threshold).forEach { pull ->
-                val state = NextChannelPullState(NextChannelPreviewData.next, threshold, haptics, settle, {}, pull)
+                val state =
+                    NextChannelPullState(NextChannelPreviewData.next, threshold, haptics, settle, scope, {}, pull)
                 NextChannelIndicator(state)
             }
         }
