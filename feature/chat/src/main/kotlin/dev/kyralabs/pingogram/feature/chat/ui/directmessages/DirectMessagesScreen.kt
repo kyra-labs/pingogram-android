@@ -40,13 +40,17 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selectableGroup
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.IntOffset
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.ChatTopBar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatSearchField
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -85,7 +89,7 @@ internal fun DirectMessagesScreen(
     }
     Scaffold(
         modifier = modifier,
-        topBar = { state.header?.let { ChatTopBar(header = it, onBack = onBack) } },
+        topBar = { DirectTopBar(state.header, onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) { innerPadding ->
@@ -157,9 +161,26 @@ private fun DirectBody(
     contentPadding: PaddingValues,
 ) {
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
+    // Loading, empty, a failure and the rows crossfade in place; new rows within the list do not.
+    StateCrossfade(targetState = content, contentKey = { it::class }, label = "directBody") { shown ->
+        DirectBodyContent(shown, onEvent, onOpenTopic, listState, contentPadding, modifier = bodyModifier)
+    }
+}
+
+@Suppress("LongParameterList") // DirectBody's arguments, and the modifier of its states.
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DirectBodyContent(
+    content: DirectContent,
+    onEvent: (DirectMessagesEvent) -> Unit,
+    onOpenTopic: (topicId: Long) -> Unit,
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
     when (content) {
         DirectContent.Loading -> {
-            Box(bodyModifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
+            Box(modifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
         }
 
         is DirectContent.Empty -> {
@@ -174,7 +195,7 @@ private fun DirectBody(
                     stringResource(
                         if (content.isFiltered) R.string.direct_empty_filtered_body else R.string.direct_empty_body,
                     ),
-                modifier = bodyModifier,
+                modifier = modifier,
             )
         }
 
@@ -184,7 +205,7 @@ private fun DirectBody(
                 icon = UiR.drawable.ic_error,
                 title = stringResource(R.string.direct_error_title),
                 body = errorText(content.error),
-                modifier = bodyModifier,
+                modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 iconColor = MaterialTheme.colorScheme.onErrorContainer,
                 action = {
@@ -199,6 +220,21 @@ private fun DirectBody(
             DirectList(content, onEvent, onOpenTopic, listState, contentPadding)
         }
     }
+}
+
+/**
+ * The top bar of the channel the direct messages are of ([header], null until it is known), growing in once known
+ * instead of pushing the page down at once.
+ */
+@Composable
+private fun DirectTopBar(
+    header: ChatHeader?,
+    onBack: (() -> Unit)?,
+) {
+    // Kept, not state, so keeping it recomposes nothing.
+    val last = remember { arrayOfNulls<ChatHeader>(1) }
+    if (header != null) last[0] = header
+    GrowingVisibility(visible = header != null) { last[0]?.let { ChatTopBar(header = it, onBack = onBack) } }
 }
 
 /** The rows, keyed by topic, then a loading indicator while the next page loads; asks for it near the end. */
@@ -220,19 +256,22 @@ private fun DirectList(
             .filter { it }
             .collect { currentOnEvent(DirectMessagesEvent.LoadMore) }
     }
-    val placement = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    val motion = rememberItemMotion()
     LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
         items(content.rows, key = { it.topicId }, contentType = { CONTENT_TYPE_ROW }) { row ->
             DirectMessageRowItem(
                 row = row,
                 onClick = { onOpenTopic(row.topicId) },
                 onMarkUnread = { onEvent(DirectMessagesEvent.MarkUnread(row.topicId, it)) },
-                modifier = Modifier.animateItem(placementSpec = placement),
+                modifier = Modifier.animateItem(this, motion),
             )
         }
         if (content.isLoadingMore) {
             item(key = KEY_LOADING, contentType = KEY_LOADING) {
-                Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.large),
+                    contentAlignment = Alignment.Center,
+                ) {
                     LoadingIndicator()
                 }
             }

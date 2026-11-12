@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -71,12 +73,14 @@ private fun PinnedSheetContent(
         )
         val shownIndex = sheet.rows.indexOfFirst { it.messageId == sheet.shownId }.coerceAtLeast(0)
         val listState = rememberLazyListState(initialFirstVisibleItemIndex = shownIndex)
+        val motion = rememberItemMotion()
         LazyColumn(Modifier.selectableGroup(), state = listState) {
             items(sheet.rows, key = { it.messageId }, contentType = { CONTENT_TYPE_PINNED }) { row ->
                 PinnedMessageRow(
                     row = row,
                     selected = row.messageId == sheet.shownId,
                     onClick = { onEvent(PinnedEvent.ShowFromList(row.messageId)) },
+                    modifier = Modifier.animateItem(this, motion),
                 )
             }
         }
@@ -89,6 +93,7 @@ private fun PinnedMessageRow(
     row: PinnedRow,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val insets = sheetRowInsets()
     val preview = row.preview.resolve()
@@ -96,7 +101,7 @@ private fun PinnedMessageRow(
     ListItem(
         selected = selected,
         onClick = onClick,
-        modifier = Modifier.padding(insets),
+        modifier = modifier.padding(insets),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),
         supportingContent =

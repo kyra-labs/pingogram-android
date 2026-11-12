@@ -45,6 +45,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -168,22 +170,30 @@ private fun InteractionList(
     removes: Boolean,
 ) {
     val listState = rememberLazyListState()
+    // Rows that load, and those a removal of reactions takes out, come and go on the scheme's springs.
+    val motion = rememberItemMotion()
     LazyColumn(state = listState, modifier = Modifier.testTag(INTERACTIONS_LIST_TAG)) {
         items(content.rows, key = { it.key }, contentType = { CONTENT_TYPE_ROW }) { row ->
-            InteractionRowItem(
-                row = row,
-                onClick = { onEvent(InteractionsEvent.Open(row.sender)) },
-                onRemove = if (removes) ({ all -> onEvent(InteractionsEvent.AskRemove(row.sender, all)) }) else null,
-            )
+            Box(Modifier.animateItem(this, motion)) {
+                InteractionRowItem(
+                    row = row,
+                    onClick = { onEvent(InteractionsEvent.Open(row.sender)) },
+                    onRemove =
+                        if (removes) ({ all -> onEvent(InteractionsEvent.AskRemove(row.sender, all)) }) else null,
+                )
+            }
         }
         when (val more = content.more) {
             MoreInteractions.Loading -> {
-                item(key = KEY_MORE, contentType = KEY_MORE) { MoreLoading() }
+                item(
+                    key = KEY_MORE,
+                    contentType = KEY_MORE,
+                ) { Box(Modifier.animateItem(this, motion)) { MoreLoading() } }
             }
 
             is MoreInteractions.Failed -> {
                 item(key = KEY_MORE, contentType = KEY_MORE) {
-                    MoreFailed(more) { onEvent(InteractionsEvent.Retry) }
+                    Box(Modifier.animateItem(this, motion)) { MoreFailed(more) { onEvent(InteractionsEvent.Retry) } }
                 }
             }
 
