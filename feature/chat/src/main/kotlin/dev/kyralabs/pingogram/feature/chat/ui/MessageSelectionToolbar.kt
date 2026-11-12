@@ -29,6 +29,12 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.Stable
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -181,12 +187,52 @@ internal data class RowSelection(
 )
 
 /**
+ * The rows' checks coming and going with selection mode (`docs/DESIGN_SYSTEM.md` §6 "Selection mode"): their width
+ * on the motion scheme's fast spatial spring ([width], 0 to 1) and their opacity on its effects springs ([alpha]), one
+ * animation for the whole list, read by every row in its layout and draw phases ([selectionReveal]), so entering or
+ * leaving selection mode moves the bubbles beside the checks without recomposing a row in any frame.
+ */
+@Stable
+internal class SelectionReveal(
+    selecting: Boolean,
+) {
+    val width = Animatable(if (selecting) 1f else 0f)
+    val alpha = Animatable(if (selecting) 1f else 0f)
+
+    /** Whether the rows show their checks: in selection mode, or while they leave with it. */
+    val showsChecks: Boolean by derivedStateOf { width.targetValue > 0f || width.isRunning }
+}
+
+/** The list's [SelectionReveal], following whether it is [selecting]. */
+@Composable
+internal fun rememberSelectionReveal(selecting: Boolean): SelectionReveal {
+    val reveal = remember { SelectionReveal(selecting) }
+    val motionScheme = MaterialTheme.motionScheme
+    LaunchedEffect(selecting) {
+        val target = if (selecting) 1f else 0f
+        val fade = if (selecting) motionScheme.defaultEffectsSpec<Float>() else motionScheme.fastEffectsSpec()
+        coroutineScope {
+            launch { reveal.alpha.animateTo(target, fade) }
+            reveal.width.animateTo(target, motionScheme.fastSpatialSpec())
+        }
+    }
+    return reveal
+}
+
+/** Shows this check as much as [reveal] says: its width in the layout phase, its opacity in the draw phase. */
+internal fun Modifier.selectionReveal(reveal: SelectionReveal): Modifier =
+    revealHorizontally { reveal.width.value }.graphicsLayer { alpha = reveal.alpha.value }
+
+/**
  * The check at the start of a row in selection mode: a ring in `outline`, or, once selected, a filled check in
  * `primary` that springs in on the motion scheme's fast spatial spring (read in the draw phase). Decorative: the row
  * tells screen readers whether it is selected.
  */
 @Composable
-internal fun SelectionCheck(isSelected: Boolean) {
+internal fun SelectionCheck(
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val colors = MaterialTheme.colorScheme
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1f else SELECTION_CHECK_RESTING_SCALE,
@@ -201,7 +247,7 @@ internal fun SelectionCheck(isSelected: Boolean) {
         contentDescription = null,
         tint = if (isSelected) colors.primary else colors.outline,
         modifier =
-            Modifier
+            modifier
                 .padding(end = MaterialTheme.spacing.small)
                 .graphicsLayer {
                     scaleX = scale

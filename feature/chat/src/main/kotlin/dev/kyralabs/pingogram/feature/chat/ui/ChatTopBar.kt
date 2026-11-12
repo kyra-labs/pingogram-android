@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
@@ -70,7 +71,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * In selection mode ([selectedCount] not null, §6 "Selection mode") a [TopAppBar] of the same height shows
  * "3 selected" in `titleLarge` with a close button that leaves it ([onClearSelection]) in place of back; screen readers
- * hear the count change.
+ * hear the count change. The two bars crossfade on the effects springs ([StateCrossfade]).
  */
 @Composable
 internal fun ChatTopBar(
@@ -93,32 +94,38 @@ internal fun ChatTopBar(
             containerColor = colors.surfaceContainer,
             scrolledContainerColor = colors.surfaceContainer,
         )
-    if (selectedCount == null && header != null) {
-        CenterAlignedTopAppBar(
-            title = { ChatTitle(header, connection.labelRes(), onOpenProfile, onOpenChatInfo) },
-            modifier = modifier,
-            navigationIcon = { ChatNavigationIcon(selectedCount = null, onClearSelection = {}, onBack = onBack) },
-            actions = {
-                val openInfo = onOpenChatInfo.takeIf { header.opensChatInfo }
-                if (header.opensChatInfo && topicAction == null) {
-                    GroupActions(header, onSearch, openInfo?.let { { it(header.chatId) } }, onSetMuted)
-                } else {
-                    ChatActions(header, onSearch, onSecretChatEvent, topicAction)
-                }
-            },
-            expandedHeight = titleHeight(),
-            colors = barColors,
-        )
-        return
-    }
-    TopAppBar(
-        title = { selectedCount?.let { SelectionTitle(it) } },
+    // The two bars crossfade in place, the same height; a new count changes the selection bar's title, not the bar.
+    StateCrossfade(
+        targetState = selectedCount,
         modifier = modifier,
-        navigationIcon = { ChatNavigationIcon(selectedCount, onClearSelection, onBack) },
-        // The same height in selection mode, so entering it moves nothing.
-        expandedHeight = titleHeight(),
-        colors = barColors,
-    )
+        contentKey = { it != null },
+        label = "ChatTopBar",
+    ) { count ->
+        if (count == null && header != null) {
+            CenterAlignedTopAppBar(
+                title = { ChatTitle(header, connection.labelRes(), onOpenProfile, onOpenChatInfo) },
+                navigationIcon = { ChatNavigationIcon(selectedCount = null, onClearSelection = {}, onBack = onBack) },
+                actions = {
+                    val openInfo = onOpenChatInfo.takeIf { header.opensChatInfo }
+                    if (header.opensChatInfo && topicAction == null) {
+                        GroupActions(header, onSearch, openInfo?.let { { it(header.chatId) } }, onSetMuted)
+                    } else {
+                        ChatActions(header, onSearch, onSecretChatEvent, topicAction)
+                    }
+                },
+                expandedHeight = titleHeight(),
+                colors = barColors,
+            )
+        } else {
+            TopAppBar(
+                title = { count?.let { SelectionTitle(it) } },
+                navigationIcon = { ChatNavigationIcon(count, onClearSelection, onBack) },
+                // The same height in selection mode, so entering it moves nothing.
+                expandedHeight = titleHeight(),
+                colors = barColors,
+            )
+        }
+    }
 }
 
 /** "3 selected", a heading whose changes screen readers announce. */

@@ -134,6 +134,23 @@ class ChatRecompositionTest {
     }
 
     @Test
+    fun `entering selection mode composes each row once, and none in the frames its checks slide in`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        state = before.copy(selection = MessageSelection(persistentSetOf(MESSAGES.toLong()), persistentListOf()))
+        repeat(2) { frame() }
+        val entering = counter.recomposedOwn.filter { ROW in it }
+        counter.reset()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // At most once for each row laid out, as it learns it is selectable.
+        val rows = composeRule.runOnIdle { listState.layoutInfo.visibleItemsInfo.size }
+        assertTrue("${entering.size} recompositions of $rows rows", entering.size in 1..rows)
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
     fun `a new message composes only its own bubble`() {
         val before = messages(MESSAGES)
         setScreen(before)
@@ -399,6 +416,9 @@ class ChatRecompositionTest {
         const val RARE = 10
 
         const val JUMP_BUTTON = "JumpToBottomButtonKt"
+
+        /** A message's row, which selection mode composes again to add its check. */
+        const val ROW = "MessageBubbleKt.MessageBubbleRow"
 
         /** The lambdas of the screen's own file: the `Scaffold`'s slots, e.g. the jump button's. */
         const val SCREEN_LAMBDA = "dev.kyralabs.pingogram.feature.chat.ui.ChatScreenKt$$"

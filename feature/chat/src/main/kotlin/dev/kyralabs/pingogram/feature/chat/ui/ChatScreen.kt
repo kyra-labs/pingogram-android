@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -535,6 +536,12 @@ private fun MessageList(
     val fileStates = state.fileStates
     val playback = state.playback
     val selectedIds = state.selection?.messageIds
+    // The checks leave with selection mode as they came, showing the selection they had meanwhile.
+    val reveal = rememberSelectionReveal(selecting = selectedIds != null)
+    val lastSelectedIds = remember { arrayOfNulls<ImmutableSet<Long>>(1) }
+    if (selectedIds != null) lastSelectedIds[0] = selectedIds
+    val checkedIds = selectedIds ?: lastSelectedIds[0]?.takeIf { reveal.showsChecks }
+    val checks = RowChecks(selectedIds, checkedIds, reveal)
     val jumpState = bubbleResources.jump
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
@@ -563,7 +570,7 @@ private fun MessageList(
         }
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, selectedIds)
+            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, checks)
         }
         val header = state.header
         if (header?.secret != null && content.reachedStart) {
@@ -612,9 +619,22 @@ private fun LazyListScope.pagesState(
 }
 
 /**
+ * Selection mode as the list's rows show it: the messages selected ([selectedIds], null outside selection mode), those
+ * whose checks show ([checkedIds]: the same, and the last selection while the checks leave with it), and how much of
+ * the checks shows ([reveal]).
+ */
+@Stable
+private data class RowChecks(
+    val selectedIds: ImmutableSet<Long>?,
+    val checkedIds: ImmutableSet<Long>?,
+    val reveal: SelectionReveal,
+)
+
+/**
  * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
  * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message. In
- * selection mode ([selectedIds] not null) a bubble shows whether it is selected: an album's when any of its items is.
+ * selection mode ([RowChecks.selectedIds] not null) a bubble shows whether it is selected: an album's when any of its
+ * items is.
  */
 @Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
@@ -626,8 +646,9 @@ private fun ChatItemRow(
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
-    selectedIds: ImmutableSet<Long>? = null,
+    checks: RowChecks? = null,
 ) {
+    val selectedIds = checks?.selectedIds
     when (item) {
         is ChatItem.Bubble -> {
             val fileState = item.content.downloadableFileId?.let(fileStates::get)
@@ -641,6 +662,8 @@ private fun ChatItemRow(
                 modifier = modifier,
                 uploads = item.uploadsIn(uploads),
                 selection = selectedIds?.let { ids -> item.selectionIn(ids) },
+                check = checks?.checkedIds?.let { ids -> item.selectionIn(ids) },
+                reveal = checks?.reveal,
             )
         }
 

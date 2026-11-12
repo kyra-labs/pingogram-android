@@ -150,6 +150,8 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     selection: RowSelection? = null,
+    check: RowSelection? = selection,
+    reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
@@ -190,7 +192,9 @@ internal fun MessageBubbleRow(
                 },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (selection != null) SelectionCheck(isSelected)
+        if (check != null) {
+            SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
+        }
         BubbleRowContent(
             bubble = bubble,
             fileState = fileState,
