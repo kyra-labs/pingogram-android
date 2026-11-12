@@ -55,10 +55,30 @@ import dev.kyralabs.pingogram.feature.settings.R
 internal fun PrivacyCheckupCard(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var dismissed by rememberSaveable { mutableStateOf(false) }
     val open = PrivacySettings.filter { state.rules[it]?.choice == PrivacyChoice.Everybody }
-    if (dismissed || open.isEmpty()) return
+    // It shrinks away on "Not now" or once no setting is open, showing the settings it last named meanwhile
+    // (docs/DESIGN_SYSTEM.md §5.1); [modifier] goes inside, so the space it holds below goes with it.
+    val shown = remember { OpenSettings(open) }
+    if (open.isNotEmpty()) shown.settings = open
+    GrowingVisibility(visible = !dismissed && open.isNotEmpty()) {
+        Box(modifier) { CheckupCard(shown.settings, onOpen, onDismiss = { dismissed = true }) }
+    }
+}
+
+/** The privacy settings the checkup card names, kept while it leaves. */
+private class OpenSettings(
+    var settings: List<PrivacySetting>,
+)
+
+@Composable
+private fun CheckupCard(
+    open: List<PrivacySetting>,
+    onOpen: (PrivacySecurityPage) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     val resources = LocalResources.current
@@ -98,7 +118,7 @@ internal fun PrivacyCheckupCard(
                         ),
                 ) { Text(stringResource(R.string.settings_privacy_checkup_review)) }
                 TextButton(
-                    onClick = { dismissed = true },
+                    onClick = onDismiss,
                     shapes = ButtonDefaults.shapes(),
                     colors = ButtonDefaults.textButtonColors(contentColor = colors.onPrimaryContainer),
                 ) { Text(stringResource(R.string.settings_privacy_checkup_not_now)) }

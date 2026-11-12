@@ -1,9 +1,12 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -34,10 +37,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -51,6 +54,8 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.isDark
+import dev.kyralabs.pingogram.core.ui.theme.popIn
+import dev.kyralabs.pingogram.core.ui.theme.popOut
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.themeColorScheme
@@ -108,6 +113,9 @@ private fun ThemeModeCard(
     val haptics = LocalHapticFeedback.current
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.largeIncreased
+    val motion = MaterialTheme.motionScheme
+    // The ring fades in its own layer on the effects spring, read in the draw phase (docs/PERFORMANCE.md §4).
+    val ring = animateFloatAsState(if (selected) 1f else 0f, motion.defaultEffectsSpec(), label = "ThemeModeRing")
     Column(
         modifier =
             modifier.selectable(selected = selected, role = Role.RadioButton) {
@@ -117,46 +125,69 @@ private fun ThemeModeCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
     ) {
-        Box(
-            modifier =
+        Box(Modifier.fillMaxWidth().aspectRatio(CARD_ASPECT_RATIO)) {
+            Box(
                 Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(CARD_ASPECT_RATIO)
-                    .border(MaterialTheme.sizes.avatarRing, if (selected) colors.primary else Color.Transparent, shape)
-                    .padding(MaterialTheme.spacing.extraSmall)
-                    .clip(MaterialTheme.shapes.medium)
-                    .drawBehind {
-                        when (mode) {
-                            ThemeMode.Light -> drawSample(light)
-                            ThemeMode.Dark -> drawSample(dark)
-                            ThemeMode.System -> drawSplitSample(light, dark)
-                        }
-                    },
-        ) {
-            if (selected) {
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(MaterialTheme.spacing.extraSmall),
-                    shape = CircleShape,
-                    color = colors.primary,
-                    contentColor = colors.onPrimary,
-                ) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_check),
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .padding(
-                                    MaterialTheme.spacing.extraSmall,
-                                ).size(IconButtonDefaults.smallIconSize),
-                    )
-                }
-            }
+                    .matchParentSize()
+                    .graphicsLayer { alpha = ring.value }
+                    .border(MaterialTheme.sizes.avatarRing, colors.primary, shape),
+            )
+            ThemeModeSample(mode, light, dark, selected)
         }
         val typography = MaterialTheme.typography
         Text(
             text = stringResource(mode.labelRes()),
             style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
         )
+    }
+}
+
+/** The sample of [mode] inside the card's ring, with a check that pops in while [selected]. */
+@Composable
+private fun BoxScope.ThemeModeSample(
+    mode: ThemeMode,
+    light: ColorScheme,
+    dark: ColorScheme,
+    selected: Boolean,
+) {
+    val colors = MaterialTheme.colorScheme
+    val motion = MaterialTheme.motionScheme
+    Box(
+        modifier =
+            Modifier
+                .matchParentSize()
+                .padding(MaterialTheme.spacing.extraSmall)
+                .clip(MaterialTheme.shapes.medium)
+                .drawBehind {
+                    when (mode) {
+                        ThemeMode.Light -> drawSample(light)
+                        ThemeMode.Dark -> drawSample(dark)
+                        ThemeMode.System -> drawSplitSample(light, dark)
+                    }
+                },
+    ) {
+        AnimatedVisibility(
+            visible = selected,
+            modifier = Modifier.align(Alignment.TopEnd).padding(MaterialTheme.spacing.extraSmall),
+            enter = popIn(motion),
+            exit = popOut(motion),
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = colors.primary,
+                contentColor = colors.onPrimary,
+            ) {
+                Icon(
+                    painter = painterResource(UiR.drawable.ic_check),
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .padding(
+                                MaterialTheme.spacing.extraSmall,
+                            ).size(IconButtonDefaults.smallIconSize),
+                )
+            }
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
+import dev.kyralabs.pingogram.core.ui.theme.growInVertically
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.shrinkOutVertically
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -80,21 +85,95 @@ internal fun SettingsGroup(
     items: SettingsGroupScope.() -> Unit,
 ) {
     val rows = SettingsGroupScope().apply(items).items
+    val shown = remember { ShownRows() }
+    val entries = shown.update(rows)
+    val motion = MaterialTheme.motionScheme
+    val enter = remember(motion) { growInVertically(motion) }
+    val exit = remember(motion) { shrinkOutVertically(motion) }
     Column(modifier) {
         if (title != null) SettingsSectionHeader(title)
         CompositionLocalProvider(LocalSettingsIconTone provides iconTone) {
             Column(rowsModifier, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                 val seed = title?.length ?: 0
-                rows.forEachIndexed { index, row ->
-                    key(row.key ?: index) {
-                        CompositionLocalProvider(LocalSettingsRowPlace provides SettingsRowPlace(index, seed)) {
-                            row.content(ListItemDefaults.segmentedShapes(index, rows.size))
+                entries.forEach { entry ->
+                    key(entry.key) {
+                        CompositionLocalProvider(LocalSettingsRowPlace provides SettingsRowPlace(entry.index, seed)) {
+                            if (entry.key is RowIndex) {
+                                entry.item.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
+                            } else {
+                                AnimatedVisibility(visibleState = entry.visibility, enter = enter, exit = exit) {
+                                    entry.item.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         if (footer != null) SettingsFooter(footer)
+    }
+}
+
+/** The key of a row given none: its place in the group, so it comes and goes at once, as rows did before. */
+private data class RowIndex(
+    val index: Int,
+)
+
+/** A row a group shows: one of its [SettingsGroupScope] items, or one on its way out, until that way ends. */
+private class ShownRow(
+    val key: Any,
+    var item: SettingsGroupItem,
+    var index: Int,
+    var count: Int,
+    val visibility: MutableTransitionState<Boolean>,
+)
+
+/**
+ * The rows of a [SettingsGroup] as they come and go (`docs/DESIGN_SYSTEM.md` §5.1): a keyed row that comes after the
+ * group first showed grows in, and one that goes shrinks away in its place, on the motion scheme's springs, so the rows
+ * and groups below move rather than jump; the others keep their shapes from their place among the rows that stay. Rows
+ * without a key come and go at once, as their place is all that tells them apart.
+ */
+private class ShownRows {
+    private var rows = emptyList<ShownRow>()
+    private var started = false
+
+    /** The rows to show for [items]: theirs in order, with the rows leaving at the places they had. */
+    fun update(items: List<SettingsGroupItem>): List<ShownRow> {
+        val previous = rows.associateBy { it.key }
+        val current =
+            items.mapIndexed { index, item ->
+                val key = item.key ?: RowIndex(index)
+                previous[key]?.also {
+                    it.item = item
+                    it.index = index
+                    it.count = items.size
+                    it.visibility.targetState = true
+                } ?: ShownRow(
+                    key,
+                    item,
+                    index,
+                    items.size,
+                    MutableTransitionState(!started || key is RowIndex).apply {
+                        targetState = true
+                    },
+                )
+            }
+        val currentKeys = current.mapTo(HashSet()) { it.key }
+        val result = current.toMutableList()
+        rows.forEachIndexed { place, row ->
+            val leaving = row.key !in currentKeys && row.key !is RowIndex
+            val gone = row.visibility.isIdle && !row.visibility.currentState
+            if (leaving && !gone) {
+                row.visibility.targetState = false
+                // After the row that was above it, if it stays; at the top otherwise.
+                val above = rows.subList(0, place).lastOrNull { it.key in currentKeys || it in result }
+                result.add(above?.let { result.indexOf(it) + 1 } ?: 0, row)
+            }
+        }
+        rows = result
+        started = true
+        return result
     }
 }
 

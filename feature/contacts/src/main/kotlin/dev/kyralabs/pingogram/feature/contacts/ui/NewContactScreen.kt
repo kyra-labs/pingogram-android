@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.contacts.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -65,6 +64,7 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.feature.contacts.ui.preview.NewContactPreviewStates
 import kotlinx.coroutines.launch
@@ -136,7 +136,14 @@ internal fun NewContactScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler(enabled = state.notOnTelegram) { onEvent(NewContactEvent.ChangeNumber) }
+    // Back from "not on Telegram" to the form follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.notOnTelegram,
+            backTo = false.takeIf { state.notOnTelegram },
+            key = { it },
+            onBack = { onEvent(NewContactEvent.ChangeNumber) },
+        )
     Scaffold(
         modifier = modifier,
         // The top bar's container; the form sits on a sheet below it (ContentSheet).
@@ -155,8 +162,7 @@ internal fun NewContactScreen(
                         .padding(contentPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AnimatedContent(
-                    targetState = state.notOnTelegram,
+                steps.transition.AnimatedContent(
                     modifier =
                         Modifier
                             .padding(horizontal = windowMargin(), vertical = MaterialTheme.spacing.large)
@@ -165,7 +171,6 @@ internal fun NewContactScreen(
                         (fadeIn(motion.defaultEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec()))
                             .using(SizeTransform(clip = false) { _, _ -> motion.defaultSpatialSpec() })
                     },
-                    label = "NewContactStep",
                 ) { notOnTelegram ->
                     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
                         if (notOnTelegram) NotOnTelegram(state, onEvent) else NewContactForm(state, onEvent)

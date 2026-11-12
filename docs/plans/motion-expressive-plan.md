@@ -644,10 +644,10 @@ M-078
 |---|---|---|---|
 | S-1 `refactor/motion-helpers` | Shared | – | helpers, lint rule ✓ (#434) |
 | S-2 `fix/motion-reorder-drop` | Shared | High | M-002, M-038, M-104 ✓ (#457) |
-| S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 |
+| S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 ✓ (#480) |
 | S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 ✓ (#453) |
 | S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 ✓ (#465) |
-| S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 |
+| S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 ✓ (#481) |
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
 | A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
@@ -672,12 +672,12 @@ M-078
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 ✓ (#469) |
 | C-3 `fix/motion-profile-progress` | C | High | M-090, M-091 ✓ (#471) |
-| C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102 ✓ (#473), M-103 (C-9) |
-| C-5 `refactor/motion-settings-rows` | C | Medium | M-108 to M-113 |
-| C-6 `refactor/motion-passcode` | C | Medium | M-115 to M-119 |
-| C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 |
-| C-8 `fix/motion-auth-back` | C | Medium | M-123, M-124 |
-| C-9 `refactor/motion-step-back` | C | Low | M-122 (with M-028, M-051, M-078, M-103) |
+| C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102 ✓ (#473), M-103 ✓ (#483) |
+| C-5 `refactor/motion-settings-rows` | C | Medium | M-108 to M-113 ✓ (#475) |
+| C-6 `refactor/motion-passcode` | C | Medium | M-115 to M-119 ✓ (#477) |
+| C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 ✓ (#478) |
+| C-8 `fix/motion-auth-back` | C | Medium | M-123, M-124 ✓ (#479) |
+| C-9 `refactor/motion-step-back` | C | Low | M-122, M-051, M-078, M-103 ✓ (#483); M-028 → #482 |
 
 Every finding from M-001 to M-126 is in one row. A finding listed in two rows (M-089, and the step-backs of C-9) is
 split between them as the entries above say.

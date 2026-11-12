@@ -57,7 +57,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -254,6 +256,8 @@ private fun MembersLazyList(
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val rowModifier = Modifier.widthIn(max = maxWidth).fillMaxWidth().padding(horizontal = margin)
+    // Every item moves on the scheme's springs, so the header and the page's end move with the rows.
+    val itemMotion = rememberItemMotion()
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag(CHAT_MEMBERS_LIST_TEST_TAG),
         state = listState,
@@ -277,7 +281,7 @@ private fun MembersLazyList(
                         list.totalCount,
                         numbers.format(list.totalCount),
                     ),
-                modifier = rowModifier,
+                modifier = rowModifier.animateItem(this, itemMotion),
             )
         }
         itemsIndexed(list.items, key = { _, item -> item.key }, contentType = { _, _ -> ROW }) { index, item ->
@@ -286,17 +290,21 @@ private fun MembersLazyList(
                 shapes = ListItemDefaults.segmentedShapes(index, list.items.size),
                 onClick = { onEvent(ChatMembersEvent.Open(item.sender)) },
                 onAction = { action -> onEvent(ChatMembersEvent.Act(item.sender, action)) },
-                modifier = rowModifier.animateItem(),
+                modifier = rowModifier.animateItem(this, itemMotion),
             )
         }
         when (val more = list.more) {
             MoreMembers.Loading -> {
-                item(key = MORE, contentType = MORE) { MoreLoading() }
+                item(key = MORE, contentType = MORE) { MoreLoading(Modifier.animateItem(this, itemMotion)) }
             }
 
             is MoreMembers.Failed -> {
                 item(key = MORE, contentType = MORE) {
-                    MoreFailed(more, onRetry = { onEvent(ChatMembersEvent.LoadMore) }, modifier = rowModifier)
+                    MoreFailed(
+                        more,
+                        onRetry = { onEvent(ChatMembersEvent.LoadMore) },
+                        modifier = rowModifier.animateItem(this, itemMotion),
+                    )
                 }
             }
 
@@ -309,9 +317,9 @@ private fun MembersLazyList(
 /** The next page on its way: a loading indicator, which screen readers hear. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MoreLoading() {
+private fun MoreLoading(modifier: Modifier = Modifier) {
     val description = stringResource(R.string.chat_info_members_loading)
-    Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
         LoadingIndicator(Modifier.semantics { contentDescription = description })
     }
 }

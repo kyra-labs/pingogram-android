@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -172,8 +174,14 @@ private fun ReactionsGroup(
                 )
             }
         }
-    ProfileGroup(rows, Modifier.selectableGroup(), title = stringResource(R.string.chat_settings_reactions))
-    if (setting.choice == ReactionsChoice.Some) ReactionPicker(setting, enabled, onEvent)
+    // The picker grows in below the rows and shrinks away as "Some reactions" is chosen or left
+    // (docs/DESIGN_SYSTEM.md §5.1); one child of the page with them, so the gap between them comes and goes with it.
+    Column {
+        ProfileGroup(rows, Modifier.selectableGroup(), title = stringResource(R.string.chat_settings_reactions))
+        GrowingVisibility(visible = setting.choice == ReactionsChoice.Some) {
+            ReactionPicker(setting, enabled, onEvent, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
+        }
+    }
 }
 
 /** The emoji Telegram offers, each an `IconToggleButton` checked while members may react with it. */
@@ -182,9 +190,10 @@ private fun ReactionPicker(
     setting: ReactionsSetting,
     enabled: Boolean,
     onEvent: (ChatSettingsEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = profileRowContainerColor(),
     ) {

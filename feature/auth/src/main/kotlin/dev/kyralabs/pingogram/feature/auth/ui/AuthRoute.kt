@@ -45,12 +45,14 @@ import dev.kyralabs.pingogram.core.ui.passkey.rememberPasskeyCredentials
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTopBar
 import dev.kyralabs.pingogram.feature.auth.ui.components.ConnectionBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.FloodWaitBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.LocalAuthFloodWait
 import kotlinx.coroutines.launch
+import kotlin.reflect.KClass
 
 /**
  * The login flow destination: hoists [AuthViewModel], handles its effects (links, email, snackbars) and calls
@@ -169,7 +171,7 @@ private fun HapticFeedback.performFeedbackFromApi34(type: HapticFeedbackType) {
  * snackbars, and the current step, switched with a Material shared axis Y transition (`docs/DESIGN_SYSTEM.md` §5:
  * vertical flows). System back within the flow follows the predictive back gesture: the transition to the step back
  * leads to ([AuthUiState.backStep]) follows the gesture's progress, and [AuthEvent.Back] goes back once it completes
- * ([rememberAuthStepTransition]).
+ * (`core:ui`'s [rememberSeekableSteps]; with animations off it previews nothing).
  */
 @Composable
 fun AuthScreen(
@@ -180,7 +182,14 @@ fun AuthScreen(
     canUsePasskeys: Boolean = false,
 ) {
     val motion = MaterialTheme.motionScheme
-    val steps = rememberAuthStepTransition(state = state, onBack = { onEvent(AuthEvent.Back) })
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = state.backStep,
+            key = { it::class },
+            enabled = state.canGoBack,
+            onBack = { onEvent(AuthEvent.Back) },
+        )
     val spatial = motion.defaultSpatialSpec<IntOffset>()
     val enterFade = motion.defaultEffectsSpec<Float>()
     val exitFade = motion.fastEffectsSpec<Float>()
@@ -285,11 +294,15 @@ private fun AuthStepContent(
     }
 }
 
+/** A login step by its screen: the transition switches screens, not the states of one screen. */
+internal typealias StepKey = KClass<out AuthStepUiState>
+
 /**
  * Material shared axis Y (`docs/DESIGN_SYSTEM.md` §5): going forward, the next step rises in from below while the
  * current one rises out, both by [distance] px and fading; going back, the reverse. Spatial and effects springs from
  * `MaterialTheme.motionScheme`.
  */
+
 private fun AnimatedContentTransitionScope<StepKey>.sharedAxisY(
     spatial: FiniteAnimationSpec<IntOffset>,
     enterFade: FiniteAnimationSpec<Float>,

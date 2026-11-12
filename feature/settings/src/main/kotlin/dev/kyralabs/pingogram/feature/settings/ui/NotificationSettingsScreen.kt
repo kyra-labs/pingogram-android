@@ -6,7 +6,12 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -28,7 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.notifications.PingogramChannel
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -130,15 +137,18 @@ private fun ScopeGroups(
             // One kind of chat at a time, picked above it (docs/DESIGN_SYSTEM.md §13.10).
             var shown by rememberSaveable { mutableStateOf(NotificationScope.PrivateChats) }
             ScopePicker(shown) { shown = it }
-            for (scope in NotificationScope.entries.filter { it == shown }) {
-                val settings = scopes.settings[scope] ?: continue
-                ScopeGroup(
-                    scope = scope,
-                    settings = settings,
-                    channelBlocked = scope in state.blockedChannels,
-                    onEvent = onEvent,
-                    onOpenExceptions = { onOpen(NotificationSettingsPage.Exceptions(scope)) },
-                )
+            // The groups differ in their rows: one cross-fades into the other as the page resizes
+            // (docs/DESIGN_SYSTEM.md §5.1).
+            StateCrossfade(shown, modifier = Modifier.fillMaxWidth(), label = "NotificationScope") { scope ->
+                scopes.settings[scope]?.let { settings ->
+                    ScopeGroup(
+                        scope = scope,
+                        settings = settings,
+                        channelBlocked = scope in state.blockedChannels,
+                        onEvent = onEvent,
+                        onOpenExceptions = { onOpen(NotificationSettingsPage.Exceptions(scope)) },
+                    )
+                }
             }
         }
     }
@@ -169,8 +179,18 @@ internal fun NotificationSettingsScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
-        if (state.notificationsBlocked) NotificationsOff { onEvent(NotificationSettingsEvent.TurnOnNotifications) }
-        ScopeGroups(state, onEvent, onOpen)
+        // The banner grows in above the groups and shrinks away as Android's setting changes (docs/DESIGN_SYSTEM.md
+        // §5.1): one child of the page with them, so the gap below it comes and goes with it.
+        Column {
+            GrowingVisibility(visible = state.notificationsBlocked) {
+                Box(Modifier.padding(bottom = settingsGroupSpacing())) {
+                    NotificationsOff { onEvent(NotificationSettingsEvent.TurnOnNotifications) }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(settingsGroupSpacing())) {
+                ScopeGroups(state, onEvent, onOpen)
+            }
+        }
         state.fromAllAccounts?.let { all ->
             AccountsGroup(
                 fromAllAccounts = all,

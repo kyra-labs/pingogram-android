@@ -1,8 +1,11 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo.requests
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -29,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -132,22 +136,28 @@ private fun RequestsContent(
     state: JoinRequestsUiState.Content,
     onEvent: (JoinRequestsEvent) -> Unit,
 ) {
-    if (state.requests.size > 1) AllButtons(state, onEvent)
     val rows =
         state.requests.map { item ->
             ProfileRow(item.userId.toString()) { shapes ->
                 RequestRow(item, shapes, enabled = item.userId !in state.busy && !state.isProcessingAll, onEvent)
             }
         }
-    if (rows.isEmpty()) {
-        Text(
-            text = stringResource(R.string.join_requests_none),
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    } else {
-        ProfileGroup(rows)
+    // "Add all" and "Dismiss all" grow in above the requests and shrink away once one is left (docs/DESIGN_SYSTEM.md
+    // §5.1); one child of the page with them, so the gap between them comes and goes with the buttons.
+    Column {
+        GrowingVisibility(visible = state.requests.size > 1) {
+            Box(Modifier.padding(bottom = MaterialTheme.spacing.extraLarge)) { AllButtons(state, onEvent) }
+        }
+        if (rows.isEmpty()) {
+            Text(
+                text = stringResource(R.string.join_requests_none),
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
+            ProfileGroup(rows)
+        }
     }
     if (state.hasMore) MoreRow(state, onEvent)
     Text(
