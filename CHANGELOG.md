@@ -141,6 +141,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
 - The answer slider responds to quick slides and flicks.
+- Smoother folder swipes, also when swiping twice quickly.
 
 ## [2.0.0] - 2026-11-08
 
