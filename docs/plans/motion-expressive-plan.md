@@ -645,7 +645,7 @@ M-078
 | S-1 `refactor/motion-helpers` | Shared | – | helpers, lint rule ✓ (#434) |
 | S-2 `fix/motion-reorder-drop` | Shared | High | M-002, M-038, M-104 |
 | S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 |
-| S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 |
+| S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 ✓ (#453) |
 | S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 |
 | S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 |
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
