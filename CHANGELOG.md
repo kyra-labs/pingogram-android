@@ -144,6 +144,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother drops when reordering folders, sticker sets and pinned topics.
 - Buttons no longer move while Telegram checks a code or password.
 - Smoother Data and storage and settings search.
+- Group settings no longer jump while a change is saved.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
