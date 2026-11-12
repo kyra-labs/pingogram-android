@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui.ai
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
+import androidx.compose.runtime.remember
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -82,15 +86,23 @@ internal fun TextStyleSheet(
                 .padding(bottom = MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-            ) {
-                when (state) {
-                    TextStyleUiState.Loading -> DelayedLoadingIndicator()
-                    is TextStyleUiState.Failed -> StyleFailed(state, onEvent, onClose)
-                    is TextStyleUiState.Content -> StyleContent(state, onEvent, onClose)
+            // Loading, a failure and the style crossfade in place.
+            StateCrossfade(
+                targetState = state,
+                modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+                contentAlignment = Alignment.TopCenter,
+                contentKey = { it::class },
+                label = "textStyle",
+            ) { shown ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                ) {
+                    when (shown) {
+                        TextStyleUiState.Loading -> DelayedLoadingIndicator()
+                        is TextStyleUiState.Failed -> StyleFailed(shown, onEvent, onClose)
+                        is TextStyleUiState.Content -> StyleContent(shown, onEvent, onClose)
+                    }
                 }
             }
         }
@@ -134,13 +146,18 @@ private fun StyleContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    state.error?.let { error ->
-        Text(
-            text = errorText(error),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-        )
+    // Telegram's refusal grows in above the buttons rather than pushing them down at once.
+    val lastError = remember { arrayOfNulls<DomainError>(1) }
+    state.error?.let { lastError[0] = it }
+    GrowingVisibility(visible = state.error != null) {
+        lastError[0]?.let { error ->
+            Text(
+                text = errorText(error),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
     }
     if (state.busy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
     StyleButtons(state, onEvent, onClose)
@@ -157,6 +174,18 @@ private fun StyleButtons(
         TextButton(onClick = onClose, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.ai_style_close))
         }
+        // "Add style" and "Remove style" crossfade in place once Telegram took the change.
+        StateCrossfade(targetState = state, contentKey = { it.isAdded }, label = "textStyleAction") { shown ->
+            StyleAction(shown, onEvent)
+        }
+    }
+}
+
+@Composable
+private fun StyleAction(
+    state: TextStyleUiState.Content,
+    onEvent: (TextStyleEvent) -> Unit,
+) {
         when {
             !state.isAdded -> {
                 Button(
@@ -180,7 +209,6 @@ private fun StyleButtons(
                 }
             }
         }
-    }
 }
 
 /** The style on a short English text: "Before" and "After" in `labelMedium` over the texts. */

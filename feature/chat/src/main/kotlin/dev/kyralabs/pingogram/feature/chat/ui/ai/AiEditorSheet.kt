@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.ai
 
+import androidx.compose.runtime.remember
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,10 +79,18 @@ internal fun AiEditorSheet(
                 .padding(bottom = MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-                when (state) {
-                    AiEditorUiState.Consent -> AiConsent(onEvent)
-                    is AiEditorUiState.Editor -> AiEditor(state, onEvent)
+            // The one-time explanation gives way to the editor, crossfading in place.
+            StateCrossfade(
+                targetState = state,
+                modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+                contentKey = { it is AiEditorUiState.Consent },
+                label = "aiEditor",
+            ) { shown ->
+                Column {
+                    when (shown) {
+                        AiEditorUiState.Consent -> AiConsent(onEvent)
+                        is AiEditorUiState.Editor -> AiEditor(shown, onEvent)
+                    }
                 }
             }
         }
@@ -247,17 +258,21 @@ private fun AiChoices(
     state: AiEditorUiState.Editor,
     onEvent: (AiEditorEvent) -> Unit,
 ) {
-    if (state.mode == AiMode.Fix) return
-    if (state.mode == AiMode.Translate) {
+    // What a mode adds grows in as it is chosen and shrinks away as another is.
+    GrowingVisibility(visible = state.mode == AiMode.Translate) {
         LanguageField(state.language, state.languages) { onEvent(AiEditorEvent.SetLanguage(it)) }
     }
-    StyleChips(
-        styles = state.styles,
-        selected = state.styleName,
-        canKeep = state.mode == AiMode.Translate,
-        onSelect = { onEvent(AiEditorEvent.SetStyle(it)) },
-    )
-    EmojiRow(state.addEmoji) { onEvent(AiEditorEvent.SetAddEmoji(it)) }
+    GrowingVisibility(visible = state.mode != AiMode.Fix) {
+        Column {
+            StyleChips(
+                styles = state.styles,
+                selected = state.styleName,
+                canKeep = state.mode == AiMode.Translate,
+                onSelect = { onEvent(AiEditorEvent.SetStyle(it)) },
+            )
+            EmojiRow(state.addEmoji) { onEvent(AiEditorEvent.SetAddEmoji(it)) }
+        }
+    }
 }
 
 @Composable
@@ -288,7 +303,18 @@ private fun EmojiRow(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AiResultCard(result: AiResult) {
-    if (result == AiResult.Idle) return
+    // The card grows in with the first result and shrinks away when a changed choice drops it, showing the last one.
+    val last = remember { arrayOfNulls<AiResult>(1) }
+    if (result != AiResult.Idle) last[0] = result
+    GrowingVisibility(visible = result != AiResult.Idle) {
+        last[0]?.let { ResultCard(it) }
+    }
+}
+
+/** [AiResultCard]'s card: its states crossfade in place, the card's height on the scheme's spring. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ResultCard(result: AiResult) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -300,6 +326,17 @@ private fun AiResultCard(result: AiResult) {
                 .semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
+            StateCrossfade(targetState = result, contentKey = { it::class }, label = "aiResult") { shown ->
+                ResultContent(shown)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ResultContent(result: AiResult) {
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
             when (result) {
                 AiResult.Working -> {
                     Text(
@@ -326,7 +363,6 @@ private fun AiResultCard(result: AiResult) {
                     Unit
                 }
             }
-        }
     }
 }
 
