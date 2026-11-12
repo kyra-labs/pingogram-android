@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui.oauth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -14,14 +13,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 
 // The parts of the "Log in with Telegram" sheet's question (OauthLoginSheet.kt).
 
@@ -130,10 +128,8 @@ private fun ToggleRow(
     )
 }
 
-/** A wavy line while Telegram answers, which screen readers hear. */
+/** A wavy line while Telegram answers, which screen readers hear, in a place kept above the buttons. */
 @Composable
 internal fun Progress(visible: Boolean) {
-    if (!visible) return
-    val description = stringResource(R.string.settings_oauth_working)
-    LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = description })
+    StepProgress(visible, stringResource(R.string.settings_oauth_working))
 }

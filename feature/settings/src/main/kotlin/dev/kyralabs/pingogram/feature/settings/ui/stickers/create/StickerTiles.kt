@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.feature.settings.ui.account.StepText
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowContainerColor
 import kotlinx.collections.immutable.ImmutableList
@@ -110,10 +111,7 @@ internal fun ColumnScope.StickersStep(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-    if (state.isPublishing) {
-        val busy = stringResource(R.string.settings_new_sticker_set_publishing)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = busy })
-    }
+    StepProgress(state.isPublishing, stringResource(R.string.settings_new_sticker_set_publishing))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         Button(
             onClick = { onEvent(NewStickerSetEvent.Publish) },

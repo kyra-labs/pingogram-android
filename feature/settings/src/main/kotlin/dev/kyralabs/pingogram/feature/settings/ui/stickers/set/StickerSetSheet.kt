@@ -27,7 +27,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -69,6 +68,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.shareStickerSet
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerCount
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerKindTexts
@@ -195,13 +195,13 @@ private fun StickerSetDetails(
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
             state.changeError?.let { ChangeError(it) }
-            if (state.isChanging) {
-                val changing =
+            StepProgress(
+                visible = state.isChanging,
+                description =
                     stringResource(
                         stickerKindTexts(state.kind).run { if (state.isInstalled) sheetRemoving else sheetAdding },
-                    )
-                LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = changing })
-            }
+                    ),
+            )
             SetActions(state, onEvent, onShare)
         }
     }

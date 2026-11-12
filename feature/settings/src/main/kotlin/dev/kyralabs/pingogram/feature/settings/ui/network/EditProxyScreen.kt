@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SecureTextField
@@ -37,7 +36,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +57,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
@@ -265,10 +264,7 @@ private fun FormEnd(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-    if (state.saving) {
-        val saving = stringResource(R.string.settings_proxy_saving)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = saving })
-    }
+    StepProgress(state.saving, stringResource(R.string.settings_proxy_saving))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

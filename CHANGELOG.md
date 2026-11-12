@@ -132,6 +132,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- Smoother selection checks, photo uploads and scrolling to the top of a tab; New chat, search and profiles grow open more gently.
 - Smoother QR code scanner as the camera is allowed.
 - Smoother stories: New story's steps slide, and the viewer closes on a swipe down only.
 - Smoother media viewer: the bar fades in, zoomed photos glide, page taps match swipes.
@@ -141,6 +142,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The back gesture previews full-screen pages as it does others.
 - Smoother reordering of a story's photos.
 - Smoother drops when reordering folders, sticker sets and pinned topics.
+- Buttons no longer move while Telegram checks a code or password.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.

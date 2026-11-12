@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui.twostep
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecureTextField
@@ -17,7 +15,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +30,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -145,7 +145,7 @@ internal fun fieldErrorText(error: TwoStepVerificationFieldError?): String? =
 
 /**
  * While Telegram asks to wait (`FLOOD_WAIT`): the time left in the error role, and beside it a determinate
- * [CircularWavyProgressIndicator] that runs down from [totalSeconds] (`docs/DESIGN_SYSTEM.md` §5), gliding from one
+ * `CountdownIndicator` that runs down from [totalSeconds] (`docs/DESIGN_SYSTEM.md` §5), gliding from one
  * second to the next on the effects spring and read while drawing. The indicator is hidden from screen readers; they
  * hear the text as a polite live region, under a minute in 15-second steps rather than every second.
  */
@@ -155,11 +155,6 @@ internal fun FloodWaitNote(
     totalSeconds: Long,
     modifier: Modifier = Modifier,
 ) {
-    val fraction by animateFloatAsState(
-        targetValue = if (totalSeconds > 0) seconds.toFloat() / totalSeconds else 0f,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "FloodWait",
-    )
     val text = stringResource(R.string.settings_two_step_flood_wait, durationText(seconds))
     val announced = if (seconds in 1 until SECONDS_PER_MINUTE) (seconds + STEP - 1) / STEP * STEP else seconds
     val announcement = stringResource(R.string.settings_two_step_flood_wait, durationText(announced))
@@ -168,9 +163,9 @@ internal fun FloodWaitNote(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CircularWavyProgressIndicator(
-            progress = { fraction },
-            modifier = Modifier.clearAndSetSemantics {},
+        CountdownIndicator(
+            secondsLeft = seconds,
+            totalSeconds = totalSeconds,
             color = MaterialTheme.colorScheme.error,
         )
         Text(
@@ -184,6 +179,27 @@ internal fun FloodWaitNote(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
+}
+
+/**
+ * [FloodWaitNote] while Telegram asks to wait ([seconds] not null): it grows in above a step's buttons and shrinks away
+ * once the wait is over (`docs/DESIGN_SYSTEM.md` §5.1), showing the last second it counted on its way out.
+ */
+@Composable
+internal fun FloodWaitSlot(
+    seconds: Long?,
+    totalSeconds: Long,
+) {
+    val last = remember { LastSeconds() }
+    if (seconds != null) last.value = seconds
+    GrowingVisibility(visible = seconds != null) {
+        FloodWaitNote(seconds = seconds ?: last.value, totalSeconds = totalSeconds)
+    }
+}
+
+/** The seconds the countdown showed last, kept for its way out; not state, as only the leaving note reads it. */
+private class LastSeconds {
+    var value = 0L
 }
 
 private const val SECONDS_PER_MINUTE = 60L

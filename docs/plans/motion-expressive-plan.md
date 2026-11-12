@@ -646,7 +646,7 @@ M-078
 | S-2 `fix/motion-reorder-drop` | Shared | High | M-002, M-038, M-104 ✓ (#457) |
 | S-3 `fix/motion-pane-handle` | Shared | Medium | M-001 |
 | S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 ✓ (#453) |
-| S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 |
+| S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 ✓ (#465) |
 | S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 |
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
@@ -669,7 +669,7 @@ M-078
 | B-8 `refactor/motion-media-viewer` | B | Medium | M-073, M-074, M-075, M-081, M-082, M-083 ✓ (#456) |
 | B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460) |
 | B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 ✓ (#462) |
-| C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 |
+| C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 |
 | C-3 `fix/motion-profile-progress` | C | High | M-090, M-091 |
 | C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102, M-103 |
