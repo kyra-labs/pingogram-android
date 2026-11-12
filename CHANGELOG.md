@@ -146,6 +146,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother Data and storage and settings search.
 - Group settings no longer jump while a change is saved.
 - The Add contact button no longer moves while it works.
+- Smoother settings pages when rows appear or go.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.

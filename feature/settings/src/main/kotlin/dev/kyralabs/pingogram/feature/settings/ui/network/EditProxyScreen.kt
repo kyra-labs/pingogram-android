@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
@@ -44,6 +45,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.ProxyKind
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.numericContent
@@ -58,6 +61,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
+import dev.kyralabs.pingogram.feature.settings.ui.settingsGroupSpacing
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
@@ -145,17 +149,21 @@ private fun ColumnScope.ProxyFormContent(
             }
         }
     }
-    ProxyFields(state, change)
-    if (form.kind == ProxyKind.Http) {
-        SettingsGroup {
-            item { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_proxy_http_only),
-                    summary = stringResource(R.string.settings_proxy_http_only_summary),
-                    checked = form.httpOnly,
-                    shapes = shapes,
-                    onCheckedChange = { change(form.copy(httpOnly = it)) },
-                )
+    // HTTP's own switch grows in below the fields and shrinks away with another protocol (docs/DESIGN_SYSTEM.md §5.1):
+    // one child of the page with them, so the gap above it comes and goes with it.
+    Column {
+        ProxyFields(state, change)
+        GrowingVisibility(visible = form.kind == ProxyKind.Http) {
+            SettingsGroup(Modifier.padding(top = settingsGroupSpacing())) {
+                item { shapes ->
+                    SwitchItem(
+                        title = stringResource(R.string.settings_proxy_http_only),
+                        summary = stringResource(R.string.settings_proxy_http_only_summary),
+                        checked = form.httpOnly,
+                        shapes = shapes,
+                        onCheckedChange = { change(form.copy(httpOnly = it)) },
+                    )
+                }
             }
         }
     }
@@ -208,38 +216,56 @@ private fun CredentialFields(
     change: (ProxyForm) -> Unit,
 ) {
     val form = state.form
-    when (form.kind) {
-        ProxyKind.Socks5, ProxyKind.Http -> {
-            ProxyField(
-                value = form.username,
-                onValueChange = { change(form.copy(username = it)) },
-                label = stringResource(R.string.settings_proxy_username),
-                enabled = !state.saving,
-                keyboardType = KeyboardType.Ascii,
-                numeric = true,
-            )
-            SecretField(
-                value = form.password,
-                onValueChange = { change(form.copy(password = it)) },
-                label = stringResource(R.string.settings_proxy_password),
-                enabled = !state.saving,
-            )
-        }
-
-        ProxyKind.Mtproto -> {
-            SecretField(
-                value = form.secret,
-                onValueChange = { change(form.copy(secret = it)) },
-                label = stringResource(R.string.settings_proxy_secret),
-                enabled = !state.saving,
-                error =
-                    stringResource(R.string.settings_proxy_secret_error).takeIf {
-                        ProxyField.Secret in
-                            state.errors
-                    },
-            )
+    // A username and password, or the secret: one cross-fades into the other as the form resizes (docs/DESIGN_SYSTEM.md
+    // §5.1). Keyed on what the protocol asks for, so SOCKS5 and HTTP keep their fields.
+    StateCrossfade(
+        targetState = form.kind == ProxyKind.Mtproto,
+        modifier = Modifier.fillMaxWidth(),
+        label = "ProxyCredentials",
+    ) { secret ->
+        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
+            if (secret) SecretCredential(state, change) else LoginCredentials(state, change)
         }
     }
+}
+
+/** The username and password of a SOCKS5 or HTTP proxy. */
+@Composable
+private fun LoginCredentials(
+    state: EditProxyUiState.Form,
+    change: (ProxyForm) -> Unit,
+) {
+    val form = state.form
+    ProxyField(
+        value = form.username,
+        onValueChange = { change(form.copy(username = it)) },
+        label = stringResource(R.string.settings_proxy_username),
+        enabled = !state.saving,
+        keyboardType = KeyboardType.Ascii,
+        numeric = true,
+    )
+    SecretField(
+        value = form.password,
+        onValueChange = { change(form.copy(password = it)) },
+        label = stringResource(R.string.settings_proxy_password),
+        enabled = !state.saving,
+    )
+}
+
+/** The secret of an MTProto proxy. */
+@Composable
+private fun SecretCredential(
+    state: EditProxyUiState.Form,
+    change: (ProxyForm) -> Unit,
+) {
+    val form = state.form
+    SecretField(
+        value = form.secret,
+        onValueChange = { change(form.copy(secret = it)) },
+        label = stringResource(R.string.settings_proxy_secret),
+        enabled = !state.saving,
+        error = stringResource(R.string.settings_proxy_secret_error).takeIf { ProxyField.Secret in state.errors },
+    )
 }
 
 /** How "Check" went (a polite live region), the progress while saving, then "Check" and "Save". */
