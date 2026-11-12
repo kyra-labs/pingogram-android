@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -52,28 +53,34 @@ internal fun AuthTopBar(
 ) {
     TopAppBar(
         modifier = modifier,
+        // The status and the back arrow cross-fade as they come and go (docs/DESIGN_SYSTEM.md §5).
         title = {
-            val status = connection.statusText()
-            if (status != null) {
-                Text(
-                    text = status,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    // Offline, the ConnectionBanner announces it instead.
-                    modifier =
-                        Modifier.semantics {
-                            if (connection != ConnectionStatus.WaitingForNetwork) liveRegion = LiveRegionMode.Polite
-                        },
-                )
+            StateCrossfade(connection.statusText(), label = "AuthConnectionStatus") { status ->
+                if (status != null) {
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        // Offline, the ConnectionBanner announces it instead.
+                        modifier =
+                            Modifier.semantics {
+                                if (connection != ConnectionStatus.WaitingForNetwork) {
+                                    liveRegion = LiveRegionMode.Polite
+                                }
+                            },
+                    )
+                }
             }
         },
         navigationIcon = {
-            if (onBack != null) {
-                IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.auth_back),
-                    )
+            StateCrossfade(onBack, contentKey = { it != null }, label = "AuthBack") { back ->
+                if (back != null) {
+                    IconButton(onClick = back, shapes = IconButtonDefaults.shapes()) {
+                        Icon(
+                            painter = painterResource(UiR.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.auth_back),
+                        )
+                    }
                 }
             }
         },

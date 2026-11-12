@@ -149,6 +149,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother settings pages when rows appear or go.
 - Smoother passcode screen and theme choices.
 - Smoother profile, group info and member lists.
+- A second back swipe during sign-in no longer flickers.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
