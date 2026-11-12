@@ -56,6 +56,7 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -176,6 +177,7 @@ private fun SharedMediaPaneBody(
     BoxWithConstraints(Modifier.fillMaxSize().consumeWindowInsets(innerPadding)) {
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().padding(remember(innerPadding) { innerPadding.topOnly() }),
@@ -183,7 +185,7 @@ private fun SharedMediaPaneBody(
             contentPadding =
                 remember(innerPadding, extraLarge) { innerPadding.withTop(0.dp).plusBottom(extraLarge) },
         ) {
-            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, emptyBody = emptyBody)
+            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, motion, emptyBody = emptyBody)
         }
     }
 }

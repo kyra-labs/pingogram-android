@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -40,7 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -130,6 +134,8 @@ private fun ActionsList(
             .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
             .fillMaxWidth()
             .padding(horizontal = windowMargin())
+    // Every item moves on the scheme's specs, so the header and the page's end move with the rows.
+    val itemMotion = rememberItemMotion()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -142,7 +148,7 @@ private fun ActionsList(
     ) {
         item(key = HEADER, contentType = HEADER) {
             Column(
-                rowModifier.padding(bottom = spacing.small),
+                rowModifier.animateItem(this, itemMotion).padding(bottom = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.small),
             ) {
                 FilterRow(state, onEvent)
@@ -157,7 +163,7 @@ private fun ActionsList(
             item(key = EMPTY, contentType = EMPTY) {
                 Text(
                     text = stringResource(R.string.recent_actions_none),
-                    modifier = rowModifier.padding(vertical = spacing.medium),
+                    modifier = rowModifier.animateItem(this, itemMotion).padding(vertical = spacing.medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -168,16 +174,31 @@ private fun ActionsList(
                 item = item,
                 shapes = ListItemDefaults.segmentedShapes(index, state.actions.size),
                 onClick = { onEvent(RecentActionsEvent.Open(item.userId)) },
-                modifier = rowModifier.animateItem(),
+                modifier = rowModifier.animateItem(this, itemMotion),
             )
         }
-        when {
-            state.loadingMore -> item(key = MORE, contentType = MORE) { MoreLoading() }
-            state.pageError != null -> item(key = MORE, contentType = MORE) { MoreFailed(onEvent, rowModifier) }
-        }
+        pageEnd(state, onEvent, rowModifier, itemMotion)
     }
     LoadMoreEffect(listState, canLoadMore = state.canLoadMore && state.pageError == null) {
         onEvent(RecentActionsEvent.LoadMore)
+    }
+}
+
+/** The next page on its way, or why it failed. */
+private fun LazyListScope.pageEnd(
+    state: RecentActionsUiState.Content,
+    onEvent: (RecentActionsEvent) -> Unit,
+    rowModifier: Modifier,
+    itemMotion: ItemMotion,
+) {
+    when {
+        state.loadingMore -> {
+            item(key = MORE, contentType = MORE) { MoreLoading(Modifier.animateItem(this, itemMotion)) }
+        }
+
+        state.pageError != null -> {
+            item(key = MORE, contentType = MORE) { MoreFailed(onEvent, rowModifier.animateItem(this, itemMotion)) }
+        }
     }
 }
 
@@ -248,9 +269,9 @@ private fun ActionRow(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MoreLoading() {
+private fun MoreLoading(modifier: Modifier = Modifier) {
     val description = stringResource(R.string.recent_actions_loading)
-    Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
         LoadingIndicator(Modifier.semantics { contentDescription = description })
     }
 }
