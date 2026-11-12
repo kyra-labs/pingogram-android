@@ -81,7 +81,10 @@ internal fun NewStoryRoute(
 
             NewStoryStep.Compose -> {
                 val compose by viewModel.composer.state.collectAsStateWithLifecycle()
-                BackHandler { viewModel.onEvent(NewStoryEvent.Back) }
+                // Only while it is the step shown: the step leaving on its slide takes no back of its own.
+                BackHandler(enabled = state.step == NewStoryStep.Compose) {
+                    viewModel.onEvent(NewStoryEvent.Back)
+                }
                 StoryComposeScreen(
                     state = state,
                     compose = compose,
