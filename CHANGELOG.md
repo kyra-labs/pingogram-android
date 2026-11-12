@@ -140,6 +140,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The back gesture previews full-screen pages as it does others.
 - Smoother reordering of a story's photos.
 - Smoother drops when reordering folders, sticker sets and pinned topics.
+- Buttons no longer move while Telegram checks a code or password.
 - Swiping up on a video that has not started no longer gets stuck.
 - Smoother voice chat screen when comments or the camera turn on.
 - Reactions in voice chats no longer replay.
