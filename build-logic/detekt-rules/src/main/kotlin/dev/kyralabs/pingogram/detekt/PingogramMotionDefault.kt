@@ -23,9 +23,11 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtPackageDirective
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtValueArgument
+import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.anyDescendantOfType
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
@@ -200,11 +202,21 @@ class PingogramMotionDefault(
         if (!ANIMATE_AS_STATE.matches(delegate.calleeExpression?.text.orEmpty())) return
         val function = property.getStrictParentOfType<KtNamedFunction>() ?: return
         val readInComposition =
-            function.collectDescendantsOfType<KtNameReferenceExpression> { it.getReferencedName() == name }.any { use ->
-                use.parents.takeWhile { it != function }.none { it is KtLambdaExpression }
-            }
+            function
+                .collectDescendantsOfType<KtNameReferenceExpression> {
+                    it.getReferencedName() == name &&
+                        it.isLocalRead()
+                }.any { use -> use.parents.takeWhile { it != function }.none { it is KtLambdaExpression } }
         if (readInComposition) report(property, COMPOSITION_READ)
     }
+
+    /**
+     * Whether this name reads a local of its name: not an argument's name (`progress = { progress }`) nor another
+     * object's member (`upload.progress`).
+     */
+    private fun KtNameReferenceExpression.isLocalRead(): Boolean =
+        getStrictParentOfType<KtValueArgumentName>() == null &&
+            (parent as? KtQualifiedExpression)?.selectorExpression != this
 
     private fun report(
         element: KtElement,
