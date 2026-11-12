@@ -886,6 +886,22 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - [ ] Density per §7: Material's component sizes; the screen is no bigger than Material's component sizes make it
 - [ ] Shapes from the scale or `MaterialShapes`; at least one meaningful shape morph where the screen has a primary action
 - [ ] All animations use `motionScheme` specs; shared-element / container transform where listed in §5
+  - [ ] Every animation call passes a spec from `MaterialTheme.motionScheme` or a `core:ui` motion helper; none is
+        left at Compose's default (`PingogramMotionDefault` passes)
+  - [ ] Spatial specs for position, size, scale, rotation and shape; effects specs for color and opacity; speed by
+        size (fast: small components; default: bars, sheets, rows, panes, screen pushes; slow: a whole screen growing
+        out of a button or a thumbnail)
+  - [ ] Nothing jumps: content that comes or goes animates its size or has its place reserved; no control moves under
+        the finger that pressed it
+  - [ ] State swaps in place crossfade (`StateCrossfade`); lazy items, headers and footers included, use
+        `animateItem(scope, motion)`
+  - [ ] Animated values are read in the layout or draw phase; a `RecompositionCounter` test covers each new animation
+        on a scrolling or always-visible surface
+  - [ ] Gestures: the release passes its velocity; a new touch cancels a running settle; the outcome and its haptic
+        happen at the release
+  - [ ] Back inside a screen previews with the gesture where §5 asks for it (`core:ui`'s `SeekableSteps`)
+  - [ ] Reduced motion: loops stop, morphs and container transforms snap, and a test runs the screen with the
+        animator duration scale at 0
 - [ ] Components match the §6 mapping (no custom lookalikes)
 - [ ] Edge-to-edge, insets, predictive back, adaptive layout at compact/medium/expanded/large and compact height
 - [ ] Goldens for light, dark, AMOLED, high contrast, RTL and a 700 dp width
