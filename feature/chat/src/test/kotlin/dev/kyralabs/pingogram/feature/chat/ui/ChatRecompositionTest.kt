@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.RichPreviewData
@@ -37,6 +39,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -113,6 +116,18 @@ class ChatRecompositionTest {
             frame()
         }
         bubble.performTouchInput { up() }
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `opening the emoji panel recomposes none of the bubbles while it grows in`() {
+        setScreen(messages(MESSAGES))
+
+        composeRule
+            .onNode(hasContentDescription(RuntimeEnvironment.getApplication().getString(R.string.panel_open)))
+            .performClick()
         repeat(SETTLE_FRAMES) { frame() }
 
         assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
