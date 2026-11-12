@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
@@ -35,6 +34,7 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.media.R
 import kotlinx.coroutines.launch
 
@@ -58,8 +58,15 @@ internal fun NewStoryRoute(
     // The two steps move on the shared axis X (Q-18): composing comes in from the end, picking again from the start.
     val motionScheme = MaterialTheme.motionScheme
     val distance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
-    AnimatedContent(
-        targetState = state.step,
+    // Back from composing to picking follows the predictive back gesture (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = NewStoryStep.Pick.takeIf { state.step == NewStoryStep.Compose },
+            key = { it },
+            onBack = { viewModel.onEvent(NewStoryEvent.Back) },
+        )
+    steps.transition.AnimatedContent(
         modifier = modifier,
         transitionSpec = {
             val forward = targetState == NewStoryStep.Compose
@@ -67,7 +74,6 @@ internal fun NewStoryRoute(
                 sharedAxisXExit(motionScheme, distance, forward) using
                 SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
         },
-        label = "newStoryStep",
     ) { step ->
         when (step) {
             NewStoryStep.Pick -> {
@@ -81,10 +87,6 @@ internal fun NewStoryRoute(
 
             NewStoryStep.Compose -> {
                 val compose by viewModel.composer.state.collectAsStateWithLifecycle()
-                // Only while it is the step shown: the step leaving on its slide takes no back of its own.
-                BackHandler(enabled = state.step == NewStoryStep.Compose) {
-                    viewModel.onEvent(NewStoryEvent.Back)
-                }
                 StoryComposeScreen(
                     state = state,
                     compose = compose,
