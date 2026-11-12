@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.poll
 
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,6 +83,7 @@ internal fun PollVotersContent(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
+    val motion = rememberItemMotion()
     LazyColumn(
         modifier = Modifier.testTag(POLL_VOTERS_TEST_TAG),
         contentPadding = PaddingValues(bottom = spacing.large),
@@ -107,25 +111,32 @@ internal fun PollVotersContent(
                 contentType = CONTENT_TYPE_NOTE,
             ) { SheetNote(stringResource(R.string.content_poll_no_votes)) }
         }
-        sheet.sections.forEach { section -> section(section, onEvent) }
+        sheet.sections.forEach { section -> section(section, motion, onEvent) }
     }
 }
 
-/** One answer's header, its voters, and what follows them: a [LoadingIndicator], the failure, or "Show more". */
+/**
+ * One answer's header, its voters, and what follows them: a [LoadingIndicator], the failure, or "Show more"; each
+ * coming, moving and going on [motion]'s springs as pages load.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class) // LoadingIndicator
 private fun LazyListScope.section(
     section: PollVoterSection,
+    motion: ItemMotion,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val index = section.optionIndex
     item(key = "header:$index", contentType = CONTENT_TYPE_HEADER) { SectionHeader(section) }
     items(section.voters, key = { "voter:$index:${it.sender}" }, contentType = { CONTENT_TYPE_VOTER }) { voter ->
-        VoterRow(voter, onClick = { onEvent(PollEvent.OpenVoter(voter.sender)) })
+        VoterRow(voter, onClick = { onEvent(PollEvent.OpenVoter(voter.sender)) }, Modifier.animateItem(this, motion))
     }
     when {
         section.isLoading -> {
             item(key = "loading:$index", contentType = CONTENT_TYPE_LOADING) {
-                Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.small),
+                    contentAlignment = Alignment.Center,
+                ) {
                     LoadingIndicator()
                 }
             }
@@ -133,13 +144,18 @@ private fun LazyListScope.section(
 
         section.error != null -> {
             item(key = "error:$index", contentType = CONTENT_TYPE_ERROR) {
-                SectionFailed(onRetry = { onEvent(PollEvent.LoadMoreVoters(index)) })
+                SectionFailed(
+                    onRetry = { onEvent(PollEvent.LoadMoreVoters(index)) },
+                    modifier = Modifier.animateItem(this, motion),
+                )
             }
         }
 
         section.hasMore -> {
             item(key = "more:$index", contentType = CONTENT_TYPE_MORE) {
-                Box(Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.small)) {
+                Box(
+                    Modifier.animateItem(this, motion).fillMaxWidth().padding(horizontal = MaterialTheme.spacing.small),
+                ) {
                     TextButton(
                         onClick = { onEvent(PollEvent.LoadMoreVoters(index)) },
                         shapes = ButtonDefaults.shapes(),
@@ -188,13 +204,14 @@ private fun SectionHeader(section: PollVoterSection) {
 private fun VoterRow(
     voter: PollVoterRow,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val name = voter.name.resolve()
     val insets = sheetRowInsets()
     val context = LocalContext.current
     ListItem(
         onClick = onClick,
-        modifier = Modifier.padding(insets),
+        modifier = modifier.padding(insets),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),
         leadingContent = {
@@ -217,9 +234,12 @@ private fun VoterRow(
 
 /** That this answer's voters could not be listed, and "Try again". */
 @Composable
-private fun SectionFailed(onRetry: () -> Unit) {
+private fun SectionFailed(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
+        modifier = modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {

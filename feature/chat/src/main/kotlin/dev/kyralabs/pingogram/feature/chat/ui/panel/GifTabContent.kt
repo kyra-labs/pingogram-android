@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.panel
 
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -250,6 +253,7 @@ private fun GifGrid(
         val columns = (width / MaterialTheme.sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cell = (width - gap * (columns - 1)) / columns
         val cellPx = with(LocalDensity.current) { cell.roundToPx() }
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
@@ -259,10 +263,12 @@ private fun GifGrid(
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
             items(count = gifs.size, key = { gifs[it].file.id }, contentType = { GIF }) { index ->
-                GifCell(gifs[index], cellPx, onGif, onRemove)
+                GifCell(gifs[index], cellPx, onGif, onRemove, Modifier.animateItem(this, motion))
             }
             if (footer != null) {
-                item(key = FOOTER, span = { GridItemSpan(maxLineSpan) }, contentType = FOOTER) { footer() }
+                item(key = FOOTER, span = { GridItemSpan(maxLineSpan) }, contentType = FOOTER) {
+                    Box(Modifier.animateItem(this, motion)) { footer() }
+                }
             }
         }
     }
@@ -280,6 +286,7 @@ private fun GifCell(
     cellPx: Int,
     onGif: (Animation) -> Unit,
     onRemove: ((Animation) -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -287,7 +294,7 @@ private fun GifCell(
     val send = stringResource(R.string.panel_gifs_send)
     val remove = stringResource(R.string.panel_gifs_remove)
     val colorFilter = MaterialTheme.pingogramColors.mediaColorFilter
-    Box {
+    Box(modifier) {
         Box(
             Modifier
                 .aspectRatio(1f)

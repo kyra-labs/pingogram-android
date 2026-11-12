@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -65,7 +69,7 @@ internal fun LazyListScope.pollOptionItems(
     editor: PollEditor,
     listState: LazyListState,
 ) {
-    item(key = OPTIONS) {
+    item(key = OPTIONS) { FormItem {
         FormSectionHeader(
             title = stringResource(R.string.poll_options),
             note =
@@ -74,7 +78,7 @@ internal fun LazyListScope.pollOptionItems(
                 ).takeIf { editor.isQuiz && editor.correctOptions.isEmpty() },
             trailing = stringResource(R.string.poll_option_count, editor.options.size, editor.limits.maxOptions),
         )
-    }
+    }}
     itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
         val drag = rememberOptionDrag(editor, listState)
         val motionScheme = MaterialTheme.motionScheme
@@ -106,7 +110,7 @@ internal fun LazyListScope.pollOptionItems(
         }
     }
     if (editor.isQuiz) {
-        item(key = EXPLANATION) {
+        item(key = EXPLANATION) { FormItem {
             OutlinedTextField(
                 state = editor.explanation,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
@@ -115,8 +119,18 @@ internal fun LazyListScope.pollOptionItems(
                 inputTransformation = InputTransformation.maxLength(NewPoll.MAX_EXPLANATION_LENGTH),
                 lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = EXPLANATION_LINES),
             )
-        }
+        }}
     }
+}
+
+/**
+ * A row of the poll form that comes, goes and moves on the motion scheme's springs (`docs/DESIGN_SYSTEM.md` §5,
+ * plan §3.3): as the form's choices add and take away rows (a quiz's explanation, the closing time, the countries),
+ * the rows below them slide instead of jumping.
+ */
+@Composable
+internal fun LazyItemScope.FormItem(content: @Composable () -> Unit) {
+    Box(Modifier.animateItem(this, rememberItemMotion())) { content() }
 }
 
 /** The row being dragged follows the finger above the rest; the others slide into their places on springs. */
@@ -203,15 +217,21 @@ private fun OptionRow(
                 }
             }
         }
-        option.link?.let { link ->
-            OutlinedTextField(
-                state = link,
-                modifier = Modifier.fillMaxWidth().padding(start = spacing.extraExtraLarge, end = spacing.small),
-                label = { Text(stringResource(R.string.poll_option_link_field)) },
-                textStyle = MaterialTheme.typography.bodyLarge.numericContent,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                lineLimits = TextFieldLineLimits.SingleLine,
-            )
+        // The link's field grows in under the option and shrinks away, keeping its last state meanwhile.
+        val link = option.link
+        val shownLink = remember { mutableStateOf(link) }
+        if (link != null) shownLink.value = link
+        GrowingVisibility(visible = link != null) {
+            shownLink.value?.let { field ->
+                OutlinedTextField(
+                    state = field,
+                    modifier = Modifier.fillMaxWidth().padding(start = spacing.extraExtraLarge, end = spacing.small),
+                    label = { Text(stringResource(R.string.poll_option_link_field)) },
+                    textStyle = MaterialTheme.typography.bodyLarge.numericContent,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                )
+            }
         }
     }
 }

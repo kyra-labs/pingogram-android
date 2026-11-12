@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -54,13 +55,13 @@ internal fun LazyListScope.pollVotersItems(
     editor: PollEditor,
 ) {
     if (!sheet.isChannel) return
-    item(key = VOTERS) {
+    item(key = VOTERS) { FormItem {
         Column(Modifier.selectableGroup()) {
             FormSectionHeader(stringResource(R.string.poll_voters))
             PollVoters.entries.forEach { option -> VotersRow(option, editor) }
         }
-    }
-    if (editor.voters == PollVoters.Countries) item(key = COUNTRIES) { CountryChips(editor) }
+    }}
+    if (editor.voters == PollVoters.Countries) item(key = COUNTRIES) { FormItem { CountryChips(editor) }}
 }
 
 @Composable
@@ -126,7 +127,7 @@ private fun CountryChips(editor: PollEditor) {
                 },
             )
         }
-        if (editor.countries.isEmpty()) {
+        GrowingVisibility(visible = editor.countries.isEmpty()) {
             Text(
                 text = stringResource(R.string.poll_country_none),
                 style = MaterialTheme.typography.bodyMedium,

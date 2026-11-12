@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.directmessages
 
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +42,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selectableGroup
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.IntOffset
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
@@ -220,19 +221,22 @@ private fun DirectList(
             .filter { it }
             .collect { currentOnEvent(DirectMessagesEvent.LoadMore) }
     }
-    val placement = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    val motion = rememberItemMotion()
     LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
         items(content.rows, key = { it.topicId }, contentType = { CONTENT_TYPE_ROW }) { row ->
             DirectMessageRowItem(
                 row = row,
                 onClick = { onOpenTopic(row.topicId) },
                 onMarkUnread = { onEvent(DirectMessagesEvent.MarkUnread(row.topicId, it)) },
-                modifier = Modifier.animateItem(placementSpec = placement),
+                modifier = Modifier.animateItem(this, motion),
             )
         }
         if (content.isLoadingMore) {
             item(key = KEY_LOADING, contentType = KEY_LOADING) {
-                Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.large),
+                    contentAlignment = Alignment.Center,
+                ) {
                     LoadingIndicator()
                 }
             }

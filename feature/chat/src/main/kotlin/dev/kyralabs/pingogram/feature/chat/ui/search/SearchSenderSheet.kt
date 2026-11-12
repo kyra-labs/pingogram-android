@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.search
 
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -132,9 +134,10 @@ private fun SenderList(
     options: ImmutableList<SenderOption>,
     onPick: (SenderOption) -> Unit,
 ) {
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.selectableGroup().testTag(SENDERS_TEST_TAG)) {
         items(options, key = { it.id }, contentType = { CONTENT_TYPE_SENDER }) { option ->
-            SenderRow(option, onClick = { onPick(option) })
+            SenderRow(option, onClick = { onPick(option) }, Modifier.animateItem(this, motion))
         }
     }
 }
@@ -148,13 +151,14 @@ private fun SenderList(
 private fun SenderRow(
     option: SenderOption,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val name = option.name.resolve()
     val insets = sheetRowInsets()
     ListItem(
         selected = option.selected,
         onClick = onClick,
-        modifier = Modifier.padding(insets),
+        modifier = modifier.padding(insets),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),
         leadingContent = {

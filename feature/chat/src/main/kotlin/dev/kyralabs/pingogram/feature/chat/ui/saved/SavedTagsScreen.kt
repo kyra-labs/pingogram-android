@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -197,16 +199,22 @@ private fun TaggedList(
         }
 
         else -> {
+            // Pages that load, and messages untagged meanwhile, come and go on the scheme's springs.
+            val motion = rememberItemMotion()
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
                 items(results.items, key = { it.messageId }, contentType = { "tagged" }) { item ->
-                    TaggedRow(item) { onEvent(SavedTagEvent.Open(item.messageId)) }
+                    TaggedRow(item, Modifier.animateItem(this, motion)) { onEvent(SavedTagEvent.Open(item.messageId)) }
                 }
                 if (results.isLoading) {
                     item(key = "loading", contentType = "loading") {
-                        LoadingIndicator(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small))
+                        LoadingIndicator(
+                            Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.small),
+                        )
                     }
                 } else if (results.error != null) {
-                    item(key = "error", contentType = "error") { ErrorRow(results, onEvent) }
+                    item(key = "error", contentType = "error") {
+                        ErrorRow(results, onEvent, Modifier.animateItem(this, motion))
+                    }
                 }
             }
         }
@@ -216,6 +224,7 @@ private fun TaggedList(
 @Composable
 private fun TaggedRow(
     item: TaggedItem,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val date =
@@ -226,7 +235,7 @@ private fun TaggedRow(
         }
     ListItem(
         onClick = onClick,
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+        modifier = modifier.padding(horizontal = MaterialTheme.spacing.small),
         supportingContent = { Text(date, style = MaterialTheme.typography.bodyMedium.userContent) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {

@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,8 +48,8 @@ internal fun LazyListScope.pollSettingItems(
     actions: PollFormActions,
     now: () -> Instant,
 ) {
-    item(key = SETTINGS) { FormSectionHeader(stringResource(R.string.poll_settings)) }
-    item(key = ANONYMOUS) {
+    item(key = SETTINGS) { FormItem { FormSectionHeader(stringResource(R.string.poll_settings)) }}
+    item(key = ANONYMOUS) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_anonymous),
             checked = sheet.isChannel || editor.isAnonymous,
@@ -54,31 +57,31 @@ internal fun LazyListScope.pollSettingItems(
             enabled = !sheet.isChannel,
             note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
         )
-    }
-    item(key = MULTIPLE) {
+    }}
+    item(key = MULTIPLE) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_multiple),
             checked = !editor.isQuiz && editor.allowsMultipleAnswers,
             onCheckedChange = { editor.allowsMultipleAnswers = it },
             enabled = !editor.isQuiz,
         )
-    }
-    item(key = REVOTING) {
+    }}
+    item(key = REVOTING) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_revoting),
             checked = !editor.isQuiz && editor.allowsRevoting,
             onCheckedChange = { editor.allowsRevoting = it },
             enabled = !editor.isQuiz,
         )
-    }
-    item(key = HIDE_RESULTS) {
+    }}
+    item(key = HIDE_RESULTS) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_hide_results),
             checked = editor.hidesResults,
             onCheckedChange = { editor.hidesResults = it },
             note = stringResource(R.string.poll_hide_results_note),
         )
-    }
+    }}
     answerSettingItems(sheet, editor)
     pollVotersItems(sheet, editor)
     closesItem(editor, actions, now)
@@ -89,14 +92,14 @@ private fun LazyListScope.answerSettingItems(
     sheet: PollSheet,
     editor: PollEditor,
 ) {
-    item(key = SHUFFLE) {
+    item(key = SHUFFLE) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_shuffle),
             checked = editor.shufflesOptions,
             onCheckedChange = { editor.shufflesOptions = it },
         )
-    }
-    item(key = ADDING) {
+    }}
+    item(key = ADDING) { FormItem {
         val allowed = editor.canAllowAddingOptions(sheet.isChannel)
         FormSwitchRow(
             title = stringResource(R.string.poll_adding_options),
@@ -105,8 +108,8 @@ private fun LazyListScope.answerSettingItems(
             enabled = allowed,
             note = stringResource(R.string.poll_adding_options_note).takeUnless { allowed },
         )
-    }
-    item(key = QUIZ) {
+    }}
+    item(key = QUIZ) { FormItem {
         FormSwitchRow(
             title = stringResource(R.string.poll_quiz),
             checked = editor.isQuiz,
@@ -122,7 +125,7 @@ private fun LazyListScope.answerSettingItems(
                     },
                 ),
         )
-    }
+    }}
 }
 
 /**
@@ -136,7 +139,7 @@ private fun LazyListScope.closesItem(
     now: () -> Instant,
 ) {
     if (editor.limits.maxOpenPeriod <= 0) return
-    item(key = CLOSES) {
+    item(key = CLOSES) { FormItem {
         val context = LocalContext.current
         val closesAt =
             when (editor.closing) {
@@ -151,7 +154,7 @@ private fun LazyListScope.closesItem(
             )
             ClosingButtons(editor, actions)
         }
-    }
+    }}
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class) // ToggleButton's connected shapes
@@ -233,8 +236,13 @@ internal fun FormSectionHeader(
                 )
             }
         }
-        note?.let {
-            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        // A note that comes and goes with the form's choices grows in and shrinks away.
+        val shownNote = remember { mutableStateOf(note) }
+        if (note != null) shownNote.value = note
+        GrowingVisibility(visible = note != null) {
+            shownNote.value?.let {
+                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }

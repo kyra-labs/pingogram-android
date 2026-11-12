@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,15 +48,28 @@ internal fun LazyListScope.pollMediaItem(
     editor: PollEditor,
     actions: PollFormActions,
 ) {
-    item(key = MEDIA) {
+    item(key = MEDIA) { FormItem {
         val photo = editor.photo
         val modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large)
-        when {
-            editor.isPreparingPhoto -> PreparingPhoto(modifier)
-            photo != null -> PickedPhoto(photo, actions, modifier)
-            else -> AddMediaButton(actions.onPickPhoto, modifier)
+        // Adding, preparing and the picked photo crossfade in place.
+        StateCrossfade(
+            targetState = editor.isPreparingPhoto to photo,
+            contentKey = { (preparing, picked) ->
+                when {
+                    preparing -> 0
+                    picked != null -> 1
+                    else -> 2
+                }
+            },
+            label = "pollMedia",
+        ) { (preparing, picked) ->
+            when {
+                preparing -> PreparingPhoto(modifier)
+                picked != null -> PickedPhoto(picked, actions, modifier)
+                else -> AddMediaButton(actions.onPickPhoto, modifier)
+            }
         }
-    }
+    }}
 }
 
 @Composable
