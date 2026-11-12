@@ -88,7 +88,8 @@ internal class DismissState {
     /**
      * A drag ended with [velocity] (pixels per second) on a page [height] pixels tall: [onDismiss] if it went past a
      * [DISMISS_HEIGHT_FRACTION] of the page or was flung on that way, or [onSwipeUp] for an upward one where there is
-     * one (a playing video goes into picture-in-picture); else the content springs back on [spec].
+     * one (a playing video goes into picture-in-picture); else the content springs back on [spec]. With [downOnly]
+     * (the stories viewer) only a drag down closes: an upward one springs back.
      */
     fun onDragStopped(
         velocity: Float,
@@ -96,11 +97,13 @@ internal class DismissState {
         spec: AnimationSpec<Float>,
         scope: CoroutineScope,
         onSwipeUp: (() -> Unit)? = null,
+        downOnly: Boolean = false,
         onDismiss: () -> Unit,
     ) {
         val farEnough = abs(dragOffset) > height * DISMISS_HEIGHT_FRACTION
         val flung = abs(velocity) > height * FLING_HEIGHTS_PER_SECOND && sign(velocity) == sign(dragOffset)
-        if (farEnough || flung) {
+        val towardsClose = !downOnly || dragOffset > 0f
+        if ((farEnough || flung) && towardsClose) {
             dismiss(if (dragOffset < 0 && onSwipeUp != null) onSwipeUp else onDismiss)
         } else {
             settling =
@@ -174,14 +177,16 @@ internal fun Modifier.layoutFollowingDismiss(state: DismissState): Modifier =
  * Leaves the viewer with system back while [enabled] (`docs/ARCHITECTURE.md`, Navigation: `PredictiveBackHandler` for
  * the media viewer): the gesture's progress goes into [state], and [onBack] runs once it completes, the content
  * staying as small as the gesture left it while the screen leaves ([DismissState.leaveAtBackScale]), and the media
- * shrinking from there into its bubble. A cancelled gesture springs back on the motion scheme's default spatial spring
- * (`docs/DESIGN_SYSTEM.md` §5.1, Q-22), and a new gesture takes over from that return where it is.
+ * shrinking from there into its bubble; without [leaveAtScale] (the stories viewer, which only fades out) it keeps
+ * that scale in the draw phase, measured as before. A cancelled gesture springs back on the motion scheme's default
+ * spatial spring (`docs/DESIGN_SYSTEM.md` §5.1, Q-22), and a new gesture takes over from that return where it is.
  */
 @Composable
 internal fun PredictiveBackDismiss(
     state: DismissState,
     onBack: () -> Unit,
     enabled: Boolean = true,
+    leaveAtScale: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
     val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
@@ -192,7 +197,7 @@ internal fun PredictiveBackDismiss(
         returning[0]?.cancel()
         try {
             events.collect { event -> state.followBack(event.progress) }
-            state.leaveAtBackScale()
+            if (leaveAtScale) state.leaveAtBackScale()
             state.dismiss(currentOnBack)
         } catch (cancelled: CancellationException) {
             // A cancelled gesture, after which this coroutine can no longer animate.

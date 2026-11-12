@@ -59,6 +59,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -204,6 +206,7 @@ private fun AlbumGrid(
     val spacing = MaterialTheme.spacing
     val margin = windowMargin()
     val sizePx = with(LocalDensity.current) { (MaterialTheme.sizes.sharedMediaCell * 2).roundToPx() }
+    val motion = rememberItemMotion()
     LazyVerticalGrid(
         columns = GridCells.Adaptive(MaterialTheme.sizes.sharedMediaCell),
         state = gridState,
@@ -227,7 +230,7 @@ private fun AlbumGrid(
             )
         }
         items(state.stories, key = { it.id }, contentType = { STORY }) { story ->
-            StoryTile(story, sizePx, onOpenStory, Modifier.animateItem())
+            StoryTile(story, sizePx, onOpenStory, Modifier.animateItem(this, motion))
         }
         footer(state, onEvent)
     }

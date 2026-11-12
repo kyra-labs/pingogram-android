@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -46,7 +48,14 @@ fun StoryAlbumsSection(
 ) {
     LaunchedEffect(viewModel, chatId) { viewModel.start(chatId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    (state as? StoryAlbumsUiState.Content)?.let { StoryAlbumsContent(it, onOpenAlbum, modifier) }
+    val content = state as? StoryAlbumsUiState.Content
+    // The albums grow in once loaded, moving what follows them on the profile smoothly; the last ones shown stay
+    // while they go.
+    val shown = remember { arrayOfNulls<StoryAlbumsUiState.Content>(1) }
+    if (content != null) shown[0] = content
+    GrowingVisibility(visible = content != null, modifier = modifier) {
+        shown[0]?.let { StoryAlbumsContent(it, onOpenAlbum) }
+    }
 }
 
 /** The section's header and covers for [state]; also drawn alone by previews and goldens. */
