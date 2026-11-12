@@ -58,6 +58,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -249,17 +250,9 @@ private fun SelectionTitle(
     selectedCount: Int?,
     style: TextStyle,
 ) {
-    val motionScheme = MaterialTheme.motionScheme
     val resources = LocalResources.current
-    AnimatedContent(
-        targetState = selectedCount,
-        transitionSpec = {
-            fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
-                fadeOut(motionScheme.fastEffectsSpec())
-        },
-        label = "title",
-        contentKey = { it != null },
-    ) { count ->
+    // Its width changes on the scheme's spring too, unclipped.
+    StateCrossfade(targetState = selectedCount, label = "title", contentKey = { it != null }) { count ->
         Text(
             text =
                 if (count !=

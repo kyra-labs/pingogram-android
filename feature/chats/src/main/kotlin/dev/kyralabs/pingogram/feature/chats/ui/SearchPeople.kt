@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -46,12 +48,16 @@ internal fun TopPeople(
     modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
+    // People who leave as the words narrow them fade out and the others slide into their places.
+    val motion = rememberItemMotion()
     LazyRow(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = spacing.small, vertical = spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
     ) {
-        items(people, key = { it.id }) { person -> Person(person, onClick = { onOpen(person.id) }) }
+        items(people, key = { it.id }) { person ->
+            Person(person, onClick = { onOpen(person.id) }, Modifier.animateItem(this, motion))
+        }
     }
 }
 
@@ -59,6 +65,7 @@ internal fun TopPeople(
 private fun Person(
     item: SearchChatItem,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
     val sizes = MaterialTheme.sizes
@@ -66,7 +73,7 @@ private fun Person(
     val description = chatDescription(item, title, subtitle = null)
     Column(
         modifier =
-            Modifier
+            modifier
                 .width(sizes.avatarMedium + spacing.extraLarge)
                 .clip(MaterialTheme.shapes.large)
                 .clickable(role = Role.Button, onClick = onClick)
@@ -117,7 +124,7 @@ internal fun HeaderPeople(
         visible = people.isNotEmpty(),
         modifier = modifier,
         enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
-        exit = shrinkVertically(motionScheme.defaultSpatialSpec()) + fadeOut(motionScheme.defaultEffectsSpec()),
+        exit = shrinkVertically(motionScheme.defaultSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
     ) {
         TopPeople(shown, { onEvent(SearchEvent.OpenChat(it)) })
     }
