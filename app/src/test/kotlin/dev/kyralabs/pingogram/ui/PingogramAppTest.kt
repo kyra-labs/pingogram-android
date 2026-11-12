@@ -612,7 +612,12 @@ class PingogramAppTest {
     fun `a predictive back gesture shrinks a full-screen page as it does others, and it stays visible`() {
         setApp()
         composeRule.runOnUiThread { navController.navigateToQrScanner() }
-        val title = composeRule.onNodeWithText(string(ScannerR.string.scanner_rationale_title))
+        // Robolectric has no camera, so the scanner asks for none and says so; either title will do.
+        val title =
+            composeRule.onNode(
+                hasText(string(ScannerR.string.scanner_rationale_title)) or
+                    hasText(string(ScannerR.string.scanner_no_camera_title)),
+            )
         composeRule.waitUntil(TIMEOUT_MILLIS) { runCatching { title.fetchSemanticsNode() }.isSuccess }
         val resting = title.fetchSemanticsNode().boundsInRoot.width
         val dispatcher = composeRule.activity.onBackPressedDispatcher

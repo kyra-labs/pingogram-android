@@ -37,8 +37,11 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -315,13 +318,29 @@ private fun TabIcon(
                 .graphicsLayer { alpha = iconAlpha.value },
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon)
         Icon(
-            painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+            painter = remember(painter, contentColor) { TintedPainter(painter, contentColor) },
             // Without a label, the icon names the tab.
             contentDescription = if (showLabel) null else label,
-            tint = contentColor,
+            tint = Color.Unspecified,
         )
         if (showLabel) Spacer(Modifier.width(MaterialTheme.spacing.small))
+    }
+}
+
+/**
+ * [painter] tinted with [tint], read in the draw phase. It draws as `Icon(tint = color)` does (the painter with a
+ * `ColorFilter.tint`), where material3's `Icon(tint = ColorProducer)` would tint a graphics layer around it.
+ */
+private class TintedPainter(
+    private val painter: Painter,
+    private val tint: ColorProducer,
+) : Painter() {
+    override val intrinsicSize: Size get() = painter.intrinsicSize
+
+    override fun DrawScope.onDraw() {
+        with(painter) { draw(size, colorFilter = ColorFilter.tint(tint())) }
     }
 }
 
