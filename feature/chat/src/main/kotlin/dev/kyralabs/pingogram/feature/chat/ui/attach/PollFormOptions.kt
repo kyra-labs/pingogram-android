@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui.attach
 
+import kotlinx.coroutines.CoroutineScope
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.core.AnimationSpec
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.animateItem
@@ -33,7 +37,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -282,23 +285,34 @@ private fun DragHandle(
 private fun rememberOptionDrag(
     editor: PollEditor,
     listState: LazyListState,
-): OptionDrag = remember(editor, listState) { OptionDrag(editor, listState) }
+): OptionDrag {
+    val scope = rememberCoroutineScope()
+    val motionScheme = MaterialTheme.motionScheme
+    return remember(editor, listState, scope, motionScheme) {
+        OptionDrag(editor, listState, scope, motionScheme.defaultSpatialSpec())
+    }
+}
 
 /**
  * The option being dragged ([draggedKey]) and how far it moved from its place ([offset], read in the graphics
  * layer). Passing the middle of a neighbouring option moves it there ([PollEditor.moveOption]), the offset taking
- * back what the new place moved, with a `SegmentTick`.
+ * back what the new place moved, with a `SegmentTick`. Let go, it settles into its place on [settle] (the default
+ * spatial spring) instead of jumping there, still above the rest until it is; a new drag takes it where it is.
  */
 @Stable
 private class OptionDrag(
     private val editor: PollEditor,
     private val listState: LazyListState,
+    private val scope: CoroutineScope,
+    private val settle: AnimationSpec<Float>,
 ) {
     var draggedKey by mutableStateOf<Long?>(null)
         private set
 
-    var offset by mutableFloatStateOf(0f)
-        private set
+    private val settling = SettlingOffset()
+
+    /** How far the option is from its place, also while it settles. */
+    val offset: Float get() = settling.value
 
     private var haptics: HapticFeedback? = null
 
@@ -306,19 +320,21 @@ private class OptionDrag(
         key: Long,
         feedback: HapticFeedback,
     ) {
+        // Another option still settling lands where it was going at once.
+        if (draggedKey != key) settling.snapTo(0f)
         draggedKey = key
-        offset = 0f
+        settling.snapTo(settling.value)
         haptics = feedback
     }
 
     fun stop() {
-        draggedKey = null
-        offset = 0f
+        val key = draggedKey ?: return
+        settling.settle(scope, 0f, settle) { if (draggedKey == key) draggedKey = null }
     }
 
     fun by(delta: Float) {
         val key = draggedKey ?: return
-        offset += delta
+        settling.dragBy(delta)
         val items = listState.layoutInfo.visibleItemsInfo
         val current = items.firstOrNull { it.key == key }
         val keys = editor.options.map { it.key }
@@ -332,7 +348,7 @@ private class OptionDrag(
             }
         if (current != null && target != null) {
             editor.moveOption(keys.indexOf(key), keys.indexOf(target.key))
-            offset += current.offset - target.offset
+            settling.dragBy((current.offset - target.offset).toFloat())
             haptics?.performHapticFeedback(HapticFeedbackType.SegmentTick)
         }
     }
