@@ -1,8 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.ai
 
-import androidx.compose.runtime.remember
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +34,7 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +49,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -293,76 +293,6 @@ private fun EmojiRow(
             style = MaterialTheme.typography.bodyLarge,
         )
         CheckSwitch(checked = checked)
-    }
-}
-
-/**
- * The result on `surfaceContainerHigh` with `large` corners: a `LinearWavyProgressIndicator` while Telegram's AI
- * works, the text it gave ([AiResultText]), or why it failed in `error`, a polite live region; nothing before.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun AiResultCard(result: AiResult) {
-    // The card grows in with the first result and shrinks away when a changed choice drops it, showing the last one.
-    val last = remember { arrayOfNulls<AiResult>(1) }
-    if (result != AiResult.Idle) last[0] = result
-    GrowingVisibility(visible = result != AiResult.Idle) {
-        last[0]?.let { ResultCard(it) }
-    }
-}
-
-/** [AiResultCard]'s card: its states crossfade in place, the card's height on the scheme's spring. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ResultCard(result: AiResult) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(
-            Modifier
-                .padding(MaterialTheme.spacing.medium)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        ) {
-            StateCrossfade(targetState = result, contentKey = { it::class }, label = "aiResult") { shown ->
-                ResultContent(shown)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ResultContent(result: AiResult) {
-    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            when (result) {
-                AiResult.Working -> {
-                    Text(
-                        text = stringResource(R.string.ai_editor_working),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    LinearWavyProgressIndicator(Modifier.fillMaxWidth())
-                }
-
-                is AiResult.Done -> {
-                    AiResultText(result)
-                }
-
-                is AiResult.Failed -> {
-                    Text(
-                        text = errorText(result.error),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                AiResult.Idle -> {
-                    Unit
-                }
-            }
     }
 }
 

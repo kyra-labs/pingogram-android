@@ -1,9 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.ai
 
-import dev.kyralabs.pingogram.core.common.result.DomainError
-import androidx.compose.runtime.remember
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +35,11 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.TextCompositionExample
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -186,29 +186,29 @@ private fun StyleAction(
     state: TextStyleUiState.Content,
     onEvent: (TextStyleEvent) -> Unit,
 ) {
-        when {
-            !state.isAdded -> {
-                Button(
-                    onClick = { onEvent(TextStyleEvent.Add) },
-                    enabled = !state.busy,
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text(stringResource(R.string.ai_style_add), style = MaterialTheme.typography.labelLargeEmphasized)
-                }
-            }
-
-            // A style the user made can only be deleted, which Pingogram does not offer.
-            !state.style.isCreator -> {
-                TextButton(
-                    onClick = { onEvent(TextStyleEvent.Remove) },
-                    enabled = !state.busy,
-                    shapes = ButtonDefaults.shapes(),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text(stringResource(R.string.ai_style_remove))
-                }
+    when {
+        !state.isAdded -> {
+            Button(
+                onClick = { onEvent(TextStyleEvent.Add) },
+                enabled = !state.busy,
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(R.string.ai_style_add), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         }
+
+        // A style the user made can only be deleted, which Pingogram does not offer.
+        !state.style.isCreator -> {
+            TextButton(
+                onClick = { onEvent(TextStyleEvent.Remove) },
+                enabled = !state.busy,
+                shapes = ButtonDefaults.shapes(),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(R.string.ai_style_remove))
+            }
+        }
+    }
 }
 
 /** The style on a short English text: "Before" and "After" in `labelMedium` over the texts. */

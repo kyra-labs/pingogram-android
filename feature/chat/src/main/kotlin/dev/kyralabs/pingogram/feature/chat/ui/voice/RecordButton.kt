@@ -1,11 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.voice
 
-import androidx.compose.ui.graphics.drawOutline
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.CompositionLocalProvider
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -36,14 +30,20 @@ import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType

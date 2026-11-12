@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
@@ -54,6 +52,8 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -259,40 +259,6 @@ private fun UnavailableLabel(reason: UiText) {
     )
 }
 
-/** The send-as avatar, where there is one, before the pill ([content]), as the composer's row lays them out. */
-@Composable
-private fun ComposerPillRow(
-    composer: ComposerUiState.Available,
-    onSendAs: () -> Unit,
-    content: @Composable RowScope.() -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        composer.sendAs?.let { SendAsButton(it, onSendAs) }
-        content()
-    }
-}
-
-/**
- * The bar of the message the composer replies to or edits, while there is one: it grows in from the top on the motion
- * scheme's spatial spring and fades in on its effects spring, and the last bar shown stays while it leaves.
- */
-@Composable
-private fun BarArea(
-    bar: ComposerBar?,
-    onShow: (messageId: Long) -> Unit,
-    onClose: () -> Unit,
-    onReplace: () -> Unit,
-) {
-    var shown by remember { mutableStateOf(bar) }
-    if (bar != null) shown = bar
-    GrowingVisibility(visible = bar != null) {
-        shown?.let { ComposerBarRow(it, onShow, onClose, onReplace = onReplace) }
-    }
-}
-
 /**
  * The composer (`docs/DESIGN_SYSTEM.md` §6 Composer): a 56 dp pill ([ComposerField], a
  * multi-line text field that grows to six lines and then scrolls) 8 dp from the window's sides, beside a 56 dp round
@@ -342,10 +308,7 @@ private fun Composer(
     val focusRequester = rememberFocusRequester(focus)
     val spacing = MaterialTheme.spacing
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(spacing.small),
+        modifier = Modifier.fillMaxWidth().padding(spacing.small),
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
