@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui.create
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -18,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -30,10 +33,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import coil3.compose.AsyncImage
+import coil3.decode.DataSource
 import coil3.request.ImageRequest
-import coil3.request.crossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import java.io.File
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -131,23 +136,34 @@ private fun PhotoContent(photo: ChatPhoto) {
     }
 }
 
-/** The copy at [path] as the circle's picture, decoded at the circle's size, crossfading in. */
+/**
+ * The copy at [path] as the circle's picture, decoded at the circle's size, fading in on the motion scheme's default
+ * effects spring as `core:ui`'s `Avatar` does, not Coil's tween (M-025); a picture already in memory shows at once.
+ */
 @Composable
 private fun PickedPhoto(path: String) {
     val context = LocalContext.current
-    val request =
-        remember(context, path) {
-            ImageRequest
-                .Builder(context)
-                .data(File(path))
-                .crossfade(true)
-                .build()
-        }
+    val request = remember(context, path) { ImageRequest.Builder(context).data(File(path)).build() }
+    val alpha = remember(path) { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val fadeIn = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     AsyncImage(
         model = request,
         contentDescription = null,
-        modifier = Modifier.fillMaxSize().clip(CircleShape),
+        modifier =
+            Modifier.fillMaxSize().graphicsLayer {
+                this.alpha = alpha.value
+                shape = CircleShape
+                clip = true
+            },
         contentScale = ContentScale.Crop,
+        onSuccess = { state ->
+            if (state.result.dataSource == DataSource.MEMORY_CACHE) {
+                scope.launch(start = CoroutineStart.UNDISPATCHED) { alpha.snapTo(1f) }
+            } else {
+                scope.launch { alpha.animateTo(1f, fadeIn) }
+            }
+        },
     )
 }
 
