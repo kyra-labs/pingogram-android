@@ -672,7 +672,7 @@ M-078
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 ✓ (#469) |
 | C-3 `fix/motion-profile-progress` | C | High | M-090, M-091 ✓ (#471) |
-| C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102, M-103 |
+| C-4 `fix/motion-contacts-form` | C | High | M-099, M-100, M-101, M-102 ✓ (#473), M-103 (C-9) |
 | C-5 `refactor/motion-settings-rows` | C | Medium | M-108 to M-113 |
 | C-6 `refactor/motion-passcode` | C | Medium | M-115 to M-119 |
 | C-7 `refactor/motion-profile-lists` | C | Medium | M-092 to M-097 |
