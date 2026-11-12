@@ -126,7 +126,7 @@ internal fun StoryBottomBar(
             // Over the frame's bottom, taking no room: the frame keeps its size while the reactions show.
             modifier = Modifier.overlayAbove(),
             enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
-            exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+            exit = shrinkVertically(motionScheme.defaultSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
         ) {
             if (reactions != null) {
                 StoryReactionsRow(reactions, onReact = { onEvent(StoryViewerEvent.React(it)) })
