@@ -91,6 +91,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
+import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberRecordDrag
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 
@@ -161,7 +162,7 @@ internal fun ChatBottomBar(
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
-    val drag = remember { RecordDrag() }
+    val drag = rememberRecordDrag()
     val suggestionsState = remember { CommandSuggestionsState() }
     val inlineState = remember { InlineResultsState() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
