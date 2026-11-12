@@ -161,16 +161,18 @@ fun CallScreen(
                 if (pictureInPicture) {
                     PictureInPicture(state, video)
                 } else {
-                    // A camera turning on or off crossfades the voice and video layouts on the effects springs.
+                    // A camera turning on or off crossfades the voice and video layouts on the effects springs, each
+                    // with its own state, so the layout leaving keeps showing what it showed.
                     AnimatedContent(
-                        targetState = state.video.shows,
+                        targetState = state,
                         transitionSpec = stateCrossfade(callMotionScheme()),
+                        contentKey = { it.video.shows },
                         label = "callLayout",
-                    ) { showsVideo ->
-                        if (showsVideo) {
-                            VideoInCall(state, onEvent, onMinimize, video)
+                    ) { shown ->
+                        if (shown.video.shows) {
+                            VideoInCall(shown, onEvent, onMinimize, video)
                         } else {
-                            InCall(state, onEvent, onMinimize, onMessage)
+                            InCall(shown, onEvent, onMinimize, onMessage)
                         }
                     }
                 }

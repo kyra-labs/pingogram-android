@@ -292,9 +292,7 @@ private fun PageError(
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodyMedium,
         )
-        TextButton(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.recent_calls_try_again))
-        }
+        TextButton(onClick = onRetry) { Text(stringResource(R.string.recent_calls_try_again)) }
     }
 }
 
