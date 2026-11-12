@@ -34,6 +34,7 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -76,10 +79,18 @@ internal fun AiEditorSheet(
                 .padding(bottom = MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-                when (state) {
-                    AiEditorUiState.Consent -> AiConsent(onEvent)
-                    is AiEditorUiState.Editor -> AiEditor(state, onEvent)
+            // The one-time explanation gives way to the editor, crossfading in place.
+            StateCrossfade(
+                targetState = state,
+                modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+                contentKey = { it is AiEditorUiState.Consent },
+                label = "aiEditor",
+            ) { shown ->
+                Column {
+                    when (shown) {
+                        AiEditorUiState.Consent -> AiConsent(onEvent)
+                        is AiEditorUiState.Editor -> AiEditor(shown, onEvent)
+                    }
                 }
             }
         }
@@ -159,9 +170,12 @@ internal fun AiEditor(
             modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleLargeEmphasized,
         )
-        ModeButtons(state.mode) { onEvent(AiEditorEvent.SetMode(it)) }
-        AiChoices(state, onEvent)
-        AiResultCard(state.result)
+        // The parts a mode or a result adds bring their own gap above them, so a hidden one leaves none.
+        Column {
+            ModeButtons(state.mode) { onEvent(AiEditorEvent.SetMode(it)) }
+            AiChoices(state, onEvent)
+            AiResultCard(state.result)
+        }
         Text(
             text = stringResource(R.string.ai_editor_note),
             style = MaterialTheme.typography.bodySmall,
@@ -247,17 +261,24 @@ private fun AiChoices(
     state: AiEditorUiState.Editor,
     onEvent: (AiEditorEvent) -> Unit,
 ) {
-    if (state.mode == AiMode.Fix) return
-    if (state.mode == AiMode.Translate) {
-        LanguageField(state.language, state.languages) { onEvent(AiEditorEvent.SetLanguage(it)) }
+    // What a mode adds grows in as it is chosen and shrinks away as another is.
+    val gap = MaterialTheme.spacing.medium
+    GrowingVisibility(visible = state.mode == AiMode.Translate) {
+        Column(Modifier.padding(top = gap)) {
+            LanguageField(state.language, state.languages) { onEvent(AiEditorEvent.SetLanguage(it)) }
+        }
     }
-    StyleChips(
-        styles = state.styles,
-        selected = state.styleName,
-        canKeep = state.mode == AiMode.Translate,
-        onSelect = { onEvent(AiEditorEvent.SetStyle(it)) },
-    )
-    EmojiRow(state.addEmoji) { onEvent(AiEditorEvent.SetAddEmoji(it)) }
+    GrowingVisibility(visible = state.mode != AiMode.Fix) {
+        Column(Modifier.padding(top = gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+            StyleChips(
+                styles = state.styles,
+                selected = state.styleName,
+                canKeep = state.mode == AiMode.Translate,
+                onSelect = { onEvent(AiEditorEvent.SetStyle(it)) },
+            )
+            EmojiRow(state.addEmoji) { onEvent(AiEditorEvent.SetAddEmoji(it)) }
+        }
+    }
 }
 
 @Composable
@@ -278,55 +299,6 @@ private fun EmojiRow(
             style = MaterialTheme.typography.bodyLarge,
         )
         CheckSwitch(checked = checked)
-    }
-}
-
-/**
- * The result on `surfaceContainerHigh` with `large` corners: a `LinearWavyProgressIndicator` while Telegram's AI
- * works, the text it gave ([AiResultText]), or why it failed in `error`, a polite live region; nothing before.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun AiResultCard(result: AiResult) {
-    if (result == AiResult.Idle) return
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(
-            Modifier
-                .padding(MaterialTheme.spacing.medium)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        ) {
-            when (result) {
-                AiResult.Working -> {
-                    Text(
-                        text = stringResource(R.string.ai_editor_working),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    LinearWavyProgressIndicator(Modifier.fillMaxWidth())
-                }
-
-                is AiResult.Done -> {
-                    AiResultText(result)
-                }
-
-                is AiResult.Failed -> {
-                    Text(
-                        text = errorText(result.error),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                AiResult.Idle -> {
-                    Unit
-                }
-            }
-        }
     }
 }
 

@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -162,14 +164,41 @@ private fun ChatStatus(
     header: ChatHeader,
     @StringRes connecting: Int?,
 ) {
-    val subtitle = header.subtitle
+    val line = StatusLine(connecting, header.subtitle, header.onlineCount)
     val colors = MaterialTheme.colorScheme
-    when {
-        connecting != null -> StatusText(stringResource(connecting), colors.onSurfaceVariant)
-        subtitle is ChatSubtitle.Action -> ActionStatus(subtitle.text.resolve())
-        subtitle is ChatSubtitle.Status -> GroupStatus(subtitle.text.resolve(), header.onlineCount)
-        else -> Unit
+    // The connection's state, an action and the status crossfade in place; a status that changes its words does not.
+    StateCrossfade(
+        targetState = line,
+        contentAlignment = Alignment.Center,
+        contentKey = { it.kind },
+        label = "ChatStatus",
+    ) { shown ->
+        val subtitle = shown.subtitle
+        when {
+            shown.connecting != null -> StatusText(stringResource(shown.connecting), colors.onSurfaceVariant)
+            subtitle is ChatSubtitle.Action -> ActionStatus(subtitle.text.resolve())
+            subtitle is ChatSubtitle.Status -> GroupStatus(subtitle.text.resolve(), shown.onlineCount)
+            else -> Unit
+        }
     }
+}
+
+/** What the status line says: the connection's state while not connected, else the chat's [subtitle]. */
+@Immutable
+private data class StatusLine(
+    @param:StringRes val connecting: Int?,
+    val subtitle: ChatSubtitle?,
+    val onlineCount: Int,
+) {
+    /** Which of the three it shows, the content the crossfade tells apart. */
+    val kind: Int
+        get() =
+            when {
+                connecting != null -> 0
+                subtitle is ChatSubtitle.Action -> 1
+                subtitle is ChatSubtitle.Status -> 2
+                else -> 3
+            }
 }
 
 /** What someone is doing, in `primary` after the typing dots. */

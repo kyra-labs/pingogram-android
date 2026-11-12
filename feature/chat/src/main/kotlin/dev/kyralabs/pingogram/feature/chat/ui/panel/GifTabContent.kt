@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -118,7 +119,10 @@ internal fun GifTabContent(
                         onEvent(EmojiPanelEvent.GifQueryChanged(it))
                     }
                 }
-                if (caption != null && caption.shows) GifCaptionBar(caption.choice)
+                // Grows in as the composer gets text, and shrinks away as it empties.
+                GrowingVisibility(visible = caption != null && caption.shows) {
+                    caption?.let { GifCaptionBar(it.choice) }
+                }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     val search = tab.search
                     if (search == null) {

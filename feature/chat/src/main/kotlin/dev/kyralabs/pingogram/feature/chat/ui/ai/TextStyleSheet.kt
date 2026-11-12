@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +35,11 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.TextCompositionExample
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -82,15 +86,23 @@ internal fun TextStyleSheet(
                 .padding(bottom = MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-            ) {
-                when (state) {
-                    TextStyleUiState.Loading -> DelayedLoadingIndicator()
-                    is TextStyleUiState.Failed -> StyleFailed(state, onEvent, onClose)
-                    is TextStyleUiState.Content -> StyleContent(state, onEvent, onClose)
+            // Loading, a failure and the style crossfade in place.
+            StateCrossfade(
+                targetState = state,
+                modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+                contentAlignment = Alignment.TopCenter,
+                contentKey = { it::class },
+                label = "textStyle",
+            ) { shown ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                ) {
+                    when (shown) {
+                        TextStyleUiState.Loading -> DelayedLoadingIndicator()
+                        is TextStyleUiState.Failed -> StyleFailed(shown, onEvent, onClose)
+                        is TextStyleUiState.Content -> StyleContent(shown, onEvent, onClose)
+                    }
                 }
             }
         }
@@ -134,13 +146,18 @@ private fun StyleContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    state.error?.let { error ->
-        Text(
-            text = errorText(error),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-        )
+    // Telegram's refusal grows in above the buttons rather than pushing them down at once.
+    val lastError = remember { arrayOfNulls<DomainError>(1) }
+    state.error?.let { lastError[0] = it }
+    GrowingVisibility(visible = state.error != null) {
+        lastError[0]?.let { error ->
+            Text(
+                text = errorText(error),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
     }
     if (state.busy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
     StyleButtons(state, onEvent, onClose)
@@ -157,27 +174,38 @@ private fun StyleButtons(
         TextButton(onClick = onClose, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.ai_style_close))
         }
-        when {
-            !state.isAdded -> {
-                Button(
-                    onClick = { onEvent(TextStyleEvent.Add) },
-                    enabled = !state.busy,
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text(stringResource(R.string.ai_style_add), style = MaterialTheme.typography.labelLargeEmphasized)
-                }
-            }
+        // "Add style" and "Remove style" crossfade in place once Telegram took the change.
+        StateCrossfade(targetState = state, contentKey = { it.isAdded }, label = "textStyleAction") { shown ->
+            StyleAction(shown, onEvent)
+        }
+    }
+}
 
-            // A style the user made can only be deleted, which Pingogram does not offer.
-            !state.style.isCreator -> {
-                TextButton(
-                    onClick = { onEvent(TextStyleEvent.Remove) },
-                    enabled = !state.busy,
-                    shapes = ButtonDefaults.shapes(),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text(stringResource(R.string.ai_style_remove))
-                }
+@Composable
+private fun StyleAction(
+    state: TextStyleUiState.Content,
+    onEvent: (TextStyleEvent) -> Unit,
+) {
+    when {
+        !state.isAdded -> {
+            Button(
+                onClick = { onEvent(TextStyleEvent.Add) },
+                enabled = !state.busy,
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(R.string.ai_style_add), style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        }
+
+        // A style the user made can only be deleted, which Pingogram does not offer.
+        !state.style.isCreator -> {
+            TextButton(
+                onClick = { onEvent(TextStyleEvent.Remove) },
+                enabled = !state.busy,
+                shapes = ButtonDefaults.shapes(),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(R.string.ai_style_remove))
             }
         }
     }
