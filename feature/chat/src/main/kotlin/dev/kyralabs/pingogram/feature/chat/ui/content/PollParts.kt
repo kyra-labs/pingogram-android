@@ -50,6 +50,7 @@ import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollMedia
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.richMediaId
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -250,6 +251,18 @@ internal fun PollAddOption(
     colors: BubbleColors,
     onAction: (PollAction) -> Unit,
 ) {
+    // The button and the field crossfade in place, the bubble's height on the scheme's spring.
+    StateCrossfade(targetState = adding, contentKey = { it != null }, label = "pollAddOption") { shown ->
+        AddOptionContent(shown, colors, onAction)
+    }
+}
+
+@Composable
+private fun AddOptionContent(
+    adding: PollAdding?,
+    colors: BubbleColors,
+    onAction: (PollAction) -> Unit,
+) {
     if (adding == null) {
         TextButton(
             onClick = { onAction(PollAction.OpenAddOption) },
@@ -313,7 +326,25 @@ private fun NewOptionField(
                     unfocusedPlaceholderColor = colors.secondaryContent,
                 ),
         )
-        if (isSending) {
+        AddOptionConfirm(isSending, colors, submit)
+    }
+}
+
+/** The check that adds the typed answer, and the indicator in its place while Telegram takes it, crossfading. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class) // LoadingIndicator
+@Composable
+private fun AddOptionConfirm(
+    isSending: Boolean,
+    colors: BubbleColors,
+    submit: () -> Unit,
+) {
+    // The check and the indicator while Telegram takes the answer crossfade in place.
+    StateCrossfade(
+        targetState = isSending,
+        contentAlignment = Alignment.Center,
+        label = "pollAddSending",
+    ) { sending ->
+        if (sending) {
             Box(Modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
                 LoadingIndicator(
                     modifier = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator),

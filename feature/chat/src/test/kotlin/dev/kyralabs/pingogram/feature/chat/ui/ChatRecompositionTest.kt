@@ -270,6 +270,22 @@ class ChatRecompositionTest {
     }
 
     @Test
+    fun `a reaction added to a bubble composes only that bubble, and its badge scales in in the draw phase`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        state = before.replacing(newest.copy(reactions = ChatPreviewData.reactions(thumbsUp)))
+        repeat(2) { frame() }
+        val functions = counter.recomposedOwnFunctions
+        counter.reset()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
     fun `loading custom emoji composes none of the bubbles that show them`() {
         val renderer = testCustomEmojiRenderer(known = emptyMap())
         setScreen(messages(MESSAGES, customEmoji = true), renderer)

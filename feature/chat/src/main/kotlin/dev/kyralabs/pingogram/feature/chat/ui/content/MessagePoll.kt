@@ -46,6 +46,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -106,7 +107,10 @@ internal fun MessagePoll(
         } else {
             PollChoices(poll, ui.choices, colors, onAction)
         }
-        PollStatus(poll, ui.closesIn, colors)
+        // "Ends in" and "Results hidden until the end" grow in when they come, e.g. once the user voted.
+        GrowingVisibility(visible = poll.hidesResults || (ui.closesIn != null && !poll.isClosed)) {
+            PollStatus(poll, ui.closesIn, colors)
+        }
         pollRestriction(poll)?.let { text ->
             Text(
                 text = stringResource(text),
