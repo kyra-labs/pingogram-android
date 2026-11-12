@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.auth.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
@@ -23,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.phone.loginCodeDescription
 import dev.kyralabs.pingogram.core.ui.phone.loginCodeResendText
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -109,8 +109,13 @@ private fun ResendCode(
     onEvent: (AuthEvent) -> Unit,
 ) {
     val nextType = state.nextType ?: return
-    Box(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-        if (state.canResend) {
+    // The countdown and the button cross-fade as the wait ends (docs/DESIGN_SYSTEM.md §5).
+    StateCrossfade(
+        targetState = state.canResend,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        label = "ResendCode",
+    ) { canResend ->
+        if (canResend) {
             AuthTextButton(
                 text = loginCodeResendText(nextType),
                 onClick = { onEvent(AuthEvent.ResendCode) },
