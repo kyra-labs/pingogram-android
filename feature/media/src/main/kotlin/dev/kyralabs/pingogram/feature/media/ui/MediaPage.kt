@@ -164,7 +164,7 @@ private fun Modifier.pageGestures(
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
-    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom) } else Modifier)
+    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier)
 }
 
 /** Scaled and moved as [zoom] says, in the draw phase; unchanged without one. */

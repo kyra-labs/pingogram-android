@@ -133,6 +133,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Fixed
 - Smoother drops when reordering folders, sticker sets and pinned topics.
+- Smoother media viewer: the bar fades in, zoomed photos glide, page taps match swipes.
 - Smoother lists in calls and in Recent calls.
 - Smoother call screen when video turns on or off.
 - Smoother tab changes in the navigation bar.
