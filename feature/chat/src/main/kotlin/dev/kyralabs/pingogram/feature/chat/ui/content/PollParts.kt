@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
-import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +50,7 @@ import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollMedia
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.richMediaId
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -326,23 +326,38 @@ private fun NewOptionField(
                     unfocusedPlaceholderColor = colors.secondaryContent,
                 ),
         )
-        // The check and the indicator while Telegram takes the answer crossfade in place.
-        StateCrossfade(targetState = isSending, contentAlignment = Alignment.Center, label = "pollAddSending") { sending ->
-            if (sending) {
-                Box(Modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-                    LoadingIndicator(
-                        modifier = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator),
-                        color = colors.accent,
-                    )
-                }
-            } else {
-                IconButton(
-                    onClick = submit,
-                    shapes = IconButtonDefaults.shapes(),
-                    colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
-                ) {
-                    Icon(painterResource(UiR.drawable.ic_check), stringResource(R.string.poll_add_option_confirm))
-                }
+        AddOptionConfirm(isSending, colors, submit)
+    }
+}
+
+/** The check that adds the typed answer, and the indicator in its place while Telegram takes it, crossfading. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class) // LoadingIndicator
+@Composable
+private fun AddOptionConfirm(
+    isSending: Boolean,
+    colors: BubbleColors,
+    submit: () -> Unit,
+) {
+    // The check and the indicator while Telegram takes the answer crossfade in place.
+    StateCrossfade(
+        targetState = isSending,
+        contentAlignment = Alignment.Center,
+        label = "pollAddSending",
+    ) { sending ->
+        if (sending) {
+            Box(Modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
+                LoadingIndicator(
+                    modifier = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator),
+                    color = colors.accent,
+                )
+            }
+        } else {
+            IconButton(
+                onClick = submit,
+                shapes = IconButtonDefaults.shapes(),
+                colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+            ) {
+                Icon(painterResource(UiR.drawable.ic_check), stringResource(R.string.poll_add_option_confirm))
             }
         }
     }

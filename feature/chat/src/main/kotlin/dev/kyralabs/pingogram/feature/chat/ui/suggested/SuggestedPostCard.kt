@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.suggested
 
-import androidx.compose.runtime.remember
-import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
@@ -27,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SuggestedPostState
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -85,29 +85,40 @@ internal fun SuggestedPostCard(
             val lastAnswerable = remember { arrayOfNulls<SuggestedPostUi>(1) }
             if (answerable) lastAnswerable[0] = post
             GrowingVisibility(visible = answerable) {
-                val shown = lastAnswerable[0] ?: post
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
-                    if (shown.canDecline) {
-                        FilledTonalButton(
-                            onClick = { onEvent(SuggestedPostEvent.Answer(post.messageId, approve = false)) },
-                            modifier = Modifier.weight(1f),
-                            shapes = ButtonDefaults.shapes(),
-                        ) { Text(stringResource(R.string.suggested_post_decline), maxLines = 1) }
-                    }
-                    if (shown.canApprove) {
-                        Button(
-                            onClick = { onEvent(SuggestedPostEvent.Answer(post.messageId, approve = true)) },
-                            modifier = Modifier.weight(1f),
-                            shapes = ButtonDefaults.shapes(),
-                        ) {
-                            Text(
-                                stringResource(R.string.suggested_post_approve),
-                                maxLines = 1,
-                                style = MaterialTheme.typography.labelLargeEmphasized,
-                            )
-                        }
-                    }
-                }
+                AnswerButtons(post.messageId, lastAnswerable[0] ?: post, onEvent)
+            }
+        }
+    }
+}
+
+/** "Decline" and "Approve" sharing the card's row, as [shown] allows them. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AnswerButtons(
+    messageId: Long,
+    shown: SuggestedPostUi,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
+        if (shown.canDecline) {
+            FilledTonalButton(
+                onClick = { onEvent(SuggestedPostEvent.Answer(messageId, approve = false)) },
+                modifier = Modifier.weight(1f),
+                shapes = ButtonDefaults.shapes(),
+            ) { Text(stringResource(R.string.suggested_post_decline), maxLines = 1) }
+        }
+        if (shown.canApprove) {
+            Button(
+                onClick = { onEvent(SuggestedPostEvent.Answer(messageId, approve = true)) },
+                modifier = Modifier.weight(1f),
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(
+                    stringResource(R.string.suggested_post_approve),
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
             }
         }
     }
