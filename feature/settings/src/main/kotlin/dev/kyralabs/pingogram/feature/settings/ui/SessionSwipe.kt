@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -66,24 +68,43 @@ internal fun SwipeToEndSession(
     ) { content() }
 }
 
-/** A `TextHandleMove` haptic each time the swipe crosses the point where letting go ends the session, either way. */
+/**
+ * A `TextHandleMove` haptic each time the user's own swipe crosses the point where letting go ends the session, either
+ * way; not when the row springs back by itself after a swipe (`docs/DESIGN_SYSTEM.md` §5.1).
+ */
 @Composable
 private fun ThresholdHaptic(state: SwipeToDismissBoxState) {
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     LaunchedEffect(state) {
         snapshotFlow { state.targetValue }
             .drop(1)
-            .collect { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+            .collect {
+                // Dragged across by the user: springing back after a swipe starts from the dismissed value.
+                if (state.currentValue == SwipeToDismissBoxValue.Settled) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+            }
     }
 }
 
-/** What the swipe reveals: "End session" after the logout symbol at the row's end, on `errorContainer`. */
+/**
+ * What the swipe reveals: "End session" after the logout symbol at the row's end, on `errorContainer`. The symbol pops
+ * to its full size where letting go would end the session, and back below it, on the fast spatial spring
+ * (`docs/DESIGN_SYSTEM.md` §5: swipe actions reveal icons with scale springs), read in its graphics layer.
+ */
 @Composable
 private fun EndSessionReveal(
     state: SwipeToDismissBoxState,
     shape: Shape,
 ) {
     val swiping by remember(state) { derivedStateOf { state.dismissDirection == SwipeToDismissBoxValue.EndToStart } }
+    val past by remember(state) { derivedStateOf { state.targetValue == SwipeToDismissBoxValue.EndToStart } }
+    val iconScale =
+        animateFloatAsState(
+            targetValue = if (past) 1f else ICON_RESTING_SCALE,
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+            label = "EndSessionIcon",
+        )
     val colors = MaterialTheme.colorScheme
     Box(
         modifier =
@@ -108,8 +129,20 @@ private fun EndSessionReveal(
                     color = colors.onErrorContainer,
                     style = MaterialTheme.typography.labelLarge,
                 )
-                Icon(painterResource(R.drawable.ic_logout), contentDescription = null, tint = colors.onErrorContainer)
+                Icon(
+                    painter = painterResource(R.drawable.ic_logout),
+                    contentDescription = null,
+                    modifier =
+                        Modifier.graphicsLayer {
+                            scaleX = iconScale.value
+                            scaleY = iconScale.value
+                        },
+                    tint = colors.onErrorContainer,
+                )
             }
         }
     }
 }
+
+/** The size of the symbol before the point where letting go ends the session, against its full size past it. */
+private const val ICON_RESTING_SCALE = 0.6f

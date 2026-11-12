@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui.profilecolor
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +42,8 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.SenderHue
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.popIn
+import dev.kyralabs.pingogram.core.ui.theme.popOut
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -217,7 +220,12 @@ private fun ColorChip(
                 .background(hue.vivid.container),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) {
+        // The check pops in with the chip's morph, on the fast springs (docs/DESIGN_SYSTEM.md §5: chips).
+        AnimatedVisibility(
+            selected,
+            enter = popIn(MaterialTheme.motionScheme),
+            exit = popOut(MaterialTheme.motionScheme),
+        ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_check),
                 contentDescription = null,
