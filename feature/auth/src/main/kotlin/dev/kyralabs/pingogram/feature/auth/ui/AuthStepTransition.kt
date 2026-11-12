@@ -15,7 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
@@ -30,8 +32,10 @@ internal typealias StepKey = KClass<out AuthStepUiState>
  * A step the view model reports animates in. While a back gesture runs, the transition seeks towards the screen back
  * leads to ([AuthUiState.backStep]) with the gesture's progress. Completed, it sends [onBack]: the view model then
  * reports that screen and the transition plays the rest from where the gesture left it. Cancelled, the transition
- * returns to the current step on the effects spring of `MaterialTheme.motionScheme` (no overshoot past the start).
- * Without a known back screen the gesture only sends [onBack] once it completes.
+ * returns to the current step on the effects spring of `MaterialTheme.motionScheme` (no overshoot past the start); a
+ * new gesture within that return takes over from where it is. Without a known back screen, and with animations off
+ * ([isReducedMotion]: the gesture previews nothing, `docs/DESIGN_SYSTEM.md` §5.1), the gesture only sends [onBack] once
+ * it completes.
  */
 @Composable
 internal fun rememberAuthStepTransition(
@@ -43,19 +47,30 @@ internal fun rememberAuthStepTransition(
     val returnSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val currentState by rememberUpdatedState(state)
     val currentOnBack by rememberUpdatedState(onBack)
+    val reducedMotion by rememberUpdatedState(isReducedMotion())
     val key = state.step::class
     SideEffect { steps.shown(state.step) }
     LaunchedEffect(key) { if (!steps.isSeeking) steps.seekable.animateTo(key) }
     PredictiveBackHandler(enabled = state.canGoBack) { events ->
+        // A return from a cancelled gesture still running: this gesture takes over from where it is.
+        steps.cancelReturn()
         val from = currentState.step::class
-        val to = currentState.backStep?.takeIf { it::class != from }
-        if (to != null) steps.startSeeking(to)
+        val to = currentState.backStep?.takeIf { it::class != from && !reducedMotion }
+        if (to != null) {
+            steps.startSeeking(to)
+        } else if (steps.isSeeking) {
+            // Caught within a return, with nothing to preview now: the step shows as it is.
+            steps.seekable.snapTo(from)
+            steps.isSeeking = false
+        }
         try {
             events.collect { event -> if (to != null) steps.seekable.seekTo(event.progress, to::class) }
             steps.isSeeking = false
             currentOnBack()
         } catch (cancelled: CancellationException) {
-            if (to != null) scope.launch { steps.returnTo(from, returnSpec) { currentState.step::class } }
+            if (to != null) {
+                steps.returning = scope.launch { steps.returnTo(from, returnSpec) { currentState.step::class } }
+            }
             throw cancelled
         }
     }
@@ -74,6 +89,15 @@ internal class AuthStepTransition(
 
     /** Whether a back gesture drives [seekable]; steps the view model reports meanwhile wait for its end. */
     var isSeeking = false
+
+    /** The return after a cancelled gesture, while it runs. */
+    var returning: Job? = null
+
+    /** Stops the return after a cancelled gesture where it is, for a new gesture to seek from there. */
+    fun cancelReturn() {
+        returning?.cancel()
+        returning = null
+    }
 
     // The last state of each screen: a leaving screen keeps showing it, and the one back leads to shows its preview.
     // Read only while composing screens that are not the current one, whose state no longer changes.
