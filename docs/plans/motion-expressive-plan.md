@@ -654,7 +654,7 @@ M-078
 | A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
 | A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 ✓ (#463) |
 | A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 ✓ (#466) |
-| A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 |
+| A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 ✓ (#468) |
 | A-6 `refactor/motion-message-menu` | A | Medium | M-033, M-043 |
 | A-7 `refactor/motion-chat-lists` | A | Low | M-045, M-049, M-050 |
 | A-8 `refactor/motion-chat-list` | A | Low | M-016 to M-019, M-021 to M-028, M-051 |
