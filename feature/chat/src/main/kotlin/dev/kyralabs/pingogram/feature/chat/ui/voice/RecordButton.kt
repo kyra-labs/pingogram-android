@@ -1,5 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui.voice
 
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.CompositionLocalProvider
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -131,7 +137,7 @@ internal fun RecordButton(
     val input = recordInputOf(video, canSwitch = mode.canSwitch && recording == null)
     val idle = if (video) ButtonFace.Camera else ButtonFace.Mic
     val face = recording?.let { if (it.isLocked) ButtonFace.Send else ButtonFace.Level } ?: idle
-    val colors = recordButtonColors(mic = face == ButtonFace.Mic || face == ButtonFace.Camera)
+    val colors = rememberRecordButtonColors(mic = face == ButtonFace.Mic || face == ButtonFace.Camera)
     // Shown after a switch only: touch would show it on the long press that records.
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
@@ -146,16 +152,22 @@ internal fun RecordButton(
                 Modifier
                     .minimumInteractiveComponentSize()
                     .animatedWidth(width, uniform.height)
-                    .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send),
+                    .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send)
+                    .fadingContainer(colors, shapes.shape),
             // A pill while it records, the press morph only while it is the microphone or camera, or sends.
             shapes = if (face == ButtonFace.Level) IconButtonShapes(shapes.shape, shapes.shape) else shapes,
-            colors = colors,
+            colors = colors.button(),
         ) {
             Crossfade(
                 targetState = face,
                 animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                 label = "recordButtonFace",
-            ) { RecordButtonFace(it, recording?.meter, video) }
+            ) {
+                // Each face in its own content color: the crossfade carries the change.
+                CompositionLocalProvider(LocalContentColor provides colors.contentOf(it)) {
+                    RecordButtonFace(it, recording?.meter, video)
+                }
+            }
         }
     }
 }
@@ -180,25 +192,62 @@ private fun recordInputOf(
 }
 
 /**
- * The record button's colors: `tertiaryContainer` while it is the microphone or the camera ([mic]), `primary` while it
- * records, cross-fading on the motion scheme's effects spring.
+ * The record button's colors (M-034): `tertiaryContainer` while it is the microphone or the camera ([mic]), `primary`
+ * while it records, its container cross-fading on the motion scheme's default effects spring. The fade is read in the
+ * draw phase ([fadingContainer]), so it recomposes nothing: the button draws its own container at rest (with its press
+ * morph) and a transparent one while the fade runs, which this draws behind it in the button's resting shape instead.
+ * The content takes each face's color at once ([contentOf]), as the faces crossfade.
  */
-@Composable
-private fun recordButtonColors(mic: Boolean): IconButtonColors {
-    val colorScheme = MaterialTheme.colorScheme
-    val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
-    val container by animateColorAsState(
-        targetValue = if (mic) colorScheme.tertiaryContainer else colorScheme.primary,
-        animationSpec = effects,
-        label = "recordButtonContainer",
-    )
-    val content by animateColorAsState(
-        targetValue = if (mic) colorScheme.onTertiaryContainer else colorScheme.onPrimary,
-        animationSpec = effects,
-        label = "recordButtonContent",
-    )
-    return IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = content)
+@Stable
+private class RecordButtonColors(
+    private val mic: Boolean,
+    private val container: State<Color>,
+    private val target: Color,
+    private val micContent: Color,
+    private val recordingContent: Color,
+) {
+    /** The fade runs, and this draws the container. */
+    val fading: Boolean by derivedStateOf { container.value != target }
+
+    /** What the container is now, read in the draw phase. */
+    val containerColor: Color get() = container.value
+
+    fun contentOf(face: ButtonFace): Color =
+        if (face == ButtonFace.Mic || face == ButtonFace.Camera) micContent else recordingContent
+
+    @Composable
+    fun button(): IconButtonColors =
+        IconButtonDefaults.filledIconButtonColors(
+            containerColor = if (fading) Color.Transparent else target,
+            contentColor = if (mic) micContent else recordingContent,
+        )
 }
+
+@Composable
+private fun rememberRecordButtonColors(mic: Boolean): RecordButtonColors {
+    val colorScheme = MaterialTheme.colorScheme
+    val target = if (mic) colorScheme.tertiaryContainer else colorScheme.primary
+    val container =
+        animateColorAsState(
+            targetValue = target,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "recordButtonContainer",
+        )
+    val micContent = colorScheme.onTertiaryContainer
+    val recordingContent = colorScheme.onPrimary
+    return remember(mic, container, target, micContent, recordingContent) {
+        RecordButtonColors(mic, container, target, micContent, recordingContent)
+    }
+}
+
+/** While [colors] fade, the button's container in [shape], drawn behind it from the fade's color. */
+private fun Modifier.fadingContainer(
+    colors: RecordButtonColors,
+    shape: Shape,
+): Modifier =
+    drawBehind {
+        if (colors.fading) drawOutline(shape.createOutline(size, layoutDirection, this), colors.containerColor)
+    }
 
 /** What the record button shows: the microphone or the camera, the voice's level while held, or send while locked. */
 private enum class ButtonFace {

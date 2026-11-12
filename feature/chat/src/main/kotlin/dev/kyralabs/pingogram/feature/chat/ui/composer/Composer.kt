@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
@@ -257,6 +259,22 @@ private fun UnavailableLabel(reason: UiText) {
     )
 }
 
+/** The send-as avatar, where there is one, before the pill ([content]), as the composer's row lays them out. */
+@Composable
+private fun ComposerPillRow(
+    composer: ComposerUiState.Available,
+    onSendAs: () -> Unit,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        composer.sendAs?.let { SendAsButton(it, onSendAs) }
+        content()
+    }
+}
+
 /**
  * The bar of the message the composer replies to or edits, while there is one: it grows in from the top on the motion
  * scheme's spatial spring and fades in on its effects spring, and the last bar shown stays while it leaves.
@@ -268,14 +286,9 @@ private fun BarArea(
     onClose: () -> Unit,
     onReplace: () -> Unit,
 ) {
-    val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(bar) }
     if (bar != null) shown = bar
-    AnimatedVisibility(
-        visible = bar != null,
-        enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
-        exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
-    ) {
+    GrowingVisibility(visible = bar != null) {
         shown?.let { ComposerBarRow(it, onShow, onClose, onReplace = onReplace) }
     }
 }
@@ -336,27 +349,36 @@ private fun Composer(
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
-        val recording = voice.recording
-        if (recording != null) {
-            RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f), voice.onVideoEvent)
-        } else {
-            composer.sendAs?.let { SendAsButton(it, onSendAs) }
-            ComposerPill(
-                composer = composer,
-                text = text,
-                onSend = { send(SendOptions()) },
-                onLink = { linking = it },
-                onFocusChanged = onFocusChanged,
-                attach = attach,
-                panel = panel,
-                focusRequester = focusRequester,
-                canSend = canSend,
-                modifier = Modifier.weight(1f),
-                onBotMenu = onBotMenu,
-                onFieldKey = onFieldKey,
-                hint = fieldHint,
-                botKeyboard = botKeyboard,
-            )
+        // The pill and the recording bar crossfade in place as a recording starts and ends.
+        StateCrossfade(
+            targetState = voice.recording,
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.BottomStart,
+            contentKey = { it != null },
+            label = "composerPill",
+        ) { recording ->
+            if (recording != null) {
+                RecordingBar(recording, voice.drag, voice.onEvent, Modifier.fillMaxWidth(), voice.onVideoEvent)
+            } else {
+                ComposerPillRow(composer, onSendAs) {
+                    ComposerPill(
+                        composer = composer,
+                        text = text,
+                        onSend = { send(SendOptions()) },
+                        onLink = { linking = it },
+                        onFocusChanged = onFocusChanged,
+                        attach = attach,
+                        panel = panel,
+                        focusRequester = focusRequester,
+                        canSend = canSend,
+                        modifier = Modifier.weight(1f),
+                        onBotMenu = onBotMenu,
+                        onFieldKey = onFieldKey,
+                        hint = fieldHint,
+                        botKeyboard = botKeyboard,
+                    )
+                }
+            }
         }
         ComposerAction(edit, canSend, composer, send, onSchedule = { scheduling = true }, voice)
     }

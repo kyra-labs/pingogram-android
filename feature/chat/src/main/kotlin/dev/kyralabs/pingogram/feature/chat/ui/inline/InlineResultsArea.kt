@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -106,21 +107,12 @@ internal fun InlineResultsArea(
     now: () -> Instant = Instant::now,
 ) {
     val bot = inline.state.takeIf { enabled }
-    val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(bot) }
     val visible = state.isShown(bot)
     if (visible) shown = bot
     LaunchedEffect(bot?.queryKey) { state.onQuery(bot?.queryKey) }
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter =
-            expandVertically(motionScheme.defaultSpatialSpec(), expandFrom = Alignment.Bottom) +
-                fadeIn(motionScheme.defaultEffectsSpec()),
-        exit =
-            shrinkVertically(motionScheme.fastSpatialSpec(), shrinkTowards = Alignment.Bottom) +
-                fadeOut(motionScheme.fastEffectsSpec()),
-    ) {
+    // Shrinks away as it grew in, on the default spatial spring (docs/DESIGN_SYSTEM.md §5.1, Q-01).
+    GrowingVisibility(visible = visible, modifier = modifier, expandFrom = Alignment.Bottom) {
         shown?.let { InlineResultsPanel(it, state.highlighted, inline.canSchedule, inline.onEvent, now = now) }
     }
 }

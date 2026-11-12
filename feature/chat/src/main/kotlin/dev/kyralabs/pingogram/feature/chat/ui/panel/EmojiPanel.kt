@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.panel
 
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -111,11 +112,14 @@ internal fun EmojiPanel(
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     val shownTab = if (showStickers) tab else PanelTab.Emoji
     Column(modifier) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (shownTab) {
-                PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
-                PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
-                PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus, gifCaption)
+        // The tabs' contents crossfade in place, as the Saved Messages tabs' do.
+        StateCrossfade(shownTab, Modifier.weight(1f).fillMaxWidth(), label = "EmojiPanelTab") { shown ->
+            Box(Modifier.fillMaxSize()) {
+                when (shown) {
+                    PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
+                    PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
+                    PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus, gifCaption)
+                }
             }
         }
         PanelTabBar(shownTab, onSelect = { tab = it }, showStickers = showStickers, onBackspace = onBackspace)

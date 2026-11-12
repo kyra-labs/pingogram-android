@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.panel
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -118,7 +119,10 @@ internal fun GifTabContent(
                         onEvent(EmojiPanelEvent.GifQueryChanged(it))
                     }
                 }
-                if (caption != null && caption.shows) GifCaptionBar(caption.choice)
+                // Grows in as the composer gets text, and shrinks away as it empties.
+                GrowingVisibility(visible = caption != null && caption.shows) {
+                    caption?.let { GifCaptionBar(it.choice) }
+                }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     val search = tab.search
                     if (search == null) {

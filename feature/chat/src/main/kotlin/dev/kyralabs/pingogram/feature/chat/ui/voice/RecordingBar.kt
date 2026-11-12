@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.voice
 
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -80,14 +81,10 @@ internal fun RecordingBar(
         // The text field's pill in its place.
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        val motionScheme = MaterialTheme.motionScheme
-        AnimatedContent(
+        StateCrossfade(
             targetState = recording.isLocked,
-            transitionSpec = {
-                fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
-                    fadeOut(motionScheme.fastEffectsSpec())
-            },
             contentAlignment = Alignment.CenterStart,
+            clip = true,
             label = "recordingBar",
         ) { locked ->
             Row(
@@ -193,7 +190,20 @@ private fun RowScope.LockedContent(
         return
     }
     val trim = recording.trim
-    if (trim != null) TrimWaveform(trim, onEvent, Modifier.weight(1f)) else LiveWaveform(recording, Modifier.weight(1f))
+    // Paused, the live waveform gives way to the trimming one, crossfading in place.
+    StateCrossfade(
+        targetState = trim,
+        modifier = Modifier.weight(1f),
+        contentAlignment = Alignment.CenterStart,
+        contentKey = { it != null },
+        label = "recordingWaveform",
+    ) { shown ->
+        if (shown != null) {
+            TrimWaveform(shown, onEvent, Modifier.fillMaxWidth())
+        } else {
+            LiveWaveform(recording, Modifier.fillMaxWidth())
+        }
+    }
     if (video?.canFlip == true) {
         IconButton(onClick = { onVideoEvent(VideoNoteEvent.FlipCamera) }, shapes = IconButtonDefaults.shapes()) {
             Icon(

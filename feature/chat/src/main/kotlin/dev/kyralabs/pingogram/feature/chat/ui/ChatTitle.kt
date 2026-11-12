@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.runtime.Immutable
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -162,14 +164,41 @@ private fun ChatStatus(
     header: ChatHeader,
     @StringRes connecting: Int?,
 ) {
-    val subtitle = header.subtitle
+    val line = StatusLine(connecting, header.subtitle, header.onlineCount)
     val colors = MaterialTheme.colorScheme
-    when {
-        connecting != null -> StatusText(stringResource(connecting), colors.onSurfaceVariant)
-        subtitle is ChatSubtitle.Action -> ActionStatus(subtitle.text.resolve())
-        subtitle is ChatSubtitle.Status -> GroupStatus(subtitle.text.resolve(), header.onlineCount)
-        else -> Unit
+    // The connection's state, an action and the status crossfade in place; a status that changes its words does not.
+    StateCrossfade(
+        targetState = line,
+        contentAlignment = Alignment.Center,
+        contentKey = { it.kind },
+        label = "ChatStatus",
+    ) { shown ->
+        val subtitle = shown.subtitle
+        when {
+            shown.connecting != null -> StatusText(stringResource(shown.connecting), colors.onSurfaceVariant)
+            subtitle is ChatSubtitle.Action -> ActionStatus(subtitle.text.resolve())
+            subtitle is ChatSubtitle.Status -> GroupStatus(subtitle.text.resolve(), shown.onlineCount)
+            else -> Unit
+        }
     }
+}
+
+/** What the status line says: the connection's state while not connected, else the chat's [subtitle]. */
+@Immutable
+private data class StatusLine(
+    @param:StringRes val connecting: Int?,
+    val subtitle: ChatSubtitle?,
+    val onlineCount: Int,
+) {
+    /** Which of the three it shows, the content the crossfade tells apart. */
+    val kind: Int
+        get() =
+            when {
+                connecting != null -> 0
+                subtitle is ChatSubtitle.Action -> 1
+                subtitle is ChatSubtitle.Status -> 2
+                else -> 3
+            }
 }
 
 /** What someone is doing, in `primary` after the typing dots. */
