@@ -557,7 +557,7 @@ closes on a swipe down only (`ui/DismissState.kt:101-104` takes the direction; a
 - Change: M-076: the page being left keeps its content until the pager settles. M-077: the stories viewer keeps the
   draw-phase scale through its fade (it does not call `leaveAtBackScale()`). M-080: as M-061. M-086: `shapes =`.
   M-088: `GrowingVisibility`. M-089: `animateItem(this, motion)`.
-- Verify: the stories viewer's tests; confirm M-077 on a device.
+- Verify: the stories viewer's tests; confirm M-077 on a device (verified 2026-11-12, Galaxy S24 Ultra).
 
 **B-10 `refactor/motion-scanner-feedback`** (Medium) — M-125, M-126 (Q-01)
 - Files: `feature:scanner` `QrScannerScreen.kt:170-240`; `feature:feedback` `FeedbackScreen.kt:270-278`.
@@ -667,7 +667,7 @@ M-078
 | B-6 `refactor/motion-call-screen` | B | Medium | M-059, M-060, M-066, M-067, M-068 ✓ (#454, #459) |
 | B-7 `refactor/motion-call-lists` | B | Medium | M-057, M-061, M-063, M-064, M-069, M-070 ✓ (#455) |
 | B-8 `refactor/motion-media-viewer` | B | Medium | M-073, M-074, M-075, M-081, M-082, M-083 ✓ (#456) |
-| B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460) |
+| B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460; M-077 verified on device) |
 | B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 ✓ (#462) |
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 ✓ (#464) |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 ✓ (#469) |

@@ -73,7 +73,8 @@ import kotlin.time.TimeSource
  *   viewed, as Telegram's terms ask: there is no hidden viewing and no stealth mode), once per showing, and closed
  *   (`closeStory`) when it leaves, the screen stops or the viewer closes.
  * - **Pausing**: while a finger holds the story, the pager moves, the reactions are open, the reply field has the
- *   keyboard, or the screen is stopped ([Pause]).
+ *   keyboard, a system back gesture is under way, or the screen is stopped ([Pause]).
+ *   During a back gesture nothing closes the viewer or moves it to the next chat but the gesture itself.
  * - **Reactions**: the emoji TDLib offers for stories without Telegram Premium; a tap sets one or takes it back,
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
  * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
@@ -155,7 +156,7 @@ class StoryViewerViewModel internal constructor(
             player = videoPlayer,
             scope = viewModelScope,
             timeSource = timeSource,
-            onEnd = ::next,
+            onEnd = ::onStoryEnded,
             onFailed = ::onPlaybackFailed,
         )
 
@@ -171,6 +172,9 @@ class StoryViewerViewModel internal constructor(
     /** Files downloaded at visible or prefetch priority in this viewer, each asked for once. */
     private val requestedFiles = mutableSetOf<Int>()
     private var failedPlayback: StoryKey? = null
+
+    /** The story ended during a back gesture ([onStoryEnded]); the viewer moves on if the gesture is cancelled. */
+    private var endedDuringBack = false
 
     private val currentChatId: Flow<Long?> =
         combine(posters, position) { posters, position -> posters?.getOrNull(position.posterIndex) }
@@ -263,6 +267,10 @@ class StoryViewerViewModel internal constructor(
 
             is StoryViewerEvent.Hold -> {
                 setPaused(Pause.Held, event.held)
+            }
+
+            is StoryViewerEvent.BackGesture -> {
+                onBackGesture(event.active)
             }
 
             is StoryViewerEvent.Paging -> {
@@ -582,6 +590,24 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
+    /**
+     * The story in the timeline ended: the next story shows, or the viewer closes after the last. During a back
+     * gesture (which pauses the timeline, so this only follows an end already on its way) it waits for the gesture:
+     * the viewer neither closes nor slides to the next chat under the user's finger.
+     */
+    private fun onStoryEnded() {
+        if (Pause.Back in pauses.value) endedDuringBack = true else next()
+    }
+
+    /** Pauses the story for a back gesture; a cancelled one resumes it, and moves on if it ended meanwhile. */
+    private fun onBackGesture(active: Boolean) {
+        setPaused(Pause.Back, active)
+        if (!active && endedDuringBack) {
+            endedDuringBack = false
+            next()
+        }
+    }
+
     /** The next chat, or after the last one the viewer closes. */
     private fun nextPoster() {
         val posters = posters.value ?: return
@@ -768,6 +794,7 @@ class StoryViewerViewModel internal constructor(
         Paging,
         Typing,
         Reactions,
+        Back,
     }
 
     /** The chat shown, by its index among the posters, and its story; null until chosen. */
