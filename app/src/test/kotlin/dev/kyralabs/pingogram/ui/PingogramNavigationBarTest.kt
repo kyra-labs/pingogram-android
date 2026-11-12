@@ -210,6 +210,31 @@ class PingogramNavigationBarTest {
         assertTrue("$before → $during → $after", during.all { it in range })
     }
 
+    @Test
+    fun `switching tabs recomposes each changed tab once, not with each frame of its animation`() {
+        var selected by mutableStateOf(TopLevelDestination.Chats)
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                PingogramNavigationBar(selected = selected, onSelect = {})
+            }
+        }
+        composeRule.waitForIdle()
+        val counter = RecompositionCounter()
+        counter.start()
+        composeRule.mainClock.autoAdvance = false
+
+        selected = TopLevelDestination.Contacts
+        repeat(SWITCH_FRAMES) {
+            composeRule.mainClock.advanceTimeByFrame()
+            composeRule.waitForIdle()
+        }
+
+        // The tab left and the tab chosen, once each; their color, indicator and room follow in the draw and layout
+        // phases.
+        val tabs = counter.recomposedOwnFunctions.count { it.endsWith(".NavigationTab") }
+        assertTrue("${counter.recomposedOwnFunctions}", tabs <= CHANGED_TABS)
+    }
+
     // The Settings tab's account menu (docs/adr/0031-multiple-accounts.md)
 
     @Test
@@ -408,6 +433,7 @@ class PingogramNavigationBarTest {
         SemanticsMatcher("has no custom actions") { SemanticsActions.CustomActions !in it.config }
 
     private companion object {
+        const val CHANGED_TABS = 2
         const val LARGE_FONT_SCALE = 2f
 
         /** Enough frames for the tabs' springs to play out. */
