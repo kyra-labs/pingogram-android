@@ -17,7 +17,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
@@ -42,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -52,6 +50,7 @@ import dev.kyralabs.pingogram.core.ui.component.FollowScaffoldDirective
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.ListPaneExpansionAnchors
 import dev.kyralabs.pingogram.core.ui.component.PaneDragHandle
+import dev.kyralabs.pingogram.core.ui.component.SchemeAnimatedPane
 import dev.kyralabs.pingogram.core.ui.component.extraPaneEdge
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.rememberExtraPaneWidth
@@ -173,15 +172,13 @@ internal fun ChatsListDetail(
         if (shownExtra != null) lastExtra = shownExtra
     }
     val keyboard = rememberPaneKeyboard()
-    val boundsSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntRect>()
     val paneExpansionState = rememberPaneExpansionState(keyProvider = value, anchors = ListPaneExpansionAnchors)
     val extraWidth = rememberExtraPaneWidth()
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainer)) {
         NavigableListDetailPaneScaffold(
             navigator = navigator,
             listPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier = Modifier.paneContainer(twoPanes, last = false),
                 ) {
                     Box(Modifier.listPaneFocus(keyboard)) {
@@ -209,8 +206,7 @@ internal fun ChatsListDetail(
                 }
             },
             detailPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier = Modifier.paneContainer(twoPanes, last = !extraVisible),
                 ) {
                     val chatId = shownChatId ?: lastChatId.takeUnless { detailVisible }
@@ -234,8 +230,7 @@ internal fun ChatsListDetail(
                 }
             },
             extraPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier =
                         Modifier
                             .preferredWidth(extraWidth.width)

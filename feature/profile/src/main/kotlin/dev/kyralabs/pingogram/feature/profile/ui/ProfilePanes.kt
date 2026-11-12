@@ -28,7 +28,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffold
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldDefaults
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldRole
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.SchemeAnimatedPane
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
@@ -115,10 +115,10 @@ internal fun SupportingPanes(
         directive = directive,
         value = value,
         mainPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) { main() }
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) { main() }
         },
         supportingPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) { supporting() }
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) { supporting() }
         },
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
     )
