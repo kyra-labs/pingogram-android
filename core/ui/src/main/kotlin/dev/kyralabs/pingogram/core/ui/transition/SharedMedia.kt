@@ -244,17 +244,19 @@ private class ViewerVisibility(
 
 /**
  * A container transform between two destinations of the `NavHost` (`docs/DESIGN_SYSTEM.md` §5): while it moves between
- * them, this content and the other destination's content of the same [key] share their bounds, which grow or shrink on
- * the motion scheme's default spatial spring, the two crossfading on its default effects spring. Both are measured to
- * the moving bounds. While they move they are drawn above both screens, clipped to a shape that morphs from
- * [counterpartShape], the other side's corners, to [shape], this side's, on the same spatial spring: e.g. from a
- * floating action button's corners to a screen's square ones and back.
+ * them, this content and the other destination's content of the same [key] share their bounds, which grow into the
+ * whole screen on the motion scheme's slow spatial spring and shrink back on its default one (§5.1, Q-03, as
+ * material3's full-screen search bar expands and collapses), the two crossfading on its default effects spring. Both
+ * are measured to the moving bounds. While they move they are drawn above both screens, clipped to a shape that
+ * morphs from [counterpartShape], the other side's corners, to [shape], this side's, on the same spatial springs: e.g.
+ * from a floating action button's corners to a screen's square ones and back.
  *
  * Each side simply comes and goes with its screen, sharing nothing, without the scopes (previews, tests, a screen
  * outside the `NavHost`), when not [enabled], with reduced motion ([isReducedMotion]), and whenever the other side
  * shows no content of [key]. [key] must be equal on both sides and on no other content, e.g. a data object.
  *
- * With [fixedLayout], this side is laid out at the size it ends at (from the transform's lookahead) and revealed by
+ * With [fixedLayout], this side is the whole screen, which grows out of the other side and shrinks back into it, and
+ * is laid out at the size it ends at (from the transform's lookahead) and revealed by
  * the moving bounds from their top start, so its layout is measured once and every frame of the transform only clips
  * it; without, it is measured anew at every frame's bounds. A whole screen (New chat, search, a profile) keeps its
  * layout, as measuring its lists, bars and text anew in every frame made the transform stutter; small content (a
@@ -268,7 +270,15 @@ fun Modifier.containerTransform(
     enabled: Boolean = true,
     fixedLayout: Boolean = false,
 ): Modifier =
-    containerTransformOf(key, shape, remember(counterpartShape) { { counterpartShape } }, enabled, fixedLayout)
+    containerTransformOf(
+        key,
+        shape,
+        remember(counterpartShape) { { counterpartShape } },
+        enabled,
+        fixedLayout,
+        screenGrowth = true,
+        isScreen = fixedLayout,
+    )
 
 /**
  * [containerTransform] with the other side's corners read while the bounds move, in the draw phase ([counterpart]).
@@ -284,20 +294,31 @@ private fun Modifier.containerTransformOf(
     visibilityScope: AnimatedVisibilityScope? = LocalNavAnimatedVisibilityScope.current,
     resizeMode: SharedTransitionScope.ResizeMode = RemeasureToBounds,
     fastFade: Boolean = false,
+    screenGrowth: Boolean = false,
+    isScreen: Boolean = false,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
     val shares = enabled && !isReducedMotion()
     if (transitionScope == null || visibilityScope == null || !shares) return this
     val motionScheme = MaterialTheme.motionScheme
     val spatial = motionScheme.defaultSpatialSpec<Float>()
+    // With [screenGrowth], growing into the whole screen runs on the slow spatial spring: the screen's side coming, or
+    // the other side going (Q-03). The media viewer keeps the default one until its benchmark says otherwise (§5.1).
+    val growing = if (screenGrowth) motionScheme.slowSpatialSpec<Float>() else spatial
     // This side's share of the transition: 1 while it shows, 0 while the other side does; drives the corners.
     val shown =
-        visibilityScope.transition.animateFloat(transitionSpec = { spatial }, label = "containerTransformShape") {
-            if (it == EnterExitState.Visible) 1f else 0f
-        }
+        visibilityScope.transition.animateFloat(
+            transitionSpec = { if ((targetState == EnterExitState.Visible) == isScreen) growing else spatial },
+            label = "containerTransformShape",
+        ) { if (it == EnterExitState.Visible) 1f else 0f }
     val clip = remember(shape, counterpart, shown) { MorphingClip(counterpart, shape) { shown.value } }
     val boundsSpec = motionScheme.defaultSpatialSpec<Rect>()
-    val boundsTransform = remember(boundsSpec) { BoundsTransform { _, _ -> boundsSpec } }
+    val growingBounds = if (screenGrowth) motionScheme.slowSpatialSpec<Rect>() else boundsSpec
+    // The bounds grow on the slow spring and shrink on the default one, whichever side is measured.
+    val boundsTransform =
+        remember(boundsSpec, growingBounds) {
+            BoundsTransform { initial, target -> if (target.area() > initial.area()) growingBounds else boundsSpec }
+        }
     val target = remember { TargetConstraints() }
     val shared =
         with(transitionScope) {
@@ -313,6 +334,8 @@ private fun Modifier.containerTransformOf(
         }
     return if (fixedLayout) shared.measuredAtTarget(target) else shared
 }
+
+private fun Rect.area(): Float = width * height
 
 /** The constraints content gets in the lookahead pass: those it ends the transform with. Read in the layout phase. */
 private class TargetConstraints {

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -39,8 +40,9 @@ class TabReselection {
 val LocalTabReselection = staticCompositionLocalOf { TabReselection() }
 
 /**
- * Scrolls [listState] back to its first item, on the list's own animation, whenever the tab of [route] is tapped while
- * selected ([TabReselection]), as Material's navigation does; a tap during the scroll starts it again. Not [enabled],
+ * Scrolls [listState] back to its first item on the motion scheme's default spatial spring ([animateScrollToTop], Q-09)
+ * whenever the tab of [route] is tapped while selected ([TabReselection]), as Material's navigation does; a tap during
+ * the scroll starts it again. Not [enabled],
  * e.g. on a screen pushed above the tab, it does nothing.
  */
 @Composable
@@ -51,7 +53,8 @@ fun ScrollToTopOnReselect(
 ) {
     if (!enabled) return
     val reselection = LocalTabReselection.current
-    LaunchedEffect(reselection, route, listState) {
-        reselection.reselections(route).collectLatest { listState.animateScrollToItem(0) }
+    val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    LaunchedEffect(reselection, route, listState, spec) {
+        reselection.reselections(route).collectLatest { listState.animateScrollToTop(spec) }
     }
 }
