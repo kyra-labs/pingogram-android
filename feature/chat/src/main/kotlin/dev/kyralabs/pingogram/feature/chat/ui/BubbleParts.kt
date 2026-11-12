@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
@@ -22,6 +23,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -143,8 +147,9 @@ internal fun LinkPreviewBlock(
  * The reactions of [bubble] as small round badges side by side on a bubble's corner, clear of its text and time: up to
  * [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's reactions picker ([onMore]), where all of
  * them show. With [onToggle], tapping a badge adds or takes back the user's reaction (not the paid star reaction, which
- * is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen readers reach them as the
- * bubble's custom actions instead.
+ * is changed elsewhere); [toggles] crossfades it meanwhile. A badge [added] to a bubble already on screen scales in on
+ * the motion scheme's fast spatial spring, read in its draw phase (`docs/DESIGN_SYSTEM.md` §5.1, Q-12); one that goes
+ * leaves at once. Inside a bubble's row, screen readers reach them as the bubble's custom actions instead.
  */
 @Composable
 internal fun ReactionBadges(
@@ -153,6 +158,7 @@ internal fun ReactionBadges(
     onToggle: (ReactionChip) -> Unit,
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
+    added: (ReactionLabel) -> Boolean = { false },
 ) {
     val reactions = bubble.reactions
     val messageId = bubble.reactionsMessageId
@@ -164,11 +170,14 @@ internal fun ReactionBadges(
         val shown = if (reactions.size > MAX_REACTION_BADGES) MAX_REACTION_BADGES else reactions.size
         for (index in 0 until shown) {
             val chip = reactions[index]
-            ReactionBadge(
-                reaction = chip,
-                chosenFraction = { toggles.chosenFraction(messageId, chip) },
-                onClick = { onToggle(chip) }.takeIf { chip.label != ReactionLabel.Paid },
-            )
+            key(chip.label) {
+                ReactionBadge(
+                    reaction = chip,
+                    chosenFraction = { toggles.chosenFraction(messageId, chip) },
+                    onClick = { onToggle(chip) }.takeIf { chip.label != ReactionLabel.Paid },
+                    popsIn = added(chip.label),
+                )
+            }
         }
         if (reactions.size > shown) MoreReactionsBadge(reactions.size - shown, onMore)
     }
@@ -179,19 +188,31 @@ internal fun ReactionBadges(
  * or `secondaryContainer` with a `primary` ring when the user chose it too, so the user's own reaction shows by more
  * than a color (`REQUIREMENTS.md` §6.3): [chosenFraction] blends them, read in the draw phase. A button
  * if [onClick] is not null. A custom emoji shows its picture, and until it does a tonal dot: the content color as a
- * tint of the badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark.
+ * tint of the badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark. Where it [popsIn], it scales up from
+ * nothing as it first shows.
  */
 @Composable
 private fun ReactionBadge(
     reaction: ReactionChip,
     chosenFraction: () -> Float,
     onClick: (() -> Unit)?,
+    popsIn: Boolean = false,
 ) {
+    val scale = remember { Animatable(if (popsIn) 0f else 1f) }
+    if (popsIn) {
+        val spec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+        LaunchedEffect(scale) { scale.animateTo(1f, spec) }
+    }
     val scheme = MaterialTheme.colorScheme
     val container = { lerp(scheme.surfaceContainerHighest, scheme.secondaryContainer, chosenFraction()) }
     val content = { lerp(scheme.onSurfaceVariant, scheme.onSecondaryContainer, chosenFraction()) }
     val ring = { lerp(scheme.surface, scheme.primary, chosenFraction()) }
-    BadgeFrame(container, onClick, ring) {
+    val pop =
+        Modifier.graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+        }
+    BadgeFrame(container, onClick, pop, ring) {
         ReactionGlyph(
             reaction.label,
             MaterialTheme.typography.titleMedium,
@@ -235,6 +256,7 @@ private fun MoreReactionsBadge(
 private fun BadgeFrame(
     container: ColorProducer,
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
     ring: ColorProducer? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -249,7 +271,8 @@ private fun BadgeFrame(
     val stateLayer = if (onClick != null) Modifier.indication(interactions, ripple()) else Modifier
     Row(
         modifier =
-            target
+            modifier
+                .then(target)
                 .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
                 .drawBehind {
                     drawRoundRect(ringColor(), cornerRadius = CornerRadius(size.minDimension / 2))

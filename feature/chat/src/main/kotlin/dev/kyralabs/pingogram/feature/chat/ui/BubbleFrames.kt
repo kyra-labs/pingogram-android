@@ -108,6 +108,8 @@ internal fun BubbleStack(
     modifier: Modifier,
     frame: @Composable (Modifier) -> Unit,
 ) {
+    // The reactions the bubble had when it showed: only those added since pop in (ReactionBadges).
+    val shownReactions = remember(bubble.reactionsMessageId) { bubble.reactions.mapTo(HashSet()) { it.label } }
     val withBadges: @Composable (Modifier) -> Unit = { modifier ->
         if (bubble.reactions.isEmpty()) {
             frame(modifier)
@@ -123,6 +125,7 @@ internal fun BubbleStack(
                         toggles = reactions,
                         onToggle = rememberReactionToggle(bubble, reactions, onEvent),
                         onMore = { onEvent(ChatEvent.ShowAllReactions(bubble.id)) },
+                        added = { it !in shownReactions },
                     )
                 },
             )

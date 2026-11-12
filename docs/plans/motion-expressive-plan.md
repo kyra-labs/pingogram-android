@@ -658,7 +658,7 @@ M-078
 | A-6 `refactor/motion-message-menu` | A | Medium | M-033 ✓ (#470), M-043 no change (owner, 2026-11-12) |
 | A-7 `refactor/motion-chat-lists` | A | Low | M-045, M-049, M-050 |
 | A-8 `refactor/motion-chat-list` | A | Low | M-016 to M-019, M-021 to M-028, M-051 |
-| A-9 `refactor/motion-reaction-badge` | A | Medium | M-036 (M-044 is closed by Q-13) |
+| A-9 `refactor/motion-reaction-badge` | A | Medium | M-036 ✓ (#472) (M-044 is closed by Q-13) |
 | B-1 `fix/motion-answer-slider` | B | High | M-052, M-054, M-062 ✓ (#440) |
 | B-2 `fix/motion-call-reactions` | B | High | M-053 ✓ (#449) |
 | B-3 `fix/motion-voice-chat-layout` | B | High | M-055, M-056, M-058, M-065, M-071 ✓ (#450) |
