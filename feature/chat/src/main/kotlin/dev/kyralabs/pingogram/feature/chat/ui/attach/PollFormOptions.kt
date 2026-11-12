@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -224,21 +225,27 @@ private fun OptionRow(
                 }
             }
         }
-        // The link's field grows in under the option and shrinks away, keeping its last state meanwhile.
-        val link = option.link
-        val shownLink = remember { mutableStateOf(link) }
-        if (link != null) shownLink.value = link
-        GrowingVisibility(visible = link != null) {
-            shownLink.value?.let { field ->
-                OutlinedTextField(
-                    state = field,
-                    modifier = Modifier.fillMaxWidth().padding(start = spacing.extraExtraLarge, end = spacing.small),
-                    label = { Text(stringResource(R.string.poll_option_link_field)) },
-                    textStyle = MaterialTheme.typography.bodyLarge.numericContent,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                )
-            }
+        OptionLinkField(option.link)
+    }
+}
+
+/** The field of an option's [link], which grows in under the option and shrinks away, keeping its last state. */
+@Composable
+private fun OptionLinkField(link: TextFieldState?) {
+    val spacing = MaterialTheme.spacing
+    // The link's field grows in under the option and shrinks away, keeping its last state meanwhile.
+    val shownLink = remember { mutableStateOf(link) }
+    if (link != null) shownLink.value = link
+    GrowingVisibility(visible = link != null) {
+        shownLink.value?.let { field ->
+            OutlinedTextField(
+                state = field,
+                modifier = Modifier.fillMaxWidth().padding(start = spacing.extraExtraLarge, end = spacing.small),
+                label = { Text(stringResource(R.string.poll_option_link_field)) },
+                textStyle = MaterialTheme.typography.bodyLarge.numericContent,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                lineLimits = TextFieldLineLimits.SingleLine,
+            )
         }
     }
 }
