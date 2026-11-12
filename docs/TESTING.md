@@ -59,10 +59,11 @@ saying why.
 - `PingogramMotionDefault` (`build-logic/detekt-rules`) fails `:feature:*` and `:app` production code that leaves an
   animation's spec to Compose's defaults (an `AnimatedVisibility` without enter and exit, an `AnimatedContent` without
   its `transitionSpec`, a transition or `animate*AsState` without a spec, a default `spring()`, a loop without a
-  commented suppression…), and `:app` and `core:ui` code with literal tweens, durations or easings
-  (`docs/DESIGN_SYSTEM.md` §5 and §5.1, `docs/plans/motion-expressive-plan.md` §4). Its checks are listed in
-  `config/detekt/detekt.yml`; the strict ones (`items`, `sizeTransform`, `pagerScroll`, `panes`, `coil`,
-  `compositionRead`) come on with `chore/motion-lint-strict`.
+  commented suppression, a lazy item's `animateItem()` without its three specs (`core:ui`'s
+  `animateItem(scope, rememberItemMotion())`), a `SizeTransform`, a pager's `animateScrollToPage` or an
+  `AnimatedPane` without its spec, Coil's `crossfade`, an animated value read in composition rather than in a
+  lambda…), and `:app` and `core:ui` code with literal tweens, durations or easings (`docs/DESIGN_SYSTEM.md` §5 and
+  §5.1, `docs/plans/motion-expressive-plan.md` §4). Every check is on; `config/detekt/detekt.yml` lists them.
 - Kotlin compiler warnings fail the build in the modules that apply `pingogram.kotlin.warnings`
   (`allWarningsAsErrors`, main and test sources). The modules without it yet, and their warnings, are listed in
   `docs/audit/v1-readiness.md`; a module applies it once they are fixed.
