@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -163,7 +164,7 @@ private fun RightsContent(
     )
     if (state.canTransfer) TransferRow(state, onEvent)
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
-        if (state.isSaving) SavingIndicator()
+        SavingIndicator(state.isSaving)
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (state.canRevoke) {
                 TextButton(
@@ -258,12 +259,16 @@ private fun TransferRow(
     }
 }
 
-/** An indeterminate wavy line while Telegram answers, which screen readers hear. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/**
+ * An indeterminate wavy line while Telegram answers ([visible]), which screen readers hear, in a place kept while
+ * nothing is on its way, so the buttons below it never move (`docs/DESIGN_SYSTEM.md` §5.1).
+ */
 @Composable
-internal fun SavingIndicator(modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.chat_info_saving)
-    LinearWavyProgressIndicator(modifier.fillMaxWidth().semantics { contentDescription = description })
+internal fun SavingIndicator(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    ReservedProgressLine(visible, modifier, stringResource(R.string.chat_info_saving))
 }
 
 /** A page's delayed loading indicator in the middle of its body. */

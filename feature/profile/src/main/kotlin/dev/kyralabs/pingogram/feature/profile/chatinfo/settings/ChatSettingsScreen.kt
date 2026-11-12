@@ -37,7 +37,6 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.InfoPageScaffold
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageError
 import dev.kyralabs.pingogram.feature.profile.chatinfo.PageLoading
 import dev.kyralabs.pingogram.feature.profile.chatinfo.RadioRow
-import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import dev.kyralabs.pingogram.feature.profile.chatinfo.SwitchRow
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
@@ -110,8 +109,7 @@ internal fun ChatSettingsScreen(
             }
 
             is ChatSettingsUiState.Content -> {
-                InfoPageContent(innerPadding) {
-                    if (state.isSaving) SavingIndicator()
+                InfoPageContent(innerPadding, saving = state.isSaving) {
                     state.reactions?.let { ReactionsGroup(it, !state.isSaving, onEvent) }
                     SwitchGroups(state, onEvent)
                     state.discussion?.let { DiscussionGroupRows(it, isChannel, !state.isSaving, onEvent) }

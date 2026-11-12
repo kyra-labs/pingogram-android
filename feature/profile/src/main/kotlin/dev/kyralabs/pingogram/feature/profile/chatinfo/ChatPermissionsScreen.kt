@@ -88,8 +88,7 @@ internal fun ChatPermissionsScreen(
             }
 
             is ChatPermissionsUiState.Content -> {
-                InfoPageContent(innerPadding) {
-                    if (state.isSaving) SavingIndicator()
+                InfoPageContent(innerPadding, saving = state.isSaving) {
                     RightsGroup(
                         title = stringResource(R.string.chat_info_permissions_header),
                         items = state.switches,

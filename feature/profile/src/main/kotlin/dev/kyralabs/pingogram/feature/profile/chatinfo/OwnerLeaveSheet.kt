@@ -145,7 +145,7 @@ internal fun OwnerLeaveContent(
                 OwnerLeaveStep.Choose -> ChooseStep(sheet, title, onEvent)
                 OwnerLeaveStep.Password -> PasswordStep(sheet, password, onEvent, focusPassword)
             }
-            if (sheet.isBusy) SavingIndicator()
+            SavingIndicator(sheet.isBusy)
             SheetButtons(sheet, password, onEvent)
         }
     }
