@@ -233,7 +233,8 @@ private fun PickedChips(
         visible = picked.isNotEmpty(),
         modifier = modifier,
         enter = expandVertically(motion.defaultSpatialSpec()) + fadeIn(motion.defaultEffectsSpec()),
-        exit = shrinkVertically(motion.fastSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
+        // Shrinks away as it grew in (docs/DESIGN_SYSTEM.md §5.1, Q-01).
+        exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
     ) {
         val spacing = MaterialTheme.spacing
         LazyRow(

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -249,17 +250,9 @@ private fun SelectionTitle(
     selectedCount: Int?,
     style: TextStyle,
 ) {
-    val motionScheme = MaterialTheme.motionScheme
     val resources = LocalResources.current
-    AnimatedContent(
-        targetState = selectedCount,
-        transitionSpec = {
-            fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
-                fadeOut(motionScheme.fastEffectsSpec())
-        },
-        label = "title",
-        contentKey = { it != null },
-    ) { count ->
+    // Its width changes on the scheme's spring too, unclipped.
+    StateCrossfade(targetState = selectedCount, label = "title", contentKey = { it != null }) { count ->
         Text(
             text =
                 if (count !=

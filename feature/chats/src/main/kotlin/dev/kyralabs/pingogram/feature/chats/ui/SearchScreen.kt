@@ -336,20 +336,26 @@ private fun ResultCountDivider(
 
 /**
  * Search's one progress indicator (`docs/DESIGN_SYSTEM.md` §5, §6): a `LinearWavyProgressIndicator` once [searching]
- * has lasted [LoadingIndicatorDelay], fading in on the default effects spring (read in the draw phase), named for
- * screen readers. It takes no height of its own ([overlapping]): it sits across the divider.
+ * has lasted [LoadingIndicatorDelay], fading in on the default effects spring and out on the fast one (read in the draw
+ * phase), named for screen readers while it searches. It takes no height of its own ([overlapping]): it sits across the divider.
  */
 @Composable
 private fun SearchProgress(searching: Boolean) {
     var shown by remember { mutableStateOf(false) }
+    val alpha = remember { Animatable(0f) }
+    val motionScheme = MaterialTheme.motionScheme
     LaunchedEffect(searching) {
-        if (searching) delay(LoadingIndicatorDelay)
-        shown = searching
+        if (searching) {
+            delay(LoadingIndicatorDelay)
+            shown = true
+            alpha.animateTo(1f, motionScheme.defaultEffectsSpec())
+        } else if (shown) {
+            // It fades out on the fast effects spring rather than leaving at once (M-024).
+            alpha.animateTo(0f, motionScheme.fastEffectsSpec())
+            shown = false
+        }
     }
     if (!shown) return
-    val alpha = remember { Animatable(0f) }
-    val fadeIn = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    LaunchedEffect(alpha) { alpha.animateTo(1f, fadeIn) }
     val description = stringResource(R.string.search_searching)
     LinearWavyProgressIndicator(
         modifier =
@@ -357,7 +363,7 @@ private fun SearchProgress(searching: Boolean) {
                 .fillMaxWidth()
                 .overlapping()
                 .graphicsLayer { this.alpha = alpha.value }
-                .semantics { contentDescription = description },
+                .semantics { if (searching) contentDescription = description },
     )
 }
 
