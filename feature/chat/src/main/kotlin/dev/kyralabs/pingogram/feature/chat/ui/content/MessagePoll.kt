@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -106,7 +107,10 @@ internal fun MessagePoll(
         } else {
             PollChoices(poll, ui.choices, colors, onAction)
         }
-        PollStatus(poll, ui.closesIn, colors)
+        // "Ends in" and "Results hidden until the end" grow in when they come, e.g. once the user voted.
+        GrowingVisibility(visible = poll.hidesResults || (ui.closesIn != null && !poll.isClosed)) {
+            PollStatus(poll, ui.closesIn, colors)
+        }
         pollRestriction(poll)?.let { text ->
             Text(
                 text = stringResource(text),

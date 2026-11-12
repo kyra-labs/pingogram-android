@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.suggested
 
+import androidx.compose.runtime.remember
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -78,16 +80,21 @@ internal fun SuggestedPostCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            if (post.canApprove || post.canDecline) {
+            // Once answered, the buttons shrink away instead of leaving the card at once; they show as they were.
+            val answerable = post.canApprove || post.canDecline
+            val lastAnswerable = remember { arrayOfNulls<SuggestedPostUi>(1) }
+            if (answerable) lastAnswerable[0] = post
+            GrowingVisibility(visible = answerable) {
+                val shown = lastAnswerable[0] ?: post
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
-                    if (post.canDecline) {
+                    if (shown.canDecline) {
                         FilledTonalButton(
                             onClick = { onEvent(SuggestedPostEvent.Answer(post.messageId, approve = false)) },
                             modifier = Modifier.weight(1f),
                             shapes = ButtonDefaults.shapes(),
                         ) { Text(stringResource(R.string.suggested_post_decline), maxLines = 1) }
                     }
-                    if (post.canApprove) {
+                    if (shown.canApprove) {
                         Button(
                             onClick = { onEvent(SuggestedPostEvent.Answer(post.messageId, approve = true)) },
                             modifier = Modifier.weight(1f),

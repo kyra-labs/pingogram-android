@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -250,6 +251,18 @@ internal fun PollAddOption(
     colors: BubbleColors,
     onAction: (PollAction) -> Unit,
 ) {
+    // The button and the field crossfade in place, the bubble's height on the scheme's spring.
+    StateCrossfade(targetState = adding, contentKey = { it != null }, label = "pollAddOption") { shown ->
+        AddOptionContent(shown, colors, onAction)
+    }
+}
+
+@Composable
+private fun AddOptionContent(
+    adding: PollAdding?,
+    colors: BubbleColors,
+    onAction: (PollAction) -> Unit,
+) {
     if (adding == null) {
         TextButton(
             onClick = { onAction(PollAction.OpenAddOption) },
@@ -313,20 +326,23 @@ private fun NewOptionField(
                     unfocusedPlaceholderColor = colors.secondaryContent,
                 ),
         )
-        if (isSending) {
-            Box(Modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-                LoadingIndicator(
-                    modifier = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator),
-                    color = colors.accent,
-                )
-            }
-        } else {
-            IconButton(
-                onClick = submit,
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
-            ) {
-                Icon(painterResource(UiR.drawable.ic_check), stringResource(R.string.poll_add_option_confirm))
+        // The check and the indicator while Telegram takes the answer crossfade in place.
+        StateCrossfade(targetState = isSending, contentAlignment = Alignment.Center, label = "pollAddSending") { sending ->
+            if (sending) {
+                Box(Modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
+                    LoadingIndicator(
+                        modifier = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator),
+                        color = colors.accent,
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = submit,
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+                ) {
+                    Icon(painterResource(UiR.drawable.ic_check), stringResource(R.string.poll_add_option_confirm))
+                }
             }
         }
     }
