@@ -156,6 +156,33 @@ internal fun StoryPage(
 }
 
 /**
+ * The chat's page the pager is leaving, as it was when it was the current one: [story]'s picture, its segments where
+ * they were and its name, still. No taps, playback or bar: what it showed goes on showing until the pager settles,
+ * rather than turning into a placeholder as the slide starts.
+ */
+@Composable
+internal fun StoryLeavingPage(
+    poster: StoryPosterUi,
+    story: StoryUi,
+    onClose: () -> Unit,
+) {
+    StoryPageLayout(
+        frame = {
+            StoryMediaContent(story.media, onRetry = {}, videoSurface = {})
+            StoryTopChrome(
+                poster = poster,
+                index = story.index,
+                progress = story.progress,
+                ageSeconds = story.ageSeconds,
+                onClose = onClose,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        },
+        bottom = { Spacer(Modifier.fillMaxWidth().height(barMinHeight())) },
+    )
+}
+
+/**
  * A chat's page beside the current one, while the pager moves: its frame on `surfaceContainer` with its segments and
  * name, so the next chat slides in as itself.
  */

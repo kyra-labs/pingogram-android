@@ -13,6 +13,10 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.TakePicture
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.togetherWith
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,12 +25,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
+import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
+import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.feature.media.R
 import kotlinx.coroutines.launch
 
@@ -47,28 +55,44 @@ internal fun NewStoryRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val launchers = rememberStoryLaunchers(viewModel::onEvent)
     StoryEffects(viewModel, launchers, snackbarHostState, onClose)
-    when (state.step) {
-        NewStoryStep.Pick -> {
-            NewStoryScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                modifier = modifier,
-                hasCamera = launchers.hasCamera,
-                snackbarHostState = snackbarHostState,
-            )
-        }
+    // The two steps move on the shared axis X (Q-18): composing comes in from the end, picking again from the start.
+    val motionScheme = MaterialTheme.motionScheme
+    val distance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
+    AnimatedContent(
+        targetState = state.step,
+        modifier = modifier,
+        transitionSpec = {
+            val forward = targetState == NewStoryStep.Compose
+            sharedAxisXEnter(motionScheme, distance, forward) togetherWith
+                sharedAxisXExit(motionScheme, distance, forward) using
+                SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
+        },
+        label = "newStoryStep",
+    ) { step ->
+        when (step) {
+            NewStoryStep.Pick -> {
+                NewStoryScreen(
+                    state = state,
+                    onEvent = viewModel::onEvent,
+                    hasCamera = launchers.hasCamera,
+                    snackbarHostState = snackbarHostState,
+                )
+            }
 
-        NewStoryStep.Compose -> {
-            val compose by viewModel.composer.state.collectAsStateWithLifecycle()
-            BackHandler { viewModel.onEvent(NewStoryEvent.Back) }
-            StoryComposeScreen(
-                state = state,
-                compose = compose,
-                caption = viewModel.composer.caption,
-                onEvent = viewModel::onEvent,
-                modifier = modifier,
-                snackbarHostState = snackbarHostState,
-            )
+            NewStoryStep.Compose -> {
+                val compose by viewModel.composer.state.collectAsStateWithLifecycle()
+                // Only while it is the step shown: the step leaving on its slide takes no back of its own.
+                BackHandler(enabled = state.step == NewStoryStep.Compose) {
+                    viewModel.onEvent(NewStoryEvent.Back)
+                }
+                StoryComposeScreen(
+                    state = state,
+                    compose = compose,
+                    caption = viewModel.composer.caption,
+                    onEvent = viewModel::onEvent,
+                    snackbarHostState = snackbarHostState,
+                )
+            }
         }
     }
 }

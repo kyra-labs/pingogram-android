@@ -14,6 +14,7 @@ import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
@@ -196,6 +197,22 @@ class ChatListFolderSwipeTest {
         assertEquals(resting, left, 1f)
     }
 
+    @Test
+    fun `two quick swipes change the folder twice`() {
+        distinctFolders = true
+        state = folderState(WORK)
+        setScreen()
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.onRoot().performTouchInput { swipeLeft() }
+        composeRule.mainClock.advanceTimeBy(QUICK_SWIPE_GAP_MILLIS)
+        composeRule.onRoot().performTouchInput { swipeLeft() }
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(FAMILY, CHANNELS), selectedFolders())
+    }
+
     /**
      * Taps [tab] while Work shows: [row] of its list comes in from the end ([fromEnd], the right left to right) or the
      * start, and settles where rows rest.
@@ -296,5 +313,8 @@ class ChatListFolderSwipeTest {
 
         /** A tenth of the width, short of the third a swipe must cross, and slow enough not to count as a fling. */
         const val SHORT_SWIPE = 0.1f
+
+        /** Between two swipes, well within the first one's slide. */
+        const val QUICK_SWIPE_GAP_MILLIS = 100L
     }
 }

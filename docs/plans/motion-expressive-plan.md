@@ -650,8 +650,8 @@ M-078
 | S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 |
 | S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
-| A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 |
-| A-2 `fix/motion-composer-panel` | A | High | M-029 |
+| A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
+| A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
 | A-3 `fix/motion-chat-selection` | A | High | M-031, M-037 |
 | A-4 `fix/motion-chat-gestures` | A | High | M-030, M-032, M-039, M-040, M-047 |
 | A-5 `refactor/motion-chat-composer` | A | Medium | M-034, M-035, M-041, M-042, M-046, M-048 |
@@ -664,10 +664,10 @@ M-078
 | B-3 `fix/motion-voice-chat-layout` | B | High | M-055, M-056, M-058, M-065, M-071 ✓ (#450) |
 | B-4 `fix/motion-viewer-swipe-up` | B | High | M-072 ✓ (#451) |
 | B-5 `fix/motion-story-picker` | B | High | M-079, M-084, M-085, M-089 (strip) ✓ (#452) |
-| B-6 `refactor/motion-call-screen` | B | Medium | M-059, M-060, M-066, M-067 (but Recent calls' Try again), M-068 ✓ (#454) |
+| B-6 `refactor/motion-call-screen` | B | Medium | M-059, M-060, M-066, M-067, M-068 ✓ (#454, #459) |
 | B-7 `refactor/motion-call-lists` | B | Medium | M-057, M-061, M-063, M-064, M-069, M-070 ✓ (#455) |
 | B-8 `refactor/motion-media-viewer` | B | Medium | M-073, M-074, M-075, M-081, M-082, M-083 ✓ (#456) |
-| B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 |
+| B-9 `refactor/motion-stories` | B | Medium | M-076, M-077, M-078, M-080, M-086, M-087, M-088, M-089 ✓ (#452, #460) |
 | B-10 `refactor/motion-scanner-feedback` | B | Medium | M-125, M-126 |
 | C-1 `fix/motion-settings-progress` | C | High | M-106, M-114, M-120 |
 | C-2 `fix/motion-settings-home` | C | High | M-105, M-107 |
