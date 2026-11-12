@@ -116,9 +116,11 @@ internal fun Modifier.pagesKeys(
     val canPlay = current.media is ViewerMedia.Clip && content.playback?.messageId == current.messageId
     val currentCanPlay by rememberUpdatedState(canPlay)
     val currentOnEvent by rememberUpdatedState(onEvent)
+    // The arrows turn the page as a swipe settles: on the default spatial spring.
+    val turn = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     LaunchedEffect(focus) { focus.requestFocus() }
     val handler =
-        remember(pagerState, scope, rtl) {
+        remember(pagerState, scope, rtl, turn) {
             { event: KeyEvent ->
                 val step = event.pageStep(rtl)
                 when {
@@ -126,7 +128,7 @@ internal fun Modifier.pagesKeys(
                         val target = pagerState.settledPage + step
                         val inRange = target in 0 until pagerState.pageCount
                         if (inRange && event.type == KeyEventType.KeyDown) {
-                            scope.launch { pagerState.animateScrollToPage(target) }
+                            scope.launch { pagerState.animateScrollToPage(target, animationSpec = turn) }
                         }
                         inRange
                     }
