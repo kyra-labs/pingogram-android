@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,8 @@ import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import dev.kyralabs.pingogram.core.ui.component.animatePlacement
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -69,7 +72,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The stickers of the set: "Step 2 of 2 · 5 stickers" and how to change them, then three tiles to a row, each sticker
  * on the rows' container (`surface`) with `extraLarge` corners and its emoji on a badge ([StickerTileItem]), the
- * stickers being made ([PreparingTile]) and "Add sticker" ([AddStickerTile]); a footer, why Telegram refused the set in
+ * stickers being made ([PreparingTile]) and "Add sticker" ([AddStickerTile]), each sliding to a new place on the
+ * theme's item motion when stickers move, come or go; a footer, why Telegram refused the set in
  * `error`, a [LinearWavyProgressIndicator] while it publishes, and "Publish set" at the end.
  */
 @Composable
@@ -92,12 +96,14 @@ internal fun ColumnScope.StickersStep(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         maxItemsInEachRow = COLUMNS,
     ) {
-        val tile = Modifier.weight(1f).aspectRatio(1f)
+        val motion = rememberItemMotion()
+        val tile = Modifier.weight(1f).aspectRatio(1f).animatePlacement(motion)
+        // Keyed, so a tile that moves keeps its place's state and slides from where it was.
         state.stickers.forEachIndexed { index, sticker ->
-            StickerTileItem(index, sticker, state, onEvent, tile)
+            key(sticker.path) { StickerTileItem(index, sticker, state, onEvent, tile) }
         }
-        repeat(state.preparing) { PreparingTile(tile) }
-        if (state.canAddSticker) AddStickerTile(onEvent, tile)
+        repeat(state.preparing) { index -> key(PREPARING_KEY + index) { PreparingTile(tile) } }
+        if (state.canAddSticker) key(ADD_KEY) { AddStickerTile(onEvent, tile) }
         // Empty places keep the last row's tiles as wide as the others.
         val shown = state.stickers.size + state.preparing + if (state.canAddSticker) 1 else 0
         repeat((COLUMNS - shown % COLUMNS) % COLUMNS) { Box(tile) }
@@ -322,4 +328,6 @@ private fun StickerImage(
 }
 
 private const val COLUMNS = 3
+private const val PREPARING_KEY = "preparing:"
+private const val ADD_KEY = "add"
 private const val STRIP_SIZE = 5
