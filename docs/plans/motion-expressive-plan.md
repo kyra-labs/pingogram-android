@@ -648,7 +648,7 @@ M-078
 | S-4 `fix/motion-app-shell` | Shared | Medium | M-008, M-009, M-010 ✓ (#453) |
 | S-5 `refactor/motion-core-ui` | Shared | Low | M-003, M-004, M-005, M-006, and Q-03 ✓ (#465) |
 | S-6 `refactor/motion-panes` | Shared | Low | M-011, M-098, M-121 ✓ (#481) |
-| S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 |
+| S-7 `docs/motion-design-system` | Shared | Low | M-007, M-012 ✓ (#484) |
 | S-8 `chore/motion-lint-strict` | Shared | – | the rule's last checks |
 | A-1 `fix/motion-folder-swipe` | A | High | M-013, M-014, M-015, M-020 ✓ (#458) |
 | A-2 `fix/motion-composer-panel` | A | High | M-029 ✓ (#461) |
