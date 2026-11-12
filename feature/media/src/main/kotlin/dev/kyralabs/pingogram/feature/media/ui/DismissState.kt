@@ -180,6 +180,8 @@ internal fun Modifier.layoutFollowingDismiss(state: DismissState): Modifier =
  * shrinking from there into its bubble; without [leaveAtScale] (the stories viewer, which only fades out) it keeps
  * that scale in the draw phase, measured as before. A cancelled gesture springs back on the motion scheme's default
  * spatial spring (`docs/DESIGN_SYSTEM.md` §5.1, Q-22), and a new gesture takes over from that return where it is.
+ * [onGestureActive] hears true as a gesture starts and false when it is cancelled; a completed gesture leaves the
+ * viewer, so it hears nothing more (the stories viewer pauses its story meanwhile; the media viewer passes nothing).
  */
 @Composable
 internal fun PredictiveBackDismiss(
@@ -187,19 +189,23 @@ internal fun PredictiveBackDismiss(
     onBack: () -> Unit,
     enabled: Boolean = true,
     leaveAtScale: Boolean = true,
+    onGestureActive: (Boolean) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnBack by rememberUpdatedState(onBack)
+    val currentOnGestureActive by rememberUpdatedState(onGestureActive)
     val returning = remember { arrayOfNulls<Job>(1) }
     PredictiveBackHandler(enabled = enabled && !state.isDismissed) { events ->
         // A new gesture: the content follows it from where the last one's return left it.
         returning[0]?.cancel()
+        currentOnGestureActive(true)
         try {
             events.collect { event -> state.followBack(event.progress) }
             if (leaveAtScale) state.leaveAtBackScale()
             state.dismiss(currentOnBack)
         } catch (cancelled: CancellationException) {
+            currentOnGestureActive(false)
             // A cancelled gesture, after which this coroutine can no longer animate.
             returning[0] =
                 scope.launch {

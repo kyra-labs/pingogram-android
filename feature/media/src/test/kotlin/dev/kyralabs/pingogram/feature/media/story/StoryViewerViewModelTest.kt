@@ -333,6 +333,108 @@ class StoryViewerViewModelTest {
         }
 
     @Test
+    fun `a back gesture pauses the story, and a cancelled one plays on from there`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+            advanceTimeBy(PHOTO_MILLIS / 2)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            runCurrent()
+            assertTrue(viewModel.content.isPaused)
+            advanceTimeBy(PHOTO_MILLIS * 2)
+            assertEquals(ADA to 11, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+            advanceTimeBy(PHOTO_MILLIS / 2 + TICK_MILLIS)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
+    fun `a back gesture and a finger holding the story pause it apart, and it plays once neither does`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+
+            viewModel.onEvent(StoryViewerEvent.Hold(true))
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            viewModel.onEvent(StoryViewerEvent.Hold(false))
+            runCurrent()
+            assertTrue(viewModel.content.isPaused)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
+    fun `the last story's end does not close the viewer during a back gesture, only once it is cancelled`() =
+        runViewModelTest {
+            downloaded(11, 12, 20, 21)
+            val viewModel = viewModel()
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Next)
+                viewModel.onEvent(StoryViewerEvent.Next)
+                runCurrent()
+                viewModel.onEvent(StoryViewerEvent.Next)
+                runCurrent()
+                assertEquals(CHANNEL to 21, viewModel.shownStory)
+
+                viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+                runCurrent()
+                advanceTimeBy(PHOTO_MILLIS * 2)
+                runCurrent()
+                expectNoEvents()
+                assertEquals(CHANNEL to 21, viewModel.shownStory)
+
+                viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+                runCurrent()
+                advanceTimeBy(PHOTO_MILLIS + TICK_MILLIS)
+                runCurrent()
+                assertEquals(StoryViewerEffect.Close, awaitItem())
+            }
+        }
+
+    @Test
+    fun `a video's end during a back gesture waits for it, so the next chat does not slide in under the finger`() =
+        runViewModelTest {
+            val video =
+                StoryContent.Video(
+                    durationMillis = 12_000,
+                    width = 720,
+                    height = 1280,
+                    isAnimation = false,
+                    minithumbnail = null,
+                    thumbnail = null,
+                    file = FileRef(fileOf(12), 1),
+                )
+            downloaded(11)
+            stories.setStory(photoStory(12, ADA).copy(content = video))
+            files.setFile(fileOf(12), FileState.Downloaded("/files/12.mp4", 1))
+            val viewModel = viewModel()
+            viewModel.onEvent(StoryViewerEvent.Next)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            runCurrent()
+            // An end already on its way as the player paused.
+            player.end()
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+            assertEquals(0, viewModel.content.current)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertEquals(1, viewModel.content.current)
+            assertEquals(CHANNEL to 20, viewModel.shownStory)
+        }
+
+    @Test
     fun `the reply field, the reactions and the pager pause the story too`() =
         runViewModelTest {
             downloaded(11)

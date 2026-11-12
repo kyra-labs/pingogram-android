@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.chat.R
 
 /**
@@ -63,14 +64,22 @@ internal fun SavedMessagesConversation(
     val snackbars = remember { SnackbarHostState() }
     TagEffects(tagsViewModel, snackbars)
     val motionScheme = MaterialTheme.motionScheme
-    AnimatedContent(
-        targetState = tagsState.selected?.takeIf { showsTags },
+    // Back from a tag's messages follows the predictive back gesture, "All" fading in with its progress
+    // (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+    val shown = TagView(tagsState.selected?.takeIf { showsTags })
+    val steps =
+        rememberSeekableSteps(
+            current = shown,
+            backTo = TagView(null).takeIf { shown.tag != null },
+            key = { it.tag != null },
+            onBack = { onTagEvent(SavedTagEvent.ShowAll) },
+        )
+    steps.transition.AnimatedContent(
         transitionSpec = {
             fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
         },
-        contentKey = { it != null },
-        label = "savedTags",
-    ) { tag ->
+    ) { hasTag ->
+        val tag = steps.stepOf(hasTag, shown).tag
         if (tag != null) {
             SavedTagScreen(tagsState, tag, chips, onTagEvent, snackbars = snackbars)
         } else {
@@ -91,6 +100,11 @@ internal fun SavedMessagesConversation(
         }
     }
 }
+
+/** What the conversation's place shows: a tag's messages, or the conversation where [tag] is null. */
+private data class TagView(
+    val tag: SavedTagChip?,
+)
 
 /** Shows the tags' snackbars: a tag renamed, or why Telegram refused. */
 @Composable

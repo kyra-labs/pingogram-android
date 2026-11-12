@@ -148,6 +148,14 @@ sealed interface StoryViewerEvent {
         val held: Boolean,
     ) : StoryViewerEvent
 
+    /**
+     * A system back gesture is under way ([active]), or ended without leaving: the story pauses for the whole gesture,
+     * and nothing moves the viewer on or closes it meanwhile.
+     */
+    data class BackGesture(
+        val active: Boolean,
+    ) : StoryViewerEvent
+
     /** The pager is dragged or settling ([moving]), which pauses the story. */
     data class Paging(
         val moving: Boolean,
