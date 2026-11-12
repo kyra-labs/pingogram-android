@@ -155,6 +155,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Pulling to the next channel responds at once after a release.
 - Smoother switch between typing and recording.
 - Smoother reactions as they appear on a message.
+- Smoother lists in a chat's sheets and pages.
 
 ## [2.0.0] - 2026-11-08
 
