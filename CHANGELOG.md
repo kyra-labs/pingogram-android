@@ -149,6 +149,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The emoji panel opens smoothly instead of jumping.
 - Smoother start and end of message selection.
 - Pulling to the next channel responds at once after a release.
+- Smoother switch between typing and recording.
 
 ## [2.0.0] - 2026-11-08
 
