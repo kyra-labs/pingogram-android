@@ -102,7 +102,9 @@ internal fun ChatsGroup(
             )
         }
         if (chats.raiseToListen.enabled) {
-            item { shapes ->
+            // Keyed, so it grows in and shrinks away as raise to listen is turned on and off
+            // (docs/DESIGN_SYSTEM.md §5.1).
+            item(key = PAUSE_WHEN_LOWERED) { shapes ->
                 SwitchItem(
                     title = stringResource(R.string.settings_pause_when_lowered),
                     summary = stringResource(R.string.settings_pause_when_lowered_summary),
@@ -292,3 +294,6 @@ private fun ChatAppearanceItem(
         onClick = onClick,
     )
 }
+
+/** The key of the row that shows only while raise to listen is on. */
+private const val PAUSE_WHEN_LOWERED = "pauseWhenLowered"

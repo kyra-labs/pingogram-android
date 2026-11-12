@@ -144,8 +144,10 @@ private fun ProxiesContent(
 ) {
     // Without proxies, the footer says what they are for.
     SettingsGroup(footer = stringResource(R.string.settings_proxy_none_text).takeIf { state.proxies.isEmpty() }) {
+        // Keyed, so the rows that need a proxy grow in with the first and shrink away with the last
+        // (docs/DESIGN_SYSTEM.md §5.1).
         if (state.proxies.isNotEmpty()) {
-            item { shapes ->
+            item(key = USE_PROXY) { shapes ->
                 SwitchItem(
                     title = stringResource(R.string.settings_proxy_use),
                     summary = stringResource(R.string.settings_proxy_use_summary),
@@ -155,9 +157,11 @@ private fun ProxiesContent(
                 )
             }
         }
-        item { shapes -> SettingsRow(stringResource(R.string.settings_proxy_add), shapes, onClick = onAddProxy) }
+        item(key = ADD_PROXY) { shapes ->
+            SettingsRow(stringResource(R.string.settings_proxy_add), shapes, onClick = onAddProxy)
+        }
         if (state.proxies.isNotEmpty()) {
-            item { shapes ->
+            item(key = CHECK_AGAIN) { shapes ->
                 SettingsRow(
                     title = stringResource(R.string.settings_proxy_check_again),
                     shapes = shapes,
@@ -312,3 +316,8 @@ private fun pingText(ping: Duration): String {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     return stringResource(R.string.settings_proxy_ping_ms, numbers.format(ping.inWholeMilliseconds))
 }
+
+// The keys of the proxy group's rows.
+private const val USE_PROXY = "use"
+private const val ADD_PROXY = "add"
+private const val CHECK_AGAIN = "check"
