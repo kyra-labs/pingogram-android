@@ -81,6 +81,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -89,6 +91,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.ui.LocalStillCallAnimations
+import dev.kyralabs.pingogram.feature.calls.ui.callMotionScheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -242,6 +245,7 @@ private fun CommentList(
             follow.newest = newest
         }
     }
+    val motion = rememberItemMotion(callMotionScheme())
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
@@ -250,7 +254,7 @@ private fun CommentList(
         verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
     ) {
         items(reversed, key = { it.id }, contentType = { if (it.paidStarCount > 0) "paid" else "comment" }) { comment ->
-            CommentRow(comment, state.canModerate, onEvent, Modifier.animateItem())
+            CommentRow(comment, state.canModerate, onEvent, Modifier.animateItem(this, motion))
         }
     }
 }

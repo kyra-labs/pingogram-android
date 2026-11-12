@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
@@ -19,7 +20,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +61,8 @@ internal val PlaceholderParticipantVideo: ParticipantVideo = { _, _, modifier ->
  * The voice chat's videos above its participants (`docs/adr/0024-video-in-voice-chats.md`): the pinned one across the
  * width at 16:9, the others two to a row, square, the user's own camera last; a single video alone across the width.
  * Each tile has `large` corners, the participant's name on a `mediaOverlay` pill, a `primary` outline while they speak,
- * and toggles its pin when tapped.
+ * and toggles its pin when tapped. A tile that comes after the grid first showed fades in on the effects spring; its
+ * bounds do not animate (`docs/DESIGN_SYSTEM.md` §5.1, Q-15).
  */
 @Composable
 internal fun VideoGrid(
@@ -78,23 +85,40 @@ internal fun VideoGrid(
         } else {
             0
         }
+    // Tiles there when the grid first shows are simply there; those that come later fade in.
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing.small)) {
         tiles.take(wide).forEach { tile ->
             key(tile?.tileKey) {
-                Tile(tile, state, videos, self, onEvent, WIDE_ASPECT, Modifier.fillMaxWidth())
+                Tile(tile, state, videos, self, onEvent, WIDE_ASPECT, Modifier.fillMaxWidth().fadesIn(shown))
             }
         }
         tiles.drop(wide).chunked(COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
                 row.forEach { tile ->
                     // Keyed, so a tile keeps its renderer as pinning moves it.
-                    key(tile?.tileKey) { Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f)) }
+                    key(tile?.tileKey) {
+                        Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f).fadesIn(shown))
+                    }
                 }
                 // A lone tile in the last row keeps its column's width.
                 repeat(COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
+}
+
+/**
+ * Fades this tile in on [callMotionScheme]'s default effects spring as it first composes, if [animate], its opacity
+ * read in the draw phase; at once while power saving holds the call screens still.
+ */
+@Composable
+private fun Modifier.fadesIn(animate: Boolean): Modifier {
+    val alpha = remember { Animatable(if (animate) 0f else 1f) }
+    val spec = callMotionScheme().defaultEffectsSpec<Float>()
+    LaunchedEffect(alpha) { alpha.animateTo(1f, spec) }
+    return graphicsLayer { this.alpha = alpha.value }
 }
 
 /** A participant's [video], or with null the user's own camera. */
