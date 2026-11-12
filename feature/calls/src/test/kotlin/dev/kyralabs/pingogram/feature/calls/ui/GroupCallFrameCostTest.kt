@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -131,6 +132,45 @@ class GroupCallFrameCostTest {
         frame()
 
         composeRule.onNodeWithTag(FLOATING_REACTIONS, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `turning comments on crossfades the layouts without recomposing each frame`() {
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(GroupCallPreviewStates.comments.copy(isShown = false))
+        show(call, comments)
+
+        comments.value = GroupCallPreviewStates.comments
+        frame()
+        frame()
+        counter.reset()
+        repeat(CROSSFADE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
+        composeRule.onNodeWithContentDescription("Comment", substring = true).assertExists()
+    }
+
+    @Test
+    fun `while power saving holds the call screens still, turning comments on swaps the layouts at once`() {
+        still.value = true
+        val call = mutableStateOf(GroupCallPreviewStates.connected)
+        val comments = mutableStateOf<GroupCallCommentsUiState>(GroupCallPreviewStates.comments.copy(isShown = false))
+        show(call, comments)
+        val name =
+            call.value.participants
+                .first()
+                .name
+
+        comments.value = GroupCallPreviewStates.comments
+        frame()
+        frame()
+        // While the layouts crossfade, both show the participant: here only the new one is left.
+        val atOnce = composeRule.onAllNodesWithContentDescription(name, substring = true).fetchSemanticsNodes().size
+        repeat(CROSSFADE_FRAMES) { frame() }
+
+        val settled = composeRule.onAllNodesWithContentDescription(name, substring = true).fetchSemanticsNodes().size
+        assertEquals(settled, atOnce)
+        composeRule.onNodeWithContentDescription("Comment", substring = true).assertExists()
     }
 
     @Test
@@ -263,6 +303,9 @@ class GroupCallFrameCostTest {
 
         /** As many reactions as the view model keeps (`GroupCallCommentsViewModel`). */
         const val REACTIONS_KEPT = 6
+
+        /** Enough frames for the layouts' crossfade and their resize on the slow spatial spring. */
+        const val CROSSFADE_FRAMES = 30
 
         /** Enough frames for a reaction to rise and fade on the slow springs. */
         const val RISE_FRAMES = 60

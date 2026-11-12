@@ -9,6 +9,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleStartEffect
 import dev.kyralabs.pingogram.feature.calls.engine.CallTrace
@@ -32,7 +33,9 @@ import java.util.concurrent.TimeUnit
  * bounds, so nothing of the screen is cut off.
  *
  * [onSink] gets the renderer as the [VideoFrameSink] the engine hands frames to while the screen is started, and null
- * when it stops or the view leaves.
+ * when it stops or the view leaves, unless another view of the same [name] on the same screen took the sink since:
+ * while a layout crossfades into another (`docs/DESIGN_SYSTEM.md` §5.1), both show the same video for a moment, and
+ * the one leaving must not take the sink from the one coming.
  */
 @Composable
 internal fun CallVideoView(
@@ -46,9 +49,11 @@ internal fun CallVideoView(
     DisposableEffect(renderer) { onDispose(renderer::release) }
     // Only while the screen is started: a call screen in the background (picture-in-picture aside) draws nothing, and
     // without a remote sink the engine does not even receive the other side's video.
-    LifecycleStartEffect(renderer) {
+    val owner = SinkOwner(LocalContext.current, name)
+    LifecycleStartEffect(renderer, owner) {
+        SinkOwners.take(owner, renderer)
         onSink(renderer)
-        onStopOrDispose { onSink(null) }
+        onStopOrDispose { if (SinkOwners.release(owner, renderer)) onSink(null) }
     }
     val aspect = if (fit) renderer.frameAspect.floatValue else 0f
     AndroidView(
@@ -56,6 +61,37 @@ internal fun CallVideoView(
         update = { renderer.setMirror(mirror) },
         modifier = if (aspect > 0f) modifier.wrapContentSize().aspectRatio(aspect) else modifier,
     )
+}
+
+/** A video's place on one screen (its activity): views of the same [name] there feed the same sink. */
+private data class SinkOwner(
+    val screen: Any,
+    val name: String,
+)
+
+/**
+ * Which renderer of each [SinkOwner] holds its sink, so a view that leaves gives the sink back only if it still holds
+ * it. Read and written on the main thread, in effects.
+ */
+private object SinkOwners {
+    private val holders = HashMap<SinkOwner, TextureRenderer>()
+
+    fun take(
+        owner: SinkOwner,
+        renderer: TextureRenderer,
+    ) {
+        holders[owner] = renderer
+    }
+
+    /** True if [renderer] held [owner]'s sink, which it now gives back. */
+    fun release(
+        owner: SinkOwner,
+        renderer: TextureRenderer,
+    ): Boolean {
+        if (holders[owner] !== renderer) return false
+        holders.remove(owner)
+        return true
+    }
 }
 
 /** One EGL context for every renderer of the process, made with the first. */

@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +23,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -135,6 +138,11 @@ private fun VideoTile(
         stringResource(if (video.isScreen) R.string.call_remote_screen else R.string.call_remote_video, name)
     val pinned = stringResource(R.string.group_call_video_pinned)
     val action = stringResource(if (video.isPinned) R.string.group_call_unpin else R.string.group_call_pin)
+    // The "speaking" outline fades as the avatar rings beside it do: on the fast effects spring, read in the draw
+    // phase, at once while power saving holds the call screens still.
+    val outlineSpec =
+        if (LocalStillCallAnimations.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val outline = animateFloatAsState(if (video.isSpeaking) 1f else 0f, outlineSpec, label = "speakingOutline")
     Box(
         modifier
             .clip(shape)
@@ -143,12 +151,6 @@ private fun VideoTile(
                 role = Role.Button,
                 onClickLabel = action,
                 onClick = onTogglePin,
-            ).then(
-                if (video.isSpeaking) {
-                    Modifier.border(MaterialTheme.sizes.avatarRing, MaterialTheme.colorScheme.primary, shape)
-                } else {
-                    Modifier
-                },
             ).semantics {
                 contentDescription = description
                 if (video.isPinned) stateDescription = pinned
@@ -177,6 +179,13 @@ private fun VideoTile(
                 Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.small),
             )
         }
+        // Over the video, as a border of the tile would be, its opacity read in the draw phase.
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer { alpha = outline.value.coerceIn(0f, 1f) }
+                .border(MaterialTheme.sizes.avatarRing, MaterialTheme.colorScheme.primary, shape),
+        )
     }
 }
 
