@@ -65,6 +65,8 @@ class AttachSavingTest {
                 correctOptionIndexes = listOf(0, 1),
                 closing = PollClosing.Custom,
                 customCloseDate = 1_796_580_000,
+                voters = PollVoters.Countries,
+                countries = listOf("DE", "FR"),
             )
 
         handle.savePoll(open = true, draft = draft)

@@ -581,6 +581,28 @@ class TdlibAttachmentRepositoryTest {
         }
 
     @Test
+    fun `a channel's poll limits its voters to subscribers or some countries`() =
+        runTest {
+            answerSends()
+            val options = persistentListOf(NewPollOption("Yes"), NewPollOption("No"))
+            val poll =
+                NewPoll(
+                    "Ok?",
+                    options,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = false,
+                    membersOnly = true,
+                    countryCodes = persistentListOf("DE", "FR"),
+                )
+
+            repository().sendPoll(CHAT, poll)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessagePoll
+            assertTrue(sent.membersOnly)
+            assertEquals(listOf("DE", "FR"), sent.countryCodes.toList())
+        }
+
+    @Test
     fun `an anonymous poll adds no answers later`() =
         runTest {
             answerSends()

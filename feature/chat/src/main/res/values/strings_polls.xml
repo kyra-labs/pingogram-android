@@ -22,7 +22,7 @@
     <!-- For screen readers: an answer whose vote is on its way to Telegram. -->
     <string name="poll_option_sending">sending your vote</string>
     <!-- Why the user can't vote, under the answers. -->
-    <string name="poll_restricted_members">Only members of the chat can vote</string>
+    <string name="poll_restricted_members">Only members and subscribers can vote</string>
     <!-- "Country or region", never "country" alone: some places are regions. -->
     <string name="poll_restricted_country">Voting isn\'t available in your country or region</string>
     <string name="poll_restricted_scheduled">Voting starts once the message is sent</string>
@@ -83,4 +83,13 @@
     <string name="poll_new_option">New option</string>
     <string name="poll_add_option_confirm">Add option</string>
     <string name="poll_add_option_cancel">Cancel adding an option</string>
+    <!-- Who may vote in a channel's poll. -->
+    <string name="poll_voters">Who can vote</string>
+    <string name="poll_voters_everyone">Everyone</string>
+    <string name="poll_voters_subscribers">Subscribers only</string>
+    <string name="poll_voters_countries">Only in some countries</string>
+    <string name="poll_country_add">Add country</string>
+    <!-- Screen readers: %1$s is a country ("Germany"). -->
+    <string name="poll_country_remove">Remove %1$s</string>
+    <string name="poll_country_none">Pick at least one country or region.</string>
 </resources>

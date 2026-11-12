@@ -201,4 +201,54 @@ class PollEditorTest {
 
         assertEquals(PollDraft(options = listOf("", ""), links = listOf(null, null)), editor.draft)
     }
+
+    @Test
+    fun `a channel's poll may limit voting to its subscribers`() {
+        val editor = editor("Lunch?", "Pizza", "Sushi")
+        editor.voters = PollVoters.Subscribers
+
+        val poll = editor.poll(forceAnonymous = true)
+
+        assertEquals(true, poll?.membersOnly)
+        assertEquals(emptyList<String>(), poll?.countryCodes)
+    }
+
+    @Test
+    fun `voting limited to some countries needs one, and sends those picked in their order`() {
+        val editor = editor("Lunch?", "Pizza", "Sushi")
+        editor.voters = PollVoters.Countries
+
+        assertNull(editor.poll(forceAnonymous = true))
+        editor.countries += listOf("DE", "IN")
+        editor.countries.remove("IN")
+        editor.countries += "FR"
+
+        val poll = editor.poll(forceAnonymous = true)
+        assertEquals(listOf("DE", "FR"), poll?.countryCodes)
+        assertEquals(false, poll?.membersOnly)
+    }
+
+    @Test
+    fun `outside channels voting is never limited`() {
+        val editor = editor("Lunch?", "Pizza", "Sushi")
+        editor.voters = PollVoters.Countries
+        editor.countries += "DE"
+
+        val poll = editor.poll(forceAnonymous = false)
+
+        assertEquals(false, poll?.membersOnly)
+        assertEquals(emptyList<String>(), poll?.countryCodes)
+    }
+
+    @Test
+    fun `the draft keeps who may vote`() {
+        val editor = editor("Lunch?", "Pizza", "Sushi")
+        editor.voters = PollVoters.Countries
+        editor.countries += "JP"
+
+        val restored = PollEditor(editor.draft)
+
+        assertEquals(PollVoters.Countries, restored.voters)
+        assertEquals(listOf("JP"), restored.countries)
+    }
 }

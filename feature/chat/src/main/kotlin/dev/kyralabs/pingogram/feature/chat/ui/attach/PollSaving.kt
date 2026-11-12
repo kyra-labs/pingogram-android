@@ -30,6 +30,8 @@ internal fun SavedStateHandle.savePoll(
     this[KEY_PHOTO] = draft.photo?.saved()
     this[KEY_CLOSING] = draft.closing.name
     this[KEY_CLOSE_DATE] = draft.customCloseDate
+    this[KEY_VOTERS] = draft.voters.name
+    this[KEY_COUNTRIES] = ArrayList(draft.countries)
 }
 
 /** Whether the poll form was open. */
@@ -57,6 +59,8 @@ internal fun SavedStateHandle.restoredPoll(): PollDraft {
         photo = get<String>(KEY_PHOTO)?.let(::restoredAttachment) as? Attachment.Photo,
         closing = PollClosing.entries.firstOrNull { it.name == get<String>(KEY_CLOSING) } ?: PollClosing.Never,
         customCloseDate = get<Long>(KEY_CLOSE_DATE),
+        voters = PollVoters.entries.firstOrNull { it.name == get<String>(KEY_VOTERS) } ?: PollVoters.Everyone,
+        countries = get<ArrayList<String>>(KEY_COUNTRIES).orEmpty(),
     )
 }
 
@@ -75,3 +79,5 @@ private const val KEY_REQUIRED_QUIZ = "chat.pollRequiredQuiz"
 private const val KEY_PHOTO = "chat.pollPhoto"
 private const val KEY_CLOSING = "chat.pollClosing"
 private const val KEY_CLOSE_DATE = "chat.pollCloseDate"
+private const val KEY_VOTERS = "chat.pollVoters"
+private const val KEY_COUNTRIES = "chat.pollCountries"
