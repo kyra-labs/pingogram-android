@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.navigation
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +23,7 @@ import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.chat.ui.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 
@@ -111,20 +111,26 @@ fun ChatPane(
 ) {
     key(chatId, messageId) {
         var threads by rememberSaveable(stateSaver = PaneThreads.Saver) { mutableStateOf(PaneThreads()) }
-        BackHandler(enabled = threads.entries.isNotEmpty()) { threads = threads.popped() }
+        // Back from a topic or thread follows the predictive back gesture, the one below sliding in with its progress
+        // (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+        val steps =
+            rememberSeekableSteps(
+                current = threads,
+                backTo = threads.popped().takeIf { threads.entries.isNotEmpty() },
+                key = { it.entries },
+                onBack = { threads = threads.popped() },
+            )
         val motionScheme = MaterialTheme.motionScheme
         val distance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
-        AnimatedContent(
-            targetState = threads,
+        steps.transition.AnimatedContent(
             transitionSpec = {
-                val forward = targetState.entries.size >= initialState.entries.size
+                val forward = targetState.size >= initialState.size
                 sharedAxisXEnter(motionScheme, distance, forward) togetherWith
                     sharedAxisXExit(motionScheme, distance, forward)
             },
-            contentKey = { it.entries.lastOrNull() },
-            label = "paneThreads",
+            contentKey = { it.lastOrNull() },
         ) { shown ->
-            val top = shown.entries.lastOrNull()
+            val top = shown.lastOrNull()
             CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
                 ChatRoute(
                     chatId = top?.chatId ?: chatId,

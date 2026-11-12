@@ -44,6 +44,15 @@ data class LoginEmailUiState(
     /** Back returns to the step before rather than leaving: from the address and the code. */
     val canGoBack: Boolean get() = step == LoginEmailStep.Address || step == LoginEmailStep.Code
 
+    /** The step back leads to, which the back gesture previews (`docs/DESIGN_SYSTEM.md` §5.1). */
+    val backStep: LoginEmailStep?
+        get() =
+            when (step) {
+                LoginEmailStep.Address -> LoginEmailStep.Intro
+                LoginEmailStep.Code -> LoginEmailStep.Address
+                LoginEmailStep.Intro, LoginEmailStep.Done -> null
+            }
+
     override fun toString() = "LoginEmailUiState(step=$step, isLoading=$isLoading, hasCurrent=${current != null})"
 }
 

@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui.account.phone
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -75,6 +74,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.verificationCode
 import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
 import dev.kyralabs.pingogram.core.ui.time.secondsLeft
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.account.StepActions
@@ -142,7 +142,15 @@ internal fun ChangePhoneNumberScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler(enabled = state.canGoBack) { onEvent(Event.Back) }
+    // Back to the step before follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = state.backStep,
+            key = { it },
+            enabled = state.canGoBack,
+            onBack = { onEvent(Event.Back) },
+        )
     val motionScheme = MaterialTheme.motionScheme
     SettingsPageScaffold(
         title = stringResource(R.string.settings_change_number_title),
@@ -151,14 +159,12 @@ internal fun ChangePhoneNumberScreen(
         snackbarHostState = snackbarHostState,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) {
-        AnimatedContent(
-            targetState = state.step,
+        steps.transition.AnimatedContent(
             transitionSpec = {
                 fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
                     fadeOut(motionScheme.fastEffectsSpec()) using
                     SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
             },
-            label = "ChangePhoneNumberStep",
         ) { step ->
             Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
                 when (step) {

@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui.passcode
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
@@ -25,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsBody
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageFrame
@@ -76,7 +80,16 @@ internal fun SetPasscodeScreen(
     modifier: Modifier = Modifier,
 ) {
     val confirming = state.step == SetPasscodeStep.Confirm
-    BackHandler(enabled = confirming) { onEvent(SetPasscodeEvent.Back) }
+    // Back from the second entry to the first follows the predictive back gesture, the two entries crossfading on
+    // the effects springs (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = SetPasscodeStep.Choose.takeIf { confirming },
+            key = { it },
+            onBack = { onEvent(SetPasscodeEvent.Back) },
+        )
+    val motionScheme = MaterialTheme.motionScheme
     val type = state.entry.type
     SettingsPageFrame(
         title = stringResource(R.string.settings_passcode_set_title),
@@ -85,39 +98,64 @@ internal fun SetPasscodeScreen(
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
         SettingsBody(innerPadding) { contentPadding ->
-            PasscodeEntry(
-                texts = setPasscodeTexts(type, confirming),
-                state = state.entry,
-                input = input,
-                onSubmit = { onEvent(SetPasscodeEvent.Submit) },
-                modifier = Modifier.padding(contentPadding),
-                secondaryAction =
-                    if (confirming) {
-                        null
-                    } else {
-                        {
-                            TextButton(
-                                onClick = { onEvent(SetPasscodeEvent.SwitchType) },
-                                shapes = ButtonDefaults.shapes(),
-                                enabled = !state.entry.isChecking,
-                            ) {
-                                Text(
-                                    text =
-                                        stringResource(
-                                            if (type == PasscodeType.Pin) {
-                                                R.string.settings_passcode_use_password
-                                            } else {
-                                                R.string.settings_passcode_use_pin
-                                            },
-                                        ),
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                            }
-                        }
-                    },
-            )
+            steps.transition.AnimatedContent(
+                transitionSpec = {
+                    fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
+                },
+            ) { step ->
+                SetPasscodeEntry(
+                    state,
+                    input,
+                    step == SetPasscodeStep.Confirm,
+                    onEvent,
+                    Modifier.padding(contentPadding),
+                )
+            }
         }
     }
+}
+
+/** The entry of one step: the passcode the first time, the same one again the second. */
+@Composable
+private fun SetPasscodeEntry(
+    state: SetPasscodeUiState,
+    input: PasscodeInput,
+    confirming: Boolean,
+    onEvent: (SetPasscodeEvent) -> Unit,
+    modifier: Modifier,
+) {
+    val type = state.entry.type
+    PasscodeEntry(
+        texts = setPasscodeTexts(type, confirming),
+        state = state.entry,
+        input = input,
+        onSubmit = { onEvent(SetPasscodeEvent.Submit) },
+        modifier = modifier,
+        secondaryAction =
+            if (confirming) {
+                null
+            } else {
+                {
+                    TextButton(
+                        onClick = { onEvent(SetPasscodeEvent.SwitchType) },
+                        shapes = ButtonDefaults.shapes(),
+                        enabled = !state.entry.isChecking,
+                    ) {
+                        Text(
+                            text =
+                                stringResource(
+                                    if (type == PasscodeType.Pin) {
+                                        R.string.settings_passcode_use_password
+                                    } else {
+                                        R.string.settings_passcode_use_pin
+                                    },
+                                ),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
+            },
+    )
 }
 
 @Composable
