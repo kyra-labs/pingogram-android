@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
+import androidx.compose.foundation.lazy.LazyListState
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.activity.compose.BackHandler
@@ -163,6 +165,16 @@ private fun TagTitle(
     }
 }
 
+/** Which of [TaggedContent]'s states [this] is, the content the crossfade tells apart. */
+private val TaggedResults.kind: Int
+    get() =
+        when {
+            items.isNotEmpty() -> 0
+            error != null -> 1
+            isLoading -> 2
+            else -> 3
+        }
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TaggedList(
@@ -180,6 +192,21 @@ private fun TaggedList(
             .filter { it >= listState.layoutInfo.totalItemsCount - LOAD_AHEAD }
             .collect { onEvent(SavedTagEvent.LoadMore) }
     }
+    // An error, loading, nothing tagged and the list crossfade in place; pages within the list do not.
+    StateCrossfade(targetState = results, contentKey = { it.kind }, label = "taggedList") { shown ->
+        TaggedContent(shown, onEvent, contentPadding, listState)
+    }
+}
+
+/** What [TaggedList] shows for [results]: its error, loading, nothing tagged, or the list in [listState]. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TaggedContent(
+    results: TaggedResults,
+    onEvent: (SavedTagEvent) -> Unit,
+    contentPadding: PaddingValues,
+    listState: LazyListState,
+) {
     when {
         results.items.isEmpty() && results.error != null -> {
             ErrorRow(results, onEvent, Modifier.padding(MaterialTheme.spacing.medium))

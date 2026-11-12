@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.directmessages
 
+import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import androidx.compose.foundation.layout.Arrangement
@@ -86,7 +89,7 @@ internal fun DirectMessagesScreen(
     }
     Scaffold(
         modifier = modifier,
-        topBar = { state.header?.let { ChatTopBar(header = it, onBack = onBack) } },
+        topBar = { DirectTopBar(state.header, onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) { innerPadding ->
@@ -158,6 +161,23 @@ private fun DirectBody(
     contentPadding: PaddingValues,
 ) {
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
+    // Loading, empty, a failure and the rows crossfade in place; new rows within the list do not.
+    StateCrossfade(targetState = content, contentKey = { it::class }, label = "directBody") { shown ->
+        DirectBodyContent(shown, onEvent, onOpenTopic, listState, contentPadding, bodyModifier)
+    }
+}
+
+@Suppress("LongParameterList") // DirectBody's arguments, and the modifier of its states.
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DirectBodyContent(
+    content: DirectContent,
+    onEvent: (DirectMessagesEvent) -> Unit,
+    onOpenTopic: (topicId: Long) -> Unit,
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    bodyModifier: Modifier,
+) {
     when (content) {
         DirectContent.Loading -> {
             Box(bodyModifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
@@ -200,6 +220,21 @@ private fun DirectBody(
             DirectList(content, onEvent, onOpenTopic, listState, contentPadding)
         }
     }
+}
+
+/**
+ * The top bar of the channel the direct messages are of ([header], null until it is known), growing in once known
+ * instead of pushing the page down at once.
+ */
+@Composable
+private fun DirectTopBar(
+    header: ChatHeader?,
+    onBack: (() -> Unit)?,
+) {
+    // Kept, not state, so keeping it recomposes nothing.
+    val last = remember { arrayOfNulls<ChatHeader>(1) }
+    if (header != null) last[0] = header
+    GrowingVisibility(visible = header != null) { last[0]?.let { ChatTopBar(header = it, onBack = onBack) } }
 }
 
 /** The rows, keyed by topic, then a loading indicator while the next page loads; asks for it near the end. */
