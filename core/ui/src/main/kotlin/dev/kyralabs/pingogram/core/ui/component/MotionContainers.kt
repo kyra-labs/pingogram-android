@@ -6,13 +6,23 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.theme.growInVertically
 import dev.kyralabs.pingogram.core.ui.theme.shrinkOutVertically
 import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
@@ -98,5 +108,54 @@ fun ReservedSlot(
             .then(if (visible) Modifier else Modifier.clearAndSetSemantics {}),
     ) {
         content()
+    }
+}
+
+/**
+ * The wavy line of a request on its way (`docs/DESIGN_SYSTEM.md` §5.1: progress while Telegram answers sits in a slot
+ * whose height is always kept, above the buttons, so no button moves): a [LinearWavyProgressIndicator] as wide as its
+ * parent, fading in on the theme's default effects spring and out on its fast one, its opacity read in the draw phase.
+ * Screen readers hear [contentDescription] while it is [visible], and nothing while it is not.
+ *
+ * Unlike [ReservedSlot], it keeps only the line's height while hidden, not the indicator: its loop runs while it shows
+ * or fades out, never on a page at rest.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ReservedProgressLine(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    val alpha =
+        animateFloatAsState(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = if (visible) motionScheme.defaultEffectsSpec() else motionScheme.fastEffectsSpec(),
+            label = "ReservedProgressLine",
+        )
+    // True while any of the line shows; changes twice per request, not per frame.
+    val fading by remember { derivedStateOf { alpha.value > 0f } }
+    Box(
+        modifier
+            .fillMaxWidth()
+            .graphicsLayer { this.alpha = alpha.value }
+            .then(if (visible) Modifier else Modifier.clearAndSetSemantics {}),
+    ) {
+        if (visible || fading) {
+            LinearWavyProgressIndicator(
+                Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (contentDescription != null) {
+                            Modifier.semantics { this.contentDescription = contentDescription }
+                        } else {
+                            Modifier
+                        },
+                    ),
+            )
+        } else {
+            Spacer(Modifier.fillMaxWidth().height(WavyProgressIndicatorDefaults.LinearContainerHeight))
+        }
     }
 }
