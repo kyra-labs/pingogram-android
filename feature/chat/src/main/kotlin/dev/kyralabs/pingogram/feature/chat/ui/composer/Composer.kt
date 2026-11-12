@@ -306,10 +306,9 @@ private fun Composer(
     var scheduling by rememberSaveable { mutableStateOf(false) }
     val canSend by remember(text) { derivedStateOf { !text.isBlank } }
     val focusRequester = rememberFocusRequester(focus)
-    val spacing = MaterialTheme.spacing
     Row(
-        modifier = Modifier.fillMaxWidth().padding(spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(spacing.small),
+        modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
         // The pill and the recording bar crossfade in place as a recording starts and ends.

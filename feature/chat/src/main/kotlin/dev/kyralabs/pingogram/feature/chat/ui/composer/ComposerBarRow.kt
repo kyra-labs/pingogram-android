@@ -225,7 +225,7 @@ private fun ComposerEditBarPreview() {
 
 /** The send-as avatar, where there is one, before the pill ([content]), as the composer's row lays them out. */
 @Composable
-private fun ComposerPillRow(
+internal fun ComposerPillRow(
     composer: ComposerUiState.Available,
     onSendAs: () -> Unit,
     content: @Composable RowScope.() -> Unit,
@@ -244,7 +244,7 @@ private fun ComposerPillRow(
  * scheme's spatial spring and fades in on its effects spring, and the last bar shown stays while it leaves.
  */
 @Composable
-private fun BarArea(
+internal fun BarArea(
     bar: ComposerBar?,
     onShow: (messageId: Long) -> Unit,
     onClose: () -> Unit,
