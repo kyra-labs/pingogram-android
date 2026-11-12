@@ -209,7 +209,10 @@ internal fun QrScannerScreen(
                 }
 
                 is CameraAccess.Rationale, CameraAccess.NoCamera -> {
-                    CameraRationale(camera, onEvent)
+                    // Centred at its own size, as the crossfade fills the screen.
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CameraRationale(camera, onEvent)
+                    }
                 }
 
                 CameraAccess.Checking -> {}
