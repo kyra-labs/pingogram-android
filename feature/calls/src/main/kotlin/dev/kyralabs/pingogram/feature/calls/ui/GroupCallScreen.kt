@@ -4,14 +4,9 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -227,14 +222,8 @@ private fun InGroupCall(
     val commenting = visibility == CommentsVisibility.Shown && !state.isStream && state.hasControls
     Column(Modifier.fillMaxSize()) {
         Header(state, onEvent, onMinimize, visibility, extras.comments.onEvent)
-        AnimatedVisibility(
+        CallGrowingVisibility(
             visible = state.video.isSharingScreen,
-            enter =
-                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                    fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-            exit =
-                shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                    fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             ScreenSharingPill(
@@ -317,7 +306,7 @@ private fun ColumnScope.OwnCamera(
 
 /** [value], or the last one that was not null: what content that is leaving goes on showing. */
 @Composable
-private fun <T : Any> rememberLastNonNull(value: T?): T? {
+internal fun <T : Any> rememberLastNonNull(value: T?): T? {
     val last = remember { arrayOfNulls<Any>(1) }
     if (value != null) last[0] = value
     @Suppress("UNCHECKED_CAST") // Only ever set to a T above.
@@ -476,11 +465,7 @@ private fun Header(
             }
         }
         // A conference call's emojis, once Telegram verified its state (docs/adr/0025-conference-calls.md).
-        AnimatedVisibility(
-            visible = state.emojis.isNotEmpty(),
-            enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-            exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-        ) {
+        CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
             KeyEmojis(state.emojis, stringResource(R.string.group_call_key_explanation))
         }
     }

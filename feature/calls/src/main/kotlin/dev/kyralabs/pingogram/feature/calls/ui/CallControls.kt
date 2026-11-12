@@ -58,6 +58,7 @@ internal fun MinimizeButton(
 ) {
     IconButton(
         onClick = onMinimize,
+        shapes = IconButtonDefaults.shapes(),
         colors =
             if (overlay) {
                 IconButtonDefaults.filledIconButtonColors(

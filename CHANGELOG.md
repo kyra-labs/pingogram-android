@@ -132,6 +132,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- Smoother call screen when video turns on or off.
 - Smoother tab changes in the navigation bar.
 - The back gesture previews full-screen pages as it does others.
 - Smoother reordering of a story's photos.
