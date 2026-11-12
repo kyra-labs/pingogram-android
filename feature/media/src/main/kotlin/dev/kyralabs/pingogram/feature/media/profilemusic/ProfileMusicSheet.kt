@@ -48,6 +48,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -104,6 +106,7 @@ internal fun ProfileMusicSheetContent(
                         .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
+        val motion = rememberItemMotion()
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
             modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
@@ -118,7 +121,7 @@ internal fun ProfileMusicSheetContent(
                     index = index,
                     content = content,
                     onEvent = onEvent,
-                    modifier = Modifier.animateItem(),
+                    modifier = Modifier.animateItem(this, motion),
                 )
             }
         }

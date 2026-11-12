@@ -80,6 +80,31 @@ class PingogramMotionDefaultTest {
     }
 
     @Test
+    fun `allows a state read only in lambdas, its name also an argument's`() {
+        val code =
+            """
+            @Composable
+            internal fun UploadRing(upload: MessageUpload, modifier: Modifier = Modifier) {
+                val target = upload.progress
+                val progress by animateFloatAsState(
+                    targetValue = target ?: 0f,
+                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    label = "uploadProgress",
+                )
+                Box(modifier) {
+                    if (target == null) {
+                        CircularWavyProgressIndicator(Modifier)
+                    } else {
+                        CircularWavyProgressIndicator(progress = { progress }, modifier = Modifier)
+                    }
+                }
+            }
+            """
+
+        assertThat(lint(code)).isEmpty()
+    }
+
+    @Test
     fun `checks core ui for literals only`() {
         assertThat(lint("val size = Modifier.animateContentSize()", path = CORE_SOURCE)).isEmpty()
     }
@@ -236,6 +261,10 @@ class PingogramMotionDefaultTest {
                 arrayOf(
                     "compositionRead",
                     "@Composable fun A() { val a = animateFloatAsState(1f, spec); B { a.value } }",
+                ),
+                arrayOf(
+                    "compositionRead",
+                    "@Composable fun A() { val progress by animateFloatAsState(1f, spec); B(progress = { progress }) }",
                 ),
             )
     }

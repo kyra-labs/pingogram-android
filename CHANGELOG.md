@@ -167,6 +167,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Smoother reactions as they appear on a message.
 - Smoother lists in a chat's sheets and pages.
 - Smoother chat list header and search.
+- Smoother profile music playlist as songs move.
 
 ## [2.0.0] - 2026-11-08
 
