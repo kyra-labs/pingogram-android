@@ -170,9 +170,12 @@ internal fun AiEditor(
             modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleLargeEmphasized,
         )
-        ModeButtons(state.mode) { onEvent(AiEditorEvent.SetMode(it)) }
-        AiChoices(state, onEvent)
-        AiResultCard(state.result)
+        // The parts a mode or a result adds bring their own gap above them, so a hidden one leaves none.
+        Column {
+            ModeButtons(state.mode) { onEvent(AiEditorEvent.SetMode(it)) }
+            AiChoices(state, onEvent)
+            AiResultCard(state.result)
+        }
         Text(
             text = stringResource(R.string.ai_editor_note),
             style = MaterialTheme.typography.bodySmall,
@@ -259,11 +262,14 @@ private fun AiChoices(
     onEvent: (AiEditorEvent) -> Unit,
 ) {
     // What a mode adds grows in as it is chosen and shrinks away as another is.
+    val gap = MaterialTheme.spacing.medium
     GrowingVisibility(visible = state.mode == AiMode.Translate) {
-        LanguageField(state.language, state.languages) { onEvent(AiEditorEvent.SetLanguage(it)) }
+        Column(Modifier.padding(top = gap)) {
+            LanguageField(state.language, state.languages) { onEvent(AiEditorEvent.SetLanguage(it)) }
+        }
     }
     GrowingVisibility(visible = state.mode != AiMode.Fix) {
-        Column {
+        Column(Modifier.padding(top = gap), verticalArrangement = Arrangement.spacedBy(gap)) {
             StyleChips(
                 styles = state.styles,
                 selected = state.styleName,

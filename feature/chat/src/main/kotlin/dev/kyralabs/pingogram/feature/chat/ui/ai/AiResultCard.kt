@@ -68,7 +68,9 @@ internal fun AiResultCard(result: AiResult) {
     val last = remember { arrayOfNulls<AiResult>(1) }
     if (result != AiResult.Idle) last[0] = result
     GrowingVisibility(visible = result != AiResult.Idle) {
-        last[0]?.let { ResultCard(it) }
+        Column(Modifier.padding(top = MaterialTheme.spacing.medium)) {
+            last[0]?.let { ResultCard(it) }
+        }
     }
 }
 
