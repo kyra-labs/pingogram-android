@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui.stickers.create
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -57,6 +56,7 @@ import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.account.StepText
@@ -81,7 +81,15 @@ internal fun NewStickerSetScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler(enabled = state.step == NewStickerSetStep.Stickers) { onEvent(NewStickerSetEvent.Back) }
+    // Back to the step before follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = NewStickerSetStep.Name.takeIf { state.step == NewStickerSetStep.Stickers },
+            key = { it },
+            enabled = state.step == NewStickerSetStep.Stickers,
+            onBack = { onEvent(NewStickerSetEvent.Back) },
+        )
     val motionScheme = MaterialTheme.motionScheme
     SettingsPageScaffold(
         title =
@@ -95,14 +103,12 @@ internal fun NewStickerSetScreen(
         snackbarHostState = snackbarHostState,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) {
-        AnimatedContent(
-            targetState = state.step,
+        steps.transition.AnimatedContent(
             transitionSpec = {
                 fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
                     fadeOut(motionScheme.fastEffectsSpec()) using
                     SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
             },
-            label = "NewStickerSetStep",
         ) { step ->
             Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
                 when (step) {

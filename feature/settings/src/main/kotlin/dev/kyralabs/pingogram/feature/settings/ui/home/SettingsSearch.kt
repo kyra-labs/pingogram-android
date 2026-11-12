@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui.home
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -111,7 +110,7 @@ internal fun SearchAction(onClick: () -> Unit) {
  * Settings search's field in the top bar's place (`docs/DESIGN_SYSTEM.md` §13.9): the search bar's `InputField` in its
  * pill on `surfaceContainerHighest` (the page is `surfaceContainerHigh`), at most `contentMaxWidth` wide inside the
  * window margin, back ("Close search", [onClose]) at its start and a clear button while it holds text. It takes the
- * focus when the search button opened it ([focus]); system back closes it too.
+ * focus when the search button opened it ([focus]); system back closes it too, through `SettingsScreen`'s steps.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +121,6 @@ internal fun SettingsSearchBar(
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    BackHandler(onBack = onClose)
     Surface(
         modifier =
             Modifier
