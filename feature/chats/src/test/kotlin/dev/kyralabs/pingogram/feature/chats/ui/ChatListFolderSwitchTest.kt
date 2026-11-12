@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performScrollToIndex
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -71,6 +72,30 @@ class ChatListFolderSwitchTest {
         val resting = left(ROCKET_CLUB)
         assertTrue("Rocket club came in from the right: $sliding, then $resting", sliding > resting)
         row(ROCKET_CLUB).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a folder selected while a slide runs comes in from beyond the list still on its way`() {
+        state = allChats
+        setScreen()
+        composeRule.waitForIdle()
+        val width = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.width
+        val resting = left("Chat 1")
+        composeRule.mainClock.autoAdvance = false
+
+        state = folder(1, numberedRows(40..50))
+        advanceFrames(SLIDE_FRAMES)
+        // Work's list is still a part of the width away from its place when Family is selected.
+        state = folder(2, numberedRows(60..70))
+        val arriving =
+            List(FEW_FRAMES + 1) {
+                advanceFrames(1)
+                if (exists("Chat 60")) left("Chat 60") else null
+            }.filterNotNull().first { it != 0f }
+        composeRule.mainClock.autoAdvance = true
+
+        // Family's list starts a width beyond Work's, wherever that was, not a width from the place lists rest in.
+        assertTrue("$arriving against ${resting + width}", arriving > resting + width * BEYOND_A_WIDTH)
     }
 
     @Test
@@ -292,6 +317,9 @@ class ChatListFolderSwitchTest {
 
         /** Frames into the slide: the selected folder's rows are laid out, still on their way in. */
         const val SLIDE_FRAMES = 6
+
+        /** How much more than a width away a list selected mid-slide starts: the rest of the slide it interrupts. */
+        const val BEYOND_A_WIDTH = 1.1f
 
         /** Enough frames for most of the slide. */
         const val SWITCH_FRAMES = 30

@@ -84,11 +84,13 @@ internal fun Modifier.folderSwipe(
  * ([FolderSwitch.position], [FolderCompanion] from [neighbourLists], whose first page is loaded ahead), both drawn in
  * their graphics layers, so a drag never recomposes the list. Toward the end it shows the tab before the selected one
  * ([FolderNeighbours.previous]), toward the start the one after it, mirrored right to left; where there is no such tab
- * the list gives only a little. Released past [COMMIT_FRACTION] of the width (a fling counts where it would land), the
- * two settle on the fast spatial spring, the neighbour in the list's place, and [onSelect] selects its tab, whose list
- * then takes the neighbour's place without a frame between ([rememberShownList]); otherwise they spring back on the
- * default spatial spring. A `TextHandleMove` haptic marks the threshold each way, as a row's swipe does. Screen readers
- * and keyboards switch folders with the tabs.
+ * the list gives only a little. Released past [COMMIT_FRACTION] of the width (a fling counts where it would land),
+ * [onSelect] selects the neighbour's tab at once, and the two settle on the default spatial spring from the release's
+ * speed, as a tab tap moves them (`docs/DESIGN_SYSTEM.md` §5.1, Q-07): the selected list takes the neighbour's place
+ * without a frame between ([rememberShownList]), and a finger that catches it on its way keeps the folder it chose.
+ * Otherwise they spring back on the default spatial spring. A `TextHandleMove` haptic marks each change of what a
+ * release would do, as the finger crosses the threshold and, for a fling that lands on the other side of it, at the
+ * release. Screen readers and keyboards switch folders with the tabs.
  */
 @Composable
 internal fun Modifier.folderSwipe(
@@ -103,20 +105,26 @@ internal fun Modifier.folderSwipe(
     val currentNeighbours by rememberUpdatedState(neighbours)
     val currentNeighbourLists by rememberUpdatedState(neighbourLists)
     val currentOnSelect by rememberUpdatedState(onSelect)
-    val motionScheme = MaterialTheme.motionScheme
-    val back = motionScheme.defaultSpatialSpec<Float>()
-    val away = motionScheme.fastSpatialSpec<Float>()
+    val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    // Whether a release where the list is now would change the folder, as the last haptic said; not observed.
+    val armed = remember { BooleanArray(1) }
+
+    fun commitsAt(position: Float): Boolean {
+        val target = if (position > 0f) currentNeighbours.previous else currentNeighbours.next
+        return target != null && position != 0f && abs(position) > folderSwitch.width * COMMIT_FRACTION
+    }
+
+    fun signal(commits: Boolean) {
+        if (commits != armed[0]) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        armed[0] = commits
+    }
     val dragState =
         rememberDraggableState { delta ->
-            val current = folderSwitch.drag
-            val moved = current + delta
+            // Where the list is, also while a folder selected under the finger moved it ([rememberShownList]).
+            val moved = folderSwitch.position + delta
             val target = if (moved > 0f) currentNeighbours.previous else currentNeighbours.next
-            val next = if (target == null) current + delta * EDGE_RESISTANCE else moved
-            val threshold = folderSwitch.width * COMMIT_FRACTION
-            if (target != null && (abs(current) < threshold) != (abs(next) < threshold)) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            }
-            folderSwitch.drag = next
+            folderSwitch.drag += if (target == null) delta * EDGE_RESISTANCE else delta
+            signal(commitsAt(folderSwitch.position))
             folderSwitch.followDrag()
         }
     return onSizeChanged { folderSwitch.width = it.width }
@@ -127,30 +135,39 @@ internal fun Modifier.folderSwipe(
             // Positive toward the end in both directions: right in left-to-right layouts, left in right-to-left.
             reverseDirection = isRtl,
             onDragStarted = {
-                // Caught while it springs back or slides: the finger takes it from where it is, against a neighbour.
+                // Caught while it springs back or slides: the finger takes it from where it is, against the list it
+                // slid against or a neighbour.
+                folderSwitch.dragging = true
                 folderSwitch.drag = folderSwitch.position
                 folderSwitch.offset.snapTo(0f)
-                folderSwitch.fixed = null
+                armed[0] = commitsAt(folderSwitch.position)
                 folderSwitch.followDrag()
             },
             onDragStopped = { velocity ->
-                val current = folderSwitch.drag
+                folderSwitch.dragging = false
+                // The finger's movement and whatever a selection meanwhile moved the list by.
+                val current = folderSwitch.position
                 folderSwitch.offset.snapTo(current)
                 folderSwitch.drag = 0f
                 val width = folderSwitch.width
                 val toward = sign(current)
                 val target = if (toward > 0f) currentNeighbours.previous else currentNeighbours.next
                 val landing = current + velocity * FLING_PROJECTION_SECONDS
-                val commits = sign(landing) == toward && abs(landing) > width * COMMIT_FRACTION
-                if (toward != 0f && target != null && commits) {
+                val commits =
+                    toward != 0f && target != null && sign(landing) == toward && abs(landing) > width * COMMIT_FRACTION
+                signal(commits)
+                armed[0] = false
+                if (target != null && commits) {
                     // The neighbour stays as it is now, whatever the neighbours become once its tab is selected.
                     val lists = currentNeighbourLists()
-                    folderSwitch.fixed = (if (toward > 0f) lists.previous else lists.next)?.state
-                    folderSwitch.offset.animateTo(toward * width, away, initialVelocity = velocity)
+                    folderSwitch.fixed = (if (toward > 0f) lists.previous else lists.next)?.state ?: folderSwitch.fixed
+                    // Selected now, not once the slide ends: a finger that catches the list on its way keeps it.
                     folderSwitch.swiped = true
                     currentOnSelect(target.folderId)
+                    // Until the selection lands, when the selected list takes over the slide with its speed.
+                    folderSwitch.offset.animateTo(toward * width, spec, initialVelocity = velocity)
                 } else {
-                    folderSwitch.offset.animateTo(0f, back, initialVelocity = velocity)
+                    folderSwitch.offset.animateTo(0f, spec, initialVelocity = velocity)
                     folderSwitch.clearCompanion()
                 }
             },
