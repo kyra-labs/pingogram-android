@@ -163,7 +163,7 @@ private fun DirectBody(
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
     // Loading, empty, a failure and the rows crossfade in place; new rows within the list do not.
     StateCrossfade(targetState = content, contentKey = { it::class }, label = "directBody") { shown ->
-        DirectBodyContent(shown, onEvent, onOpenTopic, listState, contentPadding, bodyModifier)
+        DirectBodyContent(shown, onEvent, onOpenTopic, listState, contentPadding, modifier = bodyModifier)
     }
 }
 
@@ -176,11 +176,11 @@ private fun DirectBodyContent(
     onOpenTopic: (topicId: Long) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
-    bodyModifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     when (content) {
         DirectContent.Loading -> {
-            Box(bodyModifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
+            Box(modifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
         }
 
         is DirectContent.Empty -> {
@@ -195,7 +195,7 @@ private fun DirectBodyContent(
                     stringResource(
                         if (content.isFiltered) R.string.direct_empty_filtered_body else R.string.direct_empty_body,
                     ),
-                modifier = bodyModifier,
+                modifier = modifier,
             )
         }
 
@@ -205,7 +205,7 @@ private fun DirectBodyContent(
                 icon = UiR.drawable.ic_error,
                 title = stringResource(R.string.direct_error_title),
                 body = errorText(content.error),
-                modifier = bodyModifier,
+                modifier = modifier,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 iconColor = MaterialTheme.colorScheme.onErrorContainer,
                 action = {
