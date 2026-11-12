@@ -94,11 +94,21 @@ internal class FolderSwitch {
     /** Where each folder's list was left, for a neighbour to show there; [rememberShownList] keeps them. */
     var positions = FolderPositions()
 
-    /** The companion's side as a live drag reveals it: before the list shown toward the end, after it otherwise. */
+    /** A finger holds the list ([folderSwipe]): a folder selected meanwhile leaves the list where the finger has it. */
+    var dragging = false
+
+    /**
+     * The companion's side as a drag reveals it: before the list shown toward the end, after it otherwise. A [fixed]
+     * companion stays while the drag reveals its side (a swipe caught as it lands keeps the list it slid against) and
+     * gives way to the live neighbour on the other side.
+     */
     fun followDrag() {
-        if (fixed != null) return
         val moved = sign(position)
-        if (moved != 0f) side = -moved.toInt()
+        if (moved == 0f) return
+        val revealed = -moved.toInt()
+        if (fixed != null && revealed == side) return
+        fixed = null
+        side = revealed
     }
 
     /** No companion any more. */
@@ -109,10 +119,11 @@ internal class FolderSwitch {
 
     /**
      * Puts the newly selected folder's list where it comes in from, with [outgoing], the folder's list shown before, as
-     * the companion it slides against: after a swipe ([swiped]) where the companion showed it, the old list taking the
-     * companion's side; after a tap a width toward the side of its tab ([toward]: 1 the end, -1 the start); in place,
-     * without a companion, for neither (reduced motion, a tab that is gone). It does not suspend while no slide runs
-     * (the caller stops it first), so it changes everything in one frame.
+     * the companion it slides against, which stays where it is: after a swipe ([swiped]) where the companion showed it,
+     * the old list taking the companion's side; after a tap a width toward the side of its tab ([toward]: 1 the end, -1
+     * the start) from wherever the old list is, so a tap while a slide runs carries on from there; in place, without a
+     * companion, for neither (reduced motion, a tab that is gone). It does not suspend while no slide runs (the caller
+     * stops it first), so it changes everything in one frame.
      */
     suspend fun bringIn(
         outgoing: ChatListUiState,
@@ -122,7 +133,8 @@ internal class FolderSwitch {
         val start =
             when {
                 swiped -> position + side * width
-                else -> (toward * width).toFloat()
+                toward == 0 -> 0f
+                else -> position + toward * width
             }
         val companionSide = if (swiped) -side else -toward
         drag = 0f
@@ -250,6 +262,7 @@ internal fun rememberShownList(
         val animated = coroutineContext[MotionDurationScale]?.scaleFactor != 0f
         val swiped = folderSwitch.swiped
         folderSwitch.swiped = false
+        var velocity = folderSwitch.offset.velocity
         if (state.selectedFolderId != shownFolderId) {
             val outgoing = lastShown.value
             val toward = if (swiped) 0 else tabDirection(state, from = shownFolderId)
@@ -261,15 +274,20 @@ internal fun rememberShownList(
             // Kept for a rotation or process death; the folder's list state keeps it while the screen is.
             listStates.ofFolder(shownFolderId)?.let { positions.save(shownFolderId, it) }
             // A slide still on its way stops first: from here on nothing suspends until the lists changed places,
-            // so no frame shows one of them in the other's place.
+            // so no frame shows one of them in the other's place. Its speed carries on into the new slide.
+            velocity = folderSwitch.offset.velocity
             folderSwitch.offset.stop()
             shownFolderId = state.selectedFolderId
             folderSwitch.bringIn(outgoing, toward = if (animated) toward else 0, swiped)
+            if (!swiped && toward == 0) velocity = 0f
         }
         coroutineScope {
             launch { folderSwitch.alpha.animateTo(1f, motionScheme.defaultEffectsSpec()) }
-            folderSwitch.offset.animateTo(0f, motionScheme.defaultSpatialSpec())
-            if (folderSwitch.fixed != null) folderSwitch.clearCompanion()
+            // A finger that caught the list as the swipe landed keeps it where it is: its release settles it.
+            if (!folderSwitch.dragging) {
+                folderSwitch.offset.animateTo(0f, motionScheme.defaultSpatialSpec(), initialVelocity = velocity)
+                if (folderSwitch.fixed != null) folderSwitch.clearCompanion()
+            }
         }
     }
     return if (isShown) state else lastShown.value
