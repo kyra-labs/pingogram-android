@@ -272,7 +272,7 @@ private fun ReportText(
         AnimatedVisibility(
             visible = state.showReport,
             enter = expandVertically(motion.defaultSpatialSpec()) + fadeIn(motion.defaultEffectsSpec()),
-            exit = shrinkVertically(motion.fastSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
+            exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
