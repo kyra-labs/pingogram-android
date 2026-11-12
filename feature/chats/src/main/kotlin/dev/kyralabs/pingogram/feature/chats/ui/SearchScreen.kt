@@ -337,7 +337,8 @@ private fun ResultCountDivider(
 /**
  * Search's one progress indicator (`docs/DESIGN_SYSTEM.md` §5, §6): a `LinearWavyProgressIndicator` once [searching]
  * has lasted [LoadingIndicatorDelay], fading in on the default effects spring and out on the fast one (read in the draw
- * phase), named for screen readers while it searches. It takes no height of its own ([overlapping]): it sits across the divider.
+ * phase), named for screen readers while it searches. It takes no height of its own ([overlapping]): it sits across
+ * the divider.
  */
 @Composable
 private fun SearchProgress(searching: Boolean) {

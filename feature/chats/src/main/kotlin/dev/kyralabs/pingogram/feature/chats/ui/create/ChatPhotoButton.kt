@@ -1,10 +1,5 @@
 package dev.kyralabs.pingogram.feature.chats.ui.create
 
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineStart
-import coil3.decode.DataSource
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -36,9 +33,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import coil3.compose.AsyncImage
+import coil3.decode.DataSource
 import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import java.io.File
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
