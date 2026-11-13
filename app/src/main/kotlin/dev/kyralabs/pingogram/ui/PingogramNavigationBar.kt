@@ -5,7 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -70,8 +70,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * out on the fast ones. The slide and the fade are read in the draw phase, so they never recompose or relayout.
  *
  * Hidden, it stays composed, but is neither placed (drawn, touched) nor in the semantics tree. Screens pushed above a
- * tab hide it, and composing it anew on the way back would add to the frame that composes the tab's screen again, at
- * the start of the back transition.
+ * tab hide it, and composing it anew on the way back, its labels measured again ([labelsFit]), would add to the frame
+ * that composes the tab's screen again, at the start of the back transition.
  *
  * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
  * back as it was instead of deselecting its tab on the way out and selecting it again on the way in. [accountMenu] is
@@ -125,20 +125,21 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
     }
 
 /**
- * The navigation bar of compact windows (`docs/DESIGN_SYSTEM.md` §6.1): a pill that floats over the content and holds
- * the [TopLevelDestination]s as tabs. It takes less height than a navigation bar and keeps the tabs within thumb's
- * reach. Search opens from the Chats tab's header (owner decision 2026-11-06).
+ * The navigation bar of compact windows (`docs/DESIGN_SYSTEM.md` §6.1, owner decision 2026-11-13): a pill that floats
+ * over the content and holds the [TopLevelDestination]s as tabs. It takes less height than a navigation bar and keeps
+ * the tabs within thumb's reach. Search opens from the Chats tab's header (owner decision 2026-11-06).
  *
  * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
- * elevation, `sizes.experimentalNavigationBar` (64 dp) tall (`docs/DESIGN_SYSTEM.md` §13.2): a [Surface], as
- * Material's [HorizontalFloatingToolbar] sizes itself from its content. The tabs are built from tokens: the selected
- * tab shows its filled icon and label on a `primary` pill, the others their outlined icon, named for screen readers by
- * the label (Owner decision to confirm (2026-11-07): before, the other tabs showed their labels where they fit). With
- * an [accountMenu], a long press on the Settings tab opens it ([AccountMenuAnchor]).
+ * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
+ * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens: the selected tab shows its filled icon and
+ * label on a `primary` pill (§13.2), the others their label. Where the labels do not fit (narrow phones, large font
+ * scales: measured, never cut, [labelsFit]), the other tabs show their outlined icon instead, named for screen readers
+ * by the label. With an [accountMenu], a long press on the Settings tab opens it ([AccountMenuAnchor]).
  *
- * [newChat] (the Chats tab's "New chat", [BarNewChatButton], a 64 dp rounded square) sits `spacing.small` beside the
- * pill, at its end. The pill stays centred in the window; only where it and the button's room would not fit side by
- * side does it move toward the start, by what is missing, on every tab alike, so switching tabs never moves it.
+ * [newChat] (the Chats tab's round "New chat", [BarNewChatButton], or the Contacts tab's "Add contact") sits
+ * `spacing.small` beside the pill, at its end. The pill stays centred in the window; only where it and the button's
+ * room would not fit side by side does it move toward the start, by what is missing, on every tab alike, so switching
+ * tabs never moves it.
  */
 @Composable
 internal fun PingogramNavigationBar(
@@ -150,8 +151,10 @@ internal fun PingogramNavigationBar(
 ) {
     val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
     val gap = MaterialTheme.spacing.small
-    val buttonWidth = MaterialTheme.sizes.experimentalFab
-    Box(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
+    val buttonWidth = MaterialTheme.sizes.floatingNavigationBar
+    BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
+        // The button's room is kept on every tab, so changing tabs never switches labels and icons.
+        val showLabels = labelsFit(maxWidth - buttonWidth - gap)
         PillAndButton(gap, buttonWidth) {
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
@@ -159,7 +162,7 @@ internal fun PingogramNavigationBar(
                 contentColor = colors.toolbarContentColor,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
-                NavigationTabs(selected, onSelect, accountMenu)
+                NavigationTabs(selected, onSelect, showLabels, accountMenu)
             }
             newChat?.invoke()
         }
@@ -169,8 +172,8 @@ internal fun PingogramNavigationBar(
 /**
  * The pill, then the New chat button `gap` after it where there is one: the pill centred in the width, moving toward
  * the start only by what the two would otherwise miss. The button's room ([buttonWidth]) counts on every tab, so the
- * pill sits in the same place whether the button shows or not (owner decision to confirm, 2026-11-07: with the labels
- * back, a 411 dp phone leaves the pill a little off centre on every tab rather than moving it on the Chats tab).
+ * pill sits in the same place whether the button shows or not: where the labels leave too little room, the pill sits a
+ * little off centre on every tab rather than moving as the button comes and goes.
  */
 @Composable
 private fun PillAndButton(
@@ -201,6 +204,7 @@ private fun PillAndButton(
 private fun NavigationTabs(
     selected: TopLevelDestination?,
     onSelect: (TopLevelDestination) -> Unit,
+    showLabels: Boolean,
     accountMenu: AccountMenuActions?,
 ) {
     Row(
@@ -223,7 +227,7 @@ private fun NavigationTabs(
                 NavigationTab(
                     destination = destination,
                     selected = isSelected,
-                    showLabel = isSelected,
+                    showLabel = showLabels || isSelected,
                     selectedColors = selectedColors,
                     onClick = { onSelect(destination) },
                     modifier = Modifier.fillMaxHeight().then(trigger),
@@ -363,6 +367,40 @@ private fun Modifier.tabIndicator(
             alpha = alpha().coerceIn(0f, 1f),
         )
     }
+
+/**
+ * Whether every tab can show its label in [maxWidth], the bar's room beside the New chat button. Measured for the
+ * widest selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another
+ * tab never switches between labels and icons.
+ */
+@Composable
+private fun labelsFit(maxWidth: Dp): Boolean {
+    val textMeasurer = rememberTextMeasurer()
+    val typography = MaterialTheme.typography
+    val spacing = MaterialTheme.spacing
+    val density = LocalDensity.current
+    val labels = TopLevelDestination.entries.map { stringResource(it.label) }
+    return remember(textMeasurer, typography, spacing, density, labels, maxWidth) {
+        with(density) {
+            fun width(
+                label: String,
+                emphasized: Boolean,
+            ): Int {
+                val style = if (emphasized) typography.labelLargeEmphasized else typography.labelLarge
+                return textMeasurer.measure(label, style, maxLines = 1).size.width
+            }
+            val labelsWidth = labels.sumOf { width(it, emphasized = false) }.toDp()
+            val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
+            val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
+            val icon = ICON_SIZE + spacing.small
+            val toolbarPadding = spacing.small * 2
+            labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding <= maxWidth
+        }
+    }
+}
+
+/** Material Symbols are 24 dp (`docs/DESIGN_SYSTEM.md` §8). */
+private val ICON_SIZE = 24.dp
 
 @PingogramPreviews
 @Composable

@@ -79,8 +79,8 @@ import androidx.compose.ui.unit.dp
  * @property fabSmall the height of a small extended floating action button and of the FAB it collapses to (Material 3
  *   Expressive's, 56 dp; material3 has no public token for it): the room a list leaves at its end,
  *   so its last row can scroll clear of one.
- * @property floatingNavigationBar the height of the floating navigation bar's pill and of the search button beside it,
- *   (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
+ * @property floatingNavigationBar the height of the floating navigation bar's pill and the diameter of the round
+ *   button beside it (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
  * @property themeChip the diameter of a color theme's chip in Settings → Appearance → Theme, as large as a
  *   FAB, so the three colors of each chip are told apart.
  * @property denseTopAppBar the height of the small top app bar over the dense lists of the Chats and Contacts tabs and
@@ -110,9 +110,6 @@ import androidx.compose.ui.unit.dp
  *   starts: half its 4 dp handle and the 6 dp gap beside it, where the media viewer's seek bar draws what is buffered.
  * @property chartHeight the plot of a statistics chart, without its labels.
  * @property chartLine the width of a statistics chart's lines.
- * @property experimentalNavigationBar the experimental look's floating navigation bar (`docs/DESIGN_SYSTEM.md` §13): a
- *   taller pill than [floatingNavigationBar], as the owner's design draws it.
- * @property experimentalFab the experimental look's "New chat" button beside that bar, a rounded square as tall.
  * @property experimentalBottomFade the experimental look's fade at the end of a tab's list, under the bar.
  * @property headerAction the experimental look's tonal circular action buttons in a tab's large header.
  * @property experimentalAccountAvatar the account's avatar on the experimental look's account card in Settings.
@@ -184,8 +181,6 @@ data class PingogramSizes(
     val sliderInactiveTrackInset: Dp = 8.dp,
     val chartHeight: Dp = 192.dp,
     val chartLine: Dp = 2.dp,
-    val experimentalNavigationBar: Dp = 64.dp,
-    val experimentalFab: Dp = 64.dp,
     val experimentalBottomFade: Dp = 132.dp,
     val experimentalAccountAvatar: Dp = 76.dp,
     val headerAction: Dp = 48.dp,
