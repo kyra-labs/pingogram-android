@@ -18,7 +18,10 @@ interface CommunityRepository {
     /** Community [id] as TDLib announced it, then each change; null while TDLib has not announced it. */
     fun community(id: Long): Flow<Community?>
 
-    /** What community [id] holds (`getCommunityFullInfo`), then each `updateCommunityFullInfo` while collected. */
+    /**
+     * What community [id] holds (`getCommunityFullInfo`), then each `updateCommunityFullInfo` while collected; first
+     * what it held when last read in this session, if it was.
+     */
     fun details(id: Long): Flow<Outcome<CommunityDetails>>
 
     /** Renames community [id]; [name] must not be blank (`DomainError.TitleInvalid`). */
@@ -32,7 +35,9 @@ interface CommunityRepository {
 
     /**
      * The communities the user joined (`getJoinedCommunities` once per collection, then every community TDLib
-     * announces the user in), in Telegram's order, then the ones joined since; a community they left drops out.
+     * announces the user in), in Telegram's order, then the ones joined since; a community they left drops out. The
+     * first value comes at once, before TDLib answers: the joined communities TDLib announced so far, in the order read
+     * last in this session, so it may be empty.
      */
     fun joined(): Flow<Outcome<ImmutableList<Community>>>
 

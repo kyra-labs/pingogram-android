@@ -132,6 +132,7 @@ across the app.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- The chat list shows your chats sooner as the app starts; a community's chats gather into its entry once read.
 - The stories viewer no longer plays on, and closes by itself, while you hold the back gesture.
 - Motion across the app follows Material 3 Expressive's springs: smoother lists and reordering (folders, sticker sets,
   pinned topics, a story's photos, stickers in a new set), tab changes and folder swipes, the chat list's header and
