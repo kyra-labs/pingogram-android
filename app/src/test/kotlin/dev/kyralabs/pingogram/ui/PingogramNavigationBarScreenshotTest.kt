@@ -65,7 +65,8 @@ class PingogramNavigationBarScreenshotTest {
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
     ) {
         composeRule.setContent {
-            // Robolectric's `ldrtl` qualifier does not reach the test activity's composition, so the direction is set here.
+            // Robolectric's `ldrtl` qualifier does not reach the test activity's composition: the direction is set
+            // here.
             CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
                 Bar(themeMode, selected)
             }
