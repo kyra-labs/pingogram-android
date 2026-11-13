@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -67,6 +68,36 @@ class ChatListNeighboursTest : ChatListViewModelHarness() {
             assertEquals(listOf(2L), neighbours.previous?.ids())
             assertEquals(FAMILY, neighbours.next?.folderId)
             assertEquals(listOf(4L), neighbours.next?.ids())
+        }
+
+    @Test
+    fun `All chats beside a folder shows its chats before the communities are read`() =
+        runTest {
+            communities.add(COMMUNITY, "Kyra Labs", chatIds = listOf(2))
+            communities.joinedAnswered.value = false
+            val viewModel = viewModel()
+            send(viewModel, ChatListEvent.SelectFolder(WORK))
+            val neighbours = collected(viewModel)
+
+            assertEquals(listOf(2L), neighbours.last().previous?.ids())
+
+            communities.joinedAnswered.value = true
+            runCurrent()
+
+            val main =
+                neighbours
+                    .last()
+                    .previous
+                    ?.state
+                    ?.content as ChatListContent.Content
+            assertTrue(main.items.isEmpty())
+            assertEquals(
+                listOf(2L),
+                main.communities
+                    .single()
+                    .chats
+                    .map { it.id },
+            )
         }
 
     @Test
@@ -126,5 +157,6 @@ class ChatListNeighboursTest : ChatListViewModelHarness() {
         const val WORK = 1
         const val FAMILY = 2
         const val CHANNELS = 3
+        const val COMMUNITY = 40L
     }
 }

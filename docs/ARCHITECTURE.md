@@ -1260,7 +1260,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
     saved state). The chat list shows those entries (board 19b): `feature:chats`' `ChatListCommunities`, a part of
     `ChatListViewModel` for the Chats tab, follows `joined()` and, for the communities that collapse their chats, their
-    `details()`; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
+    `details()`, starting with none, so the list's first content never waits for TDLib's answers (`StartupBenchmark`),
+    and the repository gives the communities and full info it read earlier in the session first, so they fold at once
+    where it knows them; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
     `ChatListContent.Content.communities`, each `CommunityEntry` before the row its newest chat preceded, as td_api.tl
     keeps no place for a community in the chat list. Which entries are expanded is in the view model's saved state;
     `chatsWithCommunities` (`CommunityRows.kt`) lays the entries and their chats among the rows, keyed as before, so a
