@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.LayoutDirection
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -49,8 +53,7 @@ class PingogramNavigationBarScreenshotTest {
     fun contactsDark() = capture(ThemeMode.Dark, TopLevelDestination.Contacts)
 
     @Test
-    @Config(qualifiers = "ldrtl-w411dp-h891dp-xxhdpi")
-    fun rtl() = capture(ThemeMode.Light, TopLevelDestination.Chats)
+    fun rtl() = capture(ThemeMode.Light, TopLevelDestination.Chats, LayoutDirection.Rtl)
 
     @Test
     @Config(qualifiers = "w360dp-h780dp-xxhdpi", fontScale = 2f)
@@ -59,27 +62,39 @@ class PingogramNavigationBarScreenshotTest {
     private fun capture(
         themeMode: ThemeMode,
         selected: TopLevelDestination,
+        layoutDirection: LayoutDirection = LayoutDirection.Ltr,
     ) {
         composeRule.setContent {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) {
-                // On the content's color, with room above and below for the bar's shadow.
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(vertical = MaterialTheme.spacing.medium),
-                ) {
-                    PingogramNavigationBar(
-                        selected = selected,
-                        onSelect = {},
-                        newChat = {
-                            BarPrimaryActions(tab = selected, newChatOpen = false, onNewChat = {}, onNewContact = {})
-                        },
-                    )
-                }
+            // Robolectric's `ldrtl` qualifier does not reach the test activity's composition, so the direction is set here.
+            CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                Bar(themeMode, selected)
             }
         }
         composeRule.waitForIdle()
         composeRule.onRoot().captureRoboImage()
+    }
+
+    @Composable
+    private fun Bar(
+        themeMode: ThemeMode,
+        selected: TopLevelDestination,
+    ) {
+        PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+            // On the content's color, with room above and below for the bar's shadow.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(vertical = MaterialTheme.spacing.medium),
+            ) {
+                PingogramNavigationBar(
+                    selected = selected,
+                    onSelect = {},
+                    newChat = {
+                        BarPrimaryActions(tab = selected, newChatOpen = false, onNewChat = {}, onNewContact = {})
+                    },
+                )
+            }
+        }
     }
 }

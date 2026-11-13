@@ -283,8 +283,12 @@ private fun NavigationTab(
                 .padding(horizontal = spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The selected tab's extra room at each side, growing with its indicator in the layout phase.
-        val extraRoom = Modifier.revealHorizontally { indicatorWidth.value }.width(spacing.large - spacing.medium)
+        // The selected tab's extra room at each side, growing with its indicator in the layout phase. Kept within
+        // 0..1, as the tab being left cannot go below 0: the spring's overshoot would otherwise widen the pill.
+        val extraRoom =
+            Modifier
+                .revealHorizontally { indicatorWidth.value.coerceIn(0f, 1f) }
+                .width(spacing.large - spacing.medium)
         Spacer(extraRoom)
         TabIcon(destination, selected, showLabel, label, contentColor)
         if (showLabel) {
@@ -318,7 +322,8 @@ private fun TabIcon(
     Row(
         modifier =
             Modifier
-                .revealHorizontally { iconWidth.value }
+                // Within 0..1, so the icons coming and going add up to the same width and the pill stays put.
+                .revealHorizontally { iconWidth.value.coerceIn(0f, 1f) }
                 .graphicsLayer { alpha = iconAlpha.value },
         verticalAlignment = Alignment.CenterVertically,
     ) {
