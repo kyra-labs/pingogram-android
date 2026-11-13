@@ -41,7 +41,9 @@ import javax.inject.Inject
  * through `updateCommunityFullInfo`.
  *
  * The communities the user joined are `getJoinedCommunities` once per collection, which makes TDLib announce them,
- * then the store: a community TDLib announces the user in later joins the list, one they left drops out. A request to
+ * then the store: a community TDLib announces the user in later joins the list, one they left drops out. What was read
+ * before in the session ([KnownCommunities]: the last order and each community's last full info) comes first, so a
+ * screen that opens again shows it at once rather than after TDLib answers. A request to
  * add a chat that administrators approve comes back as TDLib's error `COMMUNITY_REQUEST_CREATED`, which is
  * [CommunityAddResult.RequestSent].
  */
@@ -56,6 +58,8 @@ class TdlibCommunityRepository
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, persistentMapOf(), ::reduce)
 
+        private val known = UpdateStore(client, scope, KnownCommunities(), ::reduceKnown)
+
         override fun community(id: Long): Flow<Community?> = store.state.map { it[id] }.distinctUntilChanged()
 
         override fun details(id: Long): Flow<Outcome<CommunityDetails>> =
@@ -66,8 +70,12 @@ class TdlibCommunityRepository
                         .filter { it.communityId == id && it.communityFullInfo != null }
                         .collect { send(Outcome.Success(it.communityFullInfo.toCommunityDetails())) }
                 }
-                send(client.request(TdApi.GetCommunityFullInfo(id)).map { it.toCommunityDetails() })
-            }
+                known.state.value.details[id]
+                    ?.let { send(Outcome.Success(it)) }
+                val details = client.request(TdApi.GetCommunityFullInfo(id)).map { it.toCommunityDetails() }
+                if (details is Outcome.Success) known.update { it.copy(details = it.details.put(id, details.value)) }
+                send(details)
+            }.distinctUntilChanged()
 
         override suspend fun rename(
             id: Long,
@@ -82,13 +90,15 @@ class TdlibCommunityRepository
 
         override fun joined(): Flow<Outcome<ImmutableList<Community>>> =
             flow {
+                emit(Outcome.Success(store.state.value.joinedIn(known.state.value.order)))
                 when (val ids = client.request(TdApi.GetJoinedCommunities())) {
                     is Outcome.Failure -> {
                         emit(ids)
                     }
 
                     is Outcome.Success -> {
-                        val order = ids.value.communityIds ?: LongArray(0)
+                        val order = (ids.value.communityIds ?: LongArray(0)).toList()
+                        known.update { it.copy(order = order) }
                         emitAll(store.state.map { Outcome.Success(it.joinedIn(order)) })
                     }
                 }
@@ -166,8 +176,8 @@ class TdlibCommunityRepository
  * The communities of this map the user is in: those of [order] (`getJoinedCommunities`) first, in its order, then the
  * others by id, so one joined since comes last.
  */
-private fun Map<Long, Community>.joinedIn(order: LongArray): ImmutableList<Community> {
-    val first = order.toList().mapNotNull { this[it] }.filter { it.role.isJoined }
+private fun Map<Long, Community>.joinedIn(order: List<Long>): ImmutableList<Community> {
+    val first = order.mapNotNull { this[it] }.filter { it.role.isJoined }
     val listed = order.toSet()
     val later = values.filter { it.id !in listed && it.role.isJoined }.sortedBy { it.id }
     return (first + later).toImmutableList()
@@ -200,4 +210,22 @@ private fun reduce(
     if (update !is TdApi.UpdateCommunity) return communities
     val community = update.community.toCommunity()
     return if (communities[community.id] == community) communities else communities.putting(community.id, community)
+}
+
+/**
+ * What the repository read before in this session: the last order of the communities the user joined
+ * (`getJoinedCommunities`) and each community's last full info (its answer or `updateCommunityFullInfo`).
+ */
+private data class KnownCommunities(
+    val order: List<Long> = emptyList(),
+    val details: PersistentMap<Long, CommunityDetails> = persistentMapOf(),
+)
+
+/** [known] with the full info of an `updateCommunityFullInfo`; the same for other updates. */
+private fun reduceKnown(
+    known: KnownCommunities,
+    update: TdApi.Update,
+): KnownCommunities {
+    if (update !is TdApi.UpdateCommunityFullInfo || update.communityFullInfo == null) return known
+    return known.copy(details = known.details.put(update.communityId, update.communityFullInfo.toCommunityDetails()))
 }

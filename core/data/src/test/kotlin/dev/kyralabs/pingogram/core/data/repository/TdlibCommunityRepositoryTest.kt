@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.CommunityRole
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -114,6 +115,53 @@ class TdlibCommunityRepositoryTest {
             runCurrent()
 
             assertEquals(listOf(listOf(1L, 2L), listOf(1L, 2L, 5L), listOf(1L, 5L)), lists)
+        }
+
+    @Test
+    fun `gives the communities it knows before TDLib answers which the user joined`() =
+        runTest {
+            val repository = repository()
+            client.emit(TdApi.UpdateCommunity(community(id = 1)))
+            val answer = CompletableDeferred<TdResult<TdApi.Communities>>()
+            client.on(TdApi.GetJoinedCommunities::class) { answer.await() }
+
+            val lists = mutableListOf<List<Long>>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.joined().collect { lists += (it as Outcome.Success).value.map { c -> c.id } }
+            }
+            runCurrent()
+            assertEquals(listOf(listOf(1L)), lists)
+
+            client.emit(TdApi.UpdateCommunity(community(id = 2)))
+            answer.complete(TdResult.Success(TdApi.Communities(longArrayOf(2, 1))))
+            runCurrent()
+
+            assertEquals(listOf(listOf(1L), listOf(2L, 1L)), lists)
+        }
+
+    @Test
+    fun `gives a community's full info read before at once, then TDLib's answer`() =
+        runTest {
+            client.on(
+                TdApi.GetCommunityFullInfo::class,
+                TdResult.Success(fullInfo(TdApi.CommunityChat(10, true, false))),
+            )
+            val repository = repository()
+            repository.details(ID).first()
+            val answer = CompletableDeferred<TdResult<TdApi.CommunityFullInfo>>()
+            client.on(TdApi.GetCommunityFullInfo::class) { answer.await() }
+
+            val seen = mutableListOf<List<Long>>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.details(ID).collect { seen += (it as Outcome.Success).value.chats.map { c -> c.chatId } }
+            }
+            runCurrent()
+            assertEquals(listOf(listOf(10L)), seen)
+
+            answer.complete(TdResult.Success(fullInfo(TdApi.CommunityChat(11, true, false))))
+            runCurrent()
+
+            assertEquals(listOf(listOf(10L), listOf(11L)), seen)
         }
 
     @Test
