@@ -76,24 +76,26 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Light, "withoutChatTypeIcons", ChatSwipes(chatTypeIcons = false))
     }
 
+    /** The folder bar with Appearance → Chat list → "Folder tabs" at "Icons and names". */
     @Test
     fun folderTabsWithIcons() {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName == "contentWithFolders")
         capture(ScreenshotVariant.Light, "folderTabsWithIcons", ChatSwipes(folderTabStyle = FolderTabStyle.IconAndText))
     }
 
+    /** The folder bar with "Folder tabs" at "Icons": the selected tab keeps its name, the others their count. */
     @Test
     fun folderTabsIconsOnly() {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName == "contentWithFolders")
         capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
     /**
-     * The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for the representative state, and for the communities'
-     * entries (the owner's board 19b).
+     * The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for the representative state, the folder bar over the
+     * list (owner decision 2026-11-13) and the communities' entries (the owner's board 19b).
      */
     private fun captureAudit(variant: ScreenshotVariant) {
-        assumeTrue(stateName == "content" || stateName == "communities")
+        assumeTrue(stateName in setOf("content", "contentWithFolders", "communities"))
         capture(variant)
     }
 

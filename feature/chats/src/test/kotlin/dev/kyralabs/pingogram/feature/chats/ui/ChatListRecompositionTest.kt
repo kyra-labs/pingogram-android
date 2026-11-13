@@ -55,8 +55,9 @@ class ChatListRecompositionTest {
     private var shown by mutableStateOf(true)
 
     @Test
-    fun `scrolling the list recomposes none of its composables, and nothing in every frame`() {
+    fun `scrolling the list under the folder bar recomposes none of its composables, and nothing in every frame`() {
         setScreen(connection = ConnectionStatus.Ready)
+        val barTop = folderBarTop()
 
         repeat(SCROLL_FRAMES) {
             composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
@@ -64,6 +65,8 @@ class ChatListRecompositionTest {
         }
 
         assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > ROWS_ON_SCREEN)
+        // The rows went under the bar, which stayed where it was.
+        assertEquals(barTop, folderBarTop(), 0.5f)
         assertEquals(emptyList<String>(), counter.recomposedOwn)
         // Now and then the lazy list's machinery recomposes a text of a row it brings in (a reused or prefetched one).
         assertTrue(counter.recomposed.toString(), counter.recomposed.size < SCROLL_FRAMES / RARE)
@@ -190,9 +193,10 @@ class ChatListRecompositionTest {
     }
 
     @Test
-    fun `a swipe that lands on the next folder recomposes no row of either list`() {
+    fun `a swipe that lands on the next folder recomposes no row of either list, under a bar that stays still`() {
         setScreen(connection = ConnectionStatus.Ready, folderSwipe = true)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+        val bar = folderBarBounds()
 
         composeRule.mainClock.autoAdvance = true
         list.performTouchInput {
@@ -204,7 +208,13 @@ class ChatListRecompositionTest {
         assertEquals(FAMILY, selectedFolder)
         val rows = counter.recomposedOwn.filter { ROW in it }
         assertEquals(emptyList<String>(), rows)
+        // The lists slid under the bar; the bar itself did not move.
+        assertEquals(bar, folderBarBounds())
     }
+
+    private fun folderBarBounds() = composeRule.onNodeWithTag(FOLDER_BAR_TEST_TAG).fetchSemanticsNode().boundsInRoot
+
+    private fun folderBarTop() = folderBarBounds().top
 
     private var connection by mutableStateOf(ConnectionStatus.Ready)
 
