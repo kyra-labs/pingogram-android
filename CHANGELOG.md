@@ -132,6 +132,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
 
 ### Fixed
+- The chat list shows your chats sooner as the app starts; a community's chats gather into its entry once read.
 - The stories viewer no longer plays on, and closes by itself, while you hold the back gesture.
 - Smoother selection checks, photo uploads and scrolling to the top of a tab; New chat, search and profiles grow open more gently.
 - Smoother QR code scanner as the camera is allowed.

@@ -14,17 +14,22 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 /**
  * The communities the user joined ([joinedCommunities]) with their chats and mute ([details]); [setCollapsed] records
- * its calls ([collapsedCalls]) and changes the community, or fails with [collapseError].
+ * its calls ([collapsedCalls]) and changes the community, or fails with [collapseError]. While [joinedAnswered] is
+ * false, [joined] waits, as for TDLib's answer to `getJoinedCommunities`.
  */
 class FakeCommunityRepository : CommunityRepository {
     val joinedCommunities = MutableStateFlow<List<Community>>(emptyList())
     val detailsById = MutableStateFlow<Map<Long, CommunityDetails>>(emptyMap())
     val collapsedCalls = mutableListOf<Pair<Long, Boolean>>()
     var collapseError: DomainError? = null
+    val joinedAnswered = MutableStateFlow(true)
 
     /** Adds community [id], collapsing [chatIds] unless [collapsed] is false. */
     fun add(
@@ -56,7 +61,10 @@ class FakeCommunityRepository : CommunityRepository {
         detailsById.map { it[id]?.let { details -> Outcome.Success(details) } ?: Outcome.Failure(DomainError.NotFound) }
 
     override fun joined(): Flow<Outcome<ImmutableList<Community>>> =
-        joinedCommunities.map { Outcome.Success(it.toImmutableList()) }
+        flow {
+            joinedAnswered.first { it }
+            emitAll(joinedCommunities.map { Outcome.Success(it.toImmutableList()) })
+        }
 
     override suspend fun setCollapsed(
         id: Long,
