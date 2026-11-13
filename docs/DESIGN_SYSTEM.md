@@ -449,6 +449,9 @@ a row of §6 or §13 differs, this subsection wins; the rows are edited, and the
     `OpenMediaBenchmark` shows it keeps its frames (Q-03).
   - Panes move on `defaultSpatialSpec`, read from the scheme: their bounds, their enter and exit, and the third
     pane's handle. A pane covers part of the window, and material3-adaptive moves its panes on the same values (Q-04).
+  - The list-detail panes' enter and exit slides are material3-adaptive's own: the library exposes no hook for them,
+    and its spring matches `defaultSpatialSpec` (`core:ui`'s `PaneMotionTest` checks it, so a library update that
+    changes it fails the build). Once the library adds a hook, they take the scheme's spec through it.
   - A collapsing header settles as material3's top bar does, on its scroll behavior's own spec (Q-05).
   - A committed folder swipe and a tab tap both land the lists on `defaultSpatialSpec` (Q-07).
   - The record pill springs back on `fastSpatialSpec` after a release, a cancel or a lock (Q-17).
