@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -131,7 +132,7 @@ class FolderBarTest {
     }
 
     private fun drag(
-        list: androidx.compose.ui.test.SemanticsNodeInteraction,
+        list: SemanticsNodeInteraction,
         steps: Int,
     ) {
         list.performTouchInput {
@@ -148,7 +149,11 @@ class FolderBarTest {
 
     /** Where the list's first item would start: its top plus the padding above its items. */
     private fun firstRowTop(): Float {
-        val listTop = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG).fetchSemanticsNode().boundsInRoot.top
+        val listTop =
+            composeRule
+                .onNodeWithTag(CHAT_LIST_TEST_TAG)
+                .fetchSemanticsNode()
+                .boundsInRoot.top
         val first = listState.layoutInfo.visibleItemsInfo.first { it.index == 0 }
         return listTop + listState.layoutInfo.beforeContentPadding + first.offset
     }
