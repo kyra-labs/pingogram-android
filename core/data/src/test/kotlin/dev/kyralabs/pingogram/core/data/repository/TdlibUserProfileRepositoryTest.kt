@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -29,7 +30,9 @@ class TdlibUserProfileRepositoryTest {
         blockList: TdApi.BlockList? = null,
         botInfo: TdApi.BotInfo? = null,
         groupsInCommon: Int = 0,
+        note: String? = null,
     ) = TdApi.UserFullInfo().also {
+        it.note = note?.let(::formattedText)
         it.bio = bio?.let(::formattedText)
         it.birthdate = birthdate
         it.blockList = blockList
@@ -138,6 +141,62 @@ class TdlibUserProfileRepositoryTest {
                 assertEquals(Outcome.Failure(DomainError.FloodWait(8)), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `the note about a contact comes from the full info, empty without one`() =
+        runTest {
+            client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo(note = "Owes me a chai")))
+
+            repository.fullInfo(42).test {
+                assertEquals("Owes me a chai", (awaitItem() as Outcome.Success).value.note.text)
+                client.emit(TdApi.UpdateUserFullInfo(42, fullInfo(note = null)))
+                assertEquals("", (awaitItem() as Outcome.Success).value.note.text)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `setting the note sends it as plain text, trimmed`() =
+        runTest {
+            client.on(TdApi.SetUserNote::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(Unit), repository.setNote(42, "  Met at DroidCon  "))
+
+            val request = client.sentOf<TdApi.SetUserNote>().single()
+            assertEquals(42L, request.userId)
+            assertEquals("Met at DroidCon", request.note.text)
+            assertEquals(0, request.note.entities.size)
+        }
+
+    @Test
+    fun `a refused note is the request's error`() =
+        runTest {
+            client.on(TdApi.SetUserNote::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 5")))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository.setNote(42, "Note"))
+        }
+
+    @Test
+    fun `suggesting a birthday sends it, its year 0 when left out`() =
+        runTest {
+            client.on(TdApi.SuggestUserBirthdate::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(Unit), repository.suggestBirthdate(42, Birthdate(10, 12, 1815)))
+            assertEquals(Outcome.Success(Unit), repository.suggestBirthdate(42, Birthdate(29, 2, null)))
+
+            val (full, noYear) = client.sentOf<TdApi.SuggestUserBirthdate>()
+            assertEquals(42L, full.userId)
+            assertEquals(listOf(10, 12, 1815), with(full.birthdate) { listOf(day, month, year) })
+            assertEquals(listOf(29, 2, 0), with(noYear.birthdate) { listOf(day, month, year) })
+        }
+
+    @Test
+    fun `a refused suggestion is the request's error`() =
+        runTest {
+            client.on(TdApi.SuggestUserBirthdate::class, TdResult.Failure(TdError(400, "BIRTHDAY_INVALID")))
+
+            assertTrue(repository.suggestBirthdate(42, Birthdate(31, 2, null)) is Outcome.Failure)
         }
 
     @Test

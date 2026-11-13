@@ -31,7 +31,6 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
-import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
@@ -51,8 +50,8 @@ import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.feedbackScreen
 import dev.kyralabs.pingogram.feature.media.navigation.ReturnFromPictureInPictureEffect
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStory
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
-import dev.kyralabs.pingogram.feature.media.navigation.storyViewerScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
 /**
@@ -71,7 +70,7 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *   into it while nothing below composes anew.
  *
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
- * ([predictiveBackPopExit]); the viewer follows the gesture itself.
+ * ([predictiveBackPopExit]), full-screen ones included; the viewers follow the gesture themselves.
  *
  * The `NavHost` sits in the app shell's `SharedTransitionLayout`, whose scope comes through
  * `LocalSharedTransitionScope` (`PingogramApp`, [ProvideSharedTransitionScope]), and each destination that shares
@@ -123,13 +122,8 @@ internal fun PingogramNavHost(
         popEnterTransition = { popEnter(motionScheme, axisDistance) },
         popExitTransition = { popExit(motionScheme, axisDistance) },
         predictivePopEnterTransition = { predictiveBackPopEnter() },
-        predictivePopExitTransition = {
-            if (initialState.destination.isFullScreen()) {
-                popExit(motionScheme, axisDistance)
-            } else {
-                predictiveBackPopExit(motionScheme)
-            }
-        },
+        // Full-screen pages too (the QR code scanner, New story's picking): the gesture shrinks them as it does others.
+        predictivePopExitTransition = { predictiveBackPopExit(motionScheme) },
     ) {
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
@@ -242,6 +236,7 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenChatInfo = navController::navigateToChatInfo,
                     onEditContact = navController::navigateToEditContact,
                     onOpenStory = navController::navigateToStoryViewer,
+                    onNewStory = navController::navigateToNewStory,
                     onEditFolder = navController::navigateToFolderEditor,
                     chatToShow = request.toChatToShow(),
                     onChatShown = { entry.savedStateHandle.chatShown() },
@@ -270,11 +265,12 @@ private fun NavGraphBuilder.mainGraph(
         chatScreens(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
+        pollStatistics(navController)
         chatInvite(navController)
         chatFolderInvite(navController)
+        oauthLogin(navController)
         mediaViewer(navController)
-        // The viewer and nothing below it: a second close, e.g. a swipe while its exit plays, does nothing.
-        storyViewerScreen(onClose = { navController.popBackStack<StoryViewerRoute>(inclusive = true) })
+        stories(navController)
         share(navController)
     }
 }

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.attachment.ImageInfo
 import dev.kyralabs.pingogram.core.data.attachment.Orientation
 import dev.kyralabs.pingogram.core.data.attachment.PhoneContact
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -15,7 +16,9 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Location
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.NewPollOption
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -435,6 +438,32 @@ class TdlibAttachmentRepositoryTest {
         }
 
     @Test
+    fun `a GIF goes with its caption above or below it, and without one when it is blank`() =
+        runTest {
+            answerSends()
+            val cat =
+                Animation(2, 320, 240, "video/mp4", minithumbnail = null, thumbnail = null, file = FileRef(10, 100))
+
+            repository().sendAnimation(
+                CHAT,
+                cat,
+                caption = FormattedText("Monday mood", persistentListOf()),
+                captionAbove = true,
+            )
+            repository().sendAnimation(CHAT, cat, caption = FormattedText(" ", persistentListOf()), captionAbove = true)
+
+            val (captioned, blank) =
+                client.sentOf<TdApi.SendMessage>().map {
+                    it.inputMessageContent as TdApi.InputMessageAnimation
+                }
+            assertEquals(10, (captioned.animation.animation as TdApi.InputFileId).id)
+            assertEquals("Monday mood", captioned.caption.text)
+            assertEquals(true, captioned.showCaptionAboveMedia)
+            assertEquals("", blank.caption.text)
+            assertEquals(false, blank.showCaptionAboveMedia)
+        }
+
+    @Test
     fun `a location's accuracy stays within what Telegram takes, 0 when unknown`() =
         runTest {
             answerSends()
@@ -450,16 +479,38 @@ class TdlibAttachmentRepositoryTest {
         }
 
     @Test
+    fun `a checklist goes out with its tasks numbered and who may change it`() =
+        runTest {
+            answerSends()
+            val checklist =
+                NewChecklist(
+                    "Release",
+                    persistentListOf("Tag", "Post"),
+                    othersCanAddTasks = true,
+                    othersCanMarkTasksAsDone = false,
+                )
+
+            repository().sendChecklist(CHAT, checklist)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessageChecklist
+            assertEquals("Release", sent.checklist.title.text)
+            assertEquals(listOf(1 to "Tag", 2 to "Post"), sent.checklist.tasks.map { it.id to it.text.text })
+            assertEquals(
+                listOf(true, false),
+                listOf(sent.checklist.othersCanAddTasks, sent.checklist.othersCanMarkTasksAsDone),
+            )
+        }
+
+    @Test
     fun `a regular poll lets voters change their vote`() =
         runTest {
             answerSends()
             val poll =
                 NewPoll(
                     "Lunch?",
-                    persistentListOf("Pizza", "Sushi"),
+                    persistentListOf(NewPollOption("Pizza"), NewPollOption("Sushi")),
                     isAnonymous = false,
                     allowsMultipleAnswers = true,
-                    correctOptionIndex = null,
                 )
 
             repository().sendPoll(CHAT, poll)
@@ -489,12 +540,123 @@ class TdlibAttachmentRepositoryTest {
         }
 
     @Test
+    fun `a poll sends its description, photo, links, closing time and settings`() =
+        runTest {
+            answerSends()
+            val poll =
+                NewPoll(
+                    "Which book?",
+                    persistentListOf(NewPollOption("Piranesi"), NewPollOption("Klara", link = "https://example.org")),
+                    isAnonymous = false,
+                    allowsMultipleAnswers = false,
+                    description = "We meet on Dec 14",
+                    photo = Attachment.Photo("/uploads/1/poll.jpg", size = 1_200_000, width = 1280, height = 960),
+                    allowsRevoting = false,
+                    hidesResults = true,
+                    shufflesOptions = true,
+                    allowsAddingOptions = true,
+                    openPeriod = 3_600,
+                )
+
+            repository().sendPoll(CHAT, poll)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessagePoll
+            val photo = (sent.media as TdApi.InputPollMediaPhoto).photo.photo as TdApi.InputFileLocal
+            assertEquals(listOf("We meet on Dec 14", "/uploads/1/poll.jpg"), listOf(sent.description.text, photo.path))
+            assertEquals(
+                listOf<String?>(null, "https://example.org"),
+                sent.options.map { (it.media as? TdApi.InputPollMediaLink)?.url },
+            )
+            assertEquals(
+                listOf<Any>(false, true, true, 3_600, 0),
+                listOf(
+                    sent.allowsRevoting,
+                    sent.hideResultsUntilCloses,
+                    sent.shuffleOptions,
+                    sent.openPeriod,
+                    sent.closeDate,
+                ),
+            )
+            assertTrue((sent.type as TdApi.InputPollTypeRegular).allowAddingOptions)
+        }
+
+    @Test
+    fun `a channel's poll limits its voters to subscribers or some countries`() =
+        runTest {
+            answerSends()
+            val options = persistentListOf(NewPollOption("Yes"), NewPollOption("No"))
+            val poll =
+                NewPoll(
+                    "Ok?",
+                    options,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = false,
+                    membersOnly = true,
+                    countryCodes = persistentListOf("DE", "FR"),
+                )
+
+            repository().sendPoll(CHAT, poll)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessagePoll
+            assertTrue(sent.membersOnly)
+            assertEquals(listOf("DE", "FR"), sent.countryCodes.toList())
+        }
+
+    @Test
+    fun `an anonymous poll adds no answers later`() =
+        runTest {
+            answerSends()
+            val options = persistentListOf(NewPollOption("Yes"), NewPollOption("No"))
+            val poll =
+                NewPoll("Ok?", options, isAnonymous = true, allowsMultipleAnswers = false, allowsAddingOptions = true)
+
+            repository().sendPoll(CHAT, poll)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessagePoll
+            assertFalse((sent.type as TdApi.InputPollTypeRegular).allowAddingOptions)
+        }
+
+    @Test
+    fun `a quiz with two correct answers takes two answers per voter and keeps its explanation`() =
+        runTest {
+            answerSends()
+            val options = persistentListOf(NewPollOption("suspend"), NewPollOption("val"), NewPollOption("defer"))
+            val quiz =
+                NewPoll(
+                    "Kotlin keywords?",
+                    options,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = false,
+                    correctOptionIndexes = persistentListOf(0, 1),
+                    explanation = "defer isn't one",
+                    closeDate = 1_796_580_000,
+                )
+
+            repository().sendPoll(CHAT, quiz)
+
+            val sent = client.sentOf<TdApi.SendMessage>().single().inputMessageContent as TdApi.InputMessagePoll
+            val type = sent.type as TdApi.InputPollTypeQuiz
+            assertArrayEquals(intArrayOf(0, 1), type.correctOptionIds)
+            assertEquals("defer isn't one", type.explanation.text)
+            assertEquals(
+                listOf(true, false, 1_796_580_000),
+                listOf(sent.allowsMultipleAnswers, sent.allowsRevoting, sent.closeDate),
+            )
+        }
+
+    @Test
     fun `a quiz has one correct option, one answer and final votes`() =
         runTest {
             answerSends()
-            val options = persistentListOf("3", "4", "5")
+            val options = persistentListOf(NewPollOption("3"), NewPollOption("4"), NewPollOption("5"))
             val quiz =
-                NewPoll("2 + 2?", options, isAnonymous = true, allowsMultipleAnswers = true, correctOptionIndex = 1)
+                NewPoll(
+                    "2 + 2?",
+                    options,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = true,
+                    correctOptionIndexes = persistentListOf(1),
+                )
 
             repository().sendPoll(CHAT, quiz)
 

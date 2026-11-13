@@ -39,6 +39,7 @@ data class AuthUiState(
 enum class AuthAction {
     SubmitPhoneNumber,
     RequestQrCode,
+    SignInWithPasskey,
     CancelQrCode,
     SubmitCode,
     ResendCode,

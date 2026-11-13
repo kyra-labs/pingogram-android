@@ -42,7 +42,10 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -207,6 +210,8 @@ private fun ChatInfoGrid(
         val inset = max(margin, (maxWidth - sizes.contentMaxWidth) / 2)
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
+        // Every item moves on the scheme's springs: sections that come after the first frame, and a tab's items.
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             modifier =
@@ -218,9 +223,9 @@ private fun ChatInfoGrid(
             contentPadding =
                 remember(innerPadding, spacing) { innerPadding.withTop(0.dp).plusBottom(spacing.extraLarge) },
         ) {
-            chatInfoItems(state, page.onEvent, inset)
+            chatInfoItems(state, page.onEvent, inset, motion)
             if (withMedia && page.media.chatId != null) {
-                fullWidth(key = MEDIA_HEADER, inset = inset, gapAbove = true) {
+                fullWidth(key = MEDIA_HEADER, inset = inset, motion = motion, gapAbove = true) {
                     ProfileSectionHeader(stringResource(R.string.profile_section_media))
                 }
                 sharedMediaItems(
@@ -229,6 +234,7 @@ private fun ChatInfoGrid(
                     page.mediaActions,
                     cellSizePx,
                     inset,
+                    motion,
                     emptyBody = R.string.chat_info_media_empty_body,
                 )
             }
@@ -241,8 +247,9 @@ private fun LazyGridScope.chatInfoItems(
     state: ChatInfoUiState.Content,
     onEvent: (ChatInfoEvent) -> Unit,
     inset: Dp,
+    motion: ItemMotion,
 ) {
-    fullWidth(key = ACTIONS, inset = inset) {
+    fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ChatInfoActionsRow(
             state.header.userId,
             state.actions,
@@ -251,20 +258,24 @@ private fun LazyGridScope.chatInfoItems(
         )
     }
     if (state.description != null || state.link != null || state.id != null) {
-        fullWidth(key = INFO, inset = inset, gapAbove = true) {
-            ChatInfoGroup(state.description, state.link, onEvent, id = state.id)
+        fullWidth(key = INFO, inset = inset, motion = motion, gapAbove = true) {
+            ChatInfoGroup(state.description, state.link, onEvent, id = state.id, community = state.community)
         }
     }
     state.members?.let { members ->
-        fullWidth(key = MEMBERS, inset = inset, gapAbove = true) { ChatMembersGroup(members, state.kind, onEvent) }
+        fullWidth(key = MEMBERS, inset = inset, motion = motion, gapAbove = true) {
+            ChatMembersGroup(members, state.kind, onEvent)
+        }
     }
     state.administration?.let { administration ->
-        fullWidth(key = ADMINISTRATION, inset = inset, gapAbove = true) {
+        fullWidth(key = ADMINISTRATION, inset = inset, motion = motion, gapAbove = true) {
             ChatAdministrationGroup(administration, onEvent)
         }
     }
     if (state.actions.canExport || state.actions.canClearHistory || state.actions.canDelete) {
-        fullWidth(key = MORE, inset = inset, gapAbove = true) { ChatInfoMoreGroup(state.actions, state.kind, onEvent) }
+        fullWidth(key = MORE, inset = inset, motion = motion, gapAbove = true) {
+            ChatInfoMoreGroup(state.actions, state.kind, onEvent)
+        }
     }
 }
 
@@ -274,12 +285,15 @@ private fun LazyGridScope.chatInfoItems(
 private fun LazyGridScope.fullWidth(
     key: String,
     inset: Dp,
+    motion: ItemMotion,
     gapAbove: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     item(key = key, span = { GridItemSpan(maxLineSpan) }, contentType = key) {
         val gap = if (gapAbove) MaterialTheme.spacing.extraLarge else 0.dp
-        Box(Modifier.fillMaxWidth().padding(start = inset, end = inset, top = gap)) { content() }
+        Box(Modifier.animateItem(this, motion).fillMaxWidth().padding(start = inset, end = inset, top = gap)) {
+            content()
+        }
     }
 }
 

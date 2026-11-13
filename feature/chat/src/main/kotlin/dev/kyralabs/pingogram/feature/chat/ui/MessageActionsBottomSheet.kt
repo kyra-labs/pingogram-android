@@ -241,6 +241,8 @@ internal val MessageAction.label: Int
             MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
             MessageAction.Translate -> R.string.message_action_translate
             MessageAction.ShowOriginal -> R.string.message_action_show_original
+            MessageAction.Summarize -> R.string.message_action_summarize
+            MessageAction.ShowFullText -> R.string.message_action_show_full_text
             MessageAction.Forward -> R.string.message_action_forward
             MessageAction.Edit -> R.string.message_action_edit
             MessageAction.Pin -> R.string.message_action_pin
@@ -248,6 +250,7 @@ internal val MessageAction.label: Int
             MessageAction.Unpin -> R.string.message_action_unpin
             MessageAction.RetractVote -> R.string.message_action_retract_vote
             MessageAction.StopPoll -> R.string.message_action_stop_poll
+            MessageAction.PollStatistics -> R.string.message_action_poll_statistics
             MessageAction.SaveToDownloads -> R.string.message_action_save_to_downloads
             MessageAction.Select -> R.string.message_action_select
             MessageAction.Report -> R.string.message_action_report
@@ -265,12 +268,14 @@ internal val MessageAction.icon: Int
             MessageAction.Copy -> UiR.drawable.ic_content_copy
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
+            MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_format_list_bulleted
             MessageAction.Forward -> UiR.drawable.ic_forward
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
             MessageAction.RetractVote -> UiR.drawable.ic_history
             MessageAction.StopPoll -> R.drawable.ic_block
+            MessageAction.PollStatistics -> UiR.drawable.ic_bar_chart
             MessageAction.SaveToDownloads -> UiR.drawable.ic_download
             MessageAction.Select -> UiR.drawable.ic_check_circle
             MessageAction.Report -> UiR.drawable.ic_error
@@ -289,6 +294,8 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(messageId)
         MessageAction.Translate -> TranslationEvent.Translate(messageId)
         MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(messageId)
+        MessageAction.Summarize -> SummaryEvent.Summarize(messageId)
+        MessageAction.ShowFullText -> SummaryEvent.ShowFullText(messageId)
         MessageAction.Forward -> ChatEvent.Forward(messageId)
         MessageAction.Edit -> ChatEvent.Edit(messageId)
         MessageAction.Pin -> ChatEvent.Pin(messageId)
@@ -296,6 +303,7 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Unpin -> ChatEvent.Unpin(messageId)
         MessageAction.RetractVote -> PollEvent.RetractVote(messageId)
         MessageAction.StopPoll -> PollEvent.StopPoll(messageId)
+        MessageAction.PollStatistics -> PollEvent.OpenStatistics(messageId)
         MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(messageId)
         MessageAction.Select -> SelectionEvent.Select(messageId)
         MessageAction.Report -> SelectionEvent.Report(messageId)

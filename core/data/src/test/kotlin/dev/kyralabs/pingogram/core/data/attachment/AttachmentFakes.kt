@@ -33,12 +33,14 @@ internal class FakeContentSource : ContentSource {
 }
 
 /**
- * Images and videos by file content: [images] and [videos] map the first byte of a file to what it decodes as; other
- * files are neither. Written photos and thumbnails hold [writtenBytes]; [plans] records each photo's plan.
+ * Images, videos and songs by file content: [images], [videos] and [songs] map the first byte of a file to what it
+ * decodes as; other files are none of them. Written photos and thumbnails hold [writtenBytes]; [plans] records each
+ * photo's plan.
  */
 internal class FakeMediaProcessor : MediaProcessor {
     val images = mutableMapOf<Byte, ImageInfo>()
     val videos = mutableMapOf<Byte, VideoInfo>()
+    val songs = mutableMapOf<Byte, AudioInfo>()
     var canWritePhotos = true
     var canWriteThumbnails = true
     val plans = mutableListOf<PhotoPlan>()
@@ -58,6 +60,20 @@ internal class FakeMediaProcessor : MediaProcessor {
     ): Boolean {
         plans += plan
         qualities += quality
+        if (!canWritePhotos) return false
+        target.writeBytes(writtenBytes)
+        return true
+    }
+
+    /** The plans of the stickers written. */
+    val stickerPlans = mutableListOf<PhotoPlan>()
+
+    override fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean {
+        stickerPlans += plan
         if (!canWritePhotos) return false
         target.writeBytes(writtenBytes)
         return true
@@ -85,6 +101,8 @@ internal class FakeMediaProcessor : MediaProcessor {
         target.writeBytes(writtenBytes)
         return true
     }
+
+    override fun audioInfo(file: File): AudioInfo? = songs[file.firstByte()]
 
     private fun File.firstByte(): Byte? = readBytes().firstOrNull()
 

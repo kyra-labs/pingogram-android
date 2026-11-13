@@ -31,6 +31,11 @@ sealed interface PollEvent : ChatEvent {
         val messageId: Long,
     ) : PollEvent
 
+    /** "Statistics" in the message actions of message [messageId]: the poll's statistics page opens. */
+    data class OpenStatistics(
+        val messageId: Long,
+    ) : PollEvent
+
     /** The question whether to stop the poll was answered with "Stop": it closes for everyone. */
     data object ConfirmStop : PollEvent
 
@@ -54,6 +59,13 @@ sealed interface PollEvent : ChatEvent {
 
     /** The voters' sheet was dismissed. */
     data object DismissVoters : PollEvent
+
+    /** Open [url], an answer's link, for screen readers, who reach it through the bubble's custom actions. */
+    data class OpenLink(
+        val url: String,
+    ) : PollEvent {
+        override fun toString() = "OpenLink(…)"
+    }
 }
 
 /** One-off effects of polls. */

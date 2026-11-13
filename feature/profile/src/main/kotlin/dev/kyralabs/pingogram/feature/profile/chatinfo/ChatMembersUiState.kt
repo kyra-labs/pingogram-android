@@ -17,6 +17,7 @@ import kotlinx.collections.immutable.persistentListOf
  * @property filter which members the list holds; [filters] those the user may choose between.
  * @property query what the user searches for; searching applies to every filter but administrators.
  * @property removing the member whose removal the page asks to confirm; null while it asks nothing.
+ * @property tagging the "Set tag" sheet while it is open; null otherwise.
  */
 @Immutable
 data class ChatMembersUiState(
@@ -26,6 +27,7 @@ data class ChatMembersUiState(
     val query: String = "",
     val list: MembersList = MembersList.Loading,
     val removing: MemberItem? = null,
+    val tagging: MemberTagEditor? = null,
 ) {
     val canSearch: Boolean get() = filter != MemberFilter.Administrators
 
@@ -102,6 +104,22 @@ sealed interface ChatMembersEvent {
     data object ConfirmRemove : ChatMembersEvent
 
     data object DismissDialog : ChatMembersEvent
+
+    /** The tag in the "Set tag" sheet was edited. */
+    data class TagChanged(
+        val text: String,
+    ) : ChatMembersEvent {
+        override fun toString() = "TagChanged(…)"
+    }
+
+    /** "Save" in the "Set tag" sheet. */
+    data object SaveTag : ChatMembersEvent
+
+    /** "Remove tag" in the "Set tag" sheet. */
+    data object RemoveTag : ChatMembersEvent
+
+    /** The "Set tag" sheet was closed without saving. */
+    data object DismissTag : ChatMembersEvent
 }
 
 /** One-off side effects of [ChatMembersViewModel], handled once by its route. */

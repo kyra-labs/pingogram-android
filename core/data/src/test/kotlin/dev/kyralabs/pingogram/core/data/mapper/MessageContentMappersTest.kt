@@ -154,6 +154,24 @@ class MessageContentMappersTest {
     }
 
     @Test
+    fun `a live photo carries its motion, a still photo none`() {
+        val live = TdApiFixtures.messagePhoto().apply { video = TdApiFixtures.messageVideo().video }
+
+        val mapped = live.map() as MessageContent.Photo
+
+        assertEquals(FileRef(21, 5_000_000), mapped.motion?.file)
+        assertNull((TdApiFixtures.messagePhoto().map() as MessageContent.Photo).motion)
+    }
+
+    @Test
+    fun `a video keeps where its sender marked it to start`() {
+        val content = TdApiFixtures.messageVideo().apply { startTimestamp = 83 }
+
+        assertEquals(83, (content.map() as MessageContent.Video).startSeconds)
+        assertEquals(0, (TdApiFixtures.messageVideo().map() as MessageContent.Video).startSeconds)
+    }
+
+    @Test
     fun `an animation keeps its MIME type`() {
         val content =
             TdApi.MessageAnimation(
@@ -491,12 +509,9 @@ class MessageContentMappersTest {
         /** Regular (not service) contents of the pinned TDLib version that Pingogram does not show yet. */
         val UNSUPPORTED_CONTENTS: List<Class<out TdApi.MessageContent>> =
             listOf(
-                TdApi.MessagePaidMedia::class.java,
                 TdApi.MessageStakeDice::class.java,
-                TdApi.MessageChecklist::class.java,
-                TdApi.MessageGiveaway::class.java,
-                TdApi.MessageGiveawayWinners::class.java,
                 TdApi.MessageUnsupported::class.java,
+                TdApi.MessageWidget::class.java,
             )
     }
 }

@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AdministratorRights
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MemberTagLimits
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -102,6 +103,26 @@ class TdlibGroupAdministrationRepositoryTest {
         }
 
     @Test
+    fun `a member's tag goes trimmed to TDLib, and an empty one removes it`() =
+        runTest {
+            repository.setMemberTag(CHAT, 7, "  Beta tester ")
+            repository.setMemberTag(CHAT, 7, "")
+
+            val (set, removed) = client.sentOf<TdApi.SetChatMemberTag>()
+            assertEquals(Triple(CHAT, 7L, "Beta tester"), Triple(set.chatId, set.userId, set.tag))
+            assertEquals("", removed.tag)
+        }
+
+    @Test
+    fun `a tag longer than Telegram takes is refused before TDLib`() =
+        runTest {
+            val result = repository.setMemberTag(CHAT, 7, "x".repeat(MemberTagLimits.LENGTH_MAX + 1))
+
+            assertEquals(Outcome.Failure(DomainError.InputRejected), result)
+            assertTrue(client.sentOf<TdApi.SetChatMemberTag>().isEmpty())
+        }
+
+    @Test
     fun `clearing the history keeps the chat and revokes nothing`() =
         runTest {
             repository.clearHistory(CHAT)
@@ -142,6 +163,15 @@ class TdlibGroupAdministrationRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository.removePhoto(CHAT))
 
             assertNull(client.sentOf<TdApi.SetChatPhoto>().single().photo)
+        }
+
+    @Test
+    fun `tells who becomes the owner if the owner leaves without choosing`() =
+        runTest {
+            client.on(TdApi.GetChatOwnerAfterLeaving::class, TdResult.Success(TdApiFixtures.user(id = 42)))
+
+            assertEquals(Outcome.Success(42L), repository.ownerAfterLeaving(CHAT))
+            assertEquals(CHAT, client.sentOf<TdApi.GetChatOwnerAfterLeaving>().single().chatId)
         }
 
     @Test

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.model.isAdministrator
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
@@ -51,6 +53,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -82,7 +85,8 @@ import javax.inject.Inject
  * - **Administration**: rows for what the user's rights allow ([ChatAdministration]), which open other pages.
  * - **Actions**: muting ([ChatRepository.setMuted]); leaving and, for its owner, deleting the chat for everyone
  *   ([ChatRepository.deleteChat], whose `deleteOptions` say whether it may be deleted), and clearing the history
- *   ([GroupAdministrationRepository.clearHistory]), each after a confirmation and one request per tap.
+ *   ([GroupAdministrationRepository.clearHistory]), each after a confirmation and one request per tap. The owner leaves
+ *   through [ownerLeaveSheet] instead ([OwnerLeaving]), choosing who owns the chat next.
  * - **Starting**: what the view model starts runs once the frame that created it is done (dispatched).
  *
  * It takes one repository per kind of data the page shows or changes, plus the clock, time patterns, dispatcher and
@@ -102,6 +106,7 @@ class ChatInfoViewModel internal constructor(
     sharedMediaRepository: SharedMediaRepository,
     private val searchRepository: SearchRepository,
     private val idVisibility: IdVisibilityRepository,
+    private val communityRepository: CommunityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -117,6 +122,7 @@ class ChatInfoViewModel internal constructor(
         sharedMediaRepository: SharedMediaRepository,
         searchRepository: SearchRepository,
         idVisibility: IdVisibilityRepository,
+        communityRepository: CommunityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -130,6 +136,7 @@ class ChatInfoViewModel internal constructor(
         sharedMediaRepository,
         searchRepository,
         idVisibility,
+        communityRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -148,6 +155,28 @@ class ChatInfoViewModel internal constructor(
     /** The first members of a supergroup or channel; null until loaded (a basic group's come with its full info). */
     private val previewMembers = MutableStateFlow<List<GroupMember>?>(null)
     private var isLoadingPreview = false
+
+    /** The group as last announced, for what an event needs of it (the user's role). */
+    private val lastGroup = MutableStateFlow<GroupInfo?>(null)
+
+    private val ownerLeaving =
+        OwnerLeaving(
+            chatId = chatId,
+            savedStateHandle = savedStateHandle,
+            scope = viewModelScope,
+            chatRepository = chatRepository,
+            groupInfoRepository = groupInfoRepository,
+            administrationRepository = administrationRepository,
+            userRepository = userRepository,
+            send = ::send,
+        )
+
+    /** The sheet before the owner leaves, choosing who owns the chat next; null while it does not show. */
+    val ownerLeaveSheet: StateFlow<OwnerLeaveSheet?> = ownerLeaving.sheet
+
+    /** The 2-step verification password typed into [ownerLeaveSheet]: never in the saved state. */
+    val ownerLeavePassword: TextFieldState
+        get() = ownerLeaving.password
 
     /** Whether the chat may be deleted for everyone; null until known. */
     private val canDeleteForEveryone = MutableStateFlow<Boolean?>(null)
@@ -198,6 +227,19 @@ class ChatInfoViewModel internal constructor(
             }
         }
 
+    /** The community the chat belongs to, named once TDLib announced it; null for none. */
+    private val community: Flow<CommunityLink?> =
+        group
+            .map { lookup -> (lookup as? Lookup.Found)?.value?.details?.communityId ?: 0L }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == 0L) {
+                    flowOf(null)
+                } else {
+                    communityRepository.community(id).map { CommunityLink(id, it?.name.orEmpty()) }
+                }
+            }
+
     val uiState: StateFlow<ChatInfoUiState> =
         combine(chat, group, previewMembers, userRepository.users, userRepository.myUserId) { c, g, m, u, me ->
             Sources(c, g, m, u, me)
@@ -206,6 +248,8 @@ class ChatInfoViewModel internal constructor(
             .combine(overlay) { (sources, now, canDelete), overlay -> sources.toUiState(now, canDelete, overlay) }
             .combine(idVisibility.shown) { state, shown ->
                 if (shown && state is ChatInfoUiState.Content) state.copy(id = chatId) else state
+            }.combine(community) { state, community ->
+                if (community != null && state is ChatInfoUiState.Content) state.copy(community = community) else state
             }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatInfoUiState.Loading)
 
@@ -219,23 +263,81 @@ class ChatInfoViewModel internal constructor(
 
     fun onEvent(event: ChatInfoEvent) {
         when (event) {
-            ChatInfoEvent.Retry -> attempts.update { it + 1 }
-            ChatInfoEvent.ToggleMute -> toggleMute()
-            ChatInfoEvent.Leave -> showDialog(ChatInfoDialog.Leave)
-            ChatInfoEvent.Delete -> showDialog(ChatInfoDialog.Delete)
-            ChatInfoEvent.ClearHistory -> showDialog(ChatInfoDialog.ClearHistory)
-            ChatInfoEvent.Confirm -> confirm()
-            ChatInfoEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
-            ChatInfoEvent.CopyLink -> link()?.let { send(ChatInfoEffect.CopyText(it.url, CopiedChatText.Link)) }
-            ChatInfoEvent.CopyId -> send(ChatInfoEffect.CopyText(chatId.toString(), CopiedChatText.Id))
-            ChatInfoEvent.ShareLink -> link()?.let { send(ChatInfoEffect.Share(it.url)) }
-            ChatInfoEvent.ShowQrCode -> link()?.let { showDialog(ChatInfoDialog.QrCode(it.url)) }
-            ChatInfoEvent.CopyDescription -> copyDescription()
-            is ChatInfoEvent.OpenMention -> openMention(event.target)
-            is ChatInfoEvent.OpenMember -> openMember(event.sender)
-            is ChatInfoEvent.OpenMembers -> send(ChatInfoEffect.OpenMembers(event.filter))
-            is ChatInfoEvent.Open -> send(ChatInfoEffect.Open(event.page))
+            ChatInfoEvent.Retry -> {
+                attempts.update { it + 1 }
+            }
+
+            ChatInfoEvent.ToggleMute -> {
+                toggleMute()
+            }
+
+            ChatInfoEvent.Leave -> {
+                leave()
+            }
+
+            ChatInfoEvent.Delete -> {
+                showDialog(ChatInfoDialog.Delete)
+            }
+
+            ChatInfoEvent.ClearHistory -> {
+                showDialog(ChatInfoDialog.ClearHistory)
+            }
+
+            ChatInfoEvent.Confirm -> {
+                confirm()
+            }
+
+            ChatInfoEvent.DismissDialog -> {
+                overlay.update { it.copy(dialog = null) }
+            }
+
+            ChatInfoEvent.CopyLink -> {
+                link()?.let { send(ChatInfoEffect.CopyText(it.url, CopiedChatText.Link)) }
+            }
+
+            ChatInfoEvent.CopyId -> {
+                send(ChatInfoEffect.CopyText(chatId.toString(), CopiedChatText.Id))
+            }
+
+            ChatInfoEvent.ShareLink -> {
+                link()?.let { send(ChatInfoEffect.Share(it.url)) }
+            }
+
+            ChatInfoEvent.ShowQrCode -> {
+                link()?.let { showDialog(ChatInfoDialog.QrCode(it.url)) }
+            }
+
+            ChatInfoEvent.CopyDescription -> {
+                copyDescription()
+            }
+
+            is ChatInfoEvent.OpenMention -> {
+                openMention(event.target)
+            }
+
+            is ChatInfoEvent.OpenMember -> {
+                openMember(event.sender)
+            }
+
+            is ChatInfoEvent.OpenMembers -> {
+                send(ChatInfoEffect.OpenMembers(event.filter))
+            }
+
+            is ChatInfoEvent.Open -> {
+                send(ChatInfoEffect.Open(event.page))
+            }
+
+            ChatInfoEvent.OpenCommunity -> {
+                (uiState.value as? ChatInfoUiState.Content)?.community?.let {
+                    send(ChatInfoEffect.OpenCommunity(it.id))
+                }
+            }
         }
+    }
+
+    /** What the user does in [ownerLeaveSheet]. */
+    fun onOwnerLeaveEvent(event: OwnerLeaveEvent) {
+        ownerLeaving.onEvent(event)
     }
 
     fun onMediaEvent(event: SharedMediaEvent) {
@@ -261,6 +363,10 @@ class ChatInfoViewModel internal constructor(
      * can do something about it.
      */
     private fun onGroup(info: GroupInfo) {
+        lastGroup.value = info
+        if (ownerLeaving.wasOpen && info.myRole is MemberRole.Owner) {
+            viewModelScope.launch(Dispatchers.Main) { ownerLeaving.open(info.kind, userRepository.myUserId.value) }
+        }
         val error = info.detailsError
         if (error is DomainError.FloodWait || error == DomainError.Network) send(ChatInfoEffect.ShowError(error))
         viewModelScope.launch {
@@ -277,6 +383,16 @@ class ChatInfoViewModel internal constructor(
                 // Without them, the page shows the count and "All members" alone.
                 previewMembers.value = (page as? Outcome.Success)?.value?.members.orEmpty()
             }
+        }
+    }
+
+    /** The owner chooses who owns the chat next, in a sheet; anyone else confirms leaving. */
+    private fun leave() {
+        val info = lastGroup.value
+        if (info?.myRole is MemberRole.Owner) {
+            ownerLeaving.open(info.kind, userRepository.myUserId.value)
+        } else {
+            showDialog(ChatInfoDialog.Leave)
         }
     }
 
@@ -432,6 +548,7 @@ class ChatInfoViewModel internal constructor(
                     // Every administrator of a supergroup or channel may read its recent actions.
                     canViewRecentActions = info.kind != GroupKind.BasicGroup,
                     canViewStatistics = details?.canGetStatistics == true,
+                    canManageWelcomeMessages = rights.canSendWelcomeMessages && info.kind == GroupKind.Supergroup,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

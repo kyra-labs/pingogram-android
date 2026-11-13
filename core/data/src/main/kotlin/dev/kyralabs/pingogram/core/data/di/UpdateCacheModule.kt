@@ -5,12 +5,17 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -72,6 +77,21 @@ interface UpdateCacheModule {
     @IntoSet
     fun secretChatCache(repository: TdlibSecretChatRepository): TdlibUpdateCache
 
+    /** TDLib announces the name colors only with `updateAccentColors`, once per start. */
+    @Binds
+    @IntoSet
+    fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
+
+    /** TDLib announces the AI editor's styles only with `updateTextCompositionStyles`, once per start. */
+    @Binds
+    @IntoSet
+    fun aiTextCache(repository: TdlibAiTextRepository): TdlibUpdateCache
+
+    /** TDLib announces each community only with `updateCommunity`. */
+    @Binds
+    @IntoSet
+    fun communityCache(repository: TdlibCommunityRepository): TdlibUpdateCache
+
     /** TDLib announces each chat's active stories only with `updateChatActiveStories`. */
     @Binds
     @IntoSet
@@ -80,6 +100,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun savedMessagesTopicCache(repository: TdlibSavedMessagesTopicRepository): TdlibUpdateCache
+
+    /** TDLib announces a channel's direct messages topics only with `updateDirectMessagesChatTopic`. */
+    @Binds
+    @IntoSet
+    fun directMessagesTopicCache(repository: TdlibDirectMessagesTopicRepository): TdlibUpdateCache
 
     /** TDLib announces each call, an incoming one too, only with `updateCall`. */
     @Binds
@@ -114,6 +139,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
+
+    /** For whether the account is frozen, which TDLib announces only as an update. */
+    @Binds
+    @IntoSet
+    fun accountFreezeCache(repository: TdlibAccountFreezeRepository): TdlibUpdateCache
 
     /** For the reaction notification settings, which TDLib announces once per start and cannot be asked for. */
     @Binds

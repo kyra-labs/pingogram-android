@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageAnimation
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageChecklist
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
@@ -33,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -188,10 +190,15 @@ class TdlibAttachmentRepository internal constructor(
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
+        caption: FormattedText?,
+        captionAbove: Boolean,
     ): Outcome<Unit> =
         client.sendMessage(
             chatId,
-            animation.toInputMessageAnimation(),
+            animation.toInputMessageAnimation(
+                caption?.takeIf { it.text.isNotBlank() }?.toTdFormattedText(),
+                captionAbove,
+            ),
             options,
             replyTo?.toInputMessageReplyTo(),
         )
@@ -202,6 +209,14 @@ class TdlibAttachmentRepository internal constructor(
         options: SendOptions,
         replyTo: ReplyTarget?,
     ): Outcome<Unit> = client.sendMessage(chatId, poll.toInputMessagePoll(), options, replyTo?.toInputMessageReplyTo())
+
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, checklist.toInputMessageChecklist(), options, replyTo?.toInputMessageReplyTo())
 
     /**
      * `editMessageMedia` of [attachment] with [caption], sent in the application [scope] and waited for without a

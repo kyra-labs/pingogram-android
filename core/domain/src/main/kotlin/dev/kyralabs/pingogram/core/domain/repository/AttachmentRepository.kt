@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -119,19 +120,33 @@ interface AttachmentRepository {
 
     /**
      * Sends GIF [animation], one TDLib knows already (a saved GIF, a GIF search's result), to chat [chatId] as
-     * [options] say, replying as [replyTo] says if it is not null. Telegram then puts it first among the saved GIFs.
+     * [options] say, replying as [replyTo] says if it is not null, with [caption] below it, or above it with
+     * [captionAbove]. Telegram then puts it first among the saved GIFs.
      */
     suspend fun sendAnimation(
         chatId: Long,
         animation: Animation,
         options: SendOptions = SendOptions(),
         replyTo: ReplyTarget? = null,
+        caption: FormattedText? = null,
+        captionAbove: Boolean = false,
     ): Outcome<Unit>
 
     /** Sends [poll] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. */
     suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,
+        options: SendOptions = SendOptions(),
+        replyTo: ReplyTarget? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Sends [checklist] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. Telegram
+     * takes checklists from Telegram Premium subscribers only; it refuses the rest.
+     */
+    suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
         options: SendOptions = SendOptions(),
         replyTo: ReplyTarget? = null,
     ): Outcome<Unit>

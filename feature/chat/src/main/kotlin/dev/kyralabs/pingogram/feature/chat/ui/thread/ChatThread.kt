@@ -5,8 +5,10 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
+import dev.kyralabs.pingogram.core.domain.model.DirectMessagesTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageThread
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SavedMessagesTopic
@@ -20,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
@@ -29,11 +32,13 @@ import dev.kyralabs.pingogram.feature.chat.ui.ThreadRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.ChatPinnedMessages
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
@@ -91,6 +96,10 @@ internal class ChatThread(
                 repositories.savedTopics.topics
                     .map { topics -> ThreadState.SavedTopic(topics.firstOrNull { it.id == topic.topicId }) }
                     .distinctUntilChanged()
+            }
+
+            is MessageTopic.DirectMessages -> {
+                repositories.directTopicState(chatId, topic.topicId)
             }
         }.shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
@@ -159,6 +168,32 @@ internal class ChatThread(
     }
 }
 
+/** A channel's direct messages topic with its sender's name, which TDLib announces before the topic. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun ThreadRepositories.directTopicState(
+    chatId: Long,
+    topicId: Long,
+): Flow<ThreadState> =
+    directTopics
+        .topic(chatId, topicId)
+        .flatMapLatest { topic ->
+            val name =
+                when (val sender = topic?.sender) {
+                    is MessageSender.User -> {
+                        users.user(sender.userId).map { it?.fullName() }
+                    }
+
+                    is MessageSender.Chat -> {
+                        chats.chat(sender.chatId).map { it?.title?.let(UiText::Plain) }
+                    }
+
+                    null -> {
+                        flowOf(null)
+                    }
+                }
+            name.map { ThreadState.DirectTopic(topic, it) }
+        }.distinctUntilChanged()
+
 /** What the conversation shows of a chat: all of it, one of its forum topics, or a message thread. */
 internal sealed interface ThreadState {
     data object WholeChat : ThreadState
@@ -183,6 +218,15 @@ internal sealed interface ThreadState {
     /** A tab of Saved Messages: [topic], null until TDLib announced it (or once it was emptied). */
     data class SavedTopic(
         val topic: SavedMessagesTopic?,
+    ) : ThreadState
+
+    /**
+     * One person's conversation in a channel's direct messages, as its administrators see it: [topic] (null until TDLib
+     * announced it) and who wrote ([senderName], null until known).
+     */
+    data class DirectTopic(
+        val topic: DirectMessagesTopic?,
+        val senderName: UiText?,
     ) : ThreadState
 }
 
@@ -222,6 +266,18 @@ internal fun ThreadState.inThread(chat: Chat): Chat =
             chat.copy(lastMessage = topic?.lastMessage, draft = null)
         }
 
+        is ThreadState.DirectTopic -> {
+            topic?.let {
+                chat.copy(
+                    unreadCount = it.unreadCount.toInt(),
+                    unreadMentionCount = 0,
+                    lastReadInboxMessageId = it.lastReadInboxMessageId,
+                    lastMessage = it.lastMessage,
+                    draft = null,
+                )
+            } ?: chat.copy(draft = null)
+        }
+
         ThreadState.WholeChat, ThreadState.Missing, is ThreadState.Failed -> {
             chat
         }
@@ -247,6 +303,14 @@ internal fun ThreadState.header(
 
         is ThreadState.Replies -> {
             header.copy(subtitle = action ?: ChatSubtitle.Status(thread.countText()))
+        }
+
+        // Who wrote, over the channel's direct messages.
+        is ThreadState.DirectTopic -> {
+            header.copy(
+                title = senderName ?: header.title,
+                subtitle = action ?: ChatSubtitle.Status(UiText.Plain(chat.title)),
+            )
         }
 
         // The tabs above say which topic shows: the top bar stays Saved Messages'.

@@ -606,6 +606,19 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
+        fun `a video can go into picture-in-picture only once the player has started it`() =
+            runViewModelTest {
+                media.serve(listOf(message(1), message(2, videoContent(2))))
+                files.setFile(fullFileId(2), FileState.Downloaded(videoPath, 12_000_000))
+                val viewModel = viewModel(messageId = 2)
+                assertFalse(viewModel.content.playsVideo)
+
+                send(viewModel, MediaViewerEvent.Started)
+
+                assertTrue(viewModel.content.playsVideo)
+            }
+
+        @Test
         fun `a video downloading plays once it is on the device`() =
             runViewModelTest {
                 media.serve(listOf(message(1), message(2, videoContent(2))))

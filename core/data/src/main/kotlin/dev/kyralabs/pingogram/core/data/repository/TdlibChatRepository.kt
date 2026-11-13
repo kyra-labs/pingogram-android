@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
 import dev.kyralabs.pingogram.core.data.mapper.toChat
+import dev.kyralabs.pingogram.core.data.mapper.toChatActionBar
 import dev.kyralabs.pingogram.core.data.mapper.toChatDraft
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolder
 import dev.kyralabs.pingogram.core.data.mapper.toChatListType
@@ -228,6 +229,8 @@ class TdlibChatRepository
 
                     // td_api.tl has no source of its own for a Saved Messages topic: it is the chat's history.
                     is MessageTopic.SavedMessages -> TdApi.MessageSourceChatHistory()
+
+                    is MessageTopic.DirectMessages -> TdApi.MessageSourceDirectMessagesChatTopicHistory()
                 }
             return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
         }
@@ -417,8 +420,16 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(isTranslatable = update.isTranslatable) }
         }
 
+        is TdApi.UpdateChatHasWelcomeMessages -> {
+            ChatChange(update.chatId) { it.copy(hasWelcomeMessages = update.hasWelcomeMessages) }
+        }
+
         is TdApi.UpdateChatHasScheduledMessages -> {
             ChatChange(update.chatId) { it.copy(hasScheduledMessages = update.hasScheduledMessages) }
+        }
+
+        is TdApi.UpdateChatActionBar -> {
+            ChatChange(update.chatId) { it.copy(actionBar = update.actionBar?.toChatActionBar()) }
         }
 
         else -> {

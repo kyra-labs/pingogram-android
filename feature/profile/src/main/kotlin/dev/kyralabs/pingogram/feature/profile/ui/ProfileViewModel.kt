@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -87,6 +88,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   Each is one request per tap of the user's; a failure is a snackbar and leaves the state as it was.
  * - **Photos**: the user's profile photos a page at a time ([UserProfileRepository.profilePhotos]), the next one when
  *   the carousel reaches the last.
+ * - **Birthday suggestions**: a contact without a birthday gets an offer to suggest one
+ *   ([UserProfileRepository.suggestBirthdate]), one request per pick, a snackbar once Telegram sent it.
+ * - **The note** the current user keeps about a contact shows last in the information rows; its dialog is
+ *   [ProfileNote] ([noteEditor]), restored after process death once the contact is known.
  * - **Copying and sharing** usernames and the phone number, and dialing it, go out as effects; a mention tapped in the
  *   bio opens the profile it names, or the group or channel of an `@username` ([SearchRepository.publicChat]).
  * - **Starting**: the view model is created in the frame that first composes the profile; what it starts runs once
@@ -175,6 +180,11 @@ class ProfileViewModel internal constructor(
     /** The open report sheet; null while none is. */
     val reportSheet: StateFlow<ProfileReportSheet?> = reporting.sheet
 
+    private val note = ProfileNote(profileRepository, userId, savedStateHandle, viewModelScope)
+
+    /** The open note dialog; null while none is. */
+    val noteEditor: StateFlow<ProfileNoteEditor?> = note.editor
+
     private val sharedMedia =
         ProfileSharedMedia(
             repository = sharedMediaRepository,
@@ -239,6 +249,7 @@ class ProfileViewModel internal constructor(
         // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
         // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
         viewModelScope.launch(Dispatchers.Main) { started.value = true }
+        viewModelScope.launch { restoreNote() }
     }
 
     fun onEvent(event: ProfileEvent) {
@@ -254,6 +265,11 @@ class ProfileViewModel internal constructor(
             ProfileEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
             ProfileEvent.LoadMorePhotos -> loadPhotos()
             is ProfileEvent.OpenMention -> openMention(event.target)
+            is ProfileEvent.SuggestBirthdate -> suggestBirthdate(event.birthdate)
+            ProfileEvent.EditNote -> contactNote()?.let { note.open(it.firstName, it.text) }
+            is ProfileEvent.NoteChanged -> note.edit(event.text)
+            ProfileEvent.SaveNote -> note.save()
+            ProfileEvent.DismissNote -> note.dismiss()
             else -> onRowEvent(event)
         }
     }
@@ -450,6 +466,21 @@ class ProfileViewModel internal constructor(
         }
     }
 
+    /** Suggests [birthdate] to the contact, once per pick; a snackbar says it went, or why it did not. */
+    private fun suggestBirthdate(birthdate: Birthdate) {
+        val offer = (uiState.value as? ProfileUiState.Content)?.info?.birthdaySuggestion ?: return
+        if (overlay.value.isSuggestingBirthday) return
+        overlay.update { it.copy(isSuggestingBirthday = true) }
+        viewModelScope.launch {
+            val sent = profileRepository.suggestBirthdate(userId, birthdate)
+            overlay.update { it.copy(isSuggestingBirthday = false) }
+            when (sent) {
+                is Outcome.Success -> effectChannel.trySend(ProfileEffect.BirthdaySuggested(offer.firstName))
+                is Outcome.Failure -> showError(sent.error)
+            }
+        }
+    }
+
     /** Mutes the chat forever or unmutes it; the chat's update shows the change. */
     private fun toggleMute() {
         val id = chatId.value
@@ -491,6 +522,19 @@ class ProfileViewModel internal constructor(
         effectChannel.trySend(ProfileEffect.CopyText(text, what))
     }
 
+    private fun contactNote(): ContactNote? = (uiState.value as? ProfileUiState.Content)?.info?.note
+
+    /** Reopens the note dialog that was open before process death, once the contact's note is known. */
+    private suspend fun restoreNote() {
+        if (!note.hasSavedText()) return
+        val known =
+            uiState
+                .filterIsInstance<ProfileUiState.Content>()
+                .first { it.info.note != null }
+                .info.note
+        known?.let { note.restore(it.firstName, it.text) }
+    }
+
     private fun phoneNumber(): String? = (uiState.value as? ProfileUiState.Content)?.info?.phoneNumber
 
     private fun bioText(): String? =
@@ -526,6 +570,10 @@ class ProfileViewModel internal constructor(
                     phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" },
                     birthday = info?.birthdate?.let(::birthday),
                     personalChannel = personalChannel?.let { PersonalChannel(it.id, it.title) },
+                    birthdaySuggestion = info?.let { birthdaySuggestionOf(user, it, overlay) },
+                    note = info?.let { contactNoteOf(user, it) },
+                    // The chat's "Disable sharing" (Telegram Premium), as it is: forwarding, copying and saving off.
+                    isSharingDisabled = chat?.hasProtectedContent == true && user.id != myUserId,
                 ),
             actions = actions(user, overlay),
             dialog = overlay.dialog,
@@ -579,8 +627,30 @@ class ProfileViewModel internal constructor(
                     user.isFake -> ProfileWarning.Fake
                     else -> null
                 },
+            emojiStatusId = if (isDeleted) 0 else user.emojiStatusId,
+            profileColor = if (isDeleted) -1 else user.profileAccentColorId,
         )
     }
+
+    /** The offer to suggest a birthday to a contact who shows none; null for anyone else. */
+    private fun Sources.birthdaySuggestionOf(
+        user: User,
+        full: UserFullInfo,
+        overlay: Overlay,
+    ): BirthdaySuggestionOffer? =
+        BirthdaySuggestionOffer(user.firstName, overlay.isSuggestingBirthday).takeIf {
+            full.birthdate == null && isContactOf(user)
+        }
+
+    /** [user] is a contact the current user keeps notes about and may suggest a birthday to: a person, not oneself. */
+    private fun Sources.isContactOf(user: User): Boolean =
+        user.isContact && user.type == UserType.Regular && !user.isDeleted && user.id != myUserId
+
+    /** The note row of a contact (a regular user, not oneself); null for anyone else. */
+    private fun Sources.contactNoteOf(
+        user: User,
+        full: UserFullInfo,
+    ): ContactNote? = ContactNote(full.note.text, user.firstName).takeIf { isContactOf(user) }
 
     /** The bio, or a bot's description as plain text; null without one. */
     private fun bio(
@@ -684,6 +754,7 @@ class ProfileViewModel internal constructor(
         val isStartingSecretChat: Boolean = false,
         val isChangingBlock: Boolean = false,
         val blocked: Boolean? = null,
+        val isSuggestingBirthday: Boolean = false,
     )
 
     /** The carousel's photos as far as loaded; [totalCount] null before the first page. */

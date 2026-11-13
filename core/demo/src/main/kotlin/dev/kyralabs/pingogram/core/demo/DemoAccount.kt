@@ -7,7 +7,8 @@ import java.util.Locale
 /**
  * The demo's account and people (`docs/adr/0034-demo-mode-for-store-review.md`): the user's profile (name, bio,
  * username, birthday, photo, personal channel), contacts (added, edited, imported, removed), blocking, privacy rules,
- * sessions and websites (sample ones, never real devices), a sample story of Ada's, and the countries the phone
+ * sessions, websites and passkeys (sample ones, never real devices or password managers; adding a passkey needs a
+ * Telegram account), a sample story of Ada's, and the countries the phone
  * number fields offer. It keeps this state itself; every change goes into the journal like the others.
  *
  * One branch per function, each starting with guard clauses for people that are not the demo's: hence the
@@ -19,6 +20,7 @@ internal class DemoAccount : DemoArea {
     private val privacy = mutableMapOf<String, TdApi.UserPrivacySettingRules>()
     private val sessions = mutableListOf<TdApi.Session>()
     private val websites = mutableListOf<TdApi.ConnectedWebsite>()
+    private val passkeys = mutableListOf<TdApi.Passkey>()
     private val profilePhotos = mutableListOf<TdApi.ChatPhoto>()
     private var readDate = TdApi.ReadDatePrivacySettings(true)
     private var inactiveSessionDays = INACTIVE_SESSION_DAYS
@@ -48,6 +50,10 @@ internal class DemoAccount : DemoArea {
 
             is TdApi.SetBirthdate -> {
                 changeMine(world) { birthdate = function.birthdate }
+            }
+
+            is TdApi.SetUserNote -> {
+                setNote(world, function.userId, function.note)
             }
 
             is TdApi.SetPersonalChat -> {
@@ -177,6 +183,14 @@ internal class DemoAccount : DemoArea {
                 okChanged(emptyList()).also { websites.clear() }
             }
 
+            is TdApi.GetLoginPasskeys -> {
+                ok(TdApi.Passkeys(passkeys.toTypedArray()))
+            }
+
+            is TdApi.RemoveLoginPasskey -> {
+                okChanged(emptyList()).also { passkeys.removeAll { it.id == function.passkeyId } }
+            }
+
             is TdApi.GetChatActiveStories -> {
                 ok(chatStories(world, function.chatId))
             }
@@ -219,7 +233,7 @@ internal class DemoAccount : DemoArea {
         }
     }
 
-    /** The sample sessions, websites and Ada's story, made once from the demo's start date. */
+    /** The sample sessions, websites, passkey and Ada's story, made once from the demo's start date. */
     private fun start(world: DemoWorld) {
         started = true
         val since = world.data.channel.date
@@ -247,6 +261,7 @@ internal class DemoAccount : DemoArea {
                 "203.0.113.7",
                 "Sample City",
             )
+        passkeys += TdApi.Passkey("demo-passkey", "Sample password manager", since, since + DAY, 0)
     }
 
     /** A sample session: a made-up device at an address of the documentation range (RFC 5737), never a real one. */
@@ -392,9 +407,10 @@ internal class DemoAccount : DemoArea {
             TdApi.UserLink(
                 "https://t.me/$username",
                 0,
+                false,
             )
         } else {
-            TdApi.UserLink(TEMPORARY_LINK, DAY)
+            TdApi.UserLink(TEMPORARY_LINK, DAY, false)
         }
     }
 
@@ -405,11 +421,28 @@ internal class DemoAccount : DemoArea {
         val user = world.users[function.userId] ?: return notFound()
         user.isContact = true
         user.isMutualContact = true
+        val updates = mutableListOf<TdApi.Update>()
         function.contact?.let {
             if (it.firstName.isNotBlank()) user.firstName = it.firstName.trim()
             user.lastName = it.lastName.orEmpty().trim()
+            val info = info(world, user.id)
+            if (it.note != null && info != null) {
+                info.note = it.note
+                updates += TdApi.UpdateUserFullInfo(user.id, info)
+            }
         }
-        return okChanged(listOf(TdApi.UpdateUser(user)))
+        return okChanged(listOf(TdApi.UpdateUser(user)) + updates)
+    }
+
+    /** The note about one of the demo's people, which only the user sees: kept on the phone, like everything here. */
+    private fun setNote(
+        world: DemoWorld,
+        userId: Long,
+        note: TdApi.FormattedText?,
+    ): DemoAnswer {
+        val info = info(world, userId) ?: return notFound()
+        info.note = note ?: TdApi.FormattedText("", emptyArray())
+        return okChanged(listOf(TdApi.UpdateUserFullInfo(userId, info)))
     }
 
     /** Numbers of the demo's people match them; every other number is not on Telegram (user id 0). */

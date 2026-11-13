@@ -2,13 +2,16 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
+import dev.kyralabs.pingogram.core.domain.model.GroupCallComment
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.GroupCallStream
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -58,6 +61,16 @@ interface GroupCallRepository {
         isMuted: Boolean,
     ): Outcome<String>
 
+    /**
+     * Joins live story group call [id] (board 12, `joinLiveStory`) to watch it, muted, with the engine's join [payload]
+     * and [audioSourceId]; returns the call's connection parameters for the engine (JSON).
+     */
+    suspend fun joinLiveStory(
+        id: Int,
+        audioSourceId: Int,
+        payload: String,
+    ): Outcome<String>
+
     /** Leaves group call [id]; it goes on for the others. */
     suspend fun leave(id: Int): Outcome<Unit>
 
@@ -101,6 +114,43 @@ interface GroupCallRepository {
         isHandRaised: Boolean,
     ): Outcome<Unit>
 
+    /**
+     * The comments of call [id] announced since the user joined, oldest first: at most [MAX_COMMENTS], the newest kept
+     * (`updateNewGroupCallMessage`, `updateGroupCallMessagesDeleted`, `updateGroupCallMessageSendFailed`).
+     */
+    fun comments(id: Int): Flow<GroupCallComments>
+
+    /** Sends [text] as a comment in call [id] (`sendGroupCallMessage`, free: Pingogram never pays). */
+    suspend fun sendComment(
+        id: Int,
+        text: FormattedText,
+    ): Outcome<Unit>
+
+    /**
+     * Deletes comments [commentIds] of call [id] for everyone, as their sender or an administrator, reporting them as
+     * spam when [reportSpam].
+     */
+    suspend fun deleteComments(
+        id: Int,
+        commentIds: List<Int>,
+        reportSpam: Boolean,
+    ): Outcome<Unit>
+
+    /** Deletes every comment [sender] wrote in call [id], as an administrator (`deleteGroupCallMessagesBySender`). */
+    suspend fun deleteCommentsBy(
+        id: Int,
+        sender: MessageSender,
+        reportSpam: Boolean,
+    ): Outcome<Unit>
+
+    /**
+     * Turns comments in call [id] on or off for everyone, as an administrator (`toggleGroupCallAreMessagesAllowed`).
+     */
+    suspend fun setCommentsAllowed(
+        id: Int,
+        allowed: Boolean,
+    ): Outcome<Unit>
+
     /** The channels of live stream [id], each with its newest segment's time. */
     suspend fun streams(id: Int): Outcome<ImmutableList<GroupCallStream>>
 
@@ -116,3 +166,12 @@ interface GroupCallRepository {
         quality: GroupCallVideoQuality?,
     ): StreamSegment
 }
+
+/** A call's comments, the newest last, and how many came since the user joined ([received], deleted ones included). */
+data class GroupCallComments(
+    val items: ImmutableList<GroupCallComment> = persistentListOf(),
+    val received: Int = 0,
+)
+
+/** The most comments a call keeps in memory: the screen shows the newest. */
+const val MAX_COMMENTS = 200

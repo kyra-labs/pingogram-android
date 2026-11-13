@@ -59,6 +59,11 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open the calendar app at a new event starting at [unixTime] (Unix time), for the user to save or not. */
+    data class AddToCalendar(
+        val unixTime: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,
@@ -97,6 +102,15 @@ sealed interface ChatEffect {
 
     /** A day picked to jump to has no messages on it or before it (the chat starts later): a snackbar says so. */
     data object NoMessagesForDay : ChatEffect
+
+    /** What was picked for a poll's media is no photo, which polls take: a snackbar says so. */
+    data object PollPhotoOnly : ChatEffect
+
+    /** Open the statistics of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
+    data class OpenPollStatistics(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
 
     /**
      * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is

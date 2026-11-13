@@ -24,6 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -90,12 +92,14 @@ internal fun BotCommandsContent(
                 style = MaterialTheme.typography.bodyMedium,
             )
         } else {
+            val motion = rememberItemMotion()
             LazyColumn(Modifier.testTag(COMMANDS_TEST_TAG)) {
                 items(commands, key = { it.text }, contentType = { CONTENT_TYPE_COMMAND }) { item ->
                     BotCommandRow(
                         item = item,
                         onSend = { onEvent(BotEvent.SendCommand(item.text)) },
                         onInsert = { onEvent(BotEvent.InsertCommand(item.text)) },
+                        modifier = Modifier.animateItem(this, motion),
                     )
                 }
             }
@@ -112,12 +116,13 @@ private fun BotCommandRow(
     item: BotCommandItem,
     onSend: () -> Unit,
     onInsert: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val insets = sheetRowInsets()
     val sheetColor = MaterialTheme.colorScheme.surfaceContainerLow
     ListItem(
         onClick = onSend,
-        modifier = Modifier.padding(insets).commandSemantics(item, onInsert),
+        modifier = modifier.padding(insets).commandSemantics(item, onInsert),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),
         leadingContent = item.bot?.let { bot -> { CommandBotAvatar(bot, sheetColor) } },

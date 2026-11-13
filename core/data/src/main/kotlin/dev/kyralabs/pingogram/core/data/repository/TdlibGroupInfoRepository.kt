@@ -322,6 +322,7 @@ class TdlibGroupInfoRepository
                         members = persistentListOf(),
                         primaryInviteLink = fullInfo.inviteLink?.toInviteLink(),
                         canGetStatistics = fullInfo.canGetStatistics,
+                        communityId = fullInfo.communityId,
                     )
                 }
 

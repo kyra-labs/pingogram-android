@@ -8,6 +8,9 @@
     <string name="content_duration_and_size">%1$s · %2$s</string>
     <!-- For screen readers: %1$s is what something is ("Video"), %2$s more about it ("1:05 · 12 MB", "Not played yet"). -->
     <string name="content_kind_and_details">%1$s, %2$s</string>
+    <!-- A live photo's label over its picture in the bubble (iOS Live Photos, Android Motion Photos). -->
+    <string name="content_live_label">LIVE</string>
+    <string name="content_live_photo">Live photo</string>
     <!-- How much of a voice message or a song has played ("0:12 / 0:42"), or of a file has downloaded ("1.2 MB / 4.5 MB"). -->
     <string name="content_progress_of">%1$s / %2$s</string>
     <string name="content_play">Play</string>
@@ -28,6 +31,9 @@
     <string name="content_file_unavailable">This file isn\'t available</string>
     <!-- A snackbar after tapping a location when no app on the device shows maps. -->
     <string name="content_no_maps_app">No app on this device can show this location</string>
+    <!-- A message of a kind this version of Pingogram cannot show, and the link to the latest release below it. -->
+    <string name="content_unsupported_body">This version of Pingogram can\'t show this message yet.</string>
+    <string name="content_update_app">Update Pingogram</string>
     <!-- A snackbar when the file of a voice message or song cannot be played (damaged, or in a format the device lacks). -->
     <string name="content_playback_failed">This can\'t be played</string>
     <!-- An album of photos and videos, for screen readers: %1$d is how many it holds. -->

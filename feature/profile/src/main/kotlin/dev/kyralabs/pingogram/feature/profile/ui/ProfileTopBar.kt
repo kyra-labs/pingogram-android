@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,9 +42,12 @@ import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.rememberPolygon
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiImage
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -73,9 +78,15 @@ internal fun ProfileTopBar(
     modifier: Modifier = Modifier,
 ) {
     val collapsing by remember(scrollBehavior) { derivedStateOf { scrollBehavior.state.collapsedFraction > HALF } }
+    val tint = profileTint(header?.profileColor)
     TwoRowsTopAppBar(
         title = { expanded -> header?.let { ProfileTitle(it, expanded, collapsing) } },
-        modifier = modifier,
+        modifier =
+            if (tint == Color.Transparent) {
+                modifier
+            } else {
+                modifier.clip(MaterialTheme.shapes.extraLarge.copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize))
+            },
         subtitle = { expanded -> header?.let { if (expanded) ProfileSubtitle(it) } },
         navigationIcon = {
             if (onBack != null) {
@@ -92,12 +103,25 @@ internal fun ProfileTopBar(
         expandedHeight = expandedHeight(),
         colors =
             TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
+                containerColor = tint,
+                scrolledContainerColor = tint,
             ),
         scrollBehavior = scrollBehavior,
     )
 }
+
+/**
+ * The header's tint for profile color [profileColor] (td_api.tl `profile_accent_color_id`): the tinted fill of one of
+ * the theme's sender hues, the id picking it (§13.12); transparent without a profile color.
+ */
+@Composable
+private fun profileTint(profileColor: Int?): Color =
+    if (profileColor == null || profileColor < 0) {
+        Color.Transparent
+    } else {
+        MaterialTheme.pingogramColors.senderHues[profileColor]
+            .tinted.container
+    }
 
 /**
  * The bar's expanded height: its collapsed row, then the avatar, the name's line, the status's line and the room the
@@ -162,8 +186,31 @@ private fun ProfileTitle(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
+            EmojiStatus(header.emojiStatusId, expanded)
         }
     }
+}
+
+/**
+ * The user's emoji status after their name (the owner's board 22a): its custom emoji's picture, at the avatar's
+ * smallest size while the bar is [expanded] and an inline icon's collapsed, single-color ones in the title's color;
+ * nothing without a status or a custom emoji renderer (previews). Decorative: the name's heading says it.
+ */
+@Composable
+private fun EmojiStatus(
+    emojiStatusId: Long,
+    expanded: Boolean,
+) {
+    val renderer = LocalCustomEmoji.current ?: return
+    if (emojiStatusId == 0L) return
+    val color = LocalContentColor.current
+    CustomEmojiImage(
+        renderer = renderer,
+        customEmojiId = emojiStatusId,
+        tint = { color },
+        modifier =
+            Modifier.size(if (expanded) MaterialTheme.sizes.avatarExtraSmall else MaterialTheme.sizes.inlineIcon),
+    )
 }
 
 /** The avatar at [MaterialTheme.sizes]' `avatarProfile`, clipped to the shape that morphs while [collapsing]. */

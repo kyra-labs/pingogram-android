@@ -99,6 +99,37 @@ class ChatOpeningViewModelTest {
         }
 
     @Test
+    fun `a channel's direct messages open who wrote for its administrators, a found message its conversation`() =
+        runTest {
+            chats.setChats(forumChat)
+            groups.supergroupMap.value =
+                mapOf(SUPERGROUP_ID to supergroup(10, isChannel = false).copy(isAdministeredDirectMessages = true))
+            assertEquals(ChatOpening.DirectMessages, opening(FORUM_CHAT))
+
+            messages.onMessage =
+                {
+                    _,
+                    id,
+                    ->
+                    Outcome.Success(message(id, chatId = FORUM_CHAT).copy(topic = MessageTopic.DirectMessages(8)))
+                }
+            assertEquals(ChatOpening.Topic(MessageTopic.DirectMessages(8)), opening(FORUM_CHAT, messageId = 12))
+        }
+
+    @Test
+    fun `a forum that shows its topics as tabs opens with them, at a found message's topic`() =
+        runTest {
+            chats.setChats(forumChat)
+            groups.supergroupMap.value =
+                mapOf(SUPERGROUP_ID to supergroup(10, isChannel = false, isForum = true).copy(hasForumTabs = true))
+            assertEquals(ChatOpening.ForumTabs(null), opening(FORUM_CHAT))
+
+            messages.onMessage =
+                { _, id -> Outcome.Success(message(id, chatId = FORUM_CHAT).copy(topic = MessageTopic.Forum(4))) }
+            assertEquals(ChatOpening.ForumTabs(MessageTopic.Forum(4)), opening(FORUM_CHAT, messageId = 12))
+        }
+
+    @Test
     fun `nothing is decided while the supergroup is unknown`() =
         runTest {
             chats.setChats(forumChat)

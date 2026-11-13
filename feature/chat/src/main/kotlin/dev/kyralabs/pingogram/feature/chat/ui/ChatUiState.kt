@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -16,13 +17,17 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
@@ -50,6 +55,7 @@ import kotlinx.collections.immutable.persistentSetOf
  *   of an album by its own); messages not being sent are missing.
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
+ * @property checklistForm the form of a new checklist; null while it is closed.
  * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
  * @property selection selection mode: the selected messages and the toolbar's actions; null outside it.
  * @property report the sheet that reports messages; null while it is closed.
@@ -62,6 +68,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   bar; null while there is none.
  * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
  *   null while the chat has none.
+ * @property showsUpdateLink whether a message Pingogram cannot show offers "Update Pingogram", a link to the latest
+ *   release; false in builds an app store installed (`AppInfo.isFromAppStore`).
  */
 @Immutable
 data class ChatUiState(
@@ -83,6 +91,7 @@ data class ChatUiState(
     val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
+    val checklistForm: ChecklistSheet? = null,
     val sponsoredSheet: SponsoredSheet? = null,
     val selection: MessageSelection? = null,
     val report: ReportSheet? = null,
@@ -91,6 +100,7 @@ data class ChatUiState(
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
     val scheduledBar: ScheduledBar? = null,
+    val showsUpdateLink: Boolean = false,
 )
 
 /**
@@ -321,6 +331,12 @@ sealed interface ChatItem {
      *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
+     * @property pollClosesIn how long its open poll stays open, in seconds, as of the current minute; null for every
+     *   other bubble and for polls that do not close by themselves.
+     * @property pollAdding the inline field for a new answer of its poll, open or sending (`PollOptionEvent`); null
+     *   while it is closed.
+     * @property checklist how its checklist shows beyond the message: who ticked each task, the tasks whose change is
+     *   on its way, the inline field for a new task (`ChecklistEvent`); null for every other bubble.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
      *   scheduled messages, [time] then being its send time; null for messages of the history.
      * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
@@ -367,9 +383,14 @@ sealed interface ChatItem {
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
         val keyboard: BotKeyboard? = null,
+        /** The post the message suggests to a channel, in its direct messages, shown in a card below it. */
+        val suggestedPost: SuggestedPostUi? = null,
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val pollClosesIn: Long? = null,
+        val pollAdding: PollAdding? = null,
+        val checklist: ChecklistUi? = null,
         val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
         val hasShareButton: Boolean = false,
@@ -379,6 +400,7 @@ sealed interface ChatItem {
         val myMentions: ImmutableList<IntRange> = persistentListOf(),
         val isChannelPost: Boolean = false,
         val views: Int = 0,
+        val giveaway: GiveawayUi? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -407,10 +429,28 @@ sealed interface ChatItem {
          * (`docs/DESIGN_SYSTEM.md` §13.6).
          */
         val canWave: Boolean = false,
+        /**
+         * A birthday suggestion (td_api.tl `messageSuggestBirthdate`): shown as its card (the owner's board 16b) in
+         * place of the pill, with "Accept" and "Decline" where it is the user's to answer.
+         */
+        val birthday: ServiceBirthday? = null,
     ) : ChatItem {
         override val key: Any get() = id
 
         override fun toString() = "Service(id=$id, …)"
+    }
+
+    /**
+     * What a birthday suggestion's card shows of its message: the [birthdate] suggested, the other person's [name]
+     * (who suggested it, or for one the user sent, whom to), and whether the user sent it ([outgoing]).
+     */
+    @Immutable
+    data class ServiceBirthday(
+        val birthdate: Birthdate,
+        val name: UiText,
+        val outgoing: Boolean,
+    ) {
+        override fun toString() = "ServiceBirthday(outgoing=$outgoing, …)"
     }
 
     /** The first message of a day follows this: "Today", "Yesterday", "Monday, March 17". */
@@ -580,4 +620,10 @@ data class TypingBubble(
     val text: UiText,
 ) {
     override fun toString() = "TypingBubble(userId=$userId, …)"
+}
+
+/** The inline field for a new answer of a poll: open for typing, or its answer on its way to Telegram. */
+enum class PollAdding {
+    Open,
+    Sending,
 }

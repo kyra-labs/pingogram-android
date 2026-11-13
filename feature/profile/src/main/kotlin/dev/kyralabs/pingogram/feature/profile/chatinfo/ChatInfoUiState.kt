@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -44,6 +45,7 @@ sealed interface ChatInfoUiState {
         val administration: ChatAdministration? = null,
         val dialog: ChatInfoDialog? = null,
         val id: Long? = null,
+        val community: CommunityLink? = null,
     ) : ChatInfoUiState
 }
 
@@ -95,7 +97,8 @@ data class MembersPreview(
 
 /**
  * The rows administrators get, each where their rights allow it: editing the title and description, the default
- * permissions and slow mode (groups), the administrators, the invite links, and the removed users.
+ * permissions and slow mode (groups), the administrators, the invite links, the removed users, and a supergroup's
+ * welcome messages.
  */
 @Immutable
 data class ChatAdministration(
@@ -111,12 +114,13 @@ data class ChatAdministration(
     val joinRequestCount: Int? = null,
     val canViewRecentActions: Boolean = false,
     val canViewStatistics: Boolean = false,
+    val canManageWelcomeMessages: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
-                joinRequestCount == null && !canViewRecentActions && !canViewStatistics
+                joinRequestCount == null && !canViewRecentActions && !canViewStatistics && !canManageWelcomeMessages
 }
 
 /**
@@ -124,8 +128,9 @@ data class ChatAdministration(
  *
  * @property name the user's full name ("Deleted Account" for a deleted one), or a chat's title.
  * @property status "online", "last seen …", "bot"; null for chats.
- * @property role what the trailing label says: "Owner", "Admin" or the member's tag, "Restricted", "Removed"; null for
- *   other members.
+ * @property role what the trailing label says: "Owner", "Admin", "Restricted", "Removed"; null for other members.
+ * @property tag the member's tag (td_api.tl `chatMember.tag`), shown as a pill after the name; null without one.
+ * @property isAdministrator the member is the owner or an administrator: their tag shows in the accent color.
  * @property actions what the current user may do to the member, from the row's menu; empty for none.
  */
 @Immutable
@@ -138,6 +143,8 @@ data class MemberItem(
     val status: UiText? = null,
     val isOnline: Boolean = false,
     val role: UiText? = null,
+    val tag: String? = null,
+    val isAdministrator: Boolean = false,
     val actions: ImmutableList<MemberAction> = persistentListOf(),
 ) {
     /** The row's key in a list: users and chats have ids of their own kinds. */
@@ -153,6 +160,9 @@ data class MemberItem(
 
 /** What an administrator may do to a member, from the row's menu. */
 enum class MemberAction {
+    /** Set, change or remove the member's tag, in the "Set tag" sheet; the user's own where the group allows it. */
+    SetTag,
+
     /** Make the member an administrator, choosing their rights. */
     Promote,
 
@@ -224,6 +234,9 @@ sealed interface ChatInfoEvent {
 
     data object ShowQrCode : ChatInfoEvent
 
+    /** Open the page of the community the chat belongs to. */
+    data object OpenCommunity : ChatInfoEvent
+
     /** Put the description on the clipboard. */
     data object CopyDescription : ChatInfoEvent
 
@@ -248,6 +261,13 @@ sealed interface ChatInfoEvent {
     ) : ChatInfoEvent
 }
 
+/** The community a chat belongs to: its [id], and its [name], empty while TDLib has not announced it. */
+@Immutable
+data class CommunityLink(
+    val id: Long,
+    val name: String,
+)
+
 /** The pages the info page opens: those for administrators, and the export for anyone. */
 enum class ChatInfoPage {
     EditInfo,
@@ -259,6 +279,9 @@ enum class ChatInfoPage {
 
     /** The people waiting for an administrator to let them join. */
     JoinRequests,
+
+    /** What each new member of a supergroup sees once, right after joining (the owner's board 20). */
+    WelcomeMessages,
 
     /** What administrators and members did in the last 48 hours, for supergroups and channels. */
     RecentActions,
@@ -291,11 +314,21 @@ sealed interface ChatInfoEffect {
         val page: ChatInfoPage,
     ) : ChatInfoEffect
 
+    /** Open the page of community [communityId], which the chat belongs to. */
+    data class OpenCommunity(
+        val communityId: Long,
+    ) : ChatInfoEffect
+
     /** The user left or deleted the chat, which is gone from the lists: the page and the conversation close. */
     data object Left : ChatInfoEffect
 
     /** The history was cleared: a snackbar says so. */
     data object HistoryCleared : ChatInfoEffect
+
+    /** The owner chose a next owner, but the ownership cannot be transferred now, because of [check]: a snackbar. */
+    data class TransferUnavailable(
+        val check: OwnershipTransferCheck,
+    ) : ChatInfoEffect
 
     /** An action failed: a snackbar shows the error's text, none for [DomainError.Silent]. */
     data class ShowError(

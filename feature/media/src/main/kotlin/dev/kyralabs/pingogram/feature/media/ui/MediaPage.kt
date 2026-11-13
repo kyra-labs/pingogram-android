@@ -164,7 +164,7 @@ private fun Modifier.pageGestures(
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
-    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom) } else Modifier)
+    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier)
 }
 
 /** Scaled and moved as [zoom] says, in the draw phase; unchanged without one. */
@@ -194,9 +194,19 @@ private fun BoxScope.MediaLayers(
         BlurredMinithumbnail(media.minithumbnail, Modifier.matchParentSize())
     } else {
         when (media) {
-            is ViewerMedia.Image -> PhotoLayers(media, files)
-            is ViewerMedia.Clip -> VideoLayers(media, media.thumbnail, playback, videoSurface)
-            is ViewerMedia.Gif -> VideoLayers(media, media.thumbnail, playback, videoSurface)
+            is ViewerMedia.Image -> {
+                // A live photo's motion plays over the still once its first frame shows (a GIF's playback).
+                if (playback != null) videoSurface(Modifier.matchParentSize())
+                if (playback?.showsFrame != true) PhotoLayers(media, files)
+            }
+
+            is ViewerMedia.Clip -> {
+                VideoLayers(media, media.thumbnail, playback, videoSurface)
+            }
+
+            is ViewerMedia.Gif -> {
+                VideoLayers(media, media.thumbnail, playback, videoSurface)
+            }
         }
     }
 }

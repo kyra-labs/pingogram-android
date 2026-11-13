@@ -9,6 +9,7 @@ import android.content.res.Resources
 import android.os.Build
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,6 +21,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
+import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -38,7 +41,8 @@ import kotlinx.coroutines.launch
  * [onExportChat], where given, the export page of the private chat (`docs/adr/0021-chat-export.md`).
  * Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar before Android 13, which
  * confirms copies itself), a phone number to the dialer (`ACTION_DIAL`, no permission), a username's link to the
- * system's share sheet. The dialogs and the report sheet show over the screen while the view model has one.
+ * system's share sheet. The dialogs, the note dialog and the report sheet show over the screen while the view model has
+ * one.
  */
 @Suppress("LongParameterList") // The app's navigation from the profile.
 @Composable
@@ -51,11 +55,14 @@ internal fun ProfileRoute(
     modifier: Modifier = Modifier,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
+    storyAlbums: StoryAlbumsSlot? = null,
+    profileMusic: ProfileMusicSlot? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val media by viewModel.media.collectAsStateWithLifecycle()
     val reportSheet by viewModel.reportSheet.collectAsStateWithLifecycle()
+    val noteEditor by viewModel.noteEditor.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
@@ -71,20 +78,28 @@ internal fun ProfileRoute(
     ProfileEffects(viewModel.effects, snackbarHostState, onOpenChat, onOpenProfile)
     val userId = (state as? ProfileUiState.Content)?.header?.userId
     val exportChatId = (state as? ProfileUiState.Content)?.actions?.exportChatId
-    ProfileScreen(
-        state = state,
-        media = media,
-        onEvent = viewModel::onEvent,
-        onMediaEvent = viewModel::onMediaEvent,
-        onBack = onBack,
-        mediaActions = mediaActions,
-        modifier = modifier,
-        onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
-        onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
-        snackbarHostState = snackbarHostState,
-    )
+    val header = (state as? ProfileUiState.Content)?.header
+    val emojiStatus: EmojiStatusViewModel = hiltViewModel()
+    LaunchedEffect(header?.emojiStatusId) { header?.emojiStatusId?.let(emojiStatus::show) }
+    CompositionLocalProvider(LocalCustomEmoji provides rememberCustomEmojiRenderer(emojiStatus.customEmoji)) {
+        ProfileScreen(
+            state = state,
+            media = media,
+            onEvent = viewModel::onEvent,
+            onMediaEvent = viewModel::onMediaEvent,
+            onBack = onBack,
+            mediaActions = mediaActions,
+            modifier = modifier,
+            onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
+            onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
+            snackbarHostState = snackbarHostState,
+            storyAlbums = storyAlbums,
+            profileMusic = profileMusic,
+        )
+    }
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)
     reportSheet?.let { ReportProfileSheet(it, viewModel.reportComment, viewModel::onEvent) }
+    noteEditor?.let { ContactNoteDialog(it, viewModel::onEvent) }
 }
 
 /**
@@ -141,18 +156,12 @@ internal fun ProfileEffects(
                         ""
                     }
 
-                    is ProfileEffect.BlockChanged -> {
-                        val name = effect.name.resolve(resources).bidiIsolated()
-                        val text = if (effect.blocked) R.string.profile_blocked else R.string.profile_unblocked
-                        resources.getString(text, name).bidiIsolated()
-                    }
-
-                    ProfileEffect.Reported -> {
-                        resources.getString(R.string.profile_reported)
-                    }
-
-                    ProfileEffect.ReportNeedsMessages -> {
-                        resources.getString(R.string.profile_report_needs_messages)
+                    is ProfileEffect.BlockChanged,
+                    is ProfileEffect.BirthdaySuggested,
+                    ProfileEffect.Reported,
+                    ProfileEffect.ReportNeedsMessages,
+                    -> {
+                        resources.notice(effect)
                     }
                 }
             if (message.isNotEmpty()) {
@@ -163,6 +172,31 @@ internal fun ProfileEffects(
         }
     }
 }
+
+/** What a snackbar says after blocking, suggesting a birthday or reporting; empty for the other effects. */
+private fun Resources.notice(effect: ProfileEffect): String =
+    when (effect) {
+        is ProfileEffect.BlockChanged -> {
+            val name = effect.name.resolve(this).bidiIsolated()
+            getString(if (effect.blocked) R.string.profile_blocked else R.string.profile_unblocked, name).bidiIsolated()
+        }
+
+        is ProfileEffect.BirthdaySuggested -> {
+            getString(R.string.profile_birthday_suggested, effect.name.bidiIsolated()).bidiIsolated()
+        }
+
+        ProfileEffect.Reported -> {
+            getString(R.string.profile_reported)
+        }
+
+        ProfileEffect.ReportNeedsMessages -> {
+            getString(R.string.profile_report_needs_messages)
+        }
+
+        else -> {
+            ""
+        }
+    }
 
 /** What a snackbar says after copying, before Android 13. */
 private fun Resources.copied(what: CopiedText): String =

@@ -141,10 +141,14 @@ sealed interface ViewerMedia {
     /** The file the viewer downloads in full: the largest size of a photo, a video's or GIF's own file. */
     val fileId: Int
 
-    /** [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. */
+    /**
+     * [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. A live photo's
+     * [motion] plays over it, muted and looping, once on the device.
+     */
     data class Image(
         val photo: Photo,
         val full: PhotoSize,
+        val motion: Video? = null,
     ) : ViewerMedia {
         override val width get() = full.width
         override val height get() = full.height
@@ -201,7 +205,8 @@ data class MediaCount(
  * The video or GIF of message [messageId] in the player: playing or paused as [isPlaying] says, and [showsFrame] once
  * its first frame is on the surface, which uncovers it. How far a video has played is snapshot state that [progress]
  * reads (0–1), so the position moving re-emits nothing: only what reads it in the draw or layout phase follows it.
- * [waitsForTap] while power saving keeps it from playing by itself, until its play button is tapped.
+ * [waitsForTap] while power saving keeps it from playing by itself, until its play button is tapped. [canHandOff] once
+ * it is a video the player has started, which picture-in-picture can take where it is.
  */
 @Stable
 data class VideoPlayback(
@@ -212,6 +217,7 @@ data class VideoPlayback(
     /** How far the player has the video, 0–1, read in the seek bar's draw phase. */
     val buffered: () -> Float = progress,
     val waitsForTap: Boolean = false,
+    val canHandOff: Boolean = false,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -271,6 +277,11 @@ sealed interface MediaViewerEvent {
 
     /** Forward was tapped: the forward sheet opens for the current item's message. */
     data object Forward : MediaViewerEvent
+
+    /** "Make a sticker" was chosen for the current photo, of file [fileId] (boards 14a, 14b). */
+    data class MakeSticker(
+        val fileId: Int,
+    ) : MediaViewerEvent
 
     /**
      * The screen checked, after [MediaViewerEffect.CheckStoragePermission], whether the system wants the reason for
@@ -349,6 +360,11 @@ sealed interface MediaViewerEffect {
     /** The user deleted the last item the viewer showed: it closes. */
     data object Close : MediaViewerEffect
 
+    /** Open the sticker maker on the photo of file [fileId], in the viewer's place. */
+    data class MakeSticker(
+        val fileId: Int,
+    ) : MediaViewerEffect
+
     /** The file could not be saved into the gallery: a snackbar says so. */
     data object SaveFailed : MediaViewerEffect
 
@@ -365,11 +381,16 @@ sealed interface MediaViewerEffect {
     data object StoragePermissionDenied : MediaViewerEffect
 }
 
-/** Whether the current item is a video that plays, which a swipe up hands to picture-in-picture. */
+/**
+ * Whether the current item is a video the player has started, which a swipe up hands to picture-in-picture. Not a
+ * GIF, nor a video waiting for its play button (power saving) or for the screen: the player could not hand those
+ * over, so a swipe up closes the viewer as a swipe down does.
+ */
 internal val MediaViewerUiState.Content?.playsVideo: Boolean
     get() =
         this != null &&
             playback?.messageId == current.messageId &&
+            playback.canHandOff &&
             current.media is ViewerMedia.Clip
 
 /** The action on the current item's file that [MediaViewerEvent.Share], `Save` and `Copy` ask for; null for others. */

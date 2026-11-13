@@ -29,6 +29,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersList
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersPreview
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MoreMembers
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveSheet
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveStep
 import dev.kyralabs.pingogram.feature.profile.chatinfo.Permission
 import dev.kyralabs.pingogram.feature.profile.chatinfo.RightSwitch
 import dev.kyralabs.pingogram.feature.profile.chatinfo.TransferDialog
@@ -53,6 +55,7 @@ object ChatInfoPreviewData {
         name: String,
         status: UiText? = UiText.resource(UiR.string.user_status_online),
         role: UiText? = null,
+        tag: String? = null,
         actions: List<MemberAction> = listOf(MemberAction.Promote, MemberAction.Restrict, MemberAction.Remove),
     ) = MemberItem(
         sender = MessageSender.User(id),
@@ -62,14 +65,22 @@ object ChatInfoPreviewData {
         status = status,
         isOnline = status == UiText.resource(UiR.string.user_status_online),
         role = role,
+        tag = tag,
+        isAdministrator = role != null,
         actions = actions.toImmutableList(),
     )
 
     val members =
         persistentListOf(
             member(1, "Grace Hopper", role = UiText.resource(R.string.chat_info_role_owner), actions = emptyList()),
-            member(2, "Ada Lovelace", role = UiText.Plain("Moderator"), actions = listOf(MemberAction.EditRights)),
-            member(3, "Alan Turing", status = UiText.Plain("last seen 5 minutes ago")),
+            member(
+                2,
+                "Ada Lovelace",
+                role = UiText.resource(R.string.chat_info_role_admin),
+                tag = "Moderator",
+                actions = listOf(MemberAction.SetTag, MemberAction.EditRights),
+            ),
+            member(3, "Alan Turing", status = UiText.Plain("last seen 5 minutes ago"), tag = "Beta tester"),
             member(4, "Katherine Johnson", status = UiText.Plain("last seen yesterday at 9:41 PM")),
             member(5, "Edsger Dijkstra", status = UiText.Plain("last seen recently")),
         )
@@ -183,6 +194,27 @@ object ChatInfoPreviewData {
 
     /** Telegram transfers the ownership. */
     val transferring = transferDialog.copy(isTransferring = true)
+
+    /** The owner leaving a group with two other administrators, letting Telegram choose (which names Ada). */
+    val ownerLeave =
+        OwnerLeaveSheet(
+            kind = GroupKind.Supergroup,
+            heir = UiText.Plain("Ada Lovelace"),
+            candidates =
+                persistentListOf(
+                    member(2, "Ada Lovelace", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                    member(3, "Alan Turing", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                ),
+        )
+
+    /** The owner chose Alan, and types the 2-step verification password. */
+    val ownerLeavePassword = ownerLeave.copy(chosen = 3, step = OwnerLeaveStep.Password)
+
+    /** The password was wrong. */
+    val ownerLeaveWrongPassword = ownerLeavePassword.copy(error = DomainError.PasswordInvalid)
+
+    /** A basic group without other administrators, while Telegram has not said who it would choose. */
+    val ownerLeaveNoAdmins = OwnerLeaveSheet(kind = GroupKind.BasicGroup, candidates = persistentListOf())
 
     val restrictions =
         MemberRightsUiState.Content(

@@ -148,6 +148,7 @@ internal class FakeContacts : ContactRepository {
         firstName: String,
         lastName: String,
         sharePhoneNumber: Boolean,
+        note: String?,
     ): Outcome<Unit> = Outcome.Success(Unit)
 
     override suspend fun delete(userId: Long): Outcome<Unit> = Outcome.Success(Unit)

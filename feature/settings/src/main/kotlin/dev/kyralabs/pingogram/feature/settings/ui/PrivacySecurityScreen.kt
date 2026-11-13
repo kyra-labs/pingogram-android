@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
+import dev.kyralabs.pingogram.feature.settings.ui.passkeys.passkeysItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -156,8 +158,11 @@ internal fun PrivacySecurityScreen(
             }
 
             is PrivacySecurityUiState.Content -> {
-                PrivacyCheckupCard(state, onOpen)
-                PrivacySection(state, onOpen)
+                // One child of the page with the section below it, so the gap it holds goes with it.
+                Column {
+                    PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
+                    PrivacySection(state, onOpen)
+                }
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(
@@ -276,6 +281,7 @@ private fun SecuritySection(
                 onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
         }
+        passkeysItem { onOpen(PrivacySecurityPage.Passkeys) }
         item { shapes ->
             TwoStepVerificationItem(
                 summary = state.twoStepVerification,

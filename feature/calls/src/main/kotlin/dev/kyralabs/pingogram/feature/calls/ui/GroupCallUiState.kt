@@ -44,6 +44,8 @@ sealed interface GroupCallUiState {
         /** A conference call (`docs/adr/0025-conference-calls.md`): no chat, and [emojis] to compare. */
         val isConference: Boolean = false,
         val emojis: ImmutableList<String> = persistentListOf(),
+        /** A chat's live story (board 12): the stream full screen under its header, the comments below. */
+        val isLiveStory: Boolean = false,
         /** "01:23" once connected. */
         val duration: String? = null,
         /** How many are in it; null while TDLib has not said. */
@@ -60,6 +62,8 @@ sealed interface GroupCallUiState {
         val canEnd: Boolean = false,
         /** A conference call: "Add people" heads the participants (`docs/adr/0025-conference-calls.md`). */
         val canInvite: Boolean = false,
+        /** A conference call's link (`t.me/call/…`), which its "Invite link" chip shares; null while unknown. */
+        val inviteLink: String? = null,
         val route: AudioRoute? = null,
         val routes: ImmutableList<AudioRoute> = persistentListOf(),
         val video: GroupCallVideoUi = GroupCallVideoUi(),

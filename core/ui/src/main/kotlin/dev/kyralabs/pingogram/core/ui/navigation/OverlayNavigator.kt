@@ -218,10 +218,18 @@ private fun OverlayEntry(
     state.targetState = target
     val transition = rememberTransition(state, label = "overlay")
     val motionScheme = MaterialTheme.motionScheme
+    // In on the default effects spring, out on the fast one, as every fade (docs/DESIGN_SYSTEM.md §5.1, Q-02).
     val alpha =
-        transition.animateFloat({ motionScheme.defaultEffectsSpec() }, label = "overlayAlpha") {
-            if (it == EnterExitState.Visible) 1f else 0f
-        }
+        transition.animateFloat(
+            {
+                if (targetState == EnterExitState.Visible) {
+                    motionScheme.defaultEffectsSpec()
+                } else {
+                    motionScheme.fastEffectsSpec()
+                }
+            },
+            label = "overlayAlpha",
+        ) { if (it == EnterExitState.Visible) 1f else 0f }
     val scope = remember(transition) { OverlayVisibility(transition) }
     val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
     OverlayTransitionTrace(state)

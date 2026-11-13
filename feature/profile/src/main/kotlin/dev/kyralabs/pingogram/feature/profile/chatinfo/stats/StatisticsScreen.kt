@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.chart.StatisticsChart
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -146,7 +147,9 @@ private fun StatisticsList(
         if (state.overview.isNotEmpty()) {
             item(key = OVERVIEW, contentType = OVERVIEW) { Overview(state, rowModifier) }
         }
-        items(state.graphs, key = { it.key }, contentType = { GRAPH }) { graph -> Graph(graph, rowModifier) }
+        items(state.graphs, key = { it.key }, contentType = { GRAPH }) { graph ->
+            GraphCard(stringResource(graph.title), graph.state, rowModifier)
+        }
         if (state.topSenders.isNotEmpty()) {
             item(key = TOP, contentType = TOP) { TopSenders(state, onEvent, rowModifier) }
         }
@@ -188,10 +191,16 @@ private fun Overview(
     ProfileGroup(rows, modifier, title = stringResource(R.string.statistics_overview))
 }
 
+/**
+ * A chart in a segment of its own under [title]: a `LoadingIndicator` while Telegram makes it, [emptyText] where it has
+ * no data, else `core:ui`'s [StatisticsChart]. Also the poll statistics page's.
+ */
 @Composable
-private fun Graph(
-    graph: GraphItem,
+internal fun GraphCard(
+    title: String,
+    state: GraphState,
     modifier: Modifier,
+    emptyText: String = stringResource(R.string.statistics_graph_empty),
 ) {
     Surface(modifier, shape = MaterialTheme.shapes.large, color = profileRowContainerColor()) {
         Column(
@@ -199,14 +208,14 @@ private fun Graph(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         ) {
             Text(
-                text = stringResource(graph.title),
+                text = title,
                 modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleSmallEmphasized,
             )
-            when (val chart = graph.state) {
+            when (state) {
                 GraphState.Loading -> GraphLoading()
-                GraphState.Empty -> GraphEmpty()
-                is GraphState.Drawn -> StatisticsChart(chart.chart, Modifier.fillMaxWidth())
+                GraphState.Empty -> GraphEmpty(emptyText)
+                is GraphState.Drawn -> StatisticsChart(state.chart, Modifier.fillMaxWidth())
             }
         }
     }
@@ -222,9 +231,9 @@ private fun GraphLoading() {
 }
 
 @Composable
-private fun GraphEmpty() {
+private fun GraphEmpty(text: String) {
     Text(
-        text = stringResource(R.string.statistics_graph_empty),
+        text = text,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodyMedium,
     )

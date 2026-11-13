@@ -67,6 +67,10 @@ private fun TdApi.ChatEventAction.memberAction(): ChatEventAction? =
             }
         }
 
+        is TdApi.ChatEventMemberTagChanged -> {
+            ChatEventAction.MemberTagChanged(userId, oldTag.orEmpty(), newTag.orEmpty())
+        }
+
         else -> {
             null
         }
@@ -164,6 +168,7 @@ internal fun Set<ChatEventFilter>.toTdFilters(): TdApi.ChatEventLogFilters? {
         it.memberLeaves = ChatEventFilter.MemberLeaves in this
         it.memberInvites = ChatEventFilter.MemberInvites in this
         it.memberPromotions = ChatEventFilter.MemberPromotions in this
+        it.memberTagChanges = ChatEventFilter.MemberTagChanges in this
         it.memberRestrictions = ChatEventFilter.MemberRestrictions in this
         it.infoChanges = ChatEventFilter.InfoChanges in this
         it.settingChanges = ChatEventFilter.SettingChanges in this

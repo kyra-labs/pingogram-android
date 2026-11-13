@@ -8,9 +8,11 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.DirectMessagesRoute
 import dev.kyralabs.pingogram.feature.chat.ui.saved.SavedMessagesConversation
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpening
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpeningViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTabsConversation
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
 
 /**
@@ -133,6 +135,14 @@ private fun OpenedChat(
 
         is ChatOpening.Topic -> {
             conversation(shown.topic)
+        }
+
+        ChatOpening.DirectMessages -> {
+            DirectMessagesRoute(chatId, onBack, { onOpenThread(chatId, MessageTopic.DirectMessages(it)) }, modifier)
+        }
+
+        is ChatOpening.ForumTabs -> {
+            ForumTabsConversation(chatId, shown.topic?.topicId, messageId, conversationAt)
         }
     }
 }

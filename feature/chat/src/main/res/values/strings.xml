@@ -142,6 +142,18 @@
     <string name="composer_join_group">Join group</string>
     <string name="composer_join_channel">Join channel</string>
     <string name="composer_request_to_join">Request to join</string>
+    <!-- A channel's direct messages (the owner's boards 7a and 7b): the user's private thread with the channel. -->
+    <string name="composer_message_channel">Message channel</string>
+    <!-- %1$s: the Telegram Stars each message costs, as a number. ★ stands for Telegram Stars. -->
+    <string name="composer_message_channel_paid">Message · %1$s ★</string>
+    <plurals name="composer_message_channel_paid_description">
+        <item quantity="one">Message channel, %d Telegram Star per message</item>
+        <item quantity="other">Message channel, %d Telegram Stars per message</item>
+    </plurals>
+    <plurals name="composer_channel_charges">
+        <item quantity="one">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+        <item quantity="other">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+    </plurals>
     <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
     <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->
@@ -164,6 +176,8 @@
     <string name="composer_schedule_back">Back</string>
     <string name="composer_schedule_confirm">Schedule</string>
     <string name="composer_schedule_past">Choose a time in the future</string>
+    <string name="composer_schedule_repeat">Repeat</string>
+    <string name="composer_schedule_repeat_never">Never</string>
     <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
     <string name="composer_scheduled">Message scheduled for %1$s</string>
     <!-- The bar above the text field while replying: its close button. -->
@@ -226,6 +240,13 @@
     <string name="panel_tab_stickers">Stickers</string>
     <string name="panel_tab_gifs">GIFs</string>
     <string name="panel_gifs_search">Search GIFs</string>
+    <!-- Above the GIFs while the message field holds text, which a GIF tapped below takes as its caption. -->
+    <string name="chat_gif_caption_note">Your text goes with the GIF as its caption</string>
+    <!-- The caption's place, "Below" and "Above" the GIF, for screen readers. -->
+    <string name="chat_gif_caption_below_description">Caption below the GIF</string>
+    <string name="chat_gif_caption_above_description">Caption above the GIF</string>
+    <string name="chat_gif_caption_below">Below</string>
+    <string name="chat_gif_caption_above">Above</string>
     <string name="panel_gifs_clear">Clear search</string>
     <string name="panel_gifs_empty_title">No saved GIFs</string>
     <string name="panel_gifs_empty_body">GIFs you send show here. Search above to find one.</string>
@@ -276,6 +297,12 @@
     <string name="voice_state_paused">Paused</string>
     <string name="voice_pause">Pause recording</string>
     <string name="voice_resume">Resume recording</string>
+    <!-- A paused voice recording's trim, for screen readers: the part that will be sent, %1$s to %2$s, of all of it (%3$s); times as "0:07". -->
+    <string name="voice_trim_description">Trim: keeps %1$s to %2$s of %3$s</string>
+    <string name="voice_trim_start_later">Start one second later</string>
+    <string name="voice_trim_start_earlier">Start one second earlier</string>
+    <string name="voice_trim_end_earlier">End one second earlier</string>
+    <string name="voice_trim_end_later">End one second later</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
     <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
     <string name="voice_permission_allow">Allow</string>
@@ -384,13 +411,13 @@
     <string name="poll_remove_option">Remove option %1$d</string>
     <!-- Screen readers: the radio button that marks option %1$d as the quiz's correct answer. -->
     <string name="poll_correct_option">Option %1$d is the correct answer</string>
-    <string name="poll_choose_correct">Choose the correct answer</string>
+    <string name="poll_choose_correct">Choose the correct answers</string>
     <string name="poll_settings">Settings</string>
     <string name="poll_anonymous">Anonymous voting</string>
     <string name="poll_anonymous_channel">Polls in channels are always anonymous</string>
     <string name="poll_multiple">Multiple answers</string>
     <string name="poll_quiz">Quiz mode</string>
-    <string name="poll_quiz_note">One answer is correct, and votes can\'t be changed</string>
+    <string name="poll_quiz_note">Some answers are correct, and votes can\'t be changed</string>
 
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
@@ -698,4 +725,88 @@
     <string name="chat_wave">Wave</string>
     <!-- Screen readers: the pane of stickers suggested above the composer for the emoji typed alone. -->
     <string name="panel_sticker_suggestions">Sticker suggestions</string>
+
+    <!-- The welcome pack a new member of a group sees (the owner's board 6). -->
+    <string name="welcome_pack_label">Welcome message · only you see this</string>
+    <string name="welcome_pack_title">Welcome message</string>
+    <string name="welcome_pack_got_it">Got it</string>
+    <string name="welcome_pack_open">Open the welcome message</string>
+    <!-- The AI text editor of the composer: Telegram's AI fixes, rewrites or translates the message being written. -->
+    <string name="ai_editor_menu">Edit with AI</string>
+    <string name="ai_editor_title">Edit with AI</string>
+    <string name="ai_editor_consent_text">Telegram\'s AI can fix, rewrite or translate what you write. Your text is sent to Telegram\'s AI only when you tap Fix, Rewrite or Translate. Nothing is sent to the chat until you send it yourself.</string>
+    <string name="ai_editor_not_now">Not now</string>
+    <string name="ai_editor_continue">Continue</string>
+    <string name="ai_editor_mode_fix">Fix</string>
+    <string name="ai_editor_mode_rewrite">Rewrite</string>
+    <string name="ai_editor_mode_translate">Translate</string>
+    <string name="ai_editor_action_fix">Fix text</string>
+    <string name="ai_editor_action_rewrite">Rewrite</string>
+    <string name="ai_editor_action_translate">Translate</string>
+    <string name="ai_editor_style">Style</string>
+    <string name="ai_editor_keep_style">Keep its style</string>
+    <!-- A style a user made: %1$s is its title. -->
+    <string name="ai_editor_custom_style">%1$s · custom</string>
+    <string name="ai_editor_no_styles">Telegram hasn\'t sent its styles yet.</string>
+    <string name="ai_editor_language">Translate into</string>
+    <string name="ai_editor_add_emoji">Add emoji</string>
+    <string name="ai_editor_working">Telegram\'s AI is working…</string>
+    <string name="ai_editor_note">Nothing is sent to the chat until you send it. \"Use\" puts the result in the message field.</string>
+    <string name="ai_editor_cancel">Cancel</string>
+    <string name="ai_editor_use">Use</string>
+    <!-- Screen readers: %1$s is the text Telegram's AI gave. -->
+    <string name="ai_editor_result_description">Result: %1$s</string>
+    <plurals name="ai_editor_changes">
+        <item quantity="one">%d change</item>
+        <item quantity="other">%d changes</item>
+    </plurals>
+    <string name="ai_editor_used">Text replaced</string>
+    <string name="ai_editor_undo">Undo</string>
+    <!-- A style of the AI editor that someone shared by a link. -->
+    <string name="ai_style_custom">Custom style</string>
+    <plurals name="ai_style_used_by">
+        <item quantity="one">Custom style · used by %1$s person</item>
+        <item quantity="other">Custom style · used by %1$s people</item>
+    </plurals>
+    <plurals name="ai_style_limit">
+        <item quantity="one">You can add %d custom style. Telegram Premium allows more.</item>
+        <item quantity="other">You can add up to %d custom styles. Telegram Premium allows more.</item>
+    </plurals>
+    <string name="ai_style_before">Before</string>
+    <string name="ai_style_after">After</string>
+    <string name="ai_style_add">Add style</string>
+    <string name="ai_style_remove">Remove style</string>
+    <string name="ai_style_close">Close</string>
+    <string name="ai_style_not_found">Style not found</string>
+    <string name="ai_style_try_again">Try again</string>
+    <!-- The chat action bar: what Telegram suggests about a chat someone new started. %1$s is the other person's first name. -->
+    <string name="action_bar_not_contact_named">%1$s isn\'t in your contacts</string>
+    <string name="action_bar_not_contact">Not in your contacts</string>
+    <string name="action_bar_spam">Someone you don\'t know added you here</string>
+    <string name="action_bar_share_phone_title_named">%1$s can\'t see your phone number</string>
+    <string name="action_bar_share_phone_title">This contact can\'t see your phone number</string>
+    <!-- Who asked to join which group or channel and when: %1$s the person, %2$s the group or channel, %3$s the day. -->
+    <string name="action_bar_join_group_named">%1$s asked to join %2$s on %3$s</string>
+    <string name="action_bar_join_channel_named">%1$s asked to join your channel %2$s on %3$s</string>
+    <string name="action_bar_join_group">Asked to join %1$s on %2$s</string>
+    <string name="action_bar_join_channel">Asked to join your channel %1$s on %2$s</string>
+    <!-- What Telegram tells of the account: %1$s is a month and year ("March 2024"). -->
+    <string name="action_bar_registered">Joined Telegram in %1$s</string>
+    <!-- %1$s is a country or region ("Germany"). -->
+    <string name="action_bar_phone_country">Phone number from %1$s</string>
+    <!-- %1$s is a day ("Oct 3, 2026"). -->
+    <string name="action_bar_name_changed">Changed their name on %1$s</string>
+    <string name="action_bar_photo_changed">Changed their photo on %1$s</string>
+    <string name="action_bar_block">Block</string>
+    <string name="action_bar_report">Report</string>
+    <string name="action_bar_add_contact">Add contact</string>
+    <string name="action_bar_share_phone">Share my phone number</string>
+    <string name="action_bar_close">Close</string>
+    <string name="action_bar_cancel">Cancel</string>
+    <string name="action_bar_block_title_named">Block %1$s?</string>
+    <string name="action_bar_block_title">Block this person?</string>
+    <string name="action_bar_block_text">They won\'t be able to message or call you. You can unblock them in Privacy and security.</string>
+    <string name="action_bar_blocked">Blocked</string>
+    <string name="action_bar_contact_added">Added to your contacts</string>
+    <string name="action_bar_phone_shared">Phone number shared</string>
 </resources>

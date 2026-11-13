@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.interactions.InteractionsTab
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.InteractionsTabItem
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MoreInteractions
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.ReactionRemovalDialog
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
@@ -104,6 +105,15 @@ internal object InteractionsPreviewData {
                     more = MoreInteractions.None,
                 ),
         )
+
+    /** Every reaction, as the group's administrators see it: each row ends in its options, to remove the reaction. */
+    val adminReactions = allReactions.copy(canRemoveReactions = true)
+
+    /** The question before removing all of Ada's recent reactions. */
+    val removeAll = ReactionRemovalDialog(UiText.Plain("Ada Lovelace"), all = true)
+
+    /** Removing Ada's reaction to the message, while Telegram answers. */
+    val removing = ReactionRemovalDialog(UiText.Plain("Ada Lovelace"), all = false, isRemoving = true)
 
     val loading = seen.copy(content = InteractionsContent.Loading)
 

@@ -50,6 +50,10 @@ internal class DemoGroups : DemoArea {
                 setStatus(world, function.chatId, function.memberId, function.status)
             }
 
+            is TdApi.SetChatMemberTag -> {
+                setTag(world, function.chatId, function.userId, function.tag)
+            }
+
             is TdApi.AddChatMembers -> {
                 addMembers(world, function.chatId, function.userIds.toList())
             }
@@ -165,6 +169,10 @@ internal class DemoGroups : DemoArea {
                 transfer(world, function)
             }
 
+            is TdApi.GetChatOwnerAfterLeaving -> {
+                heir(world, function.chatId)
+            }
+
             else -> {
                 null
             }
@@ -253,7 +261,7 @@ internal class DemoGroups : DemoArea {
         val member =
             TdApi.ChatMember(
                 memberId,
-                "",
+                list.getOrNull(index)?.tag.orEmpty(),
                 DemoData.ME,
                 list.getOrNull(index)?.joinedChatDate ?: world.now,
                 status,
@@ -265,6 +273,23 @@ internal class DemoGroups : DemoArea {
                 else -> TdApi.ChatEventMemberRestricted(memberId, old, status)
             }
         world.groups.record(chatId, action)
+        return okChanged(world.groups.setMembers(chatId, list))
+    }
+
+    /** A member's tag, as the user (the groups' creator) gives it, with the action recorded. */
+    private fun setTag(
+        world: DemoWorld,
+        chatId: Long,
+        userId: Long,
+        tag: String,
+    ): DemoAnswer {
+        if (world.chat(chatId) == null) return notFound()
+        val list = world.groups.membersOf(chatId).toMutableList()
+        val index = list.indexOfFirst { userOf(it) == userId && it.status.isPresent() }
+        if (index < 0) return badRequest("USER_NOT_PARTICIPANT")
+        val old = list[index]
+        list[index] = TdApi.ChatMember(old.memberId, tag, old.inviterUserId, old.joinedChatDate, old.status)
+        world.groups.record(chatId, TdApi.ChatEventMemberTagChanged(userId, old.tag.orEmpty(), tag))
         return okChanged(world.groups.setMembers(chatId, list))
     }
 
@@ -631,6 +656,19 @@ internal class DemoGroups : DemoArea {
             TdApi.ChatEventMemberPromoted(function.userId, TdApi.ChatMemberStatusMember(0), list[index].status),
         )
         return okChanged(groups.setMembers(function.chatId, list) + TdApi.UpdateSupergroup(group))
+    }
+
+    /** Who Telegram would make the owner: the first administrator, else the first person who is no bot. */
+    private fun heir(
+        world: DemoWorld,
+        chatId: Long,
+    ): DemoAnswer {
+        val people =
+            world.groups
+                .membersOf(chatId)
+                .filter { userOf(it) != DemoData.ME && world.users[userOf(it)]?.type is TdApi.UserTypeRegular }
+        val heir = people.firstOrNull { it.status is TdApi.ChatMemberStatusAdministrator } ?: people.firstOrNull()
+        return heir?.let { world.users[userOf(it)] }?.let(::ok) ?: notFound()
     }
 
     private fun deleteHistory(

@@ -58,6 +58,16 @@ internal fun AttachSheets(
             },
         )
     }
+    state.checklistForm?.let { sheet ->
+        ChecklistFormSheet(
+            sheet = sheet,
+            editor = inputs.checklistEditor,
+            onEvent = { event ->
+                onEvent(event)
+                if (event is ChatEvent.SendChecklist) onSent(event.options)
+            },
+        )
+    }
     val composer = state.composer as? ComposerUiState.Available
     if (composer != null && AttachOption.Location in options) {
         LocationSheet(inputs.location, composer.canSchedule, onEvent, onSent)

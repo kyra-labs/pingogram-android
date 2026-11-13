@@ -28,7 +28,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffold
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldDefaults
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldRole
@@ -54,8 +53,10 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.SchemeAnimatedPane
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -114,10 +115,10 @@ internal fun SupportingPanes(
         directive = directive,
         value = value,
         mainPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) { main() }
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) { main() }
         },
         supportingPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) { supporting() }
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) { supporting() }
         },
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
     )
@@ -176,6 +177,7 @@ private fun SharedMediaPaneBody(
     BoxWithConstraints(Modifier.fillMaxSize().consumeWindowInsets(innerPadding)) {
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().padding(remember(innerPadding) { innerPadding.topOnly() }),
@@ -183,7 +185,7 @@ private fun SharedMediaPaneBody(
             contentPadding =
                 remember(innerPadding, extraLarge) { innerPadding.withTop(0.dp).plusBottom(extraLarge) },
         ) {
-            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, emptyBody = emptyBody)
+            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, motion, emptyBody = emptyBody)
         }
     }
 }

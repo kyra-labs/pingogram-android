@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <!-- A frozen account (`docs/DESIGN_SYSTEM.md` §6 "Frozen account"). %1$s is the date Telegram deletes the account. -->
+    <string name="settings_frozen_title">Your account is frozen</string>
+    <string name="settings_frozen_text">Telegram froze your account for breaking its terms of service. You can read your chats, but you can\'t send messages. Unless an appeal succeeds, Telegram deletes the account on %1$s.</string>
+    <string name="settings_frozen_text_no_date">Telegram froze your account for breaking its terms of service. You can read your chats, but you can\'t send messages until an appeal succeeds.</string>
+    <string name="settings_frozen_appeal">Appeal</string>
     <!-- Spoken by screen readers for the back button of a settings page. -->
     <string name="settings_back">Back</string>
     <!-- The page beside Settings home on a wide window while no page is open. -->
@@ -911,10 +916,6 @@
     <!-- For screen readers: the "Change" button of the birthday row; %1$s is the birthday, "December 10". -->
     <string name="settings_edit_profile_birthday_change_label">Change birthday %1$s</string>
     <string name="settings_edit_profile_birthday_privacy">Who can see it</string>
-    <string name="settings_edit_profile_birthday_show_year">Show the year</string>
-    <string name="settings_edit_profile_birthday_remove">Remove</string>
-    <string name="settings_edit_profile_birthday_cancel">Cancel</string>
-    <string name="settings_edit_profile_birthday_done">Done</string>
     <string name="settings_section_profile_phone">Phone number</string>
     <string name="settings_edit_profile_change_number">Change</string>
     <!-- The same button for screen readers: %1$s the phone number. -->
@@ -1248,6 +1249,31 @@
     <string name="settings_proxy_link_connected">Proxy turned on</string>
     <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
     <string name="settings_proxy_link_done">Done</string>
+    <!-- Log in with Telegram: a website's or app's login request (docs/DESIGN_SYSTEM.md §6). -->
+    <string name="settings_oauth_loading">Reading the login request</string>
+    <string name="settings_oauth_title">Log in to %1$s with Telegram?</string>
+    <string name="settings_oauth_website">Website</string>
+    <string name="settings_oauth_app">App</string>
+    <string name="settings_oauth_unverified">Unverified app</string>
+    <string name="settings_oauth_gets">%1$s gets</string>
+    <string name="settings_oauth_gets_what">Your name, username and photo</string>
+    <string name="settings_oauth_as">From your account, %1$s</string>
+    <string name="settings_oauth_browser">Browser</string>
+    <string name="settings_oauth_location">Location, by its address</string>
+    <string name="settings_oauth_messages_bot">Let %1$s message me</string>
+    <string name="settings_oauth_messages">Let its bot message me</string>
+    <string name="settings_oauth_phone">Share my phone number</string>
+    <string name="settings_oauth_ton">It also asks for your TON wallet, which Pingogram doesn\'t share.</string>
+    <string name="settings_oauth_code_title">Which code does %1$s show?</string>
+    <string name="settings_oauth_code_text">Pick the code you see on the website. A wrong one cancels the login.</string>
+    <string name="settings_oauth_allow">Allow</string>
+    <string name="settings_oauth_decline">Decline</string>
+    <string name="settings_oauth_working">Asking Telegram</string>
+    <string name="settings_oauth_done">You\'re logged in to %1$s</string>
+    <string name="settings_oauth_done_text">Pingogram opened it in your browser to go on. It\'s listed in Privacy and security, Websites, where you can log out of it.</string>
+    <string name="settings_oauth_failed">Couldn\'t log in</string>
+    <string name="settings_oauth_try_again">Try again</string>
+    <string name="settings_oauth_close">Close</string>
 
     <!-- Data and storage → Network usage -->
     <string name="settings_network_usage">Network usage</string>
@@ -1326,6 +1352,47 @@
     <string name="settings_website_dialog_title">Log out of this website?</string>
     <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
     <string name="settings_website_parts">%1$s · %2$s</string>
+    <string name="settings_passkeys">Passkeys</string>
+    <string name="settings_passkeys_summary">Sign in with your fingerprint, face or screen lock</string>
+    <string name="settings_passkeys_loading">Loading passkeys</string>
+    <string name="settings_passkeys_card_title">Sign in without SMS codes</string>
+    <string name="settings_passkeys_card_summary">Use your fingerprint, face or screen lock on a device you trust.</string>
+    <string name="settings_passkeys_off">Off</string>
+    <!-- %1$s is a number such as "2", formatted for the language. -->
+    <plurals name="settings_passkeys_on">
+        <item quantity="one">On · %1$s passkey</item>
+        <item quantity="other">On · %1$s passkeys</item>
+    </plurals>
+    <string name="settings_section_passkeys">Your passkeys</string>
+    <string name="settings_passkeys_none">You have no passkeys yet.</string>
+    <string name="settings_passkeys_footer">Passkeys are kept by your password manager, not by Pingogram. Removing one here stops it from signing in to this account.</string>
+    <string name="settings_passkeys_footer_old_android">Passkeys are kept by your password manager, not by Pingogram. Removing one here stops it from signing in to this account. Adding a passkey needs Android 14 or later.</string>
+    <string name="settings_passkey_add">Add passkey</string>
+    <string name="settings_passkey_adding">Adding a passkey</string>
+    <!-- %1$s is a short date such as "Oct 14". -->
+    <string name="settings_passkey_added_on">Added %1$s</string>
+    <!-- %1$s is a short date or time such as "9:41 AM" or "Oct 14". -->
+    <string name="settings_passkey_used_on">used %1$s</string>
+    <string name="settings_passkey_never_used">never used</string>
+    <!-- Joins when a passkey was added and when it was used, e.g. "Added Oct 14 · used 9:41 AM". -->
+    <string name="settings_passkey_dates">%1$s · %2$s</string>
+    <string name="settings_passkey_remove_button">Remove</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_remove">Remove %1$s</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_removing">Removing %1$s</string>
+    <string name="settings_passkey_dialog_title">Remove this passkey?</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_dialog_text">The passkey in %1$s can no longer sign in to your account. Your password manager keeps it until you delete it there.</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_added">Passkey added to %1$s</string>
+    <!-- %1$s is a passkey's name, such as "Google Password Manager". -->
+    <string name="settings_passkey_removed">Removed %1$s</string>
+    <string name="settings_passkey_unavailable">Passkeys aren’t available to Pingogram yet</string>
+    <string name="settings_passkey_failed">Couldn’t add a passkey. Try again.</string>
+    <string name="settings_section_passkeys_also">Also protecting this account</string>
+    <string name="settings_passkeys_two_step_on">On</string>
+    <string name="settings_passkeys_two_step_off">Off</string>
     <string name="settings_contact_joined">Contact joined Telegram</string>
     <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
     <string name="settings_personal_channel">Personal channel</string>
@@ -1437,4 +1504,70 @@
     <string name="settings_home_auto_download_mobile">Automatic download on mobile data</string>
     <string name="settings_home_auto_download_wifi">Automatic download on Wi-Fi</string>
     <string name="settings_home_auto_download_roaming">Automatic download when roaming</string>
+    <!-- A new sticker set (the owner's boards 21a–c) -->
+    <string name="settings_new_sticker_set">New sticker set</string>
+    <string name="settings_new_sticker_set_summary">Make a set of your own from your photos</string>
+    <string name="settings_new_sticker_set_step_name">Step 1 of 2</string>
+    <string name="settings_new_sticker_set_name_text">Give it a name and a link people can open to add it.</string>
+    <string name="settings_new_sticker_set_title_label">Name</string>
+    <string name="settings_new_sticker_set_link_label">Link</string>
+    <string name="settings_new_sticker_set_link_prefix">t.me/addstickers/</string>
+    <string name="settings_new_sticker_set_checking">Checking…</string>
+    <string name="settings_new_sticker_set_available">%1$s is available</string>
+    <string name="settings_new_sticker_set_occupied">Another set has this link</string>
+    <string name="settings_new_sticker_set_invalid">Telegram doesn\'t take this link</string>
+    <string name="settings_new_sticker_set_link_rules">Letters, digits and underscores, starting with a letter, 5 to 64 characters.</string>
+    <string name="settings_new_sticker_set_next">Next</string>
+    <plurals name="settings_new_sticker_set_step_stickers">
+        <item quantity="one">Step 2 of 2 · %1$s sticker</item>
+        <item quantity="other">Step 2 of 2 · %1$s stickers</item>
+    </plurals>
+    <string name="settings_new_sticker_set_stickers_text">Tap a sticker to change its emoji. Long-press it to move or remove it.</string>
+    <string name="settings_new_sticker_set_sticker">Sticker %1$d, emoji %2$s</string>
+    <string name="settings_new_sticker_set_preparing">Making a sticker</string>
+    <string name="settings_new_sticker_set_add">Add sticker</string>
+    <string name="settings_new_sticker_set_move_earlier">Move earlier</string>
+    <string name="settings_new_sticker_set_move_later">Move later</string>
+    <string name="settings_new_sticker_set_remove">Remove</string>
+    <string name="settings_new_sticker_set_footer">Add sticker picks a photo, which becomes a sticker as it is, without being cut out. Up to 120 stickers in a set; anyone with the link can add it.</string>
+    <string name="settings_new_sticker_set_publish">Publish set</string>
+    <string name="settings_new_sticker_set_publishing">Publishing the set</string>
+    <string name="settings_new_sticker_set_published_title">%1$s is live</string>
+    <plurals name="settings_new_sticker_set_published_text">
+        <item quantity="one">%1$s sticker · %2$s</item>
+        <item quantity="other">%1$s stickers · %2$s</item>
+    </plurals>
+    <string name="settings_new_sticker_set_share">Share link</string>
+    <string name="settings_new_sticker_set_open">Open set</string>
+    <string name="settings_new_sticker_set_done">Done</string>
+    <string name="settings_new_sticker_set_emoji_title">Emoji for sticker %1$d</string>
+    <string name="settings_new_sticker_set_emoji_loading">Loading the emoji</string>
+    <string name="settings_new_sticker_set_emoji_smileys">Smileys and emotion</string>
+    <string name="settings_new_sticker_set_emoji_people">People and body</string>
+    <string name="settings_new_sticker_set_emoji_animals">Animals and nature</string>
+    <string name="settings_new_sticker_set_emoji_food">Food and drink</string>
+    <string name="settings_new_sticker_set_emoji_travel">Travel and places</string>
+    <string name="settings_new_sticker_set_emoji_activities">Activities</string>
+    <string name="settings_new_sticker_set_emoji_objects">Objects</string>
+    <string name="settings_new_sticker_set_emoji_symbols">Symbols</string>
+    <string name="settings_new_sticker_set_emoji_flags">Flags</string>
+    <!-- Your name color (the owner's board 22b) -->
+    <string name="settings_profile_color">Your color</string>
+    <string name="settings_profile_color_summary">The color of your name in chats</string>
+    <string name="settings_profile_color_save">Save</string>
+    <string name="settings_profile_color_loading">Loading your color</string>
+    <string name="settings_profile_color_preview">Preview: %1$s, in the chosen color</string>
+    <string name="settings_profile_color_sample">This is how your name looks in groups</string>
+    <string name="settings_profile_color_name">Name color</string>
+    <string name="settings_profile_color_footer">People see your name in this color in groups and on your profile.</string>
+    <string name="settings_profile_color_premium">Premium colors</string>
+    <string name="settings_profile_color_premium_one">Premium color</string>
+    <string name="settings_profile_color_premium_footer">These colors come with a Telegram Premium account. People with Premium can set them; you see them on their profiles.</string>
+    <string name="settings_profile_color_red">Red</string>
+    <string name="settings_profile_color_orange">Orange</string>
+    <string name="settings_profile_color_violet">Violet</string>
+    <string name="settings_profile_color_green">Green</string>
+    <string name="settings_profile_color_cyan">Cyan</string>
+    <string name="settings_profile_color_blue">Blue</string>
+    <string name="settings_profile_color_pink">Pink</string>
 </resources>

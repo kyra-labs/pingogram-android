@@ -141,6 +141,7 @@ fun Avatar(
                 avatarShape = shape.rememberPolygon(size),
                 mark = SelectedMark(check, colors.primary, colors.onPrimary),
                 animationSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultSpatialSpec()),
+                fadeSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultEffectsSpec()),
             ).onlineIndicator(
                 online = isOnline,
                 dotColor = MaterialTheme.pingogramColors.online,

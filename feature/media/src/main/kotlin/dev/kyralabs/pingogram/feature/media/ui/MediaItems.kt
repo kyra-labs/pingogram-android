@@ -46,7 +46,9 @@ internal fun Message.toMediaItem(
 internal fun MessageContent.toViewerMedia(): ViewerMedia? =
     when (this) {
         is MessageContent.Photo -> {
-            largestPhotoSize(photo.sizes)?.takeUnless { isSecret }?.let { full -> ViewerMedia.Image(photo, full) }
+            largestPhotoSize(photo.sizes)?.takeUnless { isSecret }?.let { full ->
+                ViewerMedia.Image(photo, full, motion)
+            }
         }
 
         is MessageContent.Video -> {
@@ -92,12 +94,12 @@ private const val DOCUMENT_SIZE_TYPE = "d"
 
 /**
  * The files the viewer follows for this media: its full file, and a photo's other sizes, the largest of which on the
- * device shows while the full one loads.
+ * device shows while the full one loads, and a live photo's motion.
  */
 internal val ViewerMedia.followedFileIds: List<Int>
     get() =
         when (this) {
-            is ViewerMedia.Image -> photo.sizes.map { it.file.id }
+            is ViewerMedia.Image -> photo.sizes.map { it.file.id } + listOfNotNull(motion?.file?.id)
             is ViewerMedia.Clip, is ViewerMedia.Gif -> listOf(fileId)
         }
 

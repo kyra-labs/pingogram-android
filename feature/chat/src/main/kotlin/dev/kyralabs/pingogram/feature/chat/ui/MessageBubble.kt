@@ -60,14 +60,18 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botButtonActions
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistActions
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
-import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
+import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
@@ -146,6 +150,8 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     selection: RowSelection? = null,
+    check: RowSelection? = selection,
+    reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
@@ -186,7 +192,9 @@ internal fun MessageBubbleRow(
                 },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (selection != null) SelectionCheck(isSelected)
+        if (check != null) {
+            SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
+        }
         BubbleRowContent(
             bubble = bubble,
             fileState = fileState,
@@ -285,6 +293,7 @@ internal fun BubbleRowContent(
  * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
  * while there are some.
  */
+
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
     resources: Resources,
@@ -310,23 +319,16 @@ private fun bubbleActions(
             threadAction(bubble),
             shareAction(bubble, shortcuts),
         ) +
-            contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
-    val original =
-        if (bubble.translation is BubbleTranslation.Shown) {
-            listOf(
-                action(
-                    resources.getString(R.string.message_action_show_original),
-                    TranslationEvent.ShowOriginal(bubble.id),
-                ),
-            )
-        } else {
-            emptyList()
-        }
+            contentActions(bubble, fileState, isPlaying) + suggestedPostActions(bubble.suggestedPost) +
+            messageShortcuts(bubble, shortcuts)
+    val original = listOfNotNull(originalTextAction(resources, bubble)?.let { (label, event) -> action(label, event) })
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val giveaway = giveawayActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
         (bubble.content as? MessageContent.RichMessage)
             ?.let { content ->
@@ -351,7 +353,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + rich + buttons + reactions + allReactions +
+    } + original + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
@@ -456,7 +458,15 @@ private fun PaddedBubble(
                     if (content is MessageContent.RichMessage) {
                         RichMessageBody(bubble, content.message, style, resources, onEvent)
                     } else {
-                        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                        MessageContentBody(
+                            bubble = bubble,
+                            fileState = fileState,
+                            playback = playback,
+                            colors = style.colors,
+                            onEvent = onEvent,
+                            uploads = uploads,
+                            showsUpdateLink = resources.showsUpdateLink,
+                        )
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
@@ -487,7 +497,8 @@ private fun MediaBubble(
 ) {
     val colors = style.colors
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
-    val captionless = bubble.text.text.isEmpty() && bubble.linkPreview == null
+    val captionless =
+        bubble.text.text.isEmpty() && bubble.linkPreview == null && !bubble.content.showsNoteBelowMedia
     val mediaShape = remember(shape, hasHeader, captionless) { shape.mediaCorners(hasHeader, hasFooter = !captionless) }
     val textLayout = remember { TextLayoutHolder() }
     Layout(

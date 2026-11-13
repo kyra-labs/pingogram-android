@@ -52,6 +52,8 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -61,6 +63,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VideoNoteEvent
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ai.LocalAiEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartButton
@@ -81,13 +84,16 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.panel.GifCaption
 import dev.kyralabs.pingogram.feature.chat.ui.panel.StickerSuggestionsInput
+import dev.kyralabs.pingogram.feature.chat.ui.panel.rememberGifCaptionChoice
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
+import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberRecordDrag
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 
@@ -149,15 +155,16 @@ internal fun ChatBottomBar(
     panel: EmojiPanelUiState = EmojiPanelUiState(),
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
     onSendSticker: (Sticker) -> Unit = {},
-    onSendAnimation: (Animation) -> Unit = {},
+    onSendAnimation: (Animation, captionAbove: Boolean) -> Unit = { _, _ -> },
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
+    onOpenChat: (chatId: Long) -> Unit = {},
     bots: BotInput = BotInput(),
     inline: InlineBotInput = InlineBotInput(),
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
-    val drag = remember { RecordDrag() }
+    val drag = rememberRecordDrag()
     val suggestionsState = remember { CommandSuggestionsState() }
     val inlineState = remember { InlineResultsState() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
@@ -172,6 +179,10 @@ internal fun ChatBottomBar(
 
             is ComposerUiState.BotStart -> {
                 BotStartButton(composer, bots.onStart)
+            }
+
+            is ComposerUiState.MessageChannel -> {
+                MessageChannelButton(composer) { onOpenChat(composer.chatId) }
             }
 
             is ComposerUiState.Available -> {
@@ -210,10 +221,18 @@ internal fun ChatBottomBar(
                             botKeyboard = botKeyboard,
                         )
                     }
+                    // A GIF from the panel takes the field's text as its caption, where the GIF tab's bar says.
+                    val gifCaption = rememberGifCaptionChoice()
+                    val gifCaptionBar = remember(gifCaption, text) { GifCaption(gifCaption) { !text.isEmpty } }
                     PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
                         // Not while editing: a sticker would be a new message.
                         val stickers = composer.attachOptions.isNotEmpty()
-                        val sends = PanelSends(onSendSticker, onSendAnimation)
+                        val sends =
+                            PanelSends(
+                                onSendSticker,
+                                { onSendAnimation(it, gifCaption.above) },
+                                gifCaptionBar,
+                            )
                         ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
                     }
                 }
@@ -238,29 +257,6 @@ private fun UnavailableLabel(reason: UiText) {
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodyMedium,
     )
-}
-
-/**
- * The bar of the message the composer replies to or edits, while there is one: it grows in from the top on the motion
- * scheme's spatial spring and fades in on its effects spring, and the last bar shown stays while it leaves.
- */
-@Composable
-private fun BarArea(
-    bar: ComposerBar?,
-    onShow: (messageId: Long) -> Unit,
-    onClose: () -> Unit,
-    onReplace: () -> Unit,
-) {
-    val motionScheme = MaterialTheme.motionScheme
-    var shown by remember { mutableStateOf(bar) }
-    if (bar != null) shown = bar
-    AnimatedVisibility(
-        visible = bar != null,
-        enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
-        exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
-    ) {
-        shown?.let { ComposerBarRow(it, onShow, onClose, onReplace = onReplace) }
-    }
 }
 
 /**
@@ -310,56 +306,58 @@ private fun Composer(
     var scheduling by rememberSaveable { mutableStateOf(false) }
     val canSend by remember(text) { derivedStateOf { !text.isBlank } }
     val focusRequester = rememberFocusRequester(focus)
-    val spacing = MaterialTheme.spacing
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(spacing.small),
+        modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
-        val recording = voice.recording
-        if (recording != null) {
-            RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f), voice.onVideoEvent)
-        } else {
-            composer.sendAs?.let { SendAsButton(it, onSendAs) }
-            ComposerPill(
-                composer = composer,
-                text = text,
-                onSend = { send(SendOptions()) },
-                onLink = { linking = it },
-                onFocusChanged = onFocusChanged,
-                attach = attach,
-                panel = panel,
-                focusRequester = focusRequester,
-                canSend = canSend,
-                modifier = Modifier.weight(1f),
-                onBotMenu = onBotMenu,
-                onFieldKey = onFieldKey,
-                hint = fieldHint,
-                botKeyboard = botKeyboard,
-            )
+        // The pill and the recording bar crossfade in place as a recording starts and ends.
+        StateCrossfade(
+            targetState = voice.recording,
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.BottomStart,
+            contentKey = { it != null },
+            label = "composerPill",
+        ) { recording ->
+            if (recording != null) {
+                RecordingBar(recording, voice.drag, voice.onEvent, Modifier.fillMaxWidth(), voice.onVideoEvent)
+            } else {
+                ComposerPillRow(composer, onSendAs) {
+                    ComposerPill(
+                        composer = composer,
+                        text = text,
+                        onSend = { send(SendOptions()) },
+                        onLink = { linking = it },
+                        onFocusChanged = onFocusChanged,
+                        attach = attach,
+                        panel = panel,
+                        focusRequester = focusRequester,
+                        canSend = canSend,
+                        modifier = Modifier.weight(1f),
+                        onBotMenu = onBotMenu,
+                        onFieldKey = onFieldKey,
+                        hint = fieldHint,
+                        botKeyboard = botKeyboard,
+                    )
+                }
+            }
         }
-        ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
+        ComposerAction(edit, canSend, composer, send, onSchedule = { scheduling = true }, voice)
     }
     linking?.let { selection -> TextLinkDialog(text, selection, onDone = { linking = null }) }
     if (scheduling) {
-        ScheduleDialog(
-            now = now,
-            onDismiss = { scheduling = false },
-            onSchedule = { at ->
-                scheduling = false
-                send(SendOptions(scheduledAt = at.epochSecond))
-            },
-        )
+        ComposerScheduleDialog(composer.canRepeat, now, onDismiss = { scheduling = false }) { options ->
+            scheduling = false
+            send(options)
+        }
     }
 }
 
 /**
  * The button beside the text field: the check that saves an [edit] while there is something to save (also for an
  * emptied caption); else the send button while there is something to send ([canSend]), whose menu schedules where
- * [canSchedule] ([onSchedule]), and the microphone ([RecordButton]) while there is not. While a voice message records,
+ * the [composer] allows it ([onSchedule]) and suggests a post where it may, and the microphone ([RecordButton])
+ * while there is not. While a voice message records,
  * the record button stays, also when an edit starts meanwhile.
  */
 @Suppress("LongParameterList") // What to save or send and how, and the voice recording.
@@ -367,7 +365,7 @@ private fun Composer(
 private fun RowScope.ComposerAction(
     edit: ComposerBar.Edit?,
     canSend: Boolean,
-    canSchedule: Boolean,
+    composer: ComposerUiState.Available,
     send: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
     voice: VoiceInput,
@@ -384,10 +382,11 @@ private fun RowScope.ComposerAction(
     } else {
         Appearing(visible = canSend && recording == null) {
             SendButton(
-                canSchedule = canSchedule,
+                canSchedule = composer.canSchedule,
                 onSend = { send(SendOptions()) },
                 onSendSilently = { send(SendOptions(silent = true)) },
                 onSchedule = onSchedule,
+                onSuggestPost = if (composer.canSuggestPost) ({ send(SendOptions(suggestAsPost = true)) }) else null,
             )
         }
         Appearing(visible = !canSend || recording != null) {
@@ -443,6 +442,8 @@ private fun ComposerPill(
         },
         onKeyEvent = onFieldKey,
         hint = hint,
+        // The AI editor rewrites the message being written, never a caption or a comment.
+        onAiEdit = LocalAiEditor.current?.let { open -> { open(text.content) } },
     )
 }
 

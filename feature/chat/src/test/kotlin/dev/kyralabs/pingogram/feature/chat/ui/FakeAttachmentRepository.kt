@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -50,9 +51,21 @@ class FakeAttachmentRepository : AttachmentRepository {
     /** The sticker, options and reply of every [sendSticker] call. */
     val sentStickers = mutableListOf<Triple<Sticker, SendOptions, Long?>>()
     val sentAnimations = mutableListOf<Triple<Animation, SendOptions, Long?>>()
+
+    /** Each GIF's caption (null for none) and whether it goes above it. */
+    val animationCaptions = mutableListOf<Pair<FormattedText?, Boolean>>()
+
+    /** What sending a GIF answers. */
+    var animationResult: Outcome<Unit> = Outcome.Success(Unit)
     var onSendSticker: suspend (Sticker) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     val sentPolls = mutableListOf<SentPoll>()
+
+    /** Every [sendChecklist] call. */
+
+    val sentChecklists = mutableListOf<SentChecklist>()
+
+    var onSendChecklist: suspend (NewChecklist) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** What every send replied to, with its quote and chat, in order; null for none. */
@@ -161,11 +174,14 @@ class FakeAttachmentRepository : AttachmentRepository {
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
+        caption: FormattedText?,
+        captionAbove: Boolean,
     ): Outcome<Unit> {
         replyTargets += replyTo
         val replyToMessageId = replyTo?.messageId
         sentAnimations += Triple(animation, options, replyToMessageId)
-        return Outcome.Success(Unit)
+        animationCaptions += caption to captionAbove
+        return animationResult
     }
 
     override suspend fun sendPoll(
@@ -178,6 +194,17 @@ class FakeAttachmentRepository : AttachmentRepository {
         val replyToMessageId = replyTo?.messageId
         sentPolls += SentPoll(poll, options, replyToMessageId)
         return onSendPoll(poll)
+    }
+
+    override suspend fun sendChecklist(
+        chatId: Long,
+        checklist: NewChecklist,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> {
+        replyTargets += replyTo
+        sentChecklists += SentChecklist(checklist, options, replyTo?.messageId)
+        return onSendChecklist(checklist)
     }
 
     override suspend fun editMedia(
@@ -216,6 +243,13 @@ class FakeAttachmentRepository : AttachmentRepository {
         val attachment: Attachment,
         val caption: FormattedText,
         val showCaptionAboveMedia: Boolean,
+    )
+
+    /** One [sendChecklist] call. */
+    data class SentChecklist(
+        val checklist: NewChecklist,
+        val options: SendOptions,
+        val replyToMessageId: Long?,
     )
 
     /** One [sendPoll] call. */

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.UserFullInfo
 import dev.kyralabs.pingogram.core.domain.model.UserProfilePhotosPage
@@ -90,5 +91,15 @@ class VideoCallableTest {
             offset: Int,
             limit: Int,
         ): Outcome<UserProfilePhotosPage> = Outcome.Failure(DomainError.Network)
+
+        override suspend fun suggestBirthdate(
+            userId: Long,
+            birthdate: Birthdate,
+        ): Outcome<Unit> = Outcome.Failure(DomainError.Network)
+
+        override suspend fun setNote(
+            userId: Long,
+            note: String,
+        ): Outcome<Unit> = Outcome.Failure(DomainError.Network)
     }
 }

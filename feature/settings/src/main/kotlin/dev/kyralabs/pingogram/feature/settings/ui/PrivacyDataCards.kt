@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -53,10 +55,30 @@ import dev.kyralabs.pingogram.feature.settings.R
 internal fun PrivacyCheckupCard(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var dismissed by rememberSaveable { mutableStateOf(false) }
     val open = PrivacySettings.filter { state.rules[it]?.choice == PrivacyChoice.Everybody }
-    if (dismissed || open.isEmpty()) return
+    // It shrinks away on "Not now" or once no setting is open, showing the settings it last named meanwhile
+    // (docs/DESIGN_SYSTEM.md §5.1); [modifier] goes inside, so the space it holds below goes with it.
+    val shown = remember { OpenSettings(open) }
+    if (open.isNotEmpty()) shown.settings = open
+    GrowingVisibility(visible = !dismissed && open.isNotEmpty()) {
+        Box(modifier) { CheckupCard(shown.settings, onOpen, onDismiss = { dismissed = true }) }
+    }
+}
+
+/** The privacy settings the checkup card names, kept while it leaves. */
+private class OpenSettings(
+    var settings: List<PrivacySetting>,
+)
+
+@Composable
+private fun CheckupCard(
+    open: List<PrivacySetting>,
+    onOpen: (PrivacySecurityPage) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     val resources = LocalResources.current
@@ -96,7 +118,7 @@ internal fun PrivacyCheckupCard(
                         ),
                 ) { Text(stringResource(R.string.settings_privacy_checkup_review)) }
                 TextButton(
-                    onClick = { dismissed = true },
+                    onClick = onDismiss,
                     shapes = ButtonDefaults.shapes(),
                     colors = ButtonDefaults.textButtonColors(contentColor = colors.onPrimaryContainer),
                 ) { Text(stringResource(R.string.settings_privacy_checkup_not_now)) }
@@ -234,3 +256,29 @@ private const val TAG_ALPHA = 0.12f
 
 /** The least a part of the bar shows, as a share of the total: one fiftieth, so a small part stays visible. */
 private const val MIN_PART_SHARE = 50L
+
+/**
+ * The storage card while the statistics have answered ([usage] is content): it grows in and shrinks away on the motion
+ * scheme's springs, showing the last usage it had on its way out, with the page's gap below it if [gapBelow].
+ */
+@Composable
+internal fun StorageCardSlot(
+    usage: StorageUsageState,
+    gapBelow: Boolean,
+    onClearCache: () -> Unit,
+) {
+    val last = remember { LastUsage() }
+    if (usage is StorageUsageState.Content) last.value = usage.usage
+    GrowingVisibility(visible = usage is StorageUsageState.Content) {
+        last.value?.let { shown ->
+            Box(if (gapBelow) Modifier.padding(bottom = settingsGroupSpacing()) else Modifier) {
+                StorageCard(shown, onClearCache)
+            }
+        }
+    }
+}
+
+/** The usage the card showed last, kept for its way out; not state, as only the leaving card reads it. */
+private class LastUsage {
+    var value: StorageUsage? = null
+}

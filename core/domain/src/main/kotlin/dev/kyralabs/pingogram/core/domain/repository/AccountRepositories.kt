@@ -40,6 +40,8 @@ interface AccountRepositories {
 
     fun savedMessagesTopicRepository(): SavedMessagesTopicRepository
 
+    fun directMessagesTopicRepository(): DirectMessagesTopicRepository
+
     fun messageThreadRepository(): MessageThreadRepository
 
     fun messageInteractionRepository(): MessageInteractionRepository
@@ -84,6 +86,12 @@ interface AccountRepositories {
 
     fun chatBoostRepository(): ChatBoostRepository
 
+    fun storyPostRepository(): StoryPostRepository
+
+    fun storyAlbumRepository(): StoryAlbumRepository
+
+    fun profileMusicRepository(): ProfileMusicRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository
@@ -106,9 +114,15 @@ interface AccountRepositories {
 
     fun reactionNotificationRepository(): ReactionNotificationRepository
 
+    fun accountFreezeRepository(): AccountFreezeRepository
+
+    fun oauthLoginRepository(): OauthLoginRepository
+
     fun quickReactionRepository(): QuickReactionRepository
 
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
+
+    fun passkeyRepository(): PasskeyRepository
 
     fun contactJoinedRepository(): ContactJoinedRepository
 
@@ -132,11 +146,31 @@ interface AccountRepositories {
 
     fun pollRepository(): PollRepository
 
+    fun giveawayRepository(): GiveawayRepository
+
+    fun checklistRepository(): ChecklistRepository
+
+    fun chatActionBarRepository(): ChatActionBarRepository
+
+    fun suggestedPostRepository(): SuggestedPostRepository
+
     fun botInfoRepository(): BotInfoRepository
 
     fun inlineBotRepository(): InlineBotRepository
 
     fun secretChatRepository(): SecretChatRepository
+
+    fun communityRepository(): CommunityRepository
+
+    fun welcomeMessageRepository(): WelcomeMessageRepository
+
+    fun stickerSetCreationRepository(): StickerSetCreationRepository
+
+    fun stickerMakerRepository(): StickerMakerRepository
+
+    fun accentColorRepository(): AccentColorRepository
+
+    fun aiTextRepository(): AiTextRepository
 
     fun storyRepository(): StoryRepository
 
@@ -157,6 +191,8 @@ interface AccountRepositories {
     fun stickerRepository(): StickerRepository
 
     fun savedGifRepository(): SavedGifRepository
+
+    fun savedMessagesTagRepository(): SavedMessagesTagRepository
 
     fun stickerSetRepository(): StickerSetRepository
 

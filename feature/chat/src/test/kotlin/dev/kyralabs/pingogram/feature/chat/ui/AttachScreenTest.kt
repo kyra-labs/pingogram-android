@@ -156,31 +156,32 @@ class AttachScreenTest {
     fun `the poll is sent once it is complete`() {
         val editor = PollEditor()
         setScreen(ChatPreviewData.groupChat.copy(poll = PollSheet()), poll = editor)
-        composeRule.onNodeWithContentDescription("Send").performScrollTo().assertIsNotEnabled()
+        // Send stays pinned above the form, whatever it scrolls.
+        composeRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
         composeRule.runOnIdle {
             editor.question.setTextAndPlaceCursorAtEnd("Lunch?")
             editor.options[0].text.setTextAndPlaceCursorAtEnd("Pizza")
             editor.options[1].text.setTextAndPlaceCursorAtEnd("Sushi")
         }
-        composeRule
-            .onNodeWithContentDescription("Send")
-            .performScrollTo()
-            .assertIsEnabled()
-            .performClick()
-        composeRule.waitForIdle()
+        // The sheet hides before the event goes; the frames after it are stepped, as a closing sheet keeps the
+        // Robolectric screen busy (the checklist form's does too).
+        val send = composeRule.onNodeWithContentDescription("Send").assertIsEnabled()
+        composeRule.mainClock.autoAdvance = false
+        send.performClick()
+        composeRule.mainClock.advanceTimeBy(SHEET_HIDE_MILLIS)
 
         assertEquals(listOf(ChatEvent.SendPoll(SendOptions())), events.filterIsInstance<ChatEvent.SendPoll>())
     }
 
     @Test
-    fun `in quiz mode a radio button marks the correct answer`() {
+    fun `in quiz mode a check box marks a correct answer`() {
         val editor = PollEditor(PollDraft("2 + 2?", listOf("3", "4"), isQuiz = true))
         setScreen(ChatPreviewData.groupChat.copy(poll = PollSheet()), poll = editor)
 
         composeRule.onNodeWithContentDescription("Option 2 is the correct answer").performClick()
 
-        composeRule.runOnIdle { assertEquals(editor.options[1].key, editor.correctOption) }
+        composeRule.runOnIdle { assertEquals(listOf(editor.options[1].key), editor.correctOptions) }
     }
 
     @Test
@@ -227,5 +228,10 @@ class AttachScreenTest {
         val bubble = composeRule.onNodeWithContentDescription("9:46 AM", substring = true).fetchSemanticsNode()
 
         assertTrue(bubble.config[SemanticsActions.CustomActions].none { it.label == "Cancel upload" })
+    }
+
+    private companion object {
+        /** Longer than the sheet's hide on the motion scheme's springs. */
+        const val SHEET_HIDE_MILLIS = 2_000L
     }
 }

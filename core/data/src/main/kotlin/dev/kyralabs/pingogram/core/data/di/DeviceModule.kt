@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidPickedSongRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
@@ -34,6 +35,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DevicePushRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedSongRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 
@@ -71,6 +73,9 @@ interface DeviceModule {
 
     @Binds
     fun pickedPhotoRepository(repository: AndroidPickedPhotoRepository): PickedPhotoRepository
+
+    @Binds
+    fun pickedSongRepository(repository: AndroidPickedSongRepository): PickedSongRepository
 
     @Binds
     fun sharedStorageRepository(repository: AndroidSharedStorageRepository): SharedStorageRepository

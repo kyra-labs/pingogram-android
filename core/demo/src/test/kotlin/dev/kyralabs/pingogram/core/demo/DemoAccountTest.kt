@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.demo
 
+import dev.kyralabs.pingogram.core.tdlib.TdResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -41,6 +42,17 @@ class DemoAccountTest {
             assertEquals("Robin" to "robin_sample", me.firstName to me.usernames?.editableUsername)
             assertEquals("Testing the demo", restarted.ask(TdApi.GetUserFullInfo(DemoData.ME)).bio?.text)
             assertEquals("Robin Sample", restarted.ask(TdApi.GetChat(DemoData.ME)).title)
+        }
+
+    @Test
+    fun `a note about one of the people is kept after a restart`() =
+        runTest {
+            val (client, _) = client()
+
+            client.ask(TdApi.SetUserNote(DemoData.ADA, TdApi.FormattedText("Owes me a chai", emptyArray())))
+            val (restarted, _) = client()
+
+            assertEquals("Owes me a chai", restarted.ask(TdApi.GetUserFullInfo(DemoData.ADA)).note?.text)
         }
 
     @Test
@@ -110,6 +122,21 @@ class DemoAccountTest {
             val after = client.ask(TdApi.GetActiveSessions()).sessions
             assertEquals(listOf(true, false), after.map { it.isCurrent })
             assertTrue(after.all { it.ipAddress.startsWith("192.0.2.") })
+        }
+
+    @Test
+    fun `a sample passkey is listed and removed for good, and adding one needs an account`() =
+        runTest {
+            val (client, _) = client()
+
+            val before = client.ask(TdApi.GetLoginPasskeys()).passkeys
+            client.ask(TdApi.RemoveLoginPasskey(before.single().id))
+            val (restarted, _) = client()
+            val adding = restarted.send(TdApi.GetPasskeyParameters()) as TdResult.Failure
+
+            assertEquals("Sample password manager", before.single().name)
+            assertEquals(0, restarted.ask(TdApi.GetLoginPasskeys()).passkeys.size)
+            assertEquals(DemoTdlibClient.NOT_AVAILABLE, adding.error.message)
         }
 
     @Test

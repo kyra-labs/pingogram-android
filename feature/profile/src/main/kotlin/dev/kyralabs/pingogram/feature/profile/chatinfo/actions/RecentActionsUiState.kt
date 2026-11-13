@@ -69,7 +69,10 @@ enum class RecentActionsFilter(
         R.string.recent_actions_filter_members,
         setOf(ChatEventFilter.MemberJoins, ChatEventFilter.MemberLeaves, ChatEventFilter.MemberInvites),
     ),
-    Admins(R.string.recent_actions_filter_admins, setOf(ChatEventFilter.MemberPromotions)),
+    Admins(
+        R.string.recent_actions_filter_admins,
+        setOf(ChatEventFilter.MemberPromotions, ChatEventFilter.MemberTagChanges),
+    ),
     Restrictions(R.string.recent_actions_filter_restrictions, setOf(ChatEventFilter.MemberRestrictions)),
     Settings(
         R.string.recent_actions_filter_settings,

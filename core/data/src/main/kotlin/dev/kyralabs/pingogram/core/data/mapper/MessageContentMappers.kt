@@ -44,7 +44,11 @@ internal fun TdApi.MessageContent.toMessageContent(
         }
 
         is TdApi.MessagePoll -> {
-            MessageContent.Poll(poll.toPoll(), description.toFormattedText())
+            MessageContent.Poll(poll.toPoll(), description.toFormattedText(), media?.toPollMedia(), canAddOption)
+        }
+
+        is TdApi.MessageChecklist -> {
+            MessageContent.Checklist(list.toChecklist())
         }
 
         is TdApi.MessageDice -> {
@@ -89,6 +93,7 @@ internal fun TdApi.MessageContent.toMessageContent(
 
         else -> {
             toMediaContent()
+                ?: toOfferContent()
                 ?: toServiceAction(sender, isChannelPost)?.let(MessageContent::Service)
                 ?: MessageContent.Unsupported
         }
@@ -99,12 +104,26 @@ private fun TdApi.MessageContent.toMediaContent(): MessageContent? =
     when (this) {
         is TdApi.MessagePhoto -> {
             val caption = caption.toFormattedText()
-            MessageContent.Photo(photo.toPhoto(), caption, hasSpoiler, isSecret, showCaptionAboveMedia)
+            MessageContent.Photo(
+                photo.toPhoto(),
+                caption,
+                hasSpoiler,
+                isSecret,
+                showCaptionAboveMedia,
+                motion = video?.toVideo(),
+            )
         }
 
         is TdApi.MessageVideo -> {
             val caption = caption.toFormattedText()
-            MessageContent.Video(video.toVideo(), caption, hasSpoiler, isSecret, showCaptionAboveMedia)
+            MessageContent.Video(
+                video.toVideo(),
+                caption,
+                hasSpoiler,
+                isSecret,
+                showCaptionAboveMedia,
+                startSeconds = startTimestamp.coerceAtLeast(0),
+            )
         }
 
         is TdApi.MessageAnimation -> {

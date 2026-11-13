@@ -111,6 +111,12 @@ sealed interface DomainError {
      */
     data object SendingNotAllowed : DomainError
 
+    /**
+     * A video longer than a story takes could not be cut into stories on the device: its key frames lie too far
+     * apart, or Android cannot read or write its tracks (`docs/adr/0036-posting-stories.md`).
+     */
+    data object StoryVideoNotCut : DomainError
+
     // Settings (REQUIREMENTS.md FR-S1).
 
     /**
@@ -189,6 +195,9 @@ sealed interface DomainError {
     /** The group has as many members as Telegram allows (`USERS_TOO_MUCH`). */
     data object ChatFull : DomainError
 
+    /** The community has as many chats as Telegram allows (`COMMUNITY_PEERS_TOO_MUCH`). */
+    data object CommunityFull : DomainError
+
     /**
      * The QR code of a login on another device expired, was used already, or is no login code
      * (`AUTH_TOKEN_EXPIRED`, `AUTH_TOKEN_INVALID`, `AUTH_TOKEN_ALREADY_ACCEPTED`): the other device shows a new one.
@@ -215,6 +224,17 @@ sealed interface DomainError {
 
     /** The poll was closed meanwhile: no one may vote in it or change a vote (`MESSAGE_POLL_CLOSED`). */
     data object PollClosed : DomainError
+
+    // The AI text editor (docs/DESIGN_SYSTEM.md §6 "AI text editor").
+
+    /**
+     * Telegram's AI takes no more requests from this account for now without Telegram Premium
+     * (`AICOMPOSE_FLOOD_PREMIUM`). Pingogram offers no Premium purchase, so the UI says so, and no more.
+     */
+    data object AiEditLimitReached : DomainError
+
+    /** The user added as many custom AI styles as Telegram allows (`TONES_SAVED_TOO_MANY`). */
+    data object TooManyTextStyles : DomainError
 
     // The demo (REQUIREMENTS.md FR-A9, docs/adr/0034-demo-mode-for-store-review.md).
 

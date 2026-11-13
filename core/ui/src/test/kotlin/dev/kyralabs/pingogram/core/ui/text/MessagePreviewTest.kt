@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.ui.text
 import android.content.res.Resources
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Audio
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -206,6 +207,14 @@ class MessagePreviewTest {
         assertEquals("\u2068Alice\u2069 left the group", service(ServiceAction.MemberLeft))
         assertEquals("\u2068Alice\u2069 pinned a message", service(ServiceAction.MessagePinned(messageId = 7)))
         assertEquals("You took a screenshot", service(ServiceAction.ScreenshotTaken, MessageSender.User(ME), true))
+        assertEquals(
+            "\u2068Alice\u2069 suggested your birthday",
+            service(ServiceAction.BirthdateSuggested(Birthdate(10, 12, null))),
+        )
+        assertEquals(
+            "You suggested a birthday",
+            service(ServiceAction.BirthdateSuggested(Birthdate(10, 12, null)), MessageSender.User(ME), true),
+        )
         assertEquals(
             "\u2068Alice\u2069 created the group “\u2068Club\u2069”",
             service(ServiceAction.BasicGroupCreated("Club", persistentListOf())),

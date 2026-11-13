@@ -20,6 +20,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -37,15 +38,8 @@ internal fun HeaderSubtitle(
     val notConnected = connection != ConnectionStatus.Ready
     when {
         expanded -> {
-            val motionScheme = MaterialTheme.motionScheme
-            // One slot for both, so the pill and the status line take each other's place.
-            AnimatedContent(
-                targetState = notConnected,
-                transitionSpec = {
-                    fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
-                },
-                label = "headerSubtitle",
-            ) { pill ->
+            // One slot for both, so the pill and the status line take each other's place, its size on the scheme too.
+            StateCrossfade(targetState = notConnected, label = "headerSubtitle") { pill ->
                 if (pill) ConnectionPill(connection) else StatusLine(summary())
             }
         }

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.auth.ui
 
 import android.net.Uri
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
@@ -37,14 +38,21 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
+import dev.kyralabs.pingogram.core.ui.passkey.PasskeyCredentials
+import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
+import dev.kyralabs.pingogram.core.ui.passkey.rememberPasskeyCredentials
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
+import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTopBar
 import dev.kyralabs.pingogram.feature.auth.ui.components.ConnectionBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.FloodWaitBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.LocalAuthFloodWait
 import kotlinx.coroutines.launch
+import kotlin.reflect.KClass
 
 /**
  * The login flow destination: hoists [AuthViewModel], handles its effects (links, email, snackbars) and calls
@@ -63,6 +71,8 @@ fun AuthRoute(
     val showErrorDetails = isDebuggable()
     val haptics = LocalHapticFeedback.current
     val currentOnAuthorized by rememberUpdatedState(onAuthorized)
+    val credentials = rememberPasskeyCredentials()
+    val currentCredentials by rememberUpdatedState(credentials)
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -88,13 +98,30 @@ fun AuthRoute(
                     haptics.performFeedbackFromApi34(HapticFeedbackType.Reject)
                 }
 
+                is AuthEffect.GetPasskey -> {
+                    val answer = { result: PasskeyResult<PasskeyAssertion> ->
+                        viewModel.onEvent(AuthEvent.PasskeyAnswered(result))
+                    }
+                    launch { currentCredentials.signIn(effect.requestJson, answer) }
+                }
+
+                is AuthEffect.PasskeyNotUsed -> {
+                    launch { snackbarHostState.showSnackbar(resources.getString(effect.problem.message)) }
+                }
+
                 AuthEffect.Authorized -> {
                     currentOnAuthorized()
                 }
             }
         }
     }
-    AuthScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier, snackbarHostState = snackbarHostState)
+    AuthScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+        canUsePasskeys = credentials != null,
+    )
     val demoDialog by viewModel.demoDialog.collectAsStateWithLifecycle()
     if (demoDialog) {
         DemoDialog(
@@ -103,6 +130,32 @@ fun AuthRoute(
         )
     }
 }
+
+/**
+ * Asks the password managers for a passkey that answers [requestJson] while Android's sheet shows, and hands the
+ * answer to [onAnswer]: always, a cancelled wait (the screen leaving, a rotation) as cancelled, so the button never
+ * stays busy; without password managers (before Android 14) as unavailable.
+ */
+private suspend fun PasskeyCredentials?.signIn(
+    requestJson: String,
+    onAnswer: (PasskeyResult<PasskeyAssertion>) -> Unit,
+) {
+    var result: PasskeyResult<PasskeyAssertion> = PasskeyResult.Cancelled
+    try {
+        result = this?.get(requestJson) ?: PasskeyResult.Unavailable
+    } finally {
+        onAnswer(result)
+    }
+}
+
+/** What the snackbar says when signing in with a passkey did not happen. */
+private val PasskeyProblem.message: Int
+    @StringRes get() =
+        when (this) {
+            PasskeyProblem.NotFound -> R.string.auth_passkey_not_found
+            PasskeyProblem.Unavailable -> R.string.auth_passkey_unavailable
+            PasskeyProblem.Failed -> R.string.auth_passkey_failed
+        }
 
 /**
  * `Confirm` and `Reject` haptics exist from Android 14 (`docs/DESIGN_SYSTEM.md` §5); earlier versions get none rather
@@ -118,7 +171,7 @@ private fun HapticFeedback.performFeedbackFromApi34(type: HapticFeedbackType) {
  * snackbars, and the current step, switched with a Material shared axis Y transition (`docs/DESIGN_SYSTEM.md` §5:
  * vertical flows). System back within the flow follows the predictive back gesture: the transition to the step back
  * leads to ([AuthUiState.backStep]) follows the gesture's progress, and [AuthEvent.Back] goes back once it completes
- * ([rememberAuthStepTransition]).
+ * (`core:ui`'s [rememberSeekableSteps]; with animations off it previews nothing).
  */
 @Composable
 fun AuthScreen(
@@ -126,9 +179,17 @@ fun AuthScreen(
     onEvent: (AuthEvent) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    canUsePasskeys: Boolean = false,
 ) {
     val motion = MaterialTheme.motionScheme
-    val steps = rememberAuthStepTransition(state = state, onBack = { onEvent(AuthEvent.Back) })
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = state.backStep,
+            key = { it::class },
+            enabled = state.canGoBack,
+            onBack = { onEvent(AuthEvent.Back) },
+        )
     val spatial = motion.defaultSpatialSpec<IntOffset>()
     val enterFade = motion.defaultEffectsSpec<Float>()
     val exitFade = motion.fastEffectsSpec<Float>()
@@ -162,6 +223,7 @@ fun AuthScreen(
                         canSubmit = state.canSubmit,
                         pendingAction = state.pendingAction,
                         onEvent = onEvent,
+                        canUsePasskeys = canUsePasskeys,
                     )
                 }
             }
@@ -175,29 +237,72 @@ private fun AuthStepContent(
     canSubmit: Boolean,
     pendingAction: AuthAction?,
     onEvent: (AuthEvent) -> Unit,
+    canUsePasskeys: Boolean,
 ) {
     when (step) {
-        AuthStepUiState.Loading, AuthStepUiState.Done -> AuthProgressScreen(isLoggingOut = false)
-        AuthStepUiState.LoggingOut -> AuthProgressScreen(isLoggingOut = true)
-        AuthStepUiState.Welcome -> WelcomeScreen(onEvent = onEvent)
-        is AuthStepUiState.PhoneNumber -> PhoneNumberScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.QrCode -> QrCodeScreen(step, pendingAction, onEvent)
-        is AuthStepUiState.Code -> CodeScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.Password -> PasswordScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.PasswordRecoveryCode -> PasswordRecoveryCodeScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.NewPassword -> NewPasswordScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.Registration -> RegistrationScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.EmailAddress -> EmailAddressScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.EmailCode -> EmailCodeScreen(step, canSubmit, pendingAction, onEvent)
-        is AuthStepUiState.PremiumRequired -> PremiumRequiredScreen(step, onEvent)
+        AuthStepUiState.Loading, AuthStepUiState.Done -> {
+            AuthProgressScreen(isLoggingOut = false)
+        }
+
+        AuthStepUiState.LoggingOut -> {
+            AuthProgressScreen(isLoggingOut = true)
+        }
+
+        AuthStepUiState.Welcome -> {
+            WelcomeScreen(onEvent = onEvent)
+        }
+
+        is AuthStepUiState.PhoneNumber -> {
+            PhoneNumberScreen(step, canSubmit, pendingAction, onEvent, canUsePasskeys = canUsePasskeys)
+        }
+
+        is AuthStepUiState.QrCode -> {
+            QrCodeScreen(step, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.Code -> {
+            CodeScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.Password -> {
+            PasswordScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.PasswordRecoveryCode -> {
+            PasswordRecoveryCodeScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.NewPassword -> {
+            NewPasswordScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.Registration -> {
+            RegistrationScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.EmailAddress -> {
+            EmailAddressScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.EmailCode -> {
+            EmailCodeScreen(step, canSubmit, pendingAction, onEvent)
+        }
+
+        is AuthStepUiState.PremiumRequired -> {
+            PremiumRequiredScreen(step, onEvent)
+        }
     }
 }
+
+/** A login step by its screen: the transition switches screens, not the states of one screen. */
+internal typealias StepKey = KClass<out AuthStepUiState>
 
 /**
  * Material shared axis Y (`docs/DESIGN_SYSTEM.md` §5): going forward, the next step rises in from below while the
  * current one rises out, both by [distance] px and fading; going back, the reverse. Spatial and effects springs from
  * `MaterialTheme.motionScheme`.
  */
+
 private fun AnimatedContentTransitionScope<StepKey>.sharedAxisY(
     spatial: FiniteAnimationSpec<IntOffset>,
     enterFade: FiniteAnimationSpec<Float>,

@@ -94,8 +94,11 @@ sealed interface StoryMedia {
         val hasSound: Boolean,
     ) : StoryMedia
 
-    /** A live stream, which Pingogram does not join from a story. */
-    data object Live : StoryMedia
+    /** A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen. */
+    data class Live(
+        val chatId: Long,
+        val groupCallId: Int,
+    ) : StoryMedia
 
     /** Content Pingogram can't show yet. */
     data object Unsupported : StoryMedia
@@ -143,6 +146,14 @@ sealed interface StoryViewerEvent {
     /** A finger holds the story ([held]), or let go. */
     data class Hold(
         val held: Boolean,
+    ) : StoryViewerEvent
+
+    /**
+     * A system back gesture is under way ([active]), or ended without leaving: the story pauses for the whole gesture,
+     * and nothing moves the viewer on or closes it meanwhile.
+     */
+    data class BackGesture(
+        val active: Boolean,
     ) : StoryViewerEvent
 
     /** The pager is dragged or settling ([moving]), which pauses the story. */

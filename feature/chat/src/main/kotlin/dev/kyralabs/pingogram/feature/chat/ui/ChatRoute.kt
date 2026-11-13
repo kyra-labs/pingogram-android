@@ -24,6 +24,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
@@ -33,15 +34,23 @@ import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarHost
+import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorHost
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdayErrorsEffect
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.LocalBirthdaySuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.dates.addToCalendar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
@@ -52,10 +61,13 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialog
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -132,8 +144,35 @@ internal fun ConversationRoute(
     interactionsViewModel: MessageInteractionsViewModel = hiltViewModel(key = "interactions-$chatId-$topic"),
     sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
     doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
+    welcomeViewModel: WelcomePackViewModel =
+        hiltViewModel<WelcomePackViewModel, WelcomePackViewModel.Factory>(key = "welcome-$chatId") {
+            it.create(chatId)
+        },
+    suggestedPostsViewModel: SuggestedPostsViewModel =
+        hiltViewModel<SuggestedPostsViewModel, SuggestedPostsViewModel.Factory>(key = "suggested-$chatId") {
+            it.create(chatId)
+        },
+    birthdaysViewModel: BirthdaySuggestionsViewModel =
+        hiltViewModel<BirthdaySuggestionsViewModel, BirthdaySuggestionsViewModel.Factory>(key = "birthdays-$chatId") {
+            it.create(chatId)
+        },
+    actionBarViewModel: ChatActionBarViewModel =
+        hiltViewModel<ChatActionBarViewModel, ChatActionBarViewModel.Factory>(key = "actionbar-$chatId") {
+            it.create(chatId)
+        },
+    aiEditorViewModel: AiEditorViewModel =
+        hiltViewModel<AiEditorViewModel, AiEditorViewModel.Factory>(key = "ai-editor-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // A suggested post's answers go to a view model of their own (docs/DESIGN_SYSTEM.md §6 "Suggested posts").
+    val onEvent: (ChatEvent) -> Unit =
+        remember(viewModel, suggestedPostsViewModel) {
+            { event ->
+                if (event is SuggestedPostEvent) suggestedPostsViewModel.onEvent(event) else viewModel.onEvent(event)
+            }
+        }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
@@ -154,6 +193,7 @@ internal fun ConversationRoute(
             onEvent = viewModel::onEvent,
             caption = viewModel.attachCaption,
             pollEditor = viewModel.pollEditor,
+            checklistEditor = viewModel.checklistEditor,
             snackbarHostState = snackbarHostState,
             location = rememberLocationInputs(locationViewModel, snackbarHostState),
         )
@@ -174,6 +214,7 @@ internal fun ConversationRoute(
         },
         onPickReplacement = launchers::replace,
     )
+    BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -185,36 +226,53 @@ internal fun ConversationRoute(
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,
+        LocalBirthdaySuggestions provides birthdaysViewModel,
     ) {
-        ChatScreen(
-            state = state,
-            onEvent = viewModel::onEvent,
-            onBack = onBack,
-            modifier = modifier,
-            snackbarHostState = snackbarHostState,
-            jumpState = jumpState,
-            composerText = viewModel.composerText,
-            composerFocus = composerFocus,
-            attach = attach,
-            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-            reportComment = viewModel.reportComment,
-            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-            onEmojiPanelEvent = panelViewModel::onEvent,
-            onOpenProfile = onOpenProfile,
-            onOpenChatInfo = onOpenChatInfo,
-            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-            search = viewModel.searchState.collectAsStateWithLifecycle().value,
-            searchQuery = viewModel.searchQuery,
-            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-            topicAction = topicActions?.button,
-            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
-            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
-            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
-            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
-            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
-        )
+        // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
+        ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
+            AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
+                ChatScreen(
+                    state = state,
+                    onEvent = onEvent,
+                    onBack = onBack,
+                    modifier = modifier,
+                    snackbarHostState = snackbarHostState,
+                    jumpState = jumpState,
+                    composerText = viewModel.composerText,
+                    composerFocus = composerFocus,
+                    attach = attach,
+                    recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+                    reportComment = viewModel.reportComment,
+                    emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+                    onEmojiPanelEvent = panelViewModel::onEvent,
+                    onOpenProfile = onOpenProfile,
+                    onOpenChatInfo = onOpenChatInfo,
+                    commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+                    inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+                    search = viewModel.searchState.collectAsStateWithLifecycle().value,
+                    searchQuery = viewModel.searchQuery,
+                    botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+                    topicAction = topicActions?.button,
+                    connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+                    onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+                    // A topic's or thread's conversation is not where a new member lands.
+                    welcome =
+                        welcomeViewModel.pack
+                            .collectAsStateWithLifecycle()
+                            .value
+                            .takeIf { topic == null },
+                    onWelcomeEvent = welcomeViewModel::onEvent,
+                    nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+                    recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+                    videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
+                )
+            }
+        }
         ChatSheets(viewModel)
+        val suggestedPostDialog by suggestedPostsViewModel.dialog.collectAsStateWithLifecycle()
+        suggestedPostDialog?.let {
+            SuggestedPostAnswerDialog(it, suggestedPostsViewModel.comment, suggestedPostsViewModel::onEvent)
+        }
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
     }
@@ -277,6 +335,7 @@ internal fun ChatEffects(
     val showErrorDetails = isDebuggable()
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     val haptics = LocalHapticFeedback.current
+    val openPollStatistics by rememberUpdatedState(LocalPollStatisticsLauncher.current)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -293,7 +352,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
-                    is ChatEffect.SponsoredNotice,
+                    ChatEffect.PollPhotoOnly, is ChatEffect.SponsoredNotice,
                     is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
@@ -303,6 +362,10 @@ internal fun ChatEffects(
                         context.openMap(effect, resources)
                     }
 
+                    is ChatEffect.AddToCalendar -> {
+                        context.addToCalendar(effect.unixTime, resources)
+                    }
+
                     is ChatEffect.MessageScheduled -> {
                         resources.getString(R.string.composer_scheduled, context.scheduledTime(effect.at))
                     }
@@ -310,6 +373,11 @@ internal fun ChatEffects(
                     is ChatEffect.CopyText -> {
                         context.copyText(effect.text)
                         copiedNotice(resources)
+                    }
+
+                    is ChatEffect.OpenPollStatistics -> {
+                        openPollStatistics?.invoke(effect.chatId, effect.messageId)
+                        ""
                     }
 
                     is ChatEffect.OpenProfile, is ChatEffect.OpenChat, is ChatEffect.OpenThread -> {
@@ -441,6 +509,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
+        ChatEffect.PollPhotoOnly -> R.string.poll_photo_only
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed

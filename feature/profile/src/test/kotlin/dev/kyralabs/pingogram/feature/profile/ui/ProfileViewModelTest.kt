@@ -252,6 +252,22 @@ class ProfileViewModelTest {
         }
 
     @Test
+    fun `a private chat with sharing disabled says so, and follows the change`() =
+        runTest {
+            answerProfile()
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, true))
+            runCurrent()
+            assertTrue(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, false))
+            runCurrent()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+        }
+
+    @Test
     fun `no personal channel, no row`() =
         runTest {
             answerProfile()
@@ -282,6 +298,21 @@ class ProfileViewModelTest {
                 assertTrue(canReport)
                 // "Export chat" exports the private chat.
                 assertEquals(ada.id, exportChatId)
+            }
+        }
+
+    @Test
+    fun `the header carries the user's profile color and emoji status`() =
+        runTest {
+            answerProfile(
+                ada.apply {
+                    profileAccentColorId = 3
+                    emojiStatus = TdApi.EmojiStatus(TdApi.EmojiStatusTypeCustomEmoji(99), 0)
+                },
+            )
+            with(viewModel().content.header) {
+                assertEquals(3, profileColor)
+                assertEquals(99L, emojiStatusId)
             }
         }
 

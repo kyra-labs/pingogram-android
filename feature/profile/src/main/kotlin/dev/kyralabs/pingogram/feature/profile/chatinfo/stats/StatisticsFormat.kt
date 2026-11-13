@@ -4,9 +4,10 @@ import dev.kyralabs.pingogram.core.domain.model.Chart
 import dev.kyralabs.pingogram.core.domain.model.StatisticGraphKind
 import dev.kyralabs.pingogram.core.domain.model.StatisticKind
 import dev.kyralabs.pingogram.core.domain.model.StatisticValue
+import dev.kyralabs.pingogram.core.ui.chart.ChartFormat
+import dev.kyralabs.pingogram.core.ui.chart.ChartUi
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.profile.R
-import kotlinx.collections.immutable.toImmutableList
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -24,11 +25,7 @@ internal class StatisticsFormat(
     private val integers = NumberFormat.getIntegerInstance(locale)
     private val decimals = NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 }
     private val day = DateTimeFormatter.ofPattern(timePatterns.bestPattern(locale, "MMMd"), locale)
-    private val hour =
-        DateTimeFormatter.ofPattern(
-            timePatterns.bestPattern(locale, if (timePatterns.is24HourClock()) "Hm" else "hm"),
-            locale,
-        )
+    private val charts = ChartFormat(locale, zone, timePatterns)
 
     /** "Oct 1 – Oct 22". */
     fun period(
@@ -63,50 +60,7 @@ internal class StatisticsFormat(
     fun chart(
         chart: Chart,
         byHour: Boolean,
-    ): ChartUi {
-        val max =
-            when {
-                chart.percentage -> PERCENT
-                chart.stacked -> chart.x.indices.maxOfOrNull { i -> chart.series.sumOf { it.values[i] } } ?: 0
-                else -> chart.series.maxOfOrNull { series -> series.values.maxOrNull() ?: 0 } ?: 0
-            }
-        // Lines run between their lowest and highest values, as Telegram's apps draw them; stacks start at 0.
-        val min = if (chart.stacked) 0 else chart.series.minOfOrNull { series -> series.values.minOrNull() ?: 0 } ?: 0
-        val labelIndices = listOf(0, chart.x.lastIndex / 2, chart.x.lastIndex).distinct()
-        return ChartUi(
-            series =
-                chart.series
-                    .map { series ->
-                        SeriesUi(
-                            name = series.name,
-                            values = series.values,
-                            first = integers.format(series.values.first()),
-                            last = integers.format(series.values.last()),
-                            highest = integers.format(series.values.max()),
-                        )
-                    }.toImmutableList(),
-            style = chart.style,
-            stacked = chart.stacked,
-            percentage = chart.percentage,
-            maxValue = max,
-            maxLabel = if (chart.percentage) "100%" else integers.format(max),
-            minValue = min,
-            minLabel = if (chart.percentage) "0%" else integers.format(min),
-            xLabels = labelIndices.map { xLabel(chart.x[it], byHour) }.toImmutableList(),
-            pointCount = chart.x.size,
-        )
-    }
-
-    /** A date in milliseconds as a day or an hour; anything smaller, as a number. */
-    private fun xLabel(
-        x: Long,
-        byHour: Boolean,
-    ): String =
-        when {
-            x < MILLISECONDS_SINCE_2001 -> integers.format(x)
-            byHour -> hour.format(Instant.ofEpochMilli(x).atZone(zone))
-            else -> day.format(Instant.ofEpochMilli(x).atZone(zone))
-        }
+    ): ChartUi = charts.chart(chart, byHour)
 
     private fun at(epochSeconds: Long) = Instant.ofEpochSecond(epochSeconds).atZone(zone)
 
@@ -114,13 +68,6 @@ internal class StatisticsFormat(
         if (value == value.roundToLong().toDouble()) integers.format(value.roundToLong()) else decimals.format(value)
 
     private fun sign(change: Double) = if (change < 0) "−" else "+"
-
-    private companion object {
-        const val PERCENT = 100L
-
-        /** Telegram's x values in milliseconds are dates after 2001; smaller ones are counts or hours. */
-        const val MILLISECONDS_SINCE_2001 = 1_000_000_000_000L
-    }
 }
 
 /** The label of a number of the overview. */

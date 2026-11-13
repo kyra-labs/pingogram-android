@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
+import dev.kyralabs.pingogram.core.navigation.NewStickerSetRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -85,6 +86,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute a
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetRoute as NewStickerSetScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
@@ -148,7 +150,7 @@ private fun NavGraphBuilder.folderPages(
     settingsPage<ChatFolderEditRoute> { ChatFolderEditScreenRoute(onBack = onBack) }
 }
 
-/** Stickers, its Emoji page, and the Trending and Archived pages above each. */
+/** Stickers, its Emoji page, the Trending and Archived pages above each, and making a sticker set. */
 private fun NavGraphBuilder.stickerPages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
@@ -161,7 +163,11 @@ private fun NavGraphBuilder.stickerPages(
             onBack = onBack,
             kind = stickerSetKind(emoji),
             onOpenEmoji = { onOpen(StickersRoute(emoji = true)) },
+            onCreateSet = { onOpen(NewStickerSetRoute) },
         )
+    }
+    settingsPage<NewStickerSetRoute> {
+        NewStickerSetScreenRoute(onBack = onBack, onOpenSet = { onOpen(StickerSetRoute(setId = it)) })
     }
     settingsPage<StickerSetListRoute> { entry ->
         val route = entry.toRoute<StickerSetListRoute>()

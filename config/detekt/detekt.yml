@@ -75,3 +75,26 @@ pingogram:
     # Literal colors, text sizes, sizes, shapes and animation specs in :feature:* production code
     # (CLAUDE.md hard rule 4, docs/DESIGN_SYSTEM.md §1).
     active: true
+  PingogramMotionDefault:
+    # Animations in :feature:* and :app production code that leave their spec to Compose's defaults, and literal
+    # tweens, durations and easings in :app and core:ui (docs/DESIGN_SYSTEM.md §5 and §5.1 Q-26,
+    # docs/plans/motion-expressive-plan.md §4). Every check is on.
+    active: true
+    checks:
+      - visibility
+      - content
+      - crossfade
+      - contentSize
+      - asState
+      - transitions
+      - springDefault
+      - loops
+      - schemeDirect
+      - otherAnimators
+      - literals
+      - items
+      - sizeTransform
+      - pagerScroll
+      - panes
+      - coil
+      - compositionRead

@@ -64,6 +64,8 @@ class TdlibMessageActionRepository
                     canBeCopiedToSecretChat = properties.canBeCopiedToSecretChat,
                     canBeReported = properties.canReportChat,
                     canGetViewers = properties.canGetViewers,
+                    canDeleteReactions = properties.canDeleteReactions,
+                    canGetPollVoteStatistics = properties.canGetPollVoteStatistics,
                 )
             }
 

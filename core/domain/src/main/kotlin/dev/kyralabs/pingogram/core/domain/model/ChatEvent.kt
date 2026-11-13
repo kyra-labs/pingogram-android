@@ -51,6 +51,15 @@ sealed interface ChatEventAction {
         val new: MemberRole,
     ) : ChatEventAction
 
+    /** A member's tag set, changed or removed ([new] empty) by the actor (td_api.tl `chatEventMemberTagChanged`). */
+    data class MemberTagChanged(
+        val userId: Long,
+        val old: String,
+        val new: String,
+    ) : ChatEventAction {
+        override fun toString() = "MemberTagChanged(userId=$userId, …)"
+    }
+
     data class TitleChanged(
         val old: String,
         val new: String,
@@ -121,6 +130,7 @@ enum class ChatEventFilter {
     MemberInvites,
     MemberPromotions,
     MemberRestrictions,
+    MemberTagChanges,
     InfoChanges,
     SettingChanges,
     InviteLinkChanges,

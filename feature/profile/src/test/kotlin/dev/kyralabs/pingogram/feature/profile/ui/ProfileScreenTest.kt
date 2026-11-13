@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -47,6 +48,8 @@ class ProfileScreenTest {
         media: SharedMediaUiState = ProfilePreviewData.media,
         withContactEditor: Boolean = true,
         numbersHidden: Boolean = false,
+        storyAlbums: StoryAlbumsSlot? = null,
+        profileMusic: ProfileMusicSlot? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -64,6 +67,8 @@ class ProfileScreenTest {
                                 onOpenUrl = { opened += "url:$it" },
                             ),
                         onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
+                        storyAlbums = storyAlbums,
+                        profileMusic = profileMusic,
                     )
                 }
             }
@@ -79,10 +84,81 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `the story albums slot shows above the shared media, for the profile's chat`() {
+        val asked = mutableListOf<Long>()
+        setScreen(
+            storyAlbums = { chatId, modifier ->
+                asked += chatId
+                Text("Albums of $chatId", modifier)
+            },
+        )
+
+        val chatId = ProfilePreviewData.media.chatId
+        scrollTo("Albums of $chatId")
+        composeRule.onNodeWithText("Albums of $chatId").assertIsDisplayed()
+        assertEquals(chatId, asked.distinct().single())
+    }
+
+    @Test
+    fun `the profile music slot shows for the profile's user, saying whether it is the user's own`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        setScreen(
+            profileMusic = { userId, isSelf, modifier ->
+                asked += userId to isSelf
+                Text("Music of $userId", modifier)
+            },
+        )
+
+        val content = ProfilePreviewData.content
+        composeRule.onNodeWithText("Music of ${content.header.userId}").assertIsDisplayed()
+        assertEquals(content.header.userId to content.actions.isSelf, asked.distinct().single())
+    }
+
+    @Test
     fun `the name is a heading`() {
         setScreen()
 
         composeRule.onNode(isHeading() and hasText("Ada Lovelace", substring = true)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the note row shows the note and opens its dialog`() {
+        setScreen(state = ProfilePreviewData.withNote)
+        val note = "Met at the Analytical Society. Owes me a chai. Prefers letters."
+
+        scrollTo(note)
+        composeRule.onNodeWithText(string(R.string.profile_note_private)).assertIsDisplayed()
+        composeRule.onNodeWithText(note).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.EditNote), events)
+    }
+
+    @Test
+    fun `without a note the row offers to add one`() {
+        setScreen(state = ProfilePreviewData.withoutNote)
+
+        scrollTo(string(R.string.profile_note_add))
+        composeRule.onNodeWithText(string(R.string.profile_note_add)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a contact without a birthday offers to suggest one, in a picker titled so`() {
+        setScreen(state = ProfilePreviewData.withBirthdaySuggestion)
+        val action = string(R.string.profile_birthday_suggest_action)
+
+        scrollTo(action)
+        composeRule.onNode(hasText(action) and hasClickAction()).performClick()
+
+        composeRule.onNodeWithText(string(R.string.profile_birthday_suggest_confirm)).assertIsDisplayed()
+        assertEquals(emptyList<ProfileEvent>(), events)
+    }
+
+    @Test
+    fun `no note row on a profile without one`() {
+        setScreen()
+
+        val rows = composeRule.onAllNodesWithText(string(R.string.profile_note_private)).fetchSemanticsNodes()
+        assertEquals(0, rows.size)
     }
 
     @Test

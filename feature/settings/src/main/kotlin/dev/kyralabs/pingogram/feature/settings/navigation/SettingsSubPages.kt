@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
+import dev.kyralabs.pingogram.core.navigation.PasskeysRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
@@ -56,6 +57,7 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.NewChats -> NewChatPrivacyRoute
             SettingsSubPage.BlockedUsers -> BlockedUsersRoute
             SettingsSubPage.Websites -> ConnectedWebsitesRoute
+            SettingsSubPage.Passkeys -> PasskeysRoute
             SettingsSubPage.TwoStepVerification -> TwoStepVerificationRoute
             SettingsSubPage.PasscodeLock -> PasscodeLockRoute
             SettingsSubPage.LockedChats -> LockedChatsRoute

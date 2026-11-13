@@ -103,6 +103,16 @@ sealed interface ServiceAction {
     /** The sender, one of the user's contacts, joined Telegram. */
     data object ContactRegistered : ServiceAction
 
+    /**
+     * The sender suggested [birthdate] as the other user's birthday (td_api.tl `messageSuggestBirthdate`), which the
+     * receiver may keep on their profile. `toString()` leaves the date out.
+     */
+    data class BirthdateSuggested(
+        val birthdate: Birthdate,
+    ) : ServiceAction {
+        override fun toString() = "BirthdateSuggested(…)"
+    }
+
     /** A video chat starts at [startDate] (Unix seconds). */
     data class VideoChatScheduled(
         val startDate: Long,
@@ -119,6 +129,51 @@ sealed interface ServiceAction {
     data class VideoChatInvited(
         val userIds: ImmutableList<Long>,
     ) : ServiceAction
+
+    /**
+     * The sender marked [doneCount] tasks of the checklist of message [checklistMessageId] as done, and
+     * [notDoneCount] as not done again.
+     */
+    data class ChecklistTasksDone(
+        val checklistMessageId: Long,
+        val doneCount: Int,
+        val notDoneCount: Int,
+    ) : ServiceAction
+
+    /** The sender added [count] tasks to the checklist of message [checklistMessageId]. */
+    data class ChecklistTasksAdded(
+        val checklistMessageId: Long,
+        val count: Int,
+    ) : ServiceAction
+
+    /** The sender added the answer [text] to the poll of message [pollMessageId]. `toString()` leaves the text out. */
+    data class PollOptionAdded(
+        val pollMessageId: Long,
+        val text: String,
+    ) : ServiceAction {
+        override fun toString() = "PollOptionAdded($pollMessageId, …)"
+    }
+
+    /** The sender removed the answer [text] from the poll of message [pollMessageId]. */
+    data class PollOptionDeleted(
+        val pollMessageId: Long,
+        val text: String,
+    ) : ServiceAction {
+        override fun toString() = "PollOptionDeleted($pollMessageId, …)"
+    }
+
+    /**
+     * The post suggested by message [postMessageId] of a channel's direct messages: [Approved][SuggestedPostAnswer]
+     * or declined (with the administrators' [comment], empty for none), or it could not be published, was paid for or
+     * refunded (td_api.tl `messageSuggestedPost*`). `toString()` leaves the comment out.
+     */
+    data class SuggestedPostAnswered(
+        val postMessageId: Long,
+        val answer: SuggestedPostAnswer,
+        val comment: String = "",
+    ) : ServiceAction {
+        override fun toString() = "SuggestedPostAnswered($postMessageId, $answer, …)"
+    }
 
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */
     data class Custom(
@@ -149,4 +204,13 @@ enum class CallDiscardReason {
     HungUp,
 
     UpgradedToGroupCall,
+}
+
+/** What became of a suggested post ([ServiceAction.SuggestedPostAnswered]). */
+enum class SuggestedPostAnswer {
+    Approved,
+    Declined,
+    ApprovalFailed,
+    Paid,
+    Refunded,
 }

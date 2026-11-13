@@ -14,18 +14,21 @@ import dev.kyralabs.pingogram.core.domain.model.ChatInvite
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.DirectMessagesChat
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
@@ -666,6 +669,13 @@ class FakeSearchRepository : SearchRepository {
         filter: MessageSearchFilter,
     ): Outcome<FoundMessages> = unused()
 
+    override suspend fun publicPostSearchLimits(query: String): Outcome<PublicPostSearchLimits> = unused()
+
+    override suspend fun searchPublicPosts(
+        query: String,
+        offset: String?,
+    ): Outcome<FoundPublicPosts> = unused()
+
     override suspend fun recentChats(): Outcome<ImmutableList<Chat>> = unused()
 
     override suspend fun addRecentChat(chatId: Long): Outcome<Unit> = unused()
@@ -707,6 +717,12 @@ class FakeChatJoinRepository : ChatJoinRepository {
         joined += chatId
         return result
     }
+
+    /** The direct messages chat each channel's supergroup has; [DomainError.NotFound] for the others. */
+    val directMessagesChats = mutableMapOf<Long, Outcome<DirectMessagesChat>>()
+
+    override suspend fun directMessagesChat(supergroupId: Long): Outcome<DirectMessagesChat> =
+        directMessagesChats[supergroupId] ?: Outcome.Failure(DomainError.NotFound)
 }
 
 class FakeGroupRepository : GroupRepository {
@@ -774,6 +790,10 @@ class FakeTimePatterns : TimePatterns {
                 "yMMMMd" to "MMMM d, y",
                 "MMMd" to "MMM d",
                 "yMd" to "M/d/y",
+                // Dates in messages: the full date with the time, a short one, and a long one without.
+                "yMMMMEEEEdhm" to "EEEE, MMMM d, y, h:mm a",
+                "yMdhm" to "M/d/y, h:mm a",
+                "yMMMMdEEEE" to "EEEE, MMMM d, y",
             )
     }
 }

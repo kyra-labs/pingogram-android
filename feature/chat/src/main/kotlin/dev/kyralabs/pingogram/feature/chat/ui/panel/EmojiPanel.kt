@@ -67,6 +67,7 @@ import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -106,15 +107,19 @@ internal fun EmojiPanel(
     onSearchFocus: (Boolean) -> Unit = {},
     showStickers: Boolean = true,
     initialTab: PanelTab = PanelTab.Emoji,
+    gifCaption: GifCaption? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     val shownTab = if (showStickers) tab else PanelTab.Emoji
     Column(modifier) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (shownTab) {
-                PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
-                PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
-                PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus)
+        // The tabs' contents crossfade in place, as the Saved Messages tabs' do.
+        StateCrossfade(shownTab, Modifier.weight(1f).fillMaxWidth(), label = "EmojiPanelTab") { shown ->
+            Box(Modifier.fillMaxSize()) {
+                when (shown) {
+                    PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
+                    PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
+                    PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus, gifCaption)
+                }
             }
         }
         PanelTabBar(shownTab, onSelect = { tab = it }, showStickers = showStickers, onBackspace = onBackspace)

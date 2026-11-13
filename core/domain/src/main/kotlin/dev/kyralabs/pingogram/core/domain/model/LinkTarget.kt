@@ -14,13 +14,17 @@ sealed interface LinkTarget {
     /**
      * The conversation of chat [chatId], at message [messageId] if the link named one. [draftText], a text the link
      * suggests writing, goes into the composer if it has none ([LinkTarget.Chat] of `t.me/username?text=…`).
+     * [videoSeconds], a message link's `?t=` to a video (`t.me/channel/7?t=83`), opens the media viewer on that video
+     * at that time, above the conversation.
      */
     data class Chat(
         val chatId: Long,
         val messageId: Long? = null,
         val draftText: String? = null,
+        val videoSeconds: Int? = null,
     ) : LinkTarget {
-        override fun toString() = "Chat(chatId=$chatId, messageId=$messageId, hasDraft=${draftText != null})"
+        override fun toString() =
+            "Chat(chatId=$chatId, messageId=$messageId, hasDraft=${draftText != null}, videoSeconds=$videoSeconds)"
     }
 
     /**
@@ -96,6 +100,16 @@ sealed interface LinkTarget {
     }
 
     /**
+     * A style of Telegram's AI editor that someone shared, by its [name]: its sheet shows it and adds it to the user's
+     * styles only on a tap (td_api.tl `internalLinkTypeTextCompositionStyle`).
+     */
+    data class TextCompositionStyle(
+        val name: String,
+    ) : LinkTarget {
+        override fun toString() = "TextCompositionStyle(…)"
+    }
+
+    /**
      * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
      * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */
@@ -129,6 +143,18 @@ sealed interface LinkTarget {
     ) : LinkTarget {
         // Whoever has the link can join the call.
         override fun toString() = "GroupCall(…)"
+    }
+
+    /**
+     * A request to log in to a website or an app with the Telegram account ([url], td_api.tl `internalLinkTypeOauth`,
+     * "Log in with Telegram"): its sheet asks before anything is shared. TDLib says to act on it only when another app
+     * handed it over; a tap inside Pingogram offers the browser instead.
+     */
+    data class OauthLogin(
+        val url: String,
+    ) : LinkTarget {
+        // Whoever has the link can see the request.
+        override fun toString() = "OauthLogin(…)"
     }
 
     /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */

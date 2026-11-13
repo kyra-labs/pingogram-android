@@ -281,7 +281,9 @@ class TwoStepVerificationFlowViewModel
 
         private fun goTo(step: TwoStepVerificationStep) {
             history.addLast(uiState.value.step)
-            mutableUiState.update { it.copy(step = step, fieldError = null, canGoBack = true) }
+            mutableUiState.update {
+                it.copy(step = step, fieldError = null, canGoBack = true, backStep = history.lastOrNull())
+            }
         }
 
         private fun back() {
@@ -295,6 +297,7 @@ class TwoStepVerificationFlowViewModel
                     // Back before the recovery code's step leaves the recovery.
                     recovering = it.recovering && previous != RecoveryCode && previous != CurrentPassword,
                     canGoBack = history.isNotEmpty(),
+                    backStep = history.lastOrNull(),
                 )
             }
         }

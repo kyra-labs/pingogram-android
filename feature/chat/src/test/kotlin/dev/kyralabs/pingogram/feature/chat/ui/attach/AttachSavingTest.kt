@@ -52,7 +52,22 @@ class AttachSavingTest {
     fun `the poll form reads back open, with its options and correct answer`() {
         val handle = SavedStateHandle()
         val draft =
-            PollDraft("Largest?", listOf("Mars", "Jupiter"), isAnonymous = false, isQuiz = true, correctOptionIndex = 1)
+            PollDraft(
+                "Largest?",
+                listOf("Mars", "Jupiter"),
+                links = listOf(null, "https://example.org"),
+                description = "Planets",
+                explanation = "Jupiter is the largest",
+                photo = Attachment.Photo("/uploads/a/photo.jpg", 1_000, 640, 480),
+                isAnonymous = false,
+                hidesResults = true,
+                isQuiz = true,
+                correctOptionIndexes = listOf(0, 1),
+                closing = PollClosing.Custom,
+                customCloseDate = 1_796_580_000,
+                voters = PollVoters.Countries,
+                countries = listOf("DE", "FR"),
+            )
 
         handle.savePoll(open = true, draft = draft)
 

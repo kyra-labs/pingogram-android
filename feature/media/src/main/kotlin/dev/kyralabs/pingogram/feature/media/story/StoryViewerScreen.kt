@@ -77,7 +77,12 @@ internal fun StoryViewerScreen(
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
         val leave = remember(dismiss, onClose) { { dismiss.dismiss(onClose) } }
-        PredictiveBackDismiss(dismiss, onClose)
+        // Only fades out, so the content keeps its back gesture's scale in the draw phase as it leaves. The story
+        // pauses for the whole gesture, so it neither plays on nor closes the viewer by itself under the finger.
+        val currentOnEvent by rememberUpdatedState(onEvent)
+        PredictiveBackDismiss(dismiss, onClose, leaveAtScale = false) { active ->
+            currentOnEvent(StoryViewerEvent.BackGesture(active))
+        }
         ImmersiveSystemBars(hidden = false)
         val scrim = MaterialTheme.colorScheme.scrim
         val title = LocalResources.current.getString(R.string.story_viewer_title)
@@ -143,7 +148,8 @@ private fun DismissibleStories(
                         dismiss.onDragStarted()
                     },
                     onDragStopped = { velocity ->
-                        dismiss.onDragStopped(velocity, height, settle, scope, onDismiss = onClose)
+                        // Closes on a swipe down only (Q-24): an upward drag springs back.
+                        dismiss.onDragStopped(velocity, height, settle, scope, downOnly = true, onDismiss = onClose)
                         onEvent(StoryViewerEvent.Hold(false))
                     },
                 ),
@@ -185,17 +191,30 @@ private fun StoryPager(
         key = { posters[it].chatId },
     ) { page ->
         val poster = posters[page]
-        if (page == state.current) {
-            StoryPage(
-                poster = poster,
-                state = state,
-                onEvent = onEvent,
-                onClose = onClose,
-                replyText = replyText,
-                videoSurface = videoSurface,
-            )
-        } else {
-            StoryPlaceholderPage(poster = poster, onClose = onClose)
+        // The story this chat's page last showed: as the current chat moves on, its page keeps it until the pager
+        // settles, rather than turning into a placeholder as the slide starts.
+        val shown = remember { arrayOfNulls<StoryUi>(1) }
+        if (page == state.current) shown[0] = state.story
+        val leaving = shown[0]
+        when {
+            page == state.current -> {
+                StoryPage(
+                    poster = poster,
+                    state = state,
+                    onEvent = onEvent,
+                    onClose = onClose,
+                    replyText = replyText,
+                    videoSurface = videoSurface,
+                )
+            }
+
+            leaving != null && pagerState.isScrollInProgress -> {
+                StoryLeavingPage(poster = poster, story = leaving, onClose = onClose)
+            }
+
+            else -> {
+                StoryPlaceholderPage(poster = poster, onClose = onClose)
+            }
         }
     }
 }

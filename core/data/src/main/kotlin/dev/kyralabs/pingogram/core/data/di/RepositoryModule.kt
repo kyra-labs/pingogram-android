@@ -16,7 +16,10 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -25,6 +28,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBotButtonRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallHistoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionBarRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
@@ -37,6 +41,8 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatStatisticsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChecklistRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
@@ -46,10 +52,12 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCustomEmojiRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibDataOptionsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFrequentContactsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGiveawayRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
@@ -66,17 +74,21 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkUsageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibOauthLoginRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibPasskeyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPersonalChannelRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPollRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibProfileMusicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibScheduledMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -86,10 +98,15 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibShareRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStickerMakerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetCreationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStoryAlbumRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStoryPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSuggestedPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
@@ -97,7 +114,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
+import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
+import dev.kyralabs.pingogram.core.domain.repository.AiTextRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -109,6 +130,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -123,6 +145,8 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
+import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
@@ -135,11 +159,13 @@ import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
+import dev.kyralabs.pingogram.core.domain.repository.DirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -157,6 +183,8 @@ import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
+import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
@@ -164,12 +192,14 @@ import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -180,10 +210,15 @@ import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
+import dev.kyralabs.pingogram.core.domain.repository.SuggestedPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -191,6 +226,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
  * Binds each account's repositories to their interfaces, in [AccountComponent] (`docs/adr/0031-multiple-accounts.md`).
@@ -249,6 +285,9 @@ interface RepositoryModule {
 
     @Binds
     fun savedMessagesTopicRepository(repository: TdlibSavedMessagesTopicRepository): SavedMessagesTopicRepository
+
+    @Binds
+    fun directMessagesTopicRepository(repository: TdlibDirectMessagesTopicRepository): DirectMessagesTopicRepository
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository
@@ -317,6 +356,15 @@ interface RepositoryModule {
     fun chatBoostRepository(repository: TdlibChatBoostRepository): ChatBoostRepository
 
     @Binds
+    fun storyPostRepository(repository: TdlibStoryPostRepository): StoryPostRepository
+
+    @Binds
+    fun storyAlbumRepository(repository: TdlibStoryAlbumRepository): StoryAlbumRepository
+
+    @Binds
+    fun profileMusicRepository(repository: TdlibProfileMusicRepository): ProfileMusicRepository
+
+    @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository
 
     @Binds
@@ -350,10 +398,19 @@ interface RepositoryModule {
     fun reactionNotificationRepository(repository: TdlibReactionNotificationRepository): ReactionNotificationRepository
 
     @Binds
+    fun accountFreezeRepository(repository: TdlibAccountFreezeRepository): AccountFreezeRepository
+
+    @Binds
+    fun oauthLoginRepository(repository: TdlibOauthLoginRepository): OauthLoginRepository
+
+    @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
 
     @Binds
     fun connectedWebsiteRepository(repository: TdlibConnectedWebsiteRepository): ConnectedWebsiteRepository
+
+    @Binds
+    fun passkeyRepository(repository: TdlibPasskeyRepository): PasskeyRepository
 
     @Binds
     fun contactJoinedRepository(repository: TdlibContactJoinedRepository): ContactJoinedRepository
@@ -389,6 +446,18 @@ interface RepositoryModule {
     fun pollRepository(repository: TdlibPollRepository): PollRepository
 
     @Binds
+    fun checklistRepository(repository: TdlibChecklistRepository): ChecklistRepository
+
+    @Binds
+    fun chatActionBarRepository(repository: TdlibChatActionBarRepository): ChatActionBarRepository
+
+    @Binds
+    fun suggestedPostRepository(repository: TdlibSuggestedPostRepository): SuggestedPostRepository
+
+    @Binds
+    fun giveawayRepository(repository: TdlibGiveawayRepository): GiveawayRepository
+
+    @Binds
     fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository
 
     @Binds
@@ -396,6 +465,24 @@ interface RepositoryModule {
 
     @Binds
     fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository
+
+    @Binds
+    fun communityRepository(repository: TdlibCommunityRepository): CommunityRepository
+
+    @Binds
+    fun accentColorRepository(repository: TdlibAccentColorRepository): AccentColorRepository
+
+    @Binds
+    fun aiTextRepository(repository: TdlibAiTextRepository): AiTextRepository
+
+    @Binds
+    fun stickerSetCreationRepository(repository: TdlibStickerSetCreationRepository): StickerSetCreationRepository
+
+    @Binds
+    fun stickerMakerRepository(repository: TdlibStickerMakerRepository): StickerMakerRepository
+
+    @Binds
+    fun welcomeMessageRepository(repository: TdlibWelcomeMessageRepository): WelcomeMessageRepository
 
     @Binds
     fun storyRepository(repository: TdlibStoryRepository): StoryRepository
@@ -426,6 +513,9 @@ interface RepositoryModule {
 
     @Binds
     fun savedGifRepository(repository: TdlibSavedGifRepository): SavedGifRepository
+
+    @Binds
+    fun savedMessagesTagRepository(repository: TdlibSavedMessagesTagRepository): SavedMessagesTagRepository
 
     @Binds
     fun stickerSetRepository(repository: TdlibStickerSetRepository): StickerSetRepository

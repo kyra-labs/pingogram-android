@@ -174,6 +174,10 @@ internal fun ActionPill(
  * - **Birthday**, formatted by the view model.
  * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
  * - **ID**, while Privacy and security's "Show IDs" is on: the user's ID, left to right; tapping copies it.
+ * - **Birthday suggestion**, for a contact without a birthday: the offer to suggest one ([BirthdaySuggestionRow]).
+ * - **Sharing**, where the private chat has "Disable sharing" on: that its messages cannot be forwarded, copied or
+ *   saved, as information.
+ * - **Note**, last, on a contact's profile: the note only the current user sees ([NoteRow]); tapping opens its dialog.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
  */
@@ -205,6 +209,22 @@ internal fun ProfileInfoGroup(
         rows += ProfileRow("personalChannel") { shapes -> PersonalChannelRow(channel, shapes, onEvent) }
     }
     info.id?.let { id -> rows += ProfileRow("id") { shapes -> IdRow(id, shapes) { onEvent(ProfileEvent.CopyId) } } }
+    info.birthdaySuggestion?.let { offer ->
+        rows += ProfileRow("birthdaySuggestion") { shapes -> BirthdaySuggestionRow(offer, shapes, onEvent) }
+    }
+    if (info.isSharingDisabled) {
+        rows +=
+            ProfileRow("sharing") { shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = profileRowColors(),
+                    supportingContent = { Text(stringResource(R.string.profile_sharing)) },
+                ) {
+                    Text(stringResource(R.string.profile_sharing_disabled), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+    }
+    info.note?.let { note -> rows += ProfileRow("note") { shapes -> NoteRow(note, shapes, onEvent) } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
 }
 

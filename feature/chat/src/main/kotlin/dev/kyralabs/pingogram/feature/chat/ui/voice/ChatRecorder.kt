@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.ReplyHandoff
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.RecordedVideo
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteLimits
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecorder
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -211,6 +212,10 @@ internal class ChatRecorder(
                 resume()
             }
 
+            is VoiceEvent.Trim -> {
+                trim(event.startMillis, event.endMillis)
+            }
+
             VoiceEvent.Send -> {
                 finish()
             }
@@ -314,9 +319,26 @@ internal class ChatRecorder(
     private suspend fun resume() {
         val current = session?.takeIf { it.isPaused && it.stopped == null } ?: return
         if (current.isVideo) video.resume() else recorder.resume()
+        // Recording goes on at the file's end: all of it is kept again.
+        current.trimStartMillis = 0L
+        current.trimEndMillis = null
         current.isPaused = false
         current.resumedAt = clock()
         startTicker(current)
+        publish()
+    }
+
+    /** Keeps the part of the paused voice recording from [startMillis] to [endMillis], at least a second of it. */
+    private fun trim(
+        startMillis: Long,
+        endMillis: Long,
+    ) {
+        val current = session?.takeIf { it.isPaused && !it.isVideo && it.path != null } ?: return
+        val duration = current.accumulatedMillis
+        if (duration < MIN_DURATION_MILLIS) return
+        val start = startMillis.coerceIn(0L, duration - MIN_DURATION_MILLIS)
+        current.trimStartMillis = start
+        current.trimEndMillis = endMillis.coerceIn(start + MIN_DURATION_MILLIS, duration)
         publish()
     }
 
@@ -397,7 +419,35 @@ internal class ChatRecorder(
             }
 
             else -> {
-                send(RecordedVoiceNote(path, seconds(duration), voiceNoteWaveform(current.levels.toArray())))
+                sendVoice(current, path, duration)
+            }
+        }
+    }
+
+    /** Sends the finished voice recording at [path], [duration] long: only its trimmed part, cut first, if trimmed. */
+    private suspend fun sendVoice(
+        current: Session,
+        path: String,
+        duration: Long,
+    ) {
+        val levels = current.levels.toArray()
+        val start = current.trimStartMillis
+        val end = current.trimEndMillis?.coerceAtMost(duration) ?: duration
+        if (start == 0L && end == duration) {
+            send(RecordedVoiceNote(path, seconds(duration), voiceNoteWaveform(levels)))
+            return
+        }
+        when (val cut = repository.trimVoiceNote(path, start, end)) {
+            is Outcome.Success -> {
+                val kept = levels.sliceOf(start, end, duration)
+                send(RecordedVoiceNote(cut.value, seconds(end - start), voiceNoteWaveform(kept)))
+            }
+
+            is Outcome.Failure -> {
+                // Never the whole recording, which would send what the user cut.
+                log.warn("Voice recording could not be trimmed")
+                repository.discardVoiceNote(path)
+                onEffect(ChatEffect.ShowError(cut.error))
             }
         }
     }
@@ -503,6 +553,7 @@ internal class ChatRecorder(
                     isLocked = session.isLocked,
                     isPaused = session.isPaused,
                     meter = session.meter,
+                    trim = session.trim(),
                     video =
                         if (session.isVideo) {
                             VideoRecordingUiState(
@@ -555,6 +606,26 @@ internal class ChatRecorder(
         val meter = RecordingMeter()
         val levels = LevelLog()
 
+        /** The part of a paused voice recording sent: from [trimStartMillis] to [trimEndMillis] (null: its end). */
+        var trimStartMillis = 0L
+        var trimEndMillis: Long? = null
+
+        /** The trim a paused, locked voice recording offers; null otherwise. */
+        fun trim(): VoiceTrim? {
+            val trimmable = isLocked && isPaused && !isVideo
+            val duration = accumulatedMillis
+            return if (!trimmable || path == null) {
+                null
+            } else {
+                VoiceTrim(
+                    levels = levels.toArray().toList().toImmutableList(),
+                    durationMillis = duration,
+                    startMillis = trimStartMillis,
+                    endMillis = trimEndMillis ?: duration,
+                )
+            }
+        }
+
         fun durationMillis(now: Long): Long {
             val since = resumedAt?.takeIf { !isPaused } ?: return accumulatedMillis
             return accumulatedMillis + (now - since)
@@ -573,6 +644,18 @@ internal class ChatRecorder(
 
         private const val MAX_VIDEO_SECONDS = (VideoNoteLimits.MAX_DURATION_MILLIS / 1_000L).toInt()
     }
+}
+
+/** The levels of the part from [startMillis] to [endMillis] of a recording [durationMillis] long, at least one. */
+private fun FloatArray.sliceOf(
+    startMillis: Long,
+    endMillis: Long,
+    durationMillis: Long,
+): FloatArray {
+    if (isEmpty() || durationMillis <= 0) return this
+    val from = (startMillis * size / durationMillis).toInt().coerceIn(0, size - 1)
+    val to = (endMillis * size / durationMillis).toInt().coerceIn(from + 1, size)
+    return copyOfRange(from, to)
 }
 
 /** What the permission's answer shows: to hold the button now it is [granted], else where to grant it. */

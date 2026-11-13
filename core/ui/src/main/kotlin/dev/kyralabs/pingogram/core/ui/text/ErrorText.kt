@@ -78,6 +78,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.FileUnavailable -> R.string.error_file_unavailable
         DomainError.FileTooLarge -> R.string.error_file_too_large
         DomainError.SendingNotAllowed -> R.string.error_sending_not_allowed
+        DomainError.StoryVideoNotCut -> R.string.error_story_video_not_cut
         DomainError.PremiumRequired -> R.string.error_premium_required
         DomainError.UsernameTaken -> R.string.error_username_taken
         DomainError.UsernameInvalid -> R.string.error_username_invalid
@@ -94,11 +95,14 @@ private fun DomainError.messageRes(): Int =
         DomainError.TooManyAdmins -> R.string.error_too_many_admins
         DomainError.InviteLinkInvalid -> R.string.error_invite_link_invalid
         DomainError.ChatFull -> R.string.error_chat_full
+        DomainError.CommunityFull -> R.string.error_community_full
         DomainError.QrLoginExpired -> R.string.error_qr_login_expired
         DomainError.CallPrivacyRestricted -> R.string.error_call_privacy_restricted
         DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
         DomainError.MessageViewersUnavailable -> R.string.error_message_viewers_unavailable
         DomainError.PollClosed -> R.string.error_poll_closed
         DomainError.NotAvailableInDemo -> R.string.error_not_available_in_demo
+        DomainError.AiEditLimitReached -> R.string.error_ai_edit_limit
+        DomainError.TooManyTextStyles -> R.string.error_too_many_text_styles
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

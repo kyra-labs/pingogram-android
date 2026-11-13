@@ -69,7 +69,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 @Composable
-private fun ProfileScreenPreviewContent(
+internal fun ProfileScreenPreviewContent(
     state: ProfileUiState,
     media: SharedMediaUiState = ProfilePreviewData.media,
     twoPanes: Boolean = false,
@@ -123,6 +123,18 @@ private fun ProfileScreenDeletedPreview() {
 @Composable
 private fun ProfileScreenFilesPreview() {
     ProfileScreenPreviewContent(ProfilePreviewData.scam, ProfilePreviewData.files)
+}
+
+@PingogramPreviews
+@Composable
+private fun ProfileScreenNotePreview() {
+    ProfileScreenPreviewContent(ProfilePreviewData.withNote)
+}
+
+@PingogramPreviews
+@Composable
+private fun ProfileScreenNoNotePreview() {
+    ProfileScreenPreviewContent(ProfilePreviewData.withoutNote)
 }
 
 @Preview(name = "Expanded", widthDp = EXPANDED_PREVIEW_WIDTH, heightDp = EXPANDED_PREVIEW_HEIGHT)

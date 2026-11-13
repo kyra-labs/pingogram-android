@@ -112,6 +112,9 @@ enum class MessageAction {
     /** Reply to it from another chat's composer, picked in a sheet ("Reply in another chat"). */
     ReplyElsewhere,
 
+    /** Open its poll's statistics, where Telegram gives them to the chat's administrators. */
+    PollStatistics,
+
     /** Copy its text or caption, as plain text. */
     Copy,
 
@@ -126,6 +129,12 @@ enum class MessageAction {
 
     /** Show its own text again in place of the translation its bubble shows. */
     ShowOriginal,
+
+    /** Show Telegram's summary of a long message in its bubble (`ChatSummaries`). */
+    Summarize,
+
+    /** Show its own text again in place of the summary its bubble shows. */
+    ShowFullText,
 
     /** Forward it to other chats, from the forward sheet. */
     Forward,

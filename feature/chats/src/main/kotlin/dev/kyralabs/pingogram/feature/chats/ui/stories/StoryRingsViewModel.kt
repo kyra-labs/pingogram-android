@@ -4,14 +4,18 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryUpload
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -19,6 +23,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -28,14 +34,42 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** The story rings above the chat list: one per chat with active stories, in the stories list's order. */
+/**
+ * The story rings above the chat list: the user's own first, also without a story, from which they post one; then one
+ * per chat with active stories, in the stories list's order.
+ */
 @Immutable
 data class StoryRingsUiState(
     val rings: ImmutableList<StoryRing> = persistentListOf(),
+    /** The user's stories being cancelled, and why cancelling them failed. */
+    val cancel: UploadCancel = UploadCancel(),
 )
+
+/** Stopping the user's stories that are being posted: whether it is under way, and why it failed. */
+@Immutable
+data class UploadCancel(
+    val isCancelling: Boolean = false,
+    val error: DomainError? = null,
+)
+
+/**
+ * The user's stories TDLib is still posting (board 10c), shown on their own ring: their temporary [storyIds], how
+ * much of the ones still sending is sent ([progress], 0 to 1; null while TDLib does not know their sizes), and how many
+ * TDLib gave up on ([failed]), the first [error] saying why.
+ */
+@Immutable
+data class StoryRingUpload(
+    val storyIds: ImmutableList<Int>,
+    val progress: Float?,
+    val failed: Int = 0,
+    val error: DomainError? = null,
+) {
+    val count: Int get() = storyIds.size
+}
 
 /**
  * The ring of chat [chatId]'s stories: its [name] (the user's own stories are [isMine]) and [photo], whether a story is
@@ -49,12 +83,20 @@ data class StoryRing(
     val hasUnread: Boolean,
     val storyCount: Int,
     val isMine: Boolean = false,
+    /** The user's own ring only: the stories being posted, null when none are. */
+    val upload: StoryRingUpload? = null,
 )
 
 /** What happens to the rings, handled by [StoryRingsViewModel.onEvent]. */
 sealed interface StoryRingsEvent {
     /** The row's end came within a few rings of the screen: more chats with stories load. */
     data object NearEnd : StoryRingsEvent
+
+    /** Stops posting the user's stories that are still being posted, and removes those that failed. */
+    data object CancelUploads : StoryRingsEvent
+
+    /** The user saw why cancelling failed. */
+    data object CancelErrorShown : StoryRingsEvent
 }
 
 /**
@@ -69,6 +111,8 @@ sealed interface StoryRingsEvent {
  *   they are no more than a shortcut, and the row comes back with the next start.
  * - Opening a ring is the screen's: it goes straight to the viewer, which marks what it shows viewed.
  *
+ * - **Posting** (board 10c): the user's own ring carries the stories [StoryPostRepository] is still posting
+ *   ([StoryRing.upload]), which [StoryRingsEvent.CancelUploads] stops.
  * - **Hidden**: while Appearance → "Show stories" is off ([ChatListSettingsRepository]), there are no rings and nothing
  *   loads; turned on again, the rings load as at the first collection.
  *
@@ -83,8 +127,10 @@ class StoryRingsViewModel
         chatRepository: ChatRepository,
         userRepository: UserRepository,
         chatListSettings: ChatListSettingsRepository,
+        private val storyPosts: StoryPostRepository,
     ) : ViewModel() {
         private var loadingMore: Job? = null
+        private val cancel = MutableStateFlow(UploadCancel())
         private var allLoaded = false
 
         private val rings =
@@ -99,12 +145,13 @@ class StoryRingsViewModel
                         }
                     }
                 }.combine(userRepository.myUserId) { chats, me ->
-                    StoryRingsUiState(
-                        chats
-                            .mapNotNull { (stories, chat) -> chat?.let { ringOf(stories, it, me) } }
-                            .toImmutableList(),
-                    )
-                }.distinctUntilChanged()
+                    chats.mapNotNull { (stories, chat) -> chat?.let { ringOf(stories, it, me) } }
+                }.combine(myself(userRepository)) { rings, me -> withOwnRing(rings, me) }
+                .combine(storyPosts.uploads) { rings, uploads ->
+                    val upload = uploadOf(uploads)
+                    rings.map { if (it.isMine) it.copy(upload = upload) else it }.toImmutableList()
+                }.combine(cancel) { rings, cancel -> StoryRingsUiState(rings, cancel) }
+                .distinctUntilChanged()
                 .onStart { viewModelScope.launch { storyRepository.loadActiveStories(StoryList.Main) } }
 
         val uiState: StateFlow<StoryRingsUiState> =
@@ -123,6 +170,62 @@ class StoryRingsViewModel
                             val loaded = storyRepository.loadMoreActiveStories(StoryList.Main)
                             if (loaded is Outcome.Success) allLoaded = !loaded.value
                         }
+                }
+
+                StoryRingsEvent.CancelUploads -> {
+                    cancelUploads()
+                }
+
+                StoryRingsEvent.CancelErrorShown -> {
+                    cancel.update { it.copy(error = null) }
+                }
+            }
+        }
+
+        private fun cancelUploads() {
+            val storyIds = storyPosts.uploads.value.map { it.storyId }
+            if (storyIds.isEmpty() || cancel.value.isCancelling) return
+            cancel.value = UploadCancel(isCancelling = true)
+            viewModelScope.launch {
+                val result = storyPosts.cancel(storyIds)
+                cancel.value = UploadCancel(error = (result as? Outcome.Failure)?.error)
+            }
+        }
+
+        /** The user, once known, for their own ring while they have no story. */
+        private fun myself(users: UserRepository): Flow<User?> =
+            users.myUserId.flatMapLatest { id -> if (id == null) flowOf(null) else users.user(id) }
+
+        /**
+         * [rings] with the user's own first: theirs when they have stories, else one without stories that posting
+         * starts from (`docs/adr/0036-posting-stories.md`), from their Saved Messages chat, whose id is theirs.
+         */
+        private fun withOwnRing(
+            rings: List<StoryRing>,
+            me: User?,
+        ): List<StoryRing> {
+            val own = rings.firstOrNull { it.isMine }
+            return when {
+                own != null -> {
+                    listOf(own) + (rings - own)
+                }
+
+                me == null -> {
+                    rings
+                }
+
+                else -> {
+                    listOf(
+                        StoryRing(
+                            me.id,
+                            me.firstName,
+                            me.profilePhoto,
+                            hasUnread = false,
+                            storyCount = 0,
+                            isMine = true,
+                        ),
+                    ) +
+                        rings
                 }
             }
         }
@@ -146,3 +249,21 @@ class StoryRingsViewModel
             const val STOP_TIMEOUT_MILLIS = 5_000L
         }
     }
+
+/**
+ * What the user's own ring shows of [uploads]: null while nothing is being posted. The progress counts the bytes of the
+ * stories still sending, as one upload.
+ */
+internal fun uploadOf(uploads: List<StoryUpload>): StoryRingUpload? {
+    if (uploads.isEmpty()) return null
+    val sending = uploads.filter { it.failure == null }
+    val total = sending.sumOf { it.sizeBytes }
+    val sent = sending.sumOf { it.uploadedBytes.coerceIn(0, it.sizeBytes) }
+    val failed = uploads.filter { it.failure != null }
+    return StoryRingUpload(
+        storyIds = uploads.map { it.storyId }.toImmutableList(),
+        progress = if (sending.isNotEmpty() && total > 0) sent.toFloat() / total else null,
+        failed = failed.size,
+        error = failed.firstOrNull()?.failure,
+    )
+}

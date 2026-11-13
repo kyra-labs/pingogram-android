@@ -1,10 +1,12 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
@@ -113,8 +115,11 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
                 customEmojiRepository = FakeCustomEmojiRepository(),
                 pollRepository = FakePollRepository(),
+                checklistRepository = FakeChecklistRepository(),
                 scheduledMessageRepository = FakeScheduledMessageRepository(),
+                giveawayRepository = FakeGiveawayRepository(),
                 targetPreferences = TargetPreferences(),
+                appInfo = AppInfo(versionName = ""),
                 applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
@@ -129,6 +134,9 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
             FakeForumTopicRepository(),
             FakeMessageThreadRepository(),
             FakeSavedMessagesTopicRepository(),
+            FakeDirectMessagesTopicRepository(),
+            FakeUserRepository(),
+            FakeChatRepository(),
         )
 
     private fun inlineBotRepositories() =

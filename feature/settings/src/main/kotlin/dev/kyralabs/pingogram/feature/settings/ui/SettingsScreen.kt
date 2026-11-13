@@ -1,13 +1,21 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.Transition
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,12 +42,15 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.home.AccountSwitcher
 import dev.kyralabs.pingogram.feature.settings.ui.home.HomeDestination
 import dev.kyralabs.pingogram.feature.settings.ui.home.SearchAction
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeSummaries
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsHomeViewModel
+import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearch
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchBar
 import dev.kyralabs.pingogram.feature.settings.ui.home.SettingsSearchResults
 import dev.kyralabs.pingogram.feature.settings.ui.home.rememberSettingsSearch
@@ -123,23 +134,27 @@ internal fun SettingsScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val search = rememberSettingsSearch()
+    // Closing search (back, or the bar's back) follows the predictive back gesture: home cross-fades back in with its
+    // progress (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+    // One transition for both: the top bar and the body move together.
+    val searching =
+        rememberSeekableSteps(
+            current = search.isOpen,
+            backTo = false.takeIf { search.isOpen },
+            key = { it },
+            onBack = search::close,
+        ).transition
+    val motionScheme = MaterialTheme.motionScheme
+    val crossfade = remember(motionScheme) { stateCrossfade<Boolean>(motionScheme) }
     val onOpen = homeOpener(onOpenPage, onOpenSubPage)
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
         // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
-        topBar = {
-            if (search.isOpen) {
-                SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
-            } else {
-                TabHeader(
-                    scrollBehavior = scrollBehavior,
-                    title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
-                    actions = { SearchAction(onClick = search::open) },
-                )
-            }
-        },
+        // The header and the search bar cross-fade on the effects springs, the height between them on the default
+        // spatial one (docs/DESIGN_SYSTEM.md §6 "In-chat search"), so the page below moves rather than jumps.
+        topBar = { SettingsHomeTopBar(searching, crossfade, search, scrollBehavior) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
@@ -147,10 +162,22 @@ internal fun SettingsScreen(
         Box(Modifier.fillMaxSize()) {
             // Without headings between them the groups sit closer, as in the account menus.
             SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-                if (search.isOpen) {
-                    SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
-                } else {
-                    SettingsHome(state, onEvent, onOpen, selection, summaries)
+                // Home and the results cross-fade as search opens and closes; typing changes the results in place.
+                searching.AnimatedContent(
+                    modifier = Modifier.fillMaxWidth(),
+                    transitionSpec = crossfade,
+                    contentAlignment = Alignment.TopCenter,
+                ) { open ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                    ) {
+                        if (open) {
+                            SettingsSearchResults(search.query.text.toString(), summaries, onOpen)
+                        } else {
+                            SettingsHome(state, onEvent, onOpen, selection, summaries)
+                        }
+                    }
                 }
             }
             // The page's end fades into its color behind the floating navigation bar, as the Chats tab's list does.
@@ -163,6 +190,27 @@ internal fun SettingsScreen(
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
             isDemo = LocalIsDemo.current,
         )
+    }
+}
+
+/** The tab's large header, or the search bar while [searching], cross-fading on [crossfade]. */
+@Composable
+private fun SettingsHomeTopBar(
+    searching: Transition<Boolean>,
+    crossfade: AnimatedContentTransitionScope<Boolean>.() -> ContentTransform,
+    search: SettingsSearch,
+    scrollBehavior: TopAppBarScrollBehavior,
+) {
+    searching.AnimatedContent(transitionSpec = crossfade, contentAlignment = Alignment.TopCenter) { open ->
+        if (open) {
+            SettingsSearchBar(search.query, focus = search.focusOnShow, onClose = search::close)
+        } else {
+            TabHeader(
+                scrollBehavior = scrollBehavior,
+                title = { style -> TabHeaderTitle(stringResource(R.string.settings_title), style) },
+                actions = { SearchAction(onClick = search::open) },
+            )
+        }
     }
 }
 

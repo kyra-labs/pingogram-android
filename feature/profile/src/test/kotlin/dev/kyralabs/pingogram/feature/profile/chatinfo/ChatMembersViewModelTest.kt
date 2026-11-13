@@ -252,6 +252,120 @@ class ChatMembersViewModelTest : GroupViewModelTest() {
             assertEquals(false, handle[MEMBERS_CHANGED_RESULT])
         }
 
+    @Test
+    fun `an admin who manages tags sets a member's tag, which the row then shows`() =
+        runTest {
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, tagRights))
+            client.on(TdApi.SetChatMemberTag::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            val ada = MessageSender.User(ADA)
+            assertEquals(
+                MemberAction.SetTag,
+                viewModel.items
+                    .single()
+                    .actions
+                    .first(),
+            )
+
+            send(viewModel, ChatMembersEvent.Act(ada, MemberAction.SetTag))
+            val editor = viewModel.uiState.value.tagging!!
+            assertEquals(Triple(ada, "", false), Triple(editor.member.sender, editor.text, editor.canSave))
+            send(viewModel, ChatMembersEvent.TagChanged(" Beta tester"), ChatMembersEvent.SaveTag)
+
+            assertEquals("Beta tester", client.sentOf<TdApi.SetChatMemberTag>().single().tag)
+            assertNull(viewModel.uiState.value.tagging)
+            assertEquals("Beta tester", viewModel.items.single().tag)
+            assertEquals(
+                listOf(ChatMembersEffect.Done(R.string.chat_info_tag_saved, UiText.Plain("Ada Lovelace"))),
+                effects,
+            )
+        }
+
+    @Test
+    fun `removing a tag sends an empty one, and a refusal stays in the sheet with what was typed`() =
+        runTest {
+            answerSupergroup(
+                status = TdApi.ChatMemberStatusAdministrator(true, tagRights),
+                members = arrayOf(member(ADA, TdApiFixtures.memberStatus()).also { it.tag = "Night owl" }),
+            )
+            client.on(TdApi.SetChatMemberTag::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
+            val viewModel = viewModel()
+            val ada = MessageSender.User(ADA)
+
+            send(viewModel, ChatMembersEvent.Act(ada, MemberAction.SetTag), ChatMembersEvent.TagChanged("Early bird"))
+            send(viewModel, ChatMembersEvent.SaveTag)
+            with(viewModel.uiState.value.tagging!!) {
+                assertEquals(DomainError.AdminRightsRequired, error)
+                assertEquals("Early bird", text)
+            }
+
+            client.on(TdApi.SetChatMemberTag::class, TdResult.Success(TdApi.Ok()))
+            send(viewModel, ChatMembersEvent.RemoveTag)
+
+            assertEquals("", client.sentOf<TdApi.SetChatMemberTag>().last().tag)
+            assertNull(viewModel.items.single().tag)
+        }
+
+    @Test
+    fun `the open tag sheet and what was typed survive process death`() =
+        runTest {
+            answerSupergroup(status = TdApi.ChatMemberStatusAdministrator(true, tagRights))
+            val handle = SavedStateHandle()
+            val viewModel = viewModel(handle)
+            send(
+                viewModel,
+                ChatMembersEvent.Act(MessageSender.User(ADA), MemberAction.SetTag),
+                ChatMembersEvent.TagChanged("Beta"),
+            )
+
+            val restored = viewModel(handle)
+
+            assertEquals(
+                "Beta",
+                restored.uiState.value.tagging
+                    ?.text,
+            )
+            send(restored, ChatMembersEvent.DismissTag)
+            assertNull(restored.uiState.value.tagging)
+            assertNull(viewModel(handle).uiState.value.tagging)
+        }
+
+    @Test
+    fun `a member sets their own tag where the group lets members, and nobody else's`() =
+        runTest {
+            answerSupergroup(
+                status = TdApiFixtures.memberStatus(),
+                members = arrayOf(member(ME, TdApiFixtures.memberStatus()), member(ADA, TdApiFixtures.memberStatus())),
+            )
+            client.on(
+                TdApi.GetChat::class,
+                TdResult.Success(
+                    chat().also {
+                        it.permissions =
+                            TdApi.ChatPermissions().also { p -> p.canEditTag = true }
+                    },
+                ),
+            )
+            val viewModel = viewModel()
+
+            val (me, ada) = viewModel.items
+            assertEquals(listOf(MemberAction.SetTag), me.actions)
+            assertTrue(ada.actions.isEmpty())
+            send(viewModel, ChatMembersEvent.Act(MessageSender.User(ME), MemberAction.SetTag))
+            assertEquals(
+                true,
+                viewModel.uiState.value.tagging
+                    ?.isOwn,
+            )
+        }
+
+    private val tagRights =
+        TdApi.ChatAdministratorRights().also {
+            it.canRestrictMembers = true
+            it.canManageTags = true
+        }
+
     private companion object {
         val SEARCH_DELAY = 300.milliseconds
     }

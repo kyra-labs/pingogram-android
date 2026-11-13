@@ -7,16 +7,10 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.calculateTargetValue
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
@@ -66,6 +60,7 @@ import androidx.compose.material3.IconButtonDefaults.IconButtonWidthOption
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -102,20 +97,24 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
+import dev.kyralabs.pingogram.core.ui.theme.effectsExit
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
 import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.AudioRouteType
@@ -123,8 +122,8 @@ import dev.kyralabs.pingogram.feature.calls.CallEndReason
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -161,10 +160,21 @@ fun CallScreen(
             is CallUiState.InCall -> {
                 if (pictureInPicture) {
                     PictureInPicture(state, video)
-                } else if (state.video.shows) {
-                    VideoInCall(state, onEvent, onMinimize, video)
                 } else {
-                    InCall(state, onEvent, onMinimize, onMessage)
+                    // A camera turning on or off crossfades the voice and video layouts on the effects springs, each
+                    // with its own state, so the layout leaving keeps showing what it showed.
+                    AnimatedContent(
+                        targetState = state,
+                        transitionSpec = stateCrossfade(callMotionScheme()),
+                        contentKey = { it.video.shows },
+                        label = "callLayout",
+                    ) { shown ->
+                        if (shown.video.shows) {
+                            VideoInCall(shown, onEvent, onMinimize, video)
+                        } else {
+                            InCall(shown, onEvent, onMinimize, onMessage)
+                        }
+                    }
                 }
                 // Over the ended call, never in picture-in-picture, whose window has no room for it.
                 val rating = state.rating
@@ -215,15 +225,9 @@ private fun InCall(
                 name = state.person.name,
                 status = { CallStatus(state) },
                 subtitle = {
-                    AnimatedVisibility(
-                        visible = state.emojis.isNotEmpty(),
-                        enter =
-                            expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-                        exit =
-                            shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
-                    ) { KeyEmojis(state.emojis, keyExplanation(state.person.name)) }
+                    CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
+                        KeyEmojis(state.emojis, keyExplanation(state.person.name))
+                    }
                     SharingPill(state, onEvent)
                 },
             )
@@ -232,13 +236,9 @@ private fun InCall(
             CallAvatar(state.person, size, ringing = state.stage.isRinging(), large = state.isIncomingRinging)
         },
         controls = { docked ->
-            val fade = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-            val resize = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
             AnimatedContent(
                 targetState = state.controls(),
-                transitionSpec = {
-                    (fadeIn(fade) togetherWith fadeOut(fade)).using(SizeTransform { _, _ -> resize })
-                },
+                transitionSpec = stateCrossfade(callMotionScheme(), clip = true),
                 contentAlignment = Alignment.BottomCenter,
                 label = "callControls",
             ) { controls ->
@@ -369,8 +369,14 @@ private fun VideoInCall(
                 .fillMaxSize()
                 .semantics { contentDescription = description },
         )
-        if (state.video.remote == RemoteVideo.Paused) {
-            OverlayPill(Modifier.align(Alignment.Center)) {
+        // "Video paused" fades in and out over the video, as the overlay's other pills come and go.
+        AnimatedVisibility(
+            visible = state.video.remote == RemoteVideo.Paused,
+            modifier = Modifier.align(Alignment.Center),
+            enter = effectsEnter(callMotionScheme()),
+            exit = effectsExit(callMotionScheme()),
+        ) {
+            OverlayPill {
                 Text(stringResource(R.string.call_video_paused), style = MaterialTheme.typography.bodyMedium)
             }
         }
@@ -389,17 +395,9 @@ private fun VideoOverlay(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compactHeight = maxHeight < MaterialTheme.sizes.messageMenuMinWindowHeight
+        val selfWidth = minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION
         val selfView: @Composable (Modifier) -> Unit = { modifier ->
-            if (state.video.remote != RemoteVideo.Off && state.video.camera != null) {
-                SelfView(
-                    mirror = state.video.camera == CameraFacing.Front,
-                    canSwitch = state.video.canSwitchCamera,
-                    aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
-                    video = video,
-                    onSwitch = { onEvent(CallEvent.SwitchCamera) },
-                    modifier = modifier.width(minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION),
-                )
-            }
+            OverlaySelfView(state, onEvent, video, compactHeight, modifier.width(selfWidth))
         }
         val top: @Composable () -> Unit = {
             CallTopBar(state, onEvent, onMinimize, overlay = true)
@@ -443,6 +441,33 @@ private fun VideoOverlay(
                 }
             }
         }
+    }
+}
+
+/** The self-view card over the video: it fades in and out on the effects springs; its bounds do not animate (Q-15). */
+@Composable
+private fun OverlaySelfView(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+    video: CallVideo,
+    compactHeight: Boolean,
+    modifier: Modifier,
+) {
+    val camera = state.video.camera
+    val shownCamera = rememberLastNonNull(camera)
+    AnimatedVisibility(
+        visible = state.video.remote != RemoteVideo.Off && camera != null,
+        modifier = modifier,
+        enter = effectsEnter(callMotionScheme()),
+        exit = effectsExit(callMotionScheme()),
+    ) {
+        SelfView(
+            mirror = shownCamera == CameraFacing.Front,
+            canSwitch = state.video.canSwitchCamera,
+            aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
+            video = video,
+            onSwitch = { onEvent(CallEvent.SwitchCamera) },
+        )
     }
 }
 
@@ -511,15 +536,7 @@ private fun SharingPill(
     state: CallUiState.InCall,
     onEvent: (CallEvent) -> Unit,
 ) {
-    AnimatedVisibility(
-        visible = state.video.isSharingScreen,
-        enter =
-            expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-        exit =
-            shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
-    ) {
+    CallGrowingVisibility(visible = state.video.isSharingScreen) {
         ScreenSharingPill(
             onStop = { onEvent(CallEvent.ToggleScreenSharing) },
             modifier = Modifier.padding(top = MaterialTheme.spacing.small),
@@ -547,9 +564,11 @@ private fun VideoHeader(
                 )
             }
         }
-        if (state.emojis.isNotEmpty()) {
-            Spacer(Modifier.height(MaterialTheme.spacing.small))
-            KeyEmojis(state.emojis, keyExplanation(state.person.name))
+        CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.height(MaterialTheme.spacing.small))
+                KeyEmojis(state.emojis, keyExplanation(state.person.name))
+            }
         }
     }
 }
@@ -650,7 +669,7 @@ internal fun KeyEmojis(
             Spacer(Modifier.size(MaterialTheme.spacing.small))
             Text(emojis.joinToString(" "), style = MaterialTheme.typography.titleLarge)
         }
-        if (expanded) {
+        CallGrowingVisibility(visible = expanded) {
             Text(
                 explanation,
                 style = MaterialTheme.typography.bodyMedium,
@@ -891,9 +910,12 @@ private fun IncomingControls(
 /**
  * A pill with "Decline" at its start and "Answer" at its end and a handle between them, which the user slides toward
  * either (mirrored right to left), on the gesture in the layout phase. Past [COMMIT_FRACTION] of the way a
- * `TextHandleMove` haptic says it will take; releasing there answers or declines, anywhere else the handle springs back
- * on the default spatial spring. Its phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer",
- * as a hint. Screen readers hear one item with "Answer" and "Decline" as custom actions (Switch Access too).
+ * `TextHandleMove` haptic says it will take; releasing there, or flinging so the handle would land there, answers or
+ * declines at once, with its haptic, while the handle finishes the way on the fast spatial spring. Anywhere else it
+ * springs back on the default spatial spring from the release's velocity, and a new drag takes the handle from the
+ * spring wherever it is; while power saving holds the call screens still, the handle takes its place at once. Its
+ * phone turns into a hang-up as it nears "Decline". A tap nudges it toward "Answer", as a hint. Screen readers hear
+ * one item with "Answer" and "Decline" as custom actions (Switch Access too).
  */
 @Composable
 private fun AnswerSlider(
@@ -904,8 +926,11 @@ private fun AnswerSlider(
     val scope = rememberCoroutineScope()
     val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     val handleWidth = with(LocalDensity.current) { SliderHandleSize.width.toPx() }
-    val settle = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-    val fast = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    // Snaps while power saving holds the call screens still.
+    val motionScheme = callMotionScheme()
+    // Where a release would let the handle glide to, as a fling's decay projects it: tells a flick toward a side from
+    // a release short of it. Not an animation: the handle moves on the motion scheme's springs.
+    val decay = rememberSplineBasedDecay<Float>()
     val slider = remember(direction) { SliderState(direction) }
     val dragState =
         rememberDraggableState { delta ->
@@ -927,7 +952,9 @@ private fun AnswerSlider(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.large)
-                .graphicsLayer { alpha = 1f - abs(slider.progress()) },
+                .graphicsLayer { alpha = 1f - abs(slider.progress()) }
+                // The labels are the slider's custom actions for screen readers.
+                .clearAndSetSemantics {},
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.call_decline), style = MaterialTheme.typography.bodyLarge)
@@ -937,8 +964,9 @@ private fun AnswerSlider(
         SliderHandle(
             slider = slider,
             dragState = dragState,
-            onRelease = {
-                when (slider.release(fast, settle)) {
+            onRelease = { velocity ->
+                val landing = decay.calculateTargetValue(slider.offset, velocity)
+                when (slider.release(velocity, landing, scope, motionScheme)) {
                     SliderOutcome.Answer -> {
                         onAnswer()
                     }
@@ -951,12 +979,15 @@ private fun AnswerSlider(
                     null -> {}
                 }
             },
-            onTap = { scope.launch { slider.nudge(fast, settle) } },
+            onTap = { slider.nudge(scope, motionScheme) },
         )
     }
 }
 
-/** The slider's semantics: one item, answered and declined through its custom actions. */
+/**
+ * The slider's semantics: one item, answered and declined through its custom actions. Its children merge into it: the
+ * labels and the handle say nothing of their own, the handle keeping only its test tag.
+ */
 @Composable
 private fun Modifier.answerActions(
     onAnswer: () -> Unit,
@@ -965,7 +996,7 @@ private fun Modifier.answerActions(
     val answer = stringResource(R.string.call_answer)
     val decline = stringResource(R.string.call_decline)
     val description = stringResource(R.string.call_slide_description)
-    return clearAndSetSemantics {
+    return semantics(mergeDescendants = true) {
         contentDescription = description
         customActions =
             listOf(
@@ -986,7 +1017,7 @@ private fun Modifier.answerActions(
 private fun SliderHandle(
     slider: SliderState,
     dragState: DraggableState,
-    onRelease: suspend () -> Unit,
+    onRelease: (velocity: Float) -> Unit,
     onTap: () -> Unit,
 ) {
     Box(
@@ -995,8 +1026,16 @@ private fun SliderHandle(
             .size(SliderHandleSize)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceBright)
-            .draggable(dragState, Orientation.Horizontal, onDragStopped = { onRelease() })
-            .clickable(onClick = onTap),
+            // Its drag and tap are the slider's custom actions for screen readers: only the tag, for tests.
+            .clearAndSetSemantics { testTag = ANSWER_SLIDER_HANDLE }
+            .draggable(
+                dragState,
+                Orientation.Horizontal,
+                // A touch on a handle that is still springing catches it at once, where it is.
+                startDragImmediately = slider.isSettling,
+                onDragStarted = { slider.hold() },
+                onDragStopped = { velocity -> onRelease(velocity) },
+            ).clickable(onClick = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -1019,65 +1058,84 @@ private enum class SliderOutcome { Answer, Decline }
 
 /**
  * Where the slider's handle is, in pixels from the middle (physical: right is positive), and how far it may go;
- * [direction] is -1 right to left, where "Answer" is on the left.
+ * [direction] is -1 right to left, where "Answer" is on the left. The offset is a [SettlingOffset]: a drag takes it
+ * from a spring that is still running, and the springs start at the release's velocity.
  */
 private class SliderState(
     private val direction: Float,
 ) {
-    var offset by mutableFloatStateOf(0f)
+    private val position = SettlingOffset()
+    val offset: Float get() = position.value
     var maxOffset by mutableFloatStateOf(0f)
     private var committed = false
     private var pastThreshold = false
 
-    /** -1 at "Decline", 1 at "Answer", whatever the layout's direction. */
-    fun progress(): Float = if (maxOffset > 0f) offset * direction / maxOffset else 0f
+    /** Whether the handle is springing: to its end, back, or in a nudge. */
+    val isSettling: Boolean get() = position.isSettling
 
-    /** Moves the handle by [delta]; true as it passes [COMMIT_FRACTION] toward either side. */
+    /** -1 at "Decline", 1 at "Answer", whatever the layout's direction. */
+    fun progress(): Float = progress(offset)
+
+    /** A finger took the handle: it stops where it is, whatever spring was moving it. */
+    fun hold() {
+        if (!committed) position.snapTo(offset)
+    }
+
+    private fun progress(at: Float): Float = if (maxOffset > 0f) at * direction / maxOffset else 0f
+
+    /** Moves the handle by [delta], taking it from any spring; true as it passes [COMMIT_FRACTION] either way. */
     fun drag(delta: Float): Boolean {
         if (committed) return false
-        offset = (offset + delta).coerceIn(-maxOffset, maxOffset)
+        position.dragBy(delta, -maxOffset..maxOffset)
         val past = abs(progress()) >= COMMIT_FRACTION
         val crossed = past && !pastThreshold
         pastThreshold = past
         return crossed
     }
 
-    /** Past the threshold, slides to its end and answers or declines; anywhere else, springs back. */
-    suspend fun release(
-        fast: FiniteAnimationSpec<Float>,
-        settle: FiniteAnimationSpec<Float>,
+    /**
+     * The finger lifted at [velocity] (pixels per second), and the handle would have glided on to [landing]: a landing
+     * past the threshold (released there, or flung toward it) gives the outcome now, while the handle finishes the way
+     * on the fast spatial spring; anywhere else it springs back on the default spatial spring from the release's
+     * velocity.
+     */
+    fun release(
+        velocity: Float,
+        landing: Float,
+        scope: CoroutineScope,
+        motionScheme: MotionScheme,
     ): SliderOutcome? {
+        if (committed) return null
         val outcome =
             when {
-                committed -> null
-                progress() >= COMMIT_FRACTION -> SliderOutcome.Answer
-                progress() <= -COMMIT_FRACTION -> SliderOutcome.Decline
+                progress(landing) >= COMMIT_FRACTION -> SliderOutcome.Answer
+                progress(landing) <= -COMMIT_FRACTION -> SliderOutcome.Decline
                 else -> null
             }
-        if (outcome == null) {
-            if (!committed) animateTo(0f, settle)
-            return null
+        pastThreshold = false
+        when (outcome) {
+            null -> {
+                position.settle(scope, 0f, motionScheme.defaultSpatialSpec(), velocity)
+            }
+
+            else -> {
+                committed = true
+                val end = if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction
+                position.settle(scope, end, motionScheme.fastSpatialSpec(), velocity)
+            }
         }
-        committed = true
-        animateTo(if (outcome == SliderOutcome.Answer) maxOffset * direction else -maxOffset * direction, fast)
         return outcome
     }
 
-    /** A tap's hint: a little toward "Answer" and back. */
-    suspend fun nudge(
-        fast: FiniteAnimationSpec<Float>,
-        settle: FiniteAnimationSpec<Float>,
+    /** A tap's hint: a little toward "Answer" and back, as one settle that a drag or another tap takes over. */
+    fun nudge(
+        scope: CoroutineScope,
+        motionScheme: MotionScheme,
     ) {
         if (committed) return
-        animateTo(maxOffset * NUDGE_FRACTION * direction, fast)
-        animateTo(0f, settle)
-    }
-
-    private suspend fun animateTo(
-        target: Float,
-        spec: FiniteAnimationSpec<Float>,
-    ) {
-        animate(offset, target, animationSpec = spec) { value, _ -> offset = value }
+        position.settle(scope, maxOffset * NUDGE_FRACTION * direction, motionScheme.fastSpatialSpec()) {
+            position.settle(scope, 0f, motionScheme.defaultSpatialSpec())
+        }
     }
 }
 
@@ -1287,6 +1345,9 @@ private const val FULL_TURN = 360f
 /** How far the handle goes before releasing answers or declines, and how far a tap nudges it. */
 private const val COMMIT_FRACTION = 0.7f
 private const val NUDGE_FRACTION = 0.25f
+
+/** The answer slider's handle, for tests. */
+internal const val ANSWER_SLIDER_HANDLE = "answer_slider_handle"
 
 /** The phone's turn into a hang-up at "Decline". */
 private const val HANG_UP_ROTATION = 135f

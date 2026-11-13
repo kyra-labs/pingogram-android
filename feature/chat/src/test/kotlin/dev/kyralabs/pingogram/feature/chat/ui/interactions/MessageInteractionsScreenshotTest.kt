@@ -90,6 +90,7 @@ class MessageInteractionsScreenshotTest(
                     "actions" to null,
                     "seen" to seen,
                     "allReactions" to allReactions,
+                    "adminReactions" to adminReactions,
                     "oneReaction" to oneReaction,
                     "loading" to loading,
                     "empty" to empty,

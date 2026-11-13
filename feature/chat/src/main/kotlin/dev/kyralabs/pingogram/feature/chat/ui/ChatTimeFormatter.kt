@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.core.ui.time.UserStatusFormatter
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.dates.EntityDates
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -42,6 +43,16 @@ internal class ChatTimeFormatter(
 
     /** The time of day of [epochSeconds] (Unix time). */
     fun time(epochSeconds: Long): String = time.format(Instant.ofEpochSecond(epochSeconds).atZone(zone))
+
+    /** [epochSeconds] (Unix time) as its full date and time of day: "October 5, 2026, 9:41 AM". */
+    fun dateAndTime(epochSeconds: Long): UiText {
+        val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+        return UiText.resource(
+            R.string.scheduled_day_time,
+            UiText.Plain(fullDate.format(dateTime)),
+            time.format(dateTime),
+        )
+    }
 
     /** The day of [epochSeconds] (Unix time) in [zone]. */
     fun day(epochSeconds: Long): LocalDate = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDate()
@@ -106,6 +117,9 @@ internal class ChatTimeFormatter(
             else -> DayAndTime.OnDate(shortDate.format(dateTime), timeOfDay)
         }
     }
+
+    /** How dates in messages are worded for this reader ([EntityDates]). */
+    val dates = EntityDates(zone, locale, is24HourClock, patterns)
 
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(

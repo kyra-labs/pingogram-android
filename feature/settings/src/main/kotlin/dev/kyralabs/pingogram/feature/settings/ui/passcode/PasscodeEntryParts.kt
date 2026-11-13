@@ -2,8 +2,12 @@ package dev.kyralabs.pingogram.feature.settings.ui.passcode
 
 // The parts of a passcode entry (PasscodeEntry): its badge, its message, the passcode as dots or a password field.
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,10 +43,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.toRect
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -60,8 +68,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
+import dev.kyralabs.pingogram.core.ui.component.animateColorProducer
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.popIn
+import dev.kyralabs.pingogram.core.ui.theme.popOut
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -71,7 +82,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The decorative badge above the title: the lock on a [MaterialShapes.Gem] in `primaryContainer`, like a login step's
  * badge; while something is wrong ([isError]) it morphs into [MaterialShapes.Cookie4Sided] (the spatial spring) and
- * fades to `errorContainer` with the error icon (the effects spring), as the login steps' badges do.
+ * fades to `errorContainer`, the lock crossfading into the error icon (the effects spring), as the login steps' badges
+ * do. Colors and the crossfade are read in the draw phase, so the fade recomposes nothing (`docs/PERFORMANCE.md` §4).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -90,11 +102,12 @@ internal fun PasscodeBadge(isError: Boolean) {
         animationSpec = motion.defaultEffectsSpec(),
         label = "BadgeContainer",
     )
-    val content by animateColorAsState(
-        targetValue = if (isError) colors.onErrorContainer else colors.onPrimaryContainer,
-        animationSpec = motion.defaultEffectsSpec(),
-        label = "BadgeContent",
-    )
+    val content =
+        animateColorProducer(
+            targetValue = if (isError) colors.onErrorContainer else colors.onPrimaryContainer,
+            animationSpec = motion.defaultEffectsSpec(),
+        )
+    val error = animateFloatAsState(if (isError) 1f else 0f, motion.defaultEffectsSpec(), label = "BadgeError")
     Box(
         modifier =
             Modifier
@@ -103,12 +116,44 @@ internal fun PasscodeBadge(isError: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(if (isError) UiR.drawable.ic_error else UiR.drawable.ic_lock),
+            painter = painterResource(UiR.drawable.ic_lock),
             contentDescription = null,
+            modifier = Modifier.fadedBy { 1f - error.value },
+            tint = content,
+        )
+        Icon(
+            painter = painterResource(UiR.drawable.ic_error),
+            contentDescription = null,
+            modifier = Modifier.fadedBy { error.value },
             tint = content,
         )
     }
 }
+
+/**
+ * Draws this content at [alpha], read in the draw phase: as it is at 1, not at all at 0, and through a layer only in
+ * between, so the badge at rest draws exactly as without the fade.
+ */
+private fun Modifier.fadedBy(alpha: () -> Float): Modifier =
+    drawWithContent {
+        val faded = alpha()
+        when {
+            faded <= 0f -> {
+                Unit
+            }
+
+            faded >= 1f -> {
+                drawContent()
+            }
+
+            else -> {
+                drawContext.canvas.withSaveLayer(
+                    size.toRect(),
+                    Paint().apply { this.alpha = faded },
+                ) { drawContent() }
+            }
+        }
+    }
 
 /** [hint], or what went wrong with the last entry in `error`, announced politely to screen readers. */
 @Composable
@@ -158,8 +203,8 @@ private fun passcodeMessageText(
 
 /**
  * The digits of a PIN entered so far, one dot each in `onSurface`, in a pill on `surfaceContainerHighest` as tall as a
- * text field; a new dot grows in on the fast spatial spring. Screen readers hear how many digits there are. Shakes
- * for every rejection ([shake]).
+ * text field; a new dot grows in and a deleted one shrinks away on the fast spatial spring, the others sliding to keep
+ * the dots centred. Screen readers hear how many digits there are. Shakes for every rejection ([shake]).
  */
 @Composable
 internal fun PasscodeDots(
@@ -185,26 +230,28 @@ internal fun PasscodeDots(
                     contentDescription = description
                     liveRegion = LiveRegionMode.Polite
                 },
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        repeat(count) { PasscodeDot() }
+        val motion = MaterialTheme.motionScheme
+        val enter = remember(motion) { popIn(motion) + expandHorizontally(motion.fastSpatialSpec()) }
+        val exit = remember(motion) { popOut(motion) + shrinkHorizontally(motion.fastSpatialSpec()) }
+        // A place per digit the PIN can have: the dots up to [count] show, the others are gone or on their way out.
+        repeat(maxOf(count, PasscodeType.Pin.maxLength)) { index ->
+            AnimatedVisibility(visible = index < count, enter = enter, exit = exit) { PasscodeDot() }
+        }
     }
 }
 
+/** A dot with half the gap between dots on each side, so the gap comes and goes with it. */
 @Composable
 private fun PasscodeDot() {
-    val spec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-    val scale = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { scale.animateTo(1f, spec) }
     val color = MaterialTheme.colorScheme.onSurface
     Box(
         Modifier
+            .padding(horizontal = MaterialTheme.spacing.medium / 2)
             .size(MaterialTheme.sizes.passcodeDot)
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-            }.background(color, CircleShape),
+            .background(color, CircleShape),
     )
 }
 

@@ -2,6 +2,8 @@ package dev.kyralabs.pingogram.feature.profile.chatinfo.stats
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ChartStyle
+import dev.kyralabs.pingogram.core.ui.chart.ChartUi
+import dev.kyralabs.pingogram.core.ui.chart.SeriesUi
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
 import kotlinx.collections.immutable.ImmutableList

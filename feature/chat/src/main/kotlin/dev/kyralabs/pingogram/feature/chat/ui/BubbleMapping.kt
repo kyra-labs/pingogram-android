@@ -14,13 +14,19 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
-import dev.kyralabs.pingogram.core.ui.text.contentKindText
+import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.birthday
 import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistUi
+import dev.kyralabs.pingogram.feature.chat.ui.dates.withReaderDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayUi
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostUi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import java.time.Instant
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 // What one item of the conversation shows (REQUIREMENTS.md FR-C2–C4), from its ItemInputs alone.
@@ -38,6 +44,7 @@ internal fun ItemInputs.toItem(): ChatItem {
             callIsVideo = (content.action as? ServiceAction.Call)?.isVideo == true,
             groupCallChatId = message.chatId.takeIf { (content.action as? ServiceAction.GroupCall)?.isActive == true },
             canWave = canWave(content.action),
+            birthday = (content.action as? ServiceAction.BirthdateSuggested)?.let(::birthday),
         )
     } else {
         toBubble(content)
@@ -55,7 +62,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
     val senderName = senderName()
     val newest = album.lastOrNull() ?: message
-    val text = content.text
+    val text = content.text.withReaderDates(timeFormatter, relativeNow?.let(Instant::ofEpochSecond))
     return ChatItem.Bubble(
         id = message.id,
         isOutgoing = message.isOutgoing,
@@ -74,17 +81,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel =
-            when {
-                album.isNotEmpty() -> albumLabel(album)
-
-                content is MessageContent.Text -> null
-
-                // The bubble shows its blocks, and screen readers hear them (richDescription).
-                content is MessageContent.RichMessage -> null
-
-                else -> contentKindText(content)
-            },
+        contentLabel = contentLabel(content),
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
@@ -104,6 +101,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
+        suggestedPost = message.suggestedPost?.let { suggestedPostUi(message.id, it) },
         hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
         senderHue = senderHue(showsSender),
         senderRole = senderRole.takeIf { showsSender },
@@ -111,20 +109,15 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,
         views = views(newest),
+        checklist = checklistUi(content),
+        pollClosesIn = pollClosesIn(),
+        giveaway = giveawayUi(content),
     )
 }
 
-/** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
-private fun albumLabel(album: List<Message>): UiText {
-    val photos = album.count { it.content is MessageContent.Photo }
-    val plural =
-        when (photos) {
-            album.size -> ChatR.plurals.content_album_photos
-            0 -> ChatR.plurals.content_album_videos
-            else -> ChatR.plurals.content_album_media
-        }
-    return UiText.plural(plural, album.size, album.size)
-}
+/** How long the message's open poll stays open as of the current minute, in seconds; null where it does not close. */
+private fun ItemInputs.pollClosesIn(): Long? =
+    message.closingPoll?.let { at -> relativeNow?.let { (at - it).coerceAtLeast(0) } }
 
 /** "You" for the current user's messages; otherwise the sender's full name, or the chat's title. */
 private fun ItemInputs.senderName(): UiText =
@@ -194,7 +187,10 @@ internal fun Message.reactionChips(): ImmutableList<ReactionChip> =
         ?.map { ReactionChip(label = it.type.label, count = it.totalCount, isChosen = it.isChosen) }
         ?.toImmutableList() ?: persistentListOf()
 
-/** The text or caption of [this] content; a poll's description; empty for content without one. */
+/** The text or caption of [this] content as its sender wrote it, before [withReaderDates]. */
+internal val MessageContent.textOrCaption: FormattedText get() = text
+
+/** The text or caption of [this] content; empty for content without one (a poll's description is the poll's own). */
 private val MessageContent.text: FormattedText
     get() =
         when (this) {
@@ -205,6 +201,5 @@ private val MessageContent.text: FormattedText
             is MessageContent.VoiceNote -> caption
             is MessageContent.Audio -> caption
             is MessageContent.Document -> caption
-            is MessageContent.Poll -> description
             else -> FormattedText.Empty
         }

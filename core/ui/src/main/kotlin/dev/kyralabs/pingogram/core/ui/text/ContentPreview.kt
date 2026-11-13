@@ -42,6 +42,8 @@ internal fun contentPreviewText(content: MessageContent): UiText =
 
         is MessageContent.Poll -> pollText(content.poll)
 
+        is MessageContent.Checklist -> labelled(R.string.preview_checklist, content.list.title.text)
+
         is MessageContent.Dice -> UiText.Plain(content.emoji)
 
         is MessageContent.AnimatedEmoji -> UiText.Plain(content.emoji)
@@ -51,6 +53,12 @@ internal fun contentPreviewText(content: MessageContent): UiText =
         is MessageContent.Invoice -> labelled(R.string.preview_invoice, content.title)
 
         is MessageContent.Story -> UiText.resource(R.string.preview_story)
+
+        is MessageContent.PaidMedia -> labelled(R.string.preview_paid_media, content.caption.text)
+
+        is MessageContent.Giveaway -> UiText.resource(R.string.preview_giveaway)
+
+        is MessageContent.GiveawayWinners -> UiText.resource(R.string.preview_giveaway_winners)
 
         is MessageContent.Expired -> expiredText(content.media)
 

@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.RichPreviewData
@@ -37,6 +39,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -115,6 +118,35 @@ class ChatRecompositionTest {
         bubble.performTouchInput { up() }
         repeat(SETTLE_FRAMES) { frame() }
 
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `opening the emoji panel recomposes none of the bubbles while it grows in`() {
+        setScreen(messages(MESSAGES))
+
+        composeRule
+            .onNode(hasContentDescription(RuntimeEnvironment.getApplication().getString(R.string.panel_open)))
+            .performClick()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `entering selection mode composes each row once, and none in the frames its checks slide in`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        state = before.copy(selection = MessageSelection(persistentSetOf(MESSAGES.toLong()), persistentListOf()))
+        repeat(2) { frame() }
+        val entering = counter.recomposedOwn.filter { ROW in it }
+        counter.reset()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // At most once for each row laid out, as it learns it is selectable.
+        val rows = composeRule.runOnIdle { listState.layoutInfo.visibleItemsInfo.size }
+        assertTrue("${entering.size} recompositions of $rows rows", entering.size in 1..rows)
         assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
     }
 
@@ -235,6 +267,22 @@ class ChatRecompositionTest {
         repeat(SETTLE_FRAMES) { frame() }
 
         assertNotEquals(emptyList<String>(), counter.recomposedOwnFunctions.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `a reaction added to a bubble composes only that bubble, and its badge scales in in the draw phase`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        state = before.replacing(newest.copy(reactions = ChatPreviewData.reactions(thumbsUp)))
+        repeat(2) { frame() }
+        val functions = counter.recomposedOwnFunctions
+        counter.reset()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
     }
 
     @Test
@@ -384,6 +432,9 @@ class ChatRecompositionTest {
         const val RARE = 10
 
         const val JUMP_BUTTON = "JumpToBottomButtonKt"
+
+        /** A message's row, which selection mode composes again to add its check. */
+        const val ROW = "MessageBubbleKt.MessageBubbleRow"
 
         /** The lambdas of the screen's own file: the `Scaffold`'s slots, e.g. the jump button's. */
         const val SCREEN_LAMBDA = "dev.kyralabs.pingogram.feature.chat.ui.ChatScreenKt$$"

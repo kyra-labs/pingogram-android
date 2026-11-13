@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.domain.model.isAdministrator
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
@@ -22,13 +23,18 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * What the current user's rights let them do on a group's or channel's member pages: their [rights], the group's
- * [kind] and their own id, which gets no actions on its row.
+ * [kind] and their own id, whose row gets only "Set tag", where [canEditOwnTag] (the group's permissions allow it) or
+ * the rights do.
  */
 internal data class MemberPowers(
     val kind: GroupKind,
     val rights: AdministratorRights,
     val myUserId: Long?,
-)
+    val canEditOwnTag: Boolean = false,
+) {
+    /** Whether the user may tag people in this group: groups only, with `canManageTags`. */
+    val canTagOthers: Boolean get() = kind != GroupKind.Channel && rights.canManageTags
+}
 
 /**
  * The rows of members (`REQUIREMENTS.md` FR-P3), on the info page and the members page: a user by their name as
@@ -69,7 +75,14 @@ internal fun memberItem(
                     },
                 isOnline = user != null && !isDeleted && !isBot && user.status.isOnlineAt(now.epochSecond),
                 role = member.roleLabel(),
-                actions = if (sender.userId == powers.myUserId) persistentListOf() else powers.actionsOn(member),
+                tag = member.tag.takeIf { it.isNotBlank() },
+                isAdministrator = member.role.isAdministrator,
+                actions =
+                    if (sender.userId == powers.myUserId) {
+                        powers.ownActions()
+                    } else {
+                        powers.actionsOn(member, isDeleted)
+                    },
             )
         }
 
@@ -80,6 +93,8 @@ internal fun memberItem(
                 photo = chat?.photo,
                 avatarId = sender.chatId,
                 role = member.roleLabel(),
+                tag = member.tag.takeIf { it.isNotBlank() },
+                isAdministrator = member.role.isAdministrator,
                 // A chat can only be banned, or let back.
                 actions =
                     if (member.role is MemberRole.Banned && powers.rights.canRestrictMembers) {
@@ -91,24 +106,35 @@ internal fun memberItem(
         }
     }
 
-/** The label after a member's name: their tag, else what their role is; null for a member without a tag. */
-private fun GroupMember.roleLabel(): UiText? {
-    val custom = tag.takeIf { it.isNotBlank() }?.let(UiText::Plain)
-    return when (role) {
-        is MemberRole.Owner -> custom ?: UiText.resource(R.string.chat_info_role_owner)
-        is MemberRole.Administrator -> custom ?: UiText.resource(R.string.chat_info_role_admin)
+/** The label at the end of a member's row: what their role is; null for a plain member. */
+private fun GroupMember.roleLabel(): UiText? =
+    when (role) {
+        is MemberRole.Owner -> UiText.resource(R.string.chat_info_role_owner)
+        is MemberRole.Administrator -> UiText.resource(R.string.chat_info_role_admin)
         is MemberRole.Restricted -> UiText.resource(R.string.chat_info_role_restricted)
         is MemberRole.Banned -> UiText.resource(R.string.chat_info_role_removed)
-        MemberRole.Member, MemberRole.Left -> custom
+        MemberRole.Member, MemberRole.Left -> null
     }
-}
+
+/** What the user may do on their own row: set their tag, where the group or their rights allow it. */
+private fun MemberPowers.ownActions(): ImmutableList<MemberAction> =
+    if (kind != GroupKind.Channel && (canEditOwnTag || rights.canManageTags)) {
+        persistentListOf(MemberAction.SetTag)
+    } else {
+        persistentListOf()
+    }
 
 /**
- * What these powers allow on [member]: an editable administrator's rights changed or taken; a member promoted,
- * restricted (supergroups only) or removed; restrictions changed or lifted; a removed user let back. Nothing on the
- * owner, and nothing without the rights.
+ * What these powers allow on [member]: a tag set on a member or an editable administrator in a group (not a deleted
+ * account's); an editable administrator's rights changed or taken; a member promoted, restricted (supergroups only) or
+ * removed; restrictions changed or lifted; a removed user let back. Nothing on the owner, and nothing without the
+ * rights.
  */
-private fun MemberPowers.actionsOn(member: GroupMember): ImmutableList<MemberAction> {
+private fun MemberPowers.actionsOn(
+    member: GroupMember,
+    isDeleted: Boolean,
+): ImmutableList<MemberAction> {
+    val tag = MemberAction.SetTag.takeIf { canTagOthers && !isDeleted }
     val promote = rights.canPromoteMembers
     val restrict = rights.canRestrictMembers
     val canRestrict = restrict && kind == GroupKind.Supergroup
@@ -119,11 +145,16 @@ private fun MemberPowers.actionsOn(member: GroupMember): ImmutableList<MemberAct
             }
 
             is MemberRole.Administrator -> {
-                if (role.canBeEdited && promote) listOf(MemberAction.EditRights, MemberAction.Dismiss) else emptyList()
+                listOfNotNull(
+                    tag.takeIf { role.canBeEdited },
+                    MemberAction.EditRights.takeIf { role.canBeEdited && promote },
+                    MemberAction.Dismiss.takeIf { role.canBeEdited && promote },
+                )
             }
 
             MemberRole.Member -> {
                 listOfNotNull(
+                    tag,
                     MemberAction.Promote.takeIf { promote },
                     MemberAction.Restrict.takeIf { canRestrict },
                     MemberAction.Remove.takeIf { restrict },
@@ -132,6 +163,7 @@ private fun MemberPowers.actionsOn(member: GroupMember): ImmutableList<MemberAct
 
             is MemberRole.Restricted -> {
                 listOfNotNull(
+                    tag.takeIf { role.isMember },
                     MemberAction.Restrict.takeIf { canRestrict },
                     MemberAction.Unrestrict.takeIf { canRestrict },
                     MemberAction.Remove.takeIf { restrict },

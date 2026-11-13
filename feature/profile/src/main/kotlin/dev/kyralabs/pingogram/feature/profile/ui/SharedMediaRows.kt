@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -90,6 +92,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun LazyGridItemScope.MediaCell(
     item: SharedMediaItem.Media,
     cellSizePx: Int,
+    motion: ItemMotion,
     onClick: () -> Unit,
 ) {
     val resources = LocalResources.current
@@ -101,7 +104,7 @@ internal fun LazyGridItemScope.MediaCell(
     Box(
         modifier =
             Modifier
-                .animateItem()
+                .animateItem(this, motion)
                 .aspectRatio(1f)
                 .padding(MaterialTheme.sizes.mediaAlbumGap / 2)
                 .clip(MaterialTheme.shapes.extraSmall)

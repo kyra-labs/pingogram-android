@@ -70,6 +70,10 @@ data class StickersRoute(
     val emoji: Boolean = false,
 )
 
+/** Making a sticker set of the user's own (the owner's boards 21a–c), pushed above Settings → Stickers. */
+@Serializable
+data object NewStickerSetRoute
+
 /**
  * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
  * [StickersRoute].
@@ -232,6 +236,10 @@ data object ActiveSessionsRoute
 /** The websites logged in with the account, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object ConnectedWebsitesRoute
+
+/** The account's passkeys (`docs/adr/0037-passkeys.md`), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object PasskeysRoute
 
 /**
  * The chats kept behind the passcode (`docs/adr/0029-locked-chats.md`), pushed above [PrivacySecurityRoute], above the
@@ -407,29 +415,63 @@ data class ChatRoute(
     val messageId: Long? = null,
     val topicId: Int? = null,
     val threadId: Long? = null,
+    val directMessagesTopicId: Long? = null,
 )
 
 /**
  * The full-screen media viewer (`REQUIREMENTS.md` FR-C10), `:feature:media`, opened on the photo, video or GIF
  * [messageId] of chat [chatId] from the conversation, and paging through the chat's media of that kind. It is pushed
  * above everything: no navigation bar or rail, and full screen on top of the list-detail layout of the Chats tab.
+ * [startSeconds], from a message link's `?t=` (td_api.tl `messageLinkInfo.media_timestamp`), starts the video
+ * [messageId] there, in place of the time its sender marked.
  */
 @Serializable
 data class MediaViewerRoute(
     val chatId: Long,
     val messageId: Long,
+    val startSeconds: Int? = null,
 )
 
 /**
  * The full-screen stories viewer, read only (`docs/ROADMAP.md` M6), `:feature:media`, opened on the active stories of
  * chat [chatId] from the rings above the chat list: at story [storyId], or without one at the first the user has not
- * seen. Swiping sideways moves to the other chats of the stories list. Like the media viewer, it is pushed above
- * everything, without the navigation bar or rail.
+ * seen. Swiping sideways moves to the other chats of the stories list. With [albumId] (board 11b), it plays that
+ * story album of the chat instead, alone, from story [storyId]. Like the media viewer, it is pushed above everything,
+ * without the navigation bar or rail.
  */
 @Serializable
 data class StoryViewerRoute(
     val chatId: Long,
     val storyId: Int? = null,
+    val albumId: Int? = null,
+)
+
+/**
+ * Story album [albumId] of chat [chatId] opened (board 11b), `:feature:media`: its stories in a grid, a tap playing
+ * them in the stories viewer ([StoryViewerRoute] with the album). Pushed above the profile it opens from.
+ */
+@Serializable
+data class StoryAlbumRoute(
+    val chatId: Long,
+    val albumId: Int,
+)
+
+/**
+ * Posting a story (`docs/adr/0036-posting-stories.md`), `:feature:media`: the photos and videos picked with Android's
+ * photo picker or taken with the camera app, reordered and sent on to the composer. Full screen, like the stories
+ * viewer, without the navigation bar or rail.
+ */
+@Serializable
+data object NewStoryRoute
+
+/**
+ * Making a sticker from the photo of file [fileId] (boards 14a, 14b), `:feature:media`: the photo cropped to a square
+ * with text, emoji and an outline, then added to one of the user's sticker sets or a new one. Full screen, like the
+ * stories viewer, without the navigation bar or rail; the media viewer's "Make a sticker" opens it in its place.
+ */
+@Serializable
+data class MakeStickerRoute(
+    val fileId: Int,
 )
 
 /**
@@ -441,6 +483,15 @@ data class StoryViewerRoute(
 data class ForwardRoute(
     val fromChatId: Long,
     val messageIds: List<Long>,
+)
+
+/**
+ * A shared style of Telegram's AI editor by its [name] (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"),
+ * `:feature:chat`: a dialog destination above the screen it is opened from, whose sheet adds the style only on a tap.
+ */
+@Serializable
+data class TextStyleRoute(
+    val name: String,
 )
 
 /**
@@ -554,6 +605,16 @@ data class ChatStatisticsRoute(
     val chatId: Long,
 )
 
+/**
+ * The statistics of the poll of message [messageId] in chat [chatId]: its votes over time and its totals, which
+ * Telegram gives the chat's administrators (`MessageProperties.canGetPollVoteStatistics`).
+ */
+@Serializable
+data class PollStatisticsRoute(
+    val chatId: Long,
+    val messageId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(
@@ -577,6 +638,12 @@ data class ChatInviteRoute(
 ) {
     override fun toString() = "ChatInviteRoute(…)"
 }
+
+/** The page of community [communityId] (the owner's board 19a), pushed above the info page of one of its chats. */
+@Serializable
+data class CommunityRoute(
+    val communityId: Long,
+)
 
 /** The boosts of channel or supergroup [chatId], read only (`REQUIREMENTS.md` FR-P5), pushed above its info page. */
 @Serializable
@@ -606,6 +673,17 @@ data class QrLoginRoute(
     override fun toString() = "QrLoginRoute(…)"
 }
 
+/**
+ * A request to log in to a website or an app with the Telegram account ("Log in with Telegram", `:feature:settings`):
+ * a dialog destination whose sheet asks before anything is shared. `toString()` leaves out the request's link.
+ */
+@Serializable
+data class OauthLoginRoute(
+    val url: String,
+) {
+    override fun toString() = "OauthLoginRoute(…)"
+}
+
 /** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */
 @Serializable
 data object MyQrCodeRoute
@@ -623,3 +701,13 @@ data object FeedbackRoute
  */
 @Serializable
 data object RecentCallsRoute
+
+/** The welcome messages of group [chatId] (the owner's board 20), pushed above its info page. */
+@Serializable
+data class WelcomeMessagesRoute(
+    val chatId: Long,
+)
+
+/** The user's name color (the owner's board 22b), pushed above Edit profile. */
+@Serializable
+data object ProfileColorRoute

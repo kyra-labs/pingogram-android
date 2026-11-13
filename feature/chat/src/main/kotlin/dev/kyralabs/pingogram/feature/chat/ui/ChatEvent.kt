@@ -123,6 +123,17 @@ sealed interface ChatEvent {
         val userId: Long,
     ) : ChatEvent
 
+    /** A chat a message names was tapped (a giveaway's participating channel): open it. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatEvent
+
+    /** "Update Pingogram" on a message this version cannot show: open the latest release's page. */
+    data object OpenUpdatePage : ChatEvent
+
+    /** The action bar's "Report": the report sheet for the whole chat, without messages. */
+    data object ReportChat : ChatEvent
+
     /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
     data class OpenMention(
         val target: MentionTarget,
@@ -206,9 +217,13 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
-    /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */
+    /**
+     * A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply and its text as
+     * the caption, above the GIF with [captionAbove].
+     */
     data class SendAnimation(
         val animation: Animation,
+        val captionAbove: Boolean = false,
     ) : ChatEvent
 
     /** The attach preview's "Send without compression": its photos and videos go as files, or compressed. */
@@ -237,6 +252,25 @@ sealed interface ChatEvent {
 
     /** Send the poll of the form as [options] say. */
     data class SendPoll(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** The photo picker gave [uri] for the poll form's photo. */
+    data class PickPollPhoto(
+        val uri: String,
+    ) : ChatEvent
+
+    /** The poll form's photo was taken away. */
+    data object RemovePollPhoto : ChatEvent
+
+    /** "Checklist" in the attach menu: the form of a new checklist opens. */
+    data object OpenChecklist : ChatEvent
+
+    /** The checklist form was dismissed: nothing is sent, the form empties. */
+    data object DismissChecklist : ChatEvent
+
+    /** Send the checklist of the form as [options] say. */
+    data class SendChecklist(
         val options: SendOptions = SendOptions(),
     ) : ChatEvent
 

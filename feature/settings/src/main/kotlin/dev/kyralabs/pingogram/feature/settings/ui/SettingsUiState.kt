@@ -120,6 +120,7 @@ enum class SettingsSubPage(
     NewChats(SettingsPage.PrivacySecurity),
     BlockedUsers(SettingsPage.PrivacySecurity),
     Websites(SettingsPage.PrivacySecurity),
+    Passkeys(SettingsPage.PrivacySecurity),
     TwoStepVerification(SettingsPage.PrivacySecurity),
     PasscodeLock(SettingsPage.PrivacySecurity),
     LockedChats(SettingsPage.PrivacySecurity),

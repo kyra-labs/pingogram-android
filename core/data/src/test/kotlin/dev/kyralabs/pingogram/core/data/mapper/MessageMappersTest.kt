@@ -82,6 +82,14 @@ class MessageMappersTest {
     }
 
     @Test
+    fun `a message Telegram can summarize carries the summary's language, others none`() {
+        val summarized = TdApiFixtures.message(isChannelPost = true).also { it.summaryLanguageCode = "es" }
+
+        assertEquals("es", summarized.toMessage().summaryLanguage)
+        assertNull(TdApiFixtures.message().toMessage().summaryLanguage)
+    }
+
+    @Test
     fun `a pending message is pending`() {
         val message = TdApiFixtures.message(isOutgoing = true, sendingState = TdApi.MessageSendingStatePending(1))
 
@@ -124,7 +132,7 @@ class MessageMappersTest {
             TdApi.MessageReplyToMessage(
                 100,
                 4,
-                TdApi.TextQuote(TdApiFixtures.formattedText("quoted part"), 6, true),
+                TdApi.TextQuote(TdApiFixtures.formattedText("quoted part"), emptyArray(), 6, true),
                 0,
                 "",
                 null,

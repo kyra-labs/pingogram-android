@@ -41,6 +41,7 @@
     <!-- A picked photo, video, file or contact could not be read. -->
     <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
     <string name="error_file_too_large">This file is too large to send.</string>
+    <string name="error_story_video_not_cut">This video can\'t be cut into stories.</string>
     <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
     <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
     <!-- Groups and channels: what administrators change. -->
@@ -50,6 +51,7 @@
     <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
     <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
     <string name="error_chat_full">This group is full.</string>
+    <string name="error_community_full">This community has as many chats as Telegram allows.</string>
     <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>
@@ -62,6 +64,8 @@
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
     <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
+    <string name="error_ai_edit_limit">You\'ve used your free AI edits for now. Telegram Premium allows more.</string>
+    <string name="error_too_many_text_styles">You\'ve added as many custom styles as Telegram allows.</string>
     <string name="error_not_available_in_demo">This needs a Telegram account. The demo can\'t do it.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
@@ -130,9 +134,15 @@
     <string name="preview_contact">Contact</string>
     <string name="preview_poll">Poll</string>
     <string name="preview_quiz">Quiz</string>
+    <string name="preview_checklist">Checklist</string>
     <string name="preview_game">Game</string>
     <string name="preview_invoice">Invoice</string>
     <string name="preview_story">Story</string>
+    <!-- A post whose photos and videos unlock for Telegram Stars. -->
+    <string name="preview_paid_media">Paid media</string>
+    <!-- A channel's giveaway of Telegram Premium or Telegram Stars, and the message that names its winners. -->
+    <string name="preview_giveaway">Giveaway</string>
+    <string name="preview_giveaway_winners">Giveaway winners</string>
     <string name="preview_expired_photo">Photo expired</string>
     <string name="preview_expired_video">Video expired</string>
     <string name="preview_expired_voice_message">Voice message expired</string>
@@ -141,6 +151,14 @@
     <!-- A rich message (a channel's post with headings and sections) that has no text or media to name it by. -->
     <string name="preview_rich_message">Message</string>
     <!-- A service message of a kind Pingogram does not describe yet (gifts, payments, forum topics, …). -->
+    <!-- What became of a post a subscriber suggested to a channel through its direct messages. -->
+    <string name="preview_suggested_post_approved">Suggested post approved</string>
+    <string name="preview_suggested_post_declined">Suggested post declined</string>
+    <!-- %1$s is the administrators' comment. -->
+    <string name="preview_suggested_post_declined_comment">Suggested post declined: %1$s</string>
+    <string name="preview_suggested_post_failed">The suggested post couldn\'t be published</string>
+    <string name="preview_suggested_post_paid">Suggested post paid for</string>
+    <string name="preview_suggested_post_refunded">Suggested post refunded</string>
     <string name="preview_service_other">Chat event</string>
 
     <!-- Service messages: %1$s is who did it (a first name or a chat's title); "you" strings are the current user's. -->
@@ -179,6 +197,10 @@
     <string name="preview_removed_you">%1$s removed you</string>
     <string name="preview_pinned">%1$s pinned a message</string>
     <string name="preview_you_pinned">You pinned a message</string>
+    <string name="preview_added_poll_option">%1$s added “%2$s” to the poll</string>
+    <string name="preview_you_added_poll_option">You added “%1$s” to the poll</string>
+    <string name="preview_removed_poll_option">%1$s removed “%2$s” from the poll</string>
+    <string name="preview_you_removed_poll_option">You removed “%1$s” from the poll</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>
@@ -200,11 +222,48 @@
     <string name="preview_auto_delete_off">Auto-delete turned off</string>
     <!-- One of the user's contacts created a Telegram account. -->
     <string name="preview_contact_registered">%1$s joined Telegram</string>
+    <!-- The current user suggested a birthday to the other person of a private chat. -->
+    <string name="preview_you_suggested_birthday">You suggested a birthday</string>
+    <!-- %1$s suggested a birthday to the current user. -->
+    <string name="preview_suggested_birthday">%1$s suggested your birthday</string>
     <string name="preview_video_chat_scheduled">Video chat scheduled</string>
     <string name="preview_video_chat_started">Video chat started</string>
     <string name="preview_video_chat_ended">Video chat ended</string>
     <string name="preview_invited_to_video_chat">%1$s invited members to the video chat</string>
     <string name="preview_you_invited_to_video_chat">You invited members to the video chat</string>
+    <!-- Checklists: %2$d tasks were marked as done or as not done, or added to a checklist. -->
+    <plurals name="preview_marked_tasks_done">
+        <item quantity="one">%1$s marked %2$d task as done</item>
+        <item quantity="other">%1$s marked %2$d tasks as done</item>
+    </plurals>
+    <plurals name="preview_you_marked_tasks_done">
+        <item quantity="one">You marked %1$d task as done</item>
+        <item quantity="other">You marked %1$d tasks as done</item>
+    </plurals>
+    <plurals name="preview_marked_tasks_not_done">
+        <item quantity="one">%1$s marked %2$d task as not done</item>
+        <item quantity="other">%1$s marked %2$d tasks as not done</item>
+    </plurals>
+    <plurals name="preview_you_marked_tasks_not_done">
+        <item quantity="one">You marked %1$d task as not done</item>
+        <item quantity="other">You marked %1$d tasks as not done</item>
+    </plurals>
+    <plurals name="preview_changed_tasks">
+        <item quantity="one">%1$s changed %2$d task of the checklist</item>
+        <item quantity="other">%1$s changed %2$d tasks of the checklist</item>
+    </plurals>
+    <plurals name="preview_you_changed_tasks">
+        <item quantity="one">You changed %1$d task of the checklist</item>
+        <item quantity="other">You changed %1$d tasks of the checklist</item>
+    </plurals>
+    <plurals name="preview_added_tasks">
+        <item quantity="one">%1$s added %2$d task to the checklist</item>
+        <item quantity="other">%1$s added %2$d tasks to the checklist</item>
+    </plurals>
+    <plurals name="preview_you_added_tasks">
+        <item quantity="one">You added %1$d task to the checklist</item>
+        <item quantity="other">You added %1$d tasks to the checklist</item>
+    </plurals>
 
     <!-- What someone in a private chat is doing right now (ChatActionText.kt), in place of the last message. -->
     <string name="action_typing">typing…</string>
@@ -330,4 +389,25 @@
     <string name="login_code_resend_fragment">Get the code on Fragment</string>
     <!-- %1$s: the remaining time, e.g. "42 seconds". -->
     <string name="login_code_resend_in">You can get a new code in %1$s.</string>
+    <!-- The birthday picker (Edit profile, suggesting a birthday to a contact): its default title. -->
+    <string name="birthday_title">Birthday</string>
+    <string name="birthday_show_year">Show the year</string>
+    <string name="birthday_remove">Remove</string>
+    <string name="birthday_cancel">Cancel</string>
+    <string name="birthday_done">Done</string>
+    <!-- A birthday suggestion in a chat (board 16b): %1$s is who suggested it. -->
+    <string name="birthday_suggestion_title">%1$s suggested your birthday</string>
+    <!-- The same card for a suggestion the user sent: %1$s is whom it was suggested to. -->
+    <string name="birthday_suggestion_title_outgoing">You suggested %1$s\'s birthday</string>
+    <!-- %1$s is who may see the birthday under the user's Birthday privacy setting, e.g. "My contacts". -->
+    <string name="birthday_suggestion_text">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting (%1$s).</string>
+    <string name="birthday_suggestion_text_no_privacy">If you accept, it goes on your profile. Who sees it follows your Birthday privacy setting.</string>
+    <!-- %1$s is whom the birthday was suggested to. -->
+    <string name="birthday_suggestion_text_outgoing">%1$s decides whether to keep it and who sees it.</string>
+    <string name="birthday_suggestion_decline">Decline</string>
+    <string name="birthday_suggestion_accept">Accept</string>
+    <string name="birthday_suggestion_accepted">Added to your profile</string>
+    <string name="birthday_suggestion_declined">Declined</string>
+    <!-- A statistics chart for screen readers: a series' name, first, last and highest values. -->
+    <string name="chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
 </resources>

@@ -9,11 +9,14 @@ import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.followedBy
 import dev.kyralabs.pingogram.feature.chat.ui.composer.restoredText
@@ -65,6 +68,8 @@ internal class ChatAttachments(
     private val replies: ReplyHandoff,
     private val onEffect: (ChatEffect) -> Unit,
     private val originalByDefault: () -> Boolean = { false },
+    private val pollLimits: suspend () -> PollLimits = { PollLimits() },
+    private val now: () -> Long = { System.currentTimeMillis() / MILLIS_PER_SECOND },
 ) {
     /** The caption of the preview's photos, videos or files. */
     val caption =
@@ -72,6 +77,9 @@ internal class ChatAttachments(
 
     /** The form of a new poll. */
     val poll = PollEditor(savedState.restoredPoll())
+
+    /** The form of a new checklist. */
+    val checklist = ChecklistEditor(savedState.restoredChecklist())
 
     private var nextKey = 0L
 
@@ -91,6 +99,11 @@ internal class ChatAttachments(
     /** Whether the poll form is open. */
     val isPollOpen: StateFlow<Boolean> = mutablePollOpen.asStateFlow()
 
+    private val mutableChecklistOpen = MutableStateFlow(savedState.restoredChecklistOpen())
+
+    /** Whether the checklist form is open. */
+    val isChecklistOpen: StateFlow<Boolean> = mutableChecklistOpen.asStateFlow()
+
     /** The jobs preparing picked files, which closing the preview stops. */
     private val preparing = mutableSetOf<Job>()
 
@@ -109,6 +122,9 @@ internal class ChatAttachments(
             }
         }
         scope.launch { snapshotFlow { poll.draft }.collect { savedState.savePoll(isPollOpen.value, it) } }
+        scope.launch {
+            snapshotFlow { checklist.draft }.collect { savedState.saveChecklist(isChecklistOpen.value, it) }
+        }
     }
 
     /** Photos and videos from the Photo Picker, by their URIs. */
@@ -290,11 +306,30 @@ internal class ChatAttachments(
         scope.launch { report(repository.sendGreetingSticker(chatId, replyTo, options), options, replyTo) }
     }
 
-    /** Sends GIF [animation], tapped in the composer's GIF tab, at once, with the composer's reply. */
-    fun sendAnimation(animation: Animation) {
+    /** Sends the GIF of [event], with [composer]'s text as its caption, given back to it on a refusal. */
+    fun sendAnimation(
+        event: ChatEvent.SendAnimation,
+        composer: ChatComposer,
+    ) = sendAnimation(event.animation, composer.takeCaption(), event.captionAbove, composer::restoreCaption)
+
+    /**
+     * Sends GIF [animation], tapped in the composer's GIF tab, at once, with the composer's reply and [caption] (the
+     * composer's text, null without one) below it, or above it with [captionAbove]. A failure gives the caption back
+     * through [onFailed].
+     */
+    fun sendAnimation(
+        animation: Animation,
+        caption: FormattedText? = null,
+        captionAbove: Boolean = false,
+        onFailed: (FormattedText) -> Unit = {},
+    ) {
         val replyTo = replies.takeReply()
         val options = SendOptions()
-        scope.launch { report(repository.sendAnimation(chatId, animation, options, replyTo), options, replyTo) }
+        scope.launch {
+            val result = repository.sendAnimation(chatId, animation, options, replyTo, caption, captionAbove)
+            if (result is Outcome.Failure) caption?.let(onFailed)
+            report(result, options, replyTo)
+        }
     }
 
     /**
@@ -304,12 +339,52 @@ internal class ChatAttachments(
     fun openPoll(requiredQuiz: Boolean? = null) {
         poll.require(requiredQuiz)
         setPollOpen(true)
+        loadPollLimits()
     }
 
-    /** Closes the poll form, emptying it. */
+    /** Reads what Telegram allows in a poll, for the open form (also after process death). */
+    fun loadPollLimits() {
+        scope.launch { poll.limits = pollLimits() }
+    }
+
+    /** Closes the poll form, emptying it and deleting its photo's copy. */
     fun dismissPoll() {
         setPollOpen(false)
+        poll.photo?.let { repository.discard(listOf(it)) }
         poll.clear()
+    }
+
+    /**
+     * Prepares the photo picked at [uri] for the poll, in place of the one it had (whose copy is deleted); anything
+     * that is not a photo is a snackbar.
+     */
+    fun pickPollPhoto(uri: String) {
+        poll.isPreparingPhoto = true
+        scope.launch {
+            val result = repository.prepare(uri, AttachmentKind.Media)
+            poll.isPreparingPhoto = false
+            when (val prepared = (result as? Outcome.Success)?.value) {
+                is Attachment.Photo -> {
+                    poll.photo?.let { repository.discard(listOf(it)) }
+                    poll.photo = prepared
+                }
+
+                null -> {
+                    onEffect(ChatEffect.ShowError((result as Outcome.Failure).error))
+                }
+
+                else -> {
+                    repository.discard(listOf(prepared))
+                    onEffect(ChatEffect.PollPhotoOnly)
+                }
+            }
+        }
+    }
+
+    /** Takes the poll's photo away, deleting its copy. */
+    fun removePollPhoto() {
+        poll.photo?.let { repository.discard(listOf(it)) }
+        poll.photo = null
     }
 
     /**
@@ -320,12 +395,38 @@ internal class ChatAttachments(
         options: SendOptions,
         inChannel: Boolean,
     ) {
-        val newPoll = poll.poll(forceAnonymous = inChannel) ?: return
+        val newPoll = poll.poll(forceAnonymous = inChannel, now = now()) ?: return
         setPollOpen(false)
         val replyTo = replies.takeReply()
         scope.launch {
             val result = repository.sendPoll(chatId, newPoll, options, replyTo)
             if (result is Outcome.Success) poll.clear() else setPollOpen(true)
+            report(result, options, replyTo)
+        }
+    }
+
+    /** Opens the checklist form. */
+    fun openChecklist() {
+        setChecklistOpen(true)
+    }
+
+    /** Closes the checklist form, emptying it. */
+    fun dismissChecklist() {
+        setChecklistOpen(false)
+        checklist.clear()
+    }
+
+    /**
+     * Sends the checklist as [options] say, if it is complete: the form closes at once, and empties once the checklist
+     * is sent; a refused checklist opens again as it was.
+     */
+    fun sendChecklist(options: SendOptions) {
+        val newChecklist = checklist.checklist() ?: return
+        setChecklistOpen(false)
+        val replyTo = replies.takeReply()
+        scope.launch {
+            val result = repository.sendChecklist(chatId, newChecklist, options, replyTo)
+            if (result is Outcome.Success) checklist.clear() else setChecklistOpen(true)
             report(result, options, replyTo)
         }
     }
@@ -342,6 +443,7 @@ internal class ChatAttachments(
     fun release() {
         mutablePreview.value?.let { repository.discard(it.attachments) }
         savedState.get<String>(KEY_CAMERA_FILE)?.let(repository::discardCameraFile)
+        poll.photo?.takeUnless { isPollOpen.value }?.let { repository.discard(listOf(it)) }
     }
 
     private fun pick(
@@ -450,7 +552,14 @@ internal class ChatAttachments(
         savedState.savePoll(open, poll.draft)
     }
 
+    private fun setChecklistOpen(open: Boolean) {
+        mutableChecklistOpen.value = open
+        savedState.saveChecklist(open, checklist.draft)
+    }
+
     private companion object {
+        const val MILLIS_PER_SECOND = 1_000L
+
         /** The caption's text and formatting ([savedEntities]), for process death. */
         const val KEY_CAPTION = "chat.attachCaption"
         const val KEY_CAPTION_ENTITIES = "chat.attachCaptionEntities"

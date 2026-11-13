@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AutoLock
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -98,36 +99,38 @@ internal fun PasscodeLockScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) { innerPadding ->
-        when (state) {
-            PasscodeLockUiState.Loading -> {
-                SettingsContent(innerPadding) {
-                    SettingsLoading(stringResource(R.string.settings_passcode_lock_loading))
+        StateCrossfade(state, contentKey = { it::class }, label = "PasscodeLockPage") { shown ->
+            when (shown) {
+                PasscodeLockUiState.Loading -> {
+                    SettingsContent(innerPadding) {
+                        SettingsLoading(stringResource(R.string.settings_passcode_lock_loading))
+                    }
                 }
-            }
 
-            PasscodeLockUiState.Off -> {
-                SettingsContent(innerPadding) { PasscodeOff(onSetPasscode) }
-            }
-
-            is PasscodeLockUiState.Verify -> {
-                SettingsBody(innerPadding) { contentPadding ->
-                    PasscodeEntry(
-                        texts =
-                            PasscodeEntryTexts(
-                                title = stringResource(R.string.settings_passcode_verify_title),
-                                hint = stringResource(R.string.settings_passcode_verify_hint),
-                                submit = stringResource(R.string.settings_passcode_next),
-                            ),
-                        state = state.entry,
-                        input = input,
-                        onSubmit = { onEvent(PasscodeLockEvent.Submit) },
-                        modifier = Modifier.padding(contentPadding),
-                    )
+                PasscodeLockUiState.Off -> {
+                    SettingsContent(innerPadding) { PasscodeOff(onSetPasscode) }
                 }
-            }
 
-            is PasscodeLockUiState.On -> {
-                SettingsContent(innerPadding) { PasscodeOn(state, onEvent, onSetPasscode) }
+                is PasscodeLockUiState.Verify -> {
+                    SettingsBody(innerPadding) { contentPadding ->
+                        PasscodeEntry(
+                            texts =
+                                PasscodeEntryTexts(
+                                    title = stringResource(R.string.settings_passcode_verify_title),
+                                    hint = stringResource(R.string.settings_passcode_verify_hint),
+                                    submit = stringResource(R.string.settings_passcode_next),
+                                ),
+                            state = shown.entry,
+                            input = input,
+                            onSubmit = { onEvent(PasscodeLockEvent.Submit) },
+                            modifier = Modifier.padding(contentPadding),
+                        )
+                    }
+                }
+
+                is PasscodeLockUiState.On -> {
+                    SettingsContent(innerPadding) { PasscodeOn(shown, onEvent, onSetPasscode) }
+                }
             }
         }
     }

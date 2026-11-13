@@ -7,7 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.MemberFilter
  * gone after leaving or deleting it ([onLeft]); a chat or profile a mention or member names ([onOpenChat],
  * [onOpenProfile]); the members page ([onOpenMembers]) and the administrators' pages ([onOpenPage]); the shared
  * media's photos, videos and GIFs in the media viewer ([onOpenMedia]), its files at their message in the chat
- * ([onOpenMessage]).
+ * ([onOpenMessage]); the community it belongs to ([onOpenCommunity]).
  */
 @Suppress("LongParameterList") // One callback per place the page leads to.
 internal class ChatInfoNavigation(
@@ -19,6 +19,7 @@ internal class ChatInfoNavigation(
     val onOpenPage: (page: ChatInfoPage) -> Unit,
     val onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     val onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
+    val onOpenCommunity: (communityId: Long) -> Unit = {},
 ) {
     /** Follows [effect] if it leads somewhere; false for the effects the page shows itself. */
     fun navigate(effect: ChatInfoEffect): Boolean {
@@ -27,6 +28,7 @@ internal class ChatInfoNavigation(
             is ChatInfoEffect.OpenProfile -> onOpenProfile(effect.userId)
             is ChatInfoEffect.OpenMembers -> onOpenMembers(effect.filter)
             is ChatInfoEffect.Open -> onOpenPage(effect.page)
+            is ChatInfoEffect.OpenCommunity -> onOpenCommunity(effect.communityId)
             ChatInfoEffect.Left -> onLeft()
             else -> return false
         }

@@ -9,6 +9,7 @@ import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.Chat
@@ -19,9 +20,11 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
+import dev.kyralabs.pingogram.core.domain.model.StoryInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
@@ -42,6 +45,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -69,9 +73,12 @@ import kotlin.time.TimeSource
  *   viewed, as Telegram's terms ask: there is no hidden viewing and no stealth mode), once per showing, and closed
  *   (`closeStory`) when it leaves, the screen stops or the viewer closes.
  * - **Pausing**: while a finger holds the story, the pager moves, the reactions are open, the reply field has the
- *   keyboard, or the screen is stopped ([Pause]).
+ *   keyboard, a system back gesture is under way, or the screen is stopped ([Pause]).
+ *   During a back gesture nothing closes the viewer or moves it to the next chat but the gesture itself.
  * - **Reactions**: the emoji TDLib offers for stories without Telegram Premium; a tap sets one or takes it back,
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
+ * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
+ *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat.
  * - **Saved state**: the chats, the one shown and its story, so after process death the viewer opens where it was.
  *   The reply's text is not saved.
  *
@@ -93,6 +100,7 @@ class StoryViewerViewModel internal constructor(
     timeSource: TimeSource,
     private val applicationScope: CoroutineScope,
     private val videoPlayer: VideoPlayer,
+    private val albumRepository: StoryAlbumRepository? = null,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -104,6 +112,7 @@ class StoryViewerViewModel internal constructor(
         clock: WallClock,
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
+        albumRepository: StoryAlbumRepository,
     ) : this(
         savedStateHandle.toRoute<StoryViewerRoute>(),
         savedStateHandle,
@@ -115,6 +124,7 @@ class StoryViewerViewModel internal constructor(
         TimeSource.Monotonic,
         applicationScope,
         videoPlayer,
+        albumRepository,
     )
 
     /** The reply field's text, never saved. */
@@ -146,7 +156,7 @@ class StoryViewerViewModel internal constructor(
             player = videoPlayer,
             scope = viewModelScope,
             timeSource = timeSource,
-            onEnd = ::next,
+            onEnd = ::onStoryEnded,
             onFailed = ::onPlaybackFailed,
         )
 
@@ -163,6 +173,9 @@ class StoryViewerViewModel internal constructor(
     private val requestedFiles = mutableSetOf<Int>()
     private var failedPlayback: StoryKey? = null
 
+    /** The story ended during a back gesture ([onStoryEnded]); the viewer moves on if the gesture is cancelled. */
+    private var endedDuringBack = false
+
     private val currentChatId: Flow<Long?> =
         combine(posters, position) { posters, position -> posters?.getOrNull(position.posterIndex) }
             .distinctUntilChanged()
@@ -170,7 +183,7 @@ class StoryViewerViewModel internal constructor(
     // Shared: the pages and the story choice read it, and it asks TDLib for a chat it has not announced.
     private val currentStories: Flow<Outcome<ActiveStories>?> =
         combine(currentChatId, retries) { chatId, _ -> chatId }
-            .flatMapLatest { chatId -> chatId?.let(storyRepository::activeStoriesOf) ?: flowOf(null) }
+            .flatMapLatest { chatId -> chatId?.let(::storiesOf) ?: flowOf(null) }
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
 
     private val currentKey: Flow<StoryKey?> =
@@ -256,6 +269,10 @@ class StoryViewerViewModel internal constructor(
                 setPaused(Pause.Held, event.held)
             }
 
+            is StoryViewerEvent.BackGesture -> {
+                onBackGesture(event.active)
+            }
+
             is StoryViewerEvent.Paging -> {
                 setPaused(Pause.Paging, event.moving)
             }
@@ -336,10 +353,42 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
-    /** The chats to swipe between: the main stories list as it is now, or the route's chat alone if it is not in it. */
+    /**
+     * The stories of chat [chatId] to page through: its active stories, or with the route's album, that album's stories
+     * as if they were (none unseen, so the viewer starts at the route's story or the first).
+     */
+    private fun storiesOf(chatId: Long): Flow<Outcome<ActiveStories>> {
+        val albumId = route.albumId
+        val albums = albumRepository
+        if (albumId == null || albums == null) return storyRepository.activeStoriesOf(chatId)
+        return flow {
+            val page = albums.stories(chatId, albumId, offset = 0, limit = ALBUM_STORY_LIMIT)
+            emit(
+                page.map { found ->
+                    ActiveStories(
+                        chatId = chatId,
+                        list = null,
+                        order = 0,
+                        maxReadStoryId = Int.MAX_VALUE,
+                        stories = found.stories.map { StoryInfo(it.id, it.date) }.toImmutableList(),
+                    )
+                },
+            )
+        }
+    }
+
+    /**
+     * The chats to swipe between: the main stories list as it is now, or the route's chat alone if it is not in it or
+     * the viewer plays one of its albums.
+     */
     private suspend fun choosePosters() {
         if (posters.value != null) return
-        val listed = storyRepository.activeStories(StoryList.Main).first().map { it.chatId }
+        val listed =
+            if (route.albumId == null) {
+                storyRepository.activeStories(StoryList.Main).first().map { it.chatId }
+            } else {
+                emptyList()
+            }
         val chosen = if (route.chatId in listed) listed else listOf(route.chatId)
         position.value = Position(chosen.indexOf(route.chatId), route.storyId)
         posters.value = chosen.toImmutableList()
@@ -458,8 +507,8 @@ class StoryViewerViewModel internal constructor(
                 }
             }
 
-            StoryContent.Live -> {
-                flowOf(Shown.still(key, story, StoryMedia.Live))
+            is StoryContent.Live -> {
+                flowOf(Shown.still(key, story, StoryMedia.Live(key.chatId, content.groupCallId)))
             }
 
             StoryContent.Unsupported -> {
@@ -538,6 +587,24 @@ class StoryViewerViewModel internal constructor(
             position.value = current.copy(storyId = following.id)
         } else {
             nextPoster()
+        }
+    }
+
+    /**
+     * The story in the timeline ended: the next story shows, or the viewer closes after the last. During a back
+     * gesture (which pauses the timeline, so this only follows an end already on its way) it waits for the gesture:
+     * the viewer neither closes nor slides to the next chat under the user's finger.
+     */
+    private fun onStoryEnded() {
+        if (Pause.Back in pauses.value) endedDuringBack = true else next()
+    }
+
+    /** Pauses the story for a back gesture; a cancelled one resumes it, and moves on if it ended meanwhile. */
+    private fun onBackGesture(active: Boolean) {
+        setPaused(Pause.Back, active)
+        if (!active && endedDuringBack) {
+            endedDuringBack = false
+            next()
         }
     }
 
@@ -727,6 +794,7 @@ class StoryViewerViewModel internal constructor(
         Paging,
         Typing,
         Reactions,
+        Back,
     }
 
     /** The chat shown, by its index among the posters, and its story; null until chosen. */
@@ -761,6 +829,9 @@ class StoryViewerViewModel internal constructor(
 
         /** Keeps the state through a rotation, as every screen's view model does. */
         const val STOP_TIMEOUT_MILLIS = 5_000L
+
+        /** How many of an album's stories the viewer plays: td_api.tl's most for one request. */
+        const val ALBUM_STORY_LIMIT = 100
 
         val NO_PROGRESS: () -> Float = { 0f }
 

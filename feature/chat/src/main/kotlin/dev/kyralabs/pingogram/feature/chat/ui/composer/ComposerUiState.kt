@@ -42,6 +42,17 @@ sealed interface ComposerUiState {
     ) : ComposerUiState
 
     /**
+     * A channel the user reads, whose subscribers can write to its administrators (td_api.tl
+     * `supergroup.has_direct_messages_group`): "Message channel" in the composer's place, which opens [chatId], the
+     * user's thread with the channel; where each message costs Telegram Stars ([starCount] > 0), "Message · 10 ★" with
+     * a note that Pingogram can't pay yet.
+     */
+    data class MessageChannel(
+        val chatId: Long,
+        val starCount: Long,
+    ) : ComposerUiState
+
+    /**
      * A private chat with a bot that has no messages yet, or that a start link opened: "Start" in the composer's place,
      * which starts the bot (`sendBotStartMessage`) once tapped; busy while Telegram is asked ([isStarting]).
      */
@@ -55,7 +66,9 @@ sealed interface ComposerUiState {
      * attach button offers, as the chat allows; empty hides the button, as while editing. [sendAs] who new messages go
      * out as, where the user can choose (its avatar opens the send-as picker); null hides it, as while editing. [bot]
      * the button of the chat's bots at the start of the pill, where they offer commands or a menu; null hides it, as
-     * while editing.
+     * while editing. [canRepeat] whether scheduling offers to repeat the message (`SendOptions.repeatPeriod`), which
+     * Telegram allows Telegram Premium subscribers only. [canSuggestPost] whether its send menu offers "Suggest as a
+     * post" (`SendOptions.suggestAsPost`): in a channel's direct messages, to a subscriber.
      */
     data class Available(
         val canSchedule: Boolean,
@@ -63,6 +76,8 @@ sealed interface ComposerUiState {
         val attachOptions: ImmutableList<AttachOption> = persistentListOf(),
         val sendAs: SendAsChoice? = null,
         val bot: ComposerBotButton? = null,
+        val canRepeat: Boolean = false,
+        val canSuggestPost: Boolean = false,
     ) : ComposerUiState
 }
 
@@ -126,12 +141,42 @@ internal fun composerState(
         ComposerUiState.Join(isChannel = isChannel, requestsToJoin = supergroup.joinByRequest && !isChannel)
     } else {
         when (chat.writeAccess(user, basicGroup, supergroup)) {
-            WriteAccess.Allowed -> ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
-            WriteAccess.ReadOnly, WriteAccess.Unknown -> ComposerUiState.Hidden
-            WriteAccess.NotMember -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
-            WriteAccess.Restricted -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+            WriteAccess.Allowed -> {
+                supergroup?.paidComposerState()
+                    ?: ComposerUiState.Available(
+                        canSchedule = chat.type !is ChatType.Secret,
+                        // A subscriber suggests posts in a channel's direct messages; its administrators answer them.
+                        canSuggestPost =
+                            supergroup?.isDirectMessages == true && !supergroup.isAdministeredDirectMessages,
+                    )
+            }
+
+            WriteAccess.ReadOnly, WriteAccess.Unknown -> {
+                ComposerUiState.Hidden
+            }
+
+            WriteAccess.NotMember -> {
+                ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
+            }
+
+            WriteAccess.Restricted -> {
+                ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+            }
         }
     }
+
+/**
+ * A channel's direct messages chat where each message costs Telegram Stars, for a subscriber: a label with the price
+ * and that Pingogram can't pay yet (`CLAUDE.md` rule 3: shown honestly, never worked around); null where messages are
+ * free, or for the channel's administrators, who never pay.
+ */
+private fun Supergroup.paidComposerState(): ComposerUiState? {
+    val stars = paidMessageStarCount.takeIf { isDirectMessages && !isAdministeredDirectMessages && it > 0 }
+    return stars?.let {
+        val count = it.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        ComposerUiState.Unavailable(UiText.plural(R.plurals.composer_channel_charges, count, count))
+    }
+}
 
 /** The label of a secret chat that is not ready: pending or ended; nothing while it is not known. */
 private fun secretComposerState(state: SecretChatState?): ComposerUiState =

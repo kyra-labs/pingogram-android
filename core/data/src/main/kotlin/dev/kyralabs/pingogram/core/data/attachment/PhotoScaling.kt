@@ -83,6 +83,30 @@ internal fun photoPlan(
 }
 
 /**
+ * The plan for a sticker of an image stored at [storedWidth] × [storedHeight] in [orientation]: upright, its longer
+ * side exactly [side] pixels (enlarged if smaller, as Telegram takes no other size), aspect ratio kept, no side below
+ * 1.
+ */
+internal fun stickerPlan(
+    storedWidth: Int,
+    storedHeight: Int,
+    orientation: Orientation,
+    side: Int,
+): PhotoPlan {
+    val (uprightWidth, uprightHeight) =
+        if (orientation.swapsSides) storedHeight to storedWidth else storedWidth to storedHeight
+    val scale = side.toDouble() / max(uprightWidth, uprightHeight).coerceAtLeast(1)
+    val width = (uprightWidth * scale).roundToInt().coerceIn(1, side)
+    val height = (uprightHeight * scale).roundToInt().coerceIn(1, side)
+    val (neededWidth, neededHeight) = if (orientation.swapsSides) height to width else width to height
+    var sampleSize = 1
+    while (storedWidth / (sampleSize * 2) >= neededWidth && storedHeight / (sampleSize * 2) >= neededHeight) {
+        sampleSize *= 2
+    }
+    return PhotoPlan(storedWidth, storedHeight, orientation, sampleSize, width, height)
+}
+
+/**
  * [width] × [height] scaled down so the longer side is at most [maxSide], keeping the aspect ratio, never enlarged;
  * no side below 1. For photos ([MAX_PHOTO_SIDE]) and video thumbnails ([MAX_THUMBNAIL_SIDE]).
  */

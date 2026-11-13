@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,13 +21,17 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -40,6 +45,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -51,6 +58,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.insetContentPadding
 import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
 /**
  * Who saw a group message and who reacted to it (`docs/DESIGN_SYSTEM.md` §6 "Seen by and reactions"), a
@@ -74,13 +82,18 @@ import kotlinx.coroutines.flow.filterNotNull
 internal fun MessageInteractionsBottomSheet(
     sheet: MessageInteractionsSheet,
     onEvent: (InteractionsEvent) -> Unit,
+    snackbars: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
     // The sheet's window keeps the conversation's direction, also where only the composition sets it.
     val direction = LocalLayoutDirection.current
     ModalBottomSheet(onDismissRequest = { currentOnEvent(InteractionsEvent.Dismiss) }) {
         CompositionLocalProvider(LocalLayoutDirection provides direction) {
-            MessageInteractionsContent(sheet, currentOnEvent)
+            // The sheet is a window of its own: its snackbars show in it, over its rows.
+            Box {
+                MessageInteractionsContent(sheet, currentOnEvent)
+                SnackbarHost(snackbars, Modifier.align(Alignment.BottomCenter))
+            }
         }
     }
 }
@@ -128,13 +141,25 @@ internal fun MessageInteractionsContent(
             label = "interactions",
         ) { shown ->
             when (val content = shown.content) {
-                InteractionsContent.Loading -> InteractionsLoading()
-                is InteractionsContent.Error -> InteractionsError(content) { onEvent(InteractionsEvent.Retry) }
-                InteractionsContent.Empty -> InteractionsEmpty(isSeen = shown.selected == InteractionsTab.Seen)
-                is InteractionsContent.Rows -> InteractionList(content, onEvent)
+                InteractionsContent.Loading -> {
+                    InteractionsLoading()
+                }
+
+                is InteractionsContent.Error -> {
+                    InteractionsError(content) { onEvent(InteractionsEvent.Retry) }
+                }
+
+                InteractionsContent.Empty -> {
+                    InteractionsEmpty(isSeen = shown.selected == InteractionsTab.Seen)
+                }
+
+                is InteractionsContent.Rows -> {
+                    InteractionList(content, onEvent, shown.canRemoveReactions)
+                }
             }
         }
     }
+    sheet.removal?.let { RemoveReactionsDialog(it, onEvent) }
 }
 
 /** The rows, then the next page's progress or failure; asks for the next page as the end comes near. */
@@ -142,20 +167,33 @@ internal fun MessageInteractionsContent(
 private fun InteractionList(
     content: InteractionsContent.Rows,
     onEvent: (InteractionsEvent) -> Unit,
+    removes: Boolean,
 ) {
     val listState = rememberLazyListState()
+    // Rows that load, and those a removal of reactions takes out, come and go on the scheme's springs.
+    val motion = rememberItemMotion()
     LazyColumn(state = listState, modifier = Modifier.testTag(INTERACTIONS_LIST_TAG)) {
         items(content.rows, key = { it.key }, contentType = { CONTENT_TYPE_ROW }) { row ->
-            InteractionRowItem(row, onClick = { onEvent(InteractionsEvent.Open(row.sender)) })
+            Box(Modifier.animateItem(this, motion)) {
+                InteractionRowItem(
+                    row = row,
+                    onClick = { onEvent(InteractionsEvent.Open(row.sender)) },
+                    onRemove =
+                        if (removes) ({ all -> onEvent(InteractionsEvent.AskRemove(row.sender, all)) }) else null,
+                )
+            }
         }
         when (val more = content.more) {
             MoreInteractions.Loading -> {
-                item(key = KEY_MORE, contentType = KEY_MORE) { MoreLoading() }
+                item(
+                    key = KEY_MORE,
+                    contentType = KEY_MORE,
+                ) { Box(Modifier.animateItem(this, motion)) { MoreLoading() } }
             }
 
             is MoreInteractions.Failed -> {
                 item(key = KEY_MORE, contentType = KEY_MORE) {
-                    MoreFailed(more) { onEvent(InteractionsEvent.Retry) }
+                    Box(Modifier.animateItem(this, motion)) { MoreFailed(more) { onEvent(InteractionsEvent.Retry) } }
                 }
             }
 
@@ -175,6 +213,7 @@ private fun InteractionList(
 private fun InteractionRowItem(
     row: InteractionRow,
     onClick: () -> Unit,
+    onRemove: ((all: Boolean) -> Unit)? = null,
 ) {
     val name = row.name.resolve()
     val time = row.time?.resolve()
@@ -215,7 +254,8 @@ private fun InteractionRowItem(
                     )
                 }
             },
-        trailingContent = row.reaction?.let { label -> { RowReaction(label) } },
+        trailingContent =
+            if (row.reaction == null && onRemove == null) null else ({ RowEnd(row.reaction, name, onRemove) }),
     ) {
         Text(
             text = name,
@@ -224,6 +264,19 @@ private fun InteractionRowItem(
             style = LocalTextStyle.current.userContent,
             modifier = Modifier.clearAndSetSemantics {},
         )
+    }
+}
+
+/** A row's end: its reaction, then where the user may, the options that remove [name]'s reactions. */
+@Composable
+private fun RowEnd(
+    reaction: ReactionLabel?,
+    name: String,
+    onRemove: ((all: Boolean) -> Unit)?,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        reaction?.let { RowReaction(it) }
+        onRemove?.let { RemoveReactionsButton(name, it) }
     }
 }
 
@@ -305,14 +358,25 @@ internal fun MessageInteractionsHost(
 ) {
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
+    val snackbars = remember { SnackbarHostState() }
+    val resources = LocalResources.current
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is InteractionsEffect.OpenProfile -> currentOnOpenProfile?.invoke(effect.userId)
-                is InteractionsEffect.OpenChat -> currentOnOpenChat?.invoke(effect.chatId)
+                is InteractionsEffect.OpenProfile -> {
+                    currentOnOpenProfile?.invoke(effect.userId)
+                }
+
+                is InteractionsEffect.OpenChat -> {
+                    currentOnOpenChat?.invoke(effect.chatId)
+                }
+
+                else -> {
+                    removalNotice(resources, effect)?.let { launch { snackbars.showSnackbar(it) } }
+                }
             }
         }
     }
     val sheet by viewModel.sheet.collectAsStateWithLifecycle()
-    sheet?.let { MessageInteractionsBottomSheet(it, viewModel::onEvent) }
+    sheet?.let { MessageInteractionsBottomSheet(it, viewModel::onEvent, snackbars) }
 }

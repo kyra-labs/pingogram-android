@@ -60,10 +60,11 @@ abstract class MediaViewerViewModelHarness {
     protected fun TestScope.viewModel(
         messageId: Long,
         handle: SavedStateHandle = SavedStateHandle(),
+        startSeconds: Int? = null,
     ): MediaViewerViewModel {
         val viewModel =
             MediaViewerViewModel(
-                route = MediaViewerRoute(CHAT, messageId),
+                route = MediaViewerRoute(CHAT, messageId, startSeconds),
                 savedStateHandle = handle,
                 mediaRepository = media,
                 fileRepository = files,

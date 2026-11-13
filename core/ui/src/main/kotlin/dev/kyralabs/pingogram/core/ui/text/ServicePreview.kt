@@ -1,10 +1,12 @@
 package dev.kyralabs.pingogram.core.ui.text
 
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
+import dev.kyralabs.pingogram.core.domain.model.SuggestedPostAnswer
 import dev.kyralabs.pingogram.core.ui.R
 
 /**
@@ -84,6 +86,10 @@ private fun eventText(action: ServiceAction): UiText? =
             UiText.Plain(previewLine(action.text))
         }
 
+        is ServiceAction.SuggestedPostAnswered -> {
+            suggestedPostText(action)
+        }
+
         ServiceAction.Other -> {
             UiText.resource(R.string.preview_service_other)
         }
@@ -145,8 +151,28 @@ private class Actor(
                 UiText.resource(R.string.preview_contact_registered, name)
             }
 
+            is ServiceAction.BirthdateSuggested -> {
+                did(R.string.preview_you_suggested_birthday, R.string.preview_suggested_birthday)
+            }
+
             is ServiceAction.VideoChatInvited -> {
                 did(R.string.preview_you_invited_to_video_chat, R.string.preview_invited_to_video_chat)
+            }
+
+            is ServiceAction.ChecklistTasksDone -> {
+                tasksChanged(action)
+            }
+
+            is ServiceAction.ChecklistTasksAdded -> {
+                counted(R.plurals.preview_you_added_tasks, R.plurals.preview_added_tasks, action.count)
+            }
+
+            is ServiceAction.PollOptionAdded -> {
+                pollOption(R.string.preview_you_added_poll_option, R.string.preview_added_poll_option, action.text)
+            }
+
+            is ServiceAction.PollOptionDeleted -> {
+                pollOption(R.string.preview_you_removed_poll_option, R.string.preview_removed_poll_option, action.text)
             }
 
             // Worded by the other functions of this file.
@@ -156,6 +182,44 @@ private class Actor(
         }
 
     fun joined(): UiText = did(R.string.preview_you_joined, R.string.preview_joined)
+
+    /** An answer added to or removed from a poll, its [text] isolated from the words around it. */
+    private fun pollOption(
+        @StringRes mine: Int,
+        @StringRes theirs: Int,
+        text: String,
+    ): UiText = did(mine, theirs, text.bidiIsolated())
+
+    /** Tasks marked as done, as not done, or both at once ("changed 3 tasks"). */
+    private fun tasksChanged(action: ServiceAction.ChecklistTasksDone): UiText =
+        when {
+            action.notDoneCount == 0 -> {
+                counted(R.plurals.preview_you_marked_tasks_done, R.plurals.preview_marked_tasks_done, action.doneCount)
+            }
+
+            action.doneCount == 0 -> {
+                counted(
+                    R.plurals.preview_you_marked_tasks_not_done,
+                    R.plurals.preview_marked_tasks_not_done,
+                    action.notDoneCount,
+                )
+            }
+
+            else -> {
+                counted(
+                    R.plurals.preview_you_changed_tasks,
+                    R.plurals.preview_changed_tasks,
+                    action.doneCount + action.notDoneCount,
+                )
+            }
+        }
+
+    /** [mine] with [count] for the current user's action; [theirs] with the name, then [count], for anyone else's. */
+    private fun counted(
+        @PluralsRes mine: Int,
+        @PluralsRes theirs: Int,
+        count: Int,
+    ): UiText = if (byMe) UiText.plural(mine, count, count) else UiText.plural(theirs, count, name, count)
 
     fun left(): UiText = did(R.string.preview_you_left, R.string.preview_left)
 
@@ -256,3 +320,34 @@ private fun callText(
         }
     return UiText.resource(if (call.isVideo) video else voice)
 }
+
+/** What became of a suggested post; a decline with the administrators' comment quotes it. */
+private fun suggestedPostText(action: ServiceAction.SuggestedPostAnswered): UiText =
+    when (action.answer) {
+        SuggestedPostAnswer.Approved -> {
+            UiText.resource(R.string.preview_suggested_post_approved)
+        }
+
+        SuggestedPostAnswer.Declined -> {
+            if (action.comment.isBlank()) {
+                UiText.resource(R.string.preview_suggested_post_declined)
+            } else {
+                UiText.resource(
+                    R.string.preview_suggested_post_declined_comment,
+                    previewLine(action.comment).bidiIsolated(),
+                )
+            }
+        }
+
+        SuggestedPostAnswer.ApprovalFailed -> {
+            UiText.resource(R.string.preview_suggested_post_failed)
+        }
+
+        SuggestedPostAnswer.Paid -> {
+            UiText.resource(R.string.preview_suggested_post_paid)
+        }
+
+        SuggestedPostAnswer.Refunded -> {
+            UiText.resource(R.string.preview_suggested_post_refunded)
+        }
+    }

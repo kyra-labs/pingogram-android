@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAuthStep
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -81,6 +82,21 @@ class TdlibAuthRepository(
     // code to be scanned (td/telegram/AuthManager.cpp). logOut on an unauthorized session destroys its keys and
     // closes TDLib; TdlibClient then starts a new instance, which asks for a phone number again.
     override suspend fun cancelQrCode(): Outcome<Unit> = client.authRequest(TdApi.LogOut()).map {}
+
+    override suspend fun passkeySignInRequest(): Outcome<String> =
+        client.authRequest(TdApi.GetAuthenticationPasskeyParameters()).map { it.text.orEmpty() }
+
+    override suspend fun checkPasskey(assertion: PasskeyAssertion): Outcome<Unit> =
+        client
+            .authRequest(
+                TdApi.CheckAuthenticationPasskey(
+                    assertion.credentialId,
+                    assertion.clientData,
+                    assertion.authenticatorData,
+                    assertion.signature,
+                    assertion.userHandle,
+                ),
+            ).map {}
 
     override suspend fun checkPassword(password: String): Outcome<Unit> =
         client.authRequest(TdApi.CheckAuthenticationPassword(password)).map {}

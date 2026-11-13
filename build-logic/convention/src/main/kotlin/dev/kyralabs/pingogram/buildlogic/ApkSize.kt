@@ -21,14 +21,15 @@ import java.util.Locale
 /**
  * The APK size budget of `docs/PERFORMANCE.md` §1: at most [ARM64_BUDGET_BYTES] for the arm64-v8a APK, which most
  * phones install, and [UNIVERSAL_BUDGET_BYTES] for the universal one (raised for the call engine by the owner,
- * 2026-10-22; set from the APKs with voice chats at their size plus a small margin, owner, 2026-10-23). A megabyte is
- * 1,048,576 bytes, as GitHub's release pages count it.
+ * 2026-10-22; set from the APKs with voice chats at their size plus a small margin, owner, 2026-10-23; raised for TDLib
+ * 1.8.70, owner, 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`). A megabyte is 1,048,576 bytes, as
+ * GitHub's release pages count it.
  */
 private const val BYTES_PER_MEGABYTE = 1_048_576L
 
 object ApkSize {
-    const val ARM64_BUDGET_BYTES = 50L * BYTES_PER_MEGABYTE
-    const val UNIVERSAL_BUDGET_BYTES = 123L * BYTES_PER_MEGABYTE
+    const val ARM64_BUDGET_BYTES = 51L * BYTES_PER_MEGABYTE
+    const val UNIVERSAL_BUDGET_BYTES = 125L * BYTES_PER_MEGABYTE
 
     /** The budget of the APK for [abi] (null: universal), or null where `docs/PERFORMANCE.md` sets none. */
     fun budgetOf(abi: String?): Long? =

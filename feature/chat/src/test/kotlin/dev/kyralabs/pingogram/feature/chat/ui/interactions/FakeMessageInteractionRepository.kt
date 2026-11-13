@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.interactions
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AddedReactionsPage
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageViewer
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepository
@@ -38,5 +39,25 @@ class FakeMessageInteractionRepository : MessageInteractionRepository {
     ): Outcome<AddedReactionsPage> {
         requests += "reactions:$chatId:$messageId:${type ?: "all"}:$offset"
         return onReactions(type, offset)
+    }
+
+    /** Answers both removals, recorded in [requests] as `remove:<message>:<sender>` and `removeAll:<sender>`. */
+    var onRemove: suspend () -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    override suspend fun removeReactions(
+        chatId: Long,
+        messageId: Long,
+        sender: MessageSender,
+    ): Outcome<Unit> {
+        requests += "remove:$messageId:$sender"
+        return onRemove()
+    }
+
+    override suspend fun removeAllRecentReactions(
+        chatId: Long,
+        sender: MessageSender,
+    ): Outcome<Unit> {
+        requests += "removeAll:$sender"
+        return onRemove()
     }
 }

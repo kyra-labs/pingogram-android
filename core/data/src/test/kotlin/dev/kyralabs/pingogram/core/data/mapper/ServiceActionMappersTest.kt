@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -34,6 +35,15 @@ class ServiceActionMappersTest {
                 TdApi.MessageChatSetMessageAutoDeleteTime(86_400, 0),
                 TdApi.MessageContactRegistered(),
                 TdApi.MessageCustomServiceAction("Something happened"),
+                TdApi.MessageChecklistTasksDone(9, intArrayOf(1, 2), intArrayOf(3)),
+                TdApi.MessageChecklistTasksAdded(
+                    9,
+                    arrayOf(TdApi.ChecklistTask(4, TdApi.FormattedText("Post", emptyArray()), null, 0)),
+                ),
+                TdApi.MessagePollOptionAdded(11, "a", TdApi.FormattedText("Piranesi", emptyArray())),
+                TdApi.MessagePollOptionDeleted(11, "b", TdApi.FormattedText("Klara", emptyArray())),
+                TdApi.MessageSuggestBirthdate(TdApi.Birthdate(10, 12, 0)),
+                TdApi.MessageSuggestBirthdate(TdApi.Birthdate(3, 6, 1994)),
             ).map { it.action() }
 
         assertEquals(
@@ -54,6 +64,12 @@ class ServiceActionMappersTest {
                 ServiceAction.AutoDeleteTimerChanged(86_400, 0),
                 ServiceAction.ContactRegistered,
                 ServiceAction.Custom("Something happened"),
+                ServiceAction.ChecklistTasksDone(9, doneCount = 2, notDoneCount = 1),
+                ServiceAction.ChecklistTasksAdded(9, count = 1),
+                ServiceAction.PollOptionAdded(11, "Piranesi"),
+                ServiceAction.PollOptionDeleted(11, "Klara"),
+                ServiceAction.BirthdateSuggested(Birthdate(10, 12, null)),
+                ServiceAction.BirthdateSuggested(Birthdate(3, 6, 1994)),
             ),
             actions,
         )
@@ -213,12 +229,17 @@ class ServiceActionMappersTest {
                 "MessageVenue",
                 "MessageContact",
                 "MessagePoll",
+                "MessageChecklist",
                 "MessageDice",
                 "MessageAnimatedEmoji",
                 "MessageGame",
                 "MessageInvoice",
                 "MessageStory",
+                "MessageSuggestBirthdate",
                 "MessageRichMessage",
+                "MessagePaidMedia",
+                "MessageGiveaway",
+                "MessageGiveawayWinners",
                 "MessageExpiredPhoto",
                 "MessageExpiredVideo",
                 "MessageExpiredVideoNote",
@@ -245,6 +266,15 @@ class ServiceActionMappersTest {
                 "MessageChatSetMessageAutoDeleteTime",
                 "MessageContactRegistered",
                 "MessageCustomServiceAction",
+                "MessageChecklistTasksDone",
+                "MessageChecklistTasksAdded",
+                "MessagePollOptionAdded",
+                "MessagePollOptionDeleted",
+                "MessageSuggestedPostApproved",
+                "MessageSuggestedPostDeclined",
+                "MessageSuggestedPostApprovalFailed",
+                "MessageSuggestedPostPaid",
+                "MessageSuggestedPostRefunded",
             )
     }
 }

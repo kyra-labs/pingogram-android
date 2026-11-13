@@ -40,6 +40,16 @@ internal interface MediaProcessor {
         target: File,
     ): Boolean
 
+    /**
+     * Decodes the image in [source] and writes it to [target] as [plan] says (upright, scaled) as a lossy WebP that
+     * keeps its transparency, for a sticker. False when it cannot be decoded or written.
+     */
+    fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean
+
     /** The size, rotation and length of the video in [file]; null when Android cannot read it as a video. */
     fun videoInfo(file: File): VideoInfo?
 
@@ -53,6 +63,18 @@ internal interface MediaProcessor {
         height: Int,
         target: File,
     ): Boolean
+
+    /** The length and tags of the audio in [file]; null when Android cannot read it as audio without video. */
+    fun audioInfo(file: File): AudioInfo? = null
+}
+
+/** A song as stored: [durationMillis] long, with its [title] and [artist] tags, empty where it has none. */
+internal data class AudioInfo(
+    val durationMillis: Long,
+    val title: String,
+    val artist: String,
+) {
+    override fun toString() = "AudioInfo(durationMillis=$durationMillis, …)"
 }
 
 /** An image as stored: [width] × [height] pixels, seen in [orientation]. */
@@ -110,6 +132,24 @@ internal class AndroidMediaProcessor : MediaProcessor {
         }
     }
 
+    override fun writeSticker(
+        source: File,
+        plan: PhotoPlan,
+        target: File,
+    ): Boolean {
+        val options = BitmapFactory.Options().apply { inSampleSize = plan.sampleSize }
+        val decoded = BitmapFactory.decodeFile(source.path, options) ?: return false
+        val sticker = decoded.transformed(plan.orientation, plan.width, plan.height)
+        if (sticker !== decoded) decoded.recycle()
+        return try {
+            target.outputStream().use { sticker.compress(webp(), STICKER_QUALITY, it) }
+        } catch (_: IOException) {
+            false
+        } finally {
+            sticker.recycle()
+        }
+    }
+
     @Suppress("ExifInterface") // Lint's warning is about the platform class before Android 7; minSdk is 26.
     override fun copyJpegWithoutMetadata(
         source: File,
@@ -135,7 +175,7 @@ internal class AndroidMediaProcessor : MediaProcessor {
 
     override fun videoInfo(file: File): VideoInfo? =
         retrieving(file) { retriever ->
-            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_VIDEO
+            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_TRACK
             val width = retriever.metadataInt(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
             val height = retriever.metadataInt(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
             if (!hasVideo || width <= 0 || height <= 0) return@retrieving null
@@ -173,6 +213,20 @@ internal class AndroidMediaProcessor : MediaProcessor {
             }
         } == true
 
+    override fun audioInfo(file: File): AudioInfo? =
+        retrieving(file) { retriever ->
+            val hasAudio = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO) == HAS_TRACK
+            val hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == HAS_TRACK
+            val duration =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            if (!hasAudio || hasVideo || duration <= 0L) return@retrieving null
+            AudioInfo(
+                durationMillis = duration,
+                title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE).orEmpty().trim(),
+                artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST).orEmpty().trim(),
+            )
+        }
+
     /**
      * EXIF's orientation tag of [file]; upright when it has none or cannot be read.
      *
@@ -198,8 +252,6 @@ internal class AndroidMediaProcessor : MediaProcessor {
             getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         }
 
-    private fun MediaMetadataRetriever.metadataInt(key: Int): Int = extractMetadata(key)?.toIntOrNull() ?: 0
-
     /** [block] with a retriever on [file], released after; null when Android cannot open the file. */
     @Suppress("TooGenericExceptionCaught") // The retriever throws IllegalArgumentException and RuntimeException.
     private inline fun <T> retrieving(
@@ -218,7 +270,8 @@ internal class AndroidMediaProcessor : MediaProcessor {
     }
 
     private companion object {
-        const val HAS_VIDEO = "yes"
+        /** What the retriever answers when a file has a track of the kind asked about. */
+        const val HAS_TRACK = "yes"
 
         /** How many bytes start a JPEG ([JpegMetadata.isJpeg]). */
         const val JPEG_HEADER = 3
@@ -227,6 +280,9 @@ internal class AndroidMediaProcessor : MediaProcessor {
         const val FRAME_SIDE = MAX_THUMBNAIL_SIDE * 2
     }
 }
+
+/** The metadata [key] of the file as a number; 0 when it has none. */
+private fun MediaMetadataRetriever.metadataInt(key: Int): Int = extractMetadata(key)?.toIntOrNull() ?: 0
 
 /** This bitmap mirrored and turned as [orientation] says, then scaled to [width] × [height]; itself if unchanged. */
 private fun Bitmap.transformed(
@@ -245,6 +301,18 @@ private fun Bitmap.transformed(
         }
     return Bitmap.createBitmap(this, 0, 0, this.width, this.height, matrix, true)
 }
+
+/** Lossy WebP, which keeps transparency: its own name from Android 11, the deprecated one before. */
+private fun webp(): Bitmap.CompressFormat =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        Bitmap.CompressFormat.WEBP_LOSSY
+    } else {
+        @Suppress("DEPRECATION") // WEBP_LOSSY exists from Android 11 only; WEBP is lossy until then.
+        Bitmap.CompressFormat.WEBP
+    }
+
+/** The WebP quality of a sticker: small enough for Telegram's 512 KB, without visible artifacts. */
+private const val STICKER_QUALITY = 90
 
 /** This bitmap on a white background if it has transparency (recycling it), else itself. */
 private fun Bitmap.opaque(): Bitmap {
