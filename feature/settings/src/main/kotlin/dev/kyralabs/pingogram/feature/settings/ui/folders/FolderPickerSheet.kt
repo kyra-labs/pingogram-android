@@ -24,7 +24,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,6 +50,7 @@ import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderExcludedType
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -74,7 +74,7 @@ internal fun FolderPickerSheet(
     picker: FolderPickerUiState,
     onEvent: (ChatFolderEditEvent) -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(ChatFolderEditEvent.ClosePicker) },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {

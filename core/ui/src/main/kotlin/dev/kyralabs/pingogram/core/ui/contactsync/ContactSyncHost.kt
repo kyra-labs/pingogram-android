@@ -27,7 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -50,6 +49,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -137,7 +137,7 @@ fun ContactSyncHost(
 }
 
 /**
- * What turning contacts sync on does, before Android asks for the permission, in a [ModalBottomSheet] as the location
+ * What turning contacts sync on does, before Android asks for the permission, in a [PingogramBottomSheet] as the location
  * sheet explains its own (`docs/DESIGN_SYSTEM.md` §6): a `Cookie9Sided` badge with the contacts icon, the title in
  * `titleLargeEmphasized`, then what is sent, when, and how to undo it in `bodyMedium`, honestly: the phone's names and
  * numbers go to Telegram, which finds who uses it (its own contact import); nothing is read in the background; turning
@@ -149,7 +149,7 @@ fun ContactSyncRationaleSheet(
     onContinue: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = onDismiss,
         sheetState =
             rememberBottomSheetState(

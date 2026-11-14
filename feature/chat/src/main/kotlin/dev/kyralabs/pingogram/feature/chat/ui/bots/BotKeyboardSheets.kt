@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +44,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -116,7 +116,7 @@ internal fun BotKeyboardDialogHost(
 
 /**
  * The users or chat picker of a keyboard button ([sheet], `docs/DESIGN_SYSTEM.md` §6 "Bot keyboard"): a
- * [ModalBottomSheet] with the forward sheet's parts, "Choose up to 3 people" / "Choose a group" / "Choose a channel"
+ * [PingogramBottomSheet] with the forward sheet's parts, "Choose up to 3 people" / "Choose a group" / "Choose a channel"
  * (`titleLargeEmphasized`), what the bot gets and what Telegram checks or does on sharing (`bodyMedium`
  * `onSurfaceVariant`), the search field and the candidates as toggleable rows. Once something is picked, "Share"
  * (a default `Button` with its press morph, a `Confirm` haptic) grows in below the list on the default spatial spring,
@@ -136,7 +136,10 @@ internal fun KeyboardShareBottomSheet(
     LaunchedEffect(query) {
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(BotKeyboardEvent.SearchTargets(it)) }
     }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(BotKeyboardEvent.DismissShare) }, sheetState = sheetState) {
+    PingogramBottomSheet(
+        onDismissRequest = { currentOnEvent(BotKeyboardEvent.DismissShare) },
+        sheetState = sheetState,
+    ) {
         KeyboardShareContent(sheet, query, onEvent)
     }
 }

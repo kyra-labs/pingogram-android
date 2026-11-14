@@ -11,7 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -23,13 +22,14 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 
 /**
  * What the user's stories being posted are doing (board 10c, `docs/DESIGN_SYSTEM.md` §6 "Story rings"), from a tap on
- * their own ring: a [ModalBottomSheet] saying how many are posting and how much is sent, or why TDLib gave up, then
+ * their own ring: a [PingogramBottomSheet] saying how many are posting and how much is sent, or why TDLib gave up, then
  * "View your story" where they have stories already, and "Stop posting" (or "Remove" once all failed) in `error`.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +40,7 @@ internal fun StoryUploadSheet(
     canView: Boolean,
     onEvent: (StoryUploadSheetEvent) -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(StoryUploadSheetEvent.Dismiss) },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {

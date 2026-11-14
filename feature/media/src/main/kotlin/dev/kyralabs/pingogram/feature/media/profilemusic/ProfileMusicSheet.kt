@@ -22,7 +22,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -48,6 +47,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -60,7 +60,7 @@ import dev.kyralabs.pingogram.feature.media.ui.formatDuration
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The playlist (board 13b), a [ModalBottomSheet] from the card's cover: "Profile music" over how many songs there are,
+ * The playlist (board 13b), a [PingogramBottomSheet] from the card's cover: "Profile music" over how many songs there are,
  * on the user's own profile "Add music"; why the last change failed in `error`, as a polite live region; then the
  * songs, a tap playing one. The playing one shows the equalizer symbol and its title in `primary`. On the user's own
  * profile each song ends in an options button (an expressive menu: "Move up", "Move down", "Remove" in `error`), whose
@@ -74,7 +74,7 @@ internal fun ProfileMusicSheet(
     onEvent: (ProfileMusicEvent) -> Unit,
     onAdd: () -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(ProfileMusicEvent.CloseSheet) },
         sheetState =
             rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),

@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -64,7 +64,7 @@ import java.time.Instant
 
 /**
  * The "Location" sheet of the attach menu (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Share location"): a
- * [ModalBottomSheet] that finds the device's location and sends it. No map: a map needs a map service, and Pingogram
+ * [PingogramBottomSheet] that finds the device's location and sends it. No map: a map needs a map service, and Pingogram
  * talks to nothing but Telegram (`REQUIREMENTS.md` §6.2). It shows the coordinates and their accuracy instead, and
  * "Open in maps" shows them in the user's maps app where there is one ([canOpenMaps]).
  *
@@ -104,7 +104,7 @@ internal fun ShareLocationSheet(
         }
     var scheduling by rememberSaveable { mutableStateOf(false) }
     val located = (state as? ShareLocationUiState.Locating)?.location
-    ModalBottomSheet(onDismissRequest = { onEvent(ShareLocationEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { onEvent(ShareLocationEvent.Dismiss) }, sheetState = sheetState) {
         ShareLocationContent(
             state = state,
             canSchedule = canSchedule,

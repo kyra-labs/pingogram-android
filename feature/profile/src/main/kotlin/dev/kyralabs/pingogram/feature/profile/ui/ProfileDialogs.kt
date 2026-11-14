@@ -23,7 +23,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -136,7 +136,7 @@ private fun ConfirmDialog(
 
 /**
  * Reporting the account (`REQUIREMENTS.md` FR-P2; `docs/DESIGN_SYSTEM.md` §6 "Report sheet"), as the conversation
- * reports messages: a [ModalBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report" with
+ * reports messages: a [PingogramBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report" with
  * a wavy progress indicator until the reasons come, then Telegram's question with its reasons as transparent list
  * items, or a comment in the rounded tonal text field with "Send report", enabled once there is a comment unless it is
  * optional. Steps crossfade on the effects springs while the sheet resizes on the default spatial spring; while a
@@ -154,7 +154,7 @@ internal fun ReportProfileSheet(
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ProfileEvent.DismissReport) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ProfileEvent.DismissReport) }, sheetState = sheetState) {
         AnimatedContent(
             targetState = sheet.step,
             transitionSpec = {

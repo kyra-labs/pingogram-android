@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Tall bottom sheets (Send to, Forward, the attach menu and the others) stop below the status bar again instead of
+  rising behind it.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.

@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -58,6 +57,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.selectionBackground
@@ -71,7 +71,7 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [ModalBottomSheet] of the user's contacts,
+ * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [PingogramBottomSheet] of the user's contacts,
  * those in [initial] picked, to choose who sees the story. "Done" closes it, then hands the picks to [onDone]; the
  * scrim, dragging, back and "Cancel" close it without a change ([onDismiss]). The picks are forgotten once it closes.
  */
@@ -99,7 +99,7 @@ internal fun StoryPeopleSheet(
             }
         }
     }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             viewModel.reset()
             currentOnDismiss()

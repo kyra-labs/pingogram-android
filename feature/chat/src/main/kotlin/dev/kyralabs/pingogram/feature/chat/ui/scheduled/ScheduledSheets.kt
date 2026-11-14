@@ -14,7 +14,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -44,7 +44,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The actions of a scheduled message (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6 "Scheduled messages"), as
- * the conversation's actions sheet shows a message's: a [ModalBottomSheet] headed by when it goes out ("Sends Today,
+ * the conversation's actions sheet shows a message's: a [PingogramBottomSheet] headed by when it goes out ("Sends Today,
  * 9:41 AM" in `titleMedium`, a heading for screen readers, how often it repeats in `bodyMedium` `onSurfaceVariant`,
  * beside the schedule-send symbol), a divider, then the actions as transparent list items with their outlined icons,
  * "Delete" in `error`. Choosing one hides the sheet on its spring, then sends its event; dragging it down, the scrim
@@ -65,7 +65,7 @@ internal fun ScheduledActionsBottomSheet(
         remember(sheetState, scope) {
             { event -> scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(event) } }
         }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(ScheduledEvent.DismissActions) },
         sheetState = sheetState,
     ) {

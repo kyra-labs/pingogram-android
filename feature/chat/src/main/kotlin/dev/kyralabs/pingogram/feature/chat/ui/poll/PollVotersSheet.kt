@@ -18,7 +18,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -56,7 +56,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import java.text.NumberFormat
 
 /**
- * Who voted for what in a public poll (`docs/DESIGN_SYSTEM.md` §6 "Poll voters"), a [ModalBottomSheet] as the
+ * Who voted for what in a public poll (`docs/DESIGN_SYSTEM.md` §6 "Poll voters"), a [PingogramBottomSheet] as the
  * conversation's other sheets: "Votes" in `titleLargeEmphasized` over the question, then a section per answer someone
  * chose: its text in `titleSmallEmphasized` `primary` with its votes, its voters as list items inset like the chat
  * list's rows (40 dp avatar, the name as user content, when they voted), and below them a [LoadingIndicator] while a
@@ -71,7 +71,7 @@ internal fun PollVotersBottomSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(PollEvent.DismissVoters) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(PollEvent.DismissVoters) }) {
         PollVotersContent(sheet, currentOnEvent)
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -25,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -39,7 +39,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.BotButtonsPreviewData
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
- * The chat picker of a switch-inline button (`docs/DESIGN_SYSTEM.md` §6 "Bot buttons"): a [ModalBottomSheet] with the
+ * The chat picker of a switch-inline button (`docs/DESIGN_SYSTEM.md` §6 "Bot buttons"): a [PingogramBottomSheet] with the
  * forward sheet's parts, "Choose a chat" (`titleLargeEmphasized`), what goes into the picked chat's composer
  * ("@gif cats", `bodyMedium` `onSurfaceVariant`), the search field and the chats the bot allows, Saved Messages first.
  * One tap picks a chat ([BotButtonEvent.PickChat]): it opens with the query in its composer, nothing sent. Dragging it
@@ -58,7 +58,7 @@ internal fun SwitchInlineChatsSheet(
     LaunchedEffect(query) {
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(BotButtonEvent.SearchChats(it)) }
     }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(BotButtonEvent.DismissChats) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(BotButtonEvent.DismissChats) }, sheetState = sheetState) {
         SwitchInlineChatsContent(sheet, query, onEvent)
     }
 }

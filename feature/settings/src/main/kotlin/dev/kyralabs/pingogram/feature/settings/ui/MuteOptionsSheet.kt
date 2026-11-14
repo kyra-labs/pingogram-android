@@ -10,7 +10,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -29,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The mute options of an exception's chat ([item]), in a [ModalBottomSheet]: the chat and whether it notifies as its
+ * The mute options of an exception's chat ([item]), in a [PingogramBottomSheet]: the chat and whether it notifies as its
  * heading, then mute for an hour, 8 hours or a day, mute forever, unmute (unless it is unmuted) and use the default.
  * Choosing one hides the sheet on its spring, then sends its change; dragging it down, the scrim and the back gesture
  * dismiss it ([NotificationExceptionsEvent.DismissMuteOptions]). It scrolls where the window is too short.
@@ -64,7 +64,7 @@ internal fun MuteOptionsSheet(
                     .invokeOnCompletion { currentOnEvent(NotificationExceptionsEvent.Change(item.chatId, change)) }
             }
         }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(NotificationExceptionsEvent.DismissMuteOptions) },
         sheetState = sheetState,
     ) {

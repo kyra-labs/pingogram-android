@@ -19,7 +19,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.Country
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
@@ -90,7 +90,7 @@ fun List<Country>.matching(query: String): ImmutableList<CountryUiModel> =
     }
 
 /**
- * The searchable country list (FR-A2) in a full-height [ModalBottomSheet] (`docs/DESIGN_SYSTEM.md` §6): the search
+ * The searchable country list (FR-A2) in a full-height [PingogramBottomSheet] (`docs/DESIGN_SYSTEM.md` §6): the search
  * bar's input field on its container, then the countries, the one of the phone number field selected and scrolled
  * into view. The sheet handles back and dismissal itself ([onDismiss]); a typed query goes to [onQueryChange], a
  * picked country's ISO code to [onSelect].
@@ -104,7 +104,7 @@ fun CountryPickerSheet(
     onDismiss: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = onDismiss,
         sheetState =
             rememberBottomSheetState(
