@@ -16,7 +16,10 @@ data class ForumTopic(
     val isGeneral: Boolean,
     /** Only administrators can write in it. */
     val isClosed: Boolean,
-    /** A General topic hidden from the list by the administrators. */
+    /**
+     * A General topic the administrators hid: Telegram shows it above the topic list, closed (td_api.tl
+     * `forumTopicInfo.is_hidden`).
+     */
     val isHidden: Boolean,
     val isPinned: Boolean,
     /** Null if the topic has no messages, or TDLib does not know its last one. */
@@ -29,6 +32,11 @@ data class ForumTopic(
     val lastReadOutboxMessageId: Long,
     /** The current user created the topic, and may edit, close and reopen it without administrator rights. */
     val isOutgoing: Boolean = false,
+    /**
+     * For how many more seconds the topic's own notification setting mutes it (0: not muted); null where it follows
+     * its forum's (td_api.tl `chatNotificationSettings.use_default_mute_for`).
+     */
+    val muteFor: Int? = null,
 ) {
     /** Where messages of the topic are. */
     val topic: MessageTopic.Forum get() = MessageTopic.Forum(id)

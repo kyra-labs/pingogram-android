@@ -22,7 +22,7 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
  * A forum's topic list for previews and screenshot tests: "Compose Developers" with the General topic, a pinned one,
- * unread ones (one with a mention), a closed one, and the loading, empty and error states; as an administrator who
+ * unread ones (one with a mention, one muted), a closed one, and the loading, empty and error states; as an administrator who
  * manages the topics sees it, with the menus, the editor and the question before deleting.
  */
 internal object TopicsPreviewData {
@@ -64,7 +64,8 @@ internal object TopicsPreviewData {
             ),
             topic(12, "Help", TopicColor.Green, null, "How do I animate a shape morph?", "Yesterday", unread = 3),
             topic(14, "Releases", TopicColor.Yellow, "Alan", "1.5.0-beta01 is out", "Oct 12", closed = true),
-            topic(20, "Off-topic", TopicColor.Rose, "Ada", "Photo", "Sep 30"),
+            // Muted on its own: its count in the muted colors.
+            topic(20, "Off-topic", TopicColor.Rose, "Ada", "Photo", "Sep 30", unread = 7).copy(isMuted = true),
         )
 
     val content = ForumTopicsUiState(header, TopicsContent.Content(topics, reachedEnd = true))

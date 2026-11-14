@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- A forum's topic list shows a hidden General topic, closed, as Telegram does; keeps the pinned topics in the forum's
+  order; shows a muted topic's counts in the muted colors; and shows a topic's own custom emoji icon.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.

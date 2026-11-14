@@ -139,6 +139,7 @@ private fun topicDescription(
             resources.getString(R.string.topic_hidden).takeIf { topic.isHidden },
             resources.getString(R.string.topic_closed).takeIf { topic.isClosed },
             resources.getString(R.string.topic_pinned).takeIf { topic.isPinned },
+            resources.getString(R.string.topic_muted).takeIf { topic.isMuted },
             preview,
             topic.time,
             topic.unreadCount.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.topic_unread, it, it) },
@@ -290,11 +291,15 @@ private fun TopicMeta(topic: TopicRow) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            // A muted topic's counts in the muted colors, as the chat list's rows.
+            val colors = MaterialTheme.colorScheme
+            val container = if (topic.isMuted) colors.surfaceVariant else colors.primary
+            val content = if (topic.isMuted) colors.onSurfaceVariant else colors.onPrimary
             if (topic.unreadMentionCount > 0) {
-                Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("@") }
+                Badge(containerColor = container, contentColor = content) { Text("@") }
             }
             if (topic.unreadCount > 0) {
-                Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(topic.unreadCount.toString()) }
+                Badge(containerColor = container, contentColor = content) { Text(topic.unreadCount.toString()) }
             }
         }
     }
