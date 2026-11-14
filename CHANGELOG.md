@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- The navigation bar shows the tabs' names again, and New chat is round.
+
 ### Fixed
 - Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it first.
 
@@ -128,7 +131,6 @@ across the app.
   options and close the poll after an hour, a day or at a chosen time.
 
 ### Changed
-- The navigation bar shows the tabs' names again, and New chat is round.
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
   update it themselves.
 - TDLib 1.8.70 (`23383ae`), up from 1.8.68: what Telegram added since, among it the functions to add chats to a
