@@ -590,7 +590,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
   `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
   (`PickStoryMedia`, the multiple picker for more than one place left) opens as the screen first shows, the camera app
-  takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`), and every pick is
+  takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`; opened through `core:ui`'s
+  `PhotoCapture`, as the conversation's camera is, which asks for the camera permission first where it is not granted,
+  as Android requires once the app declares it, #497), and every pick is
   copied into the upload cache as it arrives (`AttachmentRepository.prepare` as media; anything but a photo or video is
   deleted and refused). The items, their order and the shown one are in its saved state; the copies are deleted when
   the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
@@ -1260,7 +1262,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     `CommunityAddChats`, a part of `CommunityViewModel` (whether it shows, the picks and "Visible to admins only" in its
     saved state). The chat list shows those entries (board 19b): `feature:chats`' `ChatListCommunities`, a part of
     `ChatListViewModel` for the Chats tab, follows `joined()` and, for the communities that collapse their chats, their
-    `details()`; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
+    `details()`, starting with none, so the list's first content never waits for TDLib's answers (`StartupBenchmark`),
+    and the repository gives the communities and full info it read earlier in the session first, so they fold at once
+    where it knows them; `groupCommunities` takes their chats out of the main list's rows (pinned ones stay) into
     `ChatListContent.Content.communities`, each `CommunityEntry` before the row its newest chat preceded, as td_api.tl
     keeps no place for a community in the chat list. Which entries are expanded is in the view model's saved state;
     `chatsWithCommunities` (`CommunityRows.kt`) lays the entries and their chats among the rows, keyed as before, so a

@@ -148,8 +148,9 @@ sealed interface ChatEffect {
     data object SendFailed : ChatEffect
 
     /**
-     * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);
-     * the screen reports what came of it with `ChatEvent.PhotoTaken`, also when no camera app opens.
+     * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI),
+     * asking for the camera permission first where it is not granted; the screen reports what came of it with
+     * `ChatEvent.PhotoTaken`, also when no camera app opens.
      */
     data class LaunchCamera(
         val path: String,

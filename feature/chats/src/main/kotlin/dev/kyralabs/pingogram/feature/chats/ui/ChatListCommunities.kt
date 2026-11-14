@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 /**
@@ -28,6 +29,10 @@ import kotlinx.coroutines.launch
  *   chats and its mute from its full info ([CommunityRepository.details]), read only for those and only while the
  *   screen collects. TDLib keeps no place for a community in the chat list, so [group] puts each entry where its
  *   newest chat would be.
+ * - **First**: none, so the list's first content never waits for TDLib's answers about communities: its chats show
+ *   in their places at once and fold into their entries once the communities are read. The repository gives what it
+ *   already knows first (the communities and their chats read earlier in the process), so they fold at once where it
+ *   knows them.
  * - **Expanded**: which entries show their chats below them is the device's own, kept in the [SavedStateHandle].
  * - **Separately**: [showSeparately] turns the collapsing off for the account (`toggleCommunityAreChatsCollapsed`);
  *   the chats come back through TDLib's update of the community, and a failure is a snackbar.
@@ -96,7 +101,8 @@ internal class ChatListCommunities(
                 } else {
                     combine(communities.map { groupOf(repository, it) }) { it.filterNotNull() }
                 }
-            }
+            }.onStart { emit(emptyList()) }
+            .distinctUntilChanged()
 
     private fun groupOf(
         repository: CommunityRepository,
