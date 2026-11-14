@@ -129,7 +129,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   what it did. A row that appears above the first one while the list shows its top is scrolled into view.
  * - **Archive row**: full or compact, its menu and swipe set its style ([ChatListEvent.SetArchiveRowStyle]); hidden,
  *   the top bar opens the archive. The archive's own top bar opens its settings.
- * - **Folder tabs**: a long press opens a tab's menu, "Mark all as read" and, with [onEditFolder], "Edit folder".
+ * - **Folder tabs**: on the Chats tab, a bar floating over the top of the list's sheet ([FolderBar], owner decision
+ *   2026-11-13), which the lists start below and scroll and slide under, and which stays where it is whether the
+ *   header is expanded or collapsed. A long press opens a tab's menu, "Mark all as read" and, with [onEditFolder],
+ *   "Edit folder".
  */
 @Composable
 internal fun ChatListScreen(
@@ -165,7 +168,7 @@ internal fun ChatListScreen(
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
-                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder, summary, headerActions)
+                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, summary, headerActions)
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = insets,
@@ -180,6 +183,7 @@ internal fun ChatListScreen(
                 neighbours,
                 header,
                 stories,
+                onEditFolder,
             )
         }
         SelectionToolbarHost(
@@ -219,15 +223,16 @@ private fun contentWindowInsets(
  * The list of the folder shown ([rememberShownList]) on its sheet, sliding to another folder's on a folder switch
  * ([folderSwitch]), with the list it slides against beside it while it moves ([FolderCompanion]: [neighbours] under a
  * swipe). Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again
- * whenever it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and
- * those frames stop here.
+ * whenever it measures it anew, e.g. when the connection pill changes the top bar's height, and those frames stop here.
+ * On the Chats tab the folder tabs float over the top of the sheet ([FolderBar]); the lists' padding leaves room for
+ * them, read in the layout phase ([FolderBarSpace]), so the bar's height never composes a list again.
  *
  * Each folder's list is movable content of its own, with its own list state ([FolderListStates]): when a swipe lands
  * or a tab is tapped, the two lists change places (the shown one and the companion) without either composing its rows
  * again, and a folder's list keeps where it was scrolled. The shown folder's list, and only it, asks for more chats
  * ([FolderListArgs.active]) and scrolls back to its top when the Chats tab is tapped again ([ScrollToTopOnReselect]).
  */
-@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots.
+@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots, folders.
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,
@@ -239,6 +244,7 @@ private fun ChatListBody(
     neighbours: () -> FolderNeighbourLists,
     header: @Composable () -> Unit,
     stories: (@Composable (Modifier) -> Unit)?,
+    onEditFolder: ((folderId: Int?) -> Unit)?,
 ) {
     val state = rememberShownList(uiState, listStates, folderSwitch)
     val hasStories = stories != null
@@ -246,39 +252,51 @@ private fun ChatListBody(
     ScrollToTopOnReselect(ChatsRoute, shownListState, enabled = state.kind == ChatListKind.Chats)
     val folderLists = remember { FolderLists() }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val showsTabs = uiState.kind == ChatListKind.Chats && uiState.folderTabs.isNotEmpty()
+    val folderBar = remember { FolderBarSpace() }
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
+        // Below the folder bar while it shows, read in the layout phase (FolderBarSpace).
+        val listPadding =
+            remember(sheetPadding, showsTabs) { if (showsTabs) folderBar.below(sheetPadding) else sheetPadding }
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
             Box(Modifier.fillMaxWidth().padding(sheetPadding.sidesOnly()), Alignment.TopCenter) { header() }
-            Box(Modifier.weight(1f).folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
-                folderLists.of(state.selectedFolderId)(
-                    FolderListArgs(
-                        state = state,
-                        listState = shownListState,
-                        contentPadding = sheetPadding,
-                        stories = stories,
-                        openChatId = openChatId,
-                        onEvent = onEvent,
-                        active = true,
-                        modifier = Modifier.folderSlide(folderSwitch, isRtl).fillMaxSize(),
-                    ),
-                )
-                FolderCompanion(folderSwitch, neighbours, isRtl, shownFolderId = state.selectedFolderId) {
-                    companion,
-                    modifier,
-                    ->
-                    folderLists.of(companion.selectedFolderId)(
+            Box(Modifier.weight(1f)) {
+                // First, so it is measured before the lists, which read its height in the same pass; drawn above
+                // them, and reached first by screen readers.
+                if (showsTabs) {
+                    FolderBar(uiState, onEvent, onEditFolder, folderBar, Modifier.padding(sheetPadding.sidesOnly()))
+                }
+                Box(Modifier.fillMaxSize().folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
+                    folderLists.of(state.selectedFolderId)(
                         FolderListArgs(
-                            state = companion,
-                            listState = listStates.of(companion, folderSwitch.positions, hasStories),
-                            contentPadding = sheetPadding,
+                            state = state,
+                            listState = shownListState,
+                            contentPadding = listPadding,
                             stories = stories,
                             openChatId = openChatId,
                             onEvent = onEvent,
-                            active = false,
-                            modifier = modifier,
+                            active = true,
+                            modifier = Modifier.folderSlide(folderSwitch, isRtl).fillMaxSize(),
                         ),
                     )
+                    FolderCompanion(folderSwitch, neighbours, isRtl, shownFolderId = state.selectedFolderId) {
+                        companion,
+                        modifier,
+                        ->
+                        folderLists.of(companion.selectedFolderId)(
+                            FolderListArgs(
+                                state = companion,
+                                listState = listStates.of(companion, folderSwitch.positions, hasStories),
+                                contentPadding = listPadding,
+                                stories = stories,
+                                openChatId = openChatId,
+                                onEvent = onEvent,
+                                active = false,
+                                modifier = modifier,
+                            ),
+                        )
+                    }
                 }
             }
         }

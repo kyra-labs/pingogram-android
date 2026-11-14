@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,13 +66,31 @@ class PingogramNavigationBarTest {
     private val selections = mutableListOf<TopLevelDestination>()
 
     @Test
-    fun `the selected tab shows its label, the others their icons named by their labels`() {
+    fun `every tab shows its label on a phone, the selected one with its icon`() {
         setBar(selected = TopLevelDestination.Chats)
 
         composeRule.onNode(hasText(string(R.string.nav_chats)) and isSelectable()).assertIsSelected()
-        iconTab(R.string.nav_contacts).assertIsNotSelected()
-        iconTab(R.string.nav_settings).assertIsNotSelected()
-        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
+        composeRule.onNode(hasText(string(R.string.nav_contacts)) and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsNotSelected()
+        // The labels name the tabs: no icon of the tabs not selected is heard on its own.
+        composeRule.onAllNodes(hasContentDescription(string(R.string.nav_contacts))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `New chat is a circle as tall as the pill`() {
+        setBar(selected = TopLevelDestination.Chats, newChat = { BarNewChatButton(shown = true, onClick = {}) })
+
+        val pill = labeledTab(R.string.nav_chats).fetchSemanticsNode().boundsInRoot
+        val newChat =
+            composeRule
+                .onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val barHeight = with(composeRule.density) { NAVIGATION_BAR_HEIGHT.toPx() }
+        assertEquals(barHeight, newChat.height, 1f)
+        assertEquals(newChat.width, newChat.height, 1f)
+        // The tab's touch target is the pill's whole height, the same as the button's.
+        assertEquals(pill.height, newChat.height, 1f)
     }
 
     @Test
@@ -122,7 +141,7 @@ class PingogramNavigationBarTest {
     }
 
     @Test
-    fun `the experimental Add contact button opens Add contact while shown, and is gone otherwise`() {
+    fun `the Add contact button opens Add contact while shown, and is gone otherwise`() {
         var shown by mutableStateOf(true)
         var clicks = 0
         composeRule.setContent {
@@ -392,6 +411,7 @@ class PingogramNavigationBarTest {
     private fun setBar(
         selected: TopLevelDestination,
         accountMenu: AccountMenuActions? = null,
+        newChat: (@Composable () -> Unit)? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -399,6 +419,7 @@ class PingogramNavigationBarTest {
                     selected = selected,
                     onSelect = { selections += it },
                     accountMenu = accountMenu,
+                    newChat = newChat,
                 )
             }
         }
@@ -435,6 +456,9 @@ class PingogramNavigationBarTest {
     private companion object {
         const val CHANGED_TABS = 2
         const val LARGE_FONT_SCALE = 2f
+
+        /** `sizes.floatingNavigationBar`: the pill's height and the round button's diameter (§6.1). */
+        val NAVIGATION_BAR_HEIGHT = 56.dp
 
         /** Enough frames for the tabs' springs to play out. */
         const val SWITCH_FRAMES = 40

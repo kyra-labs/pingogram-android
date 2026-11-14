@@ -37,6 +37,7 @@ import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph
@@ -332,12 +333,16 @@ class PingogramAppTest {
     // New chat (FR-L7)
 
     @Test
-    fun `the New chat button grows into New chat above the chats tab, and back returns to the chats`() {
+    fun `the round New chat button grows into New chat above the chats tab, and back returns to the chats`() {
         tdlib.on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
         setApp()
         awaitText(ChatsR.string.chat_list_empty_title)
         val button = composeRule.onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
         val buttonBounds = button.fetchSemanticsNode().boundsInRoot
+        // The transform grows from a circle as tall as the bar (docs/DESIGN_SYSTEM.md §6.1, owner decision 2026-11-13).
+        val barHeight = with(composeRule.density) { NAVIGATION_BAR_HEIGHT.toPx() }
+        assertEquals(barHeight, buttonBounds.height, 1f)
+        assertEquals(buttonBounds.height, buttonBounds.width, 1f)
 
         composeRule.mainClock.autoAdvance = false
         button.performClick()
@@ -357,6 +362,8 @@ class PingogramAppTest {
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
         assertTrue(navController.currentDestination?.hasRoute<ChatsRoute>() == true)
+        // And shrinks back into the same circle.
+        assertEquals(buttonBounds, button.fetchSemanticsNode().boundsInRoot)
     }
 
     // Settings pages (FR-S1)
@@ -884,6 +891,9 @@ class PingogramAppTest {
 
         /** A few frames into a container transform. */
         const val TRANSFORM_FRAMES = 3
+
+        /** `sizes.floatingNavigationBar`: the floating bar's height and the round New chat button's diameter. */
+        val NAVIGATION_BAR_HEIGHT = 56.dp
 
         /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
         val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f

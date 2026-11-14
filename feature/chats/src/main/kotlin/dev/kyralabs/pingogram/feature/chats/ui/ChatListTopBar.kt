@@ -70,8 +70,9 @@ import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The Chats tab's header with the folder tabs ([ChatListTopBar], its status from [summary] and its search and account
- * buttons from [headerActions]), or the archive's top bar ([ArchiveTopBar]).
+ * The Chats tab's header ([ChatListTopBar], its status from [summary] and its search and account buttons from
+ * [headerActions]), or the archive's top bar ([ArchiveTopBar]). The folder tabs float over the list's sheet below it
+ * ([FolderTabs]).
  */
 @Composable
 internal fun ChatListScreenTopBar(
@@ -79,7 +80,6 @@ internal fun ChatListScreenTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onEvent: (ChatListEvent) -> Unit,
     onBack: () -> Unit,
-    onEditFolder: ((folderId: Int?) -> Unit)? = null,
     summary: () -> ChatListSummary = { ChatListSummary() },
     headerActions: ChatListHeaderActions? = null,
 ) {
@@ -89,11 +89,8 @@ internal fun ChatListScreenTopBar(
             ChatListTopBar(
                 state = state,
                 scrollBehavior = scrollBehavior,
-                onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
                 onClearSelection = clearSelection,
                 onOpenArchive = { onEvent(ChatListEvent.OpenArchive) },
-                onMarkAllAsRead = { onEvent(ChatListEvent.MarkAllAsRead(it)) },
-                onEditFolder = onEditFolder,
                 summary = summary,
                 actions = headerActions,
             )
@@ -115,7 +112,7 @@ internal fun ChatListScreenTopBar(
  * The Chats tab's header (`docs/DESIGN_SYSTEM.md` §2.2, §3.3, §6 "Chat list top bar"; owner decision 2026-11-06), on
  * the screen's `surfaceContainer` above the list's sheet: the tabs' large header ([TabHeader], `core:ui`, shared with
  * Contacts and Settings), which [scrollBehavior] collapses as the list scrolls, in the layout phase. The folder tabs
- * stay below it, collapsed or not.
+ * float over the top of the list's sheet below it ([FolderTabs], owner decision 2026-11-13), collapsed or not.
  *
  * - **Expanded**: "Chats" in `displaySmallEmphasized`, and under it the status line ([StatusLine]: "12 unread · 3
  *   mentions" from [summary], read here alone, so a count changing recomposes nothing else), or while not connected
@@ -127,31 +124,23 @@ internal fun ChatListScreenTopBar(
  *
  * The bar keeps the window margin ([windowMargin]): on medium and wider windows its title lines up with the rows'
  * content. In selection mode it shows how many chats are selected, with a button that clears the selection, no
- * actions and no status; the tabs stay but are disabled, so nothing below moves and switching lists, which would drop
- * the selection, waits until the selection is done. A folder tab's long press opens its menu ([FolderTabs]):
- * [onMarkAllAsRead] and, where given, [onEditFolder].
+ * actions and no status.
  */
-@Suppress("LongParameterList") // The state, the bar's scroll, the header's hooks, and what selection and tabs do.
 @Composable
 internal fun ChatListTopBar(
     state: ChatListUiState,
     scrollBehavior: TopAppBarScrollBehavior,
-    onSelectFolder: (Int?) -> Unit,
     onClearSelection: () -> Unit,
     onOpenArchive: () -> Unit = {},
-    onMarkAllAsRead: (Int?) -> Unit = {},
-    onEditFolder: ((Int?) -> Unit)? = null,
     summary: () -> ChatListSummary = { ChatListSummary() },
     actions: ChatListHeaderActions? = null,
 ) {
     val selectedCount = state.selection?.chatIds?.size
-    // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
-    val margin = windowMargin()
     val connection = state.connection
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // Behind the bar: what the user touches there stays the bar's.
         ConnectedAnnouncement(connection, Modifier.matchParentSize())
-        // As wide as the rows below, so the title and the tabs line up with them on wide windows.
+        // As wide as the rows below, so the title lines up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
             TabHeader(
                 scrollBehavior = scrollBehavior,
@@ -174,17 +163,6 @@ internal fun ChatListTopBar(
                     }
                 },
             )
-            if (state.folderTabs.isNotEmpty()) {
-                FolderTabs(
-                    tabs = state.folderTabs,
-                    selectedFolderId = state.selectedFolderId,
-                    onSelect = onSelectFolder,
-                    enabled = selectedCount == null,
-                    margin = margin,
-                    onMarkAllAsRead = onMarkAllAsRead,
-                    onEditFolder = onEditFolder,
-                )
-            }
         }
     }
 }
