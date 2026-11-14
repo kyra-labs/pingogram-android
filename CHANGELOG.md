@@ -9,6 +9,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+
+- A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
+  composer, and the conversation takes taps as soon as the media viewer starts closing instead of up to a second
+  later.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
