@@ -11,7 +11,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.togetherWith
@@ -28,7 +27,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
+import dev.kyralabs.pingogram.core.ui.file.PhotoCapture
+import dev.kyralabs.pingogram.core.ui.file.rememberPhotoCapture
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
@@ -42,8 +42,8 @@ import kotlinx.coroutines.launch
  * Posting a new story, full screen: hoists its [NewStoryViewModel] and shows its step, picking the photos and videos
  * ([NewStoryScreen]) or composing the story ([StoryComposeScreen]), whose back returns to picking. Opens Android's
  * photo picker (as the screen first shows, and for "Add more") and the camera app, shows what failed in a snackbar, and
- * leaves through [onClose], also once the stories are posted. Neither the picker nor the camera app needs a
- * permission.
+ * leaves through [onClose], also once the stories are posted. The picker needs no permission; the camera app needs
+ * the camera permission, which the "Camera" tap asks for first where it is not granted (`REQUIREMENTS.md` §6.2).
  */
 @Composable
 internal fun NewStoryRoute(
@@ -53,7 +53,7 @@ internal fun NewStoryRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val launchers = rememberStoryLaunchers(viewModel::onEvent)
+    val launchers = rememberStoryLaunchers(viewModel::onEvent, snackbarHostState)
     StoryEffects(viewModel, launchers, snackbarHostState, onClose)
     // The two steps move on the shared axis X (Q-18): composing comes in from the end, picking again from the start.
     val motionScheme = MaterialTheme.motionScheme
@@ -133,9 +133,8 @@ private fun StoryEffects(
                     }
 
                     is NewStoryEffect.LaunchCamera -> {
-                        if (launchers.takePhoto(effect.path)) return@collect
-                        viewModel.onEvent(NewStoryEvent.PhotoTaken(taken = false))
-                        resources.getString(R.string.new_story_no_camera_app)
+                        // The camera's launcher reports the photo and says in a snackbar why no camera app opened.
+                        return@collect launchers.takePhoto(effect.path)
                     }
 
                     NewStoryEffect.NotPostable -> {
@@ -151,22 +150,22 @@ private fun StoryEffects(
     }
 }
 
-/** Android's photo picker and the camera app, whose results go to [onEvent]. */
-private class StoryLaunchers(
+/**
+ * Android's photo picker and the camera app ([PhotoCapture], which asks for the camera permission first where it is
+ * not granted), whose results go to the view model.
+ */
+internal class StoryLaunchers(
     private val context: Context,
     private val picker: ActivityResultLauncher<Int>,
-    private val camera: ActivityResultLauncher<Uri>,
+    private val photo: PhotoCapture,
 ) {
     val hasCamera: Boolean get() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
 
     /** Opens the photo picker for at most [max] items; false when no app opens. */
     fun pick(max: Int): Boolean = launching { picker.launch(max) }
 
-    /** Opens the camera app to take a photo into the camera file at [path]; false when no camera app opens. */
-    fun takePhoto(path: String): Boolean {
-        val uri = context.cameraFileUri(path) ?: return false
-        return launching { camera.launch(uri) }
-    }
+    /** Opens the camera app to take a photo into the camera file at [path]; `PhotoTaken` says what came of it. */
+    fun takePhoto(path: String) = photo.take(path)
 
     private inline fun launching(launch: () -> Unit): Boolean =
         try {
@@ -177,17 +176,30 @@ private class StoryLaunchers(
         }
 }
 
+/**
+ * The screen's [StoryLaunchers], whose results go to [onEvent]; why the camera app did not open goes to
+ * [snackbarHostState]. [cameraUri] hands the camera app the camera file's content URI (tests give their own).
+ */
 @Composable
-private fun rememberStoryLaunchers(onEvent: (NewStoryEvent) -> Unit): StoryLaunchers {
+internal fun rememberStoryLaunchers(
+    onEvent: (NewStoryEvent) -> Unit,
+    snackbarHostState: SnackbarHostState,
+    cameraUri: ((String) -> Uri?)? = null,
+): StoryLaunchers {
     val currentOnEvent by rememberUpdatedState(onEvent)
     val picker =
         rememberLauncherForActivityResult(PickStoryMedia()) { uris ->
             currentOnEvent(NewStoryEvent.Picked(uris.map(Uri::toString)))
         }
-    val camera =
-        rememberLauncherForActivityResult(TakePicture()) { taken -> currentOnEvent(NewStoryEvent.PhotoTaken(taken)) }
+    val photo =
+        rememberPhotoCapture(
+            snackbarHostState = snackbarHostState,
+            noCameraAppMessage = LocalResources.current.getString(R.string.new_story_no_camera_app),
+            onTaken = { taken -> currentOnEvent(NewStoryEvent.PhotoTaken(taken)) },
+            cameraUri = cameraUri,
+        )
     val context = LocalContext.current
-    return remember(context, picker, camera) { StoryLaunchers(context, picker, camera) }
+    return remember(context, picker, photo) { StoryLaunchers(context, picker, photo) }
 }
 
 /**

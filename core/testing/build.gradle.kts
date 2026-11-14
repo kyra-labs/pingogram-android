@@ -9,6 +9,8 @@ dependencies {
     // assertAccessible: semantics checks for Compose UI tests (docs/audit/accessibility.md).
     api(platform(libs.androidx.compose.bom))
     api(libs.androidx.compose.ui.test.junit4)
+    // FakeActivityResultRegistry: activity results without another app, for Compose UI tests.
+    api(libs.androidx.activity.compose)
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

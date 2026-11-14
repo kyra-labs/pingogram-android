@@ -590,7 +590,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   opened from the user's own story ring, `feature:chats`' `StoryRingsRow`, which shows it first also without a story),
   `NewStoryViewModel` with its list in `StoryPicks`: Android's photo picker
   (`PickStoryMedia`, the multiple picker for more than one place left) opens as the screen first shows, the camera app
-  takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`), and every pick is
+  takes photos into a camera file (`AttachmentRepository.newCameraFile`, `prepareCameraPhoto`; opened through `core:ui`'s
+  `PhotoCapture`, as the conversation's camera is, which asks for the camera permission first where it is not granted,
+  as Android requires once the app declares it, #497), and every pick is
   copied into the upload cache as it arrives (`AttachmentRepository.prepare` as media; anything but a photo or video is
   deleted and refused). The items, their order and the shown one are in its saved state; the copies are deleted when
   the screen closes or its view model is cleared, unless posting took them. Composing (board 10b) is the same screen's
