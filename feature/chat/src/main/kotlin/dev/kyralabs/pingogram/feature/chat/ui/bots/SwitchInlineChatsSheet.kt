@@ -39,8 +39,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.BotButtonsPreviewData
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
- * The chat picker of a switch-inline button (`docs/DESIGN_SYSTEM.md` §6 "Bot buttons"): a [PingogramBottomSheet] with the
- * forward sheet's parts, "Choose a chat" (`titleLargeEmphasized`), what goes into the picked chat's composer
+ * The chat picker of a switch-inline button (`docs/DESIGN_SYSTEM.md` §6 "Bot buttons"): a [PingogramBottomSheet] with
+ * the forward sheet's parts, "Choose a chat" (`titleLargeEmphasized`), what goes into the picked chat's composer
  * ("@gif cats", `bodyMedium` `onSurfaceVariant`), the search field and the chats the bot allows, Saved Messages first.
  * One tap picks a chat ([BotButtonEvent.PickChat]): it opens with the query in its composer, nothing sent. Dragging it
  * down, the scrim and the back gesture (Material's predictive back) dismiss it ([BotButtonEvent.DismissChats]).

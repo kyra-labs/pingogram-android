@@ -136,8 +136,8 @@ private fun ConfirmDialog(
 
 /**
  * Reporting the account (`REQUIREMENTS.md` FR-P2; `docs/DESIGN_SYSTEM.md` §6 "Report sheet"), as the conversation
- * reports messages: a [PingogramBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report" with
- * a wavy progress indicator until the reasons come, then Telegram's question with its reasons as transparent list
+ * reports messages: a [PingogramBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report"
+ * with a wavy progress indicator until the reasons come, then Telegram's question with its reasons as transparent list
  * items, or a comment in the rounded tonal text field with "Send report", enabled once there is a comment unless it is
  * optional. Steps crossfade on the effects springs while the sheet resizes on the default spatial spring; while a
  * report is on its way the progress indicator shows and the choices are disabled. Dragging it down, the scrim and

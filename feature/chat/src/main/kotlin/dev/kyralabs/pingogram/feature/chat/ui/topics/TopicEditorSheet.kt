@@ -84,10 +84,10 @@ internal fun TopicManagementDialogs(
 }
 
 /**
- * The editor of a new topic or of a topic's name, a [PingogramBottomSheet] that opens expanded and scrolls where the window
- * is short: "New topic" or "Edit topic" in `titleLargeEmphasized`; the topic's icon in the color picked beside the
- * name in the rounded tonal `TextField`, its length against Telegram's limit below it ("4 / 128"), or why the name is
- * refused (a polite live region); for a new topic, Telegram's six colors as named chips ([TopicColorChip]) and why
+ * The editor of a new topic or of a topic's name, a [PingogramBottomSheet] that opens expanded and scrolls where the
+ * window is short: "New topic" or "Edit topic" in `titleLargeEmphasized`; the topic's icon in the color picked beside
+ * the name in the rounded tonal `TextField`, its length against Telegram's limit below it ("4 / 128"), or why the name
+ * is refused (a polite live region); for a new topic, Telegram's six colors as named chips ([TopicColorChip]) and why
  * they show in the theme's colors; for an existing one, that its color stays. While Telegram is asked, a wavy linear
  * progress indicator; then "Cancel" at the start and "Create" or "Save" at the end, which the keyboard's action
  * sends too. Dragging it down, the scrim and back close it ([TopicEvent.DismissEditor]).

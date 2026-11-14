@@ -67,8 +67,8 @@ import dev.kyralabs.pingogram.feature.calls.R
 import kotlinx.coroutines.launch
 
 /**
- * "Rate this call" (`docs/DESIGN_SYSTEM.md` §6 "Call rating"), a [PingogramBottomSheet] over the ended call that Telegram
- * asked to have rated: one to five stars, what went wrong for one to three, and a note that the rating goes to
+ * "Rate this call" (`docs/DESIGN_SYSTEM.md` §6 "Call rating"), a [PingogramBottomSheet] over the ended call that
+ * Telegram asked to have rated: one to five stars, what went wrong for one to three, and a note that the rating goes to
  * Telegram to help improve calls. It never blocks: dragging it down, the scrim, back and "Not now" close it without
  * rating ([onDismiss]); "Send" closes it, then rates ([onRate], the problems only below four stars).
  */

@@ -116,8 +116,8 @@ internal fun BotKeyboardDialogHost(
 
 /**
  * The users or chat picker of a keyboard button ([sheet], `docs/DESIGN_SYSTEM.md` §6 "Bot keyboard"): a
- * [PingogramBottomSheet] with the forward sheet's parts, "Choose up to 3 people" / "Choose a group" / "Choose a channel"
- * (`titleLargeEmphasized`), what the bot gets and what Telegram checks or does on sharing (`bodyMedium`
+ * [PingogramBottomSheet] with the forward sheet's parts, "Choose up to 3 people" / "Choose a group" / "Choose a
+ * channel" (`titleLargeEmphasized`), what the bot gets and what Telegram checks or does on sharing (`bodyMedium`
  * `onSurfaceVariant`), the search field and the candidates as toggleable rows. Once something is picked, "Share"
  * (a default `Button` with its press morph, a `Confirm` haptic) grows in below the list on the default spatial spring,
  * with a `LinearWavyProgressIndicator` while Telegram is asked and why the last try failed (in `error`, a polite live

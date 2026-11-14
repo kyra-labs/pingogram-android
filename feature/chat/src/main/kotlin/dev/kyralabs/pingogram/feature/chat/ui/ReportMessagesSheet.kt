@@ -48,8 +48,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SelectionPreviewData
 
 /**
- * Reporting messages to Telegram's moderators (`REQUIREMENTS.md` FR-C6 "report"): a [PingogramBottomSheet] that shows the
- * step of TDLib's flow ([ReportSheet.step]): "Report" with a wavy progress indicator until the reasons come, then
+ * Reporting messages to Telegram's moderators (`REQUIREMENTS.md` FR-C6 "report"): a [PingogramBottomSheet] that shows
+ * the step of TDLib's flow ([ReportSheet.step]): "Report" with a wavy progress indicator until the reasons come, then
  * Telegram's question with its reasons as list items ([SelectionEvent.ChooseReportOption]), or a comment in the rounded
  * tonal text field (`docs/DESIGN_SYSTEM.md` §6 "Text fields") with "Send report" ([SelectionEvent.SendReportComment]),
  * enabled once there is a comment unless it is optional. Each step crossfades on the motion scheme's default effects

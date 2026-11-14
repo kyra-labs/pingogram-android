@@ -137,11 +137,12 @@ fun ContactSyncHost(
 }
 
 /**
- * What turning contacts sync on does, before Android asks for the permission, in a [PingogramBottomSheet] as the location
- * sheet explains its own (`docs/DESIGN_SYSTEM.md` §6): a `Cookie9Sided` badge with the contacts icon, the title in
- * `titleLargeEmphasized`, then what is sent, when, and how to undo it in `bodyMedium`, honestly: the phone's names and
- * numbers go to Telegram, which finds who uses it (its own contact import); nothing is read in the background; turning
- * it off deletes them from Telegram. "Not now" ([onDismiss]) at the start, "Continue" ([onContinue]) at the end.
+ * What turning contacts sync on does, before Android asks for the permission, in a [PingogramBottomSheet] as the
+ * location sheet explains its own (`docs/DESIGN_SYSTEM.md` §6): a `Cookie9Sided` badge with the contacts icon, the
+ * title in `titleLargeEmphasized`, then what is sent, when, and how to undo it in `bodyMedium`, honestly: the phone's
+ * names and numbers go to Telegram, which finds who uses it (its own contact import); nothing is read in the
+ * background; turning it off deletes them from Telegram. "Not now" ([onDismiss]) at the start, "Continue"
+ * ([onContinue]) at the end.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

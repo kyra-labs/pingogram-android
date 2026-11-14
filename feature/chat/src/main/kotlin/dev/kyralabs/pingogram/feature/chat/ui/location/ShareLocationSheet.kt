@@ -64,9 +64,9 @@ import java.time.Instant
 
 /**
  * The "Location" sheet of the attach menu (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Share location"): a
- * [PingogramBottomSheet] that finds the device's location and sends it. No map: a map needs a map service, and Pingogram
- * talks to nothing but Telegram (`REQUIREMENTS.md` §6.2). It shows the coordinates and their accuracy instead, and
- * "Open in maps" shows them in the user's maps app where there is one ([canOpenMaps]).
+ * [PingogramBottomSheet] that finds the device's location and sends it. No map: a map needs a map service, and
+ * Pingogram talks to nothing but Telegram (`REQUIREMENTS.md` §6.2). It shows the coordinates and their accuracy
+ * instead, and "Open in maps" shows them in the user's maps app where there is one ([canOpenMaps]).
  *
  * - **Permission** ([ShareLocationUiState.Permission]): why Pingogram asks, then Android asks
  *   ([ShareLocationEvent.Allow]); once Android no longer asks, the button opens the app's settings.

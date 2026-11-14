@@ -75,10 +75,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Start a call" (`docs/DESIGN_SYSTEM.md` §6 "Recent calls"): a [PingogramBottomSheet] with "New group call" first, then
- * the user's contacts, each with a voice call button and, where the device has a camera, a video call button. A choice
- * closes it, then goes to [onChoose]; the scrim, dragging and back close it without one ([onDismiss]). The query is
- * forgotten once it closes.
+ * "Start a call" (`docs/DESIGN_SYSTEM.md` §6 "Recent calls"): a [PingogramBottomSheet] with "New group call" first,
+ * then the user's contacts, each with a voice call button and, where the device has a camera, a video call button. A
+ * choice closes it, then goes to [onChoose]; the scrim, dragging and back close it without one ([onDismiss]). The query
+ * is forgotten once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

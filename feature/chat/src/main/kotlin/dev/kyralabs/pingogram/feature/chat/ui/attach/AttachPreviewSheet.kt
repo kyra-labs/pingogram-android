@@ -92,8 +92,8 @@ import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The picked photos, videos or files before they are sent (`REQUIREMENTS.md` FR-C5): a [PingogramBottomSheet] with their
- * number as its title, the items, and the caption field with the send split button below.
+ * The picked photos, videos or files before they are sent (`REQUIREMENTS.md` FR-C5): a [PingogramBottomSheet] with
+ * their number as its title, the items, and the caption field with the send split button below.
  *
  * - **Photos and videos** ([AttachmentKind.Media]): a row of square thumbnails, decoded by Coil at their size, in
  *   `medium` corners; a video with its length and a play badge; an item being prepared as a [LoadingIndicator] on a

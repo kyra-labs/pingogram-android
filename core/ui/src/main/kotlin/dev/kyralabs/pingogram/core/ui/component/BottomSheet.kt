@@ -19,7 +19,8 @@ import androidx.compose.ui.Modifier
  *
  * material3 1.5 lays a modal sheet out in an edge-to-edge window of its own and pads only its content by the status
  * bar, so a tall sheet's surface reached the top of the screen, the status bar's icons over it. Here the sheet lays
- * out below the status bar (and a display cutout at the top), so expanded it stops there, as it did before. Everything else is Material's, unchanged.
+ * out below the status bar (and a display cutout at the top), so expanded it stops there, as it did before. Everything
+ * else is Material's, unchanged.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,8 +52,8 @@ internal fun PingogramBottomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        // Outside Material's own modifiers: its anchors count from below the inset, so expanded the sheet stops there and
-        // hidden it is still off screen; the content's top inset is consumed here.
+        // Outside Material's own modifiers: its anchors count from below the inset, so expanded the sheet stops there
+        // and hidden it is still off screen; the content's top inset is consumed here.
         modifier = Modifier.windowInsetsPadding(topInset).then(modifier),
         sheetState = sheetState,
         properties = properties,

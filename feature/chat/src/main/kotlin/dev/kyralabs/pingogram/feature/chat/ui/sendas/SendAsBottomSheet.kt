@@ -53,11 +53,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.SendAsPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
- * The send-as picker (`REQUIREMENTS.md` FR-C5), a [PingogramBottomSheet] opened from the composer's avatar: "Send messages
- * as" in `titleLargeEmphasized`, then everyone the user can send as, a single choice ([SendAsRow]), or the delayed
- * loading indicator while Telegram is asked; the list crossfades in on the motion scheme's default effects spring while
- * the sheet resizes on its default spatial spring. While a new choice goes to TDLib ([SendAsSheet.isChanging]) it shows
- * chosen and a wavy progress indicator shows under the title; the view model closes the sheet once it is done.
+ * The send-as picker (`REQUIREMENTS.md` FR-C5), a [PingogramBottomSheet] opened from the composer's avatar: "Send
+ * messages as" in `titleLargeEmphasized`, then everyone the user can send as, a single choice ([SendAsRow]), or the
+ * delayed loading indicator while Telegram is asked; the list crossfades in on the motion scheme's default effects
+ * spring while the sheet resizes on its default spatial spring. While a new choice goes to TDLib
+ * ([SendAsSheet.isChanging]) it shows chosen and a wavy progress indicator shows under the title; the view model closes
+ * the sheet once it is done.
  *
  * Dragging it down, tapping the scrim and the back gesture (Material's predictive back) close it
  * ([SendAsEvent.Dismiss]). The list scrolls where the window is too short.

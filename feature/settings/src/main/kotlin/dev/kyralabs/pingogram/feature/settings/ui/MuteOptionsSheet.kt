@@ -41,10 +41,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The mute options of an exception's chat ([item]), in a [PingogramBottomSheet]: the chat and whether it notifies as its
- * heading, then mute for an hour, 8 hours or a day, mute forever, unmute (unless it is unmuted) and use the default.
- * Choosing one hides the sheet on its spring, then sends its change; dragging it down, the scrim and the back gesture
- * dismiss it ([NotificationExceptionsEvent.DismissMuteOptions]). It scrolls where the window is too short.
+ * The mute options of an exception's chat ([item]), in a [PingogramBottomSheet]: the chat and whether it notifies as
+ * its heading, then mute for an hour, 8 hours or a day, mute forever, unmute (unless it is unmuted) and use the
+ * default. Choosing one hides the sheet on its spring, then sends its change; dragging it down, the scrim and the back
+ * gesture dismiss it ([NotificationExceptionsEvent.DismissMuteOptions]). It scrolls where the window is too short.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

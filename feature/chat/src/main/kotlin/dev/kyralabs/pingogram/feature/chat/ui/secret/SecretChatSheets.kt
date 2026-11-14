@@ -47,8 +47,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The sheets of a secret chat's top bar (`REQUIREMENTS.md` FR-E1), a [PingogramBottomSheet] each: the self-destruct timer
- * ([TimerContent]) and the encryption key ([EncryptionKeyContent]), with the confirmation before the chat ends
+ * The sheets of a secret chat's top bar (`REQUIREMENTS.md` FR-E1), a [PingogramBottomSheet] each: the self-destruct
+ * timer ([TimerContent]) and the encryption key ([EncryptionKeyContent]), with the confirmation before the chat ends
  * ([EndSecretChatDialog]). Dragging a sheet down, tapping the scrim and the back gesture (Material's predictive back)
  * close it ([SecretChatEvent.Dismiss]); its content scrolls where the window is too short.
  */

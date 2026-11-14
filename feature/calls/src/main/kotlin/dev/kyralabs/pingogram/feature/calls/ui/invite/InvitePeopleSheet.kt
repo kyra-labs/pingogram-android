@@ -72,9 +72,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Add people" (`docs/DESIGN_SYSTEM.md` §6 "Add people to a call"): a [PingogramBottomSheet] of the user's contacts that
- * are not in the call ([excluded]), to pick and invite. "Add" closes it, then hands the picks to [onInvite]; the scrim,
- * dragging, back and "Cancel" close it without inviting ([onDismiss]). The picks are forgotten once it closes.
+ * "Add people" (`docs/DESIGN_SYSTEM.md` §6 "Add people to a call"): a [PingogramBottomSheet] of the user's contacts
+ * that are not in the call ([excluded]), to pick and invite. "Add" closes it, then hands the picks to [onInvite]; the
+ * scrim, dragging, back and "Cancel" close it without inviting ([onDismiss]). The picks are forgotten once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

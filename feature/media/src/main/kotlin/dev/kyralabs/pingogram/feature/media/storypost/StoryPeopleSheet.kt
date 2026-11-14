@@ -71,9 +71,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [PingogramBottomSheet] of the user's contacts,
- * those in [initial] picked, to choose who sees the story. "Done" closes it, then hands the picks to [onDone]; the
- * scrim, dragging, back and "Cancel" close it without a change ([onDismiss]). The picks are forgotten once it closes.
+ * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [PingogramBottomSheet] of the user's
+ * contacts, those in [initial] picked, to choose who sees the story. "Done" closes it, then hands the picks to
+ * [onDone]; the scrim, dragging, back and "Cancel" close it without a change ([onDismiss]). The picks are forgotten
+ * once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

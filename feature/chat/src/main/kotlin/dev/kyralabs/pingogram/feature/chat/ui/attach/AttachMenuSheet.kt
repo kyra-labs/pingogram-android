@@ -44,10 +44,11 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The composer's attach menu (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Attach menu"): a [PingogramBottomSheet]
- * with a [ButtonGroup] of the [options], each a filled tonal icon button in the Expressive shapes that morph while
- * pressed, its label below, the pressed one growing on the group's spring ([ButtonGroup]'s `animateWidth`). Where they
- * do not fit (narrow windows, large font scales), the last ones go into the group's overflow menu, never truncated.
+ * The composer's attach menu (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Attach menu"): a
+ * [PingogramBottomSheet] with a [ButtonGroup] of the [options], each a filled tonal icon button in the Expressive
+ * shapes that morph while pressed, its label below, the pressed one growing on the group's spring ([ButtonGroup]'s
+ * `animateWidth`). Where they do not fit (narrow windows, large font scales), the last ones go into the group's
+ * overflow menu, never truncated.
  *
  * Choosing one hides the sheet on its spring, then [onPick] gets it. Dragging the sheet down, tapping the
  * scrim and the back gesture (Material's predictive back) dismiss it ([onDismiss]).

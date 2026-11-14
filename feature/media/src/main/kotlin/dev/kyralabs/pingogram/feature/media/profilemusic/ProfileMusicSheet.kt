@@ -60,8 +60,8 @@ import dev.kyralabs.pingogram.feature.media.ui.formatDuration
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The playlist (board 13b), a [PingogramBottomSheet] from the card's cover: "Profile music" over how many songs there are,
- * on the user's own profile "Add music"; why the last change failed in `error`, as a polite live region; then the
+ * The playlist (board 13b), a [PingogramBottomSheet] from the card's cover: "Profile music" over how many songs there
+ * are, on the user's own profile "Add music"; why the last change failed in `error`, as a polite live region; then the
  * songs, a tap playing one. The playing one shows the equalizer symbol and its title in `primary`. On the user's own
  * profile each song ends in an options button (an expressive menu: "Move up", "Move down", "Remove" in `error`), whose
  * items are also the row's custom actions for screen readers.

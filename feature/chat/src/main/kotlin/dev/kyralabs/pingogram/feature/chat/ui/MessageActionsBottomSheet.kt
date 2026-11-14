@@ -52,9 +52,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The actions of a long-pressed message (`REQUIREMENTS.md` FR-C6, FR-C7; `docs/DESIGN_SYSTEM.md` §6 "Message actions",
- * "Reactions picker"): a [PingogramBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which scrolls
- * sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more; then
- * the actions as list items, reporting and deleting in `error`.
+ * "Reactions picker"): a [PingogramBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which
+ * scrolls sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more;
+ * then the actions as list items, reporting and deleting in `error`.
  *
  * - **Reactions picker** ([ReactionPickerContent]), while [MessageActionsSheet.showsPicker]: it takes the place of the
  *   quick reactions and the actions, the sheet's content crossfading on the motion scheme's default effects springs

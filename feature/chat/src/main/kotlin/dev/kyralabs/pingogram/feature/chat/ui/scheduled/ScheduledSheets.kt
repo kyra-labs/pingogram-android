@@ -44,12 +44,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The actions of a scheduled message (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6 "Scheduled messages"), as
- * the conversation's actions sheet shows a message's: a [PingogramBottomSheet] headed by when it goes out ("Sends Today,
- * 9:41 AM" in `titleMedium`, a heading for screen readers, how often it repeats in `bodyMedium` `onSurfaceVariant`,
- * beside the schedule-send symbol), a divider, then the actions as transparent list items with their outlined icons,
- * "Delete" in `error`. Choosing one hides the sheet on its spring, then sends its event; dragging it down, the scrim
- * and the predictive back gesture dismiss it ([ScheduledEvent.DismissActions]). It scrolls where the window is too
- * short.
+ * the conversation's actions sheet shows a message's: a [PingogramBottomSheet] headed by when it goes out ("Sends
+ * Today, 9:41 AM" in `titleMedium`, a heading for screen readers, how often it repeats in `bodyMedium`
+ * `onSurfaceVariant`, beside the schedule-send symbol), a divider, then the actions as transparent list items with
+ * their outlined icons, "Delete" in `error`. Choosing one hides the sheet on its spring, then sends its event; dragging
+ * it down, the scrim and the predictive back gesture dismiss it ([ScheduledEvent.DismissActions]). It scrolls where the
+ * window is too short.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
