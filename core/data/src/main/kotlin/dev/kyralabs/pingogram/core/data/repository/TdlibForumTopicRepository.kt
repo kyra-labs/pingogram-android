@@ -313,7 +313,7 @@ internal data class TopicCache(
     ): TopicCache {
         val forum = forums[chatId] ?: return this
         val topics = page.topics.filterNotNull().map { it.toForumTopic() }
-        val merged = forum.topics.putAll(topics.associateBy { it.id })
+        val merged = forum.topics.puttingAll(topics.associateBy { it.id })
         val done = topics.isEmpty() || merged.size >= page.totalCount
         val next =
             if (done) {
@@ -343,7 +343,11 @@ internal data class TopicCache(
         val top = loaded.maxOf { it.order }
         val reordered = loaded.mapIndexed { index, topic -> topic.copy(order = top - index) }
         return copy(
-            forums = forums.putting(chatId, forum.copy(topics = forum.topics.putAll(reordered.associateBy { it.id }))),
+            forums =
+                forums.putting(
+                    chatId,
+                    forum.copy(topics = forum.topics.puttingAll(reordered.associateBy { it.id })),
+                ),
         )
     }
 

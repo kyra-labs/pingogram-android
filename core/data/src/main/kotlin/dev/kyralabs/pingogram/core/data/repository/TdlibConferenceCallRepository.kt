@@ -136,7 +136,7 @@ private fun reduce(
             if (state.verifications[update.groupCallId] == verification) {
                 state
             } else {
-                state.copy(verifications = state.verifications.put(update.groupCallId, verification))
+                state.copy(verifications = state.verifications.putting(update.groupCallId, verification))
             }
         }
 
@@ -149,7 +149,7 @@ private fun reduce(
             if (state.members[update.groupCallId] == members) {
                 state
             } else {
-                state.copy(members = state.members.put(update.groupCallId, members))
+                state.copy(members = state.members.putting(update.groupCallId, members))
             }
         }
 
@@ -159,8 +159,8 @@ private fun reduce(
                 state
             } else {
                 state.copy(
-                    verifications = state.verifications.remove(update.groupCall.id),
-                    members = state.members.remove(update.groupCall.id),
+                    verifications = state.verifications.removing(update.groupCall.id),
+                    members = state.members.removing(update.groupCall.id),
                 )
             }
         }
