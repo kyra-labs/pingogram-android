@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,8 +16,10 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
@@ -45,7 +46,6 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.folderIconDrawable
@@ -58,26 +58,27 @@ import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import kotlinx.collections.immutable.ImmutableList
 
 /**
- * The folder tabs above the chat list (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6): "All chats" and the
- * user's folders, each with the number of its unread unmuted chats: [ToggleButton] chips apart in a [ButtonGroup]
- * that scrolls sideways, whatever their number (`docs/DESIGN_SYSTEM.md` §13.3).
+ * The folder tabs (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6, §13.3; owner decision 2026-11-13): one
+ * floating bar over the top of the chat list's sheet, a full pill on `surfaceContainer` with the floating navigation
+ * bar's elevation, as wide as its chips and never wider than the sheet. Inside it "All chats" and the user's folders,
+ * each with the number of its unread unmuted chats: [ToggleButton] chips in a [ButtonGroup] that scrolls sideways,
+ * whatever their number, fading at the bar's edges, `spacing.extraSmall` around them.
  *
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * The selected chip is a `primary` pill with its count in an inverted badge, the others `small`-cornered on
- * `surfaceContainerHighest` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
- * folders" ([EditFoldersButton]) ends the row, opening the folder settings (null), unless Appearance → Chat list
- * turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
+ * The selected chip is a `primary` pill with its count in an inverted badge, the others without a container, their
+ * labels in `onSurface` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
+ * folders" ([EditFoldersButton]) ends the bar, inside it, opening the folder settings (null), unless Appearance → Chat
+ * list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
  *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
  * @param enabled false disables every tab and its menu, e.g. in selection mode.
- * @param margin the window margin before the first tab and after the last (`docs/DESIGN_SYSTEM.md` §7).
  * @param onMarkAllAsRead called with the folder's id, or null for "All chats".
  * @param onEditFolder called with the folder's id, or null for "All chats"; null leaves "Edit folder" out.
  */
-@Suppress("LongParameterList") // The tabs and their selection, their menu's two actions, and the layout's margin.
+@Suppress("LongParameterList") // The tabs and their selection, and their menu's two actions.
 @Composable
 internal fun FolderTabs(
     tabs: ImmutableList<FolderTab>,
@@ -85,7 +86,6 @@ internal fun FolderTabs(
     onSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    margin: Dp = MaterialTheme.spacing.windowMarginCompact,
     onMarkAllAsRead: (Int?) -> Unit = {},
     onEditFolder: ((Int?) -> Unit)? = null,
 ) {
@@ -99,32 +99,30 @@ internal fun FolderTabs(
     }
     val haptics = LocalHapticFeedback.current
     val resources = LocalResources.current
-    // One instance while nothing it holds changes, so the tabs skip when the top bar composes again.
+    // One instance while nothing it holds changes, so the tabs skip when the list's body composes again.
     val tabMenu =
         remember(menu, canEditFolders, enabled, haptics, resources, onAction) {
             TabMenu(menu, canEditFolders, enabled, haptics, resources, onAction)
         }
-    // spacing.medium below the row, between it and the list's sheet (owner decision 2026-11-06).
-    Row(
-        modifier.fillMaxWidth().padding(bottom = MaterialTheme.spacing.medium),
-        verticalAlignment = Alignment.CenterVertically,
+    val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = colors.toolbarContainerColor,
+        contentColor = colors.toolbarContentColor,
+        // The floating navigation bar's elevation, so the two floating bars match.
+        shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
     ) {
-        Box(Modifier.weight(1f).folderTabMenuContainer(menu)) {
-            FolderButtonGroup(tabs, selectedFolderId, onSelect, margin, tabMenu)
-            if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
-        }
-        if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {
-            // spacing.small from the tabs' fade; at the end in line with the header's buttons: the window margin
-            // less the touch target's room around the button.
-            EditFoldersButton(
-                onClick = { onEditFolder(null) },
-                enabled = enabled,
-                modifier =
-                    Modifier.padding(
-                        start = MaterialTheme.spacing.small,
-                        end = margin - MaterialTheme.spacing.extraSmall,
-                    ),
-            )
+        // spacing.extraSmall around the chips' 48 dp touch targets: their 40 dp containers 8 dp inside the bar.
+        Row(Modifier.padding(MaterialTheme.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
+            // As wide as its chips, or the room left beside "Edit folders", then scrolling.
+            Box(Modifier.weight(1f, fill = false).folderTabMenuContainer(menu)) {
+                FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu)
+                if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
+            }
+            if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {
+                EditFoldersButton(onClick = { onEditFolder(null) }, enabled = enabled)
+            }
         }
     }
 }
@@ -141,15 +139,14 @@ internal fun FolderTabs(
  * has a menu entry, should the group overflow after all. With animations off (reduced motion) the press and the
  * shapes change at once.
  *
- * The selected tab is always in view ([rememberTabScroll]), and the row fades out at an edge it can scroll past
- * ([fadingEdges]), so a tab is never cut by the window's edge without a hint that more follow.
+ * The selected tab is always in view ([rememberTabScroll]), and the chips fade out at an edge of the bar they can
+ * scroll past ([fadingEdges]), so a tab is never cut by the bar's edge without a hint that more follow.
  */
 @Composable
 private fun FolderButtonGroup(
     tabs: ImmutableList<FolderTab>,
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
-    margin: Dp,
     tabMenu: TabMenu,
 ) {
     val enabled = tabMenu.enabled
@@ -157,19 +154,21 @@ private fun FolderButtonGroup(
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
     val scroll =
-        rememberTabScroll(tabs.size, selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }, margin)
+        rememberTabScroll(
+            tabs.size,
+            selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId },
+            margin = MaterialTheme.spacing.small,
+        )
     ButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
         modifier =
             Modifier
-                .fillMaxWidth()
                 .fadingEdges(scroll.state)
                 .horizontalScroll(scroll.state)
-                .selectableGroup()
-                // A 48 dp row: the buttons' touch targets, 4 dp above and below their 40 dp containers.
-                .padding(horizontal = margin),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                .selectableGroup(),
+        // The chips have no container but the selected one's: the gap the design keeps between their labels.
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEachIndexed { index, tab ->
