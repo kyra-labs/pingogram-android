@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
+  entry counts its chats with unread messages, in a speech-bubble badge.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
