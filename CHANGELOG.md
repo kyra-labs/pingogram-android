@@ -9,12 +9,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-14
+
+A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
+
 ### Changed
 - The chat folders sit in a floating bar at the top of the chat list, which stays in place as you scroll.
 - The navigation bar shows the tabs' names again, and New chat is round.
 
 ### Fixed
-- Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it first.
+- Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it
+  first.
 
 ## [2.1.0] - 2026-11-13
 
@@ -1288,7 +1293,8 @@ Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts 
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...v2.0.0
 [1.1.3]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...v1.1.3
