@@ -22,8 +22,8 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
  * A forum's topic list for previews and screenshot tests: "Compose Developers" with the General topic, a pinned one,
- * unread ones (one with a mention, one muted), a closed one, and the loading, empty and error states; as an administrator who
- * manages the topics sees it, with the menus, the editor and the question before deleting.
+ * unread ones (one with a mention, one muted), a closed one, and the loading, empty and error states; as an
+ * administrator who manages the topics sees it, with the menus, the editor and the question before deleting.
  */
 internal object TopicsPreviewData {
     private const val FORUM = -1_000_000_000_300L
