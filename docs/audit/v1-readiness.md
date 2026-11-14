@@ -115,7 +115,7 @@ What blocks 1.0, in order:
 | Foreground services declare their type | Pass | `dataSync` (transfers), `specialUse` (Keep connected, foss), `phoneCall` / `microphone` (calls) | — |
 | Per-app language, keyboard and mouse, state restoration | Needs device for keyboard and mouse | Saved state throughout; Enter-to-send and hover are not covered by tests | Owner / testers |
 | Accessibility (§6.3), haptics | **Fail** | See §6.3 | A |
-| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin warnings fail the build in the modules that apply `pingogram.kotlin.warnings` (`allWarningsAsErrors`, main and test sources): `:app`, `core:common`, `core:tdlib`, `feature:calls`, `feature:feedback`, `feature:media` and `feature:scanner` (2026-10-27). The other modules still compile with warnings, counted below ("Kotlin warnings"). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
+| No deprecated APIs; lint fatal | **Fail** (partly) | Lint `NewApi`, `UnusedResources` and `ExtraTranslation` are fatal and all warnings are errors (`MissingTranslation` informational since #152). Kotlin warnings fail the build in the modules that apply `pingogram.kotlin.warnings` (`allWarningsAsErrors`, main and test sources): `:app`, `core:common`, `core:notifications`, `core:tdlib`, `core:ui`, `feature:calls`, `feature:feedback`, `feature:media` and `feature:scanner` (2026-10-27; `core:notifications` and `core:ui` since 2026-11-15). The other modules still compile with warnings, counted below ("Kotlin warnings"). A lint disable for `MissingApplicationIcon` was stale and is removed (*fixed here*) | R (Kotlin warnings: each module's owner) |
 | Performance budgets per screen | **Fail** | §6.1 | A |
 | Live Updates (`ProgressStyle`) for long transfers | Pass | `TransferNotificationBuilder` | — |
 
@@ -138,8 +138,6 @@ What blocks 1.0, in order:
   | Module | Main | Test | Mostly |
   |---|---|---|---|
   | `core:data` | 28 | 108 | coroutines test APIs (`runCurrent`, `UnconfinedTestDispatcher`) without their opt-in; `kotlinx.collections.immutable`'s deprecated `put`, `remove`, `putAll` |
-  | `core:notifications` | 1 | 75 | coroutines test APIs without their opt-in; Robolectric's deprecated `isBroadcastIntent` |
-  | `core:ui` | 2 | 6 | coroutines test APIs without their opt-in; an unused expression; a redundant cast |
   | `feature:chat` | 24 | 8 | `kotlinx.collections.immutable`'s deprecated `remove`, `put`, `add`; test names with characters Windows refuses; unused expressions |
   | `feature:chats` | 3 | 0 | `ListItem`'s old overload, a deprecated `copy`, an unused expression |
   | `feature:profile` | 4 | 1 | `rememberModalBottomSheetState`, `ListItem`'s old overload, a redundant cast and safe call |
