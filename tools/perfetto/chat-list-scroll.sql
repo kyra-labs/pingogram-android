@@ -107,3 +107,80 @@ SELECT
 FROM late
 ORDER BY late.ts
 LIMIT 40;
+
+-- The RenderThread's texture uploads, by size: how many, in how many frames, how long, and the three slices they ran
+-- under (outermost first). An upload under "flush commands" in nearly every frame, of the size of something on screen,
+-- is a clip mask Skia rasterizes on the CPU, for a draw that crosses a clip Android could not hand the GPU as a
+-- rectangle or a round rect (a path: the chat list's sheet, rounded at the top only, was one until ContentSheet's
+-- SheetShape), or a bitmap drawn without a cached texture. Compare the sizes with the floating folder bar (about
+-- 1390 x 195 px on a 1440 px wide phone) and the list (1440 px wide, the sheet's height).
+SELECT
+  TRIM(SUBSTR(upload.name, INSTR(upload.name, ')') + 1)) AS size,
+  -- The frame's own slice is left out: some phones name it with the frame's vsync id.
+  COALESCE(CASE WHEN p3.depth > 0 THEN p3.name || ' > ' END, '')
+    || COALESCE(CASE WHEN p2.depth > 0 THEN p2.name || ' > ' END, '')
+    || COALESCE(CASE WHEN p1.depth > 0 THEN p1.name END, '(the frame)') AS under,
+  COUNT(*) AS uploads,
+  COUNT(DISTINCT frame.id) AS frames,
+  ROUND(SUM(upload.dur) / 1e6, 1) AS total_ms,
+  ROUND(MAX(upload.dur) / 1e6, 2) AS max_ms
+FROM slice AS upload
+JOIN thread_track ON upload.track_id = thread_track.id
+JOIN thread USING (utid)
+JOIN process USING (upid)
+LEFT JOIN slice AS p1 ON p1.id = upload.parent_id
+LEFT JOIN slice AS p2 ON p2.id = p1.parent_id
+LEFT JOIN slice AS p3 ON p3.id = p2.parent_id
+LEFT JOIN slice AS frame ON frame.track_id = upload.track_id AND frame.depth = 0
+  AND upload.ts >= frame.ts AND upload.ts < frame.ts + frame.dur
+WHERE process.name LIKE 'dev.kyralabs.pingogram%'
+  AND thread.name = 'RenderThread'
+  AND upload.name GLOB 'Texture upload*'
+GROUP BY size, under
+ORDER BY uploads DESC
+LIMIT 20;
+
+-- What the main thread's frames were for: each Choreographer#doFrame by the kinds of work under it (input, animation,
+-- Compose's recompose and prefetch, traversal). Frames with a traversal but no input, animation or recompose were asked
+-- for by an invalidated view or layer: a draw that keeps invalidating itself, or a state written in layout or draw.
+-- Compare the counts between two builds over the same journey.
+WITH frame AS (
+  SELECT slice.id, slice.ts, slice.dur, slice.track_id
+  FROM slice
+  JOIN thread_track ON slice.track_id = thread_track.id
+  JOIN thread USING (utid)
+  JOIN process USING (upid)
+  WHERE process.name LIKE 'dev.kyralabs.pingogram%'
+    AND thread.is_main_thread
+    AND slice.depth = 0
+    AND slice.name LIKE 'Choreographer#doFrame%'
+),
+kinds AS (
+  SELECT
+    frame.id,
+    frame.dur,
+    MAX(COALESCE(child.name = 'input', 0)) AS input,
+    MAX(COALESCE(child.name = 'animation', 0)) AS animation,
+    MAX(COALESCE(child.name = 'traversal', 0)) AS traversal,
+    MAX(COALESCE(child.name GLOB 'Recomposer:*' OR child.name GLOB 'Compose:recompose*', 0)) AS recompose,
+    MAX(COALESCE(child.name GLOB '*prefetch*', 0)) AS prefetch
+  FROM frame
+  LEFT JOIN slice AS child ON child.track_id = frame.track_id AND child.depth BETWEEN 1 AND 4
+    AND child.ts >= frame.ts AND child.ts < frame.ts + frame.dur
+  GROUP BY frame.id
+)
+SELECT
+  CASE
+    WHEN input THEN 'input'
+    WHEN recompose THEN 'recompose'
+    WHEN animation THEN 'animation'
+    WHEN prefetch THEN 'prefetch only'
+    WHEN traversal THEN 'invalidated draw or layout only'
+    ELSE 'other'
+  END AS frame_for,
+  COUNT(*) AS frames,
+  ROUND(AVG(dur) / 1e6, 2) AS avg_ms,
+  ROUND(MAX(dur) / 1e6, 2) AS max_ms
+FROM kinds
+GROUP BY frame_for
+ORDER BY frames DESC;
