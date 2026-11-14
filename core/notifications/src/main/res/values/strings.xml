@@ -24,6 +24,8 @@
     <!-- Notification texts. -->
     <!-- Shown instead of a message when the chat's settings hide message previews. -->
     <string name="notification_new_message">New message</string>
+    <!-- Stands for a part of a message the sender hid as a spoiler, which a notification never shows. -->
+    <string name="notification_spoiler">Spoiler</string>
     <string name="notification_new_secret_chat">Secret chat started</string>
     <string name="notification_incoming_call">Incoming call</string>
     <!-- A sender TDLib knows nothing about. -->

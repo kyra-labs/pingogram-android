@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
+  italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
