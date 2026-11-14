@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it first.
+
 ## [2.1.0] - 2026-11-13
 
 Post stories, communities, a channel's direct messages and suggested posts, richer polls, passkeys, and smoother motion
