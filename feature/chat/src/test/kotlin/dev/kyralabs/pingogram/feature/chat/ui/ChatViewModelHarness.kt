@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
 import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedJumps
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
@@ -87,9 +88,20 @@ abstract class ChatViewModelHarness {
     protected val directTopics = FakeDirectMessagesTopicRepository()
 
     private fun threadRepositories() =
-        ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads, savedTopics, directTopics, users, chats)
+        ThreadRepositories(
+            pinnedMessages,
+            hiddenPins,
+            forumTopics,
+            threads,
+            savedTopics,
+            directTopics,
+            users,
+            chats,
+            pinnedJumps,
+        )
 
     protected val shareInbox = ShareInbox()
+    internal val pinnedJumps = PinnedJumps()
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
     protected val botStarts = BotStartInbox()

@@ -22,6 +22,15 @@ interface PinnedMessageRepository {
         topic: MessageTopic? = null,
     ): Flow<ImmutableList<Message>>
 
+    /**
+     * As [pinnedMessages], but a load that fails says why (a `DomainError`) instead of reading as none, for the page of
+     * every pinned message; the changes after it follow as successes.
+     */
+    fun pinnedMessagesOrError(
+        chatId: Long,
+        topic: MessageTopic? = null,
+    ): Flow<Outcome<ImmutableList<Message>>>
+
     /** Unpins every pinned message of chat [chatId]; fails if the user may not, or with `DomainError.Network`. */
     suspend fun unpinAll(chatId: Long): Outcome<Unit>
 

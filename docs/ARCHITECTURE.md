@@ -652,7 +652,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the newest pin at or above the newest message on screen), cycles through the pins as taps show each in the list
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
-  hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+  hides. "All pinned messages" opens the page of every pin, `PinnedMessagesRoute` of `core:navigation`
+  (`ChatEffect.OpenPinnedMessages`, which the route hands to `feature:chat`'s `LocalPinnedMessagesLauncher`, provided by
+  `:app`): `PinnedMessagesViewModel` (`PinnedMessageRepository.pinnedMessagesOrError`, so a failed load shows; the
+  filter and the search in its saved state) maps the cards (`PinnedCards.kt`), and "Jump to message" goes back through
+  `PinnedJumps` (a singleton, in memory, like `ShareInbox`), which the conversation of that chat and topic takes.
 - **Seen by and reactions** (FR-C6): `core:domain`'s `MessageInteractionRepository` (`TdlibMessageInteractionRepository`,
   `core:data`, no cache) lists who saw a group message (`getMessageViewers`, all at once, the latest view first) and who
   added its reactions (`getMessageAddedReactions`, every kind or one, paged by `next_offset`); `MSG_TOO_OLD` and

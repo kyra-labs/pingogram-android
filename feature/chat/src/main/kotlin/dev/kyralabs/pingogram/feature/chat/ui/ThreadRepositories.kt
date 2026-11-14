@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedJumps
 import javax.inject.Inject
 
 /**
@@ -29,4 +30,5 @@ class ThreadRepositories
         val directTopics: DirectMessagesTopicRepository,
         val users: UserRepository,
         val chats: ChatRepository,
+        val pinnedJumps: PinnedJumps = PinnedJumps(),
     )

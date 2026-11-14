@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
+  photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
+  (Unpin all from its menu).
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
