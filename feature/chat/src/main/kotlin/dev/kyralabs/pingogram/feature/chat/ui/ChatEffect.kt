@@ -54,6 +54,15 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open chat [chatId] at message [messageId]: the original of a post forwarded from a channel. */
+    data class OpenMessage(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
+
+    /** "Forwarded from …" of a user who hides their account was tapped: a snackbar says nothing can open. */
+    data object ForwardSourceHidden : ChatEffect
+
     /** Open channel [chatId], the next unread one, in this conversation's place, so back leads where it did. */
     data class OpenNextChannel(
         val chatId: Long,

@@ -1305,6 +1305,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
+            is ChatEvent.OpenForwardSource -> event.source.open(chatId, window::showMessage, effectChannel::trySend)
             ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
             ChatEvent.ReportChat -> reporting.start(emptyList(), wholeChat = true)
             is ChatEvent.OpenMention -> mentions.open(event.target)
