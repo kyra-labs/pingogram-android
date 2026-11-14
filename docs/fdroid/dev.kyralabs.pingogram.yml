@@ -21,9 +21,9 @@ Builds:
   # One build per ABI, as the GitHub releases: version codes MAJOR*1_000_000 + MINOR*10_000 + PATCH*100 + ABI index
   # (docs/RELEASE.md). Shown for arm64-v8a; armeabi-v7a (…01) and x86_64 (…03) differ only in versionCode and the
   # abi property.
-  - versionName: 2.1.0
-    versionCode: 2010002
-    commit: v2.1.0
+  - versionName: 2.2.0
+    versionCode: 2020002
+    commit: v2.2.0
     subdir: app
     sudo:
       - apt-get update
@@ -56,10 +56,10 @@ Builds:
       # (F-Droid signs them), and the version the tag names.
       - pingogram.tdlib.aar=$$tdlib$$/example/android/tdlib.aar
       - pingogram.unsignedRelease=true
-      - version=2.1.0
+      - version=2.2.0
     ndk: r28b
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 2.1.0
-CurrentVersionCode: 2010002
+CurrentVersion: 2.2.0
+CurrentVersionCode: 2020002
