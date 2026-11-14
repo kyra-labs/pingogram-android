@@ -10,6 +10,7 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -206,13 +207,24 @@ private fun StepSlider(
 ) {
     val haptics = LocalHapticFeedback.current
     val value = labels[index]
+    // One step per label. The state follows the setting while the finger does not hold it.
+    val sliderState =
+        remember(labels.size) {
+            SliderState(
+                index.toFloat(),
+                labels.size - 2,
+                0f..labels.lastIndex.toFloat(),
+            )
+        }
+    LaunchedEffect(index) { if (!sliderState.isDragging) sliderState.value = index.toFloat() }
     SettingsSegment(shapes) {
         SegmentedListItem(shapes = shapes, supportingContent = { Text(value) }, colors = nestedItemColors()) {
             Text(title)
         }
         Slider(
-            value = index.toFloat(),
+            state = sliderState,
             onValueChange = { position ->
+                sliderState.value = position
                 val step = position.roundToInt().coerceIn(labels.indices)
                 if (step != index) {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -229,8 +241,6 @@ private fun StepSlider(
                         contentDescription = title
                         stateDescription = value
                     },
-            valueRange = 0f..labels.lastIndex.toFloat(),
-            steps = labels.size - 2,
         )
     }
 }

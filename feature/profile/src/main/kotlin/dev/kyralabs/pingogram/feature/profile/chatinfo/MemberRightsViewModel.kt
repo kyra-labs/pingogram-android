@@ -338,7 +338,7 @@ class MemberRightsViewModel internal constructor(
             canRevoke = if (restrict) role is MemberRole.Restricted else role is MemberRole.Administrator,
             isSaving = isSaving,
             canTransfer =
-                !restrict && !isDeleted && user?.type == UserType.Regular &&
+                !restrict && !isDeleted && user.type == UserType.Regular &&
                     loaded.group.myRole is MemberRole.Owner && loaded.group.kind != GroupKind.BasicGroup,
             isCheckingTransfer = (mutableUiState.value as? MemberRightsUiState.Content)?.isCheckingTransfer == true,
         )
