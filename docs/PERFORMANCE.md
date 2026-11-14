@@ -650,6 +650,20 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
       gives the main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late
       frame spent its longest slice on. It also lists the texture uploads by size with the slices they ran under, and
       what each main thread frame was for (input, animation, recompose, or an invalidated draw).
+  - **After #502** (the owner's trace of 2026-11-15): the main thread's P90 was 2.2 ms against 1.5 ms in v2.1.0, and
+    901 of its 1194 frames read as "recompose" frames. That count was the summary's mistake, not recompositions:
+    - Compose wraps its frame clock's dispatch in `Recomposer:animation` and the recomposer's per-frame loop in
+      `Recomposer:recompose`, whether anything was invalid or not (Compose runtime 1.12.1). A fling's animation runs
+      through that clock, so every frame of a fling carried both. The summary counted any `Recomposer:*` slice as a
+      recomposition.
+    - It now counts a frame as "recompose" only where a composition applied changes (`Compose:applyChanges`), calls the
+      rest "animation (a fling, no recomposition)", and lists Compose's slices per frame.
+    - On the JVM, `ChatListRecompositionTest` flings the list with touch input, through the header's nested scroll as
+      the benchmark's flings do: 4 of 204 frames recompose (Material's `Scaffold` content and the header's
+      `TwoRowsTopAppBar` as the header collapses), nothing of Pingogram's in any of them.
+    - What is left of the 0.7 ms needs the next trace, read with the corrected summary: frames that apply changes would
+      point at the app's shell or at pictures loading into rows, which the JVM test leaves out; otherwise the main
+      thread waits for the RenderThread (`postAndWait`), as before #502.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
