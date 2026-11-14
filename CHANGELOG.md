@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
+
 ## [2.2.0] - 2026-11-15
 
 A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
