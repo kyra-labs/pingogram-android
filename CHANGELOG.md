@@ -11,6 +11,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Changed
 - The chat folders sit in a floating bar at the top of the chat list, which stays in place as you scroll.
+- The navigation bar shows the tabs' names again, and New chat is round.
 
 ### Fixed
 - Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it first.
