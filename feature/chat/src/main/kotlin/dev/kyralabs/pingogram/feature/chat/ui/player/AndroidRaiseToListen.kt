@@ -29,7 +29,7 @@ private fun AudioManager.routeToEarpiece(): Boolean =
 internal class AndroidProximitySensor
     @Inject
     constructor(
-        @param:ApplicationContext context: Context,
+        @ApplicationContext context: Context,
     ) : ProximitySensor {
         private val sensors = context.getSystemService<SensorManager>()
         private val sensor = sensors?.getDefaultSensor(Sensor.TYPE_PROXIMITY)
@@ -74,7 +74,7 @@ internal class AndroidProximitySensor
 internal class AndroidEarpieceRoute
     @Inject
     constructor(
-        @param:ApplicationContext context: Context,
+        @ApplicationContext context: Context,
     ) : EarpieceRoute {
         private val audio = context.getSystemService<AudioManager>()
         private val power = context.getSystemService<PowerManager>()

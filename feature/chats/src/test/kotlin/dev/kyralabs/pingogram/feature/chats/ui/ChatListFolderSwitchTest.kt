@@ -177,7 +177,7 @@ class ChatListFolderSwitchTest {
     }
 
     @Test
-    fun `back in a folder with pinned chats, the "Pinned" header counts among the rows above the chats`() {
+    fun `back in a folder with pinned chats, the Pinned header counts among the rows above the chats`() {
         // Chats 1 and 2 pinned under "Pinned" (index 0), so chat 6 is the list's index 6.
         val pinned = allChats.copy(content = ChatListContent.Content(numberedRows(1..30), pinnedCount = 2))
         val listState = LazyListState()

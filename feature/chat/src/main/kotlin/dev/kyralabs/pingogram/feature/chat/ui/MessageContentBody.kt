@@ -209,9 +209,7 @@ private fun MediaContent(
             MessageDice(content, modifier)
         }
 
-        else -> {
-            Unit
-        }
+        else -> {}
     }
 }
 
@@ -257,9 +255,7 @@ private fun FileContent(
             )
         }
 
-        else -> {
-            Unit
-        }
+        else -> {}
     }
 }
 
@@ -335,9 +331,7 @@ private fun InfoContent(
             MessageUnsupported(showsUpdateLink, colors, onUpdate = { onEvent(ChatEvent.OpenUpdatePage) }, modifier)
         }
 
-        else -> {
-            Unit
-        }
+        else -> {}
     }
 }
 
