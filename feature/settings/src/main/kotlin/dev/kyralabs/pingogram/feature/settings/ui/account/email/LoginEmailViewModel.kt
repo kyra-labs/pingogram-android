@@ -114,9 +114,7 @@ class LoginEmailViewModel
                     goTo(LoginEmailStep.Address)
                 }
 
-                LoginEmailStep.Intro, LoginEmailStep.Done -> {
-                    Unit
-                }
+                LoginEmailStep.Intro, LoginEmailStep.Done -> {}
             }
         }
 
@@ -212,9 +210,7 @@ class LoginEmailViewModel
                     reject { mutableUiState.update { it.copy(codeError = error) } }
                 }
 
-                DomainError.Silent -> {
-                    Unit
-                }
+                DomainError.Silent -> {}
 
                 else -> {
                     effectChannel.trySend(LoginEmailEffect.ShowError(error))

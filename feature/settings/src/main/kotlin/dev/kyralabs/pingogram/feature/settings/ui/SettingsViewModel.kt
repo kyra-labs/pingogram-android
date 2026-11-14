@@ -118,6 +118,9 @@ class SettingsViewModel
                 }
 
         /** The signed-in accounts but the one shown, with their numbers formatted once TDLib has (then on). */
+        // transformLatest is still experimental in kotlinx.coroutines; a newer list of accounts drops the formatting
+        // still on its way for the older one.
+        @OptIn(ExperimentalCoroutinesApi::class)
         private fun otherAccounts(): Flow<ImmutableList<OtherAccountUiModel>> =
             deviceAccounts.accounts
                 .map { accounts -> accounts.filter { !it.isActive && it.user != null } }
