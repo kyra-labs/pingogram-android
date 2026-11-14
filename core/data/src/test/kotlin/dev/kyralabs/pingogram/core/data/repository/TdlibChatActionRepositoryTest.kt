@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -21,6 +22,7 @@ class TdlibChatActionRepositoryTest {
 
     private val ada = TdApi.MessageSenderUser(ADA)
     private val grace = TdApi.MessageSenderUser(GRACE)
+    private val lin = TdApi.MessageSenderUser(LIN)
     private val cancel = TdApi.ChatActionCancel()
 
     private fun typing(userId: Long) = SenderAction(MessageSender.User(userId), ChatAction.Typing)
@@ -122,7 +124,7 @@ class TdlibChatActionRepositoryTest {
         }
 
     @Test
-    fun `actions of a topic are ignored, as TDLib reports them for the chat too`() =
+    fun `an update of a topic alone leaves the chats' map as it is`() =
         runTest {
             val repository = repository()
             client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, ada))
@@ -130,9 +132,112 @@ class TdlibChatActionRepositoryTest {
             repository.actionsByChat.test {
                 awaitItem()
 
-                client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, grace, TdApi.MessageTopicForum(3)))
                 // The cancellation TDLib sends for the topic a sender moved away from, who still acts in the chat.
                 client.emit(updateChatAction(cancel, CHAT_ID, ada, TdApi.MessageTopicThread(7)))
+                client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, grace, TdApi.MessageTopicForum(3)))
+
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `a topic has only its own actions, the chat every topic's`() =
+        runTest {
+            val repository = repository()
+
+            typeInTopic(grace, TdApi.MessageTopicForum(3))
+            typeInTopic(ada, TdApi.MessageTopicForum(5))
+
+            assertEquals(listOf(typing(GRACE)), repository.actions(CHAT_ID, MessageTopic.Forum(3)).first())
+            assertEquals(listOf(typing(ADA)), repository.actions(CHAT_ID, MessageTopic.Forum(5)).first())
+            assertEquals(emptyList<SenderAction>(), repository.actions(CHAT_ID, MessageTopic.Forum(9)).first())
+            assertEquals(listOf(typing(GRACE), typing(ADA)), repository.actions(CHAT_ID).first())
+        }
+
+    @Test
+    fun `a topic's actions are not another chat's`() =
+        runTest {
+            val repository = repository()
+
+            typeInTopic(grace, TdApi.MessageTopicForum(3))
+
+            assertEquals(emptyList<SenderAction>(), repository.actions(OTHER_CHAT_ID, MessageTopic.Forum(3)).first())
+            assertEquals(mapOf(CHAT_ID to listOf(typing(GRACE))), repository.actionsByChat.first())
+        }
+
+    @Test
+    fun `a thread has only its own actions`() =
+        runTest {
+            val repository = repository()
+
+            typeInTopic(grace, TdApi.MessageTopicThread(7))
+            client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, ada))
+
+            assertEquals(listOf(typing(GRACE)), repository.actions(CHAT_ID, MessageTopic.Thread(7)).first())
+        }
+
+    @Test
+    fun `General has its own actions and those in no topic, never another topic's`() =
+        runTest {
+            val repository = repository()
+
+            client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, ada))
+            typeInTopic(grace, TdApi.MessageTopicForum(3))
+            typeInTopic(lin, TdApi.MessageTopicForum(MessageTopic.GENERAL_TOPIC_ID))
+
+            assertEquals(
+                listOf(typing(ADA), typing(LIN)),
+                repository.actions(CHAT_ID, MessageTopic.Forum(MessageTopic.GENERAL_TOPIC_ID)).first(),
+            )
+        }
+
+    @Test
+    fun `a sender who moves to another topic acts only there`() =
+        runTest {
+            val repository = repository()
+            typeInTopic(ada, TdApi.MessageTopicForum(3))
+
+            // What TDLib sends: the old topic's cancellation alone, then the new topic's action for it and the chat.
+            client.emit(updateChatAction(cancel, CHAT_ID, ada, TdApi.MessageTopicForum(3)))
+            typeInTopic(ada, TdApi.MessageTopicForum(5))
+
+            assertEquals(emptyList<SenderAction>(), repository.actions(CHAT_ID, MessageTopic.Forum(3)).first())
+            assertEquals(listOf(typing(ADA)), repository.actions(CHAT_ID, MessageTopic.Forum(5)).first())
+            assertEquals(listOf(typing(ADA)), repository.actions(CHAT_ID).first())
+        }
+
+    @Test
+    fun `a topic's cancellation ends its action in the topic and the chat`() =
+        runTest {
+            val repository = repository()
+            typeInTopic(ada, TdApi.MessageTopicForum(3))
+
+            client.emit(updateChatAction(cancel, CHAT_ID, ada, TdApi.MessageTopicForum(3)))
+            client.emit(updateChatAction(cancel, CHAT_ID, ada))
+
+            assertEquals(emptyList<SenderAction>(), repository.actions(CHAT_ID, MessageTopic.Forum(3)).first())
+            assertEquals(emptyMap<Long, Any>(), repository.actionsByChat.first())
+        }
+
+    @Test
+    fun `a direct messages topic has the chat's actions, as TDLib names no such topic`() =
+        runTest {
+            val repository = repository()
+
+            client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, ada))
+
+            assertEquals(listOf(typing(ADA)), repository.actions(CHAT_ID, MessageTopic.DirectMessages(5)).first())
+        }
+
+    @Test
+    fun `a topic's actions emit only that topic's changes`() =
+        runTest {
+            val repository = repository()
+
+            repository.actions(CHAT_ID, MessageTopic.Forum(3)).test {
+                assertEquals(emptyList<SenderAction>(), awaitItem())
+
+                typeInTopic(ada, TdApi.MessageTopicForum(5))
 
                 expectNoEvents()
             }
@@ -189,16 +294,28 @@ class TdlibChatActionRepositoryTest {
         runTest {
             val repository = repository()
             client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, ada))
+            typeInTopic(grace, TdApi.MessageTopicForum(3))
 
             client.emitAuthorizationState(TdApiFixtures.closed())
 
             assertEquals(emptyMap<Long, Any>(), repository.actionsByChat.first())
+            assertEquals(emptyList<SenderAction>(), repository.actions(CHAT_ID, MessageTopic.Forum(3)).first())
         }
+
+    /** [sender] typing in [topic], as TDLib reports it: for the topic, then for the chat. */
+    private suspend fun typeInTopic(
+        sender: TdApi.MessageSender,
+        topic: TdApi.MessageTopic,
+    ) {
+        client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, sender, topic))
+        client.emit(updateChatAction(TdApi.ChatActionTyping(), CHAT_ID, sender))
+    }
 
     private companion object {
         const val CHAT_ID = -100L
         const val OTHER_CHAT_ID = -200L
         const val ADA = 42L
         const val GRACE = 43L
+        const val LIN = 44L
     }
 }
