@@ -6,15 +6,22 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CornerBasedShape
-import androidx.compose.foundation.shape.ZeroCornerSize
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -29,6 +36,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  * sheet without recomposing. [content] gets the rest (the sides and the bottom: system bars, the floating navigation
  * bar), and a small gap at the top that keeps it clear of the rounded corners, to pad what it shows, also read in the
  * layout phase.
+ *
+ * The clip is [SheetShape]: a rounded rect with the same corners all round, its bottom corners below the sheet, so
+ * Android clips to a round rect rather than a path, which the GPU draws without a clip mask.
  */
 @Composable
 fun ContentSheet(
@@ -39,17 +49,42 @@ fun ContentSheet(
     val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
     val gap = MaterialTheme.spacing.small
     val contentPadding = remember(innerPadding, gap) { innerPadding.withTop(gap) }
+    val corner = MaterialTheme.shapes.extraLarge.topStart
+    val shape = remember(corner) { SheetShape(corner) }
     Box(
         modifier
             .fillMaxSize()
             .padding(sheetPadding)
-            .clip(MaterialTheme.shapes.extraLarge.top())
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surface),
     ) { content(contentPadding) }
 }
 
-/** This shape with square bottom corners: a sheet's that rises from the bottom of the window. */
-private fun CornerBasedShape.top(): CornerBasedShape = copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize)
+/**
+ * A sheet's shape that rises from the bottom of the window: [corner] at the top, square at the bottom edge. Its outline
+ * is a rounded rect with [corner] all round that reaches [corner] below the sheet, so the bottom corners fall outside
+ * it, rather than a rect rounded at the top only. Compose hands Android a round rect only where all four corners are
+ * the same ([RoundRect.isSimple]), and anything else as a path; Android 13+ clips to a path, which the GPU cannot do
+ * analytically: every draw across the rounded corners (rows, the chat list's floating folder bar and its shadow, a
+ * list's overscroll layer) would then render a clip mask on the CPU and upload it, in every frame of a scroll.
+ */
+@Immutable
+internal class SheetShape(
+    private val corner: CornerSize,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val radius = corner.toPx(size, density)
+        return Outline.Rounded(RoundRect(0f, 0f, size.width, size.height + radius, CornerRadius(radius)))
+    }
+
+    override fun equals(other: Any?): Boolean = other is SheetShape && other.corner == corner
+
+    override fun hashCode(): Int = corner.hashCode()
+}
 
 @PingogramPreviews
 @Composable

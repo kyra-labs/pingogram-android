@@ -622,14 +622,34 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - **The cost is drawing.** The bar floats over the moving list inside the sheet's rounded clip, with a level-3 shadow
     and a clip of its own. Its chips faded at the edges through an offscreen layer with a `DstOut` mask, and the list
     now draws under the bar too. The RenderThread draws all of it in every frame.
-  - **The fix.** The fade paints the bar's own opaque color over the chips' edges instead (`FolderTabs`' `fadeIntoBar`),
-    the same pixels without the offscreen layer. The shadow and the opaque pill stay, as the owner decided
-    (`docs/DESIGN_SYSTEM.md` §13.3).
+  - **A first fix that did not help** (#501): the fade paints the bar's own opaque color over the chips' edges instead
+    of masking them in an offscreen layer (`FolderBar.kt`'s `fadeIntoBar`). P90 stayed at 11.4 ms on `main`
+    (10a389e9), against 7.6 ms for v2.1.0 on the same phone the same day: a regression of about 50%.
+  - **The owner's traces** (`chat-list-scroll.sql`, v2.1.0 → `main`, per frame):
+    - RenderThread P50 3.4 → 5.4 ms, P90 6.4 → 9.5 ms;
+    - `dequeueBuffer` 0.72 → 1.55 ms, "flush commands" 1.5 → 2.0 ms;
+    - main thread P90 1.5 → 4.6 ms, mostly `postAndWait`, waiting for the RenderThread;
+    - "Texture upload(130) 1390x195" on 622 of 800 RenderThread frames on `main`, none in v2.1.0: about 397 × 56 dp,
+      the floating folder bar;
+    - "Texture upload 1440x2513" (1440x2309 in v2.1.0): the whole list area, grown by the old tab row.
+  - **The cause, from Compose's code.** `ContentSheet` clipped the sheet to a rect rounded at the top only. Compose
+    hands Android a round rect only where all four corners match (`RoundRect.isSimple`), and anything else as a path
+    (`GraphicsLayer.setPathOutline`). Android 13+ clips the layer to that path, and the GPU cannot clip to a path
+    analytically. So every draw across the sheet's rounded top corners made Skia rasterize a clip mask on the CPU and
+    upload it, in every frame:
+    - the folder bar, whose pill and level-3 shadow sit across both corners `spacing.small` below the sheet's top;
+    - the list's layer, whose mask is the whole list area.
+
+    The floating navigation bar's shadow is outside that clip, which is why v2.1.0 had no bar-sized upload.
+  - **The fix.** The sheet now clips to `SheetShape`: a round rect with `extraLarge` all round that reaches its radius
+    below the sheet, so the bottom corners fall outside it. Android gets a round rect, which the GPU clips without a
+    mask. The pixels are the same; the goldens did not change.
   - **To check on the phone**:
     - Run `ChatListScrollBenchmark` alone (`-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.ChatListScrollBenchmark`).
-    - Then summarize one of its iterations' traces with `tools/perfetto/chat-list-scroll.sql` (`summarize.py`): the
-      main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late frame
-      spent its longest slice on.
+    - Then summarize one of its iterations' traces with `tools/perfetto/chat-list-scroll.sql` (`summarize.py`). It
+      gives the main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late
+      frame spent its longest slice on. It also lists the texture uploads by size with the slices they ran under, and
+      what each main thread frame was for (input, animation, recompose, or an invalidated draw).
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
