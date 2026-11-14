@@ -238,7 +238,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
   default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
   Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
   the background; turning it off deletes the imported numbers from Telegram.
-- The camera (`CAMERA`, no camera is required to install) has three uses:
+- The camera (`CAMERA`, no camera is required to install) has four uses:
   - The QR code scanner (FR-P5, `docs/adr/0012-camerax-and-zxing-qr-scanner.md`, approved by the owner 2026-10-21),
     asked when the scanner opens, after it says why: frames are decoded on the device by ZXing and dropped, nothing
     the camera sees is kept or sent, and only the text of a Telegram link reaches TDLib. Scanning from an image uses
@@ -250,6 +250,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
     the user first switches the microphone button to video, after it says why: the camera and the microphone run only
     while the user records, the video goes only into the message the user sends (end-to-end encrypted in secret
     chats), and is not kept.
+  - Opening the camera app to take a photo for a chat (the composer's camera button, the attach menu's "Camera") or a
+    new story ("Camera"), which Android allows only once the permission is granted, as the app declares it for the
+    uses above (#497; owner decision 2026-11-14). Asked when the user first taps the camera, the tap saying why;
+    Pingogram itself sees nothing until the camera app hands back the photo, which goes only into what the user sends.
 
 ### 6.3 Accessibility (Android standards)
 

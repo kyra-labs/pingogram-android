@@ -66,8 +66,9 @@ management by the developer.
 | Financial info, Health and fitness, Web browsing, Calendar, Emails, SMS | No | | |
 
 Not collected despite a permission: the camera (`CAMERA`) scans QR codes, decoded on the device, nothing kept or sent
-(`docs/adr/0012-camerax-and-zxing-qr-scanner.md`), and in video calls is streamed to the other person, end-to-end
-encrypted, not collected; the microphone during calls is streamed, not collected
+(`docs/adr/0012-camerax-and-zxing-qr-scanner.md`), in video calls is streamed to the other person, end-to-end
+encrypted, not collected, and opens the camera app for a photo the user sends in a chat or a story, which Pingogram
+sees only once the camera app hands it back; the microphone during calls is streamed, not collected
 (Google: data processed only in real time to provide the function and not stored is "processed ephemerally"; if the
 form asks about calls, answer audio and video "collected, processed ephemerally").
 
@@ -93,7 +94,7 @@ types). The texts are ready to paste; each feature also explains itself in the a
 | `REQUEST_INSTALL_PACKAGES` | Request install packages (App content → Sensitive app permissions) | "Pingogram is a messaging app whose users send each other files. When the user taps an app file (APK) that was sent to them in a chat and has downloaded, Pingogram hands it to Android's package installer, which asks the user before installing. Pingogram never downloads or installs apps on its own, and has no app store or updater." Core functionality: communication with file attachments | a chat with an APK file, tapping it after it downloaded, Android's install prompt |
 | `MANAGE_OWN_CALLS` | none (normal permission) | for the Data safety and review notes: "registers Pingogram's calls with Android's Telecom as a self-managed calling app, so headsets, cars and watches can answer and hang up, and a phone call puts a Pingogram call on hold." | |
 | `RECORD_AUDIO` | none; prominent disclosure in the app | voice messages and calls; the app explains before Android asks | |
-| `CAMERA` | none; prominent disclosure | the QR code scanner, and video calls when the user turns the camera on | |
+| `CAMERA` | none; prominent disclosure | the QR code scanner, video calls when the user turns the camera on, and opening the camera app to take a photo for a chat or a story (Android requires the permission for it once the app declares it), asked when the user first taps the camera | |
 | `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` | none (foreground only; **no** `ACCESS_BACKGROUND_LOCATION`) | sending the current location from the attach menu | |
 | `READ_CONTACTS` | none; prominent disclosure (Play's User Data policy) | opt-in contacts sync; the rationale sheet says what is sent before Android asks, and it is off by default | |
 | `BLUETOOTH_CONNECT` | none | names of Bluetooth headsets to move a call to (Android 12+) | |
