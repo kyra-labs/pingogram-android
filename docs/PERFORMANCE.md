@@ -607,6 +607,29 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `FolderListStates`): landing a swipe or tapping a tab moves the two compositions between the shown place and the
   companion's, recomposing no row (`ChatListRecompositionTest`), and a folder's list keeps its scroll position by
   itself.
+- The floating folder bar (2026-11-14). Since v2.1.0, `ChatListScrollBenchmark.scrollBaselineProfile` on the owner's
+  Galaxy S24 Ultra (two runs, accessibility off):
+  - `frameDurationCpuMs`: P90 8.8 → 10.7 / 11.9 ms, P95 10.7 → 12.6 / 15.9 ms, P50 6.4 → 5.5–6.0 ms;
+  - frames over 32 ms: 0 → 5.
+
+  Two changes touch the screen: the folder tabs floating in a bar over the list (#496) and the navigation bar's labels
+  (#494).
+  - **The JVM.** `ChatListScrollCostTest`, four interleaved runs at each of v2.1.0, the commit before #496, #496 and
+    #494, shows the same main thread: P90 9.3–10.3, 9.4–11.0, 9.3–11.1 and 9.2–10.2 ms, mean 2.5–2.9 ms in each. So
+    neither the bar's layout (its height reaches the lists in the layout phase, `FolderBarSpace`) nor its composition
+    reaches the scroll frames, and `ChatListRecompositionTest` checks that scrolling under it recomposes neither the bar
+    nor the rows on screen. The navigation bar is measured once, not per frame.
+  - **The cost is drawing.** The bar floats over the moving list inside the sheet's rounded clip, with a level-3 shadow
+    and a clip of its own. Its chips faded at the edges through an offscreen layer with a `DstOut` mask, and the list
+    now draws under the bar too. The RenderThread draws all of it in every frame.
+  - **The fix.** The fade paints the bar's own opaque color over the chips' edges instead (`FolderTabs`' `fadeIntoBar`),
+    the same pixels without the offscreen layer. The shadow and the opaque pill stay, as the owner decided
+    (`docs/DESIGN_SYSTEM.md` §13.3).
+  - **To check on the phone**:
+    - Run `ChatListScrollBenchmark` alone (`-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.ChatListScrollBenchmark`).
+    - Then summarize one of its iterations' traces with `tools/perfetto/chat-list-scroll.sql` (`summarize.py`): the
+      main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late frame
+      spent its longest slice on.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

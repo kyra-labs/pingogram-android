@@ -47,7 +47,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
-import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.folderIconDrawable
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -117,7 +116,7 @@ internal fun FolderTabs(
         Row(Modifier.padding(MaterialTheme.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
             // As wide as its chips, or the room left beside "Edit folders", then scrolling.
             Box(Modifier.weight(1f, fill = false).folderTabMenuContainer(menu)) {
-                FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu)
+                FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu, barColor = colors.toolbarContainerColor)
                 if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
             }
             if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {
@@ -139,8 +138,8 @@ internal fun FolderTabs(
  * has a menu entry, should the group overflow after all. With animations off (reduced motion) the press and the
  * shapes change at once.
  *
- * The selected tab is always in view ([rememberTabScroll]), and the chips fade out at an edge of the bar they can
- * scroll past ([fadingEdges]), so a tab is never cut by the bar's edge without a hint that more follow.
+ * The selected tab is always in view ([rememberTabScroll]), and the chips fade into the bar ([barColor]) at an edge
+ * they can scroll past ([fadeIntoBar]), so a tab is never cut by the bar's edge without a hint that more follow.
  */
 @Composable
 private fun FolderButtonGroup(
@@ -148,6 +147,7 @@ private fun FolderButtonGroup(
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
     tabMenu: TabMenu,
+    barColor: Color,
 ) {
     val enabled = tabMenu.enabled
     val colors = folderButtonColors()
@@ -164,7 +164,7 @@ private fun FolderButtonGroup(
         overflowIndicator = {},
         modifier =
             Modifier
-                .fadingEdges(scroll.state)
+                .fadeIntoBar(scroll.state, barColor, MaterialTheme.spacing.extraLarge)
                 .horizontalScroll(scroll.state)
                 .selectableGroup(),
         // The chips have no container but the selected one's: the gap the design keeps between their labels.
