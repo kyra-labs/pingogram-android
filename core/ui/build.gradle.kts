@@ -40,5 +40,6 @@ dependencies {
     // docs/adr/0027-streaming-media.md). media3-exoplayer, in the features that play, depends on it already.
     implementation(libs.media3.datasource)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
 }

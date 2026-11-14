@@ -410,4 +410,8 @@
     <string name="birthday_suggestion_declined">Declined</string>
     <!-- A statistics chart for screen readers: a series' name, first, last and highest values. -->
     <string name="chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
+    <!-- Opening the camera app to take a photo for a chat or a story, refused the camera permission. -->
+    <string name="photo_capture_permission_needed">Pingogram needs the camera permission to open your camera app</string>
+    <!-- The snackbar's action once Android no longer asks for the camera permission: the app's settings page. -->
+    <string name="photo_capture_settings">Settings</string>
 </resources>

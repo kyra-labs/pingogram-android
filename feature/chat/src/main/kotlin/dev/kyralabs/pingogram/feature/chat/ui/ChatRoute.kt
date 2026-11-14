@@ -186,7 +186,7 @@ internal fun ConversationRoute(
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
     val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
-    val launchers = rememberAttachLaunchers(viewModel::onEvent)
+    val launchers = rememberAttachLaunchers(viewModel::onEvent, snackbarHostState)
     val attach =
         rememberAttachInputs(
             launchers = launchers,
@@ -209,9 +209,7 @@ internal fun ConversationRoute(
         onEvent = viewModel::onEvent,
         onShareLocation = { attach.onPick(AttachOption.Location) },
         onOpenInteractions = interactionsViewModel::open,
-        onLaunchCamera = { path ->
-            launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
-        },
+        onLaunchCamera = launchers::takePhoto,
         onPickReplacement = launchers::replace,
     )
     BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
@@ -288,10 +286,11 @@ internal fun ConversationRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
- * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], or a
- * snackbar says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet
- * through [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
- * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
+ * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], which
+ * asks for the camera permission first and says in a snackbar why no camera app opened; a bot's keyboard button that
+ * asks for the location opens the "Location" sheet through [onShareLocation]. After forwarding a snackbar says to
+ * how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another chat; or for
+ * how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
  * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
  * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
@@ -323,7 +322,7 @@ internal fun ChatEffects(
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
-    onLaunchCamera: (path: String) -> Boolean = { false },
+    onLaunchCamera: (path: String) -> Unit = {},
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
     onEvent: (ChatEvent) -> Unit = {},
     onShareLocation: () -> Unit = {},
@@ -392,7 +391,8 @@ internal fun ChatEffects(
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera,
                     is BotKeyboardEffect,
                     -> {
-                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, resources, onShareLocation)
+                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, onShareLocation)
+                        ""
                     }
 
                     is ChatEffect.OpenUrl -> {
@@ -431,45 +431,41 @@ internal fun ChatEffects(
 
 /**
  * Hands [effect] to the screen: media to the viewer through [onOpenMedia], the focus to the composer through
- * [composerFocus], a photo to take to the camera app through [onLaunchCamera], a bot's request for the location to
- * the "Location" sheet through [onShareLocation], which asks the user first; the snackbar when no camera app opens,
- * else nothing.
+ * [composerFocus], a photo to take to the camera app through [onLaunchCamera] (which says in a snackbar why the camera
+ * app did not open), a bot's request for the location to the "Location" sheet through [onShareLocation], which asks
+ * the user first.
  */
 private fun handOver(
     effect: ChatEffect,
     onOpenMedia: (messageId: Long) -> Unit,
     composerFocus: ComposerFocusState,
-    onLaunchCamera: (path: String) -> Boolean,
-    resources: Resources,
+    onLaunchCamera: (path: String) -> Unit,
     onShareLocation: () -> Unit = {},
-): String =
+) {
     when (effect) {
         BotKeyboardEffect.ShareLocation -> {
             onShareLocation()
-            ""
         }
 
         is ChatEffect.OpenMedia -> {
             // The viewer ends the section once it has drawn the media's page (docs/PERFORMANCE.md §9).
             MediaViewerTrace.beginOpen()
             onOpenMedia(effect.messageId)
-            ""
         }
 
         ChatEffect.FocusComposer -> {
             composerFocus.request()
-            ""
         }
 
         is ChatEffect.LaunchCamera -> {
-            val launched = onLaunchCamera(effect.path)
-            resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
+            onLaunchCamera(effect.path)
         }
 
         else -> {
-            ""
+            Unit
         }
     }
+}
 
 /**
  * Opens the downloaded document of [effect] in another app through [openFile], with the chooser's title; the snackbar
