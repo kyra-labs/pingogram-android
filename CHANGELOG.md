@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
+  stories no longer move on by themselves.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
