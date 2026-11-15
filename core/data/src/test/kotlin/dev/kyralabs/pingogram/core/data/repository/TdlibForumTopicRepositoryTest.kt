@@ -96,6 +96,77 @@ class TdlibForumTopicRepositoryTest {
     }
 
     @Test
+    fun `counts the topics with unread messages of the first page, loading it`() =
+        runTest {
+            client.on(
+                TdApi.GetForumTopics::class,
+                page(topic(5, unread = 3), topic(4), topic(3, unread = 120), total = 9, next = 7),
+            )
+            val repository = repository()
+
+            repository.unreadTopicCount(FORUM).test {
+                assertEquals(null, awaitItem())
+                assertEquals(2, awaitItem())
+            }
+            // A read topic among the loaded ones: no further page to count.
+            assertEquals(1, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `loads more pages while every loaded topic is unread, at most five`() =
+        runTest {
+            var pages = 0
+            client.on(TdApi.GetForumTopics::class) {
+                pages++
+                page(topic(pages * 10, unread = 1), topic(pages * 10 + 1, unread = 1), total = 1000, next = pages)
+            }
+            val repository = repository()
+            var latest: Int? = null
+
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.unreadTopicCount(FORUM).collect { latest = it }
+            }
+            runCurrent()
+
+            assertEquals(10, latest)
+            assertEquals(5, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `the unread count follows a topic read and a new message`() =
+        runTest {
+            client.on(TdApi.GetForumTopics::class, page(topic(5, unread = 3), topic(4)))
+            client.on(TdApi.GetForumTopic::class) { TdResult.Success(topic(5, unread = 0)) }
+            val repository = repository()
+
+            repository.unreadTopicCount(FORUM).test {
+                assertEquals(null, awaitItem())
+                assertEquals(1, awaitItem())
+
+                client.emit(updateNewMessage(message(id = 41, chatId = FORUM).inTopic(TdApi.MessageTopicForum(4))))
+                assertEquals(2, awaitItem())
+
+                client.emit(
+                    TdApi.UpdateForumTopic(FORUM, 5, false, 50, 0, 0, 0, 0, TdApi.ChatNotificationSettings(), null),
+                )
+                assertEquals(1, awaitItem())
+            }
+        }
+
+    @Test
+    fun `a forum whose topics cannot be loaded has no count`() =
+        runTest {
+            client.on(TdApi.GetForumTopics::class, TdResult.Failure(TdError(400, "CHANNEL_PRIVATE")))
+            val repository = repository()
+
+            repository.unreadTopicCount(FORUM).test {
+                assertEquals(null, awaitItem())
+                runCurrent()
+                expectNoEvents()
+            }
+        }
+
+    @Test
     fun `loads the first page in the forum's order`() =
         runTest {
             client.on(

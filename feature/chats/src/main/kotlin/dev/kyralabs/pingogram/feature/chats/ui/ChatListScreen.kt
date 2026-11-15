@@ -405,7 +405,6 @@ private fun ChatList(
     modifier: Modifier = Modifier,
 ) {
     val selection = state.selection
-    val folderId = state.selectedFolderId
     val selectedIds = selection?.chatIds
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val rowMotion = MaterialTheme.motionScheme
@@ -460,7 +459,8 @@ private fun ChatList(
         listState,
         firstKey = firstRowKey(stories != null, state.archive != null, pinnedCount, items, communities),
     )
-    ReportNearEnd(listState, folderId, active, onEvent)
+    ReportNearEnd(listState, state.selectedFolderId, active, onEvent)
+    ReportShownRows(listState, active, onEvent)
 }
 
 /**

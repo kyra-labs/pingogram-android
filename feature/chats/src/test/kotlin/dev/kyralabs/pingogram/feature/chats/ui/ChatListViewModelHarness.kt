@@ -45,6 +45,7 @@ abstract class ChatListViewModelHarness {
     protected val archiveRow = FakeArchiveRowRepository()
     protected val archiveSettings = FakeArchiveSettingsRepository()
     protected val communities = FakeCommunityRepository()
+    protected val forumTopics = FakeForumTopicRepository()
     protected val clock = FakeWallClock(NOW)
     protected val timePatterns = FakeTimePatterns()
     protected val savedState = SavedStateHandle()
@@ -86,6 +87,7 @@ abstract class ChatListViewModelHarness {
         archiveRowRepository = archiveRow,
         archiveSettingsRepository = archiveSettings,
         communityRepository = communities,
+        forumTopicRepository = forumTopics,
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = StandardTestDispatcher(testScheduler),

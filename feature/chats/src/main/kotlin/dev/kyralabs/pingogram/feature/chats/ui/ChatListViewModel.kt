@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -110,6 +111,7 @@ class ChatListViewModel internal constructor(
     archiveRowRepository: ArchiveRowRepository,
     archiveSettingsRepository: ArchiveSettingsRepository,
     communityRepository: CommunityRepository,
+    forumTopicRepository: ForumTopicRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -129,6 +131,7 @@ class ChatListViewModel internal constructor(
         archiveRowRepository: ArchiveRowRepository,
         archiveSettingsRepository: ArchiveSettingsRepository,
         communityRepository: CommunityRepository,
+        forumTopicRepository: ForumTopicRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -145,6 +148,7 @@ class ChatListViewModel internal constructor(
         archiveRowRepository,
         archiveSettingsRepository,
         communityRepository,
+        forumTopicRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -202,6 +206,9 @@ class ChatListViewModel internal constructor(
             effects = effectChannel,
         )
 
+    private val forumTopics =
+        ForumUnreadTopics(forumTopicRepository.takeIf { kind == ChatListKind.Chats }, groupRepository)
+
     private val selectedList: Flow<ChatListType> =
         when (kind) {
             ChatListKind.Archive -> {
@@ -231,12 +238,16 @@ class ChatListViewModel internal constructor(
 
     private val listState: Flow<ListState> =
         selectedList.flatMapLatest { list ->
+            val chats = chatRepository.chatList(list).without(lockedChatIds)
             combine(
-                chatRepository.chatList(list).without(lockedChatIds),
+                chats,
                 rowSources,
                 loads.map { it[list] ?: ListLoad() }.distinctUntilChanged(),
                 communities.of(list),
-            ) { chats, snapshot, load, groups -> ListState(list, content(list, chats, snapshot, load, groups)) }
+                forumTopics.of(chats),
+            ) { chats, snapshot, load, groups, unreadTopics ->
+                ListState(list, content(list, chats, snapshot, load, groups, unreadTopics))
+            }
         }
 
     private val folderTabs: Flow<ImmutableList<FolderTab>> =
@@ -323,7 +334,7 @@ class ChatListViewModel internal constructor(
                             loads.map { it[type] ?: ListLoad() }.distinctUntilChanged(),
                             communities.of(type),
                         ) { chats, snapshot, load, groups ->
-                            val content = content(type, chats, snapshot, load, groups, mapper)
+                            val content = content(type, chats, snapshot, load, groups, mapper = mapper)
                             FolderNeighbourList((type as? ChatListType.Folder)?.id, ChatListUiState(kind, content))
                         }
                     }
@@ -394,8 +405,8 @@ class ChatListViewModel internal constructor(
                 savedStateHandle[KEY_FOLDER] = event.folderId
             }
 
-            is ChatListEvent.NearEndChanged -> {
-                onNearEndChanged(event.isNearEnd)
+            is ChatListEvent.NearEndChanged, is ChatListEvent.RowsShown -> {
+                onListShown(event)
             }
 
             ChatListEvent.Retry -> {
@@ -458,6 +469,15 @@ class ChatListViewModel internal constructor(
             is ChatListEvent.ToggleCommunity, is ChatListEvent.ShowCommunityChatsSeparately -> {
                 communities.onEvent(event)
             }
+        }
+    }
+
+    /** What the list shows: whether it nears its end ([onNearEndChanged]), and which rows ([ForumUnreadTopics]). */
+    private fun onListShown(event: ChatListEvent) {
+        when (event) {
+            is ChatListEvent.NearEndChanged -> onNearEndChanged(event.isNearEnd)
+            is ChatListEvent.RowsShown -> forumTopics.onShown(event.chatIds)
+            else -> Unit
         }
     }
 
@@ -599,12 +619,13 @@ class ChatListViewModel internal constructor(
         snapshot: RowSnapshot,
         load: ListLoad,
         groups: CommunityGroups,
+        unreadTopics: Map<Long, Int> = emptyMap(),
         mapper: ChatListItemMapper = this.mapper,
     ): ChatListContent {
         val error = load.error
         return when {
             chats.isNotEmpty() -> {
-                val mapped = mapper.map(chats, snapshot.sourcesFor(list))
+                val mapped = mapper.map(chats, RowSources(list, snapshot, timeFormatter(), unreadTopics))
                 val pinnedCount = mapped.pinnedCount()
                 val (items, entries) = groupCommunities(mapped, pinnedCount, groups)
                 ChatListContent.Content(items, pinnedCount = pinnedCount, communities = entries)
@@ -623,8 +644,6 @@ class ChatListViewModel internal constructor(
             }
         }
     }
-
-    private fun RowSnapshot.sourcesFor(list: ChatListType) = RowSources(list, this, timeFormatter())
 
     /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */
     private fun timeFormatter(): ChatListTimeFormatter {

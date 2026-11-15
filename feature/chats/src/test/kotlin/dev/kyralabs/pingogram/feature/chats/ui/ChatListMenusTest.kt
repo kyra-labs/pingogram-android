@@ -281,7 +281,7 @@ class ChatListMenusTest {
     }
 
     private fun record(event: ChatListEvent) {
-        if (event !is ChatListEvent.NearEndChanged) events += event
+        if (event !is ChatListEvent.NearEndChanged && event !is ChatListEvent.RowsShown) events += event
     }
 
     /** A tab, named by its label (and unread count, if any). */
