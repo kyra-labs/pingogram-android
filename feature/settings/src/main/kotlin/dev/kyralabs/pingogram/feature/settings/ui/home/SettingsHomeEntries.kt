@@ -78,6 +78,12 @@ internal val OnThisPhoneGroup: HomeGroup =
                     R.drawable.ic_bookmark,
                 ),
                 page(
+                    SettingsPage.Focus,
+                    R.string.settings_focus,
+                    R.string.settings_focus_summary,
+                    UiR.drawable.ic_notifications_off,
+                ),
+                page(
                     SettingsPage.KeywordAlerts,
                     R.string.settings_keyword_alerts,
                     R.string.settings_keyword_alerts_summary,

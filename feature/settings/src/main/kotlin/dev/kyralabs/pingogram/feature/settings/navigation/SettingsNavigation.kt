@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
+import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.KeywordAlertsRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
@@ -262,6 +263,7 @@ fun NavGraphBuilder.settingsPages(
     }
     networkPages(onOpen, onBack)
     settingsPage<PowerSavingRoute> { PowerSavingScreenRoute(onBack = onBack) }
+    focusPages(onOpen, onBack)
     settingsPage<KeywordAlertsRoute> { KeywordAlertsScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     settingsPage<RemindersRoute> { RemindersScreenRoute(onBack = onBack) }
@@ -384,6 +386,7 @@ internal val SettingsPage.route: Any
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
             SettingsPage.ActiveSessions -> ActiveSessionsRoute
             SettingsPage.MyQrCode -> MyQrCodeRoute
+            SettingsPage.Focus -> FocusRoute
             SettingsPage.KeywordAlerts -> KeywordAlertsRoute
             SettingsPage.Reminders -> RemindersRoute
         }
