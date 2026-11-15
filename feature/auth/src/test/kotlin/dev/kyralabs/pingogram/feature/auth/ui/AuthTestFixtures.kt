@@ -18,6 +18,7 @@ internal object AuthTestFixtures {
         val format: String,
         val prefixes: List<String> = listOf(""),
         val isHidden: Boolean = false,
+        val isAnonymous: Boolean = false,
     ) {
         fun info() = TdApi.CountryInfo(iso, name, name, "", isHidden, arrayOf(callingCode))
     }
@@ -29,6 +30,8 @@ internal object AuthTestFixtures {
             TestCountry("GB", "United Kingdom", "44", "---- ------"),
             TestCountry("US", "United States", "1", "--- --- ----"),
             TestCountry("YL", "Test numbers", "999", "-- ----", isHidden = true),
+            // fragment.com's anonymous numbers, which TDLib marks as such.
+            TestCountry("FT", "Anonymous numbers", "888", "---- ----", isHidden = true, isAnonymous = true),
         )
 
     fun countriesResult() = TdResult.Success(TdApi.Countries(countries.map { it.info() }.toTypedArray()))
@@ -44,7 +47,7 @@ internal object AuthTestFixtures {
                 ?.first
                 ?: return TdApi.PhoneNumberInfo(null, "", digits, false)
         val national = digits.removePrefix(best.callingCode)
-        return TdApi.PhoneNumberInfo(best.info(), best.callingCode, format(national, best.format), false)
+        return TdApi.PhoneNumberInfo(best.info(), best.callingCode, format(national, best.format), best.isAnonymous)
     }
 
     /** TDLib's formatting: the digits laid out by the format, `-` for each digit still expected. */

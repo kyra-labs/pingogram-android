@@ -270,6 +270,8 @@ class AuthViewModel internal constructor(
             updatePhone { it.copy(error = DomainError.PhoneNumberInvalid) }
             return
         }
+        // Too short for its country: said once under the field; the next "Next" sends it, and Telegram decides.
+        phone.warnedIfTooShort()?.let { warned -> return updatePhone { warned } }
         launchAction(
             AuthAction.SubmitPhoneNumber,
             ErrorField.Phone,
