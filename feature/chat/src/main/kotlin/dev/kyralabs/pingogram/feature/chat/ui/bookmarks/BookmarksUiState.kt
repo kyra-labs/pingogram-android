@@ -90,7 +90,30 @@ sealed interface BookmarksEvent {
 
     /** The search field's back, or system back while it shows. */
     data object CloseSearch : BookmarksEvent
+
+    /** A card's "Edit tags" (its long press, or its custom action): the bookmark's sheet, with its tags and note. */
+    data class Edit(
+        val chatId: Long,
+        val messageId: Long,
+    ) : BookmarksEvent
+
+    /** The route opened the bookmark's sheet. */
+    data object EditorOpened : BookmarksEvent
+
+    /** The bookmark's sheet closed. */
+    data object EditorClosed : BookmarksEvent
 }
+
+/**
+ * A bookmark being edited in its sheet (the owner's board 34b, a card's "Edit tags"): of chat [chatId], the sheet
+ * still to open at message [openMessageId], or null once open (and after process death, when the sheet restores
+ * itself).
+ */
+@Immutable
+data class BookmarkEditing(
+    val chatId: Long,
+    val openMessageId: Long?,
+)
 
 /** What the page says or does once. */
 sealed interface BookmarksEffect {
