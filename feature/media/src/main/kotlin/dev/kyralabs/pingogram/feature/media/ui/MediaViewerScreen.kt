@@ -103,6 +103,7 @@ internal fun MediaViewerScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     videoSurface: @Composable (Modifier) -> Unit = {},
     canPictureInPicture: Boolean = false,
+    dragOut: MediaDragOut? = null,
 ) {
     // The photo grows out of its bubble into its page: the viewer comes in once it has one.
     PostponeOverlayEnter(ready = state !is MediaViewerUiState.Loading)
@@ -150,7 +151,7 @@ internal fun MediaViewerScreen(
                 val swipeUp = { onEvent(MediaViewerEvent.PictureInPicture) }
                 val exits = DismissExits(height, onBack, swipeUp.takeIf { canPictureInPicture && content.playsVideo })
                 DismissibleContent(dismiss, zoom, exits) {
-                    ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding))
+                    ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding), dragOut)
                     // Inside the dismissible content, so a swipe that starts on them still closes or goes to PiP.
                     if (content != null) CenterChrome(content, chrome, dismiss, height, onEvent)
                 }
@@ -173,30 +174,6 @@ private fun actionsOf(
     val speed = content.actions.speed.takeIf { media is ViewerMedia.Clip }
     return {
         ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, speed, onEvent)
-    }
-}
-
-/**
- * Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. While a screen
- * reader explores by touch ([keptShown], board 25), it always shows and taps leave it.
- */
-@Stable
-internal class ChromeState(
-    visible: Boolean = true,
-) {
-    private var shown by mutableStateOf(visible)
-
-    /** Set while TalkBack explores by touch: the chrome never hides then. */
-    var keptShown by mutableStateOf(false)
-
-    val visible: Boolean get() = shown || keptShown
-
-    fun toggle() {
-        if (!keptShown) shown = !shown
-    }
-
-    companion object {
-        val Saver: Saver<ChromeState, Boolean> = Saver(save = { it.shown }, restore = { ChromeState(it) })
     }
 }
 
@@ -260,6 +237,7 @@ private fun ViewerContent(
     onEvent: (MediaViewerEvent) -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
+    dragOut: MediaDragOut? = null,
 ) {
     OpenMediaTraceEffect(shown = state is MediaViewerUiState.Content)
     when (state) {
@@ -281,7 +259,7 @@ private fun ViewerContent(
         }
 
         is MediaViewerUiState.Content -> {
-            MediaPager(state, chrome, zoom, onEvent, videoSurface)
+            MediaPager(state, chrome, zoom, onEvent, videoSurface, dragOut)
         }
     }
 }
@@ -318,7 +296,8 @@ internal fun Chrome(
 /**
  * The pages of [content], starting on its current item and keyed by message id; the page settled on goes to [onEvent]
  * by its message id and resets [zoom]. Only the settled page of a shown photo zooms. A tap shows a spoiler, or else
- * shows or hides [chrome].
+ * shows or hides [chrome]. With [dragOut], the settled page's file can be dragged into another app where Telegram lets
+ * it leave the chat ([MediaActions.canSave]).
  */
 @Composable
 private fun MediaPager(
@@ -327,6 +306,7 @@ private fun MediaPager(
     zoom: ZoomState,
     onEvent: (MediaViewerEvent) -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
+    dragOut: MediaDragOut? = null,
 ) {
     val items = content.items
     val currentItems by rememberUpdatedState(items)
@@ -347,7 +327,7 @@ private fun MediaPager(
         val item = items[page]
         val isShown = page == pagerState.settledPage
         val pageZoom = zoom.takeIf { isShown && item.media is ViewerMedia.Image && !item.isHidden }
-        val onTap = if (item.isHidden) ({ onEvent(MediaViewerEvent.RevealSpoiler(item.messageId)) }) else chrome::toggle
+        val onTap = pageTap(item, chrome, onEvent)
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
         val playback = content.playback?.takeIf { it.messageId == item.messageId }
         val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
@@ -382,6 +362,7 @@ private fun MediaPager(
                 ),
             zoom = pageZoom,
             onHold = onHold.takeIf { item.isLivePhoto },
+            onDragOut = dragOut.forPage(content, item, isShown),
         )
     }
 }

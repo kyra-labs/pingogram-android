@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
   muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
@@ -35,6 +37,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in the attach preview, ready for a caption.
 - Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
   chats that protect their content.
+- The same works in the media viewer: long-press the photo, video or GIF and keep moving to drag it into another app.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and

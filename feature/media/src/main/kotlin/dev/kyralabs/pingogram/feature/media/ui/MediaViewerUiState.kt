@@ -262,6 +262,9 @@ sealed interface MediaViewerEvent {
         val held: Boolean,
     ) : MediaViewerEvent
 
+    /** A tap hid the controls: the first time on this phone, a hint says how to bring them back. */
+    data object ControlsHidden : MediaViewerEvent
+
     /** −10 or +10 s: the video in the player moves [seconds] on (back where negative). */
     data class SeekBy(
         val seconds: Int,
