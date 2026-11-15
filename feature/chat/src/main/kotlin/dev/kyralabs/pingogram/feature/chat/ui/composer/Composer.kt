@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -304,7 +305,8 @@ private fun Composer(
     }
     var linking by remember { mutableStateOf<TextRange?>(null) }
     var scheduling by rememberSaveable { mutableStateOf(false) }
-    val canSend by remember(text) { derivedStateOf { !text.isBlank } }
+    // Read by the pill and the button only, so the first letter typed recomposes them and not this row.
+    val canSend = remember(text) { derivedStateOf { !text.isBlank } }
     val focusRequester = rememberFocusRequester(focus)
     Row(
         modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small),
@@ -357,41 +359,54 @@ private fun Composer(
  * The button beside the text field: the check that saves an [edit] while there is something to save (also for an
  * emptied caption); else the send button while there is something to send ([canSend]), whose menu schedules where
  * the [composer] allows it ([onSchedule]) and suggests a post where it may, and the microphone ([RecordButton])
- * while there is not. While a voice message records,
- * the record button stays, also when an edit starts meanwhile.
+ * while there is not. While a voice message records, the record button stays, also when an edit starts meanwhile.
+ * Send and the microphone share one slot ([SendOrRecord]), so the pill beside it keeps its width as they morph.
  */
 @Suppress("LongParameterList") // What to save or send and how, and the voice recording.
 @Composable
 private fun RowScope.ComposerAction(
     edit: ComposerBar.Edit?,
-    canSend: Boolean,
+    canSend: State<Boolean>,
     composer: ComposerUiState.Available,
     send: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
     voice: VoiceInput,
 ) {
     val recording = voice.recording
+    val record: @Composable () -> Unit = {
+        RecordButton(recording, voice.drag, voice.onEvent, mode = voice.mode, onVideoEvent = voice.onVideoEvent)
+    }
     if (edit != null) {
         // An edit started while a recording goes on hands-free waits until the recording is sent or deleted.
-        Appearing(visible = recording == null && (canSend || edit.canBeEmpty)) {
+        Appearing(visible = recording == null && (canSend.value || edit.canBeEmpty)) {
             SaveEditButton(onSave = { send(SendOptions()) })
         }
-        Appearing(visible = recording != null) {
-            RecordButton(recording, voice.drag, voice.onEvent, mode = voice.mode, onVideoEvent = voice.onVideoEvent)
-        }
+        Appearing(visible = recording != null) { record() }
     } else {
-        Appearing(visible = canSend && recording == null) {
-            SendButton(
-                canSchedule = composer.canSchedule,
-                onSend = { send(SendOptions()) },
-                onSendSilently = { send(SendOptions(silent = true)) },
-                onSchedule = onSchedule,
-                onSuggestPost = if (composer.canSuggestPost) ({ send(SendOptions(suggestAsPost = true)) }) else null,
-            )
-        }
-        Appearing(visible = !canSend || recording != null) {
-            RecordButton(recording, voice.drag, voice.onEvent, mode = voice.mode, onVideoEvent = voice.onVideoEvent)
-        }
+        SendOrRecord(
+            showSend = canSend.value && recording == null,
+            send = {
+                SendButton(
+                    canSchedule = composer.canSchedule,
+                    onSend = { send(SendOptions()) },
+                    onSendSilently = { send(SendOptions(silent = true)) },
+                    onSchedule = onSchedule,
+                    onSuggestPost =
+                        if (composer.canSuggestPost) {
+                            (
+                                {
+                                    send(
+                                        SendOptions(suggestAsPost = true),
+                                    )
+                                }
+                            )
+                        } else {
+                            null
+                        },
+                )
+            },
+            record = record,
+        )
     }
 }
 
@@ -415,7 +430,7 @@ private fun ComposerPill(
     attach: AttachInput,
     panel: ComposerPanelState,
     focusRequester: FocusRequester,
-    canSend: Boolean,
+    canSend: State<Boolean>,
     modifier: Modifier = Modifier,
     onBotMenu: () -> Unit = {},
     onFieldKey: (KeyEvent) -> Boolean = { false },
@@ -424,6 +439,7 @@ private fun ComposerPill(
 ) {
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
+    val hasText = canSend.value
     // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerHigh, the attach "+" a primary circle followed by the
     // camera, no gallery button (the attach menu's first option).
     ComposerField(
@@ -434,11 +450,11 @@ private fun ComposerPill(
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        leadingIcons = pillLeadingIcons(composer, canSend, attach, onBotMenu),
+        leadingIcons = pillLeadingIcons(composer, hasText, attach, onBotMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
             PanelButton(panel, focusRequester)
-            if (bot != null && canAttach) Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
+            if (bot != null && canAttach) Appearing(visible = !hasText) { AttachButton(attach.onAttach) }
         },
         onKeyEvent = onFieldKey,
         hint = hint,

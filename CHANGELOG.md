@@ -25,6 +25,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - In a forum, a topic's top bar shows only who is typing in that topic, no longer someone typing in another topic.
 - A forum's topic list shows a hidden General topic, closed, as Telegram does; keeps the pinned topics in the forum's
   order; shows a muted topic's counts in the muted colors; and shows a topic's own custom emoji icon.
+- The microphone turns into send without a hitch when typing starts, and the text field keeps its width meanwhile.
 
 ## [2.2.0] - 2026-11-15
 
