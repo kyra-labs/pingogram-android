@@ -46,9 +46,9 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
-import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
