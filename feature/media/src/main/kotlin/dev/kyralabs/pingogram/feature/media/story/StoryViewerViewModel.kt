@@ -86,9 +86,10 @@ import kotlin.time.TimeSource
  *
  * It takes the repositories it combines, the clock, the time source, the application scope (to close the story
  * after the view model is cleared) and its player, hence `LongParameterList` is suppressed; it is large because it
- * plays, navigates and reacts in one place, hence `TooManyFunctions`.
+ * plays, navigates and reacts in one place, hence `TooManyFunctions` and `LargeClass` (its own story's actions and
+ * the viewers' list are parts of their own already: `OwnStoryActions`, `StoryViewersViewModel`).
  */
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StoryViewerViewModel internal constructor(
@@ -143,6 +144,9 @@ class StoryViewerViewModel internal constructor(
 
     /** Where the user left each chat in this viewer, by story id, so swiping back returns there. */
     private val leftAt = MutableStateFlow<PersistentMap<Long, Int>>(persistentMapOf())
+
+    /** Whether a screen reader explores by touch: stories then never move on by themselves. */
+    private var screenReader = false
 
     private val pauses = MutableStateFlow(setOf(Pause.Stopped))
     private val muted = MutableStateFlow(false)
@@ -232,7 +236,7 @@ class StoryViewerViewModel internal constructor(
 
     private val chrome: Flow<Chrome> =
         combine(pauses, muted, reactions, interaction, ownStory.state) { pauses, muted, reactions, interaction, own ->
-            Chrome(pauses.isNotEmpty(), muted, reactions, interaction, own)
+            Chrome(pauses.isNotEmpty(), muted, reactions, interaction, own, isHeld = Pause.Held in pauses)
         }
 
     private val me: Flow<Long?> = userRepository.myUserId
@@ -266,6 +270,10 @@ class StoryViewerViewModel internal constructor(
 
             is StoryViewerEvent.Hold -> {
                 setPaused(Pause.Held, event.held)
+            }
+
+            is StoryViewerEvent.ScreenReader -> {
+                screenReader = event.on
             }
 
             is StoryViewerEvent.BackGesture -> {
@@ -598,7 +606,12 @@ class StoryViewerViewModel internal constructor(
      * the viewer neither closes nor slides to the next chat under the user's finger.
      */
     private fun onStoryEnded() {
-        if (Pause.Back in pauses.value) endedDuringBack = true else next()
+        // With TalkBack nothing moves on by itself (board 26): "Next story" does.
+        if (Pause.Back in pauses.value) {
+            endedDuringBack = true
+        } else if (!screenReader) {
+            next()
+        }
     }
 
     /** Pauses the story for a back gesture; a cancelled one resumes it, and moves on if it ended meanwhile. */
@@ -768,6 +781,7 @@ class StoryViewerViewModel internal constructor(
                     progress = played?.progress ?: NO_PROGRESS,
                 ),
             isPaused = chrome.isPaused,
+            isHeld = chrome.isHeld,
             isMuted = chrome.isMuted,
             reply = replyOf(story, chat, isOwn, chrome.interaction),
             reactions = story?.takeUnless { isOwn }?.let { reactionsOf(it, chrome) },
@@ -824,18 +838,6 @@ class StoryViewerViewModel internal constructor(
         savedStateHandle[KEY_STORY] = position.storyId
     }
 
-    /** Why the story does not play; it plays while there is none. */
-    private enum class Pause {
-        Stopped,
-        Held,
-        Paging,
-        Typing,
-        Reactions,
-        Menu,
-        Viewers,
-        Back,
-    }
-
     /** The chat shown, by its index among the posters, and its story; null until chosen. */
     private data class Position(
         val posterIndex: Int,
@@ -869,6 +871,7 @@ class StoryViewerViewModel internal constructor(
         val reactions: ImmutableList<ReactionType.Emoji>?,
         val interaction: Interaction,
         val own: OwnStoryUi,
+        val isHeld: Boolean = false,
     )
 
     private companion object {
@@ -957,3 +960,15 @@ private fun viewsOf(
 
 /** How many faces the views pill shows. */
 private const val RECENT_FACES = 3
+
+/** Why the story does not play; it plays while there is none. */
+private enum class Pause {
+    Stopped,
+    Held,
+    Paging,
+    Typing,
+    Reactions,
+    Menu,
+    Viewers,
+    Back,
+}

@@ -102,6 +102,8 @@
     <string name="story_a11y_position">Story %1$d of %2$d by %3$s</string>
     <string name="story_next">Next story</string>
     <string name="story_previous">Previous story</string>
+    <!-- Under the pause badge while a finger holds a story. -->
+    <string name="story_release_to_continue">Release to continue</string>
     <string name="story_pause">Pause</string>
     <string name="story_resume">Resume</string>
     <string name="story_close">Close</string>
