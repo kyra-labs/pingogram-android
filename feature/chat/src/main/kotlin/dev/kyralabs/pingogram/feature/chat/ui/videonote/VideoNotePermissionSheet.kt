@@ -22,7 +22,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -55,7 +55,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * Why video messages need the camera and the microphone (`docs/adr/0032-round-video-messages.md`,
  * `docs/DESIGN_SYSTEM.md` §6 Composer), before Android asks, as the Share location sheet's permission step and the QR
- * code scanner explain theirs: a [ModalBottomSheet] with the title in `titleLargeEmphasized`, the camera on
+ * code scanner explain theirs: a [PingogramBottomSheet] with the title in `titleLargeEmphasized`, the camera on
  * `MaterialShapes.Cookie9Sided` in `primaryContainer`, what they are used for in `bodyMedium` `onSurfaceVariant`,
  * "Not now" at the start and "Continue" at the end, which asks Android for both. Once Android no longer asks
  * ([CameraRationale.deniedForGood]), the end button opens the app's settings instead, and coming back with both granted
@@ -87,7 +87,7 @@ internal fun VideoNotePermissionSheet(
         }
         onPauseOrDispose {}
     }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(VideoNoteEvent.DismissRationale) },
         sheetState = sheetState,
     ) {

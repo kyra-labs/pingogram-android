@@ -10,7 +10,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -24,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -39,7 +39,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
  * The commands of the chat's bots (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6 "Bot commands sheet"), a
- * [ModalBottomSheet] opened from the composer's "/" button, as the conversation's other sheets: "Commands" in
+ * [PingogramBottomSheet] opened from the composer's "/" button, as the conversation's other sheets: "Commands" in
  * `titleLargeEmphasized`, then, with more than [SEARCH_THRESHOLD] of them, the search bar's input field, which filters
  * them by name and description as the user types ([searching]); then the commands as list items inset like the chat
  * list's rows (`docs/DESIGN_SYSTEM.md` §4): the command over what it does (two lines at most), in a group its bot's
@@ -57,7 +57,7 @@ internal fun BotCommandsBottomSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(BotEvent.DismissCommands) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(BotEvent.DismissCommands) }) {
         BotCommandsContent(sheet, currentOnEvent)
     }
 }

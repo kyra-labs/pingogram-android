@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.navigation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -9,9 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -51,6 +54,9 @@ class OverlayNavigatorTest {
     /** How often the screen below was composed from nothing. */
     private var screensCreated = 0
 
+    /** How often the screen below took a tap. */
+    private var taps = 0
+
     /** Whether the overlay's content has what it shows ([PostponeOverlayEnter]). */
     private var ready by mutableStateOf(true)
 
@@ -62,11 +68,18 @@ class OverlayNavigatorTest {
                 NavHost(controller, startDestination = Screen) {
                     composable<Screen> {
                         remember { screensCreated++ }
-                        Text(SCREEN)
+                        Text(SCREEN, Modifier.clickable { taps++ })
                     }
                     overlay<Picture> { entry ->
                         PostponeOverlayEnter(ready)
-                        Box(Modifier.fillMaxSize()) { Text("$PICTURE ${entry.toRoute<Picture>().messageId}") }
+                        // Takes every touch, as the media viewer's pager and zoom do.
+                        Box(
+                            Modifier.fillMaxSize().pointerInput(
+                                Unit,
+                            ) { awaitPointerEventScope { while (true) awaitPointerEvent() } },
+                        ) {
+                            Text("$PICTURE ${entry.toRoute<Picture>().messageId}")
+                        }
                     }
                 }
             }
@@ -94,6 +107,25 @@ class OverlayNavigatorTest {
         composeRule.onNodeWithText("$PICTURE 7").assertDoesNotExist()
         assertEquals(Lifecycle.State.RESUMED, below.lifecycle.currentState)
         assertEquals(1, screensCreated)
+    }
+
+    @Test
+    fun `the screen below takes a tap in the first frame of an overlay's way out`() {
+        setContent()
+        composeRule.runOnUiThread { navController.navigate(Picture(chatId = 1, messageId = 7)) }
+        composeRule.waitForIdle()
+        val overlay = navController.currentBackStackEntry!!
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.runOnUiThread { navController.popBackStack() }
+        composeRule.mainClock.advanceTimeByFrame()
+        // Still going out, its content still composed and drawn as it fades.
+        assertEquals(Lifecycle.State.CREATED, overlay.lifecycle.currentState)
+
+        composeRule.onNodeWithText(SCREEN).performClick()
+        composeRule.mainClock.advanceTimeByFrame()
+
+        assertEquals(1, taps)
     }
 
     @Test

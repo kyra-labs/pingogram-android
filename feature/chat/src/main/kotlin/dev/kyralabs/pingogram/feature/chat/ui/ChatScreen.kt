@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewport
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.LocalChatActionBar
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
@@ -353,7 +354,8 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
-                Box(Modifier.weight(1f)) {
+                // A photo, video or GIF going to or from the media viewer stays within the messages, below the bars.
+                Box(Modifier.weight(1f).sharedMediaViewport(contentPadding)) {
                     ChatBody(
                         state,
                         onEvent,
