@@ -263,6 +263,8 @@ class ProfileViewModel internal constructor(
             ProfileEvent.Block -> showDialog(ProfileDialog.Block(nameOf(uiState.value)))
             ProfileEvent.ConfirmBlock -> setBlocked(true)
             ProfileEvent.Unblock -> setBlocked(false)
+            ProfileEvent.DeleteChat -> showDialog(ProfileDialog.DeleteChat)
+            ProfileEvent.ConfirmDeleteChat -> deleteChat()
             ProfileEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
             ProfileEvent.LoadMorePhotos -> loadPhotos()
             is ProfileEvent.OpenMention -> openMention(event.target)
@@ -482,6 +484,18 @@ class ProfileViewModel internal constructor(
         }
     }
 
+    /** Deletes the private chat with a deleted account for the user, then leaves the profile; a snackbar if not. */
+    private fun deleteChat() {
+        overlay.update { it.copy(dialog = null) }
+        val id = chatId.value ?: return
+        viewModelScope.launch {
+            when (val deleted = chatRepository.deleteChat(id, forEveryone = false)) {
+                is Outcome.Success -> effectChannel.trySend(ProfileEffect.ChatDeleted)
+                is Outcome.Failure -> showError(deleted.error)
+            }
+        }
+    }
+
     /** Mutes the chat forever or unmutes it; the chat's update shows the change. */
     private fun toggleMute() {
         val id = chatId.value
@@ -585,6 +599,7 @@ class ProfileViewModel internal constructor(
                 ),
             actions = actions(user, overlay),
             dialog = overlay.dialog,
+            isDeletedAccount = user.isDeleted,
             stranger = strangerOf(user),
         )
     }
@@ -610,8 +625,9 @@ class ProfileViewModel internal constructor(
         val blockedNow = overlay.blocked?.takeIf { info == null || info.isBlocked != it } ?: info?.isBlocked
         return ProfileActions(
             isSelf = isSelf,
-            canMessage = user.haveAccess && (!isDeleted || chat != null),
-            isMuted = chat?.isMuted?.takeIf { !isSelf },
+            // A deleted account's one action is deleting the chat (board 24): its messages stay readable there.
+            canMessage = user.haveAccess && !isDeleted,
+            isMuted = mutedOf(user),
             canStartSecretChat = isRegular && !isSelf && user.haveAccess,
             isStartingSecretChat = overlay.isStartingSecretChat,
             contact = contactAction(user).takeIf { isRegular && !isSelf },
@@ -619,10 +635,18 @@ class ProfileViewModel internal constructor(
             isChangingBlock = overlay.isChangingBlock,
             canReport = !isSelf && !isDeleted && chat != null,
             callUserId = user.id.takeIf { isRegular && !isSelf && info?.canBeCalled == true },
-            exportChatId = chat?.takeIf { !it.hasProtectedContent }?.id,
+            exportChatId = exportChatIdOf(user),
+            canDeleteChat = isDeleted && chat != null,
             shareUsername = botLinkOf(user),
         )
     }
+
+    /** Whether the private chat is muted; null where it cannot be changed: Saved Messages, a deleted account's chat. */
+    private fun Sources.mutedOf(user: User): Boolean? = chat?.isMuted?.takeIf { user.id != myUserId && !user.isDeleted }
+
+    /** The private chat "Export chat" exports: none where its content may not be saved, or with a deleted account. */
+    private fun Sources.exportChatIdOf(user: User): Long? =
+        chat?.takeIf { !it.hasProtectedContent && !user.isDeleted }?.id
 
     /** The username a bot's "Share" pill shares; null for anyone but a bot (board 24d). */
     private fun botLinkOf(user: User): String? =
