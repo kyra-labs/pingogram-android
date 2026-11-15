@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
+  stories no longer move on by themselves.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
