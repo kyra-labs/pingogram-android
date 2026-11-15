@@ -192,7 +192,9 @@ private fun entryValue(
         }
 
         else -> {
-            summaries.bookmarkCount?.takeIf { entry.destination == HomeDestination.Bookmarks }?.toString()
+            summaries.bookmarkCount
+                ?.takeIf { it > 0 && entry.destination == HomeDestination.Bookmarks }
+                ?.toString()
         }
     }
 }
