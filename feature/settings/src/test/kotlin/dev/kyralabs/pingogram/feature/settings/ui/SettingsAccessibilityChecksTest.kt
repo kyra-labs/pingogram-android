@@ -18,6 +18,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusChatPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusEditScreen
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
@@ -243,6 +247,16 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun chatsShownFirst() =
         check { ChatsShownFirstScreen(ChatsShownFirstPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun focus() =
+        check { FocusScreen(FocusPreviewStates.content, onEvent = {}, onOpenProfile = { _, _ -> }, onBack = {}) }
+
+    @Test
+    fun focusEdit() = check { FocusEditScreen(FocusPreviewStates.editing, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun focusChatPicker() = check { FocusChatPickerContent(FocusPreviewStates.chatPicker, onEvent = {}) }
 
     @Test
     fun chatsShownFirstPicker() = check { ShownFirstPickerContent(ChatsShownFirstPreviewStates.picker, onEvent = {}) }

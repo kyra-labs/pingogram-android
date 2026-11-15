@@ -46,6 +46,7 @@ internal fun FocusEditRoute(
     viewModel: FocusEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val chatPicker by viewModel.chatPicker.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val haptics = LocalHapticFeedback.current
@@ -71,12 +72,13 @@ internal fun FocusEditRoute(
         }
     }
     FocusEditScreen(state, viewModel::onEvent, onBack, modifier, snackbarHostState)
+    chatPicker?.let { FocusChatPicker(it, viewModel::onEvent) }
 }
 
 /**
  * Editing a Focus profile (`docs/DESIGN_SYSTEM.md` §13.13, board 31), a settings page with "Save" in its top bar: the
- * name, the icon, "Allow folders", when it turns on (on a schedule of days and times, or by hand), "Allow calls from
- * contacts", and for a saved profile "Delete profile", behind an `AlertDialog`.
+ * name, the icon, "Allow folders", "Also allow" chats, when it turns on (on a schedule of days and times, or by
+ * hand), "Allow calls from contacts", and for a saved profile "Delete profile", behind an `AlertDialog`.
  */
 @Composable
 internal fun FocusEditScreen(
@@ -111,6 +113,7 @@ internal fun FocusEditScreen(
         FocusNameField(state, draft, onEvent)
         FocusIconGroup(draft, enabled, onEvent)
         FocusFoldersGroup(state, draft, onEvent)
+        FocusChatsGroup(state, onEvent)
         FocusScheduleGroup(draft, enabled, onEvent)
         FocusCallsGroup(draft, onEvent)
         if (!state.isNew) FocusDeleteRow(enabled, onEvent)

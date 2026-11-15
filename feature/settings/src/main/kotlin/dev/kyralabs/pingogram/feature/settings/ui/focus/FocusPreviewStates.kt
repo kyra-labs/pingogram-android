@@ -63,7 +63,7 @@ internal object FocusPreviewStates {
                     name = "Work hours",
                     icon = FocusIcon.Work,
                     folderIds = persistentSetOf(1),
-                    chatIds = persistentListOf(),
+                    chatIds = persistentListOf(10L, 11L),
                     scheduled = true,
                     days = weekdays,
                     startMinute = 9 * 60,
@@ -76,6 +76,11 @@ internal object FocusPreviewStates {
                     FocusFolderChoice(2, "Family"),
                     FocusFolderChoice(3, "Unread"),
                 ),
+            allowedChats =
+                persistentListOf(
+                    FocusChatChoice(10, "Ada Lovelace", null),
+                    FocusChatChoice(11, "Release team", null),
+                ),
             isNew = false,
         )
 
@@ -83,9 +88,21 @@ internal object FocusPreviewStates {
         editing.copy(
             draft = editing.draft?.copy(name = "", scheduled = false),
             folders = persistentListOf(),
+            allowedChats = persistentListOf(),
             isNew = true,
             nameMissing = true,
         )
 
     val askDelete = editing.copy(askDelete = true)
+
+    val chatPicker =
+        FocusChatPickerUiState(
+            query = "",
+            candidates =
+                persistentListOf(
+                    FocusChatCandidate(FocusChatChoice(12, "Alan Turing", null), selected = true),
+                    FocusChatCandidate(FocusChatChoice(13, "Grace Hopper", null), selected = false),
+                    FocusChatCandidate(FocusChatChoice(14, "Book club", null), selected = false),
+                ),
+        )
 }

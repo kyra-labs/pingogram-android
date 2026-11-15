@@ -3,8 +3,10 @@ package dev.kyralabs.pingogram.feature.settings.ui.focus
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
+import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import java.time.DayOfWeek
 
 /**
@@ -37,11 +39,38 @@ data class FocusFolderChoice(
     override fun toString() = "FocusFolderChoice(id=$id, …)"
 }
 
+/** A chat "Also allow" lets through: its [id], [title] and [photo]. */
+@Immutable
+data class FocusChatChoice(
+    val id: Long,
+    val title: String,
+    val photo: ProfilePhoto?,
+) {
+    override fun toString() = "FocusChatChoice(id=$id, …)"
+}
+
+/** A chat the picker offers: [chat], picked while [selected]. */
+@Immutable
+data class FocusChatCandidate(
+    val chat: FocusChatChoice,
+    val selected: Boolean,
+)
+
+/** The picker of chats to also allow: its [query] and the main list's other chats it finds ([candidates]). */
+@Immutable
+data class FocusChatPickerUiState(
+    val query: String,
+    val candidates: ImmutableList<FocusChatCandidate>,
+) {
+    override fun toString() = "FocusChatPickerUiState(candidates=${candidates.size})"
+}
+
 /** Which of a schedule's two times the time picker sets. */
 enum class FocusTimeEnd { Start, End }
 
 /**
- * The profile editor: the [draft] (null until the profile is read), the user's chat [folders], whether it is a new
+ * The profile editor: the [draft] (null until the profile is read), the user's chat [folders], the chats it also
+ * allows as TDLib names them ([allowedChats], those it has not announced left out), whether it is a new
  * profile ([isNew]), whether it is being saved or deleted ([isBusy]), whether "Save" was refused for a missing name
  * ([nameMissing]), the time picker open on one end ([picking]) and whether deleting is being asked ([askDelete]).
  */
@@ -49,6 +78,7 @@ enum class FocusTimeEnd { Start, End }
 data class FocusEditUiState(
     val draft: FocusDraft? = null,
     val folders: ImmutableList<FocusFolderChoice>? = null,
+    val allowedChats: ImmutableList<FocusChatChoice> = persistentListOf(),
     val isNew: Boolean = true,
     val isBusy: Boolean = false,
     val nameMissing: Boolean = false,
@@ -105,6 +135,27 @@ sealed interface FocusEditEvent {
     data object DeleteConfirmed : FocusEditEvent
 
     data object DeleteDismissed : FocusEditEvent
+}
+
+/** What the user does with "Also allow" and its picker, handled by [FocusAllowedChats]. */
+sealed interface FocusChatEvent : FocusEditEvent {
+    /** "Add chats": opens the picker. */
+    data object Add : FocusChatEvent
+
+    data class Remove(
+        val chatId: Long,
+    ) : FocusChatEvent
+
+    data class Query(
+        val query: String,
+    ) : FocusChatEvent
+
+    data class Toggle(
+        val chatId: Long,
+    ) : FocusChatEvent
+
+    /** "Done", or the sheet dismissed: the picks join the allowed chats. */
+    data object Close : FocusChatEvent
 }
 
 /** One-off side effects of [FocusEditViewModel], handled once by its route. */

@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
 import dev.kyralabs.pingogram.core.domain.model.FocusProfile
 import dev.kyralabs.pingogram.core.domain.model.FocusSchedule
@@ -21,7 +20,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,14 +32,15 @@ import javax.inject.Inject
 /**
  * A Focus profile's editor (board 31): profile [profileId], or a new one from [template]. The draft lives in the saved
  * state, so it survives process death; nothing is saved before "Save", which needs a name and, on a schedule, a day.
- * The folders it may let through are the user's chat folders, followed while the page shows.
+ * The folders it may let through are the user's chat folders, followed while the page shows; the chats it also
+ * allows, and their picker, are [FocusAllowedChats]'.
  */
 @HiltViewModel
 class FocusEditViewModel internal constructor(
     private val profileId: Long,
     private val template: FocusTemplate?,
     private val repository: FocusRepository,
-    folders: Flow<ImmutableList<ChatFolder>>,
+    chatRepository: ChatRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     @Inject
@@ -52,7 +54,7 @@ class FocusEditViewModel internal constructor(
             FocusTemplate.entries.firstOrNull { it.name == name }
         },
         repository,
-        chatRepository.folders,
+        chatRepository,
         savedStateHandle,
     )
 
@@ -65,6 +67,18 @@ class FocusEditViewModel internal constructor(
             ),
         )
     val uiState: StateFlow<FocusEditUiState> = mutableUiState.asStateFlow()
+
+    private val chats =
+        FocusAllowedChats(
+            chats = chatRepository,
+            scope = viewModelScope,
+            savedStateHandle = savedStateHandle,
+            draftChatIds = { uiState.value.draft?.chatIds },
+            setDraftChatIds = { ids -> edit { it.copy(chatIds = ids) } },
+        )
+
+    /** The picker of chats to also allow, while it shows. */
+    val chatPicker: StateFlow<FocusChatPickerUiState?> = chats.picker
 
     private val effectChannel = Channel<FocusEditEffect>(Channel.BUFFERED)
     val effects: Flow<FocusEditEffect> = effectChannel.receiveAsFlow()
@@ -87,10 +101,15 @@ class FocusEditViewModel internal constructor(
             }
         }
         viewModelScope.launch {
-            folders.collect { list ->
+            chatRepository.folders.collect { list ->
                 mutableUiState.update { state ->
                     state.copy(folders = list.map { FocusFolderChoice(it.id, it.title.text) }.toImmutableList())
                 }
+            }
+        }
+        viewModelScope.launch {
+            chats.allowed(uiState.map { it.draft?.chatIds }.filterNotNull()).collect { allowed ->
+                mutableUiState.update { it.copy(allowedChats = allowed) }
             }
         }
     }
@@ -151,6 +170,10 @@ class FocusEditViewModel internal constructor(
 
             FocusEditEvent.DeleteConfirmed -> {
                 delete()
+            }
+
+            is FocusChatEvent -> {
+                chats.onEvent(event)
             }
         }
     }

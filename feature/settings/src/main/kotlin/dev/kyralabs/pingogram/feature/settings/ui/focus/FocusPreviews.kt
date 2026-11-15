@@ -45,3 +45,9 @@ private fun FocusEditScreenDeletePreview() {
 private fun FocusEditScreenLoadingPreview() {
     PingogramPreview { FocusEditScreen(FocusEditUiState(), onEvent = {}, onBack = {}) }
 }
+
+@PingogramPreviews
+@Composable
+private fun FocusChatPickerPreview() {
+    PingogramPreview { FocusChatPickerContent(FocusPreviewStates.chatPicker, onEvent = {}) }
+}

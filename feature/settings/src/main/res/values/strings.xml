@@ -1629,6 +1629,12 @@
     <string name="settings_focus_icon_driving">Driving</string>
     <string name="settings_focus_allow_folders">Allow folders</string>
     <string name="settings_focus_allow_folders_footer">Chats in these folders still notify while the profile is on.</string>
+    <string name="settings_focus_also_allow">Also allow</string>
+    <string name="settings_focus_also_allow_footer">These chats still notify, whatever folder they are in.</string>
+    <string name="settings_focus_add_chats">Add chats</string>
+    <!-- A chat's name, %1$s; removing it from those a Focus profile allows -->
+    <string name="settings_focus_remove_chat">Remove %1$s</string>
+    <string name="settings_focus_chat_picker_title">Allow chats</string>
     <string name="settings_focus_no_folders">You have no chat folders. While the profile is on, every chat notifies silently.</string>
     <string name="settings_focus_turns_on">Turns on</string>
     <string name="settings_focus_from">From</string>
