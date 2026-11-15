@@ -123,6 +123,11 @@ sealed interface ChatEvent {
         val userId: Long,
     ) : ChatEvent
 
+    /** A forwarded message's "Forwarded from …" was tapped: open where it comes from ([ForwardSource]). */
+    data class OpenForwardSource(
+        val source: ForwardSource,
+    ) : ChatEvent
+
     /** A chat a message names was tapped (a giveaway's participating channel): open it. */
     data class OpenChat(
         val chatId: Long,

@@ -121,7 +121,8 @@ sealed interface ChatListContent {
  *
  * @property name the community's name, as plain text.
  * @property chats its chats in the main list, in TDLib's order, mapped as any row; pinned chats stay pinned instead.
- * @property unreadCount the unread messages of [chats], for the entry's badge; 0 shows none.
+ * @property unreadChatCount how many of [chats] have unread messages (or are marked as unread), which the entry's badge
+ *   counts as Telegram's apps do (owner decision 2026-11-15); 0 shows none.
  * @property isMuted the community's notifications are muted: the badge takes the muted style.
  * @property isExpanded its chats show below it, inset; kept on this device.
  * @property before the index in [ChatListContent.Content.items] of the row the entry stands before.
@@ -132,7 +133,7 @@ data class CommunityEntry(
     val name: String,
     val photo: ProfilePhoto?,
     val chats: ImmutableList<ChatListItemModel>,
-    val unreadCount: Int,
+    val unreadChatCount: Int,
     val isMuted: Boolean,
     val isExpanded: Boolean,
     val before: Int,
@@ -184,6 +185,8 @@ sealed interface FolderTab {
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property isPinned pinned in the list shown.
  * @property unreadCount unread messages; 0 shows no count.
+ * @property unreadTopicCount a forum's topics with unread messages, which its badge counts instead of the messages, as
+ *   Telegram's apps do (owner decision 2026-11-15); null where it is no forum, or before its topics are counted.
  * @property hasUnreadMention unread messages that mention the current user.
  * @property hasUnreadReactions reactions to the current user's messages that they have not seen.
  * @property isMarkedAsUnread marked as unread by the user, with nothing unread.
@@ -215,6 +218,7 @@ data class ChatListItemModel(
     val preview: ChatPreview,
     val actions: ImmutableList<ChatRowAction>,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val unreadTopicCount: Int? = null,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread

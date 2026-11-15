@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ExportTexts
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -42,6 +43,7 @@ import org.robolectric.Shadows.shadowOf
  * data, the notification that it ended, and the folder's grant given back whatever happened.
  */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatExportWorkerTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

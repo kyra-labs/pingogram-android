@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
  * `AdminRightsRequired` without the right, `TitleInvalid` for a name Telegram does not take, `NotFound` for a topic
  * that is gone, `FloodWait`, `Network`, ….
  */
+@Suppress("TooManyFunctions") // Reading, counting and one function per change td_api.tl offers.
 interface ForumTopicRepository {
     /**
      * The topics of forum [chatId] loaded so far, then every change, for as long as it is collected. Observing loads
@@ -30,6 +31,14 @@ interface ForumTopicRepository {
      * topics as they were.
      */
     suspend fun loadMore(chatId: Long): Outcome<Unit>
+
+    /**
+     * How many topics of forum [chatId] have unread messages, as Telegram's apps count a forum in the chat list, then
+     * every change, for as long as it is collected. Collecting it loads the forum's first page of topics, the newest
+     * first, and more while every loaded topic is unread, up to five pages: a forum with more unread topics than that
+     * counts those loaded. Null until the first page is there, and when it cannot be loaded.
+     */
+    fun unreadTopicCount(chatId: Long): Flow<Int?>
 
     /**
      * Topic [topicId] of forum [chatId], then every change, for as long as it is collected: from the loaded topics, or

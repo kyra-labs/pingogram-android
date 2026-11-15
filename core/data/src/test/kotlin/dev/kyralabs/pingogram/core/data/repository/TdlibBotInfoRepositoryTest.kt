@@ -212,7 +212,7 @@ class TdlibBotInfoRepositoryTest {
             client.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
 
             repository.chatBots(BOT).test {
-                assertTrue((awaitItem() as Outcome.Failure).error is DomainError)
+                assertTrue(awaitItem() is Outcome.Failure)
                 cancelAndIgnoreRemainingEvents()
             }
         }
