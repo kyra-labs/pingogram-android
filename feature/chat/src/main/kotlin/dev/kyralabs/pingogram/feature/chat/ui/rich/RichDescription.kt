@@ -61,9 +61,7 @@ internal fun richActions(
                         block.items.forEach { visit(it.blocks) }
                     }
 
-                    else -> {
-                        Unit
-                    }
+                    else -> {}
                 }
             }
         }
@@ -164,9 +162,7 @@ private class RichSpeaker(
                 parts += resources.getString(R.string.rich_unsupported_block)
             }
 
-            RichBlock.Divider, is RichBlock.Anchor -> {
-                Unit
-            }
+            RichBlock.Divider, is RichBlock.Anchor -> {}
         }
     }
 

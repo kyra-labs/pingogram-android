@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test
  * chat repository, which reads unknown chats with getChat), the merge of local and server chats, message paging by
  * TDLib's offset, the recently found chats, and errors.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibSearchRepositoryTest {
     private val client =
         FakeTdlibClient().apply {

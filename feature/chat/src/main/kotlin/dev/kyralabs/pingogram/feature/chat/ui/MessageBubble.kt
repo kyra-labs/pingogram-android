@@ -287,11 +287,11 @@ internal fun BubbleRowContent(
 }
 
 /**
- * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction], [shareAction],
- * [contentActions], [messageShortcuts], showing the original of a translated text, voting in a poll ([pollActions]),
- * the buttons a bot attached ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the
- * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
- * while there are some.
+ * The screen reader's custom actions of [bubble], sending their events: [replyAction], [profileAction],
+ * [forwardSourceAction], [threadAction], [shareAction], [contentActions], [messageShortcuts], showing the original of
+ * a translated text, voting in a poll ([pollActions]), the buttons a bot attached ([botButtonActions]), a toggle per
+ * reaction but the paid one, all reactions where the bubble shows "+N", and the selecting it, then the actions sheet,
+ * last. Cancelling the [uploads] comes first, while there are some.
  */
 
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
@@ -316,6 +316,7 @@ private fun bubbleActions(
             uploadAction(uploads),
             replyAction(bubble),
             profileAction(bubble),
+            forwardSourceAction(bubble),
             threadAction(bubble),
             shareAction(bubble, shortcuts),
         ) +
@@ -533,7 +534,8 @@ private fun MediaBubble(
 
 /**
  * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;
- * the name opens the sender's profile and the quote shows its message when tapped, if it opens one.
+ * the name opens the sender's profile, "Forwarded from …" where the message comes from ([ForwardSource]), and the quote
+ * shows its message when tapped, if it opens one.
  */
 @Composable
 internal fun BubbleHeader(
@@ -564,8 +566,17 @@ internal fun BubbleHeader(
         }
     }
     bubble.forwardedFrom?.let { forwarded ->
+        val source = bubble.forwardSource
+        val open = remember(source, onEvent) { source?.let { { onEvent(ChatEvent.OpenForwardSource(it)) } } }
         Text(
             text = forwarded.resolve(),
+            // Opens the profile, chat or post it comes from; its touch target reaches past the line, moving nothing.
+            modifier =
+                if (open == null) {
+                    Modifier
+                } else {
+                    Modifier.openTarget(R.string.chat_forward_open_source, MaterialTheme.shapes.extraSmall, open)
+                },
             color = colors.secondaryContent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

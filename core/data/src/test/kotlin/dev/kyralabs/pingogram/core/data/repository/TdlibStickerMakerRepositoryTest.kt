@@ -83,7 +83,7 @@ class TdlibStickerMakerRepositoryTest {
             assertTrue(File(path).path.startsWith(cacheDir.path))
             assertEquals(listOf(512 to 384), media.stickerPlans.map { it.width to it.height })
             // The PNG it came from goes once written.
-            assertEquals(listOf("sticker.webp"), File(path).parentFile.list()?.toList())
+            assertEquals(listOf("sticker.webp"), File(path).parentFile!!.list()?.toList())
         }
 
     @Test

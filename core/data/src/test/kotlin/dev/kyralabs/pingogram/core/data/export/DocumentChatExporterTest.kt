@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -53,6 +54,7 @@ import java.time.ZoneOffset
  * newest first and written oldest first, the dates, the media copied or named, and what a cancelled or failed export
  * leaves behind (nothing).
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class DocumentChatExporterTest {
     @TempDir
     lateinit var cache: File

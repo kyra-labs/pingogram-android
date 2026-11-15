@@ -1116,7 +1116,8 @@ class ChatViewModel internal constructor(
         combine(
             chat,
             group,
-            chatActionRepository.actions(chatId),
+            // A topic's or thread's conversation shows only what is done in it (TDLib reports it for the chat too).
+            topic?.let { chatActionRepository.actions(chatId, it) } ?: chatActionRepository.actions(chatId),
             savedStateHandle.getStateFlow<Long?>(KEY_UNREAD_AFTER, null),
             thread.state,
             ::ChatSources,
@@ -1305,6 +1306,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
+            is ChatEvent.OpenForwardSource -> event.source.open(chatId, window::showMessage, effectChannel::trySend)
             ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
             ChatEvent.ReportChat -> reporting.start(emptyList(), wholeChat = true)
             is ChatEvent.OpenMention -> mentions.open(event.target)

@@ -76,7 +76,13 @@ class TdlibGroupCallRepository
                             val call = fetched.value.toGroupCall()
                             // An update that came meanwhile is newer than the answer.
                             store.update { state ->
-                                if (state.calls[id] != null) state else state.copy(calls = state.calls.put(id, call))
+                                if (state.calls[id] !=
+                                    null
+                                ) {
+                                    state
+                                } else {
+                                    state.copy(calls = state.calls.putting(id, call))
+                                }
                             }
                         }
                     }
@@ -136,7 +142,7 @@ class TdlibGroupCallRepository
             client.request(TdApi.LeaveGroupCall(id)).map {
                 // TDLib announces no participant or comment of a call the user left: both would go stale.
                 store.update { state ->
-                    state.copy(participants = state.participants.remove(id), comments = state.comments.remove(id))
+                    state.copy(participants = state.participants.removing(id), comments = state.comments.removing(id))
                 }
             }
 
@@ -284,14 +290,14 @@ private fun reduce(
                 // An ended call has no one left to list, nor comments to show.
                 !call.isActive && call.scheduledStartDate == 0L -> {
                     state.copy(
-                        calls = state.calls.put(call.id, call),
-                        participants = state.participants.remove(call.id),
-                        comments = state.comments.remove(call.id),
+                        calls = state.calls.putting(call.id, call),
+                        participants = state.participants.removing(call.id),
+                        comments = state.comments.removing(call.id),
                     )
                 }
 
                 else -> {
-                    state.copy(calls = state.calls.put(call.id, call))
+                    state.copy(calls = state.calls.putting(call.id, call))
                 }
             }
         }
@@ -323,8 +329,8 @@ private fun GroupCallState.withVideoChat(
 ): GroupCallState =
     when {
         videoChats[chatId] == videoChat -> this
-        videoChat == null -> copy(videoChats = videoChats.remove(chatId))
-        else -> copy(videoChats = videoChats.put(chatId, videoChat))
+        videoChat == null -> copy(videoChats = videoChats.removing(chatId))
+        else -> copy(videoChats = videoChats.putting(chatId, videoChat))
     }
 
 private fun GroupCallState.withComment(
@@ -335,12 +341,12 @@ private fun GroupCallState.withComment(
     val index = log.items.indexOfFirst { it.id == comment.id }
     val items =
         when {
-            index >= 0 -> log.items.set(index, comment)
-            log.items.size >= MAX_COMMENTS -> log.items.removeAt(0).add(comment)
-            else -> log.items.add(comment)
+            index >= 0 -> log.items.replacingAt(index, comment)
+            log.items.size >= MAX_COMMENTS -> log.items.removingAt(0).adding(comment)
+            else -> log.items.adding(comment)
         }
     val received = if (index >= 0) log.received else log.received + 1
-    return copy(comments = comments.put(callId, CommentLog(items, received)))
+    return copy(comments = comments.putting(callId, CommentLog(items, received)))
 }
 
 private fun GroupCallState.withoutComments(
@@ -348,8 +354,8 @@ private fun GroupCallState.withoutComments(
     ids: Set<Int>,
 ): GroupCallState {
     val log = comments[callId] ?: return this
-    val items = log.items.removeAll { it.id in ids }
-    return if (items === log.items) this else copy(comments = comments.put(callId, log.copy(items = items)))
+    val items = log.items.removingAll { it.id in ids }
+    return if (items === log.items) this else copy(comments = comments.putting(callId, log.copy(items = items)))
 }
 
 /** The user's comment Telegram refused stays, marked, so its text is not lost without a word. */
@@ -362,8 +368,8 @@ private fun GroupCallState.withFailedComment(
     val index = log?.items?.indexOfFirst { it.id == commentId } ?: -1
     if (log == null || index < 0) return this
     val failure = TdError(error?.code ?: 0, error?.message.orEmpty()).toDomainError()
-    val items = log.items.set(index, log.items[index].copy(sendError = failure))
-    return copy(comments = comments.put(callId, log.copy(items = items)))
+    val items = log.items.replacingAt(index, log.items[index].copy(sendError = failure))
+    return copy(comments = comments.putting(callId, log.copy(items = items)))
 }
 
 private fun GroupCallState.withParticipant(
@@ -375,12 +381,12 @@ private fun GroupCallState.withParticipant(
     val next =
         when {
             mapped == null || current[mapped.participant] == mapped -> current
-            mapped.order.isEmpty() -> current.remove(mapped.participant)
-            else -> current.put(mapped.participant, mapped)
+            mapped.order.isEmpty() -> current.removing(mapped.participant)
+            else -> current.putting(mapped.participant, mapped)
         }
     return when {
         next === current -> this
-        next.isEmpty() -> copy(participants = participants.remove(callId))
-        else -> copy(participants = participants.put(callId, next))
+        next.isEmpty() -> copy(participants = participants.removing(callId))
+        else -> copy(participants = participants.putting(callId, next))
     }
 }

@@ -122,9 +122,7 @@ private fun ResultContent(result: AiResult) {
                 )
             }
 
-            AiResult.Idle -> {
-                Unit
-            }
+            AiResult.Idle -> {}
         }
     }
 }

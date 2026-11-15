@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.pingogram.android.feature)
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 dependencies {
