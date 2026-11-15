@@ -27,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SecureTextField
 import androidx.compose.material3.SheetValue
@@ -62,6 +61,7 @@ import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -92,7 +92,7 @@ internal fun OwnerLeaveBottomSheet(
             confirmValueChange = { it != SheetValue.Hidden || !isBusy },
         )
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(OwnerLeaveEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(OwnerLeaveEvent.Dismiss) }, sheetState = sheetState) {
         OwnerLeaveContent(sheet, title, password, onEvent)
     }
 }
@@ -271,7 +271,6 @@ private fun ChoiceRow(
     val body = MaterialTheme.typography.bodyLarge
     val textStyle = if (isUserContent) body.userContent else body
     ListItem(
-        headlineContent = { Text(headline, maxLines = 2, overflow = TextOverflow.Ellipsis, style = textStyle) },
         modifier =
             Modifier
                 .clip(MaterialTheme.shapes.large)
@@ -283,7 +282,9 @@ private fun ChoiceRow(
             ListItemDefaults.colors(
                 containerColor = if (selected) colors.secondaryContainer else Color.Transparent,
             ),
-    )
+    ) {
+        Text(headline, maxLines = 2, overflow = TextOverflow.Ellipsis, style = textStyle)
+    }
 }
 
 @Composable

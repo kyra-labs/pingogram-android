@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.testing.NotificationFixtures.updateNotificati
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibNotificationRepositoryTest {
     private val client = FakeTdlibClient()
     private val openChats = OpenChats()

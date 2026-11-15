@@ -117,9 +117,7 @@ internal fun PollPhoto(
             }
         }
 
-        is PollMedia.Link, PollMedia.Other -> {
-            Unit
-        }
+        is PollMedia.Link, PollMedia.Other -> {}
     }
 }
 

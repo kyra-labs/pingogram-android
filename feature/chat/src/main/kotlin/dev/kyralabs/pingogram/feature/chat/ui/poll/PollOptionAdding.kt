@@ -98,7 +98,7 @@ internal class PollOptionAdding(
         messageId: Long,
         state: PollAdding?,
     ) {
-        mutableAdding.update { if (state == null) it.remove(messageId) else it.put(messageId, state) }
+        mutableAdding.update { if (state == null) it.removing(messageId) else it.putting(messageId, state) }
         savedState[KEY_ADDING] = mutableAdding.value.keys.toLongArray()
     }
 

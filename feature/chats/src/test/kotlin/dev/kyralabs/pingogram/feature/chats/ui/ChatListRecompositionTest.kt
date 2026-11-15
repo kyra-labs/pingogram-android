@@ -95,6 +95,39 @@ class ChatListRecompositionTest {
     }
 
     @Test
+    fun `flinging the list composes nothing again in its frames, as the benchmark's flings do`() {
+        setScreen(connection = ConnectionStatus.Ready)
+        val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+        val framesWithRecompositions =
+            (1..FLINGS).sumOf {
+                list.performTouchInput { down(center) }
+                val dragging =
+                    (1..FLING_DRAG_FRAMES).count {
+                        counter.reset()
+                        list.performTouchInput { moveBy(Offset(0f, -FLING_STEP)) }
+                        frame()
+                        counter.recomposed.isNotEmpty()
+                    }
+                list.performTouchInput { up() }
+                val flying =
+                    (1..SETTLE_FRAMES).count {
+                        counter.reset()
+                        frame()
+                        counter.recomposed.isNotEmpty()
+                    }
+                dragging + flying
+            }
+
+        // The flings scrolled the list past the rows that first showed.
+        assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > ROWS_ON_SCREEN / 2)
+        // The header's collapse and the scaffold's content once in a while (the header's height changing it), never
+        // in every frame: a fling's frames on the device are its animation's (Recomposer:animation), not
+        // recompositions.
+        val frames = FLINGS * (FLING_DRAG_FRAMES + SETTLE_FRAMES)
+        assertTrue("$framesWithRecompositions of $frames", framesWithRecompositions < frames / RARE)
+    }
+
+    @Test
     fun `dragging the list collapses the header without recomposing it`() {
         setScreen(connection = ConnectionStatus.Ready)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
@@ -349,6 +382,11 @@ class ChatListRecompositionTest {
 
         /** Enough to collapse the header and scroll the list past its first rows. */
         const val COLLAPSE_DRAG_FRAMES = 60
+
+        /** Three flings, each a quick drag up of [FLING_DRAG_FRAMES] frames, then the frames it flies on. */
+        const val FLINGS = 3
+        const val FLING_DRAG_FRAMES = 8
+        const val FLING_STEP = 60f
         const val DRAG_STEP = 10f
 
         const val SETTLE_FRAMES = 60

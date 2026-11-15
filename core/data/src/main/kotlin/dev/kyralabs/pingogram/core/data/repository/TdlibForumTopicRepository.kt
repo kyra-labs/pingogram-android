@@ -10,10 +10,12 @@ import dev.kyralabs.pingogram.core.data.mapper.toForumTopic
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toTdColor
+import dev.kyralabs.pingogram.core.data.mapper.topicMuteFor
 import dev.kyralabs.pingogram.core.data.mapper.withInfo
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -70,6 +72,15 @@ class TdlibForumTopicRepository
         override fun topics(chatId: Long): Flow<ForumTopicList> =
             observing(chatId) { cache -> cache.forums[chatId]?.list() ?: EMPTY_LIST }
 
+        override fun unreadTopicCount(chatId: Long): Flow<Int?> =
+            observing(chatId, countUnread = true) { cache ->
+                cache.forums[chatId]
+                    ?.takeIf { it.next != null }
+                    ?.topics
+                    ?.values
+                    ?.count { it.unreadCount > 0 }
+            }
+
         override fun topic(
             chatId: Long,
             topicId: Int,
@@ -83,7 +94,16 @@ class TdlibForumTopicRepository
                         ?.next ?: PageOffsets.FIRST
                 if (next == PageOffsets.END) return@withLock Outcome.Success(Unit)
                 val request = TdApi.GetForumTopics(chatId, "", next.date, next.messageId, next.topicId, PAGE_SIZE)
-                client.request(request).map { page -> store.update { cache -> cache.withPage(chatId, page) } }
+                client.request(request).map { page ->
+                    store.update { cache -> cache.withPage(chatId, page) }
+                    // Every forum has General; TDLib may leave a hidden one out of the pages (it shows above the list).
+                    val topics =
+                        store.state.value.forums[chatId]
+                            ?.topics
+                    if (next == PageOffsets.FIRST && topics != null && topics.values.none { it.isGeneral }) {
+                        refetch(chatId, MessageTopic.GENERAL_TOPIC_ID)
+                    }
+                }
             }
 
         override suspend fun createTopic(
@@ -149,15 +169,18 @@ class TdlibForumTopicRepository
 
         /**
          * What [select] takes of the cache, then every change, while forum [chatId] counts one more observer; topic
-         * [fetch] of it is fetched first when it is not loaded.
+         * [fetch] of it is fetched first when it is not loaded, and with [countUnread] the pages that count its unread
+         * topics are loaded ([loadUnreadPages]).
          */
         private fun <T> observing(
             chatId: Long,
             fetch: Int? = null,
+            countUnread: Boolean = false,
             select: (TopicCache) -> T,
         ): Flow<T> =
             flow {
                 store.update { cache -> cache.observing(chatId) }
+                if (countUnread) scope.launch { loadUnreadPages(chatId) }
                 try {
                     if (fetch != null && store.state.value.forums[chatId]
                             ?.topics
@@ -170,6 +193,21 @@ class TdlibForumTopicRepository
                     store.update { cache -> cache.releasing(chatId) }
                 }
             }
+
+        /**
+         * Loads forum [chatId]'s first page of topics if none is loaded, then the next ones while every loaded topic is
+         * unread, up to [UNREAD_COUNT_PAGES] pages: the newest topics come first, so the first read one ends the unread
+         * ones. Stops at a failure, and once nobody observes the forum.
+         */
+        private suspend fun loadUnreadPages(chatId: Long) {
+            repeat(UNREAD_COUNT_PAGES) {
+                val forum = store.state.value.forums[chatId] ?: return
+                val needed =
+                    forum.next == null ||
+                        (forum.next != PageOffsets.END && forum.topics.values.all { it.unreadCount > 0 })
+                if (!needed || loadMore(chatId) is Outcome.Failure) return
+            }
+        }
 
         private fun refetchLater(target: Pair<Long, Int>) {
             scope.launch { refetch(target.first, target.second) }
@@ -214,6 +252,9 @@ class TdlibForumTopicRepository
             /** Topics per page: a screen and a half of rows. */
             const val PAGE_SIZE = 20
 
+            /** The most pages loaded to count a forum's unread topics: 100 topics. */
+            const val UNREAD_COUNT_PAGES = 5
+
             val EMPTY_LIST = ForumTopicList(persistentListOf(), reachedEnd = false)
         }
     }
@@ -251,6 +292,7 @@ internal data class TopicCache(
                         lastReadOutboxMessageId = update.lastReadOutboxMessageId,
                         unreadMentionCount = update.unreadMentionCount,
                         unreadCount = if (read) 0 else topic.unreadCount,
+                        muteFor = update.notificationSettings.topicMuteFor(),
                     )
                 }
             }
@@ -313,7 +355,12 @@ internal data class TopicCache(
     ): TopicCache {
         val forum = forums[chatId] ?: return this
         val topics = page.topics.filterNotNull().map { it.toForumTopic() }
-        val merged = forum.topics.putAll(topics.associateBy { it.id })
+        val merged = forum.topics.puttingAll(topics.associateBy { it.id })
+        // Where each topic stands in the pages, which list the pinned ones in the forum's pin order.
+        val ranks =
+            topics.foldIndexed(forum.ranks) { index, ranked, topic ->
+                if (topic.id in ranked) ranked else ranked.putting(topic.id, forum.ranks.size + index)
+            }
         val done = topics.isEmpty() || merged.size >= page.totalCount
         val next =
             if (done) {
@@ -321,7 +368,7 @@ internal data class TopicCache(
             } else {
                 PageOffsets(page.nextOffsetDate, page.nextOffsetMessageId, page.nextOffsetForumTopicId)
             }
-        return copy(forums = forums.putting(chatId, forum.copy(topics = merged, next = next)))
+        return copy(forums = forums.putting(chatId, forum.copy(topics = merged, next = next, ranks = ranks)))
     }
 
     /** [topic], fetched, in its forum while it is observed. */
@@ -342,8 +389,19 @@ internal data class TopicCache(
         // below it in the new order.
         val top = loaded.maxOf { it.order }
         val reordered = loaded.mapIndexed { index, topic -> topic.copy(order = top - index) }
+        // Ranked before every page's topics, in the new order.
+        val ranks =
+            forum.ranks.puttingAll(
+                topicIds.withIndex().associate { (index, id) ->
+                    id to index - topicIds.size
+                },
+            )
         return copy(
-            forums = forums.putting(chatId, forum.copy(topics = forum.topics.putAll(reordered.associateBy { it.id }))),
+            forums =
+                forums.putting(
+                    chatId,
+                    forum.copy(topics = forum.topics.puttingAll(reordered.associateBy { it.id }), ranks = ranks),
+                ),
         )
     }
 
@@ -374,22 +432,26 @@ internal data class TopicCache(
 
 /**
  * One observed forum: its loaded [topics] by id, where the next page starts ([next], [PageOffsets.END] once every
- * topic is loaded; null before the first page), and how many observe it.
+ * topic is loaded; null before the first page), how many observe it, and where each topic stood in the pages
+ * ([ranks], lower first; the pinned ones moved since, negative, in their new order).
  */
 internal data class ForumState(
     val topics: PersistentMap<Int, ForumTopic> = persistentMapOf(),
     val next: PageOffsets? = null,
     val observers: Int = 0,
+    val ranks: PersistentMap<Int, Int> = persistentMapOf(),
 ) {
     /**
-     * The topics in the forum's order: General first (also when the administrators hid it, which the list shows only
-     * to those who may show it again), then the pinned ones in TDLib's order, then the others by their newest message.
+     * The topics in the forum's order: General first (also when the administrators hid it, as Telegram shows it above
+     * the list), then the pinned ones in the forum's pin order (where the pages listed them, [ranks]; one pinned since
+     * first, as Telegram puts it), then the others by their newest message.
      */
     fun list(): ForumTopicList {
         val sorted =
             topics.values.sortedWith(
                 compareByDescending<ForumTopic> { it.isGeneral }
                     .thenByDescending { it.isPinned }
+                    .thenBy { if (it.isPinned) ranks[it.id] ?: Int.MIN_VALUE else 0 }
                     .thenByDescending { if (it.isPinned) it.order else it.lastMessage?.id ?: 0 },
             )
         return ForumTopicList(sorted.toImmutableList(), reachedEnd = next == PageOffsets.END)

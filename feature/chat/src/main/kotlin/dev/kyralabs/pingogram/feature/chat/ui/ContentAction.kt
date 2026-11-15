@@ -101,6 +101,10 @@ internal fun uploadAction(uploads: Map<Long, *>): ContentAction? =
 internal fun profileAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.senderUserId?.let { ContentAction(R.string.chat_open_profile, ChatEvent.OpenProfile(it)) }
 
+/** Opening where a forwarded message comes from ([ForwardSource]); null for a message that was not forwarded. */
+internal fun forwardSourceAction(bubble: ChatItem.Bubble): ContentAction? =
+    bubble.forwardSource?.let { ContentAction(R.string.chat_forward_open_source, ChatEvent.OpenForwardSource(it)) }
+
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }

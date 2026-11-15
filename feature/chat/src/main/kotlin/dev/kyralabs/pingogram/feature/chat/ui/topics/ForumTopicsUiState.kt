@@ -50,9 +50,10 @@ sealed interface TopicsContent {
 
 /**
  * One topic in the list: its [name] and [icon], one line of its last message ([sender] before [preview]; no sender
- * for the user's own or the forum's), its [time], and its unread and mention counts, pinned and closed; a General
- * topic the administrators hid ([isHidden]) shows only to those who may show it again. What its long press offers is
- * [menu], null where the user may do nothing with it.
+ * for the user's own or the forum's), its [time], and its unread and mention counts (in the muted colors where it is
+ * [isMuted]: its own setting, else its forum's), pinned and closed; a General topic the administrators hid shows to
+ * everyone, closed, as Telegram shows it above the list, and [isHidden] to those who may show it again. What its long
+ * press offers is [menu], null where the user may do nothing with it.
  */
 @Immutable
 data class TopicRow(
@@ -68,13 +69,18 @@ data class TopicRow(
     val isClosed: Boolean,
     val isHidden: Boolean = false,
     val menu: TopicMenuState? = null,
+    val isMuted: Boolean = false,
 ) {
     override fun toString() = "TopicRow(id=$id, unreadCount=$unreadCount, isPinned=$isPinned, isClosed=$isClosed, …)"
 }
 
-/** A topic's icon: the General topic's "#", or a topic's bubble in the tone of its [color]. */
+/**
+ * A topic's icon: the General topic's "#", or a topic's bubble in the tone of its [color]; a topic's own custom emoji
+ * ([customEmojiId], 0 for none) shows in its place once loaded.
+ */
 @Immutable
 data class TopicIcon(
     val color: TopicColor,
     val isGeneral: Boolean,
+    val customEmojiId: Long = 0,
 )

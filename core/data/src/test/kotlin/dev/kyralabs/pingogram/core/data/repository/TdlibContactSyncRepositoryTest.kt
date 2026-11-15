@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -35,6 +36,7 @@ import java.time.ZoneOffset
  * on (with and without the permission), what changeImportedContacts sends and finds, when the Contacts tab's opening
  * syncs, "Sync now", errors, the permission taken back, turning off, and logging out.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibContactSyncRepositoryTest {
     private val client = FakeTdlibClient()
     private val device = FakeDeviceContacts()

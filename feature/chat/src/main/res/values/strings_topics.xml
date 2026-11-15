@@ -17,6 +17,8 @@
     <!-- A topic row's states, for screen readers. %1$d is a count. -->
     <string name="topic_closed">Closed</string>
     <string name="topic_pinned">Pinned</string>
+    <!-- A topic whose notifications are muted, spoken by screen readers with its row. -->
+    <string name="topic_muted">Muted</string>
     <plurals name="topic_unread">
         <item quantity="one">%1$d unread message</item>
         <item quantity="other">%1$d unread messages</item>

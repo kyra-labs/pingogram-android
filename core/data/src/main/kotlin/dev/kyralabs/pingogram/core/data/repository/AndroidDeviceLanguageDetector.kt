@@ -70,7 +70,7 @@ class AndroidDeviceLanguageDetector
                     null
                 }
             val likeliest = result?.takeIf { it.localeHypothesisCount > 0 }?.getLocale(0)
-            val confidence = likeliest?.let { result?.getConfidenceScore(it) } ?: 0f
+            val confidence = likeliest?.let { result.getConfidenceScore(it) } ?: 0f
             return if (likeliest != null && confidence >= MIN_CONFIDENCE) {
                 LanguageDetection.Detected(likeliest.toLanguageTag())
             } else {

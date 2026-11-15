@@ -29,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -61,6 +60,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.sticker.StickerCover
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -117,7 +117,7 @@ internal fun StickerSetSheet(
     onDismiss: () -> Unit,
     sheetState: SheetState,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         StickerSetContent(state, onEvent, onShare, onClose)
     }
 }

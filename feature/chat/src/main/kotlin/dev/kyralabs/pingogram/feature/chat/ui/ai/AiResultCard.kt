@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -122,9 +121,7 @@ private fun ResultContent(result: AiResult) {
                 )
             }
 
-            AiResult.Idle -> {
-                Unit
-            }
+            AiResult.Idle -> {}
         }
     }
 }

@@ -111,7 +111,7 @@ internal class ChatChecklists(
             return
         }
         if (messageId in sending.value) return
-        sending.update { it.add(messageId) }
+        sending.update { it.adding(messageId) }
         scope.launch {
             try {
                 val id = (list.tasks.maxOfOrNull { it.id } ?: 0) + 1
@@ -120,7 +120,7 @@ internal class ChatChecklists(
                     is Outcome.Success -> setAdding(messageId, open = false)
                 }
             } finally {
-                sending.update { it.remove(messageId) }
+                sending.update { it.removing(messageId) }
             }
         }
     }
@@ -133,7 +133,7 @@ internal class ChatChecklists(
             onEffect(ChatEffect.ActionUnavailable)
             return
         }
-        val changed = if (open) adding.value.add(messageId) else adding.value.remove(messageId)
+        val changed = if (open) adding.value.adding(messageId) else adding.value.removing(messageId)
         adding.value = changed
         savedState[KEY_ADDING] = changed.toLongArray()
     }
@@ -146,7 +146,7 @@ internal class ChatChecklists(
         pending.update { all ->
             val tasks = all[messageId].orEmpty()
             val changed = if (waiting) tasks + taskId else tasks - taskId
-            if (changed.isEmpty()) all.remove(messageId) else all.put(messageId, changed.toPersistentSet())
+            if (changed.isEmpty()) all.removing(messageId) else all.putting(messageId, changed.toPersistentSet())
         }
     }
 

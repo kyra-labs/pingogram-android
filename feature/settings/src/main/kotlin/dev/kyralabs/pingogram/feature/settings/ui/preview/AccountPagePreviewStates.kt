@@ -35,7 +35,7 @@ internal object AccountPagePreviewStates {
 
     val autoDelete = AutoDeleteUiState.Content(seconds = 604_800, options = choices)
 
-    val autoDeleteOther = AutoDeleteUiState.Content(seconds = 7_776_000, options = choices.add(7_776_000))
+    val autoDeleteOther = AutoDeleteUiState.Content(seconds = 7_776_000, options = choices.adding(7_776_000))
 
     val autoDeleteSaving = autoDelete.copy(seconds = 86_400, isSaving = true)
 }

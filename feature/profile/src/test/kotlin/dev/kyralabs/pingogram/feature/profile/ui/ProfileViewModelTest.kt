@@ -690,7 +690,7 @@ class ProfileViewModelTest {
             val items = (media.content as SharedMediaContent.Items).items
             assertEquals(listOf(9L), items.map { it.messageId })
             assertEquals(MediaKind.Photo, (items.single() as SharedMediaItem.Media).kind)
-            assertEquals(MoreMedia.None, (media.content as SharedMediaContent.Items).more)
+            assertEquals(MoreMedia.None, media.content.more)
         }
 
     @Test

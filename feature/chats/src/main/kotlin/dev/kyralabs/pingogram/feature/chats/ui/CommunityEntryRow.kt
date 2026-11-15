@@ -74,7 +74,7 @@ internal fun CommunityEntryRow(
     val resources = LocalResources.current
     val chats = entry.chats.size
     val summary = communitySummary(entry)
-    val unread = entry.unreadCount.takeIf { it > 0 }?.let { resources.getQuantityString(UNREAD, it, it) }
+    val unread = entry.unreadChatCount.takeIf { it > 0 }?.let { resources.getQuantityString(UNREAD, it, it) }
     val state =
         stringResource(
             if (entry.isExpanded) R.string.chat_list_community_expanded else R.string.chat_list_community_collapsed,
@@ -110,7 +110,7 @@ internal fun CommunityEntryRow(
             trailingContent = { CommunityEntryEnd(entry) },
         ) {
             val typography = MaterialTheme.typography
-            val style = if (entry.unreadCount > 0) typography.titleMediumEmphasized else typography.titleMedium
+            val style = if (entry.unreadChatCount > 0) typography.titleMediumEmphasized else typography.titleMedium
             Text(entry.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style.userContent)
         }
         CommunityEntryMenu(
@@ -183,11 +183,12 @@ private fun CommunityEntryEnd(entry: CommunityEntry) {
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (entry.unreadCount > 0) {
-            Badge(
-                containerColor = if (entry.isMuted) colors.surfaceVariant else colors.primary,
-                contentColor = if (entry.isMuted) colors.onSurfaceVariant else colors.onPrimary,
-            ) { Text(unreadCountText(entry.unreadCount)) }
+        if (entry.unreadChatCount > 0) {
+            UnreadTopicsBadge(
+                count = entry.unreadChatCount,
+                container = if (entry.isMuted) colors.surfaceVariant else colors.primary,
+                content = if (entry.isMuted) colors.onSurfaceVariant else colors.onPrimary,
+            )
         }
         Box(
             modifier =
@@ -206,5 +207,5 @@ private fun CommunityEntryEnd(entry: CommunityEntry) {
     }
 }
 
-private val UNREAD = R.plurals.chat_list_a11y_unread
+private val UNREAD = R.plurals.chat_list_a11y_unread_community_chats
 private const val HALF_TURN = 180f

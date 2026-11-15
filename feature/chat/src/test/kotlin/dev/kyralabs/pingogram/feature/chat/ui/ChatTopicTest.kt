@@ -1,16 +1,21 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.snapshots.Snapshot
+import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FileRef
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.FORUM_CHAT
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumTopic
@@ -18,6 +23,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.supergroup
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.text
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -26,6 +32,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
@@ -61,6 +68,34 @@ class ChatTopicTest : ChatViewModelHarness() {
             assertEquals(listOf(3L, 2L, 1L), viewModel.bubbles.map { it.id })
             assertTrue(messages.topics.isNotEmpty() && messages.topics.all { it == topic })
             assertEquals(UiText.Plain("Help"), viewModel.state.header?.title)
+            assertEquals(ChatSubtitle.Status(UiText.Plain("Compose Developers")), viewModel.subtitle)
+        }
+
+    @Test
+    fun `the header shows who types in the topic, not in another topic of the forum`() =
+        runViewModelTest {
+            users.setUsers(user(GRACE, firstName = "Grace"))
+            // TDLib reports an action in a topic for the whole forum too.
+            actions.setActions(FORUM_CHAT, typing(ADA))
+            actions.setTopicActions(FORUM_CHAT, MessageTopic.Forum(OTHER_TOPIC), typing(ADA))
+            actions.setTopicActions(FORUM_CHAT, topic, typing(GRACE))
+
+            val viewModel = inTopic()
+
+            assertEquals(
+                ChatSubtitle.Action(res(UiR.string.named_action_typing, UiText.Plain("\u2068Grace\u2069"))),
+                viewModel.subtitle,
+            )
+        }
+
+    @Test
+    fun `nobody typing in the topic keeps its status, whoever types elsewhere in the forum`() =
+        runViewModelTest {
+            actions.setActions(FORUM_CHAT, typing(ADA))
+            actions.setTopicActions(FORUM_CHAT, MessageTopic.Forum(OTHER_TOPIC), typing(ADA))
+
+            val viewModel = inTopic(isClosed = true)
+
             assertEquals(ChatSubtitle.Status(UiText.Plain("Compose Developers")), viewModel.subtitle)
         }
 
@@ -172,8 +207,11 @@ class ChatTopicTest : ChatViewModelHarness() {
             assertEquals(ChatContent.NotFound, viewModel.state.content)
         }
 
+    private fun typing(userId: Long) = SenderAction(MessageSender.User(userId), ChatAction.Typing)
+
     private companion object {
         const val TOPIC = 7
+        const val OTHER_TOPIC = 9
 
         /** Longer than the batch of viewed messages waits (`MessageViews`). */
         const val VIEW_BATCH_MILLIS = 1_000L

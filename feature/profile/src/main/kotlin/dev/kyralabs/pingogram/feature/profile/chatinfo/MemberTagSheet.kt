@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,6 +53,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MemberTagLimits
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -108,7 +108,7 @@ internal fun MemberTagSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ChatMembersEvent.DismissTag) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ChatMembersEvent.DismissTag) }, sheetState = sheetState) {
         MemberTagContent(editor, onEvent)
     }
 }

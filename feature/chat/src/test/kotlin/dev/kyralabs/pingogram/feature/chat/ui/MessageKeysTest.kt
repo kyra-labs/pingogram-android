@@ -118,9 +118,7 @@ class MessageKeysTest {
                 search = null
             }
 
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
 
@@ -294,6 +292,28 @@ class MessageKeysTest {
         name.performClick()
 
         assertEquals(listOf(ChatEvent.OpenProfile(LINUS)), events)
+    }
+
+    @Test
+    fun `Forwarded from is a button that opens where the message comes from`() {
+        val source = ForwardSource.Chat(-300, messageId = 9)
+        val bubble =
+            groupBubble().copy(
+                showsSenderName = false,
+                forwardedFrom = UiText.Plain("Forwarded from News"),
+                forwardSource = source,
+            )
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                BubbleHeader(bubble, rememberBubbleTheme().incoming.colors, ::onEvent)
+            }
+        }
+
+        val header = composeRule.onNode(hasText("Forwarded from News"))
+        header.assert(hasRole(Role.Button)).assert(hasClickLabel(string(R.string.chat_forward_open_source)))
+        header.performClick()
+
+        assertEquals(listOf(ChatEvent.OpenForwardSource(source)), events)
     }
 
     @Test

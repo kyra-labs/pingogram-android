@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chatPosition
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -33,6 +34,7 @@ import kotlin.time.Duration.Companion.seconds
  * in, as conversation shortcuts in the share target's category, in the chat list's order, once it settled.
  */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class ShareTargetShortcutsTest {
     private fun TestScope.started(
         authState: AuthState = AuthState.Ready,

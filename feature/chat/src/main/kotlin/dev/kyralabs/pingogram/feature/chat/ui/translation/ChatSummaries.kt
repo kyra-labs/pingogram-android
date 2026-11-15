@@ -130,7 +130,7 @@ internal class ChatSummaries(
     private fun showFullText(messageId: Long) {
         setChosen(chosen.value.toSet() - messageId)
         jobs.remove(messageId)?.cancel()
-        pending.update { it.remove(messageId) }
+        pending.update { it.removing(messageId) }
     }
 
     /** Asks Telegram for [message]'s summary, unless it is on its way or there is one of its current text. */
@@ -139,7 +139,7 @@ internal class ChatSummaries(
         val language = message.summaryLanguage?.takeIf { message.summarizableText.text.isNotBlank() }
         val text = message.summarizableText
         if (language == null || id in jobs || summaries.value[id]?.source == text) return
-        pending.update { it.add(id) }
+        pending.update { it.adding(id) }
         // Registered before it starts, so a request that ends at once (an immediate dispatcher) is not asked again.
         val job =
             scope.launch(start = CoroutineStart.LAZY) {
@@ -147,7 +147,7 @@ internal class ChatSummaries(
                 try {
                     when (val result = repository.summarizeMessage(chatId, id, targetFor(language))) {
                         is Outcome.Success -> {
-                            summaries.update { it.put(id, Summarized(text, result.value)) }
+                            summaries.update { it.putting(id, Summarized(text, result.value)) }
                         }
 
                         is Outcome.Failure -> {
@@ -157,7 +157,7 @@ internal class ChatSummaries(
                     }
                 } finally {
                     // A newer request for the message may have replaced this one meanwhile.
-                    if (jobs.remove(id, job)) pending.update { it.remove(id) }
+                    if (jobs.remove(id, job)) pending.update { it.removing(id) }
                 }
             }
         jobs[id] = job
@@ -172,7 +172,7 @@ internal class ChatSummaries(
         val preferred = detector.preferredLanguages()
         val reader = appLanguage.language.first() ?: preferred.firstOrNull()
         val reads = reader == null || isLanguageAmong(summaryLanguage, listOf(reader) + preferred)
-        return if (reads) null else reader?.let(repository::targetLanguageOf)
+        return if (reads) null else repository.targetLanguageOf(reader)
     }
 
     private fun setChosen(ids: Set<Long>) {

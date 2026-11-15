@@ -31,6 +31,7 @@ internal fun NavGraphBuilder.chatScreens(
         onOpenChatInfo = navController::navigateToChatInfo,
         onOpenScheduledMessages = navController::navigateToScheduledMessages,
         onOpenNextChat = navController::navigateToChatInPlace,
+        onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId = messageId)) },
     )
     chatExportScreen(onBack = { navController.popBackStack() })
     scheduledMessagesScreen(onBack = { navController.popBackStack() })
