@@ -71,9 +71,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   in front keeps the page shown; newer media to the end. Each page is a [MediaPage]. The page the pager settles on
  *   goes to the view model ([MediaViewerEvent.PageSettled]). While the photo is zoomed in, the pager does not turn.
  * - **Chrome**: [ViewerTopBar] (back, sender and date, "3 of 120") and [ViewerBottomBar] (caption, a video's controls,
- *   and the floating toolbar of actions, [ViewerToolbar]: Share and Save where Telegram allows them, Delete where TDLib
- *   does, and More with "Show in chat" and Copy), faded in and out on the motion scheme's effects springs when the
- *   media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]). Delete asks first
+ *   and the floating toolbar of actions, [ViewerToolbar]: Forward, Share and Save where Telegram allows them, and
+ *   More with "Show in chat", Copy and Delete where TDLib allows it), faded in and out on the motion scheme's effects
+ *   springs when the media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]). Delete asks first
  *   ([DeleteMediaDialog]); on Android 8–9 the reason for the storage permission shows when the state asks for it
  *   ([StorageRationaleDialog]).
  * - **Leaving**: predictive back ([PredictiveBackDismiss]) shrinks the content towards 90% and fades the background

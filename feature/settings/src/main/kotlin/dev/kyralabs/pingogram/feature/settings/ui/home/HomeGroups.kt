@@ -33,23 +33,28 @@ import java.util.Locale
 /**
  * Settings home's groups ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
  * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their badges' shapes taking
- * `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn across the page. Recent calls is left out where the app
- * does not provide its page.
+ * `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn across the page, and its footer where it has one.
+ * Recent calls is left out where the app does not provide its page, and a group without a row is not shown.
  */
 @Composable
 internal fun SettingsHomeGroups(
     summaries: SettingsHomeSummaries,
     onOpen: (HomeDestination) -> Unit,
     selection: SettingsPageSelection?,
+    groups: List<HomeGroup> = HomeGroups,
 ) {
     val hasRecentCalls = LocalRecentCallsLauncher.current != null
     val rowState = HomeRowState(summaries, selection)
     var index = 0
-    HomeGroups.forEach { group ->
+    groups.forEach { group ->
         val entries = group.entries.filter { hasRecentCalls || it.destination != HomeDestination.RecentCalls }
+        if (entries.isEmpty()) return@forEach
         val first = index
         index += entries.size
-        SettingsGroup(title = stringResource(group.title)) {
+        SettingsGroup(
+            title = stringResource(group.title),
+            footer = group.footer?.let { stringResource(it) },
+        ) {
             entries.forEachIndexed { position, entry ->
                 item(key = entry.title) { shapes ->
                     HomeEntryRow(
