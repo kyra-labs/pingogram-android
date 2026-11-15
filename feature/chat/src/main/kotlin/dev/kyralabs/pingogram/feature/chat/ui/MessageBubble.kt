@@ -158,8 +158,7 @@ internal fun MessageBubbleRow(
     reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val highlightColor = MaterialTheme.colorScheme.secondaryContainer
-    val highlightShape = MaterialTheme.shapes.medium
+    val highlight = rememberJumpHighlightStyle()
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
@@ -172,7 +171,7 @@ internal fun MessageBubbleRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
+                .jumpHighlight(resources.jump, bubble, highlight)
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
