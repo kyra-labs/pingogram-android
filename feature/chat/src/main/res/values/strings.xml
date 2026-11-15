@@ -494,7 +494,7 @@
         <item quantity="one">Bookmarks · %d</item>
         <item quantity="other">Bookmarks · %d</item>
     </plurals>
-    <string name="saved_bookmarks_on_this_phone">On this phone</string>
+    <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->

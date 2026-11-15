@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -30,9 +33,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Saved Messages' Bookmarks card (`docs/DESIGN_SYSTEM.md` §6 "Bookmarks", the owner's board 34c), shown on "All" only
- * once a message is bookmarked: a row on `surfaceContainerHigh` with `large` corners, at most `contentMaxWidth`, the
- * filled bookmark in `primary`, "Bookmarks · 3" in `labelLargeEmphasized` over "On this phone" in `bodySmall`
- * `onSurfaceVariant`, and a chevron; one link for screen readers, which opens the Bookmarks page.
+ * once a message is bookmarked: a row on `primaryContainer` with `extraLarge` corners, at most `contentMaxWidth`, the
+ * filled bookmark, "Bookmarks · 3" in `titleSmallEmphasized` over "From all your chats, kept on this phone" in
+ * `bodySmall`, and a chevron; one button for screen readers, which opens the Bookmarks page.
  */
 @Composable
 internal fun SavedBookmarksCard(
@@ -49,41 +52,34 @@ internal fun SavedBookmarksCard(
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall)
                 .semantics { role = Role.Button },
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
         Row(
-            modifier =
-                Modifier.padding(
-                    horizontal = MaterialTheme.spacing.medium,
-                    vertical = MaterialTheme.spacing.small,
-                ),
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painterResource(UiR.drawable.ic_bookmark_filled),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
-            Text(
-                text = stringResource(R.string.saved_bookmarks_on_this_phone),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Icon(painterResource(UiR.drawable.ic_bookmark_filled), contentDescription = null)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
+                )
+                Text(
+                    text = stringResource(R.string.saved_bookmarks_on_this_phone),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             Icon(
                 painterResource(UiR.drawable.ic_chevron_right),
                 contentDescription = null,
                 modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -105,4 +101,10 @@ internal fun rememberBookmarksCard(
     } else {
         null
     }
+}
+
+@PingogramPreviews
+@Composable
+private fun SavedBookmarksCardPreview() {
+    PingogramPreview { Surface { SavedBookmarksCard(count = 27, onOpen = {}) } }
 }
