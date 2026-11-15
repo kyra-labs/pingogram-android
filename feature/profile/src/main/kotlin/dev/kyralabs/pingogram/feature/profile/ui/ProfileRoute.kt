@@ -57,6 +57,7 @@ internal fun ProfileRoute(
     onExportChat: ((chatId: Long) -> Unit)? = null,
     storyAlbums: StoryAlbumsSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
+    onChatDeleted: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -75,7 +76,13 @@ internal fun ProfileRoute(
                 onOpenUrl = { url -> runCatching { uriHandler.openUri(url) } },
             )
         }
-    ProfileEffects(viewModel.effects, snackbarHostState, onOpenChat, onOpenProfile)
+    ProfileEffects(
+        effects = viewModel.effects,
+        snackbarHostState = snackbarHostState,
+        onOpenChat = onOpenChat,
+        onOpenProfile = onOpenProfile,
+        onChatDeleted = onChatDeleted ?: onBack ?: {},
+    )
     val userId = (state as? ProfileUiState.Content)?.header?.userId
     val exportChatId = (state as? ProfileUiState.Content)?.actions?.exportChatId
     val header = (state as? ProfileUiState.Content)?.header
@@ -114,6 +121,7 @@ internal fun ProfileEffects(
     snackbarHostState: SnackbarHostState,
     onOpenChat: (chatId: Long) -> Unit,
     onOpenProfile: (userId: Long) -> Unit,
+    onChatDeleted: () -> Unit = {},
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
     dial: Context.(phoneNumber: String) -> Boolean = Context::dial,
     share: Context.(text: String) -> Unit = Context::shareText,
@@ -123,6 +131,7 @@ internal fun ProfileEffects(
     val showDetails = isDebuggable()
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
+    val currentOnChatDeleted by rememberUpdatedState(onChatDeleted)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -153,6 +162,11 @@ internal fun ProfileEffects(
 
                     is ProfileEffect.Share -> {
                         context.share(effect.text)
+                        ""
+                    }
+
+                    ProfileEffect.ChatDeleted -> {
+                        currentOnChatDeleted()
                         ""
                     }
 

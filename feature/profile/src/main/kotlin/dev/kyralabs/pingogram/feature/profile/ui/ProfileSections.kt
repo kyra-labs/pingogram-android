@@ -51,12 +51,13 @@ import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The profile's actions as pills under the header (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"): "Message" (Saved
- * Messages on one's own profile) as a filled `Button`, the primary action, then "Call" (where the user can be called,
- * through [LocalCallStarter]; a menu of a voice and a video call where the user can get a video call,
- * [CallButtonMenu]), the mute toggle and "Secret chat" as `FilledTonalButton`s, each its icon over its label, sharing
- * the row's width, all with `ButtonDefaults.shapes()`' press morph. The mute toggle gives a `ToggleOn` or `ToggleOff`
- * haptic. Pills that do not apply are left out; the row is empty for a deleted account.
+ * The profile's actions as pills under the header (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"; owner decision
+ * 2026-11-15, board 24): "Message" (Saved Messages on one's own profile) as a filled `Button`, the primary action, then
+ * the mute toggle and "Call" (where the user can be called, through [LocalCallStarter]; a menu of a voice and a video
+ * call where the user can get a video call, [CallButtonMenu]) as `FilledTonalButton`s, each its icon over its label,
+ * sharing the row's width, all with `ButtonDefaults.shapes()`' press morph. "Secret chat" is in the top bar's ⋮ menu.
+ * The mute toggle gives a `ToggleOn` or `ToggleOff` haptic. Pills that do not apply are left out; a deleted account's
+ * one pill is "Delete chat", which asks first.
  */
 @Composable
 internal fun ProfileActionsRow(
@@ -68,7 +69,8 @@ internal fun ProfileActionsRow(
     val isMuted = actions.isMuted
     val calls = LocalCallStarter.current
     val callUserId = actions.callUserId.takeIf { calls != null }
-    val hasChatPills = actions.canMessage || isMuted != null || actions.canStartSecretChat
+    val hasChatPills =
+        actions.canMessage || isMuted != null || actions.canDeleteChat || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -86,17 +88,6 @@ internal fun ProfileActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
-        if (calls != null && callUserId != null) {
-            // A voice call at once, or the voice and video menu where the user can get a video call.
-            CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
-                ActionPill(
-                    icon = UiR.drawable.ic_call_filled,
-                    label = stringResource(R.string.profile_action_call),
-                    onClick = onClick,
-                    modifier = menu.fillMaxWidth(),
-                )
-            }
-        }
         if (isMuted != null) {
             ActionPill(
                 icon = if (isMuted) UiR.drawable.ic_notifications else UiR.drawable.ic_notifications_off,
@@ -110,14 +101,17 @@ internal fun ProfileActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
-        if (actions.canStartSecretChat) {
-            ActionPill(
-                icon = UiR.drawable.ic_lock,
-                label = stringResource(R.string.profile_action_secret_chat),
-                onClick = { onEvent(ProfileEvent.StartSecretChat) },
-                enabled = !actions.isStartingSecretChat,
-                modifier = Modifier.weight(1f),
-            )
+        DeleteOrSharePill(actions, onEvent)
+        if (calls != null && callUserId != null) {
+            // A voice call at once, or the voice and video menu where the user can get a video call.
+            CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
+                ActionPill(
+                    icon = UiR.drawable.ic_call_filled,
+                    label = stringResource(R.string.profile_action_call),
+                    onClick = onClick,
+                    modifier = menu.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -193,6 +187,7 @@ internal fun ProfileInfoGroup(
         rows += ProfileRow("username:$username") { UsernameRow(username, it, onEvent) }
     }
     info.phoneNumber?.let { phone -> rows += ProfileRow("phone") { PhoneRow(phone, it, onEvent) } }
+    info.phoneHiddenBy?.let { name -> rows += ProfileRow("phone") { HiddenPhoneRow(name, it) } }
     info.birthday?.let { birthday ->
         rows +=
             ProfileRow("birthday") { shapes ->

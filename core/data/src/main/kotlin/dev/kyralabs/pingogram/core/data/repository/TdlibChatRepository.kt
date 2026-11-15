@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
+import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
@@ -141,6 +142,9 @@ class TdlibChatRepository
 
         override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
             store.state.map { it.unreadChatCounts[list] ?: UnreadChatCount.None }.distinctUntilChanged()
+
+        override fun unreadMessageCount(list: ChatListType): Flow<UnreadMessageCount> =
+            store.state.map { it.unreadMessageCounts[list] ?: UnreadMessageCount.None }.distinctUntilChanged()
 
         /** `toggleChatIsPinned`. */
         override suspend fun setPinned(
@@ -258,6 +262,7 @@ private data class ChatCache(
      * new folder before `updateChatFolders` announces it.
      */
     val unreadChatCounts: PersistentMap<ChatListType, UnreadChatCount> = persistentMapOf(),
+    val unreadMessageCounts: PersistentMap<ChatListType, UnreadMessageCount> = persistentMapOf(),
 ) {
     fun reduce(update: TdApi.Update): ChatCache =
         when (update) {
@@ -266,6 +271,7 @@ private data class ChatCache(
             is TdApi.UpdateScopeNotificationSettings -> withScopeMute(update.scope, update.notificationSettings.isMuted)
             is TdApi.UpdateChatFolders -> withFolders(update)
             is TdApi.UpdateUnreadChatCount -> withUnreadChatCount(update)
+            is TdApi.UpdateUnreadMessageCount -> withUnreadMessageCount(update)
             else -> chatChange(update)?.let(::withChange) ?: this
         }
 
@@ -307,6 +313,12 @@ private data class ChatCache(
     private fun withUnreadChatCount(update: TdApi.UpdateUnreadChatCount): ChatCache {
         val list = update.chatList.toChatListType() ?: return this
         return copy(unreadChatCounts = unreadChatCounts.putting(list, update.toUnreadChatCount()))
+    }
+
+    private fun withUnreadMessageCount(update: TdApi.UpdateUnreadMessageCount): ChatCache {
+        val list = update.chatList.toChatListType() ?: return this
+        val count = UnreadMessageCount(update.unreadCount, update.unreadUnmutedCount)
+        return copy(unreadMessageCounts = unreadMessageCounts.putting(list, count))
     }
 }
 

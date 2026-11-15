@@ -649,13 +649,36 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
   names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
   the folder editor).
+- **Catch-up** (the owner's board 32, `docs/DESIGN_SYSTEM.md` §6 "Catch-up"): `feature:chats`' `catchup/`.
+  `CatchUpChats` reads the main list's unread chats in Catch-up's order (mentions first, then the most recent; muted
+  chats and channels only with `ChatListSettings.catchUpIncludesMuted`; never locked chats), which
+  `ChatListViewModel.summary` counts for the header's chip (`ChatListSummary.offersCatchUp`, from five) and
+  `CatchUpViewModel` takes once as its round (`CatchUpRound`, in the saved state). Its cards (`CatchUpSources`,
+  `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
+  and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
+  moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
 - **Bookmarks** (the owner's board 34, kept on this phone only): `core:domain`'s `BookmarkRepository`
   (`FileBookmarkRepository`, `core:data`, account-scoped: `bookmarks.txt` in the account's TDLib directory, which
   `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout; the demo's in memory) keeps the
   bookmarks (`Bookmark`: the message, when, its tags, a note and what the message said) and their tags (`BookmarkTag`,
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
-  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`. The page is
+  `BookmarksRoute` of `core:navigation` (`bookmarksScreen`, registered in `:app`, `BookmarksViewModel`: the tag filter in
+  its saved state, the chats from `ChatRepository`, asked for once where TDLib has not announced them), opened through
+  `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
+  (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
+  once a message is bookmarked). Its "Edit tags" pushes `BookmarkTagsRoute` (`BookmarkTagsViewModel`: the draft and the
+  question before deleting in its saved state). A card's long press opens that bookmark's sheet over the page
+  (`BookmarkSheetViewModel`, keyed by its chat as the conversation's; `BookmarksViewModel.editing`, the chat in its
+  saved state), and its search filters on the device (`BookmarkSearch`).
+- **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
+  (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
+  `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
+  accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
+  phone. `feature:settings`' `KeywordAlertsRoute` (`KeywordAlertsViewModel`: the words, the empty page's suggestions
+  from `ProfileRepository.editableProfile`, read on the phone, and the folders being chosen in saved state) is a page
+  of Settings home's "On this phone" and of Settings → Notifications.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -762,6 +785,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
   (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
   `TextStyleViewModel`), which adds the style only on a tap.
+- **Message reminders** (`docs/DESIGN_SYSTEM.md` §6 "Message reminders", the owner's board 29): kept on the device only,
+  never sent to Telegram. `core:domain`'s `ReminderRepository` (`FileReminderRepository`, `core:data`, account-scoped,
+  `reminders.txt` in the account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only
+  to delete them at logout; the demo's in memory) keeps a `MessageReminder` per message: the chat, the message, the
+  time, the user's note and whether it is done, never the message's text, which stays in TDLib's database.
+  `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the process) follows every
+  account's reminders and keeps one-time WorkManager work per reminder not done whose time is ahead
+  (`WorkManagerReminderWork`: named after the account, the message and the time, so a moved reminder gets new work and
+  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6), so Doze may hold a ring
+  back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
+  `ReminderNotificationBuilder`'s notification in the app's "Reminders" channel; its "Snooze 1 h" goes to
+  `ReminderActionReceiver`, which moves the reminder an hour on.
 - **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on
   the device only. `core:domain`'s `VoiceTranscriber` (`AndroidVoiceTranscriber`, `core:data`'s `transcription/`, a
   singleton of `DeviceModule`) is Android's own on-device speech recognizer (`SpeechRecognizer.createOnDeviceSpeechRecognizer`,
@@ -1493,6 +1528,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   picture-in-picture's return. A message link's `?t=` (`messageLinkInfo.media_timestamp`, of a video only) comes as
   `LinkTarget.Chat.videoSeconds`; `:app`'s `openLinkedChat` opens the chat at the message, then the viewer above it with
   `MediaViewerRoute.startSeconds`, which wins over the sender's time.
+- The viewer's one-time hint (board 25): the first time the user hides its controls, "Tap to show controls" shows in its
+  snackbar host, once on the phone: `feature:media`'s `ControlsHintViewModel` beside `MediaViewerViewModel` (the route
+  hands it `MediaViewerEvent.ControlsHidden`), over `core:domain`'s `ViewerHintsRepository`
+  (`DataStoreViewerHintsRepository`, the settings file).
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player
@@ -1781,6 +1820,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
+- **Drag and drop** (the owner's board 35a): `feature:chat`'s `drop/` makes the conversation's message area
+  (`MessagesArea`) a Compose drag and drop target (`chatDropTarget`) where the chat takes attachments. It shows
+  `ChatDropZone` while a drag of files is under way (`ChatDropState`, from the drag's MIME types), reads the dropped
+  `content://` URIs with the drop's permission (`Activity.requestDragAndDropPermissions`, which lasts as long as the
+  activity) and hands them to `ChatViewModel` as a pick (`ChatEvent.AttachMedia` / `AttachFiles`), so the attach
+  preview prepares and cleans them up as picked files. Nothing is sent before Send there. Out (board 35c): the bubble's
+  long-press node (`LongPress.kt`) hands a move past the touch slop after the long press to `MessageDragOut`
+  (`BubbleResources.dragOut`), which reads the bubble's downloaded files from the state at that moment
+  (`ChatUiState.dragOutFiles`, none where `MessageShortcuts.canForward` is false) and starts `View.startDragAndDrop`
+  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ` (`core:ui`'s `startFileDrag`, its shadow drawn by
+  `FileDragShadow`). The media viewer does the same for its shown item (`feature:media`'s `MediaDragOut`, a long press
+  then a move detected by `detectDragOutAfterLongPress` in the page's gestures), where `MediaActions.canSave` says the
+  content may leave the chat; `MediaViewerRoute` gives the screen none in a secret chat.
 
 ## Calls
 
@@ -1942,6 +1994,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 ## Home screen widget
 
 `docs/adr/0017-home-screen-widget.md`. Jetpack Glance, in `:app`'s `widget/` package; nothing polls.
+
+- **Unread counter** (board 33): `UnreadCounterWidget` (its receiver `UnreadCounterWidgetReceiver`) draws
+  `UnreadCounterContent` from the same `RecentChatsWidgetUpdater` content, which also carries the main list's unread
+  messages (`ChatRepository.unreadMessageCount`, TDLib's `updateUnreadMessageCount`) and the loaded chats' mentions;
+  `GlanceRecentChatsWidgets` counts, moves and redraws both widgets' ids.
 
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
   widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.

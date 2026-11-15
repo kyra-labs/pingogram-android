@@ -1,0 +1,359 @@
+package dev.kyralabs.pingogram.feature.settings.ui.keywords
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.material3.toShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
+import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
+import dev.kyralabs.pingogram.core.domain.model.KeywordScope
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
+import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.PickerDone
+import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
+import dev.kyralabs.pingogram.feature.settings.ui.RadioItem
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
+import dev.kyralabs.pingogram.feature.settings.ui.pickerRowLook
+import dev.kyralabs.pingogram.core.ui.R as UiR
+
+// The parts of the keyword alerts page (KeywordAlertsScreen), board 30.
+
+/** A word: its text (user content, one line) and a close symbol; a tap removes it ("launch, Remove"). */
+@Composable
+internal fun KeywordChip(
+    word: String,
+    onRemove: () -> Unit,
+) {
+    val label = stringResource(R.string.settings_keyword_alerts_remove, word.bidiIsolated())
+    val maxWidth = MaterialTheme.sizes.mediaMinSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    InputChip(
+        selected = false,
+        onClick = onRemove,
+        label = {
+            Text(
+                word,
+                modifier = Modifier.widthIn(max = maxWidth),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = LocalTextStyle.current.userContent,
+            )
+        },
+        shapes = InputChipDefaults.shapes(),
+        modifier =
+            Modifier.semantics {
+                contentDescription = label
+                onClick(label = label) {
+                    onRemove()
+                    true
+                }
+            },
+        trailingIcon = {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_close),
+                contentDescription = null,
+                modifier = Modifier.size(InputChipDefaults.IconSize),
+            )
+        },
+    )
+}
+
+/**
+ * No words yet: the bell on a `Cookie12Sided` badge, "No alert words yet", that matching runs on this phone, and
+ * one-tap suggestions (the account's first name and username, then two common words) that are not kept yet.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun KeywordsEmpty(
+    state: KeywordAlertsUiState,
+    onEvent: (KeywordAlertsEvent) -> Unit,
+) {
+    val kept =
+        state.settings
+            ?.words
+            .orEmpty()
+            .map(KeywordMatcher::keyOf)
+            .toSet()
+    val common =
+        listOf(
+            stringResource(R.string.settings_keyword_alerts_suggest_urgent),
+            stringResource(R.string.settings_keyword_alerts_suggest_meeting),
+        ).filter { KeywordMatcher.keyOf(it) !in kept }
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = MaterialTheme.spacing.large),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+    ) {
+        EmptyHeading()
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small, Alignment.CenterHorizontally),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.settings_keyword_alerts_try),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+            )
+            state.suggestions.forEach { suggestion ->
+                val label =
+                    when (suggestion.kind) {
+                        KeywordSuggestion.Kind.Name -> R.string.settings_keyword_alerts_add_name
+                        KeywordSuggestion.Kind.Username -> R.string.settings_keyword_alerts_add_username
+                    }
+                SuggestionChip(suggestion.word, stringResource(label)) { onEvent(KeywordAlertsEvent.Add(it)) }
+            }
+            common.forEach { word ->
+                SuggestionChip(word, stringResource(R.string.settings_keyword_alerts_add_named, word.bidiIsolated())) {
+                    onEvent(KeywordAlertsEvent.Add(it))
+                }
+            }
+        }
+    }
+}
+
+/** The bell on a `Cookie12Sided` badge over "No alert words yet" (a heading) and what alerts do. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun EmptyHeading() {
+    Box(
+        Modifier
+            .size(MaterialTheme.sizes.headlineBadge)
+            .clip(MaterialShapes.Cookie12Sided.toShape())
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(UiR.drawable.ic_notifications),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+    Text(
+        stringResource(R.string.settings_keyword_alerts_empty_title),
+        modifier = Modifier.semantics { heading() },
+        style = MaterialTheme.typography.titleMediumEmphasized,
+        textAlign = TextAlign.Center,
+    )
+    Text(
+        stringResource(R.string.settings_keyword_alerts_empty_body),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodyMedium,
+        textAlign = TextAlign.Center,
+    )
+}
+
+/** A suggestion: [word] after an add symbol, [label] for screen readers ("Add your name"). */
+@Composable
+private fun SuggestionChip(
+    word: String,
+    label: String,
+    onAdd: (String) -> Unit,
+) {
+    AssistChip(
+        onClick = { onAdd(word) },
+        label = { Text(word, style = LocalTextStyle.current.userContent, maxLines = 1) },
+        modifier = Modifier.semantics { contentDescription = label },
+        leadingIcon = {
+            Icon(
+                painterResource(UiR.drawable.ic_add),
+                contentDescription = null,
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+            )
+        },
+    )
+}
+
+/**
+ * "Where to look": All chats, Chosen folders (the folders' names, and "Edit" while chosen; disabled without folders)
+ * and Muted chats only, one radio group.
+ */
+@Composable
+internal fun KeywordWhereGroup(
+    state: KeywordAlertsUiState,
+    settings: KeywordAlertSettings,
+    onEvent: (KeywordAlertsEvent) -> Unit,
+) {
+    val where = settings.where
+    val chosen =
+        (where as? KeywordScope.Folders)?.folderIds?.let { ids -> state.folders.filter { it.id in ids } }.orEmpty()
+    SettingsGroup(
+        title = stringResource(R.string.settings_keyword_alerts_where),
+        rowsModifier = Modifier.selectableGroup(),
+    ) {
+        item { shapes ->
+            RadioItem(
+                label = stringResource(R.string.settings_keyword_alerts_where_all),
+                selected = where == KeywordScope.AllChats,
+                enabled = true,
+                shapes = shapes,
+                onClick = { onEvent(KeywordAlertsEvent.Where(KeywordScope.AllChats)) },
+            )
+        }
+        item { shapes ->
+            RadioItem(
+                label = stringResource(R.string.settings_keyword_alerts_where_folders),
+                selected = where is KeywordScope.Folders,
+                enabled = state.folders.isNotEmpty(),
+                shapes = shapes,
+                onClick = { onEvent(KeywordAlertsEvent.ChooseFolders) },
+                summary =
+                    when {
+                        state.folders.isEmpty() -> stringResource(R.string.settings_keyword_alerts_no_folders)
+                        chosen.isNotEmpty() -> chosen.joinToString(", ") { it.title }
+                        else -> stringResource(R.string.settings_keyword_alerts_where_folders_summary)
+                    },
+                trailingContent =
+                    if (where is KeywordScope.Folders) {
+                        {
+                            TextButton(onClick = { onEvent(KeywordAlertsEvent.ChooseFolders) }) {
+                                Text(stringResource(R.string.settings_keyword_alerts_edit_folders))
+                            }
+                        }
+                    } else {
+                        null
+                    },
+            )
+        }
+        item { shapes ->
+            RadioItem(
+                label = stringResource(R.string.settings_keyword_alerts_where_muted),
+                selected = where == KeywordScope.MutedChats,
+                enabled = true,
+                shapes = shapes,
+                onClick = { onEvent(KeywordAlertsEvent.Where(KeywordScope.MutedChats)) },
+                summary = stringResource(R.string.settings_keyword_alerts_where_muted_summary),
+            )
+        }
+    }
+}
+
+/** "Alert": whether muted chats alert too, and the chat list's tab. */
+@Composable
+internal fun KeywordAlertGroup(
+    settings: KeywordAlertSettings,
+    onEvent: (KeywordAlertsEvent) -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_keyword_alerts_alert)) {
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_keyword_alerts_when_muted),
+                summary = stringResource(R.string.settings_keyword_alerts_when_muted_summary),
+                checked = settings.alertWhenMuted,
+                shapes = shapes,
+                onCheckedChange = { onEvent(KeywordAlertsEvent.AlertWhenMuted(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_keyword_alerts_in_chat_list),
+                summary = stringResource(R.string.settings_keyword_alerts_in_chat_list_summary),
+                checked = settings.showInChatList,
+                shapes = shapes,
+                onCheckedChange = { onEvent(KeywordAlertsEvent.ShowInChatList(it)) },
+            )
+        }
+    }
+}
+
+/** The folders to look in: a sheet of checkbox rows and "Done", which keeps them; dismissing changes nothing. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun KeywordFoldersSheet(
+    state: KeywordAlertsUiState,
+    chosen: Set<Int>,
+    onEvent: (KeywordAlertsEvent) -> Unit,
+) {
+    PingogramBottomSheet(
+        onDismissRequest = { onEvent(KeywordAlertsEvent.CloseFolders) },
+        sheetState =
+            rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
+    ) {
+        KeywordFoldersContent(state, chosen, onEvent)
+    }
+}
+
+@Composable
+internal fun KeywordFoldersContent(
+    state: KeywordAlertsUiState,
+    chosen: Set<Int>,
+    onEvent: (KeywordAlertsEvent) -> Unit,
+) {
+    LazyColumn(Modifier.fillMaxWidth()) {
+        item(key = TITLE) { PickerTitle(stringResource(R.string.settings_keyword_alerts_folders_title)) }
+        items(state.folders, key = { it.id }) { folder ->
+            val checked = folder.id in chosen
+            val (shape, color) = pickerRowLook(checked)
+            ListItem(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MaterialTheme.spacing.small)
+                        .clip(shape)
+                        .background(color)
+                        .toggleable(
+                            checked,
+                            role = Role.Checkbox,
+                        ) { onEvent(KeywordAlertsEvent.ToggleFolder(folder.id)) },
+                leadingContent = { Checkbox(checked = checked, onCheckedChange = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            ) {
+                Text(folder.title, style = LocalTextStyle.current.userContent)
+            }
+        }
+        item(key = DONE) {
+            PickerDone(stringResource(R.string.settings_chat_folder_picker_done)) {
+                onEvent(KeywordAlertsEvent.FoldersChosen)
+            }
+        }
+    }
+}
+
+private const val TITLE = "title"
+private const val DONE = "done"

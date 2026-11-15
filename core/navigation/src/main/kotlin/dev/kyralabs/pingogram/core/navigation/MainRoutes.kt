@@ -248,6 +248,10 @@ data object PasskeysRoute
 @Serializable
 data object LockedChatsRoute
 
+/** The message reminders kept on this phone (the owner's board 29), from Settings home's "On this phone" group. */
+@Serializable
+data object RemindersRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute
@@ -361,6 +365,13 @@ data object ArchiveRoute
  */
 @Serializable
 data object ArchiveSettingsRoute
+
+/**
+ * Catch-up (`docs/DESIGN_SYSTEM.md` §6 "Catch-up", the owner's board 32): the unread chats one card at a time,
+ * `:feature:chats`, pushed above the Chats tab from the Catch-up chip of its header.
+ */
+@Serializable
+data object CatchUpRoute
 
 /**
  * Starting a chat (`REQUIREMENTS.md` FR-L7): new group, new channel and new contact, then the contacts,
@@ -746,3 +757,18 @@ data class FocusProfileRoute(
     val profileId: Long = 0,
     val template: String? = null,
 )
+
+/** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
+@Serializable
+data object KeywordAlertsRoute
+
+/**
+ * The messages bookmarked on this phone (the owner's board 34), `:feature:chat`: pushed above Settings › On this phone
+ * or Saved Messages, with the shared axis on X, the newest first, filtered by tag.
+ */
+@Serializable
+data object BookmarksRoute
+
+/** The bookmarks' tag editor (the owner's board 34c), pushed above the Bookmarks page. */
+@Serializable
+data object BookmarkTagsRoute

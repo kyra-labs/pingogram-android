@@ -209,6 +209,20 @@ class RecentChatsWidgetUpdaterTest {
         }
 
     @Test
+    fun `the unread counter gets TDLib's unread messages and the chats' mentions`() =
+        runTest {
+            val updater = updater(FakeWidgets(0))
+            chats()
+            client.emit(TdApi.UpdateChatUnreadMentionCount(GROUP, 2))
+            client.emit(TdApi.UpdateUnreadMessageCount(TdApi.ChatListMain(), 50, 47))
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(47 to 2, content.unreadMessages to content.mentions)
+        }
+
+    @Test
     fun `loads the first chats itself when TDLib has fewer`() =
         runTest {
             updater(FakeWidgets(0))
