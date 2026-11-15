@@ -1520,6 +1520,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   picture-in-picture's return. A message link's `?t=` (`messageLinkInfo.media_timestamp`, of a video only) comes as
   `LinkTarget.Chat.videoSeconds`; `:app`'s `openLinkedChat` opens the chat at the message, then the viewer above it with
   `MediaViewerRoute.startSeconds`, which wins over the sender's time.
+- The viewer's one-time hint (board 25): the first time the user hides its controls, "Tap to show controls" shows in its
+  snackbar host, once on the phone: `feature:media`'s `ControlsHintViewModel` beside `MediaViewerViewModel` (the route
+  hands it `MediaViewerEvent.ControlsHidden`), over `core:domain`'s `ViewerHintsRepository`
+  (`DataStoreViewerHintsRepository`, the settings file).
 - Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
   not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
   position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player

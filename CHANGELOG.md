@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
   muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.

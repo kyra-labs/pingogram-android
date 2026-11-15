@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptReposito
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreViewerHintsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -38,6 +39,7 @@ import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepositor
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.ViewerHintsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -57,6 +59,9 @@ interface DataStoreModule {
 
     @Binds
     fun notificationPromptRepository(repository: DataStoreNotificationPromptRepository): NotificationPromptRepository
+
+    @Binds
+    fun viewerHintsRepository(repository: DataStoreViewerHintsRepository): ViewerHintsRepository
 
     @Binds
     fun keepConnectedRepository(repository: DataStoreKeepConnectedRepository): KeepConnectedRepository
