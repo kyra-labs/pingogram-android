@@ -129,7 +129,11 @@ class FocusEditViewModelTest {
             viewModel.onEvent(FocusEditEvent.Save)
             runCurrent()
 
-            assertNull(repository.profiles.value.single().schedule)
+            assertNull(
+                repository.profiles.value
+                    .single()
+                    .schedule,
+            )
         }
 
     @Test

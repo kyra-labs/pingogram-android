@@ -109,17 +109,49 @@ class FocusEditViewModel internal constructor(
                 edit { it.copy(name = event.name.take(NAME_MAX_LENGTH)) }
             }
 
-            is FocusEditEvent.Icon -> edit { it.copy(icon = event.icon) }
-            is FocusEditEvent.Folder -> edit { it.copy(folderIds = it.folderIds.toggled(event.id, event.allowed)) }
-            is FocusEditEvent.Scheduled -> edit { it.copy(scheduled = event.scheduled) }
-            is FocusEditEvent.Day -> edit { it.copy(days = it.days.toggled(event.day, event.on)) }
-            is FocusEditEvent.Calls -> edit { it.copy(allowsCalls = event.allowed) }
-            is FocusEditEvent.Pick -> mutableUiState.update { it.copy(picking = event.end) }
-            is FocusEditEvent.Time -> setTime(event)
-            FocusEditEvent.Save -> save()
-            FocusEditEvent.Delete -> setAskDelete(true)
-            FocusEditEvent.DeleteDismissed -> setAskDelete(false)
-            FocusEditEvent.DeleteConfirmed -> delete()
+            is FocusEditEvent.Icon -> {
+                edit { it.copy(icon = event.icon) }
+            }
+
+            is FocusEditEvent.Folder -> {
+                edit { it.copy(folderIds = it.folderIds.toggled(event.id, event.allowed)) }
+            }
+
+            is FocusEditEvent.Scheduled -> {
+                edit { it.copy(scheduled = event.scheduled) }
+            }
+
+            is FocusEditEvent.Day -> {
+                edit { it.copy(days = it.days.toggled(event.day, event.on)) }
+            }
+
+            is FocusEditEvent.Calls -> {
+                edit { it.copy(allowsCalls = event.allowed) }
+            }
+
+            is FocusEditEvent.Pick -> {
+                mutableUiState.update { it.copy(picking = event.end) }
+            }
+
+            is FocusEditEvent.Time -> {
+                setTime(event)
+            }
+
+            FocusEditEvent.Save -> {
+                save()
+            }
+
+            FocusEditEvent.Delete -> {
+                setAskDelete(true)
+            }
+
+            FocusEditEvent.DeleteDismissed -> {
+                setAskDelete(false)
+            }
+
+            FocusEditEvent.DeleteConfirmed -> {
+                delete()
+            }
         }
     }
 
@@ -135,16 +167,13 @@ class FocusEditViewModel internal constructor(
 
     private fun save() {
         val state = uiState.value
-        val draft = state.draft ?: return
-        if (state.isBusy) return
+        val draft = state.draft?.takeUnless { state.isBusy } ?: return
         val name = draft.name.trim()
         if (name.isEmpty() || (draft.scheduled && draft.days.isEmpty())) {
             mutableUiState.update { it.copy(nameMissing = name.isEmpty()) }
             effectChannel.trySend(FocusEditEffect.Rejected)
-            return
-        }
-        busy {
-            repository.saveProfile(draft.copy(name = name).toProfile(profileId))
+        } else {
+            busy { repository.saveProfile(draft.copy(name = name).toProfile(profileId)) }
         }
     }
 

@@ -91,7 +91,11 @@ class FocusViewModelTest {
             assertEquals(2L, manual.profileId)
             assertEquals(FocusUntil.ScheduleChange, manual.until)
             assertEquals(now.epochSecond, manual.setAt)
-            assertEquals(listOf(false, true), viewModel.uiState.value.profiles!!.map { it.isOn })
+            assertEquals(
+                listOf(false, true),
+                viewModel.uiState.value.profiles!!
+                    .map { it.isOn },
+            )
         }
 
     @Test
@@ -103,7 +107,11 @@ class FocusViewModelTest {
             runCurrent()
 
             assertNull(repository.manual.value!!.profileId)
-            assertEquals(listOf(false, false), viewModel.uiState.value.profiles!!.map { it.isOn })
+            assertEquals(
+                listOf(false, false),
+                viewModel.uiState.value.profiles!!
+                    .map { it.isOn },
+            )
         }
 
     @Test

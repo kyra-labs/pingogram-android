@@ -14,6 +14,12 @@ import java.time.DayOfWeek
 // opens filled in with them; nothing is saved before "Save".
 
 private const val HOUR = 60
+private const val WORK_START = 9 * HOUR
+private const val WORK_END = 18 * HOUR
+private const val SLEEP_START = 22 * HOUR + 30
+private const val SLEEP_END = 7 * HOUR
+private const val WEEKEND_START = 10 * HOUR
+private const val WEEKEND_END = 20 * HOUR
 
 @StringRes
 internal fun FocusTemplate.title(): Int =
@@ -45,7 +51,7 @@ internal fun FocusTemplate.icon(): FocusIcon? =
 /** The profile this template fills the editor with, named [name] (its title in the app's language). */
 internal fun FocusTemplate.profile(name: String): FocusProfile =
     when (this) {
-        FocusTemplate.WorkHours ->
+        FocusTemplate.WorkHours -> {
             profile(
                 name,
                 FocusIcon.Work,
@@ -57,29 +63,34 @@ internal fun FocusTemplate.profile(name: String): FocusProfile =
                         DayOfWeek.THURSDAY,
                         DayOfWeek.FRIDAY,
                     ),
-                    startMinute = 9 * HOUR,
-                    endMinute = 18 * HOUR,
+                    startMinute = WORK_START,
+                    endMinute = WORK_END,
                 ),
                 calls = true,
             )
+        }
 
-        FocusTemplate.Sleep ->
+        FocusTemplate.Sleep -> {
             profile(
                 name,
                 FocusIcon.Sleep,
-                FocusSchedule(DayOfWeek.entries.toPersistentSet(), 22 * HOUR + 30, 7 * HOUR),
+                FocusSchedule(DayOfWeek.entries.toPersistentSet(), SLEEP_START, SLEEP_END),
                 calls = true,
             )
+        }
 
-        FocusTemplate.Weekend ->
+        FocusTemplate.Weekend -> {
             profile(
                 name,
                 FocusIcon.Weekend,
-                FocusSchedule(persistentSetOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), 10 * HOUR, 20 * HOUR),
+                FocusSchedule(persistentSetOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), WEEKEND_START, WEEKEND_END),
                 calls = false,
             )
+        }
 
-        FocusTemplate.Blank -> profile("", FocusIcon.Work, schedule = null, calls = true)
+        FocusTemplate.Blank -> {
+            profile("", FocusIcon.Work, schedule = null, calls = true)
+        }
     }
 
 private fun profile(

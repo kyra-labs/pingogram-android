@@ -210,24 +210,7 @@ private fun FocusEmpty(onOpenProfile: (id: Long, template: FocusTemplate?) -> Un
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(spacing.small),
                 ) {
-                    Row(
-                        modifier = Modifier.clearAndSetSemantics {},
-                        horizontalArrangement = Arrangement.spacedBy(-spacing.medium),
-                    ) {
-                        FocusBadge(FocusIcon.Work, MaterialTheme.sizes.avatarMedium, colors.primary, colors.onPrimary)
-                        FocusBadge(
-                            FocusIcon.Sleep,
-                            MaterialTheme.sizes.avatarMedium,
-                            colors.tertiary,
-                            colors.onTertiary,
-                        )
-                        FocusBadge(
-                            FocusIcon.Weekend,
-                            MaterialTheme.sizes.avatarMedium,
-                            colors.secondary,
-                            colors.onSecondary,
-                        )
-                    }
+                    EmptyShapes()
                     Text(
                         stringResource(R.string.settings_focus_empty_title),
                         style = MaterialTheme.typography.headlineSmallEmphasized,
@@ -244,6 +227,12 @@ private fun FocusEmpty(onOpenProfile: (id: Long, template: FocusTemplate?) -> Un
             }
         }
     }
+    FocusTemplatesGroup(onOpenProfile)
+}
+
+/** "Start with": the templates, each opening the editor filled in. */
+@Composable
+private fun FocusTemplatesGroup(onOpenProfile: (id: Long, template: FocusTemplate?) -> Unit) {
     SettingsGroup(title = stringResource(R.string.settings_focus_templates)) {
         FocusTemplate.entries.forEach { template ->
             item(key = template) { shapes ->
@@ -277,3 +266,18 @@ private fun TelegramStatusGroup() {
 }
 
 private const val NEW_PROFILE = "new"
+
+/** Three profile shapes overlapping, decorative. */
+@Composable
+private fun EmptyShapes() {
+    val colors = MaterialTheme.colorScheme
+    val size = MaterialTheme.sizes.avatarMedium
+    Row(
+        modifier = Modifier.clearAndSetSemantics {},
+        horizontalArrangement = Arrangement.spacedBy(-MaterialTheme.spacing.medium),
+    ) {
+        FocusBadge(FocusIcon.Work, size, colors.primary, colors.onPrimary)
+        FocusBadge(FocusIcon.Sleep, size, colors.tertiary, colors.onTertiary)
+        FocusBadge(FocusIcon.Weekend, size, colors.secondary, colors.onSecondary)
+    }
+}

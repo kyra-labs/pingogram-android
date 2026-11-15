@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -194,10 +195,31 @@ class SettingsHomeTest {
 
     @Test
     fun `on this phone stays hidden while no tool has a row there`() {
-        show()
+        val groups = HomeGroups.map { if (it === OnThisPhoneGroup) HomeGroup(it.title, emptyList(), it.footer) else it }
+        composeRule.setContent {
+            PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
+                Column {
+                    SettingsHomeGroups(
+                        summaries = SettingsPreviewData.homeSummaries,
+                        onOpen = {},
+                        selection = null,
+                        groups = groups,
+                    )
+                }
+            }
+        }
 
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone))).assertCountEquals(0)
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone_footer))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `focus is on this phone`() {
+        show()
+
+        composeRule.onNodeWithText(string(R.string.settings_focus)).performClick()
+
+        assertEquals(listOf(SettingsPage.Focus), opened)
     }
 
     @Test

@@ -11,7 +11,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
-  notifications still show, silently. The pages to set them up follow.
+  notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
+  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
 
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.

@@ -98,7 +98,10 @@ internal fun FocusEditScreen(
                 enabled = state.draft != null && !state.isBusy,
                 shapes = ButtonDefaults.shapes(),
             ) {
-                Text(stringResource(R.string.settings_focus_save), style = MaterialTheme.typography.labelLargeEmphasized)
+                Text(
+                    stringResource(R.string.settings_focus_save),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
             }
         },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
@@ -110,36 +113,47 @@ internal fun FocusEditScreen(
         FocusFoldersGroup(state, draft, onEvent)
         FocusScheduleGroup(draft, enabled, onEvent)
         FocusCallsGroup(draft, onEvent)
-        if (!state.isNew) {
-            SettingsGroup {
-                item { shapes ->
-                    SettingsRow(
-                        title = stringResource(R.string.settings_focus_delete),
-                        shapes = shapes,
-                        icon = UiR.drawable.ic_delete,
-                        iconTone = SettingsIconTone.Error,
-                        colors = destructiveItemColors(),
-                        onClick = { onEvent(FocusEditEvent.Delete) },
-                        enabled = enabled,
-                    )
-                }
-            }
-        }
+        if (!state.isNew) FocusDeleteRow(enabled, onEvent)
         state.picking?.let { end ->
             FocusTimeDialog(end, if (end == FocusTimeEnd.Start) draft.startMinute else draft.endMinute, onEvent)
         }
     }
-    if (state.askDelete) {
-        DestructiveDialog(
-            icon = UiR.drawable.ic_delete,
-            texts =
-                DestructiveDialogTexts(
-                    title = stringResource(R.string.settings_focus_delete_title),
-                    text = stringResource(R.string.settings_focus_delete_text),
-                    confirm = stringResource(R.string.settings_focus_delete_confirm),
-                ),
-            onConfirm = { onEvent(FocusEditEvent.DeleteConfirmed) },
-            onDismiss = { onEvent(FocusEditEvent.DeleteDismissed) },
-        )
+    if (state.askDelete) FocusDeleteDialog(onEvent)
+}
+
+/** "Delete profile", a destructive row. */
+@Composable
+private fun FocusDeleteRow(
+    enabled: Boolean,
+    onEvent: (FocusEditEvent) -> Unit,
+) {
+    SettingsGroup {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_focus_delete),
+                shapes = shapes,
+                icon = UiR.drawable.ic_delete,
+                iconTone = SettingsIconTone.Error,
+                colors = destructiveItemColors(),
+                onClick = { onEvent(FocusEditEvent.Delete) },
+                enabled = enabled,
+            )
+        }
     }
+}
+
+/** The question before deleting the profile. */
+@Composable
+private fun FocusDeleteDialog(onEvent: (FocusEditEvent) -> Unit) {
+    DestructiveDialog(
+        icon = UiR.drawable.ic_delete,
+        texts =
+            DestructiveDialogTexts(
+                title = stringResource(R.string.settings_focus_delete_title),
+                text = stringResource(R.string.settings_focus_delete_text),
+                confirm = stringResource(R.string.settings_focus_delete_confirm),
+            ),
+        onConfirm = { onEvent(FocusEditEvent.DeleteConfirmed) },
+        onDismiss = { onEvent(FocusEditEvent.DeleteDismissed) },
+    )
 }

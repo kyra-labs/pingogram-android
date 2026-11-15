@@ -17,6 +17,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -80,7 +81,11 @@ internal fun FocusNameField(
         isError = state.nameMissing,
         singleLine = true,
         textStyle = LocalTextStyle.current.userContent,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        keyboardOptions =
+            KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done,
+            ),
         shape = TextFieldDefaults.roundedShape,
         colors = TextFieldDefaults.tonalColors(),
     )
@@ -193,7 +198,6 @@ internal fun FocusFoldersGroup(
  * language's week (checkboxes with the days' full names for screen readers), "From" and "To", each opening the time
  * picker; an end at or before the start reads "next day".
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun FocusScheduleGroup(
     draft: FocusDraft,
@@ -201,7 +205,6 @@ internal fun FocusScheduleGroup(
     onEvent: (FocusEditEvent) -> Unit,
 ) {
     val locale = appLocale()
-    val haptics = LocalHapticFeedback.current
     SettingsGroup(title = stringResource(R.string.settings_focus_turns_on)) {
         item(key = MODE) { shapes ->
             SettingsSegment(shapes) {
@@ -209,7 +212,9 @@ internal fun FocusScheduleGroup(
                     options = ScheduleModes,
                     selected = draft.scheduled,
                     label = {
-                        stringResource(if (it) R.string.settings_focus_on_schedule else R.string.settings_focus_by_hand_choice)
+                        stringResource(
+                            if (it) R.string.settings_focus_on_schedule else R.string.settings_focus_by_hand_choice,
+                        )
                     },
                     onSelect = { onEvent(FocusEditEvent.Scheduled(it)) },
                     contentPadding = PaddingValues(MaterialTheme.spacing.small),
@@ -218,34 +223,7 @@ internal fun FocusScheduleGroup(
             }
         }
         if (draft.scheduled) {
-            item(key = DAYS) { shapes ->
-                SettingsSegment(shapes) {
-                    FlowRow(
-                        modifier = Modifier.padding(MaterialTheme.spacing.small),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-                    ) {
-                        weekDays(locale).forEach { day ->
-                            val on = day in draft.days
-                            val name = day.getDisplayName(TextStyle.FULL, locale)
-                            ToggleButton(
-                                checked = on,
-                                onCheckedChange = {
-                                    haptics.performToggle(it)
-                                    onEvent(FocusEditEvent.Day(day, it))
-                                },
-                                enabled = enabled,
-                                modifier =
-                                    Modifier.semantics {
-                                        role = Role.Checkbox
-                                        contentDescription = name
-                                    },
-                            ) {
-                                Text(day.getDisplayName(TextStyle.SHORT, locale))
-                            }
-                        }
-                    }
-                }
-            }
+            item(key = DAYS) { shapes -> FocusDays(draft, enabled, shapes, onEvent) }
             item(key = FROM) { shapes ->
                 SettingsRow(
                     title = stringResource(R.string.settings_focus_from),
@@ -255,26 +233,75 @@ internal fun FocusScheduleGroup(
                     enabled = enabled,
                 )
             }
-            item(key = TO) { shapes ->
-                val end = focusTime(draft.endMinute, locale)
-                SettingsRow(
-                    title = stringResource(R.string.settings_focus_to),
-                    shapes = shapes,
-                    supportingContent = {
-                        Text(
-                            if (draft.endMinute <= draft.startMinute) {
-                                stringResource(R.string.settings_focus_next_day, end)
-                            } else {
-                                end
-                            },
-                        )
+            item(key = TO) { shapes -> FocusEndRow(draft, enabled, shapes, onEvent) }
+        }
+    }
+}
+
+/** The days of a schedule as toggle buttons in the language's week; checkboxes named in full for screen readers. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FocusDays(
+    draft: FocusDraft,
+    enabled: Boolean,
+    shapes: ListItemShapes,
+    onEvent: (FocusEditEvent) -> Unit,
+) {
+    val locale = appLocale()
+    val haptics = LocalHapticFeedback.current
+    SettingsSegment(shapes) {
+        FlowRow(
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+        ) {
+            weekDays(locale).forEach { day ->
+                val name = day.getDisplayName(TextStyle.FULL, locale)
+                ToggleButton(
+                    checked = day in draft.days,
+                    onCheckedChange = {
+                        haptics.performToggle(it)
+                        onEvent(FocusEditEvent.Day(day, it))
                     },
-                    onClick = { onEvent(FocusEditEvent.Pick(FocusTimeEnd.End)) },
                     enabled = enabled,
-                )
+                    modifier =
+                        Modifier.semantics {
+                            role = Role.Checkbox
+                            contentDescription = name
+                        },
+                ) {
+                    Text(day.getDisplayName(TextStyle.SHORT, locale))
+                }
             }
         }
     }
+}
+
+/** "To", the end of the schedule, "next day" when it is at or before the start. */
+@Composable
+private fun FocusEndRow(
+    draft: FocusDraft,
+    enabled: Boolean,
+    shapes: ListItemShapes,
+    onEvent: (FocusEditEvent) -> Unit,
+) {
+    val end = focusTime(draft.endMinute, appLocale())
+    SettingsRow(
+        title = stringResource(R.string.settings_focus_to),
+        shapes = shapes,
+        supportingContent = {
+            Text(
+                if (draft.endMinute <=
+                    draft.startMinute
+                ) {
+                    stringResource(R.string.settings_focus_next_day, end)
+                } else {
+                    end
+                },
+            )
+        },
+        onClick = { onEvent(FocusEditEvent.Pick(FocusTimeEnd.End)) },
+        enabled = enabled,
+    )
 }
 
 /** "Allow calls from contacts", a switch row. */

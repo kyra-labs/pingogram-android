@@ -26,9 +26,8 @@ import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
-import dev.kyralabs.pingogram.core.navigation.FocusProfileRoute
-import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
+import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
@@ -56,9 +55,6 @@ import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
 import dev.kyralabs.pingogram.core.ui.component.SheetDialogProperties
-import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusEditRoute
-import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusTemplate
-import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusRoute as FocusScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
@@ -389,20 +385,3 @@ private val NotificationSettingsPage.route: Any
             is NotificationSettingsPage.Exceptions -> NotificationExceptionsRoute(scope.name)
             NotificationSettingsPage.Reactions -> ReactionNotificationsRoute
         }
-
-/** Focus ([FocusRoute]) and a profile's editor ([FocusProfileRoute]), pushed above it. */
-private fun NavGraphBuilder.focusPages(
-    onOpen: (route: Any) -> Unit,
-    onBack: () -> Unit,
-) {
-    settingsPage<FocusRoute> {
-        FocusScreenRoute(
-            onOpenProfile = { id, template -> onOpen(FocusProfileRoute(id, template?.name)) },
-            onBack = onBack,
-        )
-    }
-    settingsPage<FocusProfileRoute> { entry ->
-        val name = entry.toRoute<FocusProfileRoute>().template
-        FocusEditRoute(template = FocusTemplate.entries.firstOrNull { it.name == name }, onBack = onBack)
-    }
-}

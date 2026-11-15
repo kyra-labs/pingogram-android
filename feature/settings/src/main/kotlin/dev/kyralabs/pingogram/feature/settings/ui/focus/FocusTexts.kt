@@ -18,13 +18,14 @@ import java.util.Locale
 
 // How the Focus page words a profile: when it runs and what it lets through, in the app's language.
 
-private val Weekdays = setOf(
-    DayOfWeek.MONDAY,
-    DayOfWeek.TUESDAY,
-    DayOfWeek.WEDNESDAY,
-    DayOfWeek.THURSDAY,
-    DayOfWeek.FRIDAY,
-)
+private val Weekdays =
+    setOf(
+        DayOfWeek.MONDAY,
+        DayOfWeek.TUESDAY,
+        DayOfWeek.WEDNESDAY,
+        DayOfWeek.THURSDAY,
+        DayOfWeek.FRIDAY,
+    )
 private val WeekendDays = setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 private const val MINUTES_PER_HOUR = 60
 
@@ -58,13 +59,23 @@ internal fun scheduleText(schedule: FocusSchedule): String {
     return remember(schedule, locale, resources) {
         val days =
             when (schedule.days) {
-                DayOfWeek.entries.toSet() -> resources.getString(R.string.settings_focus_every_day)
-                Weekdays -> resources.getString(R.string.settings_focus_weekdays)
-                WeekendDays -> resources.getString(R.string.settings_focus_weekends)
-                else ->
+                DayOfWeek.entries.toSet() -> {
+                    resources.getString(R.string.settings_focus_every_day)
+                }
+
+                Weekdays -> {
+                    resources.getString(R.string.settings_focus_weekdays)
+                }
+
+                WeekendDays -> {
+                    resources.getString(R.string.settings_focus_weekends)
+                }
+
+                else -> {
                     weekDays(locale)
                         .filter { it in schedule.days }
                         .joinToString(", ") { it.getDisplayName(TextStyle.SHORT, locale) }
+                }
             }
         val start = focusTime(schedule.startMinute, locale)
         val end = focusTime(schedule.endMinute, locale)
@@ -87,7 +98,13 @@ internal fun allowsText(item: FocusProfileItem): String {
         val parts =
             buildList {
                 if (item.folderCount > 0) {
-                    add(resources.getQuantityString(R.plurals.settings_focus_folders, item.folderCount, item.folderCount))
+                    add(
+                        resources.getQuantityString(
+                            R.plurals.settings_focus_folders,
+                            item.folderCount,
+                            item.folderCount,
+                        ),
+                    )
                 }
                 if (item.chatCount > 0) {
                     add(resources.getQuantityString(R.plurals.settings_focus_chats, item.chatCount, item.chatCount))

@@ -60,7 +60,15 @@ internal fun page(
 internal val OnThisPhoneGroup: HomeGroup =
     HomeGroup(
         R.string.settings_home_on_this_phone,
-        entries = emptyList(),
+        entries =
+            listOf(
+                page(
+                    SettingsPage.Focus,
+                    R.string.settings_focus,
+                    R.string.settings_focus_summary,
+                    UiR.drawable.ic_notifications_off,
+                ),
+            ),
         footer = R.string.settings_home_on_this_phone_footer,
     )
 
