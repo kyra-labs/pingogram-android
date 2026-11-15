@@ -242,7 +242,7 @@ private fun StorySegments(
  * the language's narrow units ("12m", "3h"), at most a day or two, as stories expire.
  */
 @Composable
-private fun storyAge(ageSeconds: Long): String {
+internal fun storyAge(ageSeconds: Long): String {
     val locale = LocalConfiguration.current.locales[0]
     val now = stringResource(R.string.story_age_now)
     return remember(ageSeconds, locale, now) {

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.testing.assertAccessible
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.VoiceChats
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -262,6 +263,19 @@ class StoryViewerScreenTest {
     }
 
     @Test
+    fun `the user's own story shows its views pill, which opens the viewers`() {
+        setScreen(StoryViewerPreviewData.ownViews)
+
+        composeRule
+            .onNode(hasContentDescription("Viewed by 24, 6 reactions. Opens the list of viewers"))
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(StoryViewerEvent.ViewersOpen(true), events.last())
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
+    }
+
+    @Test
     fun `typing a reply pauses the story and sends it`() {
         setScreen()
 
@@ -314,6 +328,17 @@ class StoryViewerScreenTest {
     }
 
     @Test
+    fun `a story still downloading says so after a moment, with the reply field already there`() {
+        composeRule.mainClock.autoAdvance = false
+        setScreen(StoryViewerPreviewData.loadingStory)
+
+        composeRule.onNode(hasText(string(R.string.story_loading))).assertDoesNotExist()
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds + FRAME_MILLIS)
+        composeRule.onNode(hasText(string(R.string.story_loading))).assertExists()
+        composeRule.onNode(hasSetTextAction()).assertExists()
+    }
+
+    @Test
     fun `a story that failed offers to try again`() {
         setScreen(StoryViewerPreviewData.failed)
 
@@ -325,3 +350,6 @@ class StoryViewerScreenTest {
 
 /** Half way through a back gesture: far enough to shrink the story, not yet released. */
 private const val HALF_GESTURE = 0.5f
+
+/** One frame at 60 Hz, past which the delayed text has composed. */
+private const val FRAME_MILLIS = 16L

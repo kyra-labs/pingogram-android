@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
@@ -104,4 +105,17 @@ interface StoryRepository {
         chatId: Long,
         storyId: Int,
     ): Outcome<Unit>
+
+    /**
+     * A page of who saw the user's own story [storyId] (td_api.tl `getStoryInteractions`), from [offset] ("" for the
+     * first page): those whose name starts with [query] (all for ""), contacts only where [onlyContacts], those who
+     * reacted first where [reactionsFirst]. Users only: reposts by chats are left out.
+     */
+    suspend fun viewers(
+        storyId: Int,
+        query: String,
+        onlyContacts: Boolean,
+        reactionsFirst: Boolean,
+        offset: String,
+    ): Outcome<StoryViewersPage>
 }

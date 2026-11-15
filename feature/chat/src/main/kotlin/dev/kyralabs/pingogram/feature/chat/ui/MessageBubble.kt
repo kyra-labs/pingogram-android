@@ -66,8 +66,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
@@ -155,23 +158,24 @@ internal fun MessageBubbleRow(
     reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val highlightColor = MaterialTheme.colorScheme.secondaryContainer
-    val highlightShape = MaterialTheme.shapes.medium
+    val highlight = rememberJumpHighlightStyle()
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe = rowSwipe(bubble, selecting = selection != null, resources, onEvent)
+    val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val reminder = LocalReminderChips.current?.labelFor(bubble.id)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
-                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
+                .jumpHighlight(resources.jump, bubble, highlight)
+                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription = bubbleDescription(strings, bubble)
+                    contentDescription = bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
@@ -189,7 +193,7 @@ internal fun MessageBubbleRow(
                                 uploads = uploads,
                                 onEvent = onEvent,
                                 canTranscribe = resources.canTranscribe,
-                            )
+                            ) + reminderActions(strings, bubble.id, reminder, onEvent)
                     }
                 },
         verticalAlignment = Alignment.CenterVertically,

@@ -206,19 +206,26 @@ class RecentChatsWidgetUpdater
                     combine(chatRepository.chatList(ChatListType.Main), account.chatLock.lockedChatIds) { all, locked ->
                         if (locked.isEmpty()) all else all.filterNot { it.id in locked }
                     }
+                val unread = chatRepository.unreadMessageCount(ChatListType.Main).map { it.unreadUnmutedCount }
                 combine(
-                    chats,
+                    combine(chats, unread, ::Pair),
                     account.users.users,
                     account.users.myUserId,
                     account.groups.supergroups,
                     loaded,
-                ) { list, users, me, supergroups, done ->
+                ) { (list, unreadMessages), users, me, supergroups, done ->
                     val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot)
                     val shown = list.take(MAX_CHATS)
                     if (rows.isEmpty() && !done) {
                         null
                     } else {
-                        Rows(rows, shown.map { it.photo }, shown.map { it.isForumIn(supergroups) })
+                        Rows(
+                            rows,
+                            shown.map { it.photo },
+                            shown.map { it.isForumIn(supergroups) },
+                            unreadMessages,
+                            list.sumOf { it.unreadMentionCount },
+                        )
                     }
                 }.distinctUntilChanged()
                     .debounce(UPDATE_DELAY)
@@ -236,14 +243,18 @@ class RecentChatsWidgetUpdater
                     val corner = forumCorner.takeIf { forums[index] }
                     row.copy(avatar = avatars.bitmap(photos[index], row.id, row.title, size, corner))
                 },
+                unreadMessages = unreadMessages,
+                mentions = mentions,
             )
         }
 
-        /** The widget's rows, the chats' photos and which are forums, compared as a whole before avatars are drawn. */
+        /** The rows, their photos, which are forums, and the totals: compared as a whole before avatars are drawn. */
         private data class Rows(
             val rows: List<WidgetChat>,
             val photos: List<ProfilePhoto?>,
             val forums: List<Boolean>,
+            val unreadMessages: Int,
+            val mentions: Int,
         )
 
         private enum class State { Loading, SignedOut, Locked, Chats }

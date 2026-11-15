@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
+import dev.kyralabs.pingogram.core.navigation.KeywordAlertsRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
@@ -44,6 +45,7 @@ import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
 import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
+import dev.kyralabs.pingogram.core.navigation.RemindersRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
@@ -78,12 +80,14 @@ import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingRoute as PowerSavin
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordAlertsRoute as KeywordAlertsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsRoute as ReactionNotificationsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.reminders.RemindersRoute as RemindersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
@@ -258,7 +262,9 @@ fun NavGraphBuilder.settingsPages(
     }
     networkPages(onOpen, onBack)
     settingsPage<PowerSavingRoute> { PowerSavingScreenRoute(onBack = onBack) }
+    settingsPage<KeywordAlertsRoute> { KeywordAlertsScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
+    settingsPage<RemindersRoute> { RemindersScreenRoute(onBack = onBack) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
@@ -378,6 +384,8 @@ internal val SettingsPage.route: Any
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
             SettingsPage.ActiveSessions -> ActiveSessionsRoute
             SettingsPage.MyQrCode -> MyQrCodeRoute
+            SettingsPage.KeywordAlerts -> KeywordAlertsRoute
+            SettingsPage.Reminders -> RemindersRoute
         }
 
 private val NotificationSettingsPage.route: Any
@@ -385,4 +393,5 @@ private val NotificationSettingsPage.route: Any
         when (this) {
             is NotificationSettingsPage.Exceptions -> NotificationExceptionsRoute(scope.name)
             NotificationSettingsPage.Reactions -> ReactionNotificationsRoute
+            NotificationSettingsPage.KeywordAlerts -> KeywordAlertsRoute
         }
