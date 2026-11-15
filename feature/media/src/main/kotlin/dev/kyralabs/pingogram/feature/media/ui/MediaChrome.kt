@@ -82,7 +82,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The viewer's transparent small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6) over a gradient of `mediaOverlay` (the
  * theme's `scrim`, translucent) that fades into the media: back, the sender and the date as a two-line title, and
- * "3 of 120" ([position]) at the end. Before the media is there, [item] is null and only back shows.
+ * "3 of 120" ([position], [PositionChip]) at the end: the position among the chat's media, never dots (owner decision
+ * 2026-11-15, board 25: the viewer pages through all of a chat's media, not one album). Before the media is there,
+ * [item] is null and only back shows.
  */
 @Composable
 internal fun ViewerTopBar(
@@ -104,13 +106,7 @@ internal fun ViewerTopBar(
             }
         },
         actions = {
-            if (position != null) {
-                Text(
-                    text = positionText(position),
-                    modifier = Modifier.padding(end = MaterialTheme.spacing.large),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
+            if (position != null) PositionChip(positionText(position))
         },
         expandedHeight = titleHeight(),
         colors =
