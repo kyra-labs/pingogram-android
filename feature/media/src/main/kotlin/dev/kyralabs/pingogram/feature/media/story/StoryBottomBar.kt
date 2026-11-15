@@ -109,7 +109,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Below the frame, as tall as the composer's pill whether or not it shows anything, so pages line up as they slide:
  * the reply field ("Reply privately…", the rounded tonal field in `extraLarge` corners as the composer's, user
  * content), which pauses the story while it has the keyboard, with its send button once it holds text; and the
- * reaction button with the row of reactions above it ([StoryReactionsRow]).
+ * reaction button with the row of reactions above it ([StoryReactionsRow]). The user's own story shows its views pill
+ * ([StoryViewsPill]) across the bar instead.
  */
 @Composable
 internal fun StoryBottomBar(
@@ -117,6 +118,7 @@ internal fun StoryBottomBar(
     reactions: StoryReactionsUi?,
     replyText: TextFieldState,
     onEvent: (StoryViewerEvent) -> Unit,
+    views: StoryViewsUi? = null,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxWidth()) {
@@ -141,7 +143,9 @@ internal fun StoryBottomBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.small),
         ) {
-            if (reply != null) {
+            if (views != null) {
+                StoryViewsPill(views, onClick = { onEvent(StoryViewerEvent.ViewersOpen(true)) }, Modifier.weight(1f))
+            } else if (reply != null) {
                 StoryReplyField(replyText, reply, onEvent, Modifier.weight(1f))
                 if (replyText.text.isNotBlank()) {
                     FilledIconButton(

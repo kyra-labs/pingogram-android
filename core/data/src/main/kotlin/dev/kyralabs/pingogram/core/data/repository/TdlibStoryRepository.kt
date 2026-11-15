@@ -11,11 +11,13 @@ import dev.kyralabs.pingogram.core.data.mapper.toStory
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdStoryList
+import dev.kyralabs.pingogram.core.data.mapper.toViewersPage
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
@@ -189,6 +191,26 @@ class TdlibStoryRepository
             storyId: Int,
         ): Outcome<Unit> = client.request(TdApi.DeleteStory(chatId, storyId)).map {}
 
+        override suspend fun viewers(
+            storyId: Int,
+            query: String,
+            onlyContacts: Boolean,
+            reactionsFirst: Boolean,
+            offset: String,
+        ): Outcome<StoryViewersPage> =
+            client
+                .request(
+                    TdApi.GetStoryInteractions(
+                        storyId,
+                        query,
+                        onlyContacts,
+                        false,
+                        reactionsFirst,
+                        offset,
+                        VIEWERS_PAGE,
+                    ),
+                ).map { it.toViewersPage() }
+
         private companion object {
             /** The quick reactions TDLib puts first: one row of the reactions picker. */
             const val REACTION_ROW_SIZE = 8
@@ -234,3 +256,6 @@ private fun TdApi.Update.isAbout(
         is TdApi.UpdateStoryDeleted -> storyPosterChatId == chatId && this.storyId == storyId
         else -> false
     }
+
+/** How many viewers of the user's own story a page asks for. */
+private const val VIEWERS_PAGE = 50
