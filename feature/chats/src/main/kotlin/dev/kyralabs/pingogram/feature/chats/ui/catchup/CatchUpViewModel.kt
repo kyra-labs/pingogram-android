@@ -43,6 +43,7 @@ import kotlin.math.ceil
  *   `viewMessages`), and only for the chat the user marked: nothing reads a chat the user did not mark or open (owner
  *   decision 2026-11-15). A chat the user opened, or read anywhere else, counts as read once TDLib says it has
  *   nothing unread.
+ * - **Replying** in place ([CatchUpReply]) answers the card's message and then marks the chat as read.
  * - **Skipping** leaves a chat for "Review skipped", a new round of the skipped chats once the round is over.
  * - **A card** shows the newest unread messages of its chat (its history from TDLib's local database, as the
  *   conversation loads it; loading it reads nothing), the older ones on "N earlier messages".
@@ -86,6 +87,15 @@ class CatchUpViewModel internal constructor(
     private val effectChannel = Channel<CatchUpEffect>(Channel.BUFFERED)
     val effects: Flow<CatchUpEffect> = effectChannel.receiveAsFlow()
 
+    private val reply =
+        CatchUpReply(
+            scope = viewModelScope,
+            savedStateHandle = savedStateHandle,
+            sources = sources,
+            onSent = ::replied,
+            onError = { effectChannel.trySend(CatchUpEffect.ShowError(it)) },
+        )
+
     private val cards: Flow<List<CatchUpCard>> =
         combine(
             round.map { it?.queue?.take(2).orEmpty() }.distinctUntilChanged(),
@@ -103,9 +113,16 @@ class CatchUpViewModel internal constructor(
             }
 
     val uiState: StateFlow<CatchUpUiState> =
-        combine(round, cards, catchUpChats.includesMuted, settingsShown) { round, cards, includesMuted, settings ->
+        combine(
+            round,
+            cards,
+            catchUpChats.includesMuted,
+            settingsShown,
+            reply.state(round.map { it?.queue?.firstOrNull() }),
+        ) { round, cards, includesMuted, settings, replyState ->
+            val stage = catchUpStage(round, cards, clock.now().toEpochMilli())
             CatchUpUiState(
-                stage = stageOf(round, cards),
+                stage = if (stage is CatchUpStage.Cards) stage.copy(reply = replyState) else stage,
                 includesMuted = includesMuted,
                 showsSettings = settings,
             )
@@ -141,6 +158,9 @@ class CatchUpViewModel internal constructor(
             CatchUpEvent.Skip -> shown()?.let { id -> advance(id) { it.copy(skipped = it.skipped + id) } }
             CatchUpEvent.OpenChat -> shown()?.let { effectChannel.trySend(CatchUpEffect.OpenChat(it)) }
             CatchUpEvent.ShowEarlier -> shown()?.let { savedStateHandle[KEY_EXPANDED] = it }
+            CatchUpEvent.Reply -> shown()?.let(reply::start)
+            CatchUpEvent.CancelReply -> reply.cancel()
+            is CatchUpEvent.SendReply -> sendReply(event.text)
             CatchUpEvent.ReviewSkipped -> reviewSkipped()
             is CatchUpEvent.ShowSettings -> savedStateHandle[KEY_SETTINGS] = event.show
             is CatchUpEvent.SetIncludesMuted -> setIncludesMuted(event.include)
@@ -154,6 +174,19 @@ class CatchUpViewModel internal constructor(
         advance(id) { it.copy(read = it.read + id) }
         viewModelScope.launch {
             sources.chatRepository.markAsRead(id).onFailure { effectChannel.trySend(CatchUpEffect.ShowError(it)) }
+        }
+    }
+
+    private fun sendReply(text: String) {
+        val cards = uiState.value.stage as? CatchUpStage.Cards ?: return
+        reply.send(cards.current.chatId, cards.current.replyTo?.id, text)
+    }
+
+    /** A reply went to chat [chatId]: it is read, as after "Mark as read", and counts as replied. */
+    private fun replied(chatId: Long) {
+        advance(chatId) { it.copy(replied = it.replied + chatId) }
+        viewModelScope.launch {
+            sources.chatRepository.markAsRead(chatId).onFailure { effectChannel.trySend(CatchUpEffect.ShowError(it)) }
         }
     }
 
@@ -198,59 +231,10 @@ class CatchUpViewModel internal constructor(
         viewModelScope.launch { sources.messageRepository.loadNewest(chatId) }
     }
 
-    private fun stageOf(
-        round: CatchUpRound?,
-        cards: List<CatchUpCard>,
-    ): CatchUpStage {
-        val first = round?.queue?.firstOrNull()
-        val current = cards.firstOrNull { it.chatId == first }
-        return when {
-            round == null -> {
-                CatchUpStage.Loading
-            }
-
-            round.total == 0 && round.read.isEmpty() && round.replied.isEmpty() -> {
-                CatchUpStage.Empty
-            }
-
-            first == null -> {
-                CatchUpStage.Done(
-                    chats = round.read.size + round.replied.size + round.skipped.size,
-                    minutes = minutesSince(round.startedAt),
-                    read = round.read.size,
-                    replied = round.replied.size,
-                    skipped = round.skipped.size,
-                )
-            }
-
-            current == null -> {
-                CatchUpStage.Loading
-            }
-
-            else -> {
-                CatchUpStage.Cards(
-                    position = round.total - round.queue.size + 1,
-                    total = round.total,
-                    minutesLeft = ceil(round.queue.size * SECONDS_PER_CHAT / SECONDS_PER_MINUTE).toInt(),
-                    current = current,
-                    next = round.queue.getOrNull(1)?.let { next -> cards.firstOrNull { it.chatId == next } },
-                )
-            }
-        }
-    }
-
-    private fun minutesSince(startedAt: Long): Int {
-        val seconds = (clock.now().toEpochMilli() - startedAt).coerceAtLeast(0) / MILLIS_PER_SECOND
-        return ceil(seconds / SECONDS_PER_MINUTE).toInt().coerceAtLeast(1)
-    }
-
     private companion object {
         const val KEY_EXPANDED = "catchUp.expanded"
         const val KEY_SETTINGS = "catchUp.settings"
         const val STOP_TIMEOUT_MILLIS = 5_000L
-        const val SECONDS_PER_CHAT = 20.0
-        const val SECONDS_PER_MINUTE = 60.0
-        const val MILLIS_PER_SECOND = 1_000.0
     }
 }
 
@@ -297,3 +281,58 @@ internal data class CatchUpRound(
         }
     }
 }
+
+/** What Catch-up shows of [round] with its [cards] loaded, [now] in Unix milliseconds. */
+internal fun catchUpStage(
+    round: CatchUpRound?,
+    cards: List<CatchUpCard>,
+    now: Long,
+): CatchUpStage {
+    val first = round?.queue?.firstOrNull()
+    val current = cards.firstOrNull { it.chatId == first }
+    return when {
+        round == null -> {
+            CatchUpStage.Loading
+        }
+
+        round.total == 0 && round.read.isEmpty() && round.replied.isEmpty() -> {
+            CatchUpStage.Empty
+        }
+
+        first == null -> {
+            CatchUpStage.Done(
+                chats = round.read.size + round.replied.size + round.skipped.size,
+                minutes = minutesBetween(round.startedAt, now),
+                read = round.read.size,
+                replied = round.replied.size,
+                skipped = round.skipped.size,
+            )
+        }
+
+        current == null -> {
+            CatchUpStage.Loading
+        }
+
+        else -> {
+            CatchUpStage.Cards(
+                position = round.total - round.queue.size + 1,
+                total = round.total,
+                minutesLeft = ceil(round.queue.size * SECONDS_PER_CHAT / SECONDS_PER_MINUTE).toInt(),
+                current = current,
+                next = round.queue.getOrNull(1)?.let { next -> cards.firstOrNull { it.chatId == next } },
+            )
+        }
+    }
+}
+
+private fun minutesBetween(
+    startedAt: Long,
+    now: Long,
+): Int {
+    val seconds = (now - startedAt).coerceAtLeast(0) / MILLIS_PER_SECOND
+    return ceil(seconds / SECONDS_PER_MINUTE).toInt().coerceAtLeast(1)
+}
+
+private const val SECONDS_PER_CHAT = 20.0
+private const val SECONDS_PER_MINUTE = 60.0
+private const val MILLIS_PER_SECOND = 1_000.0

@@ -6,10 +6,12 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.domain.model.AccountFreeze
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
+import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeBookmarkRepository
+import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
@@ -26,11 +28,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsHomeViewModelTest {
     private val client = FakeTdlibClient()
     private val language = FakeAppLanguageRepository()
+    private val reminders = FakeReminderRepository()
     private val bookmarks = FakeBookmarkRepository()
 
     @BeforeEach
@@ -50,6 +54,7 @@ class SettingsHomeViewModelTest {
             TdlibStorageRepository(client),
             language,
             TdlibAccountFreezeRepository(client, backgroundScope),
+            reminders,
             bookmarks,
         ).also { runCurrent() }
 
@@ -89,7 +94,12 @@ class SettingsHomeViewModelTest {
             val viewModel = viewModel()
 
             assertEquals(
-                SettingsHomeSummaries(sessionCount = 3, storageBytes = 1_200L, bookmarkCount = 0),
+                SettingsHomeSummaries(
+                    sessionCount = 3,
+                    storageBytes = 1_200L,
+                    upcomingReminders = 0,
+                    bookmarkCount = 0,
+                ),
                 viewModel.summaries.value,
             )
 
@@ -127,6 +137,21 @@ class SettingsHomeViewModelTest {
             client.emit(TdApi.UpdateFreezeState(false, 0, 0, ""))
             runCurrent()
             assertNull(viewModel.summaries.value.freeze)
+        }
+
+    @Test
+    fun `the home counts the reminders not done yet`() =
+        runTest {
+            val at = Instant.parse("2026-10-19T09:00:00Z")
+            reminders.saved.value =
+                listOf(MessageReminder(1, 1, at), MessageReminder(1, 2, at), MessageReminder(2, 3, at, isDone = true))
+            val viewModel = viewModel()
+
+            assertEquals(2, viewModel.summaries.value.upcomingReminders)
+
+            reminders.saved.value = emptyList()
+            runCurrent()
+            assertEquals(0, viewModel.summaries.value.upcomingReminders)
         }
 
     @Test

@@ -180,7 +180,8 @@ object ProfilePreviewData {
                     placeholderIcon = UiR.drawable.ic_person_filled,
                 ),
             info = ProfileInfo(),
-            actions = ProfileActions(canMessage = true, isMuted = false),
+            actions = ProfileActions(canDeleteChat = true),
+            isDeletedAccount = true,
         )
 
     val scam =

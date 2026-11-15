@@ -116,6 +116,10 @@ internal class CatchUpCardMapper(
                         ) - shown.size
                     ).coerceAtLeast(0)
                 },
+            replyTo =
+                (unread.firstOrNull { it.containsUnreadMention } ?: unread.firstOrNull())
+                    ?.takeUnless { loading }
+                    ?.toCardMessage(chat, name, time, now, withSender = true),
         )
     }
 
@@ -124,9 +128,10 @@ internal class CatchUpCardMapper(
         name: (MessageSender) -> UiText?,
         time: ChatListTimeFormatter,
         now: Instant,
+        withSender: Boolean = false,
     ) = CatchUpMessage(
         id = id,
-        sender = if (chat.isGroup) name(sender) else null,
+        sender = if (chat.isGroup || withSender) name(sender) else null,
         text = messagePreviewText(this, myUserId = null, name = name),
         time = time.format(date, now),
     )

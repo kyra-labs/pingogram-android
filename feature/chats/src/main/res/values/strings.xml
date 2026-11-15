@@ -449,6 +449,14 @@
         <item quantity="other">%d earlier messages</item>
     </plurals>
     <string name="catch_up_mark_as_read">Mark as read</string>
+    <string name="catch_up_reply">Reply in place</string>
+    <string name="catch_up_reply_placeholder">Reply</string>
+    <!-- Over the message a reply answers: "Reply to Meera"; %s is who sent it. -->
+    <string name="catch_up_reply_to">Reply to %s</string>
+    <string name="catch_up_reply_to_message">Reply to this message</string>
+    <string name="catch_up_reply_cancel">Cancel reply</string>
+    <string name="catch_up_send_and_next">Send and go to next</string>
+    <string name="catch_up_reply_note">Sending also marks this chat as read and moves to the next one.</string>
     <string name="catch_up_open_chat">Open chat</string>
     <string name="catch_up_skip">Skip</string>
     <!-- The stamp on a card swiped toward marking it as read. -->
