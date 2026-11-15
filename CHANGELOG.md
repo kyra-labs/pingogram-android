@@ -13,6 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
   muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
+- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
+  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
@@ -21,12 +23,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
-  from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags.
+  from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
+  its search finds bookmarks by their chat, text, note or tags.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
   notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
+- A reminder on the Reminders page opens its chat at the message it was set on.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.

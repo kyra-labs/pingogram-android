@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -64,8 +65,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The Reminders page (the owner's boards 29e, 29f): hoists [RemindersViewModel]. A reminder's chat opens through
- * `core:ui`'s `LocalChatLauncher`; deleting shows a snackbar with "Undo" (long, for screen readers).
+ * The Reminders page (the owner's boards 29e, 29f): hoists [RemindersViewModel]. A reminder opens its chat at its
+ * message through `core:ui`'s `LocalMessageLauncher` (`LocalChatLauncher`, at the chat's place, where only that is
+ * provided); deleting shows a snackbar with "Undo" (long, for screen readers).
  */
 @Composable
 internal fun RemindersRoute(
@@ -77,12 +79,13 @@ internal fun RemindersRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val details = isDebuggable()
+    val openMessage = LocalMessageLauncher.current
     val openChat = LocalChatLauncher.current
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is RemindersEffect.OpenChat -> {
-                    openChat?.invoke(effect.chatId)
+                is RemindersEffect.OpenMessage -> {
+                    openMessage?.invoke(effect.chatId, effect.messageId) ?: openChat?.invoke(effect.chatId)
                 }
 
                 RemindersEffect.Deleted -> {
@@ -175,7 +178,7 @@ private fun ReminderItem(
     val title = row.chatTitle.ifEmpty { stringResource(R.string.reminders_unknown_chat) }
     ReminderSwipe(shapes.shape, ReminderSwipeLabels(doneLabel, deleteLabel), onDone = done, onDelete = delete) {
         SegmentedListItem(
-            onClick = { onEvent(RemindersEvent.Open(row.chatId)) },
+            onClick = { onEvent(RemindersEvent.Open(row.chatId, row.messageId)) },
             shapes = shapes,
             colors = settingsRowColors(),
             modifier =

@@ -105,7 +105,7 @@ class RemindersViewModel internal constructor(
 
     fun onEvent(event: RemindersEvent) {
         when (event) {
-            is RemindersEvent.Open -> effectChannel.trySend(RemindersEffect.OpenChat(event.chatId))
+            is RemindersEvent.Open -> effectChannel.trySend(RemindersEffect.OpenMessage(event.chatId, event.messageId))
             is RemindersEvent.ToggleDone -> change(event.chatId, event.messageId) { it.copy(isDone = !it.isDone) }
             is RemindersEvent.Delete -> delete(event.chatId, event.messageId)
             RemindersEvent.UndoDelete -> undo()

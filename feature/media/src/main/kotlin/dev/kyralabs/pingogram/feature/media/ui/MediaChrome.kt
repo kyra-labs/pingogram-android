@@ -28,6 +28,7 @@ import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
@@ -40,6 +41,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -55,17 +57,24 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
@@ -256,12 +265,14 @@ internal fun ExpandableCaption(
 }
 
 /**
- * Play or pause and seek the current video (`REQUIREMENTS.md` FR-C10): a [FilledIconButton] whose shape morphs while
- * pressed, the time played, an expressive [Slider] and the length. The slider follows the playback in its layout and
- * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
- * there. Its inactive track shows in `outline` how far the player has the video ([VideoPlayback.buffered], read in the
- * draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`). The times recompose only when the second
- * changes. While the speed is not 1×, its chip ([SpeedChip]) follows the length.
+ * Seek the current video (`REQUIREMENTS.md` FR-C10, board 25; its play or pause and ±10 s are in the middle,
+ * [VideoCenterControls]): the time played, an expressive [Slider] and the length, left to right in every language, then
+ * the speed chip ([SpeedChip]) while the speed is not 1×, mute and picture-in-picture. The slider follows the playback
+ * in its layout and draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it;
+ * letting go seeks there. Its inactive track shows in `outline` how far the player has the video
+ * ([VideoPlayback.buffered], read in the draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`).
+ * Screen readers hear it as "0:48 of 2:31" and move it 10 s at a time. The times recompose only when the second
+ * changes.
  */
 @Composable
 internal fun VideoControls(
@@ -283,33 +294,50 @@ internal fun VideoControls(
         derivedStateOf { (sliderState.value * durationSeconds).toInt() }
     }
     val locale = LocalConfiguration.current.locales[0]
-    val playLabel = stringResource(if (playback.isPlaying) R.string.media_pause else R.string.media_play)
     val seekLabel = stringResource(R.string.media_seek)
+    val seekState =
+        stringResource(
+            R.string.media_seek_state,
+            formatDuration(played, locale),
+            formatDuration(durationSeconds, locale),
+        )
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FilledIconButton(onClick = { onEvent(MediaViewerEvent.PlayPause) }, shapes = IconButtonDefaults.shapes()) {
-            Icon(
-                painter =
-                    painterResource(
-                        if (playback.isPlaying) UiR.drawable.ic_pause_filled else UiR.drawable.ic_play_arrow_filled,
-                    ),
-                contentDescription = playLabel,
-            )
+        // Media timelines fill left to right in every language (board 25).
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TimeText(formatDuration(played, locale))
+                Slider(
+                    state = sliderState,
+                    onValueChange = { sliderState.value = it },
+                    modifier =
+                        Modifier.weight(1f).clearAndSetSemantics {
+                            contentDescription = seekLabel
+                            stateDescription = seekState
+                            progressBarRangeInfo = ProgressBarRangeInfo(sliderState.value, 0f..1f)
+                            // Screen readers move it 10 s at a time, as "Back" and "Forward 10 seconds" do.
+                            setProgress { target ->
+                                val step = if (target >= sliderState.value) SEEK_STEP_SECONDS else -SEEK_STEP_SECONDS
+                                onEvent(MediaViewerEvent.SeekBy(step))
+                                true
+                            }
+                        },
+                    onValueChangeFinished = { onEvent(MediaViewerEvent.Seek(sliderState.value)) },
+                    interactionSource = interactionSource,
+                    track = { state -> BufferedTrack(state, playback.buffered) },
+                )
+                TimeText(formatDuration(durationSeconds, locale))
+            }
         }
-        TimeText(formatDuration(played, locale))
-        Slider(
-            state = sliderState,
-            onValueChange = { sliderState.value = it },
-            modifier = Modifier.weight(1f).semantics { contentDescription = seekLabel },
-            onValueChangeFinished = { onEvent(MediaViewerEvent.Seek(sliderState.value)) },
-            interactionSource = interactionSource,
-            track = { state -> BufferedTrack(state, playback.buffered) },
-        )
-        TimeText(formatDuration(durationSeconds, locale))
         if (playback.speed != 1f) SpeedChip(playback.speed) { onEvent(MediaViewerEvent.SetSpeed(it)) }
+        MuteButton(playback.isMuted) { onEvent(MediaViewerEvent.SetMuted(!playback.isMuted)) }
         if (canPictureInPicture) PictureInPictureButton(onClick = { onEvent(MediaViewerEvent.PictureInPicture) })
     }
 }
