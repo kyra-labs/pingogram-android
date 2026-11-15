@@ -71,8 +71,11 @@ internal fun NavController.navigateToAuthGraph() {
  * chat list is left, so back returns to the chat list, then leaves the app. Pushed on every window, as the archive
  * pushes chats.
  */
-internal fun NavController.navigateToChatAboveList(chatId: Long) {
-    navigate(ChatRoute(chatId)) {
+internal fun NavController.navigateToChatAboveList(
+    chatId: Long,
+    messageId: Long? = null,
+) {
+    navigate(ChatRoute(chatId, messageId = messageId)) {
         popUpTo(TopLevelDestination.Start.route)
         launchSingleTop = true
     }

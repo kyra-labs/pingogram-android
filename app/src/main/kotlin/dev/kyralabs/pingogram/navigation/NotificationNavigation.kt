@@ -10,7 +10,7 @@ import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 
 /**
- * Opens [chatId], a chat a notification asked for, once the main graph shows, after `SessionNavigationEffect`
+ * Opens [chatId], a chat a notification asked for (at [messageId] for a reminder), once the main graph shows, after `SessionNavigationEffect`
  * (`PingogramNavHost`) moved there, and reports it handled; drops it when signed out, as it belongs to an account that
  * is gone (or the login flow is in the way), and reports that too.
  */
@@ -19,6 +19,7 @@ internal fun OpenChatEffect(
     navController: NavHostController,
     uiState: MainActivityUiState,
     chatId: Long?,
+    messageId: Long?,
     onHandled: () -> Unit,
 ) {
     val currentEntry by navController.currentBackStackEntryAsState()
@@ -29,7 +30,7 @@ internal fun OpenChatEffect(
         if (chatId == null || uiState == MainActivityUiState.Loading) return@LaunchedEffect
         if (uiState == MainActivityUiState.SignedIn) {
             if (!inMainGraph) return@LaunchedEffect
-            navController.navigateToChatAboveList(chatId)
+            navController.navigateToChatAboveList(chatId, messageId)
         }
         currentOnHandled()
     }

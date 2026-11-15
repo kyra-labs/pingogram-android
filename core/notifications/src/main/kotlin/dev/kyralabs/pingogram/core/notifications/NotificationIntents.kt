@@ -17,20 +17,23 @@ import android.net.Uri
  */
 object NotificationIntents {
     /**
-     * Opens chat [chatId] in the app, in its task: an activity already running gets it in `onNewIntent`. Null if the
-     * app has no launcher activity (never in the app; possible in tests).
+     * Opens chat [chatId] in the app, in its task, at message [messageId] where one is given (a reminder's "Open"): an
+     * activity already running gets it in `onNewIntent`. Null if the app has no launcher activity (never in the app;
+     * possible in tests).
      */
     fun openChat(
         context: Context,
         chatId: Long,
         slot: Int = 0,
+        messageId: Long? = null,
     ): Intent? =
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             action = Intent.ACTION_VIEW
             removeCategory(Intent.CATEGORY_LAUNCHER)
-            data = chatUri(chatId, slot)
+            data = chatUri(chatId, slot, messageId)
             putExtra(EXTRA_CHAT_ID, chatId)
             putExtra(EXTRA_ACCOUNT, slot)
+            messageId?.let { putExtra(EXTRA_MESSAGE_ID, it) }
             // Back from the chat leads to the chat list of the app's one activity, never to a second instance.
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -40,8 +43,9 @@ object NotificationIntents {
         context: Context,
         chatId: Long,
         slot: Int = 0,
+        messageId: Long? = null,
     ): PendingIntent? =
-        openChat(context, chatId, slot)?.let { intent ->
+        openChat(context, chatId, slot, messageId)?.let { intent ->
             PendingIntent.getActivity(context, 0, intent, IMMUTABLE_FLAGS)
         }
 
@@ -132,9 +136,11 @@ object NotificationIntents {
      */
     const val SHARE_TARGET_CATEGORY = "dev.kyralabs.pingogram.category.SHARE_TARGET"
 
+    // A message makes the uri its own, so the pending intents of two messages of one chat stay apart.
     private fun chatUri(
         chatId: Long,
         slot: Int,
+        messageId: Long? = null,
     ): Uri =
         Uri
             .Builder()
@@ -142,6 +148,7 @@ object NotificationIntents {
             .authority(CHAT_HOST)
             .appendPath("$chatId")
             .apply { if (slot != 0) appendQueryParameter(ACCOUNT_PARAMETER, "$slot") }
+            .apply { messageId?.let { appendQueryParameter(MESSAGE_PARAMETER, "$it") } }
             .build()
 
     private const val IMMUTABLE_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -152,6 +159,7 @@ object NotificationIntents {
     private const val EXTRA_CHAT_ID = "dev.kyralabs.pingogram.extra.CHAT_ID"
     private const val EXTRA_ACCOUNT = "dev.kyralabs.pingogram.extra.ACCOUNT"
     private const val ACCOUNT_PARAMETER = "account"
+    private const val MESSAGE_PARAMETER = "message"
     private const val SHORTCUT_PREFIX = "chat_"
 
     // TDLib's chat ids are never 0.
@@ -163,3 +171,11 @@ data class ShortcutChat(
     val slot: Int,
     val chatId: Long,
 )
+
+/** The message that [intent] opens its chat at ([NotificationIntents.openChat] with a message), or null. */
+fun openedMessageIdOf(intent: Intent?): Long? =
+    intent
+        ?.takeIf { NotificationIntents.chatIdOf(it) != null && it.hasExtra(EXTRA_MESSAGE_ID) }
+        ?.getLongExtra(EXTRA_MESSAGE_ID, 0L)
+
+private const val EXTRA_MESSAGE_ID = "dev.kyralabs.pingogram.extra.MESSAGE_ID"

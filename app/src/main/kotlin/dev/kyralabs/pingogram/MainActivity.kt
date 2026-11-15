@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.core.notifications.openedMessageIdOf
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
@@ -331,7 +332,7 @@ class MainActivity : ComponentActivity() {
      * views, or what it shares.
      */
     private fun handle(intent: Intent?) {
-        NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        NotificationIntents.chatIdOf(intent)?.let { viewModel.openChat(it, openedMessageIdOf(intent)) }
         if (NotificationIntents.opensLockedChats(intent)) viewModel.setLockedChatsToOpen(true)
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
@@ -393,12 +394,14 @@ private fun App(
     accountMenu: AccountMenuViewModel?,
 ) {
     val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
+    val messageToOpen by viewModel.messageToOpen.collectAsStateWithLifecycle()
     val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
     val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
     val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
     PingogramApp(
         uiState = uiState,
         chatToOpen = chatToOpen,
+        messageToOpen = messageToOpen,
         onChatOpened = viewModel::onChatOpened,
         lockedChatsToOpen = lockedChatsToOpen,
         onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },

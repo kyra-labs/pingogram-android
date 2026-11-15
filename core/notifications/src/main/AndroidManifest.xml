@@ -8,6 +8,11 @@
             android:name="dev.kyralabs.pingogram.core.notifications.NotificationActionReceiver"
             android:exported="false" />
 
+        <!-- A reminder notification's "Snooze", from the app's own pending intent only. -->
+        <receiver
+            android:name="dev.kyralabs.pingogram.core.notifications.ReminderActionReceiver"
+            android:exported="false" />
+
         <!-- The transfers notification's "Cancel", from the app's own pending intent only. -->
         <receiver
             android:name="dev.kyralabs.pingogram.core.notifications.TransferCancelReceiver"

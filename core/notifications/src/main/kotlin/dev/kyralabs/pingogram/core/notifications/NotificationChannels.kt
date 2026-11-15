@@ -88,6 +88,17 @@ enum class PingogramChannel(
         perAccount = true,
     ),
 
+    /**
+     * Reminders the user set on messages (`ReminderWorker`, the owner's board 29): the app's own, so they ring also for
+     * muted chats and through Focus profiles (owner decision 2026-11-15: the user set them on purpose).
+     */
+    Reminders(
+        "reminders",
+        R.string.notification_channel_reminders,
+        R.string.notification_channel_reminders_description,
+        NotificationManagerCompat.IMPORTANCE_HIGH,
+    ),
+
     /** The files the user sends and downloads, while they are on their way (`TransfersWorker`, FR-N4). */
     Transfers(
         "transfers",

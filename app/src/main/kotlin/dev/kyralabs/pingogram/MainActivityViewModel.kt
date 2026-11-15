@@ -94,14 +94,25 @@ class MainActivityViewModel internal constructor(
      */
     val chatToOpen: StateFlow<Long?> = mutableChatToOpen.asStateFlow()
 
-    /** Asks to open chat [chatId]; a later request replaces one not opened yet. */
-    fun openChat(chatId: Long) {
+    private val mutableMessageToOpen = MutableStateFlow<Long?>(null)
+
+    /** The message [chatToOpen] opens at (a reminder's "Open"), or null for where the chat opens by itself. */
+    val messageToOpen: StateFlow<Long?> = mutableMessageToOpen.asStateFlow()
+
+    /** Asks to open chat [chatId], at [messageId] if given; a later request replaces one not opened yet. */
+    fun openChat(
+        chatId: Long,
+        messageId: Long? = null,
+    ) {
+        // The message first: the chat is what starts opening it.
+        mutableMessageToOpen.value = messageId
         mutableChatToOpen.value = chatId
     }
 
     /** The chat of [chatToOpen] was opened, or dropped because nobody is logged in. */
     fun onChatOpened() {
         mutableChatToOpen.value = null
+        mutableMessageToOpen.value = null
     }
 
     private val mutableLockedChatsToOpen = MutableStateFlow(false)

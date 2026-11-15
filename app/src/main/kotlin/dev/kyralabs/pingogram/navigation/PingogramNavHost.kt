@@ -102,6 +102,7 @@ internal fun PingogramNavHost(
     modifier: Modifier = Modifier,
     headerActions: ChatListHeaderActions? = null,
     chatToOpen: Long? = null,
+    messageToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
     lockedChatsToOpen: Boolean = false,
     onLockedChatsOpened: () -> Unit = {},
@@ -131,7 +132,7 @@ internal fun PingogramNavHost(
         mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions)
     }
     SessionNavigationEffect(navController, uiState)
-    OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
+    OpenChatEffect(navController, uiState, chatToOpen, messageToOpen, onChatOpened)
     OpenLockedChatsEffect(navController, uiState, lockedChatsToOpen, onLockedChatsOpened)
     ReturnFromPictureInPictureEffect(navController)
 }
