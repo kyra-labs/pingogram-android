@@ -168,7 +168,7 @@ internal fun MediaViewerScreen(
 
 /**
  * The toolbar of actions on the current item of [content] ([ViewerToolbar]), with its full file's state for a Share,
- * Save or Copy that waits for it; Copy for photos only.
+ * Save or Copy that waits for it; Copy for photos only, the speed for videos only.
  */
 private fun actionsOf(
     content: MediaViewerUiState.Content,
@@ -176,7 +176,10 @@ private fun actionsOf(
 ): @Composable () -> Unit {
     val media = content.current.media
     val file = ItemFile(media.fileId, content.files[media.fileId])
-    return { ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, onEvent) }
+    val speed = content.actions.speed.takeIf { media is ViewerMedia.Clip }
+    return {
+        ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, speed, onEvent)
+    }
 }
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */

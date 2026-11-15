@@ -709,6 +709,43 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
+        fun `a speed plays the video at it, shows in the state and is kept for the next one`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+
+                send(viewModel, MediaViewerEvent.SetSpeed(1.5f))
+
+                assertEquals(listOf("play:$videoPath:Video", "speed:1.5"), player.calls)
+                assertEquals(1.5f, viewModel.content.playback!!.speed)
+                assertEquals(1.5f, viewModel.content.actions.speed)
+            }
+
+        @Test
+        fun `a speed that is not offered is ignored`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+
+                send(viewModel, MediaViewerEvent.SetSpeed(3f))
+
+                assertEquals(listOf("play:$videoPath:Video"), player.calls)
+                assertEquals(1f, viewModel.content.actions.speed)
+            }
+
+        @Test
+        fun `the speed survives process death`() =
+            runViewModelTest {
+                media.serve(listOf(message(1), message(2, videoContent(2)), message(3)))
+                files.setFile(fullFileId(2), FileState.Downloaded(videoPath, 12_000_000))
+                val handle = SavedStateHandle()
+                send(viewModel(messageId = 2, handle = handle), MediaViewerEvent.SetSpeed(2f))
+
+                val restored = viewModel(messageId = 2, handle = handle)
+                runCurrent()
+
+                assertEquals(2f, restored.content.actions.speed)
+            }
+
+        @Test
         fun `the progress follows the player while it plays`() =
             runViewModelTest {
                 val viewModel = playingVideo()
