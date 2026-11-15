@@ -7,8 +7,10 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
+import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * The chats TDLib announced in this session, kept in memory (`docs/ARCHITECTURE.md`, Repositories), their lists,
@@ -68,6 +70,12 @@ interface ChatRepository {
 
     /** How many chats of [list] are unread, then every change; [UnreadChatCount.None] until TDLib counted them. */
     fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount>
+
+    /**
+     * How many messages of [list]'s chats are unread, then every change; [UnreadMessageCount.None] until TDLib counted
+     * them, and from repositories that do not count them (the tests' fakes).
+     */
+    fun unreadMessageCount(list: ChatListType): Flow<UnreadMessageCount> = flowOf(UnreadMessageCount.None)
 
     /**
      * Pins chat [chatId] at the top of [list], or unpins it. Fails with `DomainError.TooManyPinnedChats` when the list

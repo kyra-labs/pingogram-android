@@ -187,6 +187,23 @@ class BookmarksViewModelTest {
         }
 
     @Test
+    fun `a card's edit opens its bookmark's sheet once, which a process death keeps without opening it again`() =
+        runTest {
+            val handle = SavedStateHandle()
+            val viewModel = createViewModel(handle)
+
+            viewModel.onEvent(BookmarksEvent.Edit(chatId = 1, messageId = 100))
+            assertEquals(BookmarkEditing(1, 100), viewModel.editing.value)
+
+            viewModel.onEvent(BookmarksEvent.EditorOpened)
+            assertEquals(BookmarkEditing(1, null), viewModel.editing.value)
+            assertEquals(BookmarkEditing(1, null), createViewModel(handle).editing.value)
+
+            viewModel.onEvent(BookmarksEvent.EditorClosed)
+            assertEquals(null, viewModel.editing.value)
+        }
+
+    @Test
     fun `a removed tag no longer filters`() =
         runTest {
             val viewModel = createViewModel()

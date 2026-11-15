@@ -27,6 +27,18 @@
 
     <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md): its name and description in the
          launcher's widget list, its title and "New chat" button, the messages it shows instead of chats -->
+    <!-- The unread counter widget (board 33): its name and description in the launcher's widget list, what it shows
+         under the count, when nothing is unread, and what screen readers hear. -->
+    <string name="widget_unread_label">Unread counter</string>
+    <string name="widget_unread_description">How many messages wait for you, and your mentions</string>
+    <string name="widget_unread_unread">unread</string>
+    <plurals name="widget_unread_mentions">
+        <item quantity="one">%d mention</item>
+        <item quantity="other">%d mentions</item>
+    </plurals>
+    <string name="widget_unread_all_read">All read</string>
+    <string name="widget_unread_signed_out">Sign in to Pingogram</string>
+    <string name="widget_unread_locked">Pingogram is locked</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>
