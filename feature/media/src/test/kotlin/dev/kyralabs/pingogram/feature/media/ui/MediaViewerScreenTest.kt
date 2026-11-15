@@ -399,12 +399,28 @@ class MediaViewerScreenTest {
     // Delete, More and tooltips
 
     @Test
-    fun `Delete shows where it is allowed and asks first`() {
+    fun `Delete is in More where it is allowed, not in the toolbar, and asks first`() {
         setScreen(MediaPreviewData.allActions)
 
-        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertHasClickAction().performClick()
+        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertDoesNotExist()
+        moreButton().performClick()
+        composeRule.onNode(hasText(string(R.string.media_delete))).assertIsDisplayed().performClick()
 
         assertEquals(MediaViewerEvent.Delete, events.last())
+    }
+
+    @Test
+    fun `the toolbar is Forward, Share, Save and More, in that order`() {
+        setScreen(MediaPreviewData.allActions)
+
+        val lefts =
+            listOf(R.string.media_forward, R.string.media_share, R.string.media_save, R.string.media_more).map {
+                composeRule
+                    .onNode(hasContentDescription(string(it)))
+                    .fetchSemanticsNode()
+                    .boundsInRoot.left
+            }
+        assertEquals(lefts.sorted(), lefts)
     }
 
     @Test
@@ -430,7 +446,10 @@ class MediaViewerScreenTest {
     fun `Delete is hidden where it is not allowed`() {
         setScreen(MediaPreviewData.withActions)
 
-        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertDoesNotExist()
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_delete))).assertDoesNotExist()
     }
 
     @Test
@@ -495,7 +514,6 @@ class MediaViewerScreenTest {
                 R.string.media_forward,
                 R.string.media_share,
                 R.string.media_save,
-                R.string.media_delete,
                 R.string.media_more,
             )
 

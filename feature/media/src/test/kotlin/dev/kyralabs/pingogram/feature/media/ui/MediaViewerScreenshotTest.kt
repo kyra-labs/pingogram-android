@@ -21,7 +21,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the media viewer (`docs/TESTING.md`), light and dark on a compact phone and light on an expanded window:
  * a photo with its chrome and caption, a video with its controls, a photo still downloading, the chrome hidden, the
- * error, and the floating toolbar: Share, Save and More; with Delete too, and its confirmation; Share waiting for the
+ * error, and the floating toolbar: Share, Save and More; with Forward too, More's menu with Delete in its own group
+ * (board 25), and the delete confirmation; Share waiting for the
  * download; and More alone in a chat that protects its content. The viewer is dark in either theme, so light and dark
  * differ only where the app's theme shows through (none here). Inspection mode, so Coil shows solid colors for the
  * images ([PreviewImages]) instead of loading TDLib files; the downloading photo stays loading.
@@ -99,14 +100,19 @@ class MediaViewerScreenshotTest(
                 .performSemanticsAction(SemanticsActions.OnClick)
             composeRule.waitForIdle()
         }
+        if (shot.openMore) {
+            composeRule.onNode(hasContentDescription("More options")).performSemanticsAction(SemanticsActions.OnClick)
+            composeRule.waitForIdle()
+        }
         captureScreenRoboImage(goldenPath(javaClass, "$stateName.$goldenName"))
     }
 
-    /** A state to capture, with its images loading or not, and its chrome shown or hidden. */
+    /** A state to capture, with its images loading or not, its chrome shown or hidden, and More's menu open. */
     class Shot(
         val state: MediaViewerUiState,
         val imagesLoading: Boolean = false,
         val hideChrome: Boolean = false,
+        val openMore: Boolean = false,
     )
 
     companion object {
@@ -120,6 +126,7 @@ class MediaViewerScreenshotTest(
                 "error" to Shot(MediaPreviewData.error),
                 "actions" to Shot(MediaPreviewData.withActions),
                 "allActions" to Shot(MediaPreviewData.allActions),
+                "moreMenu" to Shot(MediaPreviewData.allActions, openMore = true),
                 "deleteConfirmation" to Shot(MediaPreviewData.deleteConfirmation),
                 "sharing" to Shot(MediaPreviewData.sharing, imagesLoading = true),
                 "protectedContent" to Shot(MediaPreviewData.protectedContent),
