@@ -82,7 +82,8 @@ class BookmarkTagsScreenTest {
 
         composeRule
             .onNodeWithText(
-                "1 bookmark keeps its other tags. 2 bookmarks with only this tag will have no tag. No bookmark is removed.",
+                "1 bookmark keeps its other tags. 2 bookmarks with only this tag will have no tag. " +
+                    "No bookmark is removed.",
             ).assertExists()
         composeRule.onNodeWithText("Delete tag").performClick()
 
