@@ -82,6 +82,10 @@
     <string name="media_copy_pending">Preparing to copy</string>
     <!-- The clipboard's label of a copied photo -->
     <string name="media_copy_label">Photo</string>
+    <!-- What a photo, video or GIF dragged out of the viewer into another app shows on its shadow. -->
+    <string name="media_drag_photo">Photo</string>
+    <string name="media_drag_video">Video</string>
+    <string name="media_drag_gif">GIF</string>
     <string name="media_copied">Photo copied</string>
     <string name="media_copy_failed">This photo can\'t be copied</string>
     <!-- The confirmation before the shown photo, video or GIF is deleted -->

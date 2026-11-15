@@ -1,5 +1,6 @@
-package dev.kyralabs.pingogram.feature.chat.ui.drop
+package dev.kyralabs.pingogram.core.ui.file
 
+import android.content.ClipData
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Point
@@ -23,11 +24,12 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlin.math.ceil
 
 /**
- * How a dragged-out file's shadow looks, in pixels and ARGB: the board's tilted card, on `primaryContainer` with
- * `large` corners, the label in `labelLarge` (Google Sans Flex) and `onPrimaryContainer`, at most a bubble wide.
+ * How a dragged-out file's shadow looks, in pixels and ARGB (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop", the owner's
+ * board 35c): the tilted card, on `primaryContainer` with `large` corners, the label in `labelLarge` (Google Sans Flex)
+ * and `onPrimaryContainer`, at most a bubble's media wide.
  */
 @Immutable
-internal data class DragShadowStyle(
+data class DragShadowStyle(
     val container: Int,
     val content: Int,
     val corner: Float,
@@ -39,7 +41,7 @@ internal data class DragShadowStyle(
 
 /** The [DragShadowStyle] of the current theme. */
 @Composable
-internal fun rememberDragShadowStyle(): DragShadowStyle {
+fun rememberDragShadowStyle(): DragShadowStyle {
     val colors = MaterialTheme.colorScheme
     val style = MaterialTheme.typography.labelLarge
     val corner = MaterialTheme.shapes.large.topStart
@@ -65,7 +67,7 @@ internal fun rememberDragShadowStyle(): DragShadowStyle {
 }
 
 /**
- * The shadow of a file dragged out of a bubble: a card tilted by [TILT_DEGREES] with [label] on it, ellipsized at the
+ * The shadow of files dragged out of the app: a card tilted by [TILT_DEGREES] with [label] on it, ellipsized at the
  * style's width, the finger at its middle. Drawn once by Android into the drag's surface.
  */
 internal class FileDragShadow(
@@ -111,3 +113,32 @@ internal class FileDragShadow(
 
 /** The board's tilt of the dragged copy. */
 private const val TILT_DEGREES = -4f
+
+/** A TDLib file at [path] to drag into another app, as [mimeType]. */
+@Immutable
+data class DraggedFile(
+    val path: String,
+    val mimeType: String,
+) {
+    override fun toString() = "DraggedFile(mimeType=$mimeType)"
+}
+
+/**
+ * Starts Android's drag between apps with [files] as `content://` URIs of the app's `FileProvider` ([tdlibFileUri]) and
+ * a read grant for them alone ([View.DRAG_FLAG_GLOBAL_URI_READ]), its shadow a [FileDragShadow] of [label] in
+ * [style]. False where no file could be served or Android refused the drag.
+ */
+fun View.startFileDrag(
+    files: List<DraggedFile>,
+    label: String,
+    style: DragShadowStyle,
+): Boolean {
+    val uris = files.mapNotNull { file -> context.tdlibFileUri(file.path)?.let { it to file.mimeType } }
+    if (uris.isEmpty()) return false
+    val types = uris.map { it.second }.distinct().toTypedArray()
+    val clip = ClipData(label, types, ClipData.Item(uris.first().first))
+    uris.drop(1).forEach { (uri, _) -> clip.addItem(ClipData.Item(uri)) }
+    return startDragAndDrop(clip, FileDragShadow(label, style), null, DRAG_FLAGS)
+}
+
+private const val DRAG_FLAGS = View.DRAG_FLAG_GLOBAL or View.DRAG_FLAG_GLOBAL_URI_READ

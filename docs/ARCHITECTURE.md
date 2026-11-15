@@ -1815,7 +1815,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   long-press node (`LongPress.kt`) hands a move past the touch slop after the long press to `MessageDragOut`
   (`BubbleResources.dragOut`), which reads the bubble's downloaded files from the state at that moment
   (`ChatUiState.dragOutFiles`, none where `MessageShortcuts.canForward` is false) and starts `View.startDragAndDrop`
-  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ`, its shadow drawn by `FileDragShadow`.
+  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ` (`core:ui`'s `startFileDrag`, its shadow drawn by
+  `FileDragShadow`). The media viewer does the same for its shown item (`feature:media`'s `MediaDragOut`, a long press
+  then a move detected by `detectDragOutAfterLongPress` in the page's gestures), where `MediaActions.canSave` says the
+  content may leave the chat; `MediaViewerRoute` gives the screen none in a secret chat.
 
 ## Calls
 
