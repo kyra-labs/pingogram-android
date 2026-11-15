@@ -63,7 +63,7 @@ class RecentChatsWidget : GlanceAppWidget() {
  * dark theme, not the app's theme mode.
  */
 @Composable
-private fun widgetColors(settings: AppearanceSettings?): ColorProviders {
+internal fun widgetColors(settings: AppearanceSettings?): ColorProviders {
     val dynamic = settings == null || settings.dynamicColor
     return if (dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         GlanceTheme.colors
@@ -77,7 +77,7 @@ private fun widgetColors(settings: AppearanceSettings?): ColorProviders {
 }
 
 /** The slot of the account widget [id] keeps; [default] from now on if it keeps none yet. */
-private suspend fun accountOf(
+internal suspend fun accountOf(
     context: Context,
     id: GlanceId,
     default: Int,
@@ -110,7 +110,8 @@ class RecentChatsWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        updater(context).onWidgetsChanged(present = false)
+        // Unread counters may still be placed: the updater asks the launcher again.
+        updater(context).onWidgetsChanged(present = true)
     }
 
     private fun updater(context: Context) =
@@ -149,11 +150,18 @@ internal class GlanceRecentChatsWidgets
             updateAppWidgetState(context, id) { it[ACCOUNT_KEY] = to }
         }
 
-        private suspend fun ids() = GlanceAppWidgetManager(context).getGlanceIds(RecentChatsWidget::class.java)
+        // Both widgets show what the updater follows: the recent chats and the unread counter (board 33).
+        private suspend fun ids() =
+            GlanceAppWidgetManager(context).let {
+                it.getGlanceIds(RecentChatsWidget::class.java) + it.getGlanceIds(UnreadCounterWidget::class.java)
+            }
 
         private suspend fun state(id: GlanceId) = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
 
-        override suspend fun updateAll() = RecentChatsWidget().updateAll(context)
+        override suspend fun updateAll() {
+            RecentChatsWidget().updateAll(context)
+            UnreadCounterWidget().updateAll(context)
+        }
     }
 
 @Module

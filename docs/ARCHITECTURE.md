@@ -1965,6 +1965,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 
 `docs/adr/0017-home-screen-widget.md`. Jetpack Glance, in `:app`'s `widget/` package; nothing polls.
 
+- **Unread counter** (board 33): `UnreadCounterWidget` (its receiver `UnreadCounterWidgetReceiver`) draws
+  `UnreadCounterContent` from the same `RecentChatsWidgetUpdater` content, which also carries the main list's unread
+  messages (`ChatRepository.unreadMessageCount`, TDLib's `updateUnreadMessageCount`) and the loaded chats' mentions;
+  `GlanceRecentChatsWidgets` counts, moves and redraws both widgets' ids.
+
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
   widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.
   A widget whose account leaves the device takes the shown account then (`RecentChatsWidgets.move`).

@@ -62,3 +62,17 @@ data class UnreadChatCount(
         val None = UnreadChatCount(0, 0, 0, 0, 0)
     }
 }
+
+/**
+ * How many messages of a list's chats are unread (td_api.tl `updateUnreadMessageCount`); "unmuted" leaves muted
+ * chats out.
+ */
+data class UnreadMessageCount(
+    val unreadCount: Int,
+    val unreadUnmutedCount: Int,
+) {
+    companion object {
+        /** Before TDLib counted the list. */
+        val None = UnreadMessageCount(0, 0)
+    }
+}
