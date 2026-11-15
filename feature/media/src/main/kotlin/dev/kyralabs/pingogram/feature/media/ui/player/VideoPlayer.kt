@@ -49,6 +49,12 @@ interface VideoPlayer {
      */
     fun setMuted(muted: Boolean) {}
 
+    /**
+     * Plays videos at [speed] times their pace (1 is normal), what plays now and what plays next, with their pitch
+     * kept: the media viewer's speed. GIFs always play at their own pace.
+     */
+    fun setSpeed(speed: Float) {}
+
     /** Stops and empties the player; it can [play] again. */
     fun stop()
 

@@ -308,6 +308,36 @@
     <string name="voice_trim_start_earlier">Start one second earlier</string>
     <string name="voice_trim_end_earlier">End one second earlier</string>
     <string name="voice_trim_end_later">End one second later</string>
+    <!-- Voice message transcription (docs/DESIGN_SYSTEM.md §6, board 28): the bubble's button, for screen readers. -->
+    <string name="transcription_transcribe">Transcribe voice message</string>
+    <string name="transcription_transcribe_video">Transcribe video message</string>
+    <!-- The button and the text button that hide a transcript. -->
+    <string name="transcription_hide">Hide text</string>
+    <!-- Under a voice message while Android's recognizer, on the phone, makes its text. -->
+    <string name="transcription_transcribing">Transcribing on this phone…</string>
+    <!-- Under the first transcript made on the phone: where it was made. -->
+    <string name="transcription_on_this_phone">On this phone</string>
+    <!-- Under a transcript made by "Transcribe voice messages automatically". -->
+    <string name="transcription_automatic">Transcribed automatically</string>
+    <!-- Under a long transcript cut after a few lines. -->
+    <string name="transcription_show_more">Show more</string>
+    <!-- In place of a transcript where the recognizer heard no words. -->
+    <string name="transcription_no_words">No words heard</string>
+    <!-- Where no speech language for the message is ready on the phone, above a link to Android's settings. -->
+    <string name="transcription_unavailable">Not available on this device.</string>
+    <string name="transcription_language_settings">Android language settings</string>
+    <string name="transcription_failed">Couldn’t transcribe this message.</string>
+    <string name="transcription_try_again">Try again</string>
+    <!-- What screen readers hear of a transcript, after the voice message: "Text, transcribed on this phone: …". -->
+    <string name="transcription_a11y_text">Text, transcribed on this phone: %1$s</string>
+    <!-- Snackbar at a tap on Transcribe without the microphone permission, with an action that asks for it. -->
+    <string name="transcription_permission_rationale">Android lets apps use its speech recognition only with the microphone permission. Pingogram records nothing for it.</string>
+    <string name="transcription_permission_allow">Allow</string>
+    <!-- Snackbar after the microphone permission was refused, with an action that opens the app's settings. -->
+    <string name="transcription_permission_denied">Allow the microphone in Settings to transcribe voice messages</string>
+    <string name="transcription_permission_settings">Settings</string>
+    <!-- Snackbar where the phone has no page for its speech languages. -->
+    <string name="transcription_no_settings">This phone has no page for speech languages</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
     <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
     <string name="voice_permission_allow">Allow</string>
