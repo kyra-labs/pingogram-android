@@ -91,7 +91,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -259,7 +258,7 @@ private fun StoryPhoto(
 
 /**
  * What the story shows, filling the frame: a photo (decoded at the frame's size) or a video, each over its blurred
- * minithumbnail and with a [DelayedLoadingIndicator] until its file is on the device; for a video its thumbnail until
+ * minithumbnail and with [StoryLoading] until its file is on the device; for a video its thumbnail until
  * its first frame. What the viewer cannot show says so as an [EmptyState]: a live stream, unsupported content, a
  * deleted story; a failure with "Try again" ([onRetry]).
  */
@@ -273,8 +272,7 @@ private fun StoryMediaContent(
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val widthPx = constraints.maxWidth
         val heightPx = constraints.maxHeight
-        val loading = stringResource(R.string.story_viewer_loading)
-        val indicator = @Composable { DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading }) }
+        val indicator = @Composable { StoryLoading() }
         when (media) {
             StoryMedia.Loading -> {
                 indicator()
