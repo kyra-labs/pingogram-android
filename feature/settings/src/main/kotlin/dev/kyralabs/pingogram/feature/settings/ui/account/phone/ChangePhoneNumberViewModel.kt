@@ -175,9 +175,7 @@ class ChangePhoneNumberViewModel
                     goTo(ChangePhoneNumberStep.Number)
                 }
 
-                ChangePhoneNumberStep.Intro, ChangePhoneNumberStep.Done -> {
-                    Unit
-                }
+                ChangePhoneNumberStep.Intro, ChangePhoneNumberStep.Done -> {}
             }
         }
 
@@ -354,9 +352,7 @@ class ChangePhoneNumberViewModel
                     reject { updateCode { it.copy(error = error) } }
                 }
 
-                DomainError.Silent -> {
-                    Unit
-                }
+                DomainError.Silent -> {}
 
                 else -> {
                     effectChannel.trySend(ChangePhoneNumberEffect.ShowError(error))

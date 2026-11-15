@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.mapLatest
@@ -34,6 +35,8 @@ class TdlibProxyRepository
     ) : ProxyRepository {
         private val changes = MutableStateFlow(0)
 
+        // mapLatest is still experimental in kotlinx.coroutines; it drops a read that a newer change made stale.
+        @OptIn(ExperimentalCoroutinesApi::class)
         override val proxies: Flow<Outcome<ImmutableList<SavedProxy>>> =
             changes.mapLatest {
                 client.request(TdApi.GetProxies()).map { added ->

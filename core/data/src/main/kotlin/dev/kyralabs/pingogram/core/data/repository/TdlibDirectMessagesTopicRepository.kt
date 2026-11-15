@@ -49,7 +49,7 @@ class TdlibDirectMessagesTopicRepository
                 if (topic == null) {
                     chats
                 } else {
-                    chats.put(topic.chatId, (chats[topic.chatId] ?: persistentMapOf()).put(topic.id, topic))
+                    chats.putting(topic.chatId, (chats[topic.chatId] ?: persistentMapOf()).putting(topic.id, topic))
                 }
             }
 

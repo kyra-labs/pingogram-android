@@ -271,7 +271,6 @@ private fun ChoiceRow(
     val body = MaterialTheme.typography.bodyLarge
     val textStyle = if (isUserContent) body.userContent else body
     ListItem(
-        headlineContent = { Text(headline, maxLines = 2, overflow = TextOverflow.Ellipsis, style = textStyle) },
         modifier =
             Modifier
                 .clip(MaterialTheme.shapes.large)
@@ -283,7 +282,9 @@ private fun ChoiceRow(
             ListItemDefaults.colors(
                 containerColor = if (selected) colors.secondaryContainer else Color.Transparent,
             ),
-    )
+    ) {
+        Text(headline, maxLines = 2, overflow = TextOverflow.Ellipsis, style = textStyle)
+    }
 }
 
 @Composable

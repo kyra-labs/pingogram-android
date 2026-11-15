@@ -9,8 +9,10 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -175,6 +177,16 @@ private fun SizeLimitSegment(
     val index = sizeLimitIndex(limit)
     val limitText = stringResource(R.string.settings_auto_download_up_to, sizeText(LocalResources.current, limit))
     val haptics = LocalHapticFeedback.current
+    // One step per limit. The state follows the setting while the finger does not hold it.
+    val sliderState =
+        remember {
+            SliderState(
+                index.toFloat(),
+                AutoDownloadSizeLimits.size - 2,
+                0f..AutoDownloadSizeLimits.lastIndex.toFloat(),
+            )
+        }
+    LaunchedEffect(index) { if (!sliderState.isDragging) sliderState.value = index.toFloat() }
     SettingsSegment(shapes) {
         SegmentedListItem(
             shapes = shapes,
@@ -185,8 +197,9 @@ private fun SizeLimitSegment(
             Text(title)
         }
         Slider(
-            value = index.toFloat(),
+            state = sliderState,
             onValueChange = { value ->
+                sliderState.value = value
                 val step = value.roundToInt().coerceIn(AutoDownloadSizeLimits.indices)
                 if (step != index) {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -204,8 +217,6 @@ private fun SizeLimitSegment(
                         stateDescription = limitText
                     },
             enabled = enabled,
-            valueRange = 0f..AutoDownloadSizeLimits.lastIndex.toFloat(),
-            steps = AutoDownloadSizeLimits.size - 2,
         )
     }
 }
