@@ -26,7 +26,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   its search finds bookmarks by their chat, text, note or tags. Long-press a bookmark to change its tags or note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
-  notification channel of its own, even in a muted chat, with "Snooze 1 h".
+  notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
+  moves it an hour on.
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
 - A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
