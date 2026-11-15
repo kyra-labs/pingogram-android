@@ -21,7 +21,8 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
  * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out.
  * [storyAlbums], where given, shows the user's story albums above the shared media, and [profileMusic] their profile
- * music below the header. It grows
+ * music below the header. [onChatDeleted] leaves it once the chat with a deleted account was deleted ([onBack] where
+ * not given), as the conversation below it is gone too. It grows
  * out of the conversation's avatar that opened it, and shrinks back into it (`docs/DESIGN_SYSTEM.md` §5,
  * [avatarTransformTarget]).
  */
@@ -35,6 +36,7 @@ fun NavGraphBuilder.profileScreen(
     onExportChat: ((chatId: Long) -> Unit)? = null,
     storyAlbums: StoryAlbumsSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
+    onChatDeleted: (() -> Unit)? = null,
 ) {
     composable<ProfileRoute> { entry ->
         val userId = entry.toRoute<ProfileRoute>().userId
@@ -51,6 +53,7 @@ fun NavGraphBuilder.profileScreen(
                 onExportChat = onExportChat,
                 storyAlbums = storyAlbums,
                 profileMusic = profileMusic,
+                onChatDeleted = onChatDeleted,
             )
         }
     }
