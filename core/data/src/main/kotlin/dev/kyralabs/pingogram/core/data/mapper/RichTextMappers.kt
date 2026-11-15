@@ -128,9 +128,7 @@ private class RichTextBuilder {
             }
 
             // Anchors mark a place, icons are small pictures Pingogram does not draw, and a newer TDLib may add more.
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
 

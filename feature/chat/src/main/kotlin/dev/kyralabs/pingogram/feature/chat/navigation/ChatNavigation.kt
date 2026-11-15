@@ -37,7 +37,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
  * [onOpenChatInfo] the info page of a group or channel, from its title; [onOpenThread] pushes a forum topic or a
  * message thread opened from it, a [ChatDestination] too; [onOpenScheduledMessages] the list of the chat's scheduled
  * messages, from their bar (`scheduledMessagesScreen`). [onOpenNextChat] opens the next unread channel, which a read
- * channel offers, in the conversation's place ([onOpenChat] without it).
+ * channel offers, in the conversation's place ([onOpenChat] without it). [onOpenMessage] opens a chat at a message:
+ * the original of a post forwarded from a channel ([onOpenChat] without it).
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
@@ -48,6 +49,7 @@ fun NavGraphBuilder.chatScreen(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     composable<ChatDestination> { entry ->
         val route = entry.toRoute<ChatDestination>()
@@ -64,6 +66,7 @@ fun NavGraphBuilder.chatScreen(
                 onOpenChatInfo = onOpenChatInfo,
                 onOpenScheduledMessages = onOpenScheduledMessages,
                 onOpenNextChat = onOpenNextChat,
+                onOpenMessage = onOpenMessage,
             )
         }
     }
@@ -76,7 +79,7 @@ fun NavGraphBuilder.chatScreen(
  * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
  * were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page, which the
  * layout pushes above itself or shows beside the conversation; [onOpenScheduledMessages] the chat's scheduled messages,
- * which it pushes above itself.
+ * which it pushes above itself; [onOpenMessage] a chat at a message, the original of a post forwarded from a channel.
  *
  * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
  * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own
@@ -108,6 +111,7 @@ fun ChatPane(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     key(chatId, messageId) {
         var threads by rememberSaveable(stateSaver = PaneThreads.Saver) { mutableStateOf(PaneThreads()) }
@@ -145,6 +149,7 @@ fun ChatPane(
                     onOpenChatInfo = onOpenChatInfo,
                     focusComposer = focusComposer && top == null,
                     onOpenScheduledMessages = onOpenScheduledMessages,
+                    onOpenMessage = onOpenMessage,
                 )
             }
         }

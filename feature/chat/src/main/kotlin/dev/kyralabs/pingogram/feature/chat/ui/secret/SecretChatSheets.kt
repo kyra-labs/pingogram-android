@@ -17,7 +17,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -47,8 +47,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The sheets of a secret chat's top bar (`REQUIREMENTS.md` FR-E1), a [ModalBottomSheet] each: the self-destruct timer
- * ([TimerContent]) and the encryption key ([EncryptionKeyContent]), with the confirmation before the chat ends
+ * The sheets of a secret chat's top bar (`REQUIREMENTS.md` FR-E1), a [PingogramBottomSheet] each: the self-destruct
+ * timer ([TimerContent]) and the encryption key ([EncryptionKeyContent]), with the confirmation before the chat ends
  * ([EndSecretChatDialog]). Dragging a sheet down, tapping the scrim and the back gesture (Material's predictive back)
  * close it ([SecretChatEvent.Dismiss]); its content scrolls where the window is too short.
  */
@@ -61,7 +61,7 @@ internal fun SecretChatBottomSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(SecretChatEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(SecretChatEvent.Dismiss) }, sheetState = sheetState) {
         when (sheet) {
             is SecretChatSheet.Timer -> TimerContent(sheet, currentOnEvent)
             is SecretChatSheet.Key -> EncryptionKeyContent(sheet, currentOnEvent)

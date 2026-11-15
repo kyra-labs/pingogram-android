@@ -224,7 +224,10 @@ internal object ChatListPreviewData {
                 ),
         )
 
-    /** Two communities whose chats show as one entry each (the owner's board 19b): one expanded, one muted. */
+    /**
+     * Two communities whose chats show as one entry each (the owner's board 19b): one expanded, with a forum among its
+     * chats, one muted.
+     */
     val withCommunities: ChatListUiState =
         run {
             val pinned = items.count { it.isPinned }
@@ -238,14 +241,15 @@ internal object ChatListPreviewData {
                         unreadCount = 1,
                         avatarShape = AvatarShape.Channel,
                     ),
+                    // A forum: its badge counts its topics with unread messages, not the messages.
                     row(
                         id = 42,
                         title = "Pingogram Beta",
                         preview = message("Pager swipe feels great", UiText.Plain("Riya")),
                         time = "9:02 AM",
-                        unreadCount = 4,
-                        avatarShape = AvatarShape.Group,
-                    ),
+                        unreadCount = 57,
+                        avatarShape = AvatarShape.RoundedSquare,
+                    ).copy(unreadTopicCount = 3),
                     row(
                         id = 43,
                         title = "Moderators",
@@ -274,7 +278,7 @@ internal object ChatListPreviewData {
                         name = "Kyra Labs Community",
                         photo = null,
                         chats = kyraLabs,
-                        unreadCount = 5,
+                        unreadChatCount = kyraLabs.count { it.isUnread },
                         isMuted = false,
                         isExpanded = true,
                         before = pinned,
@@ -284,7 +288,7 @@ internal object ChatListPreviewData {
                         name = "Android Devs",
                         photo = null,
                         chats = androidDevs,
-                        unreadCount = 12,
+                        unreadChatCount = androidDevs.count { it.isUnread },
                         isMuted = true,
                         isExpanded = false,
                         before = pinned + 2,

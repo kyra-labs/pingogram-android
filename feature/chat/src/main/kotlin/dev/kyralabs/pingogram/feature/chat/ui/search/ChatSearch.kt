@@ -548,7 +548,7 @@ private fun ChatSearchPage.leadsTo(restored: Long?): Boolean {
 
 /** [this] with the ids of [more] it does not hold yet, after its own. */
 private fun PersistentList<Long>.addAllNew(more: ImmutableList<Long>): PersistentList<Long> =
-    addAll(more.filterNot { it in this })
+    addingAll(more.filterNot { it in this })
 
 /** "u42" or "c-100" for the saved state. */
 private fun keyOf(sender: MessageSender): String =

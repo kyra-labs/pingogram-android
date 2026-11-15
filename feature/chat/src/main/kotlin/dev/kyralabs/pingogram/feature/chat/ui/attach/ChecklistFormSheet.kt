@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.domain.model.NewChecklist
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -57,7 +57,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The form of a new checklist (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Checklists"): a
- * [ModalBottomSheet] that scrolls, with the title, the tasks (one to thirty, each removable while more than one is
+ * [PingogramBottomSheet] that scrolls, with the title, the tasks (one to thirty, each removable while more than one is
  * left, "Add a task" below them), switches for who else may mark tasks as done and add tasks, then the send split
  * button. Built as the poll form is ([PollFormSheet]).
  *
@@ -95,7 +95,7 @@ internal fun ChecklistFormSheet(
             }
         }
     var scheduling by rememberSaveable { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissChecklist) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissChecklist) }, sheetState = sheetState) {
         ChecklistForm(
             sheet = sheet,
             editor = editor,

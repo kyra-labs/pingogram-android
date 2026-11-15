@@ -38,7 +38,7 @@ class TdlibSavedMessagesTopicRepository
         private val store =
             UpdateStore<PersistentMap<Long, SavedMessagesTopic>>(client, scope, persistentMapOf()) { topics, update ->
                 if (update is TdApi.UpdateSavedMessagesTopic) {
-                    topics.put(update.topic.id, update.topic.toSavedMessagesTopic())
+                    topics.putting(update.topic.id, update.topic.toSavedMessagesTopic())
                 } else {
                     topics
                 }

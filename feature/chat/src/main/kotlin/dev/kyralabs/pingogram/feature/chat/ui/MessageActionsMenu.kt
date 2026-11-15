@@ -355,6 +355,7 @@ private fun MenuGroups(
             modifier
                 .width(IntrinsicSize.Max)
                 .verticalScroll(rememberScrollState())
+                .testTag(MESSAGE_ACTIONS_TAG)
                 .padding(bottom = MaterialTheme.spacing.small),
         verticalArrangement = Arrangement.spacedBy(MenuDefaults.GroupSpacing),
     ) {
@@ -488,3 +489,6 @@ private const val MESSAGE_SHARE = 4
 
 /** The lifted copy of the message, for tests. */
 internal const val LIFTED_MESSAGE_TAG = "lifted_message"
+
+/** The actions' scrolling column, in the menu and the sheet alike: the benchmarks scroll it to "Delete". */
+internal const val MESSAGE_ACTIONS_TAG = "message_actions"

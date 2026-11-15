@@ -13,11 +13,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.TextCompositionExample
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -59,7 +60,7 @@ internal fun TextStyleSheetRoute(
 }
 
 /**
- * A shared style of Telegram's AI editor (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): a [ModalBottomSheet] that
+ * A shared style of Telegram's AI editor (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): a [PingogramBottomSheet] that
  * opens expanded and scrolls, at most `contentMaxWidth`: the AI badge, the style's title in `titleLargeEmphasized`
  * (a heading) over "Custom style · used by 1,204 people", its example before and after on `surfaceContainerHigh` with
  * `large` corners, how many custom styles the account may add as information, why Telegram refused in `error` (a
@@ -74,9 +75,10 @@ internal fun TextStyleSheet(
     onEvent: (TextStyleEvent) -> Unit,
     onClose: () -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = onClose,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState =
+            rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
         Column(
             Modifier

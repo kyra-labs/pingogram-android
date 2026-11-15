@@ -46,7 +46,7 @@ class AndroidDiagnosticsRepositoryTest {
     @Test
     fun `reads the kept crash, and forgets it when asked`() =
         runTest(dispatcher) {
-            crash.parentFile.mkdirs()
+            crash.parentFile!!.mkdirs()
             crash.writeText("time=1000\nthread=main\njava.lang.IllegalStateException\n\tat a.B.c(B.kt:1)\n")
             val repository = repository()
 
@@ -62,7 +62,7 @@ class AndroidDiagnosticsRepositoryTest {
     @Test
     fun `keeps the last lines of TDLib's log, redacted`() =
         runTest(dispatcher) {
-            log.parentFile.mkdirs()
+            log.parentFile!!.mkdirs()
             log.writeText((1..250).joinToString("\n") { "[ 1][t 1][1.0][A.cpp:$it] text = \"message $it\"" } + "\n")
 
             val lines = repository().report().log

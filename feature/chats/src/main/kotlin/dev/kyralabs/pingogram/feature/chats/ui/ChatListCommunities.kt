@@ -171,7 +171,7 @@ internal fun groupCommunities(
                 name = group.name,
                 photo = group.photo,
                 chats = chats.toImmutableList(),
-                unreadCount = chats.sumOf { it.unreadCount },
+                unreadChatCount = chats.count { it.isUnread },
                 isMuted = group.isMuted,
                 isExpanded = group.id in communities.expanded,
                 before = places.getValue(group.id),

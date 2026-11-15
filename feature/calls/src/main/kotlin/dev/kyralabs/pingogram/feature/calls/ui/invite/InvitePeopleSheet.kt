@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -58,6 +57,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.selectionBackground
@@ -72,9 +72,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Add people" (`docs/DESIGN_SYSTEM.md` §6 "Add people to a call"): a [ModalBottomSheet] of the user's contacts that
- * are not in the call ([excluded]), to pick and invite. "Add" closes it, then hands the picks to [onInvite]; the scrim,
- * dragging, back and "Cancel" close it without inviting ([onDismiss]). The picks are forgotten once it closes.
+ * "Add people" (`docs/DESIGN_SYSTEM.md` §6 "Add people to a call"): a [PingogramBottomSheet] of the user's contacts
+ * that are not in the call ([excluded]), to pick and invite. "Add" closes it, then hands the picks to [onInvite]; the
+ * scrim, dragging, back and "Cancel" close it without inviting ([onDismiss]). The picks are forgotten once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +100,7 @@ internal fun InvitePeopleSheet(
             }
         }
     }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             viewModel.reset()
             currentOnDismiss()

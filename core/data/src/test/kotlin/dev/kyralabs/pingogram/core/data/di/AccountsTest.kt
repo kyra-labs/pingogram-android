@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.lang.reflect.Proxy
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AccountsTest {
     @TempDir
     lateinit var dir: File

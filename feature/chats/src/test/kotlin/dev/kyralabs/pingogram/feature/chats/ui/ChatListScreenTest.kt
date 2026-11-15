@@ -446,7 +446,7 @@ class ChatListScreenTest {
 
     /** Keeps the events these tests are about: not paging, which the list reports as it lays out. */
     private fun record(event: ChatListEvent) {
-        if (event !is ChatListEvent.NearEndChanged) events += event
+        if (event !is ChatListEvent.NearEndChanged && event !is ChatListEvent.RowsShown) events += event
     }
 
     /** A row by the start of its description, which names its chat. */

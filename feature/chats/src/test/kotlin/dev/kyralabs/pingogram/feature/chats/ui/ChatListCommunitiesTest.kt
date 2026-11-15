@@ -2,9 +2,14 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.folder
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +41,7 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
             val entry = viewModel.communities().single()
             assertEquals(listOf(3L, 5L), entry.chats.map { it.id })
             assertEquals(1, entry.before)
-            assertEquals(5, entry.unreadCount)
+            assertEquals(2, entry.unreadChatCount)
             assertEquals("Kyra Labs", entry.name)
             assertFalse(entry.isExpanded)
         }
@@ -171,6 +176,37 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
         }
 
     @Test
+    fun `typing in one of a community's groups shows on that group's row alone`() =
+        runTest {
+            users.setUsers(user(USER, firstName = "Ravindu"))
+            chats.setChats(
+                ChatListType.Main,
+                chat(id = 3, type = ChatType.Supergroup(30, isChannel = false)),
+                chat(id = 5, type = ChatType.Supergroup(50, isChannel = false)),
+            )
+            communities.add(COMMUNITY, "Kyra Labs", chatIds = listOf(3, 5))
+            val viewModel = viewModel()
+            send(viewModel, ChatListEvent.ToggleCommunity(COMMUNITY))
+            runCurrent()
+
+            actions.setActions(5, SenderAction(MessageSender.User(USER), ChatAction.Typing))
+            runCurrent()
+
+            val (group, other) = viewModel.communities().single().chats
+            assertEquals(listOf(3L, 5L), listOf(group.id, other.id))
+            assertFalse(group.preview is ChatPreview.Action)
+            assertTrue(other.preview is ChatPreview.Action)
+
+            actions.setActions(5)
+            actions.setActions(3, SenderAction(MessageSender.User(USER), ChatAction.Typing))
+            runCurrent()
+
+            val (typing, quiet) = viewModel.communities().single().chats
+            assertTrue(typing.preview is ChatPreview.Action)
+            assertFalse(quiet.preview is ChatPreview.Action)
+        }
+
+    @Test
     fun `rowIndexOf counts the entries and their open chats`() {
         val rows = persistentListOf(row(2), row(4))
         val entry =
@@ -179,7 +215,7 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
                 name = "Kyra Labs",
                 photo = null,
                 chats = persistentListOf(row(3), row(5)),
-                unreadCount = 0,
+                unreadChatCount = 0,
                 isMuted = false,
                 isExpanded = true,
                 before = 1,
@@ -199,5 +235,6 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
 
     private companion object {
         const val COMMUNITY = 70L
+        const val USER = 8L
     }
 }

@@ -89,8 +89,9 @@ private fun OutgoingStatusIcon(status: OutgoingStatus) {
 }
 
 /**
- * Reactions, mentions and the unread count as badges, in `primary`, or in `surfaceVariant` for a muted chat; a dot
- * for a chat marked as unread; the pin of a pinned chat with nothing unread.
+ * Reactions, mentions and the unread count as badges, in `primary`, or in `surfaceVariant` for a muted chat (a forum's
+ * topics with unread messages instead of its messages, [UnreadTopicsBadge]); a dot for a chat marked as unread; the pin
+ * of a pinned chat with nothing unread.
  */
 @Composable
 private fun UnreadBadges(item: ChatListItemModel) {
@@ -107,7 +108,12 @@ private fun UnreadBadges(item: ChatListItemModel) {
         if (item.hasUnreadMention) {
             Badge(containerColor = container, contentColor = content) { BadgeIcon(UiR.drawable.ic_alternate_email) }
         }
+        val topics = item.unreadTopicCount
         when {
+            topics != null -> {
+                UnreadTopicsBadge(topics, container, content)
+            }
+
             item.unreadCount > 0 -> {
                 Badge(containerColor = container, contentColor = content) { Text(unreadCountText(item.unreadCount)) }
             }
