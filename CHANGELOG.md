@@ -27,6 +27,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
   channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
   the chat.
+- Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
+  languages).
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.

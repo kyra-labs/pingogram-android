@@ -40,9 +40,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -59,39 +60,6 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The stack: two layers of the next cards peek below the shown one (`surfaceContainer` and `surfaceContainerLow`,
- * decorative), and the shown chat's card ([CatchUpChatCard]) above them.
- */
-@Composable
-internal fun CatchUpStack(
-    stage: CatchUpStage.Cards,
-    onEvent: (CatchUpEvent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val peek = MaterialTheme.spacing.small
-    val shape = MaterialTheme.shapes.extraLarge
-    Box(modifier.padding(bottom = peek * 2)) {
-        if (stage.position + 1 <= stage.total) {
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .padding(horizontal = peek * 2)
-                    .offset(y = peek * 2)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow, shape),
-            )
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .padding(horizontal = peek)
-                    .offset(y = peek)
-                    .background(MaterialTheme.colorScheme.surfaceContainer, shape),
-            )
-        }
-        CatchUpChatCard(stage.current, onEvent, Modifier.fillMaxSize())
-    }
-}
-
-/**
  * One chat's card (`surfaceContainerHigh`, `extraLarge` corners), a region for screen readers named by the chat and
  * its unread messages: the avatar in the chat's shape, its name over "9 unread · 1 mention · since 9:02", an "@" badge
  * while it mentions the user; the newest unread messages, "N earlier messages" above them; then "Mark as read" (a
@@ -106,8 +74,19 @@ internal fun CatchUpChatCard(
 ) {
     val resources = LocalResources.current
     val region = resources.getQuantityString(R.plurals.catch_up_card, card.unreadCount, card.title, card.unreadCount)
+    val markAsRead = resources.getString(R.string.catch_up_mark_as_read)
+    val skip = resources.getString(R.string.catch_up_skip)
     Card(
-        modifier = modifier.semantics { paneTitle = region },
+        modifier =
+            modifier.semantics {
+                paneTitle = region
+                // The swipes' equivalents.
+                customActions =
+                    listOf(
+                        CustomAccessibilityAction(markAsRead) { onEvent(CatchUpEvent.MarkAsRead).let { true } },
+                        CustomAccessibilityAction(skip) { onEvent(CatchUpEvent.Skip).let { true } },
+                    )
+            },
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
@@ -123,7 +102,7 @@ internal fun CatchUpChatCard(
 }
 
 @Composable
-private fun CardHeader(card: CatchUpCard) {
+internal fun CardHeader(card: CatchUpCard) {
     val resources = LocalResources.current
     Row(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
