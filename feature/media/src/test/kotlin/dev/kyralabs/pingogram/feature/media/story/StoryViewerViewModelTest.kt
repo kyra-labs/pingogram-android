@@ -204,13 +204,31 @@ internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
             viewModel.onEvent(StoryViewerEvent.Hold(true))
             runCurrent()
             assertTrue(viewModel.content.isPaused)
+            assertTrue(viewModel.content.isHeld)
             advanceTimeBy(PHOTO_MILLIS * 2)
             assertEquals(ADA to 11, viewModel.shownStory)
 
             viewModel.onEvent(StoryViewerEvent.Hold(false))
             runCurrent()
             assertFalse(viewModel.content.isPaused)
+            assertFalse(viewModel.content.isHeld)
             advanceTimeBy(PHOTO_MILLIS / 2 + TICK_MILLIS)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
+    fun `with TalkBack a story's end does not move on, Next does`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+            viewModel.onEvent(StoryViewerEvent.ScreenReader(true))
+
+            advanceTimeBy(PHOTO_MILLIS * 2)
+            runCurrent()
+            assertEquals(ADA to 11, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.Next)
             runCurrent()
             assertEquals(ADA to 12, viewModel.shownStory)
         }

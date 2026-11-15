@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.intl.Locale
+import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -178,10 +179,12 @@ internal fun SettingsSearchResults(
     val resources = LocalResources.current
     val locale = Locale.current.platformLocale
     val hasRecentCalls = LocalRecentCallsLauncher.current != null
+    val hasBookmarks = LocalBookmarksLauncher.current != null
     val found =
-        remember(query, resources, locale, hasRecentCalls) {
+        remember(query, resources, locale, hasRecentCalls, hasBookmarks) {
             searchEntries(SearchEntries, query, resources, locale) {
-                hasRecentCalls || it.destination != HomeDestination.RecentCalls
+                (hasRecentCalls || it.destination != HomeDestination.RecentCalls) &&
+                    (hasBookmarks || it.destination != HomeDestination.Bookmarks)
             }
         }
     if (query.isBlank()) return

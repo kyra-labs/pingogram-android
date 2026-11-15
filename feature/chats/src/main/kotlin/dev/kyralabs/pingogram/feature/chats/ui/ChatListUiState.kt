@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -57,9 +58,14 @@ data class ChatListSummary(
     val unreadChats: Int = 0,
     val mentionChats: Int = 0,
     val account: HeaderAccount? = null,
+    /** The chats Catch-up would go through (`CatchUpChats`). */
+    val catchUpChats: Int = 0,
 ) {
     /** The status line shows: something is unread. */
     val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0
+
+    /** The header offers Catch-up: from `CatchUpChats.MIN_CHATS` chats to catch up on (owner decision 2026-11-15). */
+    val offersCatchUp: Boolean get() = catchUpChats >= CatchUpChats.MIN_CHATS
 }
 
 /** The signed-in user as the header's avatar shows them. */

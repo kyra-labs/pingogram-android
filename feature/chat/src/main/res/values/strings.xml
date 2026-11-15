@@ -483,8 +483,10 @@
     <string name="reminder_set_for">Reminder set for %1$s</string>
     <string name="reminder_undo">Undo</string>
     <string name="reminder_deleted">Reminder deleted</string>
-    <!-- A reminder's day and time: "Sun, 9:00 AM". -->
-    <string name="reminder_day_time">%1$s, %2$s</string>
+    <!-- A message's reminder as screen readers hear it in the bubble: "Reminder Sun, 9:00 AM". -->
+    <string name="chat_bubble_reminder">Reminder %1$s</string>
+    <!-- The reminder chip in a bubble's meta, for screen readers: it opens the reminder to change or delete it. -->
+    <string name="reminder_chip_open">Change reminder</string>
     <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
     <string name="drop_title">Drop to send to %1$s</string>
     <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
@@ -502,6 +504,67 @@
     <string name="bookmark_remove">Remove bookmark</string>
     <string name="bookmark_saved">Bookmarked</string>
     <string name="bookmark_removed">Bookmark removed</string>
+    <!-- The Bookmarks page (docs/DESIGN_SYSTEM.md §6 "Bookmarks"). -->
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_back">Back</string>
+    <string name="bookmarks_all">All</string>
+    <!-- A filter chip: a tag's name (or "All") and how many bookmarks it holds, "Trips 4". -->
+    <string name="bookmarks_filter">%1$s %2$d</string>
+    <string name="bookmarks_open_in_chat">Open in chat</string>
+    <string name="bookmarks_undo">Undo</string>
+    <string name="bookmarks_empty_title">Nothing bookmarked yet</string>
+    <string name="bookmarks_empty_body">Long-press a message and choose Bookmark to keep it here with tags and a note. Bookmarks stay on this phone.</string>
+    <!-- Saved Messages' card to the Bookmarks page: "Bookmarks · 27". -->
+    <plurals name="saved_bookmarks_card">
+        <item quantity="one">Bookmarks · %d</item>
+        <item quantity="other">Bookmarks · %d</item>
+    </plurals>
+    <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
+    <!-- Editing the bookmarks' tags (docs/DESIGN_SYSTEM.md §6 "Bookmarks", board 34c). -->
+    <string name="bookmarks_edit_tags">Edit tags</string>
+    <string name="bookmarks_search">Search bookmarks</string>
+    <string name="bookmarks_no_matches">No bookmarks found</string>
+    <string name="bookmark_tags_title">Edit tags</string>
+    <string name="bookmark_tags_footer">Tags show in this order when you bookmark a message and on the Bookmarks page. They stay on this phone.</string>
+    <plurals name="bookmark_tag_count">
+        <item quantity="one">%d bookmark</item>
+        <item quantity="other">%d bookmarks</item>
+    </plurals>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_rename">Rename %1$s</string>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_delete">Delete %1$s</string>
+    <string name="bookmark_tag_move_up">Move up</string>
+    <string name="bookmark_tag_move_down">Move down</string>
+    <string-array name="bookmark_tag_colors">
+        <item>Color: Red</item>
+        <item>Color: Orange</item>
+        <item>Color: Violet</item>
+        <item>Color: Green</item>
+        <item>Color: Teal</item>
+        <item>Color: Blue</item>
+        <item>Color: Pink</item>
+        <item>Color: Gold</item>
+    </string-array>
+    <!-- The question before deleting a tag: %1$s is its name. -->
+    <string name="bookmark_tag_delete_title">Delete “%1$s”?</string>
+    <!-- What deleting a tag does to the bookmarks that have other tags too. -->
+    <plurals name="bookmark_tag_delete_others">
+        <item quantity="one">%d bookmark keeps its other tags.</item>
+        <item quantity="other">%d bookmarks keep their other tags.</item>
+    </plurals>
+    <!-- What deleting a tag does to the bookmarks that have only it. -->
+    <plurals name="bookmark_tag_delete_alone">
+        <item quantity="one">%d bookmark with only this tag will have no tag.</item>
+        <item quantity="other">%d bookmarks with only this tag will have no tag.</item>
+    </plurals>
+    <string name="bookmark_tag_delete_kept">No bookmark is removed.</string>
+    <string name="bookmark_tag_delete_unused">No bookmark has this tag.</string>
+    <string name="bookmark_tag_delete_confirm">Delete tag</string>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_deleted">“%1$s” deleted</string>
+    <string name="bookmark_tags_empty_title">No tags yet</string>
+    <string name="bookmark_tags_empty_body">Tags sort your bookmarks. Add one here, or when you bookmark a message.</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->

@@ -160,7 +160,14 @@ object ProfilePreviewData {
                     isBot = true,
                     usernames = persistentListOf("stickerfinderbot"),
                 ),
-            actions = ProfileActions(canMessage = true, isMuted = true, isBlocked = false, canReport = true),
+            actions =
+                ProfileActions(
+                    canMessage = true,
+                    isMuted = true,
+                    isBlocked = false,
+                    canReport = true,
+                    shareUsername = "stickerfinderbot",
+                ),
         )
 
     val deleted =
@@ -173,7 +180,8 @@ object ProfilePreviewData {
                     placeholderIcon = UiR.drawable.ic_person_filled,
                 ),
             info = ProfileInfo(),
-            actions = ProfileActions(canMessage = true, isMuted = false),
+            actions = ProfileActions(canDeleteChat = true),
+            isDeletedAccount = true,
         )
 
     val scam =

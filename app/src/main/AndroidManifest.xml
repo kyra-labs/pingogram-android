@@ -231,6 +231,19 @@
                 android:resource="@xml/recent_chats_widget_info" />
         </receiver>
 
+        <!-- The unread counter widget (board 33), drawn from the same updater; it takes nothing else either. -->
+        <receiver
+            android:name=".widget.UnreadCounterWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_unread_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/unread_counter_widget_info" />
+        </receiver>
+
         <!-- WorkManager starts when first used (PingogramApplication's Configuration.Provider, with Hilt's worker
              factory), not at every process start through App Startup. -->
         <provider

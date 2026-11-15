@@ -44,9 +44,11 @@ import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
@@ -63,6 +65,7 @@ import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.feature.calls.navigation.navigateToRecentCalls
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToBookmarks
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToPinnedMessages
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
@@ -184,6 +187,7 @@ fun PingogramApp(
     val openNewContact = remember(navController) { { navController.navigateToNewContact() } }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
+    val openBookmarks = remember(navController) { { navController.navigateToBookmarks() } }
     val openPollStatistics: (Long, Long) -> Unit =
         remember(navController) { { chatId, messageId -> navController.navigateToPollStatistics(chatId, messageId) } }
     val openPinnedMessages: (PinnedMessagesRoute) -> Unit =
@@ -191,6 +195,10 @@ fun PingogramApp(
     val openLockedChats =
         remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
     val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
+    val openMessage =
+        remember(navController) {
+            { chatId: Long, messageId: Long -> navController.navigate(ChatRoute(chatId, messageId = messageId)) }
+        }
     // Before the NavHost sets its graph, whose media viewer is an overlay destination.
     val overlays = rememberOverlayNavigator(navController)
     SharedTransitionLayout(modifier) {
@@ -216,12 +224,14 @@ fun PingogramApp(
                             LocalTabReselection provides tabReselection,
                             LocalFeedbackLauncher provides openFeedback,
                             LocalRecentCallsLauncher provides openRecentCalls,
+                            LocalBookmarksLauncher provides openBookmarks,
                             LocalPollStatisticsLauncher provides openPollStatistics,
                             LocalPinnedMessagesLauncher provides openPinnedMessages,
                             // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on
                             // the page.
                             LocalLockedChatsLauncher provides openLockedChats,
                             LocalChatLauncher provides openChat,
+                            LocalMessageLauncher provides openMessage,
                         ) {
                             AppContent(uiState, search) {
                                 PingogramNavHost(
