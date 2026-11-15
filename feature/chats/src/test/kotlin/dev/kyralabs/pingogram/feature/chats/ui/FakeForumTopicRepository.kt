@@ -2,11 +2,13 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicIcon
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -21,10 +23,17 @@ class FakeForumTopicRepository : ForumTopicRepository {
     val observed = mutableSetOf<Long>()
     val requested = mutableListOf<Long>()
 
-    override fun unreadTopicCount(chatId: Long): Flow<Int?> =
-        unreadTopics
-            .map { it[chatId] }
-            .distinctUntilChanged()
+    /** The unread messages each forum's count was last asked to hold, by chat id. */
+    val unreadMessages = mutableMapOf<Long, Int>()
+
+    override fun recentTopics(
+        chatId: Long,
+        unreadMessages: Flow<Int>,
+    ): Flow<List<ForumTopic>?> =
+        combine(unreadTopics.map { it[chatId] }, unreadMessages) { count, messages ->
+            this.unreadMessages[chatId] = messages
+            count?.let { List(it) { index -> unreadTopic(chatId, index + 1) } }
+        }.distinctUntilChanged()
             .onStart {
                 observed += chatId
                 requested += chatId
@@ -77,6 +86,26 @@ class FakeForumTopicRepository : ForumTopicRepository {
         chatId: Long,
         isHidden: Boolean,
     ): Outcome<Unit> = unused()
+
+    private fun unreadTopic(
+        chatId: Long,
+        id: Int,
+    ) = ForumTopic(
+        chatId = chatId,
+        id = id,
+        name = "Topic $id",
+        icon = ForumTopicIcon(TopicColor.Blue, 0),
+        isGeneral = false,
+        isClosed = false,
+        isHidden = false,
+        isPinned = false,
+        lastMessage = null,
+        order = 0,
+        unreadCount = 1,
+        unreadMentionCount = 0,
+        lastReadInboxMessageId = 0,
+        lastReadOutboxMessageId = 0,
+    )
 
     private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the chat list")
 }

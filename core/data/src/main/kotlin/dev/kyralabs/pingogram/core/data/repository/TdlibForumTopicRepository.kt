@@ -24,11 +24,15 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -72,14 +76,16 @@ class TdlibForumTopicRepository
         override fun topics(chatId: Long): Flow<ForumTopicList> =
             observing(chatId) { cache -> cache.forums[chatId]?.list() ?: EMPTY_LIST }
 
-        override fun unreadTopicCount(chatId: Long): Flow<Int?> =
-            observing(chatId, countUnread = true) { cache ->
-                cache.forums[chatId]
-                    ?.takeIf { it.next != null }
-                    ?.topics
-                    ?.values
-                    ?.count { it.unreadCount > 0 }
-            }
+        override fun recentTopics(
+            chatId: Long,
+            unreadMessages: Flow<Int>,
+        ): Flow<List<ForumTopic>?> =
+            observing(
+                chatId,
+                whileObserved = {
+                    unreadMessages.distinctUntilChanged().collectLatest { count -> loadUnreadPages(chatId, count) }
+                },
+            ) { cache -> cache.forums[chatId]?.takeIf { it.next != null }?.recent() }
 
         override fun topic(
             chatId: Long,
@@ -87,13 +93,19 @@ class TdlibForumTopicRepository
         ): Flow<ForumTopic?> =
             observing(chatId, fetch = topicId) { cache -> cache.forums[chatId]?.topics?.get(topicId) }
 
-        override suspend fun loadMore(chatId: Long): Outcome<Unit> =
+        override suspend fun loadMore(chatId: Long): Outcome<Unit> = loadPage(chatId, PAGE_SIZE)
+
+        /** The next page of forum [chatId]'s topics, [limit] of them, one page at a time per forum. */
+        private suspend fun loadPage(
+            chatId: Long,
+            limit: Int,
+        ): Outcome<Unit> =
             pageLocks.computeIfAbsent(chatId) { Mutex() }.withLock {
                 val next =
                     store.state.value.forums[chatId]
                         ?.next ?: PageOffsets.FIRST
                 if (next == PageOffsets.END) return@withLock Outcome.Success(Unit)
-                val request = TdApi.GetForumTopics(chatId, "", next.date, next.messageId, next.topicId, PAGE_SIZE)
+                val request = TdApi.GetForumTopics(chatId, "", next.date, next.messageId, next.topicId, limit)
                 client.request(request).map { page ->
                     store.update { cache -> cache.withPage(chatId, page) }
                     // Every forum has General; TDLib may leave a hidden one out of the pages (it shows above the list).
@@ -169,44 +181,68 @@ class TdlibForumTopicRepository
 
         /**
          * What [select] takes of the cache, then every change, while forum [chatId] counts one more observer; topic
-         * [fetch] of it is fetched first when it is not loaded, and with [countUnread] the pages that count its unread
-         * topics are loaded ([loadUnreadPages]).
+         * [fetch] of it is fetched first when it is not loaded, and [whileObserved] runs from the first value on, for
+         * as long as it is observed.
          */
         private fun <T> observing(
             chatId: Long,
             fetch: Int? = null,
-            countUnread: Boolean = false,
+            whileObserved: (suspend () -> Unit)? = null,
             select: (TopicCache) -> T,
         ): Flow<T> =
             flow {
                 store.update { cache -> cache.observing(chatId) }
-                if (countUnread) scope.launch { loadUnreadPages(chatId) }
                 try {
-                    if (fetch != null && store.state.value.forums[chatId]
-                            ?.topics
-                            ?.get(fetch) == null
-                    ) {
-                        refetch(chatId, fetch)
+                    coroutineScope {
+                        val running = whileObserved?.let { launch(start = CoroutineStart.LAZY) { it() } }
+                        if (fetch != null && store.state.value.forums[chatId]
+                                ?.topics
+                                ?.get(fetch) == null
+                        ) {
+                            refetch(chatId, fetch)
+                        }
+                        emitAll(
+                            store.state
+                                .map(select)
+                                .distinctUntilChanged()
+                                .onEach { running?.start() },
+                        )
                     }
-                    emitAll(store.state.map(select).distinctUntilChanged())
                 } finally {
                     store.update { cache -> cache.releasing(chatId) }
                 }
             }
 
         /**
-         * Loads forum [chatId]'s first page of topics if none is loaded, then the next ones while every loaded topic is
-         * unread, up to [UNREAD_COUNT_PAGES] pages: the newest topics come first, so the first read one ends the unread
-         * ones. Stops at a failure, and once nobody observes the forum.
+         * Loads forum [chatId]'s first page of topics if none is loaded, then the next ones until the loaded topics
+         * hold the forum's [unreadMessages], up to [UNREAD_COUNT_PAGES] more pages of [UNREAD_COUNT_PAGE_SIZE]: topics
+         * come by their newest message, and a read one can come before unread ones, so only the forum's own count says
+         * when every unread topic is loaded. Stops at a failure, and once nobody observes the forum.
          */
-        private suspend fun loadUnreadPages(chatId: Long) {
-            repeat(UNREAD_COUNT_PAGES) {
-                val forum = store.state.value.forums[chatId] ?: return
-                val needed =
-                    forum.next == null ||
-                        (forum.next != PageOffsets.END && forum.topics.values.all { it.unreadCount > 0 })
-                if (!needed || loadMore(chatId) is Outcome.Failure) return
+        private suspend fun loadUnreadPages(
+            chatId: Long,
+            unreadMessages: Int,
+        ) {
+            val first =
+                store.state.value.forums[chatId]
+                    ?.next == null
+            if (first && loadMore(chatId) is Outcome.Failure) return
+            var pages = 0
+            while (pages < UNREAD_COUNT_PAGES && moreUnread(chatId, unreadMessages)) {
+                if (loadPage(chatId, UNREAD_COUNT_PAGE_SIZE) is Outcome.Failure) break
+                pages++
             }
+        }
+
+        /** Forum [chatId] is observed, has topics to load, and the loaded ones hold fewer than [unreadMessages]. */
+        private fun moreUnread(
+            chatId: Long,
+            unreadMessages: Int,
+        ): Boolean {
+            val forum = store.state.value.forums[chatId] ?: return false
+            return forum.next != null &&
+                forum.next != PageOffsets.END &&
+                forum.topics.values.sumOf { it.unreadCount } < unreadMessages
         }
 
         private fun refetchLater(target: Pair<Long, Int>) {
@@ -252,8 +288,11 @@ class TdlibForumTopicRepository
             /** Topics per page: a screen and a half of rows. */
             const val PAGE_SIZE = 20
 
-            /** The most pages loaded to count a forum's unread topics: 100 topics. */
+            /** The most pages loaded after the first to find a forum's unread topics: 500 topics. */
             const val UNREAD_COUNT_PAGES = 5
+
+            /** Topics per page loaded to find a forum's unread topics: td_api.tl's most. */
+            const val UNREAD_COUNT_PAGE_SIZE = 100
 
             val EMPTY_LIST = ForumTopicList(persistentListOf(), reachedEnd = false)
         }
@@ -456,6 +495,16 @@ internal data class ForumState(
             )
         return ForumTopicList(sorted.toImmutableList(), reachedEnd = next == PageOffsets.END)
     }
+
+    /** The loaded topics, the newest message first. */
+    fun recent(): List<ForumTopic> =
+        topics.values
+            .sortedWith(
+                compareByDescending<ForumTopic> { it.lastMessage?.date ?: 0 }.thenByDescending {
+                    it.lastMessage?.id
+                        ?: 0
+                },
+            )
 }
 
 /** The forum topic [this] message is in; null for a message without one. */

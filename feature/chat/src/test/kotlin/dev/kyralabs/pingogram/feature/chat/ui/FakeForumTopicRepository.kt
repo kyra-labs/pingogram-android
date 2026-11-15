@@ -41,8 +41,10 @@ class FakeForumTopicRepository : ForumTopicRepository {
         return onLoadMore(chatId)
     }
 
-    override fun unreadTopicCount(chatId: Long): Flow<Int?> =
-        forums.map { forum -> forum[chatId]?.topics?.count { it.unreadCount > 0 } }.distinctUntilChanged()
+    override fun recentTopics(
+        chatId: Long,
+        unreadMessages: Flow<Int>,
+    ): Flow<List<ForumTopic>?> = forums.map { forum -> forum[chatId]?.topics }.distinctUntilChanged()
 
     override fun topic(
         chatId: Long,

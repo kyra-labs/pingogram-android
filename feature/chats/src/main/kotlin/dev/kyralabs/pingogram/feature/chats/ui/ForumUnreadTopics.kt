@@ -15,13 +15,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 
 /**
  * The forums' topics with unread messages, which their rows count instead of the messages (owner decision 2026-11-15),
  * a part of [ChatListViewModel]. td_api.tl gives a chat no such count, so it comes from the forum's own topics
- * ([ForumTopicRepository.unreadTopicCount]), loaded only for the forums the list has shown ([onShown]) while they
+ * ([ForumTopicRepository.recentTopics]), loaded only for the forums the list has shown ([onShown]) while they
  * have unread messages (`docs/PERFORMANCE.md` §3): a forum far down the list, or with nothing unread, asks TDLib for
  * nothing. A forum the list showed once keeps its count while it is in the list, so it does not change as it scrolls
  * back.
@@ -45,16 +46,26 @@ internal class ForumUnreadTopics(
      */
     fun of(chats: Flow<List<Chat>>): Flow<Map<Long, Int>> {
         val repository = repository ?: return flowOf(emptyMap())
+        // The counted forums' unread messages, which say how many of their topics to load.
+        val unreadMessages = MutableStateFlow<Map<Long, Int>>(emptyMap())
         return combine(chats, groupRepository.supergroups, shown) { list, supergroups, seen ->
             list
                 .filter { it.id in seen && it.unreadCount > 0 && it.isForum(supergroups) }
-                .mapTo(HashSet()) { it.id }
-        }.distinctUntilChanged()
+                .associate { it.id to it.unreadCount }
+        }.onEach { unreadMessages.value = it }
+            .map { it.keys }
+            .distinctUntilChanged()
             .flatMapLatest { forums ->
                 if (forums.isEmpty()) {
                     flowOf(emptyMap())
                 } else {
-                    combine(forums.map { id -> repository.unreadTopicCount(id).map { id to it } }) { counts ->
+                    combine(
+                        forums.map { id ->
+                            repository
+                                .recentTopics(id, unreadMessages.map { it[id] ?: 0 })
+                                .map { topics -> id to topics?.count { it.unreadCount > 0 } }
+                        },
+                    ) { counts ->
                         counts.mapNotNull { (id, count) -> count?.let { id to it } }.toMap()
                     }
                 }

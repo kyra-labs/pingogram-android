@@ -46,6 +46,24 @@ class ChatListForumTopicsTest : ChatListViewModelHarness() {
         }
 
     @Test
+    fun `a forum's count follows its unread messages, which say how many topics to load`() =
+        runTest {
+            setForums(FORUM)
+            chats.setChats(ChatListType.Main, forum(FORUM, unreadCount = 7))
+            forumTopics.unreadTopics.value = mapOf(FORUM to 2)
+            val viewModel = viewModel()
+            send(viewModel, ChatListEvent.RowsShown(setOf(FORUM)))
+            assertEquals(7, forumTopics.unreadMessages[FORUM])
+
+            chats.setChats(ChatListType.Main, forum(FORUM, unreadCount = 9))
+            runCurrent()
+
+            assertEquals(9, forumTopics.unreadMessages[FORUM])
+            // The same forum keeps its one observation as its count changes.
+            assertEquals(listOf(FORUM), forumTopics.requested)
+        }
+
+    @Test
     fun `a forum the list has not shown, or without unread messages, asks for nothing`() =
         runTest {
             setForums(FORUM, OTHER_FORUM, READ_FORUM)

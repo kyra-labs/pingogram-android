@@ -33,12 +33,16 @@ interface ForumTopicRepository {
     suspend fun loadMore(chatId: Long): Outcome<Unit>
 
     /**
-     * How many topics of forum [chatId] have unread messages, as Telegram's apps count a forum in the chat list, then
-     * every change, for as long as it is collected. Collecting it loads the forum's first page of topics, the newest
-     * first, and more while every loaded topic is unread, up to five pages: a forum with more unread topics than that
-     * counts those loaded. Null until the first page is there, and when it cannot be loaded.
+     * The loaded topics of forum [chatId], the newest message first, from which the chat list counts the topics with
+     * unread messages and names the newest, as Telegram's apps do, then every change, for as long as it is collected.
+     * Collecting it loads the forum's first page of topics, and more until the loaded topics hold the forum's
+     * [unreadMessages] (its chat's unread count), up to 500 topics more: unread topics past them are not loaded. Null
+     * until the first page is there, and when it cannot be loaded.
      */
-    fun unreadTopicCount(chatId: Long): Flow<Int?>
+    fun recentTopics(
+        chatId: Long,
+        unreadMessages: Flow<Int>,
+    ): Flow<List<ForumTopic>?>
 
     /**
      * Topic [topicId] of forum [chatId], then every change, for as long as it is collected: from the loaded topics, or
