@@ -954,4 +954,11 @@
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>
     </plurals>
+    <!-- The keyword match bar (board 30), where a keyword alert opened the conversation: the word, then which match
+         of how many, the newest first. -->
+    <string name="keyword_match_title">Keyword: %1$s · %2$d of %3$d</string>
+    <string name="keyword_match_pane">Keyword matches</string>
+    <string name="keyword_match_older">Older match</string>
+    <string name="keyword_match_newer">Newer match</string>
+    <string name="keyword_match_close">Close keyword matches</string>
 </resources>
