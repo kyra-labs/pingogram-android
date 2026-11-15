@@ -86,7 +86,8 @@ fun TabHeader(
                 )
             },
             collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
-            expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null, subtitleMinHeight) + subtitleExtraHeight,
+            expandedHeight =
+                tabHeaderExpandedHeight(withSubtitle = subtitle != null, subtitleMinHeight) + subtitleExtraHeight,
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
