@@ -206,6 +206,8 @@ interface AccountRepositories {
 
     fun bookmarkRepository(): BookmarkRepository
 
+    fun reminderRepository(): ReminderRepository
+
     fun customEmojiRepository(): CustomEmojiRepository
 
     fun chatExportRepository(): ChatExportRepository
