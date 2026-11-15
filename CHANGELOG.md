@@ -25,6 +25,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   The top bar's "3 of 128" is a chip.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
+- A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
+  by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
