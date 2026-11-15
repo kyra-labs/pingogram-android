@@ -1,0 +1,10 @@
+{
+  "comment": "The groups of modules whose `check` CI runs in parallel jobs (ci.yml, tools/ci/check_shards.py). Every project of settings.gradle.kts, and the root (\":\", its own and build-logic's checks), is in exactly one group, or CI fails. Balanced by size on 2026-11-15: feature:chat alone holds a third of the screenshot goldens.",
+  "shards": [
+    {"name": "chat", "projects": [":feature:chat"]},
+    {"name": "settings", "projects": [":feature:settings", ":feature:auth", ":feature:feedback"]},
+    {"name": "chats-profile", "projects": [":feature:chats", ":feature:profile", ":feature:contacts", ":feature:scanner"]},
+    {"name": "calls-media-app", "projects": [":feature:calls", ":feature:media", ":app", ":benchmark"]},
+    {"name": "core", "projects": [":", ":core:common", ":core:data", ":core:datastore", ":core:demo", ":core:domain", ":core:navigation", ":core:notifications", ":core:tdlib", ":core:testing", ":core:ui"]}
+  ]
+}

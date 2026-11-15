@@ -82,5 +82,9 @@ https://core.telegram.org/api/auth#test-accounts). Use them only in `androidTest
 ## CI gates
 
 - PR: `check` (ktlint, detekt, lint, unit, screenshot verify), `assembleFossDebug`.
+  - `ci.yml` runs `check` as parallel jobs, one per group of modules (`tools/ci/check-shards.json`), beside the debug
+    APK. A new module goes into a group in that file; `tools/ci/check_shards.py` fails CI when a project of
+    `settings.gradle.kts` is in no group or in two.
+  - The `build` job passes only when every one of them did, so pull requests keep waiting for one check.
 - Nightly: instrumented smoke on API 26 and API 36 emulators, Macrobenchmark on a Firebase
   Test Lab physical device if the owner configures it (optional).
