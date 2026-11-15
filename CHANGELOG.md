@@ -25,6 +25,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notifications still show, silently. The pages to set them up follow.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.
+- Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
+  chats that protect their content.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
