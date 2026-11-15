@@ -42,6 +42,10 @@
     <string name="auth_code_title">Enter the code</string>
     <string name="auth_code_open_fragment">Open Fragment</string>
     <string name="auth_change_number">Wrong number?</string>
+    <string name="auth_code_help">Didn\'t get the code?</string>
+    <string name="auth_ok">OK</string>
+    <!-- %1$s is the phone number the code went to, e.g. "+44 7911 123456". -->
+    <string name="auth_code_help_text">Check that %1$s is your number. A code can take a minute to arrive, and you can ask for a new one another way once the countdown ends.</string>
 
     <!-- 2-step verification password (FR-A4) -->
     <string name="auth_password_title">Two-step verification</string>
