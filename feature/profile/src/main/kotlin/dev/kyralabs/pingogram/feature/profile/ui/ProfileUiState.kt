@@ -29,6 +29,7 @@ sealed interface ProfileUiState {
         val actions: ProfileActions,
         val photos: ProfilePhotos = ProfilePhotos(),
         val dialog: ProfileDialog? = null,
+        val stranger: ProfileStranger? = null,
     ) : ProfileUiState
 }
 
@@ -88,6 +89,9 @@ enum class ProfileWarning {
  *   anyone else, or while the full info is not known.
  * @property note the note the current user keeps about a contact, which only they see; null where there is none to
  *   keep (not a contact, oneself, a bot) or the full info is not known yet.
+ * @property phoneHiddenBy the first name of a person whose privacy settings hide their phone number, so the row says
+ *   so instead of leaving it out (the owner's board 24c); null where a number shows, or where there is none to hide
+ *   (oneself, a bot, a deleted account) or the full info is not known yet.
  */
 @Immutable
 data class ProfileInfo(
@@ -95,6 +99,7 @@ data class ProfileInfo(
     val isBot: Boolean = false,
     val usernames: ImmutableList<String> = persistentListOf(),
     val phoneNumber: String? = null,
+    val phoneHiddenBy: String? = null,
     val birthday: String? = null,
     val personalChannel: PersonalChannel? = null,
     val id: Long? = null,
@@ -104,10 +109,23 @@ data class ProfileInfo(
 ) {
     val isEmpty: Boolean
         get() =
-            bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
-                id == null && birthdaySuggestion == null && note == null && !isSharingDisabled
+            bio == null && usernames.isEmpty() && phoneNumber == null && phoneHiddenBy == null && birthday == null &&
+                personalChannel == null && id == null && birthdaySuggestion == null && note == null &&
+                !isSharingDisabled
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
+}
+
+/**
+ * Someone not in the contacts who wrote to the current user first (td_api.tl `chatActionBarReportAddBlock` on their
+ * private chat): the profile shows a card about it above its actions, with how many [groupsInCommon] they share.
+ */
+@Immutable
+data class ProfileStranger(
+    val firstName: String,
+    val groupsInCommon: Int,
+) {
+    override fun toString() = "ProfileStranger(groupsInCommon=$groupsInCommon)"
 }
 
 /**
