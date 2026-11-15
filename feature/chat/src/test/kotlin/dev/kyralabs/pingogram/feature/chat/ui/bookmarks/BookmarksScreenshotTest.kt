@@ -38,6 +38,15 @@ class BookmarksScreenshotTest {
     fun filtered() = capture("filtered", ScreenshotVariant.Light, BookmarksPreviewData.filtered)
 
     @Test
+    fun searching() = capture("searching", ScreenshotVariant.Light, BookmarksPreviewData.searching)
+
+    @Test
+    fun noMatches() = capture("noMatches", ScreenshotVariant.Light, BookmarksPreviewData.noMatches)
+
+    @Test
+    fun searchingRtl() = capture("searchingRtl", ScreenshotVariant.Rtl, BookmarksPreviewData.searching)
+
+    @Test
     fun empty() = capture("empty", ScreenshotVariant.Light, BookmarksUiState.Empty)
 
     @Test
