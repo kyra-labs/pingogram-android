@@ -18,6 +18,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
+- A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
