@@ -175,9 +175,7 @@ class DeleteAccountViewModel
                     effectChannel.trySend(DeleteAccountEffect.PasswordRejected)
                 }
 
-                DomainError.Silent -> {
-                    Unit
-                }
+                DomainError.Silent -> {}
 
                 else -> {
                     effectChannel.trySend(DeleteAccountEffect.ShowError(error))

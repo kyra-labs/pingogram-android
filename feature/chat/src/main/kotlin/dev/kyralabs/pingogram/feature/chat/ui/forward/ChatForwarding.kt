@@ -178,7 +178,7 @@ internal class ChatForwarding(
     fun toggle(chatId: Long) {
         choice.update { choice ->
             val selected = choice.selected
-            choice.copy(selected = if (chatId in selected) selected.remove(chatId) else selected.add(chatId))
+            choice.copy(selected = if (chatId in selected) selected.removing(chatId) else selected.adding(chatId))
         }
     }
 

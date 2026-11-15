@@ -65,7 +65,7 @@ internal class ChatAutoDownloads(
 
     /** The user asked to download [fileId]: a document's, or a photo's the rules leave for a tap ([ChatFiles]). */
     fun download(fileId: Int) {
-        requestedFiles.update { it.add(fileId) }
+        requestedFiles.update { it.adding(fileId) }
         files.download(fileId)
     }
 
@@ -81,7 +81,7 @@ internal class ChatAutoDownloads(
 
     /** The user cancelled the download of [fileId]. */
     fun cancelDownload(fileId: Int) {
-        requestedFiles.update { it.remove(fileId) }
+        requestedFiles.update { it.removing(fileId) }
         files.cancelDownload(fileId)
     }
 }

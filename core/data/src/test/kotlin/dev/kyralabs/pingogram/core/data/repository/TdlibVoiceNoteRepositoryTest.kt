@@ -94,7 +94,7 @@ class TdlibVoiceNoteRepositoryTest {
             assertTrue(files.isUpload(path))
             assertEquals(
                 listOf("voice.ogg"),
-                file.parentFile
+                file.parentFile!!
                     .list()
                     .orEmpty()
                     .toList(),
@@ -140,7 +140,7 @@ class TdlibVoiceNoteRepositoryTest {
 
             assertTrue(result is Outcome.Failure)
             assertFalse(File(path).exists())
-            assertFalse(File(path).parentFile.exists())
+            assertFalse(File(path).parentFile!!.exists())
         }
 
     @Test
@@ -153,7 +153,7 @@ class TdlibVoiceNoteRepositoryTest {
             repository().discardVoiceNote(elsewhere.path)
             runCurrent()
 
-            assertFalse(File(path).parentFile.exists())
+            assertFalse(File(path).parentFile!!.exists())
             assertTrue(elsewhere.exists())
         }
 

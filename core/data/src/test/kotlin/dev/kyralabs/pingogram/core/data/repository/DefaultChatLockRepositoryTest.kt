@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.FakeAppLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,6 +28,7 @@ import kotlin.time.Duration.Companion.seconds
  * [DefaultChatLockRepository] (`docs/adr/0029-locked-chats.md`) on in-memory ids, [FakePasscodeRepository],
  * [FakeAppLockRepository] and the real login steps on [FakeTdlibClient].
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class DefaultChatLockRepositoryTest {
     private val client = FakeTdlibClient(authState = AuthState.Ready)
     private val storage = MemoryLockedChatIds()

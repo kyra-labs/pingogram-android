@@ -3,6 +3,8 @@
 plugins {
     alias(libs.plugins.pingogram.android.library)
     alias(libs.plugins.pingogram.android.hilt)
+    // Kotlin warnings fail the build here (docs/audit/v1-readiness.md).
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 android {
