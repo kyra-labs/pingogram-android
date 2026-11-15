@@ -134,17 +134,21 @@ internal fun rememberCatchUpSwipe(
 }
 
 /**
- * The card following [state]'s swipe, in its graphics layer: moved by the offset (mirrored right to left) and tilted
- * a little with it.
+ * The card following [state]'s swipe while [enabled] (not while the reply field shows), in its graphics layer: moved
+ * by the offset (mirrored right to left) and tilted a little with it.
  */
 @Composable
-internal fun Modifier.catchUpSwipe(state: CatchUpSwipeState): Modifier {
+internal fun Modifier.catchUpSwipe(
+    state: CatchUpSwipeState,
+    enabled: Boolean = true,
+): Modifier {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     return this
         .onSizeChanged { state.width = it.width.toFloat() }
         .draggable(
             state = state.draggable,
             orientation = Orientation.Horizontal,
+            enabled = enabled,
             reverseDirection = rtl,
             onDragStarted = state.onStarted,
             onDragStopped = state.onStopped,

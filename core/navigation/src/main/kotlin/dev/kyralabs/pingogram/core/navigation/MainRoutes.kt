@@ -739,3 +739,10 @@ data class WelcomeMessagesRoute(
 /** The user's name color (the owner's board 22b), pushed above Edit profile. */
 @Serializable
 data object ProfileColorRoute
+
+/**
+ * The messages bookmarked on this phone (the owner's board 34), `:feature:chat`: pushed above Settings › On this phone
+ * or Saved Messages, with the shared axis on X, the newest first, filtered by tag.
+ */
+@Serializable
+data object BookmarksRoute

@@ -133,7 +133,12 @@ class ChatsAccessibilityChecksTest(
                     put("archiveSettings.$name") { ArchiveSettingsScreen(state = state, onEvent = {}, onBack = {}) }
                 }
                 with(CatchUpPreviewData) {
-                    listOf("cards" to cards, "done" to done, "empty" to CatchUpUiState(CatchUpStage.Empty))
+                    listOf(
+                        "cards" to cards,
+                        "replying" to replying,
+                        "done" to done,
+                        "empty" to CatchUpUiState(CatchUpStage.Empty),
+                    )
                 }.forEach { (name, state) ->
                     put("catchUp.$name") { CatchUpScreen(state = state, onEvent = {}, onBack = {}) }
                 }

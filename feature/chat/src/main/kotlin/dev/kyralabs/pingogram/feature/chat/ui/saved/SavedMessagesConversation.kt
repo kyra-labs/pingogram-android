@@ -43,6 +43,7 @@ internal fun SavedMessagesConversation(
     conversation: @Composable (topic: MessageTopic?, messageId: Long?) -> Unit,
     viewModel: SavedTabsViewModel = hiltViewModel(key = "saved-tabs"),
     tagsViewModel: SavedTagsViewModel = hiltViewModel(key = "saved-tags"),
+    bookmarksViewModel: SavedBookmarksViewModel = hiltViewModel(key = "saved-bookmarks"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tagsState by tagsViewModel.uiState.collectAsStateWithLifecycle()
@@ -60,7 +61,9 @@ internal fun SavedMessagesConversation(
             },
         )
     }
-    val tabs = rememberTabsSlot(state, viewModel, chips.takeIf { showsTags && tagsState.tags.isNotEmpty() })
+    val bookmarks = rememberBookmarksCard(showsTags, bookmarksViewModel)
+    val tabs =
+        rememberTabsSlot(state, viewModel, chips.takeIf { showsTags && tagsState.tags.isNotEmpty() }, bookmarks)
     val snackbars = remember { SnackbarHostState() }
     TagEffects(tagsViewModel, snackbars)
     val motionScheme = MaterialTheme.motionScheme
@@ -171,14 +174,18 @@ private fun rememberTagEvents(
         }
     }
 
-/** The top bar's slot: the topic tabs while there are any, then the tag [chips] where they show; null for neither. */
+/**
+ * The top bar's slot: the topic tabs while there are any, then the tag [chips] and the [bookmarks] card where they
+ * show; null for none.
+ */
 @Composable
 private fun rememberTabsSlot(
     state: SavedTabsUiState,
     viewModel: SavedTabsViewModel,
     chips: (@Composable () -> Unit)?,
+    bookmarks: (@Composable () -> Unit)?,
 ): (@Composable () -> Unit)? =
-    if (state.tabs.isEmpty() && chips == null) {
+    if (state.tabs.isEmpty() && chips == null && bookmarks == null) {
         null
     } else {
         {
@@ -188,6 +195,10 @@ private fun rememberTabsSlot(
                 val lastChips = remember { arrayOfNulls<@Composable () -> Unit>(1) }
                 if (chips != null) lastChips[0] = chips
                 GrowingVisibility(visible = chips != null) { lastChips[0]?.invoke() }
+                // The Bookmarks card shows once a message is bookmarked, on "All" only (board 34c).
+                val lastBookmarks = remember { arrayOfNulls<@Composable () -> Unit>(1) }
+                if (bookmarks != null) lastBookmarks[0] = bookmarks
+                GrowingVisibility(visible = bookmarks != null) { lastBookmarks[0]?.invoke() }
             }
         }
     }
