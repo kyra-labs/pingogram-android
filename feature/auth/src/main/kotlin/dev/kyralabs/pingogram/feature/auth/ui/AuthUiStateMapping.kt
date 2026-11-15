@@ -136,6 +136,7 @@ private fun AuthModel.phoneScreen(isChangingNumber: Boolean) =
         error = phone.error,
         isChangingNumber = isChangingNumber,
         countryPicker = phone.picker,
+        expectedLength = phone.expectedLength.takeIf { phone.isShortWarned && phone.isTooShort },
     )
 
 private fun AuthModel.displayPhoneNumber(raw: String): String =

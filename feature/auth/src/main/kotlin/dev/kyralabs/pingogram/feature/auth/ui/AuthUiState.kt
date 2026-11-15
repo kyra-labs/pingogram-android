@@ -72,6 +72,8 @@ sealed interface AuthStepUiState {
      *   (from TDLib, e.g. `--- --- ----`); null if unknown. More digits than slots may follow.
      * @property isChangingNumber the user came back from a later step to use another number.
      * @property countryPicker the open country picker, or null.
+     * @property expectedLength while the number looks too short for its country and "Next" was pressed once: how many
+     *   digits the country's numbers have (board 23); "Next" then sends it anyway, and Telegram decides.
      */
     @Immutable
     data class PhoneNumber(
@@ -82,6 +84,7 @@ sealed interface AuthStepUiState {
         val error: DomainError?,
         val isChangingNumber: Boolean,
         val countryPicker: CountryPickerUiState?,
+        val expectedLength: Int? = null,
     ) : AuthStepUiState {
         override fun toString() = "PhoneNumber(country=${country?.isoCode}, error=$error, …)"
     }
