@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
@@ -27,8 +31,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the chat.
 - Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
   languages).
-- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
-  marks the chat as read and moves to the next one.
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
@@ -38,6 +40,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
