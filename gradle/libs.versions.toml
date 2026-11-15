@@ -92,7 +92,7 @@ ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f-pingogram1"
 # build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
 ntgcallsAarSha256 = "9dd9b2fce089bcff8382930a88c377ba224e4ea09dc107063058b55a45193f2c"
 robolectric = "4.17"
-roborazzi = "1.76.0"
+roborazzi = "1.78.0"
 # tdlib/td commit (TDLib 1.8.70); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "23383aef218a3123f02b744bfa91bde21056a814"
 # SHA-256 of tdlib-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release (docs/TDLIB.md).
