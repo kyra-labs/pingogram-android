@@ -31,6 +31,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
+- Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
+  edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
