@@ -12,7 +12,7 @@ androidxCore = "1.19.1"
 androidxCoreSplashscreen = "1.2.0"
 # Calls with Android's Telecom as a self-managed calling app (feature:calls, docs/adr/0016-calls-and-telecom.md):
 # CallsManager, a ConnectionService before Android 14 and the platform's call API from 14, minSdk 24.
-androidxCoreTelecom = "1.0.1"
+androidxCoreTelecom = "1.1.0"
 # Preferences DataStore for the app's settings (core:datastore): first-party, no network, approved on 2026-10-18.
 androidxDatastore = "1.3.0"
 # hilt-lifecycle-viewmodel-compose (hiltViewModel); hilt-navigation-compose's copy is deprecated in its favour. Also
@@ -79,7 +79,7 @@ ktlintGradlePlugin = "14.2.0"
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
 # material3-adaptive-navigation-suite uses this version too: it is released in lockstep with material3,
 # and the BOM's 1.4.0 suite would mix two material3 lines in one NavigationSuiteScaffold.
-material3 = "1.5.0-beta02"
+material3 = "1.5.0-rc01"
 # Voice messages and music in conversations (feature:chat), approved by the owner on 2026-10-18, and videos and GIFs
 # in the media viewer (feature:media). media3-exoplayer plays files TDLib has already downloaded, so no
 # media3-datasource-* network module; media3-ui-compose draws the videos (PlayerSurface), and never media3-ui
@@ -92,7 +92,7 @@ ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f-pingogram1"
 # build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
 ntgcallsAarSha256 = "9dd9b2fce089bcff8382930a88c377ba224e4ea09dc107063058b55a45193f2c"
 robolectric = "4.17"
-roborazzi = "1.76.0"
+roborazzi = "1.78.0"
 # tdlib/td commit (TDLib 1.8.70); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "23383aef218a3123f02b744bfa91bde21056a814"
 # SHA-256 of tdlib-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release (docs/TDLIB.md).
