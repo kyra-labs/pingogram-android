@@ -76,6 +76,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 
 /**
  * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at
@@ -162,13 +163,14 @@ internal fun MessageBubbleRow(
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe = rowSwipe(bubble, selecting = selection != null, resources, onEvent)
+    val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
-                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
+                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
                     contentDescription = bubbleDescription(strings, bubble)

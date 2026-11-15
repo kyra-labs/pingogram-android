@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberMessageDragOut
 
 // Group bubbles (`docs/DESIGN_SYSTEM.md` §13.6): names and reply stripes in the sender's hue,
 // role labels, and the name above a vivid bubble.
@@ -183,6 +184,7 @@ internal fun rememberChatBubbleResources(
         vivid,
         showsUpdateLink = state.showsUpdateLink,
         canTranscribe = state.canTranscribe,
+        dragOut = rememberMessageDragOut(state, onEvent),
         onDateTime = { unixTime -> onEvent(DateTimeEvent.Open(unixTime)) },
     ) { target -> onEvent(ChatEvent.OpenMention(target)) }
 }
