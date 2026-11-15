@@ -224,6 +224,8 @@ class MediaViewerViewModel internal constructor(
 
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
+            // The speed chosen before process death holds again.
+            savedStateHandle.get<Float>(KEY_SPEED)?.takeIf { it in PlaybackSpeeds }?.let(::setSpeed)
             // Picture-in-picture gave this video back: it plays on from where the window left it.
             val returned = pictureInPicture.takeReturn(chatId, route.messageId)
             if (returned != null) {
@@ -287,11 +289,13 @@ class MediaViewerViewModel internal constructor(
             sharing.state(currentId),
             deletion.state(currentId),
             deletion.canForward(currentId),
-        ) { actions, deletion, canForward ->
+            playback.speed,
+        ) { actions, deletion, canForward, speed ->
             actions.copy(
                 canForward = canForward,
                 canDelete = deletion.canDelete,
                 deleteConfirmation = deletion.confirmation,
+                speed = speed,
             )
         }
 
@@ -367,20 +371,16 @@ class MediaViewerViewModel internal constructor(
                 playback.seek(event.fraction)
             }
 
+            is MediaViewerEvent.SetSpeed -> {
+                setSpeed(event.speed)
+            }
+
             MediaViewerEvent.Share, MediaViewerEvent.Save, MediaViewerEvent.Copy -> {
                 event.mediaAction?.let(sharing::start)
             }
 
-            MediaViewerEvent.Delete -> {
-                deletion.request()
-            }
-
-            is MediaViewerEvent.DeleteConfirmed -> {
-                deletion.confirm(event.forEveryone)
-            }
-
-            MediaViewerEvent.DeleteDismissed -> {
-                deletion.dismiss()
+            MediaViewerEvent.Delete, is MediaViewerEvent.DeleteConfirmed, MediaViewerEvent.DeleteDismissed -> {
+                onDeletionEvent(event)
             }
 
             MediaViewerEvent.ShowInChat -> {
@@ -458,6 +458,23 @@ class MediaViewerViewModel internal constructor(
         savedStateHandle[KEY_CURRENT] = messageId
         failedEdges.clear()
         loadMoreIfNear()
+    }
+
+    /** Delete asked for, its question answered, or dismissed. */
+    private fun onDeletionEvent(event: MediaViewerEvent) {
+        when (event) {
+            MediaViewerEvent.Delete -> deletion.request()
+            is MediaViewerEvent.DeleteConfirmed -> deletion.confirm(event.forEveryone)
+            MediaViewerEvent.DeleteDismissed -> deletion.dismiss()
+            else -> Unit
+        }
+    }
+
+    /** Videos play at [speed] from now on, kept across process death; a speed the viewer does not offer is ignored. */
+    private fun setSpeed(speed: Float) {
+        if (speed !in PlaybackSpeeds) return
+        savedStateHandle[KEY_SPEED] = speed
+        playback.setSpeed(speed)
     }
 
     private fun retry() {
@@ -622,6 +639,9 @@ class MediaViewerViewModel internal constructor(
     internal companion object {
         /** The current item's message id, which survives process death. */
         const val KEY_CURRENT = "media.currentMessageId"
+
+        /** The speed videos play at, kept across process death while the viewer shows. */
+        const val KEY_SPEED = "media.speed"
 
         /** How close to either end of what is loaded the current item comes before the next page there loads. */
         const val PREFETCH_DISTANCE = 5
