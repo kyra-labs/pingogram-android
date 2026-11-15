@@ -743,3 +743,10 @@ data object ProfileColorRoute
 /** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
 @Serializable
 data object KeywordAlertsRoute
+
+/**
+ * The messages bookmarked on this phone (the owner's board 34), `:feature:chat`: pushed above Settings › On this phone
+ * or Saved Messages, with the shared axis on X, the newest first, filtered by tag.
+ */
+@Serializable
+data object BookmarksRoute

@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -34,7 +35,8 @@ import java.util.Locale
  * Settings home's groups ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
  * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their badges' shapes taking
  * `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn across the page, and its footer where it has one.
- * Recent calls is left out where the app does not provide its page, and a group without a row is not shown.
+ * Recent calls and Bookmarks are left out where the app does not provide their pages, and a group without a row is
+ * not shown.
  */
 @Composable
 internal fun SettingsHomeGroups(
@@ -44,10 +46,15 @@ internal fun SettingsHomeGroups(
     groups: List<HomeGroup> = HomeGroups,
 ) {
     val hasRecentCalls = LocalRecentCallsLauncher.current != null
+    val hasBookmarks = LocalBookmarksLauncher.current != null
     val rowState = HomeRowState(summaries, selection)
     var index = 0
     groups.forEach { group ->
-        val entries = group.entries.filter { hasRecentCalls || it.destination != HomeDestination.RecentCalls }
+        val entries =
+            group.entries.filter {
+                (hasRecentCalls || it.destination != HomeDestination.RecentCalls) &&
+                    (hasBookmarks || it.destination != HomeDestination.Bookmarks)
+            }
         if (entries.isEmpty()) return@forEach
         val first = index
         index += entries.size
@@ -185,7 +192,9 @@ private fun entryValue(
         }
 
         else -> {
-            null
+            summaries.bookmarkCount
+                ?.takeIf { it > 0 && entry.destination == HomeDestination.Bookmarks }
+                ?.toString()
         }
     }
 }

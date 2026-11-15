@@ -107,6 +107,7 @@ private fun ExtraPaneNavHost(
             onOpenMessage = navigation.onOpenMessage,
             onEditContact = navigation.onEditContact,
             onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
+            onChatDeleted = navigation.onLeft,
         )
         chatInfoScreens(
             onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },

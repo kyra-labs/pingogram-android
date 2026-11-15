@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.navigation
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.feature.chat.navigation.bookmarksScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
@@ -36,4 +37,9 @@ internal fun NavGraphBuilder.chatScreens(
     chatExportScreen(onBack = { navController.popBackStack() })
     scheduledMessagesScreen(onBack = { navController.popBackStack() })
     pinnedMessagesScreen(onBack = { navController.popBackStack() })
+    // The bookmarks kept on this phone, from Settings › On this phone and Saved Messages (LocalBookmarksLauncher).
+    bookmarksScreen(
+        onBack = { navController.popBackStack() },
+        onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId = messageId)) },
+    )
 }

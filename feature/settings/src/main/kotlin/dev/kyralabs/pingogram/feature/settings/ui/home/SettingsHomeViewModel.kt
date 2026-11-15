@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AccountFreeze
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLanguageRepository
+import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,12 +31,14 @@ data class SettingsHomeSummaries(
     val storageBytes: Long? = null,
     val languageTag: String? = null,
     val freeze: AccountFreeze? = null,
+    val bookmarkCount: Int? = null,
 )
 
 /**
  * Reads [SettingsHomeSummaries] for the Settings home: the active sessions and the storage once
  * (TDLib answers both from its memory or database; `getActiveSessions`, `getStorageStatisticsFast`), the language as
- * it changes, and whether the account is frozen ([AccountFreezeRepository]) as TDLib announces it.
+ * it changes, whether the account is frozen ([AccountFreezeRepository]) as TDLib announces it, and how many messages
+ * are bookmarked on this phone ([BookmarkRepository], On this phone's Bookmarks).
  */
 @HiltViewModel
 class SettingsHomeViewModel
@@ -45,6 +48,7 @@ class SettingsHomeViewModel
         private val storage: StorageRepository,
         private val language: AppLanguageRepository,
         private val accountFreeze: AccountFreezeRepository,
+        private val bookmarks: BookmarkRepository,
     ) : ViewModel() {
         private val mutableSummaries = MutableStateFlow(SettingsHomeSummaries())
         val summaries: StateFlow<SettingsHomeSummaries> = mutableSummaries.asStateFlow()
@@ -63,6 +67,9 @@ class SettingsHomeViewModel
             }
             viewModelScope.launch {
                 accountFreeze.freeze.collect { freeze -> mutableSummaries.update { it.copy(freeze = freeze) } }
+            }
+            viewModelScope.launch {
+                bookmarks.bookmarks.collect { all -> mutableSummaries.update { it.copy(bookmarkCount = all.size) } }
             }
         }
     }
