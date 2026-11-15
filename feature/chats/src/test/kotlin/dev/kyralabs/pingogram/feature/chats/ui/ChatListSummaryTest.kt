@@ -118,6 +118,42 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
             assertEquals(ChatListSummary(), summaryOf(createViewModel(kind = ChatListKind.Archive))())
         }
 
+    @Test
+    fun `offers catch-up from five unread chats, muted ones and channels left out`() =
+        runTest {
+            chats.setChats(
+                ChatListType.Main,
+                *(2L..5L).map { chat(id = it, unreadCount = 1) }.toTypedArray(),
+                chat(id = 6, unreadCount = 1, isMuted = true),
+            )
+            val summary = summaryOf(createViewModel())
+
+            assertEquals(4, summary().catchUpChats)
+            assertFalse(summary().offersCatchUp)
+
+            chats.setChats(ChatListType.Main, *(2L..6L).map { chat(id = it, unreadCount = 1) }.toTypedArray())
+            runCurrent()
+
+            assertEquals(5, summary().catchUpChats)
+            assertTrue(summary().offersCatchUp)
+        }
+
+    @Test
+    fun `counts muted chats for catch-up once they are included`() =
+        runTest {
+            chats.setChats(
+                ChatListType.Main,
+                *(2L..6L).map { chat(id = it, unreadCount = 1, isMuted = true) }.toTypedArray(),
+            )
+            val summary = summaryOf(createViewModel())
+            assertEquals(0, summary().catchUpChats)
+
+            chatListSettings.setCatchUpIncludesMuted(true)
+            runCurrent()
+
+            assertTrue(summary().offersCatchUp)
+        }
+
     /** Collects [viewModel]'s summary as the header does, and reads its latest value. */
     private fun TestScope.summaryOf(viewModel: ChatListViewModel): () -> ChatListSummary {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.summary.collect {} }

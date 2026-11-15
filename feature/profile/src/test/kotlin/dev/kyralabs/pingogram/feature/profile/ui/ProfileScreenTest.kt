@@ -183,6 +183,16 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `a bot's pills are Message, Mute and Share, which shares its link`() {
+        setScreen(ProfilePreviewData.bot, ProfilePreviewData.emptyMedia)
+
+        composeRule.onNodeWithText(string(R.string.profile_action_share)).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.ShareUsername("stickerfinderbot")), events)
+        composeRule.onNodeWithText(string(R.string.profile_action_call)).assertDoesNotExist()
+    }
+
+    @Test
     fun `tapping a username copies it, its button shares it`() {
         setScreen()
 
@@ -269,13 +279,19 @@ class ProfileScreenTest {
     }
 
     @Test
-    fun `a deleted account offers neither blocking nor reporting`() {
+    fun `a deleted account offers only deleting the chat, and says what is kept`() {
         setScreen(state = ProfilePreviewData.deleted, media = ProfilePreviewData.emptyMedia)
 
         composeRule.onNodeWithText(string(R.string.profile_block)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_report)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_action_message)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_action_mute)).assertDoesNotExist()
         composeRule.onNode(hasContentDescription(string(R.string.profile_more_options))).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_deleted_title)).assertIsDisplayed()
+
+        composeRule.onNodeWithText(string(R.string.profile_action_delete_chat)).performClick()
+        assertTrue(events.toString(), ProfileEvent.DeleteChat in events)
     }
 
     @Test

@@ -84,6 +84,9 @@ enum class SettingsPage {
 
     /** The user's QR code, from the account card. */
     MyQrCode,
+
+    /** The message reminders kept on this phone (the owner's board 29), in "On this phone". */
+    Reminders,
 }
 
 /**
