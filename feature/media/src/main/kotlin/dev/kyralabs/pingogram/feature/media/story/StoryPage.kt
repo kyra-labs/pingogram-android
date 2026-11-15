@@ -137,20 +137,23 @@ internal fun StoryPage(
             // Under the picture, which takes no input, so taps reach them; a failed story's "Try again" takes its own.
             StoryTapZones(poster, story, state.isPaused, onEvent)
             StoryMediaContent(story.media, onRetry = { onEvent(StoryViewerEvent.Retry) }, videoSurface = videoSurface)
-            StoryTopChrome(
-                poster = poster,
-                index = story.index,
-                progress = story.progress,
-                ageSeconds = story.ageSeconds,
-                onClose = onClose,
-                modifier = Modifier.align(Alignment.TopCenter),
-                mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
-                onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
-                menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
-            )
-            if (story.caption.text.isNotEmpty()) {
-                StoryCaption(story, Modifier.align(Alignment.BottomCenter))
+            // Held, the chrome steps aside for the picture and a badge says to let go (board 26).
+            HeldFade(visible = !state.isHeld, Modifier.align(Alignment.TopCenter)) {
+                StoryTopChrome(
+                    poster = poster,
+                    index = story.index,
+                    progress = story.progress,
+                    ageSeconds = story.ageSeconds,
+                    onClose = onClose,
+                    mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
+                    onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
+                    menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
+                )
             }
+            if (story.caption.text.isNotEmpty()) {
+                HeldFade(visible = !state.isHeld, Modifier.align(Alignment.BottomCenter)) { StoryCaption(story) }
+            }
+            HeldFade(visible = state.isHeld, Modifier.align(Alignment.Center)) { HeldBadge() }
         },
         bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views) },
     )

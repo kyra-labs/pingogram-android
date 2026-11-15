@@ -102,6 +102,9 @@ internal object StoryViewerPreviewData {
             reactions = reactions.copy(chosen = ReactionType.Emoji("🔥"), isOpen = true),
         )
 
+    /** A finger holds the photo (board 26): the chrome gone, the pause badge and "Release to continue". */
+    val held = photo.copy(isPaused = true, isHeld = true)
+
     val failed = content(StoryMedia.Failed(DomainError.Network), reply = null, reactions = null)
 
     /** The user's own story with its ⋮ menu open (board 26): no reply field, no reactions. */
@@ -142,6 +145,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
     override val values =
         sequenceOf(
             StoryViewerPreviewData.photo,
+            StoryViewerPreviewData.held,
             StoryViewerPreviewData.video,
             StoryViewerPreviewData.reacting,
             StoryViewerPreviewData.live,
