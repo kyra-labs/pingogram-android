@@ -15,6 +15,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
+  at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+  notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
@@ -57,6 +60,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- The profile of someone not in your contacts who wrote first shows a card with how many groups you share and Block,
+  Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 

@@ -252,7 +252,7 @@ internal fun ThisDeviceCard(session: SessionItem) {
 @DrawableRes
 internal fun SessionDevice.iconRes(): Int =
     when (this) {
-        SessionDevice.Phone -> R.drawable.ic_smartphone
+        SessionDevice.Phone -> UiR.drawable.ic_smartphone
         SessionDevice.Tablet -> R.drawable.ic_tablet
         SessionDevice.Desktop -> R.drawable.ic_computer
         SessionDevice.Browser -> R.drawable.ic_language
