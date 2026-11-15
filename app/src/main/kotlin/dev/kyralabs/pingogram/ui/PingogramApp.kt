@@ -36,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.PageToOpen
 import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
@@ -142,8 +143,8 @@ fun PingogramApp(
     tabReselection: TabReselection = remember { TabReselection() },
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
-    lockedChatsToOpen: Boolean = false,
-    onLockedChatsOpened: () -> Unit = {},
+    pageToOpen: PageToOpen? = null,
+    onPageOpened: () -> Unit = {},
     links: LinkDispatcher? = null,
     linkToOpen: String? = null,
     onLinkOpened: () -> Unit = {},
@@ -231,8 +232,8 @@ fun PingogramApp(
                                     headerActions = headerActions,
                                     chatToOpen = chatToOpen,
                                     onChatOpened = onChatOpened,
-                                    lockedChatsToOpen = lockedChatsToOpen,
-                                    onLockedChatsOpened = onLockedChatsOpened,
+                                    pageToOpen = pageToOpen,
+                                    onPageOpened = onPageOpened,
                                     onOpenLinkTarget = { target -> links?.show(target) },
                                 )
                             }

@@ -7,6 +7,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.PageToOpen
+import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 
 /**
@@ -36,29 +38,40 @@ internal fun OpenChatEffect(
 }
 
 /**
- * Opens Locked chats, which a locked chat's notification asked for (`docs/adr/0029-locked-chats.md`: it names no chat),
- * above the chat list once the main graph shows, and reports it handled; drops it when signed out, as [OpenChatEffect].
- * The page asks for the passcode first.
+ * Opens [page], which something outside the app asked for, once the main graph shows, and reports it handled; drops it
+ * when signed out, as [OpenChatEffect]:
+ * - Locked chats, which a locked chat's notification asks for (`docs/adr/0029-locked-chats.md`: it names no chat),
+ *   above the chat list; the page asks for the passcode first.
+ * - The Chats tab, whose Focus switcher the Focus tile's long press opened through `FocusSwitcherRequests` (board 31).
+ * - Settings → Focus, which the Focus tile opens while there is no profile to turn on.
  */
 @Composable
-internal fun OpenLockedChatsEffect(
+internal fun OpenPageEffect(
     navController: NavHostController,
     uiState: MainActivityUiState,
-    requested: Boolean,
+    page: PageToOpen?,
     onHandled: () -> Unit,
 ) {
     val currentEntry by navController.currentBackStackEntryAsState()
     val inMainGraph = currentEntry?.destination.isInMainGraph()
     val currentOnHandled by rememberUpdatedState(onHandled)
-    LaunchedEffect(requested, uiState, inMainGraph) {
-        if (!requested || uiState == MainActivityUiState.Loading) return@LaunchedEffect
+    LaunchedEffect(page, uiState, inMainGraph) {
+        if (page == null || uiState == MainActivityUiState.Loading) return@LaunchedEffect
         if (uiState == MainActivityUiState.SignedIn) {
             if (!inMainGraph) return@LaunchedEffect
-            navController.navigate(LockedChatsRoute) {
-                popUpTo(TopLevelDestination.Start.route)
-                launchSingleTop = true
+            when (page) {
+                PageToOpen.LockedChats -> navController.navigateAboveChats(LockedChatsRoute)
+                PageToOpen.Focus -> navController.navigateAboveChats(FocusRoute)
+                PageToOpen.FocusSwitcher -> navController.navigateToTopLevelDestination(TopLevelDestination.Chats)
             }
         }
         currentOnHandled()
+    }
+}
+
+private fun NavHostController.navigateAboveChats(route: Any) {
+    navigate(route) {
+        popUpTo(TopLevelDestination.Start.route)
+        launchSingleTop = true
     }
 }

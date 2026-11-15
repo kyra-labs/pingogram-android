@@ -33,7 +33,8 @@ import javax.inject.Inject
  *
  * A profile chosen in the switcher, or Off, is set by hand for as long as "Keep it on" says: until the schedule's next
  * change, an hour, or until turned off. Changing that keeps the current choice for the new time. A change that fails
- * leaves things as they were, and a snackbar says why.
+ * leaves things as they were, and a snackbar says why. The Quick Settings tile's long press opens the switcher through
+ * [FocusSwitcherRequests].
  */
 @HiltViewModel
 class FocusSwitchViewModel
@@ -42,7 +43,16 @@ class FocusSwitchViewModel
         private val repository: FocusRepository,
         private val clock: WallClock,
         private val savedStateHandle: SavedStateHandle,
+        requests: FocusSwitcherRequests,
     ) : ViewModel() {
+        init {
+            viewModelScope.launch {
+                requests.requested.collect { requested ->
+                    if (requested && requests.take()) savedStateHandle[KEY_OPEN] = true
+                }
+            }
+        }
+
         private val effectChannel = Channel<FocusSwitchEffect>(Channel.BUFFERED)
         val effects: Flow<FocusSwitchEffect> = effectChannel.receiveAsFlow()
 

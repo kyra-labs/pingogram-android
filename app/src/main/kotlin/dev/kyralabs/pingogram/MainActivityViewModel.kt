@@ -104,17 +104,18 @@ class MainActivityViewModel internal constructor(
         mutableChatToOpen.value = null
     }
 
-    private val mutableLockedChatsToOpen = MutableStateFlow(false)
+    private val mutablePageToOpen = MutableStateFlow<PageToOpen?>(null)
 
     /**
-     * Whether a locked chat's notification asked to open Locked chats (`docs/adr/0029-locked-chats.md`), until the app
-     * opened them ([setLockedChatsToOpen] false); like [chatToOpen], once logged in and never in the login flow.
+     * A page something outside the app asked to open, until the app opened it, or dropped it because nobody is logged
+     * in ([setPageToOpen] null): Locked chats, which a locked chat's notification opens
+     * (`docs/adr/0029-locked-chats.md`), or Focus, which its Quick Settings tile opens (board 31); like [chatToOpen],
+     * once logged in and never in the login flow.
      */
-    val lockedChatsToOpen: StateFlow<Boolean> = mutableLockedChatsToOpen.asStateFlow()
+    val pageToOpen: StateFlow<PageToOpen?> = mutablePageToOpen.asStateFlow()
 
-    /** Asks to open Locked chats ([open]), or reports them opened. */
-    fun setLockedChatsToOpen(open: Boolean) {
-        mutableLockedChatsToOpen.value = open
+    fun setPageToOpen(page: PageToOpen?) {
+        mutablePageToOpen.value = page
     }
 
     private val mutableLinkToOpen = MutableStateFlow<String?>(null)
@@ -185,4 +186,16 @@ class MainActivityViewModel internal constructor(
     internal companion object {
         val SPLASH_SCREEN_TIMEOUT = 300.milliseconds
     }
+}
+
+/** A page something outside the app asks to open ([MainActivityViewModel.pageToOpen]). */
+enum class PageToOpen {
+    /** Locked chats, from a locked chat's notification. */
+    LockedChats,
+
+    /** The Chats tab with its Focus switcher, from the Focus tile's long press. */
+    FocusSwitcher,
+
+    /** Settings → Focus, from the Focus tile while there is no profile to turn on. */
+    Focus,
 }

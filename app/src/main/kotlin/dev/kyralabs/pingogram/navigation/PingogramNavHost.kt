@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.PageToOpen
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
@@ -103,8 +104,8 @@ internal fun PingogramNavHost(
     headerActions: ChatListHeaderActions? = null,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
-    lockedChatsToOpen: Boolean = false,
-    onLockedChatsOpened: () -> Unit = {},
+    pageToOpen: PageToOpen? = null,
+    onPageOpened: () -> Unit = {},
     onOpenLinkTarget: (LinkTarget) -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -132,7 +133,7 @@ internal fun PingogramNavHost(
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
-    OpenLockedChatsEffect(navController, uiState, lockedChatsToOpen, onLockedChatsOpened)
+    OpenPageEffect(navController, uiState, pageToOpen, onPageOpened)
     ReturnFromPictureInPictureEffect(navController)
 }
 

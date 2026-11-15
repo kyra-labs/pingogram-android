@@ -12,11 +12,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
-  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders and chats it lets through, a schedule of
-  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring. While one is on,
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders and chats it lets through, a
+  schedule of days and times (one across midnight is one range) or by hand, and whether calls from contacts ring. While one is on,
   the Chats header shows it ("Focus: Work hours · until 6:00 PM"); a tap opens a switcher to change the profile, turn
   Focus off, or keep it on until the schedule ends, for an hour or until turned off. The page's "Show Focus in the chat
-  list header" hides it.
+  list header" hides it. A Focus tile in Quick Settings turns the last used profile on or off, its long press opens
+  the switcher.
+- A "New message" tile in Quick Settings opens New chat.
 
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.

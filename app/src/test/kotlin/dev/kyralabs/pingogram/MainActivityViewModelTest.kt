@@ -260,16 +260,16 @@ class MainActivityViewModelTest {
         }
 
     @Test
-    fun `locked chats to open wait until they are opened`() =
+    fun `a page to open waits until it is opened`() =
         runTest {
             val viewModel = viewModel()
-            assertFalse(viewModel.lockedChatsToOpen.value)
+            assertNull(viewModel.pageToOpen.value)
 
-            viewModel.setLockedChatsToOpen(true)
-            assertTrue(viewModel.lockedChatsToOpen.value)
+            viewModel.setPageToOpen(PageToOpen.LockedChats)
+            assertEquals(PageToOpen.LockedChats, viewModel.pageToOpen.value)
 
-            viewModel.setLockedChatsToOpen(false)
-            assertFalse(viewModel.lockedChatsToOpen.value)
+            viewModel.setPageToOpen(null)
+            assertNull(viewModel.pageToOpen.value)
         }
 
     @Test

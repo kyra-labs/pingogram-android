@@ -51,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitcherRequests
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatGate
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
@@ -62,6 +63,7 @@ import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
 import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
 import dev.kyralabs.pingogram.startup.StartupTrace
+import dev.kyralabs.pingogram.tile.FocusTile
 import dev.kyralabs.pingogram.ui.DemoFrame
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
@@ -146,6 +148,10 @@ class MainActivity : ComponentActivity() {
     /** What the call buttons call through ([LocalCallStarter]): `feature:calls`' call screen. */
     @Inject
     lateinit var calls: Calls
+
+    /** Opens the chat list's Focus switcher, which the Focus tile's long press asks for ([FocusTile]). */
+    @Inject
+    lateinit var focusSwitcherRequests: FocusSwitcherRequests
 
     /** Whether phone numbers are hidden on screen ([LocalPhoneNumbersHidden], Privacy and security). */
     @Inject
@@ -328,11 +334,15 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, the Telegram link it
-     * views, or what it shares.
+     * views, what it shares, or the Focus page or switcher the Focus tile asks for.
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
-        if (NotificationIntents.opensLockedChats(intent)) viewModel.setLockedChatsToOpen(true)
+        if (NotificationIntents.opensLockedChats(intent)) viewModel.setPageToOpen(PageToOpen.LockedChats)
+        FocusTile.pageOf(intent)?.let { page ->
+            if (page == PageToOpen.FocusSwitcher) focusSwitcherRequests.request()
+            viewModel.setPageToOpen(page)
+        }
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
     }
@@ -393,15 +403,15 @@ private fun App(
     accountMenu: AccountMenuViewModel?,
 ) {
     val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
-    val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
+    val pageToOpen by viewModel.pageToOpen.collectAsStateWithLifecycle()
     val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
     val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
     PingogramApp(
         uiState = uiState,
         chatToOpen = chatToOpen,
         onChatOpened = viewModel::onChatOpened,
-        lockedChatsToOpen = lockedChatsToOpen,
-        onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },
+        pageToOpen = pageToOpen,
+        onPageOpened = { viewModel.setPageToOpen(null) },
         links = links,
         linkToOpen = linkToOpen,
         onLinkOpened = viewModel::onLinkOpened,
