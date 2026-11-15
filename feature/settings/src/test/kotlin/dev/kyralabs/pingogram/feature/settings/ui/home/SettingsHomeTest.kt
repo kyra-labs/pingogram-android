@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui.home
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
@@ -189,6 +190,48 @@ class SettingsHomeTest {
         composeRule.onNode(hasText(other.name) and hasClickAction()).performClick()
 
         assertEquals(listOf<SettingsEvent>(SettingsEvent.SwitchAccount(other.slot)), events)
+    }
+
+    @Test
+    fun `on this phone stays hidden while no tool has a row there`() {
+        show()
+
+        composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone))).assertCountEquals(0)
+        composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone_footer))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `on this phone shows a tool's row with the group's footer`() {
+        val tool =
+            page(
+                SettingsPage.Appearance,
+                R.string.settings_appearance,
+                R.string.settings_appearance_summary,
+                R.drawable.ic_shield,
+            )
+        val groups = listOf(HomeGroup(OnThisPhoneGroup.title, listOf(tool), OnThisPhoneGroup.footer))
+        composeRule.setContent {
+            PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
+                Column {
+                    SettingsHomeGroups(
+                        summaries = SettingsPreviewData.homeSummaries,
+                        onOpen = { opened += (it as HomeDestination.Page).page },
+                        selection = null,
+                        groups = groups,
+                    )
+                }
+            }
+        }
+
+        composeRule.onNode(hasText(string(R.string.settings_home_on_this_phone))).assertExists()
+        composeRule.onNode(hasText(string(R.string.settings_home_on_this_phone_footer))).assertExists()
+        composeRule.onNode(hasText(string(R.string.settings_appearance)) and hasClickAction()).performClick()
+        assertEquals(listOf(SettingsPage.Appearance), opened)
+    }
+
+    @Test
+    fun `on this phone comes first`() {
+        assertEquals(OnThisPhoneGroup, HomeGroups.first())
     }
 
     @Test
