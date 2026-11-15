@@ -65,6 +65,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialo
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
@@ -434,6 +435,10 @@ internal fun ChatEffects(
 
                     is PollEffect.QuizAnswered -> {
                         haptics.quizAnswered(effect.correct)
+                    }
+
+                    is TranscriptionEffect -> {
+                        context.transcriptionNotice(effect, resources)
                     }
                 }
             if (message.isNotEmpty()) {

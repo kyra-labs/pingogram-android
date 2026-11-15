@@ -158,19 +158,12 @@ sealed interface AuthEvent {
         override fun toString() = "LastNameChanged(…)"
     }
 
-    data class TermsAcceptedChanged(
-        val accepted: Boolean,
-    ) : AuthEvent
-
-    /** Shows the full terms of service. */
-    data object ShowTermsOfService : AuthEvent
-
-    /** Closes the terms (back, swipe, outside tap) without changing whether they are accepted. */
+    /** Closes the terms' dialog (back, an outside tap) without accepting or declining them. */
     data object DismissTermsOfService : AuthEvent
 
     data object AcceptTermsOfService : AuthEvent
 
-    /** Declines the terms: closes them and un-accepts them. */
+    /** Declines the terms: closes them and goes back to the phone number, as signing up needs them accepted. */
     data object DeclineTermsOfService : AuthEvent
 
     data object SubmitRegistration : AuthEvent

@@ -23,6 +23,9 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.MessageTranscription
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscribeButton
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptBlock
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -35,6 +38,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Time**: the length, or "0:12 / 0:42" once playing started; it recomposes once a second at most
  *   ([playedSeconds]). A dot in the accent follows it while nobody has listened to the message yet.
  * - **Download**: while [fileState] is [FileState.Downloading], a determinate wavy ring runs around the button.
+ *
+ * - **Transcript** ([transcription], `docs/DESIGN_SYSTEM.md` §6 "Voice message transcription"): the Transcribe button
+ *   at the row's end where the device can transcribe, and the text under the waveform once shown ([TranscriptBlock]).
  *
  * Screen readers hear the button ("Play"/"Pause") and then the message ("Voice message, 0:42, not played yet") as a
  * progress bar they can set to seek.
@@ -53,6 +59,33 @@ internal fun MessageVoiceNote(
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
     colors: BubbleColors = MaterialTheme.pingogramColors.incomingBubble,
+    transcription: MessageTranscription? = null,
+) {
+    Column(modifier = modifier) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlayPauseButton(
+                isPlaying = playback.isPlaying,
+                fileState = fileState,
+                colors = colors,
+                onClick = onPlayPause,
+            )
+            WaveformAndTime(content, playback, onSeek, colors)
+            if (transcription?.showsButton == true) TranscribeButton(transcription, colors)
+        }
+        transcription?.let { TranscriptBlock(it, colors) }
+    }
+}
+
+/** The [Waveform], which seeks, over the time and the dot of a message nobody listened to yet. */
+@Composable
+private fun WaveformAndTime(
+    content: MessageContent.VoiceNote,
+    playback: Playback,
+    onSeek: (Float) -> Unit,
+    colors: BubbleColors,
 ) {
     val voiceNote = content.voiceNote
     val sizes = MaterialTheme.sizes
@@ -64,43 +97,36 @@ internal fun MessageVoiceNote(
         stringResource(R.string.content_kind_and_details, kind, time).let {
             if (content.isListened) it else stringResource(R.string.content_kind_and_details, it, notPlayed)
         }
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        PlayPauseButton(isPlaying = playback.isPlaying, fileState = fileState, colors = colors, onClick = onPlayPause)
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
-            Waveform(
-                waveform = voiceNote.waveform,
-                progress = playback.progress,
-                colors = colors,
-                onSeek = onSeek,
-                width =
-                    lerp(
-                        sizes.waveformMinWidth,
-                        sizes.waveformMaxWidth,
-                        (voiceNote.duration.toFloat() / LONGEST_WAVEFORM_SECONDS).coerceIn(0f, 1f),
-                    ),
-                modifier =
-                    Modifier.clearAndSetSemantics {
-                        contentDescription = description
-                        val fraction = if (voiceNote.duration > 0) (played ?: 0).toFloat() / voiceNote.duration else 0f
-                        progressBarRangeInfo = ProgressBarRangeInfo(fraction.coerceIn(0f, 1f), 0f..1f)
-                        setProgress { target ->
-                            onSeek(target.coerceIn(0f, 1f))
-                            true
-                        }
-                    },
-            )
-            Row(
-                modifier = Modifier.clearAndSetSemantics {},
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = time, color = colors.content, maxLines = 1, style = MaterialTheme.typography.labelSmall)
-                if (!content.isListened) Badge(containerColor = colors.accent)
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
+        Waveform(
+            waveform = voiceNote.waveform,
+            progress = playback.progress,
+            colors = colors,
+            onSeek = onSeek,
+            width =
+                lerp(
+                    sizes.waveformMinWidth,
+                    sizes.waveformMaxWidth,
+                    (voiceNote.duration.toFloat() / LONGEST_WAVEFORM_SECONDS).coerceIn(0f, 1f),
+                ),
+            modifier =
+                Modifier.clearAndSetSemantics {
+                    contentDescription = description
+                    val fraction = (played ?: 0).toFloat() / voiceNote.duration.coerceAtLeast(1)
+                    progressBarRangeInfo = ProgressBarRangeInfo(fraction.coerceIn(0f, 1f), 0f..1f)
+                    setProgress { target ->
+                        onSeek(target.coerceIn(0f, 1f))
+                        true
+                    }
+                },
+        )
+        Row(
+            modifier = Modifier.clearAndSetSemantics {},
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = time, color = colors.content, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+            if (!content.isListened) Badge(containerColor = colors.accent)
         }
     }
 }

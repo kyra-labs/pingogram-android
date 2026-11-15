@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostDescription
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptDescription
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 
 /**
@@ -58,6 +59,7 @@ private fun bubbleContent(
                 ?: text
         },
         bubble.contentLabel?.resolve(resources),
+        bubble.transcript?.let { transcriptDescription(resources, it) },
         pollDescription(resources, bubble),
         paidMediaDescription(resources, bubble),
         giveawayDescription(resources, bubble),

@@ -378,6 +378,10 @@ internal class FakeVideoPlayer : VideoPlayer {
         calls += "muted:$muted"
     }
 
+    override fun setSpeed(speed: Float) {
+        calls += "speed:$speed"
+    }
+
     override fun release() {
         calls += "release"
     }

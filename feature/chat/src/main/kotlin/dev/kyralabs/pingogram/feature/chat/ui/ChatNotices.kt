@@ -41,6 +41,8 @@ private fun actionLabelOf(effect: ChatEffect): Int? =
         effect == SelectionEffect.RequestStoragePermission -> R.string.save_storage_continue
         effect == SelectionEffect.StoragePermissionDenied -> R.string.save_storage_settings
         effect is VoiceEffect -> voiceNoticeActionLabel(effect)
+        effect == TranscriptionEffect.ExplainMicrophone -> R.string.transcription_permission_allow
+        effect == TranscriptionEffect.MicrophoneDenied -> R.string.transcription_permission_settings
         else -> null
     }
 
