@@ -89,6 +89,21 @@ class ReminderAlarmsTest {
             assertEquals(listOf(0 to listOf(1L), 1 to listOf(5L), 1 to emptyList<Long>()), work.synced)
         }
 
+    @Test
+    fun `an account without reminders to ring leaves WorkManager alone until it has one, then cancels as they go`() =
+        runTest {
+            first.value = listOf(reminder(1, -60))
+            started()
+            assertTrue(work.synced.isEmpty())
+
+            first.value = listOf(reminder(2, 60))
+            runCurrent()
+            first.value = emptyList()
+            runCurrent()
+
+            assertEquals(listOf(0 to listOf(2L), 0 to emptyList<Long>()), work.synced)
+        }
+
     private companion object {
         val NOW: Instant = Instant.parse("2026-11-15T12:00:00Z")
     }

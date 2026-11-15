@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -83,6 +84,17 @@ class DataStoreFocusRepositoryTest {
             assertNull(repository.manual.first())
             assertNull(repository.lastUsedId.first())
             assertTrue(repository.profiles.first().isEmpty())
+        }
+
+    @Test
+    fun `the chat list shows Focus until turned off`() =
+        runTest {
+            val repository = DataStoreFocusRepository(dataStore())
+            assertTrue(repository.showsInChatList.first())
+
+            repository.setShowsInChatList(false)
+
+            assertFalse(repository.showsInChatList.first())
         }
 
     @Test

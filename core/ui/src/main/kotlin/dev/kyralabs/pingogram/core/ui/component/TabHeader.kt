@@ -41,6 +41,8 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *   Catch-up chip).
  * - **Collapsed**: the dense bar's height (`sizes.denseTopAppBar`, §7) with the [title] in `titleLargeWide`; the
  *   [subtitle] gets `expanded = false` to say what it shows there, if anything.
+ * - [subtitleExtraHeight] makes the expanded bar taller for what the [subtitle] shows below its line (the Chats tab's
+ *   Focus pill).
  * - [navigationIcon] at the start (selection mode's close) and [actions] at the end: 48 dp tonal circles
  *   ([tabHeaderActionSize]), `spacing.small` apart.
  *
@@ -56,6 +58,7 @@ fun TabHeader(
     subtitleMinHeight: Dp = 0.dp,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    subtitleExtraHeight: Dp = 0.dp,
 ) {
     // The wide titles (docs/DESIGN_SYSTEM.md §13.2): the type scale's sizes and line heights.
     val wide = MaterialTheme.experimentalTypography
@@ -83,7 +86,8 @@ fun TabHeader(
                 )
             },
             collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
-            expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null, subtitleMinHeight),
+            expandedHeight =
+                tabHeaderExpandedHeight(withSubtitle = subtitle != null, subtitleMinHeight) + subtitleExtraHeight,
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,

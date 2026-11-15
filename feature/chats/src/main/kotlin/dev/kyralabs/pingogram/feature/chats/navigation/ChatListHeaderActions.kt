@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
  *   Settings tab's account menu, which a long press opens (`docs/adr/0031-multiple-accounts.md`), given the modifier
  *   to put on the avatar. Without several accounts it hands the avatar no modifier.
  * - **Catch-up**: the status line's chip opens Catch-up ([openCatchUp], owner decision 2026-11-15).
+ * - **Focus**: the Focus switcher's "Manage" opens Settings → Focus ([openFocus], board 31).
  */
 @Stable
 class ChatListHeaderActions(
@@ -24,6 +25,7 @@ class ChatListHeaderActions(
     val openAccount: () -> Unit,
     val accountMenu: @Composable (content: @Composable (Modifier) -> Unit) -> Unit = { content -> content(Modifier) },
     val openCatchUp: () -> Unit = {},
+    val openFocus: () -> Unit = {},
 ) {
     /** Search shows, docked or as its own destination: the search button is away. */
     val isSearchOpen: Boolean get() = searchOpen.value

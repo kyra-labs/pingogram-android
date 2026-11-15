@@ -1663,7 +1663,9 @@
     <string name="settings_focus_template_weekend_summary">Saturdays and Sundays, 10 to 8</string>
     <string name="settings_focus_template_blank">Start from scratch</string>
     <string name="settings_focus_template_blank_summary">Choose everything yourself</string>
-    <string name="settings_focus_telegram">Telegram</string>
+    <string name="settings_focus_while_on">While Focus is on</string>
+    <string name="settings_focus_in_chat_list">Show Focus in the chat list header</string>
+    <string name="settings_focus_in_chat_list_summary">Tap it to switch or turn off</string>
     <string name="settings_focus_status">Tell people you\'re focusing</string>
     <string name="settings_focus_status_summary">Telegram has no status for it, so Focus stays on this phone</string>
     <string name="settings_focus_name">Name</string>
