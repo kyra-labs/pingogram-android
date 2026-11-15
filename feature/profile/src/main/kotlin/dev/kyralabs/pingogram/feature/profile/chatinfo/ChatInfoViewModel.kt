@@ -599,6 +599,8 @@ class ChatInfoViewModel internal constructor(
                     else -> null
                 },
             avatarShape = AvatarShape.ofChat(info.isForum),
+            // The chat's own profile color where it set one, none otherwise (owner decision 2026-11-15, board 24).
+            profileColor = chat.profileAccentColorId,
         )
     }
 

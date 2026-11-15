@@ -497,6 +497,60 @@ class MediaViewerScreenTest {
     }
 
     @Test
+    fun `More offers a video's speed, whose list picks one`() {
+        setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
+
+        moreButton().performClick()
+        composeRule.onNode(hasText(string(R.string.media_speed))).assertIsDisplayed().performClick()
+        composeRule.onNode(hasText("1.5×")).assertIsDisplayed().performClick()
+
+        assertEquals(MediaViewerEvent.SetSpeed(1.5f), events.last())
+    }
+
+    @Test
+    fun `a photo has no speed`() {
+        setScreen(MediaPreviewData.withActions)
+
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_speed))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the speed chip shows only while the speed is not 1x, and changes it`() {
+        setScreen(MediaPreviewData.video)
+        composeRule.onNode(hasContentDescription("Playback speed", substring = true)).assertDoesNotExist()
+
+        state = MediaPreviewData.videoFaster
+        composeRule.waitForIdle()
+        composeRule.onNode(hasContentDescription("Playback speed 1.5×")).assertIsDisplayed().performClick()
+        composeRule.onNode(hasText("1×")).performClick()
+
+        assertEquals(MediaViewerEvent.SetSpeed(1f), events.last())
+    }
+
+    @Test
+    fun `a live photo says so, plays while held and through its actions`() {
+        setScreen(MediaPreviewData.livePhoto)
+        val page = composeRule.onNode(hasContentDescription(string(R.string.media_live_photo), substring = true))
+
+        page.assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_live_badge))).assertDoesNotExist() // Decorative.
+        page.performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+            move()
+        }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+        page.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = false), events.last())
+        page.performCustomAction(string(R.string.media_live_play))
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+    }
+
+    @Test
     fun `a video cannot be copied`() {
         setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
 

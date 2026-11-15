@@ -21,6 +21,10 @@ data class PhoneNumberForm(
     val pickerQuery: String = "",
     /** The country of the IP address was looked up for this form (once, and only for an empty calling code). */
     val isCountryDetected: Boolean = false,
+    /** TDLib says the number is an anonymous one (fragment.com's +888), whose length no country's format tells. */
+    val isAnonymous: Boolean = false,
+    /** The user was told the number looks too short ([isTooShort]); sending it now is their choice. */
+    val isShortWarned: Boolean = false,
 ) {
     val country: Country? get() = countryIso?.let { iso -> countries.find { it.isoCode == iso } }
 
@@ -29,6 +33,21 @@ data class PhoneNumberForm(
 
     /** Whether the calling code and number can form a valid E.164 number ([isPlausiblePhoneNumber]). */
     val isPlausible: Boolean get() = isPlausiblePhoneNumber(callingCode, number)
+
+    /**
+     * How many digits the country's numbers have, from TDLib's format for it ([numberFormat]: one slot per digit),
+     * where the device is sure: a known country and no anonymous number. Null otherwise, so nothing is ever held back
+     * by a guess (owner decision 2026-11-15, board 23).
+     */
+    val expectedLength: Int?
+        get() = numberFormat?.count { it == '-' }?.takeIf { !isAnonymous && country != null && it > 0 }
+
+    /** The number has digits, and fewer than [expectedLength]. */
+    val isTooShort: Boolean
+        get() = expectedLength?.let { number.isNotEmpty() && number.length < it } == true
+
+    /** The form telling the user the number looks too short, the first time it does; null when nothing is to say. */
+    fun warnedIfTooShort(): PhoneNumberForm? = if (isTooShort && !isShortWarned) copy(isShortWarned = true) else null
 
     /** The open country picker, or null. */
     val picker: CountryPickerUiState?
@@ -51,6 +70,7 @@ data class PhoneNumberForm(
             countryIso = countryForCallingCode(code, country, countries)?.isoCode,
             error = null,
             isCountryDetected = true,
+            isShortWarned = false,
         )
     }
 
@@ -65,9 +85,14 @@ data class PhoneNumberForm(
                 countryIso = countryForCallingCode(split.first, country, countries)?.isoCode,
                 error = null,
                 isCountryDetected = true,
+                isShortWarned = false,
             )
         } else {
-            copy(number = digits.take(MAX_PHONE_NUMBER_DIGITS - callingCode.length), error = null)
+            copy(
+                number = digits.take(MAX_PHONE_NUMBER_DIGITS - callingCode.length),
+                error = null,
+                isShortWarned = false,
+            )
         }
     }
 
@@ -83,6 +108,7 @@ data class PhoneNumberForm(
             pickerQuery = "",
             error = null,
             isCountryDetected = true,
+            isShortWarned = false,
         )
     }
 
@@ -108,11 +134,12 @@ data class PhoneNumberForm(
      * the number is still empty (+1 is both Canada and the United States); after that the number decides.
      */
     fun withPhoneNumberInfo(info: PhoneNumberInfo): PhoneNumberForm {
-        if (info.callingCode != callingCode) return copy(numberFormat = null)
+        if (info.callingCode != callingCode) return copy(numberFormat = null, isAnonymous = false)
         val detected = info.country?.isoCode
         val keepSelection = number.isEmpty() && country?.callingCodes?.contains(callingCode) == true
         return copy(
             numberFormat = numberFormatOf(info.formattedNumber),
+            isAnonymous = info.isAnonymous,
             countryIso = if (detected == null || keepSelection) countryIso else detected,
         )
     }

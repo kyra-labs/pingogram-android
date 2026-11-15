@@ -242,6 +242,17 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `the language button opens Android's list of the app's languages`() =
+            runTest {
+                val viewModel = viewModel()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.OpenAppLanguages)
+
+                assertEquals(listOf<AuthEffect>(AuthEffect.OpenAppLanguages), effects)
+            }
+
+        @Test
         fun `the connection status is part of the state`() =
             runTest {
                 val viewModel = viewModel()
@@ -411,6 +422,66 @@ class AuthViewModelTest {
 
                 assertEquals(DomainError.PhoneNumberInvalid, viewModel.step<AuthStepUiState.PhoneNumber>().error)
                 assertTrue(client.sentOf<TdApi.SetAuthenticationPhoneNumber>().isEmpty())
+            }
+
+        @Test
+        fun `a number too short for its country is said once under the field, then sent`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged("79111234"))
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                val warned = viewModel.step<AuthStepUiState.PhoneNumber>()
+                val sentAfterWarning = client.sentOf<TdApi.SetAuthenticationPhoneNumber>().size
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertEquals(10, warned.expectedLength)
+                assertNull(warned.error)
+                assertEquals(0, sentAfterWarning)
+                assertEquals("+4479111234", client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
+            }
+
+        @Test
+        fun `typing again takes the length warning back`() =
+            runTest {
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged("79111234"))
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                send(viewModel, AuthEvent.PhoneNumberChanged("791112345"))
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+            }
+
+        @Test
+        fun `a number of the right length is sent at once`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = onPhoneNumberEntry()
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+                assertEquals(UK_INTERNATIONAL, client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
+            }
+
+        @Test
+        fun `an anonymous number is never held back by its length`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = viewModel()
+                send(
+                    viewModel,
+                    AuthEvent.StartMessaging,
+                    AuthEvent.CallingCodeChanged("888"),
+                    AuthEvent.PhoneNumberChanged("0812"),
+                )
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+                assertEquals("+8880812", client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
             }
 
         @Test
@@ -1279,7 +1350,6 @@ class AuthViewModelTest {
                 assertTrue(opened.isTermsOfServiceOpen)
                 assertEquals("Be nice", opened.termsOfServiceText)
                 assertEquals(16, opened.minUserAge)
-                assertTrue(viewModel.step<AuthStepUiState.Registration>().termsAccepted)
                 assertFalse(viewModel.step<AuthStepUiState.Registration>().isTermsOfServiceOpen)
             }
 
@@ -1288,7 +1358,7 @@ class AuthViewModelTest {
             runTest {
                 val viewModel = onRegistration()
 
-                send(viewModel, AuthEvent.TermsAcceptedChanged(true), AuthEvent.SubmitRegistration)
+                send(viewModel, AuthEvent.SubmitRegistration)
 
                 assertEquals(
                     DomainError.FirstNameInvalid,
@@ -1298,14 +1368,30 @@ class AuthViewModelTest {
             }
 
         @Test
-        fun `registering without accepted terms shows them`() =
+        fun `registering accepts the terms the screen names, without a dialog`() =
             runTest {
+                client.on(TdApi.RegisterUser::class, ok())
                 val viewModel = onRegistration()
 
                 send(viewModel, AuthEvent.FirstNameChanged("Ada"), AuthEvent.SubmitRegistration)
 
-                assertTrue(viewModel.step<AuthStepUiState.Registration>().isTermsOfServiceOpen)
-                assertTrue(client.sentOf<TdApi.RegisterUser>().isEmpty())
+                assertFalse(viewModel.step<AuthStepUiState.Registration>().isTermsOfServiceOpen)
+                assertEquals(1, client.sentOf<TdApi.RegisterUser>().size)
+            }
+
+        @Test
+        fun `where Telegram asks for the terms to be accepted, registering waits for that`() =
+            runTest {
+                client.on(TdApi.RegisterUser::class, ok())
+                val viewModel = onRegistration(mustShowTerms = true)
+
+                send(viewModel, AuthEvent.DismissTermsOfService)
+                send(viewModel, AuthEvent.FirstNameChanged("Ada"), AuthEvent.SubmitRegistration)
+                val waiting = viewModel.step<AuthStepUiState.Registration>()
+                send(viewModel, AuthEvent.AcceptTermsOfService, AuthEvent.SubmitRegistration)
+
+                assertTrue(waiting.isTermsOfServiceOpen)
+                assertEquals(1, client.sentOf<TdApi.RegisterUser>().size)
             }
 
         @Test
@@ -1318,7 +1404,6 @@ class AuthViewModelTest {
                     viewModel,
                     AuthEvent.FirstNameChanged(" Ada "),
                     AuthEvent.LastNameChanged("Lovelace"),
-                    AuthEvent.TermsAcceptedChanged(true),
                     AuthEvent.SubmitRegistration,
                 )
 
@@ -1335,7 +1420,6 @@ class AuthViewModelTest {
                 send(
                     viewModel,
                     AuthEvent.FirstNameChanged("Ada"),
-                    AuthEvent.TermsAcceptedChanged(true),
                     AuthEvent.SubmitRegistration,
                 )
 
@@ -1343,19 +1427,24 @@ class AuthViewModelTest {
             }
 
         @Test
-        fun `declining the terms un-accepts them, dismissing keeps the choice`() =
+        fun `declining the terms goes back to the phone number`() =
             runTest {
-                val viewModel = onRegistration()
+                val viewModel = onRegistration(mustShowTerms = true)
 
-                send(viewModel, AuthEvent.TermsAcceptedChanged(true), AuthEvent.ShowTermsOfService)
+                send(viewModel, AuthEvent.DeclineTermsOfService)
+
+                assertInstanceOf(AuthStepUiState.PhoneNumber::class.java, viewModel.state.step)
+                assertTrue(client.sentOf<TdApi.RegisterUser>().isEmpty())
+            }
+
+        @Test
+        fun `dismissing the terms closes them without going back`() =
+            runTest {
+                val viewModel = onRegistration(mustShowTerms = true)
+
                 send(viewModel, AuthEvent.DismissTermsOfService)
-                val dismissed = viewModel.step<AuthStepUiState.Registration>()
-                send(viewModel, AuthEvent.ShowTermsOfService, AuthEvent.DeclineTermsOfService)
-                val declined = viewModel.step<AuthStepUiState.Registration>()
 
-                assertTrue(dismissed.termsAccepted)
-                assertFalse(declined.termsAccepted)
-                assertFalse(declined.isTermsOfServiceOpen)
+                assertFalse(viewModel.step<AuthStepUiState.Registration>().isTermsOfServiceOpen)
             }
 
         @Test
@@ -1853,12 +1942,11 @@ class AuthViewModelTest {
             runTest {
                 client.authState.value = AuthState.from(TdApiFixtures.waitRegistration())!!
                 val first = viewModel()
-                send(first, AuthEvent.FirstNameChanged("Ada"), AuthEvent.TermsAcceptedChanged(true))
+                send(first, AuthEvent.FirstNameChanged("Ada"))
 
                 val restored = viewModel(handle = savedState).step<AuthStepUiState.Registration>()
 
                 assertEquals("Ada", restored.firstName)
-                assertTrue(restored.termsAccepted)
             }
 
         @Test

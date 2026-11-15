@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
+import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
@@ -98,6 +99,7 @@ import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.SuggestedPostRepository
+import dev.kyralabs.pingogram.core.domain.repository.TranscriptRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -425,6 +427,12 @@ object ActiveAccountModule {
 
     @Provides
     fun translationRepository(accounts: Accounts): TranslationRepository = accounts.active.translationRepository()
+
+    @Provides
+    fun transcriptRepository(accounts: Accounts): TranscriptRepository = accounts.active.transcriptRepository()
+
+    @Provides
+    fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()
 
     @Provides
     fun customEmojiRepository(accounts: Accounts): CustomEmojiRepository = accounts.active.customEmojiRepository()

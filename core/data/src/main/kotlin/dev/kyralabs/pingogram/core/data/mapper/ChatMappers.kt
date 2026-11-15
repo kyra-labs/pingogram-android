@@ -43,6 +43,7 @@ internal fun TdApi.Chat.toChat(mutedScopes: Set<NotificationScope>): Chat? {
         hasWelcomeMessages = hasWelcomeMessages,
         hasScheduledMessages = hasScheduledMessages,
         actionBar = actionBar?.toChatActionBar(),
+        profileAccentColorId = profileAccentColorId,
     )
 }
 

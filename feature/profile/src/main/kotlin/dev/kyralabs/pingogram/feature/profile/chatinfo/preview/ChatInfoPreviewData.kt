@@ -130,6 +130,9 @@ object ChatInfoPreviewData {
             actions = ChatInfoActions(isMuted = true, canLeave = true),
         )
 
+    /** A channel that chose its profile color (board 24): its header on that hue's tinted fill. */
+    val channelWithColor = channel.copy(header = channel.header.copy(profileColor = CHANNEL_PROFILE_COLOR))
+
     val membersPage =
         ChatMembersUiState(
             kind = GroupKind.Supergroup,
@@ -286,3 +289,5 @@ object ChatInfoPreviewData {
 
     val newLink = EditInviteLinkUiState.Content(isNew = true, name = "Meetup flyer")
 }
+
+private const val CHANNEL_PROFILE_COLOR = 2
