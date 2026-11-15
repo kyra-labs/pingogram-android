@@ -21,19 +21,17 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // Each Focus profile's symbol in its shape (board 31: Work `Cookie9Sided`, Sleep `Cookie12Sided`, Weekend `Sunny`).
-// The symbols stand in for Material Symbols the app does not bundle yet (work, bedtime, beach, book, fitness, car);
-// they change here alone.
 
-/** The Material Symbol of this profile icon. */
+/** The Material Symbol of this profile icon, as the owner's board 31 names it. */
 @DrawableRes
 internal fun FocusIcon.symbol(): Int =
     when (this) {
-        FocusIcon.Work -> UiR.drawable.ic_schedule
-        FocusIcon.Sleep -> UiR.drawable.ic_notifications_off
-        FocusIcon.Weekend -> UiR.drawable.ic_emoji_nature
-        FocusIcon.Reading -> UiR.drawable.ic_library_books
-        FocusIcon.Fitness -> UiR.drawable.ic_sports_soccer
-        FocusIcon.Driving -> UiR.drawable.ic_emoji_transportation
+        FocusIcon.Work -> UiR.drawable.ic_work
+        FocusIcon.Sleep -> UiR.drawable.ic_bedtime
+        FocusIcon.Weekend -> UiR.drawable.ic_beach_access
+        FocusIcon.Reading -> UiR.drawable.ic_menu_book
+        FocusIcon.Fitness -> UiR.drawable.ic_fitness_center
+        FocusIcon.Driving -> UiR.drawable.ic_directions_car
     }
 
 /** What screen readers call this profile icon in the editor's icon choice. */
