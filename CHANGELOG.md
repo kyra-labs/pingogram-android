@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
+
 ### Fixed
 - In a forum, a topic's top bar shows only who is typing in that topic, no longer someone typing in another topic.
 

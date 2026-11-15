@@ -49,6 +49,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     key's Keystore unwrap takes most of that time, and the two used to run one after the other.
   - `PingogramApplication` parses Google Sans Flex and makes the typefaces of every style on `Default`
     (`warmUpGoogleSansFlex`). The first frame used to make them while it measured its text.
+  - Then it measures the floating navigation bar's labels with them (`NavigationLabelWidths.warmUp`, 2026-11-15), whose
+    width decides whether the tabs show their names (`labelsFit`). The first frame used to measure the three labels in
+    two styles, which made it slower without a baseline profile after #494 (`StartupBenchmark` with
+    `CompilationMode.None`: cold +19%, the warm first frame +18–22%). The width is kept for the process, so a warm start
+    measures nothing; a first frame that asks for other labels or styles (high contrast, another language before
+    Android 13) measures them itself, the same way, so the tabs never switch between names and icons after.
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
