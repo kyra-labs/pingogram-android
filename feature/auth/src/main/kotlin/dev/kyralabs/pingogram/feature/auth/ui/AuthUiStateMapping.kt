@@ -66,7 +66,6 @@ private fun AuthModel.laterStepScreen(step: AuthStep): AuthStepUiState =
                 lastNameError = registration.lastNameError,
                 termsOfServiceText = step.termsOfService.text,
                 minUserAge = step.termsOfService.minUserAge,
-                termsAccepted = registration.termsAccepted,
                 isTermsOfServiceOpen = registration.isTermsOpen == true,
             )
         }
