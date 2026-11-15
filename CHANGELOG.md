@@ -22,6 +22,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
+- A reminder on the Reminders page opens its chat at the message it was set on.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
