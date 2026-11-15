@@ -63,124 +63,7 @@ import kotlin.reflect.cast
  * reactions, replies, errors and process death, on fakes of the repositories and the player and the test clock.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class StoryViewerViewModelTest {
-    private val stories = FakeStoryRepository()
-    private val chats = FakeChatRepository()
-    private val files = FakeFileRepository()
-    private val users = FakeUserRepository()
-    private val player = FakeVideoPlayer()
-    private val created = mutableListOf<StoryViewerViewModel>()
-    private val albums = FakeStoryAlbumRepository()
-
-    @BeforeEach
-    fun setUp() {
-        Dispatchers.setMain(StandardTestDispatcher())
-        // Ada, a user: stories 10, 11 and 12, seen up to 10. A channel: stories 20 and 21, none seen.
-        chats.chats.value =
-            mapOf(
-                ADA to MediaFixtures.chat(ADA, "Ada").copy(type = ChatType.Private(ADA)),
-                CHANNEL to MediaFixtures.chat(CHANNEL, "News"),
-                ME to MediaFixtures.chat(ME, "Me").copy(type = ChatType.Private(ME)),
-            )
-        stories.setActive(active(ADA, order = 9, maxRead = 10, ids = listOf(10, 11, 12)))
-        stories.setActive(active(CHANNEL, order = 5, maxRead = 0, ids = listOf(20, 21)))
-        listOf(10, 11, 12).forEach { stories.setStory(photoStory(it, ADA)) }
-        listOf(20, 21).forEach { stories.setStory(photoStory(it, CHANNEL, canBeReplied = false)) }
-    }
-
-    @AfterEach
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    /**
-     * [runTest] that clears every view model the test made once [testBody] ends, which stops what still runs in their
-     * scopes, such as the timeline's ticker.
-     */
-    private fun runViewModelTest(testBody: suspend TestScope.() -> Unit) =
-        runTest {
-            try {
-                testBody()
-            } finally {
-                created.toList().forEach(::clear)
-            }
-        }
-
-    /** Clears [viewModel] as leaving the screen does: through a [ViewModelStore], which closes what it holds. */
-    private fun clear(viewModel: StoryViewerViewModel) {
-        val store = ViewModelStore()
-        val factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(
-                    modelClass: KClass<T>,
-                    extras: CreationExtras,
-                ): T = modelClass.cast(viewModel)
-            }
-        ViewModelProvider.create(store, factory)[StoryViewerViewModel::class]
-        store.clear()
-        created -= viewModel
-    }
-
-    private fun active(
-        chatId: Long,
-        order: Long,
-        maxRead: Int,
-        ids: List<Int>,
-    ) = ActiveStories(chatId, StoryList.Main, order, maxRead, ids.map { StoryInfo(it, 0) }.toImmutableList())
-
-    private fun photoStory(
-        id: Int,
-        chatId: Long,
-        canBeReplied: Boolean = true,
-        chosen: ReactionType? = null,
-    ) = Story(
-        id = id,
-        posterChatId = chatId,
-        date = NOW.epochSecond - THREE_HOURS,
-        content = StoryContent.Photo(Photo(persistentListOf(PhotoSize("x", 1080, 1920, FileRef(fileOf(id), 1))), null)),
-        caption = FormattedText("Story $id", persistentListOf()),
-        canBeReplied = canBeReplied,
-        chosenReaction = chosen,
-    )
-
-    private fun fileOf(storyId: Int) = FILE_BASE + storyId
-
-    private fun downloaded(vararg storyIds: Int) =
-        storyIds.forEach { files.setFile(fileOf(it), FileState.Downloaded("/files/$it.jpg", 1)) }
-
-    /** A view model opened on [route], whose state is collected and whose screen is started, as by the screen. */
-    private fun TestScope.viewModel(
-        route: StoryViewerRoute = StoryViewerRoute(ADA),
-        handle: SavedStateHandle = SavedStateHandle(),
-        started: Boolean = true,
-        albums: StoryAlbumRepository? = null,
-    ): StoryViewerViewModel {
-        val viewModel =
-            StoryViewerViewModel(
-                route = route,
-                savedStateHandle = handle,
-                storyRepository = stories,
-                chatRepository = chats,
-                fileRepository = files,
-                userRepository = users,
-                clock = FakeWallClock(NOW),
-                timeSource = testScheduler.timeSource,
-                applicationScope = backgroundScope,
-                videoPlayer = player,
-                albumRepository = albums,
-            )
-        created += viewModel
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
-        runCurrent()
-        if (started) viewModel.onEvent(StoryViewerEvent.Started(true))
-        runCurrent()
-        return viewModel
-    }
-
-    private val StoryViewerViewModel.content get() = uiState.value as StoryViewerUiState.Content
-
-    private val StoryViewerViewModel.shownStory get() = content.posters[content.current].chatId to content.story.storyId
-
+internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
     @Test
     fun `opens at the route's chat on its first unseen story, among the stories list's chats`() =
         runViewModelTest {
@@ -615,7 +498,7 @@ class StoryViewerViewModelTest {
     fun `what the viewer cannot show says so and moves on`() =
         runViewModelTest {
             stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Unsupported))
-            stories.deleteStory(ADA, 12)
+            stories.removeStory(ADA, 12)
             val viewModel = viewModel()
             assertEquals(StoryMedia.Unsupported, viewModel.content.story.media)
 
@@ -743,16 +626,4 @@ class StoryViewerViewModelTest {
             assertEquals(listOf(ADA, CHANNEL), restored.content.posters.map { it.chatId })
             assertEquals(CHANNEL to 21, restored.shownStory)
         }
-
-    private companion object {
-        const val ADA = 2L
-        const val CHANNEL = 3L
-        const val ME = 1L
-        const val FILE_BASE = 100
-        const val THREE_HOURS = 10_800L
-        const val PHOTO_MILLIS = StoryContent.PHOTO_DURATION_MILLIS
-        const val TICK_MILLIS = 40L
-        const val PROGRESS_TOLERANCE = 0.02f
-        val NOW: Instant = Instant.parse("2026-10-18T09:41:30Z")
-    }
 }

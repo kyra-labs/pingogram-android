@@ -95,6 +95,9 @@ class StoryViewerScreenshotTest(
         val STATES =
             mapOf(
                 "photo" to StoryViewerPreviewData.photo,
+                "ownMenu" to StoryViewerPreviewData.ownMenu,
+                "ownDeleteAsked" to StoryViewerPreviewData.ownDeleteAsked,
+                "ownViews" to StoryViewerPreviewData.ownViews,
                 "video" to StoryViewerPreviewData.video,
                 "reacting" to StoryViewerPreviewData.reacting,
                 "live" to StoryViewerPreviewData.live,

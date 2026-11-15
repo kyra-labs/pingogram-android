@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
@@ -16,8 +17,10 @@ import kotlinx.coroutines.flow.Flow
  * (https://core.telegram.org/api/terms), and there is no stealth mode (a Telegram Premium feature).
  *
  * Requests that get no answer in time fail with `DomainError.Network`; a story or chat TDLib does not know fails with
- * `DomainError.NotFound`, a flood wait with `DomainError.FloodWait`.
+ * `DomainError.NotFound`, a flood wait with `DomainError.FloodWait`. One function per request the viewer makes (hence
+ * `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 interface StoryRepository {
     /**
      * The chats with active stories in [list], in TDLib's order (by `order`, then chat id, both descending: the user's
@@ -93,4 +96,26 @@ interface StoryRepository {
         storyId: Int,
         text: FormattedText,
     ): Outcome<Unit>
+
+    /**
+     * Deletes story [storyId] of chat [chatId] for everyone (td_api.tl `deleteStory`): only where `Story.canBeDeleted`,
+     * the user's own stories. TDLib then announces `updateStoryDeleted`.
+     */
+    suspend fun deleteStory(
+        chatId: Long,
+        storyId: Int,
+    ): Outcome<Unit>
+
+    /**
+     * A page of who saw the user's own story [storyId] (td_api.tl `getStoryInteractions`), from [offset] ("" for the
+     * first page): those whose name starts with [query] (all for ""), contacts only where [onlyContacts], those who
+     * reacted first where [reactionsFirst]. Users only: reposts by chats are left out.
+     */
+    suspend fun viewers(
+        storyId: Int,
+        query: String,
+        onlyContacts: Boolean,
+        reactionsFirst: Boolean,
+        offset: String,
+    ): Outcome<StoryViewersPage>
 }

@@ -6,7 +6,10 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewer
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import kotlin.math.roundToLong
@@ -49,6 +52,30 @@ internal fun TdApi.Story.toStory(): Story =
         caption = caption?.toFormattedText() ?: FormattedText.Empty,
         canBeReplied = canBeReplied,
         chosenReaction = chosenReactionType?.toReactionType()?.takeUnless { it == ReactionType.Paid },
+        canBeDeleted = canBeDeleted,
+        interactions = interactionInfo?.takeIf { canGetInteractions }?.toInteractionInfo(),
+    )
+
+private fun TdApi.StoryInteractionInfo.toInteractionInfo() =
+    StoryInteractionInfo(viewCount, reactionCount, recentViewerUserIds.toList().toImmutableList())
+
+/** Who saw the user's own story: users only (a chat's repost or forward is left out), and the page's totals. */
+internal fun TdApi.StoryInteractions.toViewersPage(): StoryViewersPage =
+    StoryViewersPage(
+        totalCount = totalCount,
+        reactionCount = totalReactionCount,
+        viewers =
+            interactions
+                .mapNotNull { interaction ->
+                    val user = interaction.actorId as? TdApi.MessageSenderUser ?: return@mapNotNull null
+                    val view = interaction.type as? TdApi.StoryInteractionTypeView ?: return@mapNotNull null
+                    StoryViewer(
+                        userId = user.userId,
+                        date = interaction.interactionDate.toLong(),
+                        reaction = view.chosenReactionType?.toReactionType()?.takeUnless { it == ReactionType.Paid },
+                    )
+                }.toImmutableList(),
+        nextOffset = nextOffset.takeIf { it.isNotEmpty() },
     )
 
 private fun TdApi.StoryContent?.toStoryContent(): StoryContent =

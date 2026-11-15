@@ -108,10 +108,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The top of the frame on a `mediaOverlay` gradient: the segments ([StorySegments]), then the chat's avatar
  * (`sizes.avatarSmall`), its name in `titleSmallEmphasized` and the story's age in `bodySmall` (one heading for screen
- * readers), and the mute button ([mute] is whether the video is muted; null without one) and close button
- * (`IconButton`s with `IconButtonDefaults.shapes()`), in `onMediaOverlay`.
+ * readers), and the mute button ([mute] is whether the video is muted; null without one), the ⋮ menu of the user's own
+ * story ([menu], null for others) and the close button (`IconButton`s with `IconButtonDefaults.shapes()`), in
+ * `onMediaOverlay`.
  */
-@Suppress("LongParameterList") // The chat, its story's place and progress, its age, and the two buttons.
+@Suppress("LongParameterList") // The chat, its story's place and progress, its age, and the buttons.
 @Composable
 internal fun StoryTopChrome(
     poster: StoryPosterUi,
@@ -122,6 +123,7 @@ internal fun StoryTopChrome(
     modifier: Modifier = Modifier,
     mute: Boolean? = null,
     onToggleMute: () -> Unit = {},
+    menu: (@Composable () -> Unit)? = null,
 ) {
     val colors = MaterialTheme.pingogramColors
     val spacing = MaterialTheme.spacing
@@ -154,6 +156,7 @@ internal fun StoryTopChrome(
                     )
                 }
             }
+            menu?.invoke()
             IconButton(onClick = onClose, shapes = IconButtonDefaults.shapes()) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_close),
@@ -239,7 +242,7 @@ private fun StorySegments(
  * the language's narrow units ("12m", "3h"), at most a day or two, as stories expire.
  */
 @Composable
-private fun storyAge(ageSeconds: Long): String {
+internal fun storyAge(ageSeconds: Long): String {
     val locale = LocalConfiguration.current.locales[0]
     val now = stringResource(R.string.story_age_now)
     return remember(ageSeconds, locale, now) {

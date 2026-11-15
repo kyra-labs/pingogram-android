@@ -66,6 +66,29 @@ class NotificationRendererTest {
         checkNotNull(NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(this)).messages
 
     @Test
+    fun `a chat Focus holds back shows its new message silently`() =
+        runTest {
+            val harness = started()
+            harness.focus.heldBack = setOf(100)
+
+            harness.client.emit(
+                updateNotificationGroup(added = listOf(messageNotification(message = message(id = 10)))),
+            )
+            runCurrent()
+
+            val notification = checkNotNull(harness.posted(7))
+            assertEquals(Notification.GROUP_ALERT_SUMMARY, notification.groupAlertBehavior)
+            assertEquals(
+                "Hello",
+                notification
+                    .messages()
+                    .single()
+                    .text
+                    .toString(),
+            )
+        }
+
+    @Test
     fun `a new message shows as a conversation that alerts, with reply and mark as read`() =
         runTest {
             val harness = started()

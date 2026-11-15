@@ -21,7 +21,9 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
@@ -151,6 +153,9 @@ class StoryViewerViewModel internal constructor(
     private val effectChannel = Channel<StoryViewerEffect>(Channel.BUFFERED)
     val effects: Flow<StoryViewerEffect> = effectChannel.receiveAsFlow()
 
+    private val ownStory =
+        OwnStoryActions(storyRepository, viewModelScope, effectChannel) { paused -> setPaused(Pause.Menu, paused) }
+
     private val timeline =
         StoryTimeline(
             player = videoPlayer,
@@ -226,8 +231,8 @@ class StoryViewerViewModel internal constructor(
         }
 
     private val chrome: Flow<Chrome> =
-        combine(pauses, muted, reactions, interaction) { pauses, muted, reactions, interaction ->
-            Chrome(pauses.isNotEmpty(), muted, reactions, interaction)
+        combine(pauses, muted, reactions, interaction, ownStory.state) { pauses, muted, reactions, interaction, own ->
+            Chrome(pauses.isNotEmpty(), muted, reactions, interaction, own)
         }
 
     private val me: Flow<Long?> = userRepository.myUserId
@@ -238,15 +243,9 @@ class StoryViewerViewModel internal constructor(
             position,
             shown,
             timeline.state,
-            combine(chrome, me, currentChat()) { chrome, me, chat -> Triple(chrome, me, chat) },
-        ) {
-            pages,
-            position,
-            shown,
-            timeline,
-            (chrome, me, chat),
-            ->
-            stateOf(pages, position, shown, timeline, chrome, me, chat)
+            combine(chrome, me, currentChat(), userRepository.users, ::Extras),
+        ) { pages, position, shown, timeline, extras ->
+            stateOf(pages, position, shown, timeline, extras)
         }.distinctUntilChanged()
             .onStart { start() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoryViewerUiState.Loading)
@@ -301,13 +300,16 @@ class StoryViewerViewModel internal constructor(
                 sendReply()
             }
 
-            is StoryViewerEvent.ReactionsOpen -> {
-                interaction.update { it.copy(reactionsOpen = event.open) }
-                setPaused(Pause.Reactions, event.open)
+            is StoryViewerEvent.ReactionsOpen, is StoryViewerEvent.ViewersOpen -> {
+                onSheetOpen(event)
             }
 
             is StoryViewerEvent.React -> {
                 react(event.reaction)
+            }
+
+            is StoryViewerEvent.Own -> {
+                onOwnStoryEvent(event)
             }
 
             StoryViewerEvent.Retry -> {
@@ -647,8 +649,10 @@ class StoryViewerViewModel internal constructor(
         val leaving = posters.getOrNull(current.posterIndex)
         if (leaving != null && current.storyId != null) leftAt.update { it.putting(leaving, current.storyId) }
         currentActive = null
-        interaction.update { it.copy(reactionsOpen = false) }
+        interaction.update { it.copy(reactionsOpen = false, viewersOpen = false) }
         setPaused(Pause.Reactions, false)
+        setPaused(Pause.Viewers, false)
+        ownStory.closeMenu()
         position.value = Position(index, storyId = null)
     }
 
@@ -692,6 +696,29 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
+    /** The row of reactions, or the list of viewers of the user's own story, opened or closed: either pauses it. */
+    private fun onSheetOpen(event: StoryViewerEvent) {
+        when (event) {
+            is StoryViewerEvent.ReactionsOpen -> {
+                interaction.update { it.copy(reactionsOpen = event.open) }
+                setPaused(Pause.Reactions, event.open)
+            }
+
+            is StoryViewerEvent.ViewersOpen -> {
+                interaction.update { it.copy(viewersOpen = event.open) }
+                setPaused(Pause.Viewers, event.open)
+            }
+
+            else -> {}
+        }
+    }
+
+    /** The ⋮ menu of the user's own story, and its Delete with its question. */
+    private fun onOwnStoryEvent(event: StoryViewerEvent.Own) {
+        val key = currentKeyNow()
+        ownStory.onEvent(event, key) { deleted -> if (currentKeyNow() == deleted) next() }
+    }
+
     private fun react(reaction: ReactionType.Emoji) {
         val key = currentKeyNow() ?: return
         val chosen = (uiState.value as? StoryViewerUiState.Content)?.reactions?.chosen
@@ -713,10 +740,11 @@ class StoryViewerViewModel internal constructor(
         position: Position,
         shown: Shown?,
         timeline: TimelineState?,
-        chrome: Chrome,
-        me: Long?,
-        chat: Chat?,
+        extras: Extras,
     ): StoryViewerUiState {
+        val chrome = extras.chrome
+        val me = extras.me
+        val chat = extras.chat
         if (pages.isEmpty()) return StoryViewerUiState.Loading
         val index = position.posterIndex.coerceIn(pages.indices)
         val page = pages[index]
@@ -743,6 +771,15 @@ class StoryViewerViewModel internal constructor(
             isMuted = chrome.isMuted,
             reply = replyOf(story, chat, isOwn, chrome.interaction),
             reactions = story?.takeUnless { isOwn }?.let { reactionsOf(it, chrome) },
+            own = chrome.own.takeIf { story?.canBeDeleted == true },
+            views =
+                story?.interactions?.takeIf { isOwn }?.let {
+                    viewsOf(
+                        it,
+                        extras.users,
+                        chrome.interaction.viewersOpen,
+                    )
+                },
         )
     }
 
@@ -794,6 +831,8 @@ class StoryViewerViewModel internal constructor(
         Paging,
         Typing,
         Reactions,
+        Menu,
+        Viewers,
         Back,
     }
 
@@ -808,6 +847,7 @@ class StoryViewerViewModel internal constructor(
         val reactionsOpen: Boolean = false,
         val pendingReaction: PendingReaction? = null,
         val isSendingReply: Boolean = false,
+        val viewersOpen: Boolean = false,
     )
 
     /** A reaction, or none ([reaction] null), set but not yet confirmed by TDLib. */
@@ -815,11 +855,20 @@ class StoryViewerViewModel internal constructor(
         val reaction: ReactionType?,
     )
 
+    /** What the state needs besides the story: the chrome, the user's id, the current chat and the users known. */
+    private data class Extras(
+        val chrome: Chrome,
+        val me: Long?,
+        val chat: Chat?,
+        val users: Map<Long, User>,
+    )
+
     private data class Chrome(
         val isPaused: Boolean,
         val isMuted: Boolean,
         val reactions: ImmutableList<ReactionType.Emoji>?,
         val interaction: Interaction,
+        val own: OwnStoryUi,
     )
 
     private companion object {
@@ -888,3 +937,23 @@ private fun pageOf(
         shownIndex = shownIndex,
     )
 }
+
+/** The views pill of the user's own story from its [interactions], with the faces of the users TDLib announced. */
+private fun viewsOf(
+    interactions: StoryInteractionInfo,
+    users: Map<Long, User>,
+    isOpen: Boolean,
+): StoryViewsUi =
+    StoryViewsUi(
+        viewCount = interactions.viewCount,
+        reactionCount = interactions.reactionCount,
+        recent =
+            interactions.recentViewerIds
+                .mapNotNull { id -> users[id]?.let { StoryViewerFace(id, it.firstName, it.profilePhoto) } }
+                .take(RECENT_FACES)
+                .toImmutableList(),
+        isOpen = isOpen,
+    )
+
+/** How many faces the views pill shows. */
+private const val RECENT_FACES = 3

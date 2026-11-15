@@ -60,6 +60,10 @@ data class Story(
     val caption: FormattedText,
     val canBeReplied: Boolean,
     val chosenReaction: ReactionType?,
+    /** Whether the user may delete it: their own story (td_api.tl `story.can_be_deleted`). */
+    val canBeDeleted: Boolean = false,
+    /** Who saw and reacted, for the user's own story (td_api.tl `story.interaction_info`); null for others. */
+    val interactions: StoryInteractionInfo? = null,
 ) {
     override fun toString() = "Story(id=$id, posterChatId=$posterChatId, content=$content, …)"
 }
@@ -99,3 +103,31 @@ sealed interface StoryContent {
         const val PHOTO_DURATION_MILLIS = 5_000L
     }
 }
+
+/**
+ * How many saw the user's own story ([viewCount]) and reacted to it ([reactionCount]), and the users who saw it last
+ * ([recentViewerIds], newest first, at most a few), as TDLib reports them with the story.
+ */
+data class StoryInteractionInfo(
+    val viewCount: Int,
+    val reactionCount: Int,
+    val recentViewerIds: ImmutableList<Long>,
+)
+
+/** User [userId] saw the user's own story at [date], and reacted with [reaction] (null for none). */
+data class StoryViewer(
+    val userId: Long,
+    val date: Long,
+    val reaction: ReactionType?,
+)
+
+/**
+ * A page of who saw the user's own story (td_api.tl `getStoryInteractions`): [viewers] of [totalCount] (with
+ * [reactionCount] reactions among them), and where the next page starts ([nextOffset], null at the end).
+ */
+data class StoryViewersPage(
+    val totalCount: Int,
+    val reactionCount: Int,
+    val viewers: ImmutableList<StoryViewer>,
+    val nextOffset: String?,
+)

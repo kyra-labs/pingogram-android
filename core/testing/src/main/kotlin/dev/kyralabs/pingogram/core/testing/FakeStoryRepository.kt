@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -39,6 +40,13 @@ class FakeStoryRepository : StoryRepository {
     var onReact: suspend (ReactionType?) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onReply: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
+    /** Who saw the user's own story, by page: none by default. */
+    var onViewers: suspend (query: String, onlyContacts: Boolean, reactionsFirst: Boolean, offset: String) ->
+    Outcome<StoryViewersPage> = { _, _, _, _ -> Outcome.Success(StoryViewersPage(0, 0, persistentListOf(), null)) }
+
+    /** Deleting a story: success by default. */
+    var onDelete: suspend (chatId: Long, storyId: Int) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
+
     /** Puts [activeStories] in, replacing the chat's earlier ones. */
     fun setActive(activeStories: ActiveStories) {
         active.value += activeStories.chatId to activeStories
@@ -48,8 +56,8 @@ class FakeStoryRepository : StoryRepository {
         stories.value += (story.posterChatId to story.id) to Outcome.Success(story)
     }
 
-    /** Story [storyId] of chat [chatId] was deleted or expired. */
-    fun deleteStory(
+    /** Story [storyId] of chat [chatId] was deleted or expired, as TDLib announces it. */
+    fun removeStory(
         chatId: Long,
         storyId: Int,
     ) {
@@ -120,5 +128,24 @@ class FakeStoryRepository : StoryRepository {
     ): Outcome<Unit> {
         calls += "reply:$chatId:$storyId:${text.text}"
         return onReply(text.text)
+    }
+
+    override suspend fun deleteStory(
+        chatId: Long,
+        storyId: Int,
+    ): Outcome<Unit> {
+        calls += "delete:$chatId:$storyId"
+        return onDelete(chatId, storyId)
+    }
+
+    override suspend fun viewers(
+        storyId: Int,
+        query: String,
+        onlyContacts: Boolean,
+        reactionsFirst: Boolean,
+        offset: String,
+    ): Outcome<StoryViewersPage> {
+        calls += "viewers:$storyId:$query:$onlyContacts:$reactionsFirst:$offset"
+        return onViewers(query, onlyContacts, reactionsFirst, offset)
     }
 }

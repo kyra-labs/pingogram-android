@@ -146,12 +146,13 @@ internal fun StoryPage(
                 modifier = Modifier.align(Alignment.TopCenter),
                 mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
                 onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
+                menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
             )
             if (story.caption.text.isNotEmpty()) {
                 StoryCaption(story, Modifier.align(Alignment.BottomCenter))
             }
         },
-        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent) },
+        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views) },
     )
 }
 
