@@ -86,7 +86,8 @@ private fun MessageContent.draggableFile(): Pair<Int, DragOutFile>? =
 /**
  * Drags a bubble's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop", the owner's board 35c): a long
  * press lifts the message for its actions, and moving the finger on starts Android's drag between apps with the
- * files ([startFileDrag]), then closes the actions. [start] answers whether a drag started; a message without such files keeps its actions open.
+ * files ([startFileDrag]), then closes the actions. [start] answers whether a drag started; a message without such
+ * files keeps its actions open.
  */
 @Stable
 internal class MessageDragOut(

@@ -386,11 +386,7 @@ private fun MediaPager(
                 ),
             zoom = pageZoom,
             onHold = onHold.takeIf { item.isLivePhoto },
-            // The shown item, where Telegram lets it leave the chat; its file is read when a drag starts.
-            onDragOut =
-                dragOut
-                    ?.takeIf { isShown && content.actions.canSave && !item.isHidden }
-                    ?.let { out -> { out.start(item.media, content.files) } },
+            onDragOut = dragOut.forPage(content, item, isShown),
         )
     }
 }

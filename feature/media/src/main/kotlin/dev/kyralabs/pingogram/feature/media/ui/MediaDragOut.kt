@@ -36,7 +36,7 @@ internal class MediaDragOut(
     private val drag: (DraggedFile, label: String) -> Boolean,
     private val onStarted: () -> Unit,
 ) {
-    /** Starts dragging [media]'s file out, its state in [files]; false where it is not on the device or Android refused. */
+    /** Starts dragging [media]'s file out, its state in [files]; false where it is not on the device or refused. */
     fun start(
         media: ViewerMedia,
         files: Map<Int, FileState>,
@@ -48,7 +48,20 @@ internal class MediaDragOut(
     }
 }
 
-/** The viewer's [MediaDragOut]: the drag from the screen's view, its shadow in the theme's [rememberDragShadowStyle]. */
+/**
+ * What a long press then a move does on [item]'s page: drag its file out, for the shown item only, where Telegram lets
+ * it leave the chat ([MediaActions.canSave]); its file is read when a drag starts. Null for the other pages.
+ */
+internal fun MediaDragOut?.forPage(
+    content: MediaViewerUiState.Content,
+    item: MediaItem,
+    isShown: Boolean,
+): (() -> Boolean)? =
+    this
+        ?.takeIf { isShown && content.actions.canSave && !item.isHidden }
+        ?.let { out -> { out.start(item.media, content.files) } }
+
+/** The viewer's [MediaDragOut]: the drag from the screen's view, its shadow in the theme's style. */
 @Composable
 internal fun rememberMediaDragOut(): MediaDragOut {
     val view = LocalView.current

@@ -153,8 +153,7 @@ internal fun MediaPage(
 /**
  * Taps ([onTap], or [onSideTap] near a side) and, with [zoom], double taps that zoom around the tap and pinches
  * ([detectZoomGestures]). The taps are outside the pinch, so they see the moves the pinch consumed and take no pan for
- * a tap. With [onDragOut], outside both, a long press then a move drags the file out
- * ([detectDragOutAfterLongPress]).
+ * a tap. With [onDragOut], a long press then a move drags the file out ([detectDragOutAfterLongPress]).
  */
 @Composable
 private fun Modifier.pageGestures(
@@ -172,18 +171,20 @@ private fun Modifier.pageGestures(
     val currentOnDragOut by rememberUpdatedState(onDragOut)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val holds = onHold != null
+    val pinches = if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier
+    // It consumes on the initial pass, before the taps and pinches see the move, wherever it sits in the chain.
     val drags =
         if (onDragOut == null) {
-            this
+            Modifier
         } else {
-            pointerInput(zoom) {
+            Modifier.pointerInput(zoom) {
                 detectDragOutAfterLongPress(
                     canStart = { zoom?.isZoomed != true },
                     onDragOut = { currentOnDragOut?.invoke() == true },
                 )
             }
         }
-    return drags.pointerInput(zoom, rtl, holds) {
+    return pointerInput(zoom, rtl, holds) {
         val holdAfter = viewConfiguration.longPressTimeoutMillis
         detectTapGestures(
             // A live photo plays while held: once held for a long press, until let go.
@@ -206,7 +207,7 @@ private fun Modifier.pageGestures(
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
-    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier)
+    }.then(pinches.then(drags))
 }
 
 /** Scaled and moved as [zoom] says, in the draw phase; unchanged without one. */
