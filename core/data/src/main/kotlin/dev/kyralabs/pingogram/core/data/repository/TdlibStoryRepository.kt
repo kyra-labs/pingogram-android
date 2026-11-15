@@ -50,8 +50,10 @@ import javax.inject.Inject
  * - **Viewing**: [openStory] and [closeStory] are always sent around a story on screen; TDLib then marks it viewed and
  *   announces the chat's new `max_read_story_id`. `activateStoryStealthMode` (Telegram Premium) is never sent.
  *
- * Nothing about a story (caption, content) is logged.
+ * Nothing about a story (caption, content) is logged. One function per request of [StoryRepository] (hence
+ * `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @AccountScoped
 class TdlibStoryRepository
     @Inject
