@@ -19,8 +19,9 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
-    # ./gradlew check takes about 45 minutes on GitHub's runners (2026-11-11), so some room above it.
-    timeout-minutes: 60
+    # ./gradlew check and the debug APK take 39 to 59 minutes on GitHub's runners (2026-11-15), and runs at 60 minutes
+    # were cut short before their tests ended, so this leaves room above the slowest.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v7
