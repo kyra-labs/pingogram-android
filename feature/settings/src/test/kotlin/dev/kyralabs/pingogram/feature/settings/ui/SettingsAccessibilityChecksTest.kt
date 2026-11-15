@@ -68,6 +68,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetP
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetUiState
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
+import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import kotlinx.collections.immutable.persistentListOf
@@ -468,6 +470,12 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun powerSaving() = check { PowerSavingScreen(SettingsPreviewData.powerSaving, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun transcription() =
+        check {
+            TranscriptionSettingsScreen(TranscriptionSettingsPreviewData.content, onEvent = {}, onBack = {})
+        }
 
     @Test
     fun activeSessions() = check { ActiveSessionsScreen(SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
