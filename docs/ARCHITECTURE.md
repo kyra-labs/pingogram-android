@@ -241,6 +241,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
   through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
   `PingogramApp`.
+- **Focus profiles** (board 31, kept on this phone only): `core:domain`'s `FocusRepository` (`DataStoreFocusRepository`,
+  the settings file: the profiles, Focus set by hand, the last used) and `FocusClock`, which works out the profile on at
+  a moment from the schedules and Focus set by hand, so nothing needs an alarm. `FocusGate` (`DefaultFocusGate`,
+  provided by `core:datastore`'s `FocusModule` over the `WallClock`) answers whether a chat may alert or a call ring
+  now: `core:notifications`' renderer posts a chat it holds back silently (Focus changes notifications only).
+  Reminders ring through Focus: they read `FocusGate.active` and do not ask `allowsChat`.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one

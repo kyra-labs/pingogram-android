@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. The pages to set them up follow.
+
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
