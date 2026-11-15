@@ -17,13 +17,18 @@ sealed interface BookmarksUiState {
 
     /**
      * The tag filters ([filters], "All" first) with the one chosen ([selectedTagId], null for "All"), and the bookmarks
-     * it lets through, the newest first (owner decision 2026-11-15).
+     * it and the search's words ([query], null while search is closed) let through, the newest first (owner decision
+     * 2026-11-15).
      */
     data class Content(
         val filters: ImmutableList<BookmarkFilter>,
         val selectedTagId: Long?,
         val items: ImmutableList<BookmarkItem>,
-    ) : BookmarksUiState
+        val query: String? = null,
+    ) : BookmarksUiState {
+        /** Words are typed and no bookmark has them all. */
+        val hasNoMatches: Boolean get() = items.isEmpty() && !query.isNullOrBlank()
+    }
 }
 
 /** A filter chip: a tag ([tagId] and [name], in sender hue [color]) or "All" ([tagId] null), with how many it holds. */
@@ -74,6 +79,17 @@ sealed interface BookmarksEvent {
 
     /** "Undo" after a removal. */
     data object UndoRemove : BookmarksEvent
+
+    /** The top bar's search button. */
+    data object OpenSearch : BookmarksEvent
+
+    /** The search field's text. */
+    data class Search(
+        val query: String,
+    ) : BookmarksEvent
+
+    /** The search field's back, or system back while it shows. */
+    data object CloseSearch : BookmarksEvent
 }
 
 /** What the page says or does once. */

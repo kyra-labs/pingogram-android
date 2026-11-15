@@ -48,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
@@ -195,6 +196,10 @@ fun PingogramApp(
     val openLockedChats =
         remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
     val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
+    val openMessage =
+        remember(navController) {
+            { chatId: Long, messageId: Long -> navController.navigate(ChatRoute(chatId, messageId = messageId)) }
+        }
     // Before the NavHost sets its graph, whose media viewer is an overlay destination.
     val overlays = rememberOverlayNavigator(navController)
     SharedTransitionLayout(modifier) {
@@ -227,6 +232,7 @@ fun PingogramApp(
                             // the page.
                             LocalLockedChatsLauncher provides openLockedChats,
                             LocalChatLauncher provides openChat,
+                            LocalMessageLauncher provides openMessage,
                         ) {
                             AppContent(uiState, search) {
                                 PingogramNavHost(
