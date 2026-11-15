@@ -425,6 +425,66 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `a number too short for its country is said once under the field, then sent`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged("79111234"))
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                val warned = viewModel.step<AuthStepUiState.PhoneNumber>()
+                val sentAfterWarning = client.sentOf<TdApi.SetAuthenticationPhoneNumber>().size
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertEquals(10, warned.expectedLength)
+                assertNull(warned.error)
+                assertEquals(0, sentAfterWarning)
+                assertEquals("+4479111234", client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
+            }
+
+        @Test
+        fun `typing again takes the length warning back`() =
+            runTest {
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged("79111234"))
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                send(viewModel, AuthEvent.PhoneNumberChanged("791112345"))
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+            }
+
+        @Test
+        fun `a number of the right length is sent at once`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = onPhoneNumberEntry()
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+                assertEquals(UK_INTERNATIONAL, client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
+            }
+
+        @Test
+        fun `an anonymous number is never held back by its length`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = viewModel()
+                send(
+                    viewModel,
+                    AuthEvent.StartMessaging,
+                    AuthEvent.CallingCodeChanged("888"),
+                    AuthEvent.PhoneNumberChanged("0812"),
+                )
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().expectedLength)
+                assertEquals("+8880812", client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
+            }
+
+        @Test
         fun `numbers are capped at 15 digits`() =
             runTest {
                 val viewModel = viewModel()

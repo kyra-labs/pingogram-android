@@ -60,6 +60,8 @@ data class Story(
     val caption: FormattedText,
     val canBeReplied: Boolean,
     val chosenReaction: ReactionType?,
+    /** Whether the user may delete it: their own story (td_api.tl `story.can_be_deleted`). */
+    val canBeDeleted: Boolean = false,
 ) {
     override fun toString() = "Story(id=$id, posterChatId=$posterChatId, content=$content, …)"
 }

@@ -12,11 +12,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
+- Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
+  a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
+- Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
+  messages automatically as they show, and see which speech languages Android has ready on the phone.
 
 ### Changed
+- In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
   later, a language button at the top opens Android's list of the app's languages.
@@ -25,12 +30,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Decline; Decline goes back to the phone number.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
+- Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
+  Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
+  can't be sure about, such as anonymous +888 ones, are never held back.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
@@ -39,6 +48,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
+- A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
