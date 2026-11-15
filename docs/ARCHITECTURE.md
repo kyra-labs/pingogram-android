@@ -1794,6 +1794,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Hand-over**: `feature:chat`'s `ShareInbox` (singleton): `offer` keeps a share for the share sheet by id
   (`ShareRoute(shareId)`), `deliver` keeps one for a chat. `:app`'s `openShare` opens the sheet, or a Direct Share
   target's chat above the chat list.
+- **Stories**: the stories viewer's share button (board 26) offers `SharedContent.story` (a `SharedStory`) through
+  `:app`'s `openShare`; the sheet sends it to every chat picked, one or several (`inputMessageStory`), never into a
+  composer, secret chats left out. The viewer pauses while the sheet shows (`StoryViewerEvent.Share`, resumed with the
+  screen).
 - **Share sheet** (`ShareRoute`, a dialog destination like the forward sheet, `ShareViewModel`): the forward sheet's
   chat list (`ChatTargets`: Saved Messages first, the chat list, search; chats where the user can write) and parts. One
   chat picked opens it with the share delivered to it; several get it at once after "Send" with an optional comment,

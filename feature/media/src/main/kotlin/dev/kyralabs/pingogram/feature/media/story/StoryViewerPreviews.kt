@@ -56,6 +56,7 @@ internal object StoryViewerPreviewData {
         current: Int = 0,
         reply: StoryReplyUi? = StoryReplyUi(),
         reactions: StoryReactionsUi? = this.reactions,
+        canShare: Boolean = false,
     ) = StoryViewerUiState.Content(
         posters = posters,
         current = current,
@@ -64,13 +65,15 @@ internal object StoryViewerPreviewData {
         isMuted = false,
         reply = reply,
         reactions = reactions,
+        canShare = canShare,
     )
 
-    /** A photo (the preview handler's color) with a caption, from a user: the reply field and reactions. */
+    /** A photo (the preview handler's color) with a caption, from a user: the reply field, reactions and share. */
     val photo =
         content(
             StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = true),
             caption = caption,
+            canShare = true,
         )
 
     /** A video with sound, its first frame not yet shown, from a channel: reactions only. */

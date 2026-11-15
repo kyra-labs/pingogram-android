@@ -244,6 +244,7 @@ fun PingogramApp(
                                     lockedChatsToOpen = lockedChatsToOpen,
                                     onLockedChatsOpened = onLockedChatsOpened,
                                     onOpenLinkTarget = { target -> links?.show(target) },
+                                    shares = shares,
                                 )
                             }
                         }

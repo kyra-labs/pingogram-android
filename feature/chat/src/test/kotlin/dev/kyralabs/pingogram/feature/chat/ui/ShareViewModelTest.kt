@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ShareResult
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
+import dev.kyralabs.pingogram.core.domain.model.SharedStory
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.navigation.ShareRoute
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
@@ -182,6 +183,24 @@ class ShareViewModelTest : ChatViewModelHarness() {
 
             assertEquals(listOf(Triple(listOf(PRIVATE_CHAT, GROUP_CHAT), link, "For you")), shares.calls)
             assertEquals(listOf(ShareResult(sent = 2, failed = 0)), reported)
+        }
+
+    @Test
+    fun `a story goes to the one chat picked at once, rather than waiting in its composer`() =
+        runViewModelTest {
+            val story = SharedContent(story = SharedStory(posterChatId = PRIVATE_CHAT, storyId = 3))
+            shares.onShare = { ShareResult(sent = 1, failed = 0) }
+            val viewModel = shareViewModel(story)
+
+            val sheet = viewModel.sheet.value!!
+            assertTrue(sheet.isStory)
+            send(viewModel, ShareEvent.ToggleTarget(GROUP_CHAT))
+            assertTrue(viewModel.sheet.value!!.sendsAtOnce)
+            send(viewModel, ShareEvent.Send)
+
+            assertEquals(ShareClose.Done, viewModel.closed.value)
+            assertEquals(listOf(Triple(listOf(GROUP_CHAT), story, "")), shares.calls)
+            assertEquals(listOf(ShareResult(sent = 1, failed = 0)), reported)
         }
 
     @Test

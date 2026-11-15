@@ -95,7 +95,7 @@ internal fun ShareBottomSheet(
             {
                 val selected = currentSheet.selectedIds.size
                 if (selected > 0) {
-                    if (selected > 1) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    if (currentSheet.sendsAtOnce) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(ShareEvent.Send) }
                 }
             }
@@ -167,7 +167,7 @@ internal fun ColumnScope.ShareContent(
         exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
     ) {
         AnimatedContent(
-            targetState = sheet.selectedIds.size > 1,
+            targetState = sheet.sendsAtOnce,
             transitionSpec = {
                 (fadeIn(motion.defaultEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec()))
                     .using(SizeTransform(clip = false) { _, _ -> motion.defaultSpatialSpec() })
@@ -192,6 +192,10 @@ private fun ShareHeader(sheet: ShareSheet) {
         Text(text = stringResource(R.string.share_title), style = MaterialTheme.typography.titleLargeEmphasized)
         val files =
             when {
+                sheet.isStory -> {
+                    stringResource(R.string.share_story)
+                }
+
                 sheet.fileCount == 0 -> {
                     null
                 }

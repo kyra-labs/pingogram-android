@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
+  an optional comment, where Telegram lets it be sent on.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,

@@ -155,7 +155,7 @@ internal fun StoryPage(
             }
             HeldFade(visible = state.isHeld, Modifier.align(Alignment.Center)) { HeldBadge() }
         },
-        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views) },
+        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views, state.canShare) },
     )
 }
 

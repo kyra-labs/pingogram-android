@@ -33,6 +33,8 @@ sealed interface StoryViewerUiState {
         val views: StoryViewsUi? = null,
         /** A finger holds the story (board 26): the chrome hides and a pause badge says to let go. */
         val isHeld: Boolean = false,
+        /** The share button beside the reaction (board 26): someone else's story the user may send to chats. */
+        val canShare: Boolean = false,
     ) : StoryViewerUiState
 }
 
@@ -233,6 +235,17 @@ sealed interface StoryViewerEvent {
 
     data object Retry : StoryViewerEvent
 
+    /** Sharing the story (board 26): the share button, and the screen coming back from the share sheet. */
+    sealed interface Share : StoryViewerEvent {
+        /** The share button: the story pauses while the share sheet shows, and [StoryViewerEffect.Share] opens it. */
+        data object Open : Share
+
+        /** The screen was resumed ([resumed] true) or paused: back from the share sheet, the story plays on. */
+        data class Resumed(
+            val resumed: Boolean,
+        ) : Share
+    }
+
     /** Opens or closes the list of who saw the user's own story ([open]), which pauses it while it shows. */
     data class ViewersOpen(
         val open: Boolean,
@@ -272,5 +285,11 @@ sealed interface StoryViewerEffect {
 
     data class ShowError(
         val error: DomainError,
+    ) : StoryViewerEffect
+
+    /** Opens the share sheet for story [storyId] of chat [posterChatId]. */
+    data class Share(
+        val posterChatId: Long,
+        val storyId: Int,
     ) : StoryViewerEffect
 }

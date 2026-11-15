@@ -15,10 +15,13 @@ import kotlinx.collections.immutable.persistentSetOf
  *
  * @property text the start of the shared text, at most [ShareSummary.MAX_TEXT] characters on one line; empty without.
  * @property fileCount how many files are shared, [fileKind] saying whether they go as photos and videos or as files.
+ * @property isStory a story from the stories viewer is shared: it goes to every chat picked, one or several, after the
+ *   comment, as it cannot wait in a composer.
  * @property targets the chats shown: without a query Saved Messages first, then the main chat list in its order, as far
  *   as TDLib loaded it; with one, the chats search found. Only chats where the user can send messages.
  * @property selectedIds the chats picked, in the order they were picked; they stay picked while a search hides them.
- *   One opens that chat with the share in its composer; several get it at once, after the comment.
+ *   One opens that chat with the share in its composer (a story goes to it at once); several get it at once, after
+ *   the comment.
  * @property isSearching the list shows what a query found rather than the chat list.
  * @property isLoading the list's first chats, or a query's results, are on their way.
  * @property searchError the search failed; shown in place of the results.
@@ -28,13 +31,18 @@ data class ShareSheet(
     val text: String = "",
     val fileCount: Int = 0,
     val fileKind: AttachmentKind = AttachmentKind.Document,
+    val isStory: Boolean = false,
     val targets: ImmutableList<ForwardTarget> = persistentListOf(),
     val selectedIds: ImmutableSet<Long> = persistentSetOf(),
     val isSearching: Boolean = false,
     val isLoading: Boolean = false,
     val searchError: DomainError? = null,
 ) {
-    override fun toString() = "ShareSheet(textLength=${text.length}, files=$fileCount, targets=${targets.size}, …)"
+    override fun toString() =
+        "ShareSheet(textLength=${text.length}, files=$fileCount, story=$isStory, targets=${targets.size}, …)"
+
+    /** The comment and "Send" show rather than "Open chat": several chats picked, or a story. */
+    val sendsAtOnce: Boolean get() = selectedIds.size > 1 || (isStory && selectedIds.isNotEmpty())
 }
 
 /** How a shared text is summed up in the sheet. */
