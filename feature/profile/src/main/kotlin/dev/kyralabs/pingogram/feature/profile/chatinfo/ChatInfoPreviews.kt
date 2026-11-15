@@ -49,6 +49,12 @@ private fun ChatInfoScreenChannelPreview() {
 
 @PingogramPreviews
 @Composable
+private fun ChatInfoScreenChannelColorPreview() {
+    ChatInfoPreviewContent(ChatInfoPreviewData.channelWithColor, ProfilePreviewData.emptyMedia)
+}
+
+@PingogramPreviews
+@Composable
 private fun ChatInfoScreenLoadingPreview() {
     ChatInfoPreviewContent(ChatInfoUiState.Loading)
 }
