@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
