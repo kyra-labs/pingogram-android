@@ -261,7 +261,7 @@ internal fun ExpandableCaption(
  * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
  * there. Its inactive track shows in `outline` how far the player has the video ([VideoPlayback.buffered], read in the
  * draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`). The times recompose only when the second
- * changes.
+ * changes. While the speed is not 1×, its chip ([SpeedChip]) follows the length.
  */
 @Composable
 internal fun VideoControls(
@@ -309,6 +309,7 @@ internal fun VideoControls(
             track = { state -> BufferedTrack(state, playback.buffered) },
         )
         TimeText(formatDuration(durationSeconds, locale))
+        if (playback.speed != 1f) SpeedChip(playback.speed) { onEvent(MediaViewerEvent.SetSpeed(it)) }
         if (canPictureInPicture) PictureInPictureButton(onClick = { onEvent(MediaViewerEvent.PictureInPicture) })
     }
 }

@@ -747,6 +747,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
   (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
   `TextStyleViewModel`), which adds the style only on a tap.
+- **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on
+  the device only. `core:domain`'s `VoiceTranscriber` (`AndroidVoiceTranscriber`, `core:data`'s `transcription/`, a
+  singleton of `DeviceModule`) is Android's own on-device speech recognizer (`SpeechRecognizer.createOnDeviceSpeechRecognizer`,
+  Android 13 and later; `isAvailable` false before, where the Transcribe button is not shown): the message's file is decoded
+  on the IO dispatcher (`SpeechAudioDecoder`: `MediaExtractor` and `MediaCodec`, Ogg Opus and the AAC of round videos) into
+  16-bit mono PCM at 16 kHz (`SpeechPcm`) and written into a pipe the recognizer reads (`RecognizerIntent.EXTRA_AUDIO_SOURCE`,
+  a segmented session), so the microphone is never opened. Pingogram bundles no model and sends nothing anywhere; Android
+  downloads and manages the speech languages (`languages()`, from `checkRecognitionSupport`). Android's recognition service
+  checks that its caller holds `RECORD_AUDIO` also for audio it is handed, so without the grant the transcriber answers
+  `TranscriptionResult.NeedsMicrophonePermission` and asks nothing of the recognizer. The transcripts are an account's,
+  kept on the device only: `TranscriptRepository` (`FileTranscriptRepository`, account-scoped, `transcripts.txt` in the
+  account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout;
+  the demo's in memory). Whether others' messages are transcribed as they show, and whether a transcript said "On this
+  phone" yet, are `TranscriptionSettingsRepository` (`DataStoreTranscriptionSettingsRepository`, the settings file).
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its

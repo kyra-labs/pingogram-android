@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
@@ -86,6 +87,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun aiTextCache(repository: TdlibAiTextRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's transcripts when it logs out. */
+    @Binds
+    @IntoSet
+    fun transcriptCache(repository: FileTranscriptRepository): TdlibUpdateCache
 
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds
