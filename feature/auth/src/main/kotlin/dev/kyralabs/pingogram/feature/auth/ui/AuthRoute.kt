@@ -1,7 +1,11 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -30,6 +34,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
@@ -39,6 +44,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.passkey.PasskeyCredentials
 import dev.kyralabs.pingogram.core.ui.passkey.PasskeyResult
 import dev.kyralabs.pingogram.core.ui.passkey.rememberPasskeyCredentials
@@ -47,10 +53,12 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.components.AppLanguageButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTopBar
 import dev.kyralabs.pingogram.feature.auth.ui.components.ConnectionBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.FloodWaitBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.LocalAuthFloodWait
+import dev.kyralabs.pingogram.feature.auth.ui.components.isAppLanguageListAvailable
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
@@ -68,6 +76,7 @@ fun AuthRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
     val resources = LocalResources.current
+    val context = LocalContext.current
     val showErrorDetails = isDebuggable()
     val haptics = LocalHapticFeedback.current
     val currentOnAuthorized by rememberUpdatedState(onAuthorized)
@@ -78,6 +87,10 @@ fun AuthRoute(
             when (effect) {
                 is AuthEffect.OpenUrl -> {
                     uriHandler.tryOpen(effect.url)
+                }
+
+                AuthEffect.OpenAppLanguages -> {
+                    context.openAppLanguages()
                 }
 
                 is AuthEffect.SendEmail -> {
@@ -122,6 +135,12 @@ fun AuthRoute(
         snackbarHostState = snackbarHostState,
         canUsePasskeys = credentials != null,
     )
+    AuthDemoDialog(viewModel)
+}
+
+/** The demo's question, while the Welcome screen's logo was held (`docs/adr/0034-demo-mode-for-store-review.md`). */
+@Composable
+private fun AuthDemoDialog(viewModel: AuthViewModel) {
     val demoDialog by viewModel.demoDialog.collectAsStateWithLifecycle()
     if (demoDialog) {
         DemoDialog(
@@ -200,6 +219,15 @@ fun AuthScreen(
             AuthTopBar(
                 connection = state.connection,
                 onBack = if (state.canGoBack) ({ onEvent(AuthEvent.Back) }) else null,
+                actions = {
+                    // The language button only on Welcome, before anything else is asked (board 23).
+                    StateCrossfade(
+                        targetState = state.step == AuthStepUiState.Welcome && isAppLanguageListAvailable,
+                        label = "AuthLanguage",
+                    ) { shown ->
+                        if (shown) AppLanguageButton(onClick = { onEvent(AuthEvent.OpenAppLanguages) })
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -334,6 +362,20 @@ private val StepOrder: List<StepKey> =
         AuthStepUiState.LoggingOut::class,
         AuthStepUiState.Done::class,
     )
+
+/**
+ * Android's list of the app's languages (`Settings.ACTION_APP_LOCALE_SETTINGS`, Android 13 and later); nothing where
+ * no app shows it.
+ */
+private fun Context.openAppLanguages() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val intent = Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", packageName, null))
+    try {
+        startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No settings app shows it on this device; nothing else to do.
+    }
+}
 
 private fun UriHandler.tryOpen(uri: String) {
     try {

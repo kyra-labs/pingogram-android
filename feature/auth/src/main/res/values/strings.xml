@@ -20,8 +20,15 @@
 
     <!-- Welcome (FR-A1) -->
     <string name="auth_welcome_title" translatable="false">Pingogram</string>
-    <string name="auth_welcome_tagline">A fast, private Telegram client for Android.</string>
-    <string name="auth_welcome_disclaimer">Pingogram is an independent, open-source app. It isn\'t made by Telegram.</string>
+    <string name="auth_welcome_tagline">Your Telegram account, in Material 3 Expressive.</string>
+    <string name="auth_welcome_disclaimer">An unofficial client, not made by Telegram.</string>
+    <!-- Welcome's illustration: two sample messages beside Pingogram's logo, decorative (screen readers skip them). -->
+    <string name="auth_welcome_sample_incoming">Ready for the trip? 🚆</string>
+    <string name="auth_welcome_sample_outgoing">Always ✨</string>
+    <string name="auth_welcome_sample_initials_one" translatable="false">AK</string>
+    <string name="auth_welcome_sample_initials_two" translatable="false">LF</string>
+    <!-- Welcome's language button for screen readers; %1$s is the language the app shows, e.g. "English". -->
+    <string name="auth_app_language">App language: %1$s</string>
     <string name="auth_start_messaging">Start messaging</string>
     <string name="auth_welcome_agreement">By continuing, you agree to Telegram\'s Terms of Service and Privacy Policy.</string>
 

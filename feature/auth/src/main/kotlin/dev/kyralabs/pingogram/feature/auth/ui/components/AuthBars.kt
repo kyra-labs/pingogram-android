@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.auth.ui.components
 
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -8,9 +9,15 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -23,6 +30,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -43,16 +51,19 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Back navigation ([onBack], null when back leaves the flow) and, while not connected, the connection status as the
- * title, announced to screen readers (`docs/DESIGN_SYSTEM.md` §9).
+ * title, announced to screen readers (`docs/DESIGN_SYSTEM.md` §9); [actions] at the end, e.g. Welcome's language
+ * button.
  */
 @Composable
 internal fun AuthTopBar(
     connection: ConnectionStatus,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
         modifier = modifier,
+        actions = actions,
         // The status and the back arrow cross-fade as they come and go (docs/DESIGN_SYSTEM.md §5).
         title = {
             StateCrossfade(connection.statusText(), label = "AuthConnectionStatus") { status ->
@@ -97,6 +108,39 @@ private fun ConnectionStatus.statusText(): String? =
         ConnectionStatus.Updating -> stringResource(R.string.auth_connection_updating)
         ConnectionStatus.Ready -> null
     }
+
+/**
+ * Welcome's language button at the top bar's end (owner decision 2026-11-15, board 23): a default tonal button with
+ * the language symbol and the language the app shows, named "App language: English" for screen readers. It opens
+ * Android's list of the app's languages ([onClick]), which exists from Android 13; earlier versions leave it out
+ * ([isAppLanguageListAvailable]).
+ */
+@Composable
+internal fun AppLanguageButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val language = locale.getDisplayLanguage(locale).replaceFirstChar { it.titlecase(locale) }
+    val description = stringResource(R.string.auth_app_language, language)
+    FilledTonalButton(
+        onClick = onClick,
+        shapes = ButtonDefaults.shapes(),
+        modifier = modifier.padding(end = MaterialTheme.spacing.small).semantics { contentDescription = description },
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_language),
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MinHeight)),
+        )
+        Spacer(Modifier.width(ButtonDefaults.iconSpacingFor(ButtonDefaults.MinHeight)))
+        Text(text = language, style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics {})
+    }
+}
+
+/** Whether Android lists the app's languages for it to open (`Settings.ACTION_APP_LOCALE_SETTINGS`, Android 13+). */
+internal val isAppLanguageListAvailable: Boolean
+    get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
  * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with an info icon; announced

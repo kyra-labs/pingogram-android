@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
+  Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
+  later, a language button at the top opens Android's list of the app's languages.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
