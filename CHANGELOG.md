@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
   edge, outside the code, so every scanner reads it.
+- The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
+  The top bar's "3 of 128" is a chip.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
@@ -22,6 +24,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
+  has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 
 ### Fixed
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
