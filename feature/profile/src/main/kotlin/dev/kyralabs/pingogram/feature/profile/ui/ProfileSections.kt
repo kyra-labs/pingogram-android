@@ -185,6 +185,7 @@ internal fun ProfileInfoGroup(
         rows += ProfileRow("username:$username") { UsernameRow(username, it, onEvent) }
     }
     info.phoneNumber?.let { phone -> rows += ProfileRow("phone") { PhoneRow(phone, it, onEvent) } }
+    info.phoneHiddenBy?.let { name -> rows += ProfileRow("phone") { HiddenPhoneRow(name, it) } }
     info.birthday?.let { birthday ->
         rows +=
             ProfileRow("birthday") { shapes ->
