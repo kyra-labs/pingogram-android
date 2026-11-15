@@ -15,6 +15,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's language is not on the phone, a link opens Android's language settings.
 
 ### Changed
+- The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
+  Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
+  later, a language button at the top opens Android's list of the app's languages.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
