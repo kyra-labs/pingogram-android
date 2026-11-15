@@ -93,4 +93,13 @@ interface StoryRepository {
         storyId: Int,
         text: FormattedText,
     ): Outcome<Unit>
+
+    /**
+     * Deletes story [storyId] of chat [chatId] for everyone (td_api.tl `deleteStory`): only where `Story.canBeDeleted`,
+     * the user's own stories. TDLib then announces `updateStoryDeleted`.
+     */
+    suspend fun deleteStory(
+        chatId: Long,
+        storyId: Int,
+    ): Outcome<Unit>
 }

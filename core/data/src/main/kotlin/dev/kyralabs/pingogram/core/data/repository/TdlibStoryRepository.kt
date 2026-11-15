@@ -182,6 +182,11 @@ class TdlibStoryRepository
             return client.request(TdApi.SendMessage(chatId, null, replyTo, null, null, content)).map {}
         }
 
+        override suspend fun deleteStory(
+            chatId: Long,
+            storyId: Int,
+        ): Outcome<Unit> = client.request(TdApi.DeleteStory(chatId, storyId)).map {}
+
         private companion object {
             /** The quick reactions TDLib puts first: one row of the reactions picker. */
             const val REACTION_ROW_SIZE = 8

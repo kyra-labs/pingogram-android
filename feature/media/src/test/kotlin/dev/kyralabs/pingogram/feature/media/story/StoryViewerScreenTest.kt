@@ -235,6 +235,33 @@ class StoryViewerScreenTest {
     }
 
     @Test
+    fun `others' stories have no menu`() {
+        setScreen()
+
+        composeRule.onNode(hasContentDescription(string(R.string.story_more))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the user's own story's menu offers Delete, which asks first`() {
+        setScreen(StoryViewerPreviewData.ownMenu.copy(own = OwnStoryUi()))
+
+        composeRule.onNode(hasContentDescription(string(R.string.story_more))).performClick()
+        assertEquals(StoryViewerEvent.Own.MenuOpen(true), events.last())
+        state = StoryViewerPreviewData.ownMenu
+        composeRule.waitForIdle()
+        composeRule.onNode(hasText(string(R.string.story_delete))).performClick()
+        assertEquals(StoryViewerEvent.Own.Delete, events.last())
+
+        state = StoryViewerPreviewData.ownDeleteAsked
+        composeRule.waitForIdle()
+        composeRule.onNode(hasText(string(R.string.story_delete_title))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.story_delete_confirm))).performClick()
+        assertEquals(StoryViewerEvent.Own.DeleteConfirmed, events.last())
+        composeRule.onNode(hasText(string(R.string.story_delete_cancel))).performClick()
+        assertEquals(StoryViewerEvent.Own.DeleteDismissed, events.last())
+    }
+
+    @Test
     fun `typing a reply pauses the story and sends it`() {
         setScreen()
 

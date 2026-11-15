@@ -39,6 +39,9 @@ class FakeStoryRepository : StoryRepository {
     var onReact: suspend (ReactionType?) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onReply: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
+    /** Deleting a story: success by default. */
+    var onDelete: suspend (chatId: Long, storyId: Int) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
+
     /** Puts [activeStories] in, replacing the chat's earlier ones. */
     fun setActive(activeStories: ActiveStories) {
         active.value += activeStories.chatId to activeStories
@@ -48,8 +51,8 @@ class FakeStoryRepository : StoryRepository {
         stories.value += (story.posterChatId to story.id) to Outcome.Success(story)
     }
 
-    /** Story [storyId] of chat [chatId] was deleted or expired. */
-    fun deleteStory(
+    /** Story [storyId] of chat [chatId] was deleted or expired, as TDLib announces it. */
+    fun removeStory(
         chatId: Long,
         storyId: Int,
     ) {
@@ -120,5 +123,13 @@ class FakeStoryRepository : StoryRepository {
     ): Outcome<Unit> {
         calls += "reply:$chatId:$storyId:${text.text}"
         return onReply(text.text)
+    }
+
+    override suspend fun deleteStory(
+        chatId: Long,
+        storyId: Int,
+    ): Outcome<Unit> {
+        calls += "delete:$chatId:$storyId"
+        return onDelete(chatId, storyId)
     }
 }
