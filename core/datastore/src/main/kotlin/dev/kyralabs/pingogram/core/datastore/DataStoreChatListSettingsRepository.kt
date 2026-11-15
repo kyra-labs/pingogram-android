@@ -45,6 +45,7 @@ class DataStoreChatListSettingsRepository
                         showEditFoldersButton = preferences[EDIT_FOLDERS_BUTTON] ?: defaults.showEditFoldersButton,
                         showChatTypeIcons = preferences[CHAT_TYPE_ICONS] ?: defaults.showChatTypeIcons,
                         folderTabStyle = folderTabStyleOf(preferences[FOLDER_TAB_STYLE]) ?: defaults.folderTabStyle,
+                        catchUpIncludesMuted = preferences[CATCH_UP_INCLUDES_MUTED] ?: defaults.catchUpIncludesMuted,
                     )
                 }.distinctUntilChanged()
 
@@ -70,6 +71,9 @@ class DataStoreChatListSettingsRepository
         override suspend fun setFolderTabStyle(style: FolderTabStyle): Outcome<Unit> =
             save { it[FOLDER_TAB_STYLE] = style.name }
 
+        override suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit> =
+            save { it[CATCH_UP_INCLUDES_MUTED] = include }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -91,3 +95,4 @@ private val SWIPE_CHANGES_FOLDER = booleanPreferencesKey("chat_list.swipe_change
 private val EDIT_FOLDERS_BUTTON = booleanPreferencesKey("chat_list.edit_folders_button")
 private val CHAT_TYPE_ICONS = booleanPreferencesKey("chat_list.chat_type_icons")
 private val FOLDER_TAB_STYLE = stringPreferencesKey("chat_list.folder_tab_style")
+private val CATCH_UP_INCLUDES_MUTED = booleanPreferencesKey("chat_list.catch_up_includes_muted")

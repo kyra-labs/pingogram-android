@@ -241,6 +241,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
   through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
   `PingogramApp`.
+- **Focus profiles** (board 31, kept on this phone only): `core:domain`'s `FocusRepository` (`DataStoreFocusRepository`,
+  the settings file: the profiles, Focus set by hand, the last used) and `FocusClock`, which works out the profile on at
+  a moment from the schedules and Focus set by hand, so nothing needs an alarm. `FocusGate` (`DefaultFocusGate`,
+  provided by `core:datastore`'s `FocusModule` over the `WallClock`) answers whether a chat may alert or a call ring
+  now: `core:notifications`' renderer posts a chat it holds back silently (Focus changes notifications only).
+  Reminders ring through Focus: they read `FocusGate.active` and do not ask `allowsChat`.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one
@@ -635,6 +641,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
   names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
   the folder editor).
+- **Catch-up** (the owner's board 32, `docs/DESIGN_SYSTEM.md` §6 "Catch-up"): `feature:chats`' `catchup/`.
+  `CatchUpChats` reads the main list's unread chats in Catch-up's order (mentions first, then the most recent; muted
+  chats and channels only with `ChatListSettings.catchUpIncludesMuted`; never locked chats), which
+  `ChatListViewModel.summary` counts for the header's chip (`ChatListSummary.offersCatchUp`, from five) and
+  `CatchUpViewModel` takes once as its round (`CatchUpRound`, in the saved state). Its cards (`CatchUpSources`,
+  `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
+  and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
+  moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
 - **Bookmarks** (the owner's board 34, kept on this phone only): `core:domain`'s `BookmarkRepository`
   (`FileBookmarkRepository`, `core:data`, account-scoped: `bookmarks.txt` in the account's TDLib directory, which
   `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout; the demo's in memory) keeps the
@@ -642,6 +656,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
   (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+- **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
+  (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
+  `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
+  accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
+  phone.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -748,6 +767,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
   (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
   `TextStyleViewModel`), which adds the style only on a tap.
+- **Message reminders** (`docs/DESIGN_SYSTEM.md` §6 "Message reminders", the owner's board 29): kept on the device only,
+  never sent to Telegram. `core:domain`'s `ReminderRepository` (`FileReminderRepository`, `core:data`, account-scoped,
+  `reminders.txt` in the account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only
+  to delete them at logout; the demo's in memory) keeps a `MessageReminder` per message: the chat, the message, the
+  time, the user's note and whether it is done, never the message's text, which stays in TDLib's database.
+  `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the process) follows every
+  account's reminders and keeps one-time WorkManager work per reminder not done whose time is ahead
+  (`WorkManagerReminderWork`: named after the account, the message and the time, so a moved reminder gets new work and
+  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6), so Doze may hold a ring
+  back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
+  `ReminderNotificationBuilder`'s notification in the app's "Reminders" channel; its "Snooze 1 h" goes to
+  `ReminderActionReceiver`, which moves the reminder an hour on.
 - **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on
   the device only. `core:domain`'s `VoiceTranscriber` (`AndroidVoiceTranscriber`, `core:data`'s `transcription/`, a
   singleton of `DeviceModule`) is Android's own on-device speech recognizer (`SpeechRecognizer.createOnDeviceSpeechRecognizer`,

@@ -96,6 +96,17 @@ enum class PingogramChannel(
         NotificationManagerCompat.IMPORTANCE_LOW,
         showBadge = false,
     ),
+
+    /**
+     * The message reminders the user set (the owner's board 29), which pop up: a channel of their own, so they ring
+     * whatever the chat's notifications are set to.
+     */
+    Reminders(
+        "reminders",
+        R.string.notification_channel_reminders,
+        R.string.notification_channel_reminders_description,
+        NotificationManagerCompat.IMPORTANCE_HIGH,
+    ),
     ;
 
     /**

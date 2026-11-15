@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
+import dev.kyralabs.pingogram.core.notifications.ReminderAlarms
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.notifications.StorageOptimization
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -60,6 +61,10 @@ class PingogramApplication :
     /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
     @Inject
     lateinit var storageOptimization: dagger.Lazy<StorageOptimization>
+
+    /** Keeps the rings of the message reminders scheduled, for every account (the owner's board 29). */
+    @Inject
+    lateinit var reminderAlarms: dagger.Lazy<ReminderAlarms>
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -151,6 +156,8 @@ class PingogramApplication :
                 recentChatsWidgetUpdater.get().start()
                 // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
                 storageOptimization.get().start()
+                // Schedules the message reminders' rings, a few seconds after the start too.
+                reminderAlarms.get().start()
             }
         }
     }
