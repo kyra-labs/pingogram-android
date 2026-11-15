@@ -139,6 +139,9 @@ enum class MessageAction {
     /** Forward it to other chats, from the forward sheet. */
     Forward,
 
+    /** Bookmark it on this device, with tags and a note (`bookmarks.BookmarkSheetViewModel`, the owner's board 34). */
+    Bookmark,
+
     /** Edit its text or caption in the composer. */
     Edit,
 

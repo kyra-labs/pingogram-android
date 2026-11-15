@@ -643,6 +643,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
   and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
   moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
+- **Bookmarks** (the owner's board 34, kept on this phone only): `core:domain`'s `BookmarkRepository`
+  (`FileBookmarkRepository`, `core:data`, account-scoped: `bookmarks.txt` in the account's TDLib directory, which
+  `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout; the demo's in memory) keeps the
+  bookmarks (`Bookmark`: the message, when, its tags, a note and what the message said) and their tags (`BookmarkTag`,
+  colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
+  content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
+  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
