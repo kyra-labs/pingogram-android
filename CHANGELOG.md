@@ -13,6 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
+- Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
+  messages automatically as they show, and see which speech languages Android has ready on the phone.
 
 ### Changed
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
