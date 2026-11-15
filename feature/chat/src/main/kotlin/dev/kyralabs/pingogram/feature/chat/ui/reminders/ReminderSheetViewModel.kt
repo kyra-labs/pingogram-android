@@ -22,10 +22,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
-import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.ChatTimeFormatter
 import dev.kyralabs.pingogram.feature.chat.ui.ReminderEvent
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -39,7 +36,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * Setting a reminder of a message of chat [chatId] (`docs/DESIGN_SYSTEM.md` §6 "Message reminders", the owner's board
@@ -61,13 +57,15 @@ class ReminderSheetViewModel
         private val messages: MessageRepository,
         private val chats: ChatRepository,
         private val users: UserRepository,
-        private val clock: WallClock,
-        private val timePatterns: TimePatterns,
+        clock: WallClock,
+        timePatterns: TimePatterns,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
             fun create(chatId: Long): ReminderSheetViewModel
         }
+
+        private val times = ReminderTimes(clock, timePatterns)
 
         private val messageId = savedStateHandle.getStateFlow(KEY_MESSAGE, 0L)
         private val option = savedStateHandle.getStateFlow(KEY_OPTION, ReminderOption.InOneHour.name)
@@ -102,7 +100,7 @@ class ReminderSheetViewModel
                                 messageId = id,
                                 sender = shown?.sender,
                                 text = shown?.text,
-                                choices = choices(custom.takeIf { it != 0L }),
+                                choices = times.choices(custom.takeIf { it != 0L }),
                                 selected = ReminderOption.valueOf(chosen),
                                 note = existing?.note.orEmpty(),
                                 hasReminder = existing != null && !existing.done,
@@ -144,35 +142,6 @@ class ReminderSheetViewModel
             savedStateHandle[KEY_OPTION] = ReminderOption.Custom.name
         }
 
-        private fun choices(custom: Long?) =
-            ReminderOption.entries
-                .mapNotNull { choice ->
-                    val at =
-                        if (choice ==
-                            ReminderOption.Custom
-                        ) {
-                            custom
-                        } else {
-                            presetAt(choice, clock.now(), clock.zone())
-                        }
-                    when {
-                        choice == ReminderOption.Custom -> ReminderChoice(choice, at, at?.let(::whenText))
-                        at == null -> null
-                        else -> ReminderChoice(choice, at, whenText(at))
-                    }
-                }.toImmutableList()
-
-        private fun whenText(at: Long): UiText {
-            val formatter =
-                ChatTimeFormatter(clock.zone(), Locale.getDefault(), timePatterns.is24HourClock(), timePatterns)
-            val today = clock.now().atZone(clock.zone()).toLocalDate()
-            return UiText.resource(
-                R.string.reminder_day_time,
-                formatter.dateLabel(formatter.day(at), today),
-                formatter.time(at),
-            )
-        }
-
         private fun loadPreview(id: Long) {
             viewModelScope.launch {
                 val message = messages.message(chatId, id).getOrNull() ?: return@launch
@@ -197,7 +166,7 @@ class ReminderSheetViewModel
             shownPreview: BookmarkPreview,
         ) {
             val shown = sheet.value ?: return
-            val at = shown.at?.takeIf { it > clock.now().epochSecond }
+            val at = shown.at?.takeIf { it > times.now() }
             if (saving.value || at == null) return
             saving.value = true
             viewModelScope.launch {
@@ -209,7 +178,7 @@ class ReminderSheetViewModel
                     is Outcome.Success -> {
                         undo = UndoReminder(shown.messageId, before)
                         close()
-                        effectChannel.trySend(ReminderEffect.Set(whenText(at)))
+                        effectChannel.trySend(ReminderEffect.Set(times.whenText(at)))
                     }
 
                     is Outcome.Failure -> {
