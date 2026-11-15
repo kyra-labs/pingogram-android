@@ -183,6 +183,16 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `a bot's pills are Message, Mute and Share, which shares its link`() {
+        setScreen(ProfilePreviewData.bot, ProfilePreviewData.emptyMedia)
+
+        composeRule.onNodeWithText(string(R.string.profile_action_share)).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.ShareUsername("stickerfinderbot")), events)
+        composeRule.onNodeWithText(string(R.string.profile_action_call)).assertDoesNotExist()
+    }
+
+    @Test
     fun `tapping a username copies it, its button shares it`() {
         setScreen()
 
