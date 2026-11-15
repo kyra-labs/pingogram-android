@@ -156,3 +156,23 @@ private fun DeleteMediaDialogPreview() {
         )
     }
 }
+
+/** The viewer's questions over [content]: why it asks for storage (Android 8–9), and whether to delete. */
+@Composable
+internal fun ViewerDialogs(
+    content: MediaViewerUiState.Content,
+    onEvent: (MediaViewerEvent) -> Unit,
+) {
+    if (content.actions.showsStorageRationale) {
+        StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
+    }
+    val deleteConfirmation = content.actions.deleteConfirmation
+    if (deleteConfirmation != null) {
+        DeleteMediaDialog(
+            confirmation = deleteConfirmation,
+            media = content.current.media,
+            onConfirm = { onEvent(MediaViewerEvent.DeleteConfirmed(it)) },
+            onDismiss = { onEvent(MediaViewerEvent.DeleteDismissed) },
+        )
+    }
+}

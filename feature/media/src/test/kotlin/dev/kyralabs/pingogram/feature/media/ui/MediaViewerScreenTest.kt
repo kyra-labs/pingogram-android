@@ -22,6 +22,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -243,6 +244,19 @@ class MediaViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun `a video's controls play, move 10 seconds either way and mute`() {
+        setScreen(MediaPreviewData.video)
+
+        composeRule.onNodeWithContentDescription("Back 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Forward 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Mute").performClick()
+
+        assertTrue(MediaViewerEvent.SeekBy(-10) in events)
+        assertTrue(MediaViewerEvent.SeekBy(10) in events)
+        assertTrue(MediaViewerEvent.SetMuted(true) in events)
     }
 
     @Test

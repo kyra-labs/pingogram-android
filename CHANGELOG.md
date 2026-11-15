@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
+  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and

@@ -47,6 +47,9 @@ internal class MediaPlayback(
     private var autoplay = true
     private val mutableSpeed = MutableStateFlow(1f)
 
+    /** Whether videos play without sound ([setMuted]), until the viewer closes. */
+    private var muted = false
+
     /** How fast videos play ([setSpeed]), also while none is in the player. */
     val speed: StateFlow<Float> = mutableSpeed.asStateFlow()
 
@@ -143,6 +146,22 @@ internal class MediaPlayback(
         publish()
     }
 
+    /** Plays videos without sound, or with it again; GIFs never have any. */
+    fun setMuted(muted: Boolean) {
+        if (muted == this.muted) return
+        this.muted = muted
+        player.setMuted(muted)
+        publish()
+    }
+
+    /** Moves the video in the player [seconds] on (back where negative), within its length, shown at once. */
+    fun seekBy(seconds: Int) {
+        val current = session?.takeIf { it.hasStarted } ?: return
+        val length = player.durationMillis ?: current.target.durationMillis
+        if (length <= 0) return
+        seek(current.progress.floatValue + seconds * MILLIS_PER_SECOND / length)
+    }
+
     /** Moves the video in the player to [fraction] (0–1) of its length, shown at once. */
     fun seek(fraction: Float) {
         val current = session?.takeIf { it.hasStarted } ?: return
@@ -229,6 +248,7 @@ internal class MediaPlayback(
                     waitsForTap = !it.hasStarted && !autoplay,
                     canHandOff = it.hasStarted && it.target.kind == VideoKind.Video,
                     speed = mutableSpeed.value,
+                    isMuted = muted,
                 )
             }
     }
@@ -316,3 +336,5 @@ private fun VideoPlayer.fractionOf(
     val length = durationMillis ?: session.target.durationMillis
     return if (length > 0) (millis.toFloat() / length).coerceIn(0f, 1f) else 0f
 }
+
+private const val MILLIS_PER_SECOND = 1_000f
