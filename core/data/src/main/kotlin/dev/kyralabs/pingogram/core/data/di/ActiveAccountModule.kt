@@ -78,6 +78,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
@@ -429,6 +430,9 @@ object ActiveAccountModule {
 
     @Provides
     fun transcriptRepository(accounts: Accounts): TranscriptRepository = accounts.active.transcriptRepository()
+
+    @Provides
+    fun reminderRepository(accounts: Accounts): ReminderRepository = accounts.active.reminderRepository()
 
     @Provides
     fun customEmojiRepository(accounts: Accounts): CustomEmojiRepository = accounts.active.customEmojiRepository()

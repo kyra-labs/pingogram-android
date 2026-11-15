@@ -20,6 +20,13 @@
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
     <string name="notification_channel_transfers">Transfers</string>
     <string name="notification_channel_transfers_description">Progress of the files you send and download, and of chat exports</string>
+    <string name="notification_channel_reminders">Reminders</string>
+    <string name="notification_channel_reminders_description">The message reminders you set, kept on this phone. They ring even when a chat is muted.</string>
+    <!-- A message reminder's notification: its title, the chat's name. -->
+    <string name="reminder_notification_title">Reminder · %1$s</string>
+    <string name="reminder_notification_deleted">The message was deleted</string>
+    <string name="reminder_action_open">Open</string>
+    <string name="reminder_action_snooze">Snooze 1 h</string>
 
     <!-- Notification texts. -->
     <!-- Shown instead of a message when the chat's settings hide message previews. -->
