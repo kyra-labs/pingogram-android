@@ -16,8 +16,10 @@ import kotlinx.coroutines.flow.Flow
  * (https://core.telegram.org/api/terms), and there is no stealth mode (a Telegram Premium feature).
  *
  * Requests that get no answer in time fail with `DomainError.Network`; a story or chat TDLib does not know fails with
- * `DomainError.NotFound`, a flood wait with `DomainError.FloodWait`.
+ * `DomainError.NotFound`, a flood wait with `DomainError.FloodWait`. One function per request the viewer makes (hence
+ * `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 interface StoryRepository {
     /**
      * The chats with active stories in [list], in TDLib's order (by `order`, then chat id, both descending: the user's
