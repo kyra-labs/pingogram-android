@@ -107,6 +107,32 @@ class ProfileScreenScreenshotTest {
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
     fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
 
+    /** Someone not in the contacts who wrote first (board 24c): the card, and their phone number hidden. */
+    @Test
+    fun strangerLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun strangerDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun strangerAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun strangerHighContrast() =
+        capture(ScreenshotVariant.HighContrast, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun strangerRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun strangerMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun strangerFontScale200() =
+        capture(ScreenshotVariant.Light, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
     /** "Disable sharing" on in the private chat: the Info group says so. */
     @Test
     @Config(qualifiers = TALL)
