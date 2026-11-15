@@ -12,7 +12,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
-/** A chat's action bar, as TDLib announces it with the chat and changes it with `updateChatActionBar`. */
+/**
+ * A chat's action bar and profile color, as TDLib announces them with the chat and changes them with
+ * `updateChatActionBar` and `updateChatAccentColors`.
+ */
 class TdlibChatRepositoryActionBarTest {
     private val client = FakeTdlibClient()
 
@@ -29,6 +32,18 @@ class TdlibChatRepositoryActionBarTest {
 
             client.emit(TdApi.UpdateChatActionBar(CHAT_ID, null))
             assertNull(repository.chat(CHAT_ID).first()?.actionBar)
+        }
+
+    @Test
+    fun `a chat carries its profile color, and follows updateChatAccentColors`() =
+        runTest {
+            val repository =
+                TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
+            client.emit(updateNewChat(chat(id = CHAT_ID).apply { profileAccentColorId = 3 }))
+            assertEquals(3, repository.chat(CHAT_ID).first()?.profileAccentColorId)
+
+            client.emit(TdApi.UpdateChatAccentColors(CHAT_ID, 0, 0, null, -1, 0))
+            assertEquals(-1, repository.chat(CHAT_ID).first()?.profileAccentColorId)
         }
 
     private companion object {

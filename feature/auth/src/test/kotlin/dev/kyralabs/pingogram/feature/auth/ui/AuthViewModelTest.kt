@@ -242,6 +242,17 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `the language button opens Android's list of the app's languages`() =
+            runTest {
+                val viewModel = viewModel()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.OpenAppLanguages)
+
+                assertEquals(listOf<AuthEffect>(AuthEffect.OpenAppLanguages), effects)
+            }
+
+        @Test
         fun `the connection status is part of the state`() =
             runTest {
                 val viewModel = viewModel()
