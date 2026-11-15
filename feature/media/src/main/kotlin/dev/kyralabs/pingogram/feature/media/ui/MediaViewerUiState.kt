@@ -72,6 +72,8 @@ sealed interface MediaViewerUiState {
 @Immutable
 data class MediaActions(
     val canForward: Boolean = false,
+    /** How fast videos play, one of [PlaybackSpeeds]: More's "Speed" shows it for a video. */
+    val speed: Float = 1f,
     val canSave: Boolean = false,
     val canDelete: Boolean = false,
     val pending: MediaAction? = null,
@@ -143,7 +145,7 @@ sealed interface ViewerMedia {
 
     /**
      * [photo] at its [full] size, the largest one; Telegram sends no larger one than about 2560 px. A live photo's
-     * [motion] plays over it, muted and looping, once on the device.
+     * [motion] plays over it, muted, while the photo is held (board 25), once on the device.
      */
     data class Image(
         val photo: Photo,
@@ -218,6 +220,8 @@ data class VideoPlayback(
     val buffered: () -> Float = progress,
     val waitsForTap: Boolean = false,
     val canHandOff: Boolean = false,
+    /** How fast videos play, one of [PlaybackSpeeds]; GIFs keep their pace whatever it says. */
+    val speed: Float = 1f,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -246,6 +250,20 @@ sealed interface MediaViewerEvent {
 
     /** The video goes on in picture-in-picture: the button beside its seek bar, or a swipe up. */
     data object PictureInPicture : MediaViewerEvent
+
+    /**
+     * A live photo of message [messageId] is pressed and held ([held]), or let go: its motion plays while held, muted,
+     * and the still comes back once let go (board 25). Screen readers play and stop it through custom actions.
+     */
+    data class HoldLivePhoto(
+        val messageId: Long,
+        val held: Boolean,
+    ) : MediaViewerEvent
+
+    /** Videos are to play at [speed] times their pace (one of [PlaybackSpeeds]): More's "Speed", or the speed chip. */
+    data class SetSpeed(
+        val speed: Float,
+    ) : MediaViewerEvent
 
     /** The current video is to play from [fraction] (0–1) of its length. */
     data class Seek(

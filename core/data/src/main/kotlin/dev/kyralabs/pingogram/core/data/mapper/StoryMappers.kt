@@ -49,6 +49,7 @@ internal fun TdApi.Story.toStory(): Story =
         caption = caption?.toFormattedText() ?: FormattedText.Empty,
         canBeReplied = canBeReplied,
         chosenReaction = chosenReactionType?.toReactionType()?.takeUnless { it == ReactionType.Paid },
+        canBeDeleted = canBeDeleted,
     )
 
 private fun TdApi.StoryContent?.toStoryContent(): StoryContent =

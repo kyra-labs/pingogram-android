@@ -202,6 +202,10 @@ interface AccountRepositories {
 
     fun translationRepository(): TranslationRepository
 
+    fun transcriptRepository(): TranscriptRepository
+
+    fun bookmarkRepository(): BookmarkRepository
+
     fun customEmojiRepository(): CustomEmojiRepository
 
     fun chatExportRepository(): ChatExportRepository
