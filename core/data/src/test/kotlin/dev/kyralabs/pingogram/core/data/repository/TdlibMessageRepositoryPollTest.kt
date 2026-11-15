@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.testing.PollFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test
  * `updatePoll`, which names no chat, in the history windows: the poll it carries replaces the poll of every loaded
  * message that shows it, in every chat, also while a page loads.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibMessageRepositoryPollTest {
     private val client = FakeTdlibClient()
 

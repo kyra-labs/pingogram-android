@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test
  * announces them and changes them, sorted by name; search; adding by phone number and by username; editing (keeping
  * the contact's note), deleting, opening the chat, the invitation link, and errors.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibContactRepositoryTest {
     private val client = FakeTdlibClient()
 

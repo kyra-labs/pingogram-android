@@ -1116,7 +1116,8 @@ class ChatViewModel internal constructor(
         combine(
             chat,
             group,
-            chatActionRepository.actions(chatId),
+            // A topic's or thread's conversation shows only what is done in it (TDLib reports it for the chat too).
+            topic?.let { chatActionRepository.actions(chatId, it) } ?: chatActionRepository.actions(chatId),
             savedStateHandle.getStateFlow<Long?>(KEY_UNREAD_AFTER, null),
             thread.state,
             ::ChatSources,

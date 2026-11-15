@@ -205,17 +205,15 @@ private fun ProxyDetails(
     val colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     Column(Modifier.fillMaxWidth()) {
         ListItem(
-            headlineContent = {
-                Text(
-                    text = stringResource(R.string.settings_proxy_address, proxy.server, proxy.port.toString()),
-                    style = MaterialTheme.typography.bodyLarge.numericContent,
-                )
-            },
             supportingContent = { Text(proxyKindName(proxy.type.kind)) },
             colors = colors,
-        )
+        ) {
+            Text(
+                text = stringResource(R.string.settings_proxy_address, proxy.server, proxy.port.toString()),
+                style = MaterialTheme.typography.bodyLarge.numericContent,
+            )
+        }
         ListItem(
-            headlineContent = { Text(proxyCheckText(state.check)) },
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             colors = colors,
             trailingContent = {
@@ -225,7 +223,9 @@ private fun ProxyDetails(
                     }
                 }
             },
-        )
+        ) {
+            Text(proxyCheckText(state.check))
+        }
     }
 }
 

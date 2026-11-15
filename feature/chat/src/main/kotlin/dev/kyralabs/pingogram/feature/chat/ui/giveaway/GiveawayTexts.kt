@@ -6,6 +6,7 @@ import android.icu.text.ListFormatter
 import android.icu.util.TimeZone
 import dev.kyralabs.pingogram.core.domain.model.GiveawayPrize
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.regionName
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.util.Date
@@ -37,7 +38,7 @@ private const val MILLIS_PER_SECOND = 1_000L
 internal fun countriesText(
     codes: List<String>,
     locale: Locale,
-): String = ListFormatter.getInstance(locale).format(codes.map { Locale("", it).getDisplayCountry(locale) })
+): String = ListFormatter.getInstance(locale).format(codes.map { regionName(it, locale) })
 
 /** [count] with the digits of [locale]. */
 internal fun giveawayNumber(

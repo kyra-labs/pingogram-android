@@ -750,8 +750,25 @@ class FakeChatActionRepository : ChatActionRepository {
 
     override val actionsByChat: Flow<ImmutableMap<Long, ImmutableList<SenderAction>>> get() = unused()
 
+    /** The actions of a topic, by chat id and topic; a topic's conversation sees only these. */
+    val topicActionMap = MutableStateFlow<Map<Pair<Long, MessageTopic>, ImmutableList<SenderAction>>>(emptyMap())
+
+    fun setTopicActions(
+        chatId: Long,
+        topic: MessageTopic,
+        vararg actions: SenderAction,
+    ) {
+        topicActionMap.value += (chatId to topic) to actions.toList().toImmutableList()
+    }
+
     override fun actions(chatId: Long): Flow<ImmutableList<SenderAction>> =
         actionMap.map { it[chatId] ?: persistentListOf() }.distinctUntilChanged()
+
+    override fun actions(
+        chatId: Long,
+        topic: MessageTopic,
+    ): Flow<ImmutableList<SenderAction>> =
+        topicActionMap.map { it[chatId to topic] ?: persistentListOf() }.distinctUntilChanged()
 }
 
 /** A wall clock at [now] in UTC; [setTime] moves it and emits the new time as the minute. */

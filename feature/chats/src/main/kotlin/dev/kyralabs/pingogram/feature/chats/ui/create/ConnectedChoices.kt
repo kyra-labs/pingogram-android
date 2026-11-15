@@ -177,12 +177,13 @@ private fun ChoiceRadioRow(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = { Text(label) },
         modifier =
             Modifier
                 .clip(MaterialTheme.shapes.large)
                 .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick),
         leadingContent = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
+    ) {
+        Text(label)
+    }
 }

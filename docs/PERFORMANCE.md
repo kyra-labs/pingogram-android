@@ -607,6 +607,63 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `FolderListStates`): landing a swipe or tapping a tab moves the two compositions between the shown place and the
   companion's, recomposing no row (`ChatListRecompositionTest`), and a folder's list keeps its scroll position by
   itself.
+- The floating folder bar (2026-11-14). Since v2.1.0, `ChatListScrollBenchmark.scrollBaselineProfile` on the owner's
+  Galaxy S24 Ultra (two runs, accessibility off):
+  - `frameDurationCpuMs`: P90 8.8 → 10.7 / 11.9 ms, P95 10.7 → 12.6 / 15.9 ms, P50 6.4 → 5.5–6.0 ms;
+  - frames over 32 ms: 0 → 5.
+
+  Two changes touch the screen: the folder tabs floating in a bar over the list (#496) and the navigation bar's labels
+  (#494).
+  - **The JVM.** `ChatListScrollCostTest`, four interleaved runs at each of v2.1.0, the commit before #496, #496 and
+    #494, shows the same main thread: P90 9.3–10.3, 9.4–11.0, 9.3–11.1 and 9.2–10.2 ms, mean 2.5–2.9 ms in each. So
+    neither the bar's layout (its height reaches the lists in the layout phase, `FolderBarSpace`) nor its composition
+    reaches the scroll frames, and `ChatListRecompositionTest` checks that scrolling under it recomposes neither the bar
+    nor the rows on screen. The navigation bar is measured once, not per frame.
+  - **The cost is drawing.** The bar floats over the moving list inside the sheet's rounded clip, with a level-3 shadow
+    and a clip of its own. Its chips faded at the edges through an offscreen layer with a `DstOut` mask, and the list
+    now draws under the bar too. The RenderThread draws all of it in every frame.
+  - **A first fix that did not help** (#501): the fade paints the bar's own opaque color over the chips' edges instead
+    of masking them in an offscreen layer (`FolderBar.kt`'s `fadeIntoBar`). P90 stayed at 11.4 ms on `main`
+    (10a389e9), against 7.6 ms for v2.1.0 on the same phone the same day: a regression of about 50%.
+  - **The owner's traces** (`chat-list-scroll.sql`, v2.1.0 → `main`, per frame):
+    - RenderThread P50 3.4 → 5.4 ms, P90 6.4 → 9.5 ms;
+    - `dequeueBuffer` 0.72 → 1.55 ms, "flush commands" 1.5 → 2.0 ms;
+    - main thread P90 1.5 → 4.6 ms, mostly `postAndWait`, waiting for the RenderThread;
+    - "Texture upload(130) 1390x195" on 622 of 800 RenderThread frames on `main`, none in v2.1.0: about 397 × 56 dp,
+      the floating folder bar;
+    - "Texture upload 1440x2513" (1440x2309 in v2.1.0): the whole list area, grown by the old tab row.
+  - **The cause, from Compose's code.** `ContentSheet` clipped the sheet to a rect rounded at the top only. Compose
+    hands Android a round rect only where all four corners match (`RoundRect.isSimple`), and anything else as a path
+    (`GraphicsLayer.setPathOutline`). Android 13+ clips the layer to that path, and the GPU cannot clip to a path
+    analytically. So every draw across the sheet's rounded top corners made Skia rasterize a clip mask on the CPU and
+    upload it, in every frame:
+    - the folder bar, whose pill and level-3 shadow sit across both corners `spacing.small` below the sheet's top;
+    - the list's layer, whose mask is the whole list area.
+
+    The floating navigation bar's shadow is outside that clip, which is why v2.1.0 had no bar-sized upload.
+  - **The fix.** The sheet now clips to `SheetShape`: a round rect with `extraLarge` all round that reaches its radius
+    below the sheet, so the bottom corners fall outside it. Android gets a round rect, which the GPU clips without a
+    mask. The pixels are the same; the goldens did not change.
+  - **To check on the phone**:
+    - Run `ChatListScrollBenchmark` alone (`-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.ChatListScrollBenchmark`).
+    - Then summarize one of its iterations' traces with `tools/perfetto/chat-list-scroll.sql` (`summarize.py`). It
+      gives the main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late
+      frame spent its longest slice on. It also lists the texture uploads by size with the slices they ran under, and
+      what each main thread frame was for (input, animation, recompose, or an invalidated draw).
+  - **After #502** (the owner's trace of 2026-11-15): the main thread's P90 was 2.2 ms against 1.5 ms in v2.1.0, and
+    901 of its 1194 frames read as "recompose" frames. That count was the summary's mistake, not recompositions:
+    - Compose wraps its frame clock's dispatch in `Recomposer:animation` and the recomposer's per-frame loop in
+      `Recomposer:recompose`, whether anything was invalid or not (Compose runtime 1.12.1). A fling's animation runs
+      through that clock, so every frame of a fling carried both. The summary counted any `Recomposer:*` slice as a
+      recomposition.
+    - It now counts a frame as "recompose" only where a composition applied changes (`Compose:applyChanges`), calls the
+      rest "animation (a fling, no recomposition)", and lists Compose's slices per frame.
+    - On the JVM, `ChatListRecompositionTest` flings the list with touch input, through the header's nested scroll as
+      the benchmark's flings do: 4 of 204 frames recompose (Material's `Scaffold` content and the header's
+      `TwoRowsTopAppBar` as the header collapses), nothing of Pingogram's in any of them.
+    - What is left of the 0.7 ms needs the next trace, read with the corrected summary: frames that apply changes would
+      point at the app's shell or at pictures loading into rows, which the JVM test leaves out; otherwise the main
+      thread waits for the RenderThread (`postAndWait`), as before #502.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

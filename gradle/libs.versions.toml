@@ -204,7 +204,7 @@ android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }
 android-test = { id = "com.android.test", version.ref = "androidGradlePlugin" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxBenchmark" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
+gradle-versions = { id = "io.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "gradlePlayPublisher" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

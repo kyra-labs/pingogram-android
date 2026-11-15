@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.isTraversalGroup
@@ -108,3 +114,33 @@ private class BelowFolderBar(
     override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
         padding.calculateRightPadding(layoutDirection)
 }
+
+/**
+ * Fades the chips into the bar at each edge they can scroll past, over [width]: a gradient of the bar's own [color]
+ * painted over them in the draw phase, its brushes made once per size, read from [scrollState] in the draw phase.
+ *
+ * The bar is opaque, so this gives the same pixels as masking the chips out (`core:ui`'s `fadingEdges`), without the
+ * offscreen layer a mask needs (`CompositingStrategy.Offscreen` and a `DstOut` blend). The bar floats over the moving
+ * chat list, inside its shadow and its clip, and the RenderThread draws it in every frame of a scroll.
+ */
+internal fun Modifier.fadeIntoBar(
+    scrollState: ScrollState,
+    color: Color,
+    width: Dp,
+): Modifier =
+    drawWithCache {
+        val fade = width.toPx()
+        val leftFade = Brush.horizontalGradient(listOf(color, Color.Transparent), startX = 0f, endX = fade)
+        val rightStart = size.width - fade
+        val rightFade =
+            Brush.horizontalGradient(listOf(Color.Transparent, color), startX = rightStart, endX = size.width)
+        val fadeSize = Size(fade, size.height)
+        onDrawWithContent {
+            drawContent()
+            val ltr = layoutDirection == LayoutDirection.Ltr
+            val left = if (ltr) scrollState.canScrollBackward else scrollState.canScrollForward
+            val right = if (ltr) scrollState.canScrollForward else scrollState.canScrollBackward
+            if (left) drawRect(leftFade, size = fadeSize)
+            if (right) drawRect(rightFade, topLeft = Offset(rightStart, 0f), size = fadeSize)
+        }
+    }

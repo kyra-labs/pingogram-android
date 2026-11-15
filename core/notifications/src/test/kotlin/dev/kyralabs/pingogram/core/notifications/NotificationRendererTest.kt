@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateSupergroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -34,6 +35,7 @@ import org.robolectric.RobolectricTestRunner
 
 /** From TDLib's notification updates to the notifications Android shows ([NotificationRenderer]). */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationRendererTest {
     /** A logged-in account with Ada (user 42) and her private chat 100, and a channel, chat 300. */
     private suspend fun TestScope.started(
