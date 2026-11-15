@@ -806,6 +806,8 @@ class FakeTimePatterns : TimePatterns {
                 "MMMMEEEEd" to "EEEE, MMMM d",
                 "yMMMMd" to "MMMM d, y",
                 "MMMd" to "MMM d",
+                "EEE" to "EEE",
+                "EEEMMMd" to "EEE, MMM d",
                 "yMd" to "M/d/y",
                 // Dates in messages: the full date with the time, a short one, and a long one without.
                 "yMMMMEEEEdhm" to "EEEE, MMMM d, y, h:mm a",
