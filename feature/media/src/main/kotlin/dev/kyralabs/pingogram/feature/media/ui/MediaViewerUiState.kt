@@ -265,6 +265,9 @@ sealed interface MediaViewerEvent {
     /** A tap hid the controls: the first time on this phone, a hint says how to bring them back. */
     data object ControlsHidden : MediaViewerEvent
 
+    /** Stop the video streaming before its first frame (board 25): it then waits for a tap. */
+    data object CancelStream : MediaViewerEvent
+
     /** −10 or +10 s: the video in the player moves [seconds] on (back where negative). */
     data class SeekBy(
         val seconds: Int,

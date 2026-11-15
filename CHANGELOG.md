@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
+  until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
 - The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
   once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
@@ -29,6 +31,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
   starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders and chats it lets through, a schedule of
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
   days and times (one across midnight is one range) or by hand, and whether calls from contacts ring. While one is on,
   the Chats header shows it ("Focus: Work hours · until 6:00 PM"); a tap opens a switcher to change the profile, turn
   Focus off, or keep it on until the schedule ends, for an hour or until turned off. The page's "Show Focus in the chat

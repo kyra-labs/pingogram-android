@@ -107,6 +107,7 @@ internal fun MediaPage(
     zoom: ZoomState? = null,
     onSideTap: ((end: Boolean) -> Unit)? = null,
     onHold: ((held: Boolean) -> Unit)? = null,
+    onCancelStream: (() -> Unit)? = null,
     onDragOut: (() -> Boolean)? = null,
 ) {
     val media = item.media
@@ -142,7 +143,11 @@ internal fun MediaPage(
                 PlayButton(onPlay, Modifier.align(Alignment.Center))
             }
 
-            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
+            // A video in the player streams until its first frame: what came of it, then the seek bar shows it.
+            playback != null && media is ViewerMedia.Clip && !playback.showsFrame -> {
+                StreamingStatus(media.fileId, files[media.fileId], onCancelStream, Modifier.align(Alignment.Center))
+            }
+
             playback?.showsFrame != true -> {
                 DownloadProgress(media.fileId, files[media.fileId], Modifier.align(Alignment.Center))
             }
