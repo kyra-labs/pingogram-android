@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
+  edge, outside the code, so every scanner reads it.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
