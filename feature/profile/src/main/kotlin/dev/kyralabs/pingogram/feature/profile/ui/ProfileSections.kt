@@ -69,7 +69,7 @@ internal fun ProfileActionsRow(
     val isMuted = actions.isMuted
     val calls = LocalCallStarter.current
     val callUserId = actions.callUserId.takeIf { calls != null }
-    val hasChatPills = actions.canMessage || isMuted != null
+    val hasChatPills = actions.canMessage || isMuted != null || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -97,6 +97,15 @@ internal fun ProfileActionsRow(
                     )
                     onEvent(ProfileEvent.ToggleMute)
                 },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        actions.shareUsername?.let { username ->
+            // A bot's third pill: its link, as bots are not called (board 24d).
+            ActionPill(
+                icon = UiR.drawable.ic_share,
+                label = stringResource(R.string.profile_action_share),
+                onClick = { onEvent(ProfileEvent.ShareUsername(username)) },
                 modifier = Modifier.weight(1f),
             )
         }
@@ -185,6 +194,7 @@ internal fun ProfileInfoGroup(
         rows += ProfileRow("username:$username") { UsernameRow(username, it, onEvent) }
     }
     info.phoneNumber?.let { phone -> rows += ProfileRow("phone") { PhoneRow(phone, it, onEvent) } }
+    info.phoneHiddenBy?.let { name -> rows += ProfileRow("phone") { HiddenPhoneRow(name, it) } }
     info.birthday?.let { birthday ->
         rows +=
             ProfileRow("birthday") { shapes ->

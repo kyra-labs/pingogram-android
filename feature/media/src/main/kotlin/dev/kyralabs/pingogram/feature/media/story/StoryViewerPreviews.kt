@@ -112,6 +112,23 @@ internal object StoryViewerPreviewData {
             reactions = null,
         ).copy(own = OwnStoryUi(menuOpen = true))
 
+    /** The user's own story with its views pill: 24 views, 6 reactions, three faces. */
+    val ownViews =
+        ownMenu.copy(
+            own = OwnStoryUi(),
+            views =
+                StoryViewsUi(
+                    viewCount = 24,
+                    reactionCount = 6,
+                    recent =
+                        persistentListOf(
+                            StoryViewerFace(7, "Aisha", null),
+                            StoryViewerFace(8, "Meera", null),
+                            StoryViewerFace(9, "Rahul", null),
+                        ),
+                ),
+        )
+
     /** The user's own story, "Delete this story?" asking. */
     val ownDeleteAsked = ownMenu.copy(own = OwnStoryUi(deleteAsked = true))
 
@@ -132,6 +149,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
             StoryViewerPreviewData.failed,
             StoryViewerPreviewData.ownMenu,
             StoryViewerPreviewData.ownDeleteAsked,
+            StoryViewerPreviewData.ownViews,
             StoryViewerUiState.Loading,
         )
 }

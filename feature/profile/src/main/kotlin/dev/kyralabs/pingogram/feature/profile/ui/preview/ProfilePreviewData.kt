@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileHeader
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileInfo
 import dev.kyralabs.pingogram.feature.profile.ui.ProfilePhotoItem
 import dev.kyralabs.pingogram.feature.profile.ui.ProfilePhotos
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStranger
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileUiState
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileWarning
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaContent
@@ -104,6 +105,32 @@ object ProfilePreviewData {
     /** A private chat with "Disable sharing" on: the Info group says so. */
     val sharingDisabled = content.copy(info = content.info.copy(isSharingDisabled = true))
 
+    /**
+     * Someone not in the contacts who wrote first (the owner's board 24c): a neutral header, "last seen a long time
+     * ago", the card with two groups in common, and the phone row saying their privacy settings hide it.
+     */
+    val stranger =
+        ProfileUiState.Content(
+            header =
+                ProfileHeader(
+                    userId = 93,
+                    name = UiText.Plain("Dev Malhotra"),
+                    photo = null,
+                    status = UiText.resource(UiR.string.user_status_last_seen_long_ago),
+                ),
+            info = ProfileInfo(usernames = persistentListOf("devm"), phoneHiddenBy = "Dev"),
+            actions =
+                ProfileActions(
+                    canMessage = true,
+                    isMuted = false,
+                    canStartSecretChat = true,
+                    contact = ContactAction.Add,
+                    isBlocked = false,
+                    canReport = true,
+                ),
+            stranger = ProfileStranger(firstName = "Dev", groupsInCommon = 2),
+        )
+
     /** A contact without a note: the row offers to add one. */
     val withoutNote = content.copy(info = content.info.copy(note = ContactNote("", "Ada")))
 
@@ -133,7 +160,14 @@ object ProfilePreviewData {
                     isBot = true,
                     usernames = persistentListOf("stickerfinderbot"),
                 ),
-            actions = ProfileActions(canMessage = true, isMuted = true, isBlocked = false, canReport = true),
+            actions =
+                ProfileActions(
+                    canMessage = true,
+                    isMuted = true,
+                    isBlocked = false,
+                    canReport = true,
+                    shareUsername = "stickerfinderbot",
+                ),
         )
 
     val deleted =

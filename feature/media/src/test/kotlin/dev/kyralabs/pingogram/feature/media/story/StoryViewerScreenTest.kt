@@ -262,6 +262,19 @@ class StoryViewerScreenTest {
     }
 
     @Test
+    fun `the user's own story shows its views pill, which opens the viewers`() {
+        setScreen(StoryViewerPreviewData.ownViews)
+
+        composeRule
+            .onNode(hasContentDescription("Viewed by 24, 6 reactions. Opens the list of viewers"))
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(StoryViewerEvent.ViewersOpen(true), events.last())
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
+    }
+
+    @Test
     fun `typing a reply pauses the story and sends it`() {
         setScreen()
 

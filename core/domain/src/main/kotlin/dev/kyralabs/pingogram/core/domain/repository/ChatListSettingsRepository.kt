@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
  * the folder instead ([ChatListSettings.swipeChangesFolder], off by default), whether the folder tabs end in an
  * "Edit folders" button ([ChatListSettings.showEditFoldersButton], on by default), whether the rows show the kind of
  * chat before its name ([ChatListSettings.showChatTypeIcons], on by default), and how the folder tabs show their
- * folders ([ChatListSettings.folderTabStyle], their names by default).
+ * folders ([ChatListSettings.folderTabStyle], their names by default), and whether Catch-up takes muted chats and
+ * channels too ([ChatListSettings.catchUpIncludesMuted], off by default).
  */
 interface ChatListSettingsRepository {
     /** The settings, then every change. Never fails: unreadable settings read as the defaults. */
@@ -36,6 +37,9 @@ interface ChatListSettingsRepository {
 
     /** Saves how the folder tabs show their folders; fails as [setShowStories] does. */
     suspend fun setFolderTabStyle(style: FolderTabStyle): Outcome<Unit>
+
+    /** Saves whether Catch-up takes muted chats and channels; fails as [setShowStories] does. */
+    suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit>
 }
 
 /**
@@ -45,7 +49,8 @@ interface ChatListSettingsRepository {
  * and rows do not swipe; [startSwipe] and [endSwipe] are kept for when it is turned off. While
  * [showEditFoldersButton] is off, the folder row ends at the tabs; their menus keep "Edit folders". While
  * [showChatTypeIcons] is off, the rows show no group or channel symbol before the chat's name. [folderTabStyle] is what
- * each folder tab shows: its name, its icon and name, or its icon alone.
+ * each folder tab shows: its name, its icon and name, or its icon alone. Catch-up (`docs/DESIGN_SYSTEM.md` §6
+ * "Catch-up") leaves muted chats and channels out unless [catchUpIncludesMuted].
  */
 data class ChatListSettings(
     val showStories: Boolean = true,
@@ -55,6 +60,7 @@ data class ChatListSettings(
     val showEditFoldersButton: Boolean = true,
     val showChatTypeIcons: Boolean = true,
     val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
+    val catchUpIncludesMuted: Boolean = false,
 )
 
 /**
