@@ -36,6 +36,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
