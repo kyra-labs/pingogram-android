@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
@@ -252,8 +253,8 @@ class MainActivityViewModelTest {
             assertEquals(null, viewModel.chatToOpen.value)
 
             viewModel.openChat(100)
-            viewModel.openChat(200)
-            assertEquals(200L, viewModel.chatToOpen.value)
+            viewModel.openChat(200, messageId = 7)
+            assertEquals(ChatToOpen(200, messageId = 7), viewModel.chatToOpen.value)
 
             viewModel.onChatOpened()
             assertEquals(null, viewModel.chatToOpen.value)

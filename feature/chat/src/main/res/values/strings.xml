@@ -487,6 +487,10 @@
     <string name="chat_bubble_reminder">Reminder %1$s</string>
     <!-- The reminder chip in a bubble's meta, for screen readers: it opens the reminder to change or delete it. -->
     <string name="reminder_chip_open">Change reminder</string>
+    <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
+    <string name="drop_title">Drop to send to %1$s</string>
+    <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
+    <string name="drop_files">Files. You can add a caption before sending.</string>
     <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
     <string name="bookmark_title">Bookmark</string>
     <string name="bookmark_tags">Tags</string>

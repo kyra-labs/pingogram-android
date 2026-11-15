@@ -1808,6 +1808,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
+- **Drag and drop** (the owner's board 35a): `feature:chat`'s `drop/` makes the conversation's message area
+  (`MessagesArea`) a Compose drag and drop target (`chatDropTarget`) where the chat takes attachments. It shows
+  `ChatDropZone` while a drag of files is under way (`ChatDropState`, from the drag's MIME types), reads the dropped
+  `content://` URIs with the drop's permission (`Activity.requestDragAndDropPermissions`, which lasts as long as the
+  activity) and hands them to `ChatViewModel` as a pick (`ChatEvent.AttachMedia` / `AttachFiles`), so the attach
+  preview prepares and cleans them up as picked files. Nothing is sent before Send there.
 
 ## Calls
 

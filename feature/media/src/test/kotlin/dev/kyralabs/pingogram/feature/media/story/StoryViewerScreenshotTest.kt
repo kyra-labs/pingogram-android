@@ -96,6 +96,7 @@ class StoryViewerScreenshotTest(
             mapOf(
                 "photo" to StoryViewerPreviewData.photo,
                 "held" to StoryViewerPreviewData.held,
+                "loadingStory" to StoryViewerPreviewData.loadingStory,
                 "ownMenu" to StoryViewerPreviewData.ownMenu,
                 "ownDeleteAsked" to StoryViewerPreviewData.ownDeleteAsked,
                 "ownViews" to StoryViewerPreviewData.ownViews,
