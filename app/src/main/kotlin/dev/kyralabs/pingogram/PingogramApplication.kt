@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.startup.asyncTraceSection
+import dev.kyralabs.pingogram.ui.NavigationLabelWidths
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
@@ -110,8 +111,12 @@ class PingogramApplication :
         applicationScope.launch {
             asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
         }
-        // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
-        applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }
+        // Parses the font and makes its typefaces while the activity is created, instead of in the first frame, then
+        // measures the navigation bar's labels with them, which the first frame would otherwise do.
+        applicationScope.launch {
+            warmUpGoogleSansFlex(this@PingogramApplication)
+            NavigationLabelWidths.warmUp(this@PingogramApplication)
+        }
         startInBackground()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.

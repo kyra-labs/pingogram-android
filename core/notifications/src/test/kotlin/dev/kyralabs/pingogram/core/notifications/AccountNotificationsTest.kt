@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.myIdOption
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -28,6 +29,7 @@ import org.robolectric.RobolectricTestRunner
  * channels and bundle, named by the account's first name while several are signed in, gone with the account.
  */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class AccountNotificationsTest {
     /** Ada's account (user 1) in slot 0 and Grace's (user 2) in slot 1, each with a private chat 100. */
     private suspend fun TestScope.twoAccounts(): Pair<NotificationsHarness, NotificationsHarness> {

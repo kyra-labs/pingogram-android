@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
  * (`docs/DESIGN_SYSTEM.md` §5, "avatar → profile"): a user's profile ([profile]) or a group's or channel's info page
  * ([chatInfo]). Equal on both sides, and on no other content.
  */
+@ConsistentCopyVisibility
 data class AvatarTransformKey private constructor(
     val kind: Kind,
     val id: Long,

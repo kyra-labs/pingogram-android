@@ -150,7 +150,7 @@ class EmojiPanelViewModel
             if (!requestedSets.add(setId)) return
             viewModelScope.launch {
                 when (val result = stickers.stickerSet(setId)) {
-                    is Outcome.Success -> loadedSets.update { it.put(setId, result.value.toImmutableList()) }
+                    is Outcome.Success -> loadedSets.update { it.putting(setId, result.value.toImmutableList()) }
                     is Outcome.Failure -> requestedSets.remove(setId)
                 }
             }

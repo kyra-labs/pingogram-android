@@ -461,9 +461,7 @@ private fun handOver(
             onLaunchCamera(effect.path)
         }
 
-        else -> {
-            Unit
-        }
+        else -> {}
     }
 }
 

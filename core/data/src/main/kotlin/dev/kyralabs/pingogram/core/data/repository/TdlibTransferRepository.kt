@@ -83,7 +83,7 @@ class TdlibTransferRepository private constructor(
         store.update { state ->
             when (answer) {
                 is Outcome.Success -> state.answered(answer.value)
-                is Outcome.Failure -> state.copy(downloads = state.downloads.remove(fileId))
+                is Outcome.Failure -> state.copy(downloads = state.downloads.removing(fileId))
             }
         }
         return answer.map {}
@@ -143,7 +143,7 @@ private data class TransferState(
         }
 
     fun requesting(fileId: Int): TransferState =
-        if (fileId in downloads) this else copy(downloads = downloads.put(fileId, null))
+        if (fileId in downloads) this else copy(downloads = downloads.putting(fileId, null))
 
     /** TDLib's answer to the download request, unless an `updateFile` came first: the answer can be older. */
     fun answered(file: TdApi.File): TransferState =
@@ -171,9 +171,9 @@ private data class TransferState(
         return copy(
             downloads =
                 if (ended) {
-                    downloads.remove(file.id)
+                    downloads.removing(file.id)
                 } else {
-                    downloads.put(file.id, Progress(local.downloadedSize, file.knownSize))
+                    downloads.putting(file.id, Progress(local.downloadedSize, file.knownSize))
                 },
         )
     }
@@ -185,7 +185,7 @@ private data class TransferState(
             uploads
                 .filterValues { it.fileId == file.id && it.progress != progress }
                 .mapValues { (_, upload) -> upload.copy(progress = progress) }
-        return if (changed.isEmpty()) this else copy(uploads = uploads.putAll(changed))
+        return if (changed.isEmpty()) this else copy(uploads = uploads.puttingAll(changed))
     }
 
     private fun sending(message: TdApi.Message): TransferState {
@@ -199,11 +199,11 @@ private data class TransferState(
                 null
             }
         val upload = file?.let { Upload(message.chatId, it.id, Progress(it.remote.uploadedSize, it.knownSize)) }
-        return if (upload == null) this else copy(uploads = uploads.put(message.id, upload))
+        return if (upload == null) this else copy(uploads = uploads.putting(message.id, upload))
     }
 
     private fun withoutUpload(messageId: Long): TransferState =
-        if (messageId in uploads) copy(uploads = uploads.remove(messageId)) else this
+        if (messageId in uploads) copy(uploads = uploads.removing(messageId)) else this
 
     private fun withoutUploads(messageIds: LongArray): TransferState =
         if (messageIds.none { it in uploads }) this else copy(uploads = uploads - messageIds.asList())

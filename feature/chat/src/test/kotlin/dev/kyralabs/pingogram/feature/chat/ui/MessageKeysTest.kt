@@ -118,9 +118,7 @@ class MessageKeysTest {
                 search = null
             }
 
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
 

@@ -9,10 +9,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
-### Fixed
+### Changed
+- The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
 
+### Fixed
 - Tall bottom sheets (Send to, Forward, the attach menu and the others) stop below the status bar again instead of
   rising behind it.
+- In a forum, a topic's top bar shows only who is typing in that topic, no longer someone typing in another topic.
 
 ## [2.2.0] - 2026-11-15
 

@@ -226,10 +226,11 @@ private fun HiddenRow(
                 onValueChange = { onEvent(CommunityEvent.HiddenChanged(it)) },
             ),
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        headlineContent = { Text(stringResource(R.string.community_add_hidden)) },
         supportingContent = { Text(stringResource(R.string.community_add_hidden_text)) },
         trailingContent = { CheckSwitch(sheet.isHidden, enabled = !sheet.isSending) },
-    )
+    ) {
+        Text(stringResource(R.string.community_add_hidden))
+    }
 }
 
 /** "Cancel" at the start and "Add" ("Suggest") at the end. */

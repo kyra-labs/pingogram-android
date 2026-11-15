@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
 import dev.kyralabs.pingogram.core.testing.inTopic
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test
  * The topics of a forum: pages, their order, TDLib's updates, single topics, forgetting a forum nobody observes; and
  * managing them: creating, renaming, closing, pinning and reordering, deleting, hiding General, and the refusals.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibForumTopicRepositoryTest {
     private val client = FakeTdlibClient()
 

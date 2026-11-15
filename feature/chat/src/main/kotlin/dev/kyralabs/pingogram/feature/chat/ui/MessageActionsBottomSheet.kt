@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -132,6 +133,7 @@ private fun ActionsContent(
         modifier =
             Modifier
                 .verticalScroll(rememberScrollState())
+                .testTag(MESSAGE_ACTIONS_TAG)
                 .padding(bottom = MaterialTheme.spacing.large),
     ) {
         if (sheet.reactions.isNotEmpty() || sheet.picker != null) QuickReactions(sheet, choose, onExpand)
