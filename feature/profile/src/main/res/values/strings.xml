@@ -27,6 +27,7 @@
     <string name="profile_action_mute">Mute</string>
     <string name="profile_action_unmute">Unmute</string>
     <string name="profile_action_secret_chat">Secret chat</string>
+    <string name="profile_more_options">More options</string>
 
     <!-- Profile photos -->
     <string name="profile_section_photos">Photos</string>

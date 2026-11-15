@@ -650,6 +650,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
   (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+- **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
+  (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
+  `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
+  accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
+  phone.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -756,6 +761,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
   (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
   `TextStyleViewModel`), which adds the style only on a tap.
+- **Message reminders** (`docs/DESIGN_SYSTEM.md` §6 "Message reminders", the owner's board 29): kept on the device only,
+  never sent to Telegram. `core:domain`'s `ReminderRepository` (`FileReminderRepository`, `core:data`, account-scoped,
+  `reminders.txt` in the account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only
+  to delete them at logout; the demo's in memory) keeps a `MessageReminder` per message: the chat, the message, the
+  time, the user's note and whether it is done, never the message's text, which stays in TDLib's database.
+  `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the process) follows every
+  account's reminders and keeps one-time WorkManager work per reminder not done whose time is ahead
+  (`WorkManagerReminderWork`: named after the account, the message and the time, so a moved reminder gets new work and
+  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6), so Doze may hold a ring
+  back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
+  `ReminderNotificationBuilder`'s notification in the app's "Reminders" channel; its "Snooze 1 h" goes to
+  `ReminderActionReceiver`, which moves the reminder an hour on.
 - **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on
   the device only. `core:domain`'s `VoiceTranscriber` (`AndroidVoiceTranscriber`, `core:data`'s `transcription/`, a
   singleton of `DeviceModule`) is Android's own on-device speech recognizer (`SpeechRecognizer.createOnDeviceSpeechRecognizer`,
