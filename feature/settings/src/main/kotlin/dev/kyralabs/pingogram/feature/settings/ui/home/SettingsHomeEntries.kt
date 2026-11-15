@@ -24,6 +24,9 @@ internal sealed interface HomeDestination {
 
     data object RecentCalls : HomeDestination
 
+    /** The Bookmarks page (`:feature:chat`, `LocalBookmarksLauncher`), On this phone's first tool. */
+    data object Bookmarks : HomeDestination
+
     /** A page above a page of Settings home, opened with that page below it (settings search only). */
     data class SubPage(
         val subPage: SettingsSubPage,
@@ -60,7 +63,15 @@ internal fun page(
 internal val OnThisPhoneGroup: HomeGroup =
     HomeGroup(
         R.string.settings_home_on_this_phone,
-        entries = emptyList(),
+        entries =
+            listOf(
+                HomeEntry(
+                    HomeDestination.Bookmarks,
+                    R.string.settings_bookmarks,
+                    R.string.settings_bookmarks_summary,
+                    R.drawable.ic_bookmark,
+                ),
+            ),
         footer = R.string.settings_home_on_this_phone_footer,
     )
 

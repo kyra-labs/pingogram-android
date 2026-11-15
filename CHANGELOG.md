@@ -13,7 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
-  a note.
+  a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
+  from Saved Messages once you have a bookmark.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
   notification channel of its own, even in a muted chat, with "Snooze 1 h".
