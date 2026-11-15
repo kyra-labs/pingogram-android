@@ -466,6 +466,25 @@
     <!-- Opens the forward sheet, to send the message on to other chats. -->
     <string name="message_action_forward">Forward</string>
     <string name="message_action_bookmark">Bookmark</string>
+    <!-- Message reminders, kept on this phone (the owner's board 29). -->
+    <string name="message_action_remind">Remind me</string>
+    <string name="reminder_title">Remind me</string>
+    <string name="reminder_when">When</string>
+    <string name="reminder_in_one_hour">In 1 hour</string>
+    <string name="reminder_this_evening">This evening</string>
+    <string name="reminder_tomorrow_morning">Tomorrow morning</string>
+    <string name="reminder_next_week">Next week</string>
+    <string name="reminder_pick">Pick a date and time</string>
+    <string name="reminder_note">Note (optional)</string>
+    <string name="reminder_on_this_phone">Stays on this phone. Not sent to Telegram.</string>
+    <string name="reminder_cancel">Cancel</string>
+    <string name="reminder_set">Set reminder</string>
+    <string name="reminder_delete">Delete reminder</string>
+    <string name="reminder_set_for">Reminder set for %1$s</string>
+    <string name="reminder_undo">Undo</string>
+    <string name="reminder_deleted">Reminder deleted</string>
+    <!-- A reminder's day and time: "Sun, 9:00 AM". -->
+    <string name="reminder_day_time">%1$s, %2$s</string>
     <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
     <string name="bookmark_title">Bookmark</string>
     <string name="bookmark_tags">Tags</string>

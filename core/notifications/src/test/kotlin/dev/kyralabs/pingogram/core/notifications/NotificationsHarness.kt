@@ -14,7 +14,10 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.focus.FocusGate
+import dev.kyralabs.pingogram.core.domain.model.ActiveFocus
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeDirectShareRepository
@@ -58,6 +61,9 @@ internal class NotificationsHarness(
     val directShare = FakeDirectShareRepository()
 
     val builder = ConversationNotificationBuilder(context)
+
+    /** What Focus lets alert: everything at first. */
+    val focus = FakeFocusGate()
     val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files)
 
     /** The device's accounts the renderer follows: this one; tests add others ([NotificationsHarness.account]). */
@@ -68,6 +74,7 @@ internal class NotificationsHarness(
             shortcuts = ConversationShortcutsFactory(context, dispatcher, directShare),
             appearance = FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
             ioDispatcher = dispatcher,
+            focus = focus,
         )
 
     /** Whether each slot shows its notifications ("Notifications from all accounts"); every slot does at first. */
@@ -107,4 +114,15 @@ internal class NotificationsHarness(
     fun postStale(groupId: Int) {
         manager.notify("group", groupId, Notification.Builder(context, PingogramChannel.Other.id).build())
     }
+}
+
+/** A [FocusGate] that holds back the chats in [heldBack], as a Focus profile on would. */
+class FakeFocusGate : FocusGate {
+    var heldBack: Set<Long> = emptySet()
+
+    override suspend fun active(): ActiveFocus? = null
+
+    override suspend fun allowsChat(chat: Chat): Boolean = chat.id !in heldBack
+
+    override suspend fun allowsCall(isContact: Boolean): Boolean = true
 }

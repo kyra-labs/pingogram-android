@@ -10,14 +10,24 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark.
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
+  at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+  notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
 - Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
   messages automatically as they show, and see which speech languages Android has ready on the phone.
+- Catch-up: from five unread chats, a chip under the chat list's title opens them one card at a time, those that
+  mention you first, then the most recent. Each card shows the newest unread messages, with "Mark as read", "Open chat"
+  and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
+  channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
+  the chat.
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
@@ -27,6 +37,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
