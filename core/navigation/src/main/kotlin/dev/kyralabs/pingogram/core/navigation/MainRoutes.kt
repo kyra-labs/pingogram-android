@@ -248,6 +248,10 @@ data object PasskeysRoute
 @Serializable
 data object LockedChatsRoute
 
+/** The message reminders kept on this phone (the owner's board 29), from Settings home's "On this phone" group. */
+@Serializable
+data object RemindersRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute
@@ -750,3 +754,7 @@ data object KeywordAlertsRoute
  */
 @Serializable
 data object BookmarksRoute
+
+/** The bookmarks' tag editor (the owner's board 34c), pushed above the Bookmarks page. */
+@Serializable
+data object BookmarkTagsRoute

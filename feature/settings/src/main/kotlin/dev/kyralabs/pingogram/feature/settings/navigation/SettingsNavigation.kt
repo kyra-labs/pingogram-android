@@ -45,6 +45,7 @@ import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
 import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
+import dev.kyralabs.pingogram.core.navigation.RemindersRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
@@ -86,6 +87,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as S
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.reminders.RemindersRoute as RemindersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
@@ -262,6 +264,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<PowerSavingRoute> { PowerSavingScreenRoute(onBack = onBack) }
     settingsPage<KeywordAlertsRoute> { KeywordAlertsScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
+    settingsPage<RemindersRoute> { RemindersScreenRoute(onBack = onBack) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
@@ -382,6 +385,7 @@ internal val SettingsPage.route: Any
             SettingsPage.ActiveSessions -> ActiveSessionsRoute
             SettingsPage.MyQrCode -> MyQrCodeRoute
             SettingsPage.KeywordAlerts -> KeywordAlertsRoute
+            SettingsPage.Reminders -> RemindersRoute
         }
 
 private val NotificationSettingsPage.route: Any

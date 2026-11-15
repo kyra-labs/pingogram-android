@@ -31,6 +31,8 @@ sealed interface StoryViewerUiState {
         val reactions: StoryReactionsUi?,
         val own: OwnStoryUi? = null,
         val views: StoryViewsUi? = null,
+        /** A finger holds the story (board 26): the chrome hides and a pause badge says to let go. */
+        val isHeld: Boolean = false,
     ) : StoryViewerUiState
 }
 
@@ -177,6 +179,11 @@ sealed interface StoryViewerEvent {
 
     /** A tap on the start side. */
     data object Previous : StoryViewerEvent
+
+    /** A screen reader explores by touch ([on]), or stopped: stories then wait for "Next story". */
+    data class ScreenReader(
+        val on: Boolean,
+    ) : StoryViewerEvent
 
     /** A finger holds the story ([held]), or let go. */
     data class Hold(

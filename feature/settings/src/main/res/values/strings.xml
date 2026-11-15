@@ -1485,6 +1485,34 @@
     <string name="settings_home_on_this_phone_footer">Kept on this phone only. Never sent to Telegram.</string>
     <string name="settings_bookmarks">Bookmarks</string>
     <string name="settings_bookmarks_summary">Messages you saved with tags and notes</string>
+    <!-- Message reminders, kept on this phone (the owner's board 29). -->
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_reminders_summary">Messages to come back to</string>
+    <plurals name="settings_reminders_upcoming">
+        <item quantity="one">%1$s upcoming</item>
+        <item quantity="other">%1$s upcoming</item>
+    </plurals>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_loading">Loading reminders</string>
+    <string name="reminders_on_this_phone">Kept on this phone only</string>
+    <!-- The group of reminders not done yet, with how many: "Upcoming · 3". -->
+    <string name="reminders_upcoming">Upcoming · %1$d</string>
+    <string name="reminders_done">Done</string>
+    <string name="reminders_unknown_chat">Chat</string>
+    <!-- A reminder's message in a group, after who sent it: "Aisha: Train leaves 6:40". -->
+    <string name="reminders_preview_sender">%1$s: %2$s</string>
+    <!-- A reminder's note, as the user wrote it. -->
+    <string name="reminders_note">Note: %1$s</string>
+    <string name="reminders_mark_done">Mark done</string>
+    <string name="reminders_mark_not_done">Mark not done</string>
+    <string name="reminders_delete">Delete</string>
+    <string name="reminders_deleted">Reminder deleted</string>
+    <string name="reminders_undo">Undo</string>
+    <string name="reminders_sort">Sort reminders</string>
+    <string name="reminders_sort_time">By time</string>
+    <string name="reminders_sort_chat">By chat</string>
+    <string name="reminders_empty_title">No reminders yet</string>
+    <string name="reminders_empty_body">Long-press any message and choose Remind me. It comes back when you need it, even if the chat is muted. Stays on this phone. Not sent to Telegram.</string>
     <string name="settings_home_more">More</string>
     <string name="settings_home_app">App</string>
     <string name="settings_home_stickers_emoji">Stickers and emoji</string>
