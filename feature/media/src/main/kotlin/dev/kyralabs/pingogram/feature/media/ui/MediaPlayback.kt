@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
  *   silent loop. Another item stops it; nothing replaces it for a photo or a file still downloading. Without autoplay
  *   ([setAutoplay], power saving) it waits for [playPause] instead ([VideoPlayback.waitsForTap]).
  * - **Play and pause** ([playPause]) toggle the video; after its end it plays again from the start. [seek] moves it.
+ * - **Speed** ([setSpeed]) holds for every video shown after it, until the viewer closes; GIFs keep their pace.
  * - **The screen stopping** ([setStarted]) pauses what plays; starting again plays a GIF on, and a video that has
  *   not played yet, but leaves a paused video paused.
  * - **Progress**: while a video plays, its position goes into snapshot state every other frame ([ProgressTicker]),
@@ -44,6 +45,10 @@ internal class MediaPlayback(
     private val ticker = ProgressTicker(player, scope)
     private var isStarted = false
     private var autoplay = true
+    private val mutableSpeed = MutableStateFlow(1f)
+
+    /** How fast videos play ([setSpeed]), also while none is in the player. */
+    val speed: StateFlow<Float> = mutableSpeed.asStateFlow()
 
     /** Where a message's video is to start ([startAt]), until it does. */
     private var startPosition: Pair<Long, Long>? = null
@@ -128,6 +133,14 @@ internal class MediaPlayback(
             current.isPlaying -> pause(current)
             else -> resume(current)
         }
+    }
+
+    /** Plays videos at [speed] times their pace from now on, the one in the player too. */
+    fun setSpeed(speed: Float) {
+        if (speed == mutableSpeed.value) return
+        mutableSpeed.value = speed
+        player.setSpeed(speed)
+        publish()
     }
 
     /** Moves the video in the player to [fraction] (0–1) of its length, shown at once. */
@@ -215,6 +228,7 @@ internal class MediaPlayback(
                     buffered = it.readBuffered,
                     waitsForTap = !it.hasStarted && !autoplay,
                     canHandOff = it.hasStarted && it.target.kind == VideoKind.Video,
+                    speed = mutableSpeed.value,
                 )
             }
     }
