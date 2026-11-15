@@ -5,13 +5,16 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
@@ -222,7 +225,7 @@ internal fun AuthActionRow(
  * the bottom end. [hero] makes it the medium (56 dp) button of a hero moment instead, Welcome's "Start messaging"
  * (`docs/DESIGN_SYSTEM.md` §6). While its request runs ([inProgress]) it shows a [LoadingIndicator] in place of the
  * label, keeping its width, and keeps [text] for screen readers. [interactionSource] lets the screen react to presses
- * too.
+ * too. [trailingIcon] follows the label at the button's icon size, decorative (Welcome's forward arrow).
  */
 @Composable
 internal fun AuthPrimaryButton(
@@ -233,6 +236,7 @@ internal fun AuthPrimaryButton(
     modifier: Modifier = Modifier,
     hero: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
+    @DrawableRes trailingIcon: Int? = null,
 ) {
     val height = if (hero) ButtonDefaults.MediumContainerHeight else ButtonDefaults.MinHeight
     Button(
@@ -252,6 +256,14 @@ internal fun AuthPrimaryButton(
             inProgress = inProgress,
             indicatorSize = ButtonDefaults.iconSizeFor(height),
         )
+        if (trailingIcon != null) {
+            Spacer(Modifier.width(ButtonDefaults.iconSpacingFor(height)))
+            Icon(
+                painter = painterResource(trailingIcon),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.iconSizeFor(height)),
+            )
+        }
     }
 }
 
