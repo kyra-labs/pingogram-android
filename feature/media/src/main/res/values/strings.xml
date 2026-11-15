@@ -26,6 +26,11 @@
     <string name="media_pause">Pause</string>
     <string name="media_picture_in_picture">Picture-in-picture</string>
     <string name="media_pip_video">Video in picture-in-picture</string>
+    <!-- The seek bar's value for screen readers: the time played, then the length. -->
+    <string name="media_seek_state">%1$s of %2$s</string>
+    <string name="media_back_10">Back 10 seconds</string>
+    <string name="media_forward_10">Forward 10 seconds</string>
+    <string name="media_mute">Mute</string>
     <string name="media_seek">Playback position</string>
     <string name="media_caption_expand">Show the whole caption</string>
     <string name="media_caption_collapse">Show less of the caption</string>
