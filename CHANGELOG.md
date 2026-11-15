@@ -27,6 +27,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
+  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
   notifications still show, silently. The pages to set them up follow.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.

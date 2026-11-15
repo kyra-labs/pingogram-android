@@ -247,6 +247,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   provided by `core:datastore`'s `FocusModule` over the `WallClock`) answers whether a chat may alert or a call ring
   now: `core:notifications`' renderer posts a chat it holds back silently (Focus changes notifications only).
   Reminders ring through Focus: they read `FocusGate.active` and do not ask `allowsChat`.
+  `feature:settings`' `FocusRoute` (`FocusViewModel`: the profiles and the one on now, worked out each minute of
+  `WallClock.minutes` while the page shows; a switch sets Focus by hand until the schedule's next change) sits in Settings
+  home's "On this phone"; `FocusProfileRoute(profileId, template)` (`FocusEditViewModel`, the draft in saved state) is
+  its editor.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one
