@@ -432,6 +432,10 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(actionBar = update.actionBar?.toChatActionBar()) }
         }
 
+        is TdApi.UpdateChatAccentColors -> {
+            ChatChange(update.chatId) { it.copy(profileAccentColorId = update.profileAccentColorId) }
+        }
+
         else -> {
             null
         }

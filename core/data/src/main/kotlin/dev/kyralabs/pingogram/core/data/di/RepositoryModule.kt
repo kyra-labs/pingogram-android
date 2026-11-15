@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
@@ -127,6 +128,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
+import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
@@ -533,6 +535,9 @@ interface RepositoryModule {
 
     @Binds
     fun transcriptRepository(repository: FileTranscriptRepository): TranscriptRepository
+
+    @Binds
+    fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository
 
     @Binds
     fun customEmojiRepository(repository: TdlibCustomEmojiRepository): CustomEmojiRepository

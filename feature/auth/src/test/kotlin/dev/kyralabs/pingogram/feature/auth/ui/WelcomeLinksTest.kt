@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.feature.auth.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -60,6 +63,30 @@ class WelcomeLinksTest {
             ),
             events,
         )
+    }
+
+    @Test
+    fun `the language button names the app's language and opens the list of languages`() {
+        composeRule.setContent {
+            ScreenshotTheme(ScreenshotVariant.Light) {
+                AuthScreen(state = AuthPreviewData.all.getValue("welcome"), onEvent = { events += it })
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("App language: English").assertHasClickAction().performClick()
+
+        assertEquals(listOf<AuthEvent>(AuthEvent.OpenAppLanguages), events)
+    }
+
+    @Test
+    fun `the wordmark is the screen's heading, Pingogram`() {
+        composeRule.setContent {
+            ScreenshotTheme(ScreenshotVariant.Light) {
+                AuthScreen(state = AuthPreviewData.all.getValue("welcome"), onEvent = { events += it })
+            }
+        }
+
+        composeRule.onNode(hasContentDescription("Pingogram") and isHeading()).assertExists()
     }
 
     private companion object {

@@ -53,6 +53,13 @@
     <string name="media_delete">Delete</string>
     <!-- The toolbar's button that opens the menu of further actions -->
     <string name="media_more">More options</string>
+    <!-- The badge on a live photo (iOS Live Photos, Android Motion Photos) in the viewer, in capitals as on the bubble. -->
+    <string name="media_live_badge">LIVE</string>
+    <!-- Screen readers: what a live photo's page is, in place of "Photo". -->
+    <string name="media_live_photo">Live photo, press and hold to play</string>
+    <!-- Screen readers: the page's custom actions that play a live photo's motion and stop it. -->
+    <string name="media_live_play">Play live photo</string>
+    <string name="media_live_stop">Stop live photo</string>
     <!-- More's item that chooses how fast videos play, and the heading of its list. -->
     <string name="media_speed">Speed</string>
     <!-- A playback speed, e.g. "1.5×": %1$s is the number in the language's digits. -->
@@ -100,6 +107,16 @@
     <string name="story_reply_placeholder">Reply privately…</string>
     <string name="story_send">Send reply</string>
     <string name="story_reply_sent">Reply sent</string>
+    <!-- The ⋮ button on the user's own story, and its item that deletes the story. -->
+    <string name="story_more">More options</string>
+    <string name="story_delete">Delete</string>
+    <!-- The question before deleting the user's own story. -->
+    <string name="story_delete_title">Delete this story?</string>
+    <string name="story_delete_body">It goes for everyone who can see it, and its views and reactions with it.</string>
+    <string name="story_delete_confirm">Delete</string>
+    <string name="story_delete_cancel">Cancel</string>
+    <!-- Snackbar once the user's own story was deleted. -->
+    <string name="story_deleted">Story deleted</string>
     <string name="story_react">React</string>
     <!-- %1$s is the emoji the user reacted with. -->
     <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>

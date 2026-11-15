@@ -48,6 +48,15 @@ class ChatInfoScreenshotTest {
     @Test
     fun channelDark() = info(ScreenshotVariant.Dark, ChatInfoPreviewData.channel, ProfilePreviewData.emptyMedia)
 
+    /** A channel's own profile color tints its header (board 24). */
+    @Test
+    fun channelColorLight() =
+        info(ScreenshotVariant.Light, ChatInfoPreviewData.channelWithColor, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun channelColorDark() =
+        info(ScreenshotVariant.Dark, ChatInfoPreviewData.channelWithColor, ProfilePreviewData.emptyMedia)
+
     /** "Show IDs" on: the chat's ID closes the Info group. */
     @Test
     @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
