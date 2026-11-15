@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
+  turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
   read"; a tap opens your chats.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
