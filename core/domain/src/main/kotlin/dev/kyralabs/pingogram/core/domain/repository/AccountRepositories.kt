@@ -204,6 +204,8 @@ interface AccountRepositories {
 
     fun transcriptRepository(): TranscriptRepository
 
+    fun reminderRepository(): ReminderRepository
+
     fun bookmarkRepository(): BookmarkRepository
 
     fun customEmojiRepository(): CustomEmojiRepository

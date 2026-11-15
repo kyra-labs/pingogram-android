@@ -7,10 +7,11 @@ import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveSettingsScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
 
 /**
- * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them; a chat
- * opens with [openChat].
+ * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them, and
+ * Catch-up; a chat opens with [openChat].
  */
 internal fun NavGraphBuilder.archive(
     navController: NavHostController,
@@ -22,6 +23,8 @@ internal fun NavGraphBuilder.archive(
         onOpenSettings = { navController.navigate(ArchiveSettingsRoute) { launchSingleTop = true } },
     )
     archiveSettingsScreen(onBack = { navController.popBackStack() })
+    // Catch-up, pushed above the Chats tab from its header's chip: a chat it opens is pushed above it.
+    catchUpScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
 }
 
 /**

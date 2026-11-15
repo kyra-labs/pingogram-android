@@ -16,11 +16,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
+  at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+  notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
 - Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
   messages automatically as they show, and see which speech languages Android has ready on the phone.
+- Catch-up: from five unread chats, a chip under the chat list's title opens them one card at a time, those that
+  mention you first, then the most recent. Each card shows the newest unread messages, with "Mark as read", "Open chat"
+  and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
+  channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
+  the chat.
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
@@ -35,6 +43,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
+- Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
+  edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
@@ -48,12 +58,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
+- A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
+  scrolls, the top bar keeps a Call button where the person can be called.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
 - A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- The profile of someone not in your contacts who wrote first shows a card with how many groups you share and Block,
+  Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 

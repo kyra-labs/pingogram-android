@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.NewChatRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
 import dev.kyralabs.pingogram.feature.chats.ui.archive.ArchiveSettingsRoute
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpRoute
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelTypeStep
@@ -34,6 +35,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
 import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute as ArchiveSettingsDestination
+import dev.kyralabs.pingogram.core.navigation.CatchUpRoute as CatchUpDestination
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
@@ -100,6 +102,17 @@ fun NavGraphBuilder.archiveScreen(
  */
 fun NavGraphBuilder.archiveSettingsScreen(onBack: () -> Unit) {
     composable<ArchiveSettingsDestination> { ArchiveSettingsRoute(onBack = onBack) }
+}
+
+/**
+ * Adds Catch-up, [CatchUpDestination], to the graph: the unread chats one card at a time; [onBack] leaves it, "Open
+ * chat" calls [onOpenChat].
+ */
+fun NavGraphBuilder.catchUpScreen(
+    onBack: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
+) {
+    composable<CatchUpDestination> { CatchUpRoute(onBack = onBack, onOpenChat = onOpenChat) }
 }
 
 /**

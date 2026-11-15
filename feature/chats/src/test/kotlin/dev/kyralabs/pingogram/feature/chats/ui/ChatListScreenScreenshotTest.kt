@@ -90,6 +90,25 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
+    /** The header's Catch-up chip after the status line, from five chats to catch up on (owner decision 2026-11-15). */
+    @Test
+    fun catchUpChip() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Light, "catchUpChip", summary = ChatListPreviewData.summary.copy(catchUpChats = 12))
+    }
+
+    /** The chip in dark theme and at twice the font size, where the counts give way to it. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun catchUpChipFontScale200() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(
+            ScreenshotVariant.Dark,
+            "catchUpChipFontScale200",
+            summary = ChatListPreviewData.summary.copy(catchUpChats = 12),
+        )
+    }
+
     /**
      * The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for the representative state, the folder bar over the
      * list (owner decision 2026-11-13) and the communities' entries (the owner's board 19b).
@@ -104,6 +123,7 @@ class ChatListScreenScreenshotTest(
         variant: ScreenshotVariant,
         name: String = variant.goldenName,
         swipes: ChatSwipes = ChatSwipes(),
+        summary: ChatListSummary = ChatListPreviewData.summary,
     ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
@@ -112,7 +132,7 @@ class ChatListScreenScreenshotTest(
                     ChatListScreen(
                         state = state,
                         onEvent = {},
-                        summary = { ChatListPreviewData.summary },
+                        summary = { summary },
                         onEditFolder = {},
                     )
                 }

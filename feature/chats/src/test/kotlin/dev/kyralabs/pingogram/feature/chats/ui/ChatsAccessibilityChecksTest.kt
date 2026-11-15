@@ -9,6 +9,10 @@ import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.archive.ArchiveSettingsScreen
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpScreen
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpStage
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpUiState
 import dev.kyralabs.pingogram.feature.chats.ui.create.CreateChatScreenshotTest
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ArchiveSettingsPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
@@ -127,6 +131,18 @@ class ChatsAccessibilityChecksTest(
                     listOf("content" to content, "unavailable" to unavailable, "loading" to loading, "error" to error)
                 }.forEach { (name, state) ->
                     put("archiveSettings.$name") { ArchiveSettingsScreen(state = state, onEvent = {}, onBack = {}) }
+                }
+                with(CatchUpPreviewData) {
+                    listOf("cards" to cards, "done" to done, "empty" to CatchUpUiState(CatchUpStage.Empty))
+                }.forEach { (name, state) ->
+                    put("catchUp.$name") { CatchUpScreen(state = state, onEvent = {}, onBack = {}) }
+                }
+                put("chatList.catchUpChip") {
+                    ChatListScreen(
+                        state = ChatListPreviewData.content,
+                        onEvent = {},
+                        summary = { ChatListPreviewData.summary.copy(catchUpChats = 12) },
+                    )
                 }
             }
 
