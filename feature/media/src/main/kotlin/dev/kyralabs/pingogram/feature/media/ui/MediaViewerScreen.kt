@@ -285,8 +285,8 @@ internal fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
-    afterEnter: Boolean = false,
     modifier: Modifier = Modifier,
+    afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     // The bottom bar waits for the way in to end (rememberEnterSettled), then fades in; the top bar shows from the
