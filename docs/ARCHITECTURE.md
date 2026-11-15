@@ -247,6 +247,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   provided by `core:datastore`'s `FocusModule` over the `WallClock`) answers whether a chat may alert or a call ring
   now: `core:notifications`' renderer posts a chat it holds back silently (Focus changes notifications only).
   Reminders ring through Focus: they read `FocusGate.active` and do not ask `allowsChat`.
+  `feature:settings`' `FocusRoute` (`FocusViewModel`: the profiles and the one on now, worked out each minute of
+  `WallClock.minutes` while the page shows; a switch sets Focus by hand until the schedule's next change) sits in Settings
+  home's "On this phone"; `FocusProfileRoute(profileId, template)` (`FocusEditViewModel`, the draft in saved state) is
+  its editor.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one
@@ -1821,7 +1825,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   long-press node (`LongPress.kt`) hands a move past the touch slop after the long press to `MessageDragOut`
   (`BubbleResources.dragOut`), which reads the bubble's downloaded files from the state at that moment
   (`ChatUiState.dragOutFiles`, none where `MessageShortcuts.canForward` is false) and starts `View.startDragAndDrop`
-  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ`, its shadow drawn by `FileDragShadow`.
+  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ` (`core:ui`'s `startFileDrag`, its shadow drawn by
+  `FileDragShadow`). The media viewer does the same for its shown item (`feature:media`'s `MediaDragOut`, a long press
+  then a move detected by `detectDragOutAfterLongPress` in the page's gestures), where `MediaActions.canSave` says the
+  content may leave the chat; `MediaViewerRoute` gives the screen none in a secret chat.
 
 ## Calls
 

@@ -122,6 +122,8 @@ internal fun MediaViewerRoute(
             snackbarHostState = snackbarHostState,
             // Never a secret chat's media, which only this secure window may show.
             canPictureInPicture = pictureInPicture && !isSecretChat,
+            // Nothing drags out of a secret chat, whose screenshots are blocked too (owner decision 2026-11-15).
+            dragOut = rememberMediaDragOut().takeUnless { isSecretChat },
             videoSurface = { surfaceModifier ->
                 PlayerSurface(
                     player = viewModel.surfacePlayer,

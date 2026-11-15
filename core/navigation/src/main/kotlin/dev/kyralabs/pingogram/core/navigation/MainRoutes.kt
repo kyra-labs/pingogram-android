@@ -744,6 +744,20 @@ data class WelcomeMessagesRoute(
 @Serializable
 data object ProfileColorRoute
 
+/** Focus profiles (board 31), kept on this phone only: `:feature:settings`, pushed above the Settings tab. */
+@Serializable
+data object FocusRoute
+
+/**
+ * A Focus profile's editor, pushed above [FocusRoute]: profile [profileId], or a new one (0) started from [template]
+ * (one of `FocusTemplate`'s names in `:feature:settings`; none: from scratch).
+ */
+@Serializable
+data class FocusProfileRoute(
+    val profileId: Long = 0,
+    val template: String? = null,
+)
+
 /** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
 @Serializable
 data object KeywordAlertsRoute

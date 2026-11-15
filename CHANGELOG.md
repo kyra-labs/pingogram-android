@@ -29,11 +29,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
+  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
   notifications still show, silently. The pages to set them up follow.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.
 - Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
   chats that protect their content.
+- The same works in the media viewer: long-press the photo, video or GIF and keep moving to drag it into another app.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
