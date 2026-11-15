@@ -15,6 +15,10 @@ import androidx.compose.ui.unit.dp
  * @property contentMaxWidth the widest a single column of content gets (forms, onboarding, a list on its own),
  *   centered on medium and wider windows so lines and fields stay comfortable; the width of an M3 dialog.
  * @property illustrationMaxSize the largest side of a hero illustration or a QR code frame.
+ * @property welcomeIllustrationMaxSize the widest the Welcome screen's illustration gets: its logo among chat avatars,
+ *   as wide as a phone (`docs/DESIGN_SYSTEM.md` §6 "Welcome").
+ * @property illustrationMinSize the smallest an illustration shrinks to before text and actions, at large font
+ *   scales and in short windows.
  * @property headlineBadge the side of a `MaterialShapes` badge with an icon above a headline, e.g. on every login step
  *   (`docs/DESIGN_SYSTEM.md` §3.3); its icon takes half of it.
  * @property avatarSmall an `Avatar` in a one- or two-line list item: contacts, members, search results (the M3 list
@@ -118,6 +122,8 @@ import androidx.compose.ui.unit.dp
 data class PingogramSizes(
     val contentMaxWidth: Dp = 560.dp,
     val illustrationMaxSize: Dp = 280.dp,
+    val welcomeIllustrationMaxSize: Dp = 412.dp,
+    val illustrationMinSize: Dp = 200.dp,
     val headlineBadge: Dp = 64.dp,
     val avatarSmall: Dp = 40.dp,
     val avatarRow: Dp = 48.dp,

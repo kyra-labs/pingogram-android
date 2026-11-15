@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Videos that start where their sender marked (td_api.tl `messageVideo.start_timestamp`) or a message link's `?t=`
- * says, and live photos, whose motion (`messagePhoto.video`) plays over the still as a GIF does.
+ * says, and live photos, whose motion (`messagePhoto.video`) plays over the still while held (board 25).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MediaViewerMotionTest : MediaViewerViewModelHarness() {
@@ -89,7 +89,7 @@ class MediaViewerMotionTest : MediaViewerViewModelHarness() {
         }
 
     @Test
-    fun `a live photo downloads its motion after the still, and plays it as a GIF once there`() =
+    fun `a live photo downloads its motion after the still, and plays it only while held`() =
         runViewModelTest {
             media.serve(listOf(message(1, livePhoto(1))))
             files.setFile(fullFileId(1), FileState.Downloaded("/files/photo.jpg", 200_000))
@@ -97,10 +97,30 @@ class MediaViewerMotionTest : MediaViewerViewModelHarness() {
             val viewModel = viewModel(messageId = 1)
             send(viewModel, MediaViewerEvent.Started)
             assertTrue(files.calls.any { it.startsWith("download:$motionFileId:") })
-            assertEquals(emptyList<String>(), player.calls)
 
             files.setFile(motionFileId, FileState.Downloaded(motionPath, 2_000_000))
             runCurrent()
+            assertEquals(emptyList<String>(), player.calls)
+
+            send(viewModel, MediaViewerEvent.HoldLivePhoto(1, held = true))
+            assertEquals(listOf("play:$motionPath:Gif"), player.calls)
+            assertEquals(1L, viewModel.content.playback?.messageId)
+
+            send(viewModel, MediaViewerEvent.HoldLivePhoto(1, held = false))
+            assertEquals(listOf("play:$motionPath:Gif", "stop"), player.calls)
+            assertEquals(null, viewModel.content.playback)
+        }
+
+    @Test
+    fun `letting go of another live photo leaves the held one playing`() =
+        runViewModelTest {
+            media.serve(listOf(message(1, livePhoto(1))))
+            files.setFile(fullFileId(1), FileState.Downloaded("/files/photo.jpg", 200_000))
+            files.setFile(motionFileId, FileState.Downloaded(motionPath, 2_000_000))
+            val viewModel = viewModel(messageId = 1)
+            send(viewModel, MediaViewerEvent.Started, MediaViewerEvent.HoldLivePhoto(1, held = true))
+
+            send(viewModel, MediaViewerEvent.HoldLivePhoto(2, held = false))
 
             assertEquals(listOf("play:$motionPath:Gif"), player.calls)
         }

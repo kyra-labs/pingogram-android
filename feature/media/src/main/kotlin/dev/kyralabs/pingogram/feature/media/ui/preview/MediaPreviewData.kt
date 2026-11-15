@@ -191,6 +191,23 @@ internal object MediaPreviewData {
             actions = MediaActions(canSave = true, speed = FASTER),
         )
 
+    /** A live photo (board 25): "LIVE" at its top start; its motion plays while it is held. */
+    val livePhoto: MediaViewerUiState.Content =
+        photo.copy(
+            items =
+                persistentListOf(
+                    photoItem.copy(
+                        media =
+                            ViewerMedia.Image(
+                                samplePhoto,
+                                samplePhoto.sizes.last(),
+                                motion = sampleVideo.copy(duration = 2, supportsStreaming = false),
+                            ),
+                    ),
+                    videoItem,
+                ),
+        )
+
     /** A spoiler not revealed yet. */
     val spoiler: MediaViewerUiState.Content = photo.copy(currentIndex = 3)
 
