@@ -45,6 +45,7 @@ import javax.inject.Inject
  * decoded, and it asks for no audio focus, so music elsewhere keeps playing. The player sets no wake lock (the app
  * holds no `WAKE_LOCK` permission); the screen stays on while a video plays because the viewer keeps it on.
  */
+@Suppress("TooManyFunctions") // One override per function of VideoPlayer, and how the player is built.
 internal class ExoVideoPlayer
     @Inject
     constructor(
@@ -70,6 +71,9 @@ internal class ExoVideoPlayer
 
         /** Whether a video plays silenced ([setMuted]); GIFs are always silent. */
         private var isMuted = false
+
+        /** How fast a video plays ([setSpeed]); GIFs always play at their own pace. */
+        private var speed = 1f
 
         override var listener: VideoPlayer.Listener? = null
 
@@ -143,6 +147,11 @@ internal class ExoVideoPlayer
             if (kind == VideoKind.Video) player?.volume = if (muted) 0f else 1f
         }
 
+        override fun setSpeed(speed: Float) {
+            this.speed = speed
+            if (kind == VideoKind.Video) player?.setPlaybackSpeed(speed)
+        }
+
         override fun stop() {
             pending = Pending()
             player?.run {
@@ -171,6 +180,7 @@ internal class ExoVideoPlayer
                 this.kind = kind
             }
             if (kind == VideoKind.Video) player.volume = if (isMuted) 0f else 1f
+            player.setPlaybackSpeed(if (kind == VideoKind.Video) speed else 1f)
             val uri =
                 when (source) {
                     is PlaySource.File -> Uri.fromFile(File(source.path))

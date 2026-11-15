@@ -72,6 +72,8 @@ sealed interface MediaViewerUiState {
 @Immutable
 data class MediaActions(
     val canForward: Boolean = false,
+    /** How fast videos play, one of [PlaybackSpeeds]: More's "Speed" shows it for a video. */
+    val speed: Float = 1f,
     val canSave: Boolean = false,
     val canDelete: Boolean = false,
     val pending: MediaAction? = null,
@@ -218,6 +220,8 @@ data class VideoPlayback(
     val buffered: () -> Float = progress,
     val waitsForTap: Boolean = false,
     val canHandOff: Boolean = false,
+    /** How fast videos play, one of [PlaybackSpeeds]; GIFs keep their pace whatever it says. */
+    val speed: Float = 1f,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -246,6 +250,11 @@ sealed interface MediaViewerEvent {
 
     /** The video goes on in picture-in-picture: the button beside its seek bar, or a swipe up. */
     data object PictureInPicture : MediaViewerEvent
+
+    /** Videos are to play at [speed] times their pace (one of [PlaybackSpeeds]): More's "Speed", or the speed chip. */
+    data class SetSpeed(
+        val speed: Float,
+    ) : MediaViewerEvent
 
     /** The current video is to play from [fraction] (0–1) of its length. */
     data class Seek(
