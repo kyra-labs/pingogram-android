@@ -49,9 +49,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **Forward** where TDLib allows it ([MediaActions.canForward]; never protected content): the forward sheet;
  * - **Share** and **Save** where Telegram lets the content leave it ([MediaActions.canSave]);
- * - **Delete** where TDLib allows it ([MediaActions.canDelete]); it asks first;
  * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo ([photoFileId]) that may leave
- *   Telegram, "Copy" and "Make a sticker" (boards 14a, 14b).
+ *   Telegram, "Copy" and "Make a sticker" (boards 14a, 14b); then, in a group of its own in `error`, "Delete" where
+ *   TDLib allows it ([MediaActions.canDelete]), which asks first (owner decision 2026-11-15, board 25: deleting is
+ *   destructive and rare, so it leaves the toolbar).
  *
  * The button whose action waits for the item's file (More for Copy) shows the download's progress ([file], a
  * determinate wavy indicator) instead of its icon, or a loading indicator while the file is copied into the gallery;
@@ -96,15 +97,9 @@ internal fun ViewerToolbar(
                 file = file,
             )
         }
-        if (actions.canDelete) {
-            ToolbarButton(
-                icon = UiR.drawable.ic_delete,
-                label = stringResource(R.string.media_delete),
-                onClick = { onEvent(MediaViewerEvent.Delete) },
-            )
-        }
         MoreMenu(
             photoFileId = photoFileId?.takeIf { actions.canSave },
+            canDelete = actions.canDelete,
             copyEnabled = idle,
             copyPending = Pending(actions.pending == MediaAction.Copy, stringResource(R.string.media_copy_pending)),
             file = file,
@@ -115,12 +110,14 @@ internal fun ViewerToolbar(
 
 /**
  * More, and the menu it opens: "Show in chat", then for a photo that may leave Telegram ([photoFileId]) "Copy"
- * (disabled unless [copyEnabled]) and "Make a sticker". A menu of one group ([DropdownMenuGroup]) whose items take the
- * expressive menu's shapes; choosing one closes it.
+ * (disabled unless [copyEnabled]) and "Make a sticker"; and where [canDelete], "Delete" in `error` in a second group.
+ * The groups ([DropdownMenuGroup]) and their items take the expressive menu's shapes; choosing an item closes it.
  */
+@Suppress("LongParameterList") // What the menu offers, the state of Copy, and where its choices go.
 @Composable
 private fun MoreMenu(
     photoFileId: Int?,
+    canDelete: Boolean,
     copyEnabled: Boolean,
     copyPending: Pending,
     file: ItemFile?,
@@ -136,44 +133,61 @@ private fun MoreMenu(
             file = file,
         )
         DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
-            val count = if (photoFileId != null) PHOTO_MENU_SIZE else 1
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
-                MenuItem(
-                    icon = UiR.drawable.ic_chat,
-                    label = stringResource(R.string.media_show_in_chat),
-                    index = 0,
-                    count = count,
-                ) {
-                    expanded = false
-                    onEvent(MediaViewerEvent.ShowInChat)
-                }
-                if (photoFileId != null) {
+            val groups = if (canDelete) 2 else 1
+            val choose = { event: MediaViewerEvent ->
+                expanded = false
+                onEvent(event)
+            }
+            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groups)) {
+                EverydayItems(photoFileId, copyEnabled, choose)
+            }
+            if (canDelete) {
+                DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = groups)) {
                     MenuItem(
-                        icon = UiR.drawable.ic_content_copy,
-                        label = stringResource(R.string.media_copy),
-                        index = 1,
-                        count = count,
-                        enabled = copyEnabled,
-                    ) {
-                        expanded = false
-                        onEvent(MediaViewerEvent.Copy)
-                    }
-                    MenuItem(
-                        icon = UiR.drawable.ic_mood,
-                        label = stringResource(R.string.media_make_sticker),
-                        index = 2,
-                        count = count,
-                    ) {
-                        expanded = false
-                        onEvent(MediaViewerEvent.MakeSticker(photoFileId))
-                    }
+                        icon = UiR.drawable.ic_delete,
+                        label = stringResource(R.string.media_delete),
+                        index = 0,
+                        count = 1,
+                        destructive = true,
+                    ) { choose(MediaViewerEvent.Delete) }
                 }
             }
         }
     }
 }
 
-/** An item of the More menu, [index] of [count]: its [icon] and [label]. */
+/** The More menu's first group: "Show in chat", and for a photo that may leave Telegram "Copy" and "Make a sticker". */
+@Composable
+private fun EverydayItems(
+    photoFileId: Int?,
+    copyEnabled: Boolean,
+    choose: (MediaViewerEvent) -> Unit,
+) {
+    val count = if (photoFileId != null) PHOTO_MENU_SIZE else 1
+    MenuItem(
+        icon = UiR.drawable.ic_chat,
+        label = stringResource(R.string.media_show_in_chat),
+        index = 0,
+        count = count,
+    ) { choose(MediaViewerEvent.ShowInChat) }
+    if (photoFileId != null) {
+        MenuItem(
+            icon = UiR.drawable.ic_content_copy,
+            label = stringResource(R.string.media_copy),
+            index = 1,
+            count = count,
+            enabled = copyEnabled,
+        ) { choose(MediaViewerEvent.Copy) }
+        MenuItem(
+            icon = UiR.drawable.ic_mood,
+            label = stringResource(R.string.media_make_sticker),
+            index = 2,
+            count = count,
+        ) { choose(MediaViewerEvent.MakeSticker(photoFileId)) }
+    }
+}
+
+/** An item of the More menu, [index] of [count]: its [icon] and [label], in `error` where [destructive]. */
 @Suppress("LongParameterList") // What the item shows, where it is in the group, and what it does.
 @Composable
 private fun MenuItem(
@@ -182,14 +196,22 @@ private fun MenuItem(
     index: Int,
     count: Int,
     enabled: Boolean = true,
+    destructive: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val error = MaterialTheme.colorScheme.error
     DropdownMenuItem(
         onClick = onClick,
         text = { Text(label) },
         shape = MenuDefaults.itemShape(index, count).shape,
         leadingIcon = { Icon(painter = painterResource(icon), contentDescription = null) },
         enabled = enabled,
+        colors =
+            if (destructive) {
+                MenuDefaults.itemColors(textColor = error, leadingIconColor = error)
+            } else {
+                MenuDefaults.itemColors()
+            },
     )
 }
 
