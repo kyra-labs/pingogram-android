@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
+  later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
+  message's language is not on the phone, a link opens Android's language settings.
+
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
