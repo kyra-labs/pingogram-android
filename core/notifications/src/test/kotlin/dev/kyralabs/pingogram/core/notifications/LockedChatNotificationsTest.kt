@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -29,6 +30,7 @@ import org.robolectric.Shadows.shadowOf
  * locked, unlocked or not.
  */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class LockedChatNotificationsTest {
     /** A logged-in account with Ada (user 42) and her private chat 100. */
     private suspend fun TestScope.started(): NotificationsHarness {
@@ -56,7 +58,11 @@ class LockedChatNotificationsTest {
         )
     }
 
-    /** Everything a notification says, in every text and extra Android keeps. */
+    /**
+     * Everything a notification says, in every text and extra Android keeps. `Bundle.get` is deprecated for its
+     * unchecked type, but this reads every extra whatever its type, to search them all.
+     */
+    @Suppress("DEPRECATION")
     private fun Notification.everything(): String =
         extras.keySet().joinToString(" ") { key -> extras.get(key).toString() } + " $tickerText"
 

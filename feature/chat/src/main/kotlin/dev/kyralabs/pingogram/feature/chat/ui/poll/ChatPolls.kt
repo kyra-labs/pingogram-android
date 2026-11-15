@@ -33,6 +33,7 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -99,7 +100,7 @@ internal class ChatPolls(
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
     /** The loads of the open voters' sheet, cancelled with it. */
-    private var votersJob: Job? = null
+    private var votersScope: CoroutineScope? = null
 
     /** The messages whose vote is on its way. */
     private val voting = mutableSetOf<Long>()
@@ -166,7 +167,7 @@ internal class ChatPolls(
         setChoices { all ->
             val checked = all[messageId].orEmpty()
             val toggled = if (optionIndex in checked) checked - optionIndex else checked + optionIndex
-            if (toggled.isEmpty()) all.remove(messageId) else all.put(messageId, toggled.toPersistentSet())
+            if (toggled.isEmpty()) all.removing(messageId) else all.putting(messageId, toggled.toPersistentSet())
         }
     }
 
@@ -195,7 +196,7 @@ internal class ChatPolls(
                     }
 
                     is Outcome.Success -> {
-                        setChoices { it.remove(messageId) }
+                        setChoices { it.removing(messageId) }
                         if (poll.type is PollType.Quiz && optionIndexes.isNotEmpty()) reportQuizAnswer(messageId)
                     }
                 }
@@ -239,19 +240,19 @@ internal class ChatPolls(
                 .filter { it.voterCount > 0 }
                 .map { PollVoterSection(it.index, it.text.text, it.voterCount) }
         voters.value = PollVotersSheet(messageId, poll.question.text, sections.toImmutableList())
-        votersJob = Job(scope.coroutineContext[Job])
+        votersScope = CoroutineScope(scope.coroutineContext + Job(scope.coroutineContext[Job]))
         sections.forEach { loadVoters(it.optionIndex) }
     }
 
     /** Loads the next page of answer [optionIndex]'s voters, unless one is on its way or there are no more. */
     private fun loadVoters(optionIndex: Int) {
         val sheet = voters.value
-        val job = votersJob
+        val votersScope = votersScope
         val section =
             sheet?.sections?.firstOrNull { it.optionIndex == optionIndex }?.takeUnless { it.isLoading || it.reachedEnd }
-        if (sheet == null || job == null || section == null) return
+        if (sheet == null || votersScope == null || section == null) return
         updateSection(optionIndex) { it.copy(isLoading = true, error = null) }
-        scope.launch(job) {
+        votersScope.launch {
             val page = repository.voters(chatId, sheet.messageId, optionIndex, section.voters.size, PAGE_SIZE)
             when (page) {
                 is Outcome.Failure -> {
@@ -298,8 +299,8 @@ internal class ChatPolls(
     }
 
     private fun dismissVoters() {
-        votersJob?.cancel()
-        votersJob = null
+        votersScope?.cancel()
+        votersScope = null
         voters.value = null
     }
 

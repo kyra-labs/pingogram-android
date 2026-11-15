@@ -85,9 +85,7 @@ class TwoStepVerificationViewModel
                             }
 
                             // Telegram moved the date: the state says when.
-                            is PasswordResetResult.Pending -> {
-                                Unit
-                            }
+                            is PasswordResetResult.Pending -> {}
                         }
                         load(keepContent = true)
                     }

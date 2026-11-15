@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ActionBarEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.regionName
 import dev.kyralabs.pingogram.feature.chat.ui.topics.showError
 import java.time.Instant
 import java.time.ZoneId
@@ -167,7 +168,7 @@ private fun accountLines(account: AccountInfo): List<String> {
             )
         }
         if (account.phoneCountryCode.isNotEmpty()) {
-            val country = JavaLocale("", account.phoneCountryCode).getDisplayCountry(locale)
+            val country = regionName(account.phoneCountryCode, locale)
             add(stringResource(R.string.action_bar_phone_country, country))
         }
         if (account.lastNameChangeDate > 0) {

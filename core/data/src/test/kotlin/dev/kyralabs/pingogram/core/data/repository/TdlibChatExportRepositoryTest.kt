@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.floodWait
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test
  * back, waiting out flood waits, the errors that end an export, names, and downloads that are waited for and
  * cancelled.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibChatExportRepositoryTest {
     private val client = FakeTdlibClient()
     private val repository = TdlibChatExportRepository(client)

@@ -65,10 +65,10 @@ import java.util.Locale
  * - **Rows**: the last message's sender before its preview ("You" for the user's own, none where the forum itself
  *   posts), its time as of the minute ([WallClock.minutes]) in the zone, language and clock setting.
  * - **Managing** ([TopicManagement], through [onTopicEvent]): what the user may do follows their rights in the forum
- *   ([GroupInfoRepository.groupInfo], [ForumRights]): "New topic", each topic's menu, a hidden General topic shown to
- *   those who may show it again, and dragging the pinned topics into another order, which shows at once and goes back
- *   when Telegram refuses it ([ForumTopicsEvent.Reorder], [ForumTopicsEvent.Move]). A created topic opens, a deleted
- *   one and every refusal are snackbars ([effects]).
+ *   ([GroupInfoRepository.groupInfo], [ForumRights]): "New topic", each topic's menu, a hidden General topic marked
+ *   for those who may show it again (everyone sees it, closed), and dragging the pinned topics into another order,
+ *   which shows at once and goes back when Telegram refuses it ([ForumTopicsEvent.Reorder],
+ *   [ForumTopicsEvent.Move]). A created topic opens, a deleted one and every refusal are snackbars ([effects]).
  *
  * Mapped on [dispatcher]; it runs while the screen collects, and 5 s after, so a rotation does not restart it.
  */
@@ -253,8 +253,8 @@ class ForumTopicsViewModel internal constructor(
     ): ForumTopicsUiState {
         latestTopics = allTopics.topics
         val rights = managing.rights
-        val shown = allTopics.topics.filter { !(it.isGeneral && it.isHidden) || rights.canManage }
-        val topics = allTopics.copy(topics = shown.inOrder(managing.pendingOrder).toImmutableList())
+        // A hidden General topic shows to everyone, closed, as Telegram shows it above the list.
+        val topics = allTopics.copy(topics = allTopics.topics.inOrder(managing.pendingOrder).toImmutableList())
         val header = chat?.let { headerOf(it, topics) }
         val content =
             when {
@@ -364,7 +364,7 @@ private fun ForumTopic.toRow(
     return TopicRow(
         id = id,
         name = name,
-        icon = TopicIcon(icon.color, isGeneral),
+        icon = TopicIcon(icon.color, isGeneral, icon.customEmojiId),
         sender =
             if (last == null || chat == null || postedByForum) {
                 null
@@ -381,8 +381,10 @@ private fun ForumTopic.toRow(
         unreadCount = unreadCount,
         unreadMentionCount = unreadMentionCount,
         isPinned = isPinned,
-        isClosed = isClosed,
-        isHidden = isGeneral && isHidden,
+        isClosed = isClosed || (isGeneral && isHidden),
+        isHidden = isGeneral && isHidden && rights.canManage,
         menu = menuFor(rights),
+        // The topic's own setting, else its forum's.
+        isMuted = muteFor?.let { it > 0 } ?: (chat?.isMuted == true),
     )
 }

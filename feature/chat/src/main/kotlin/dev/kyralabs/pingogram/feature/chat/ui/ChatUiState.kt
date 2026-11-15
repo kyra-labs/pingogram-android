@@ -401,6 +401,8 @@ sealed interface ChatItem {
         val isChannelPost: Boolean = false,
         val views: Int = 0,
         val giveaway: GiveawayUi? = null,
+        /** Where a forwarded message comes from, which tapping "Forwarded from …" opens; null if not forwarded. */
+        val forwardSource: ForwardSource? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -626,4 +628,22 @@ data class TypingBubble(
 enum class PollAdding {
     Open,
     Sending,
+}
+
+/** What tapping a forwarded message's "Forwarded from …" opens ([ChatEvent.OpenForwardSource]). */
+@Immutable
+sealed interface ForwardSource {
+    /** The profile of user [userId], who sent it. */
+    data class Profile(
+        val userId: Long,
+    ) : ForwardSource
+
+    /** Chat [chatId], at message [messageId] where TDLib names the original (a channel's post). */
+    data class Chat(
+        val chatId: Long,
+        val messageId: Long?,
+    ) : ForwardSource
+
+    /** A user who hides their account when their messages are forwarded: nothing opens. */
+    data object Hidden : ForwardSource
 }

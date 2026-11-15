@@ -19,7 +19,7 @@ internal data class SearchCounts(
         count: Int,
     ): SearchCounts =
         if (query == this.query) {
-            copy(counts = counts.put(chip, count))
+            copy(counts = counts.putting(chip, count))
         } else {
             SearchCounts(query, persistentMapOf(chip to count))
         }

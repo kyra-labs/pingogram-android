@@ -25,13 +25,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -58,7 +59,7 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The AI editor's sheet (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): a [ModalBottomSheet] that opens expanded and
+ * The AI editor's sheet (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"): a [PingogramBottomSheet] that opens expanded and
  * scrolls, at most `contentMaxWidth`, showing the one-time explanation ([AiConsent]) or the editor ([AiEditor]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,9 +68,10 @@ internal fun AiEditorSheet(
     state: AiEditorUiState,
     onEvent: (AiEditorEvent) -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(AiEditorEvent.Dismiss) },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState =
+            rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
         Column(
             Modifier

@@ -19,7 +19,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -62,7 +62,10 @@ internal fun CommunityAddChatsSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(CommunityEvent.DismissAddChats) }, sheetState = sheetState) {
+    PingogramBottomSheet(
+        onDismissRequest = { currentOnEvent(CommunityEvent.DismissAddChats) },
+        sheetState = sheetState,
+    ) {
         AddChatsContent(sheet, isDirect, onEvent)
     }
 }
@@ -223,10 +226,11 @@ private fun HiddenRow(
                 onValueChange = { onEvent(CommunityEvent.HiddenChanged(it)) },
             ),
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        headlineContent = { Text(stringResource(R.string.community_add_hidden)) },
         supportingContent = { Text(stringResource(R.string.community_add_hidden_text)) },
         trailingContent = { CheckSwitch(sheet.isHidden, enabled = !sheet.isSending) },
-    )
+    ) {
+        Text(stringResource(R.string.community_add_hidden))
+    }
 }
 
 /** "Cancel" at the start and "Add" ("Suggest") at the end. */

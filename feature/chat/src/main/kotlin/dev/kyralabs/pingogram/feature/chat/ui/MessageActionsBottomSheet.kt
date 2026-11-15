@@ -26,7 +26,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
@@ -39,9 +38,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -52,9 +53,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The actions of a long-pressed message (`REQUIREMENTS.md` FR-C6, FR-C7; `docs/DESIGN_SYSTEM.md` §6 "Message actions",
- * "Reactions picker"): a [ModalBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which scrolls
- * sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more; then
- * the actions as list items, reporting and deleting in `error`.
+ * "Reactions picker"): a [PingogramBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which
+ * scrolls sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more;
+ * then the actions as list items, reporting and deleting in `error`.
  *
  * - **Reactions picker** ([ReactionPickerContent]), while [MessageActionsSheet.showsPicker]: it takes the place of the
  *   quick reactions and the actions, the sheet's content crossfading on the motion scheme's default effects springs
@@ -91,7 +92,7 @@ internal fun MessageActionsBottomSheet(
     val collapse: () -> Unit =
         remember(hideThen) { { hideThen { event -> currentOnEvent(event) }(ChatEvent.CollapseReactions) } }
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             currentOnEvent(if (currentOnClose != null) ChatEvent.CollapseReactions else ChatEvent.DismissMessageActions)
         },
@@ -132,6 +133,7 @@ private fun ActionsContent(
         modifier =
             Modifier
                 .verticalScroll(rememberScrollState())
+                .testTag(MESSAGE_ACTIONS_TAG)
                 .padding(bottom = MaterialTheme.spacing.large),
     ) {
         if (sheet.reactions.isNotEmpty() || sheet.picker != null) QuickReactions(sheet, choose, onExpand)

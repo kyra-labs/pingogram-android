@@ -28,7 +28,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -66,6 +65,7 @@ import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -92,8 +92,8 @@ import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The picked photos, videos or files before they are sent (`REQUIREMENTS.md` FR-C5): a [ModalBottomSheet] with their
- * number as its title, the items, and the caption field with the send split button below.
+ * The picked photos, videos or files before they are sent (`REQUIREMENTS.md` FR-C5): a [PingogramBottomSheet] with
+ * their number as its title, the items, and the caption field with the send split button below.
  *
  * - **Photos and videos** ([AttachmentKind.Media]): a row of square thumbnails, decoded by Coil at their size, in
  *   `medium` corners; a video with its length and a play badge; an item being prepared as a [LoadingIndicator] on a
@@ -145,7 +145,7 @@ internal fun AttachPreviewSheet(
     val replace: () -> Unit = remember(hideThen) { { hideThen { currentOnEvent(ReplyEvent.SaveReplacement) } } }
     var scheduling by rememberSaveable { mutableStateOf(false) }
     var linking by remember { mutableStateOf<TextRange?>(null) }
-    ModalBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissAttachments) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissAttachments) }, sheetState = sheetState) {
         AttachPreviewContent(
             preview = preview,
             caption = caption,
@@ -283,7 +283,6 @@ private fun OriginalQualityRow(
 ) {
     val haptics = LocalHapticFeedback.current
     ListItem(
-        headlineContent = { Text(stringResource(R.string.attach_original)) },
         supportingContent = { Text(stringResource(R.string.attach_original_summary)) },
         trailingContent = {
             Switch(
@@ -307,7 +306,9 @@ private fun OriginalQualityRow(
                     )
                     onChange(checked)
                 },
-    )
+    ) {
+        Text(stringResource(R.string.attach_original))
+    }
 }
 
 /** The caption field and the send split button, which waits until every item of [preview] is ready. */

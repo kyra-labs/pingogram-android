@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageContent
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test
  * ([TdlibMessageRepository.loadAround]), newer pages after it ([TdlibMessageRepository.loadNewer]) up to the chat's
  * last message, and the newest page that replaces it ([TdlibMessageRepository.loadNewest]).
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibMessageRepositoryWindowTest {
     private val client = FakeTdlibClient()
 

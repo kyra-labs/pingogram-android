@@ -67,7 +67,7 @@ class TdlibVideoNoteRepositoryTest {
             assertFalse(File(files.thumbnail).exists())
             assertEquals(
                 listOf("video_note.mp4"),
-                video.parentFile
+                video.parentFile!!
                     .list()
                     .orEmpty()
                     .toList(),
@@ -139,7 +139,7 @@ class TdlibVideoNoteRepositoryTest {
             runCurrent()
 
             assertTrue(result is Outcome.Failure)
-            assertFalse(File(files.video).parentFile.exists())
+            assertFalse(File(files.video).parentFile!!.exists())
         }
 
     @Test
@@ -164,7 +164,7 @@ class TdlibVideoNoteRepositoryTest {
             repository().discardVideoNote(elsewhere.path)
             runCurrent()
 
-            assertFalse(File(files.video).parentFile.exists())
+            assertFalse(File(files.video).parentFile!!.exists())
             assertTrue(elsewhere.exists())
         }
 

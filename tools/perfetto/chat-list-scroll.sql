@@ -140,10 +140,13 @@ GROUP BY size, under
 ORDER BY uploads DESC
 LIMIT 20;
 
--- What the main thread's frames were for: each Choreographer#doFrame by the kinds of work under it (input, animation,
--- Compose's recompose and prefetch, traversal). Frames with a traversal but no input, animation or recompose were asked
--- for by an invalidated view or layer: a draw that keeps invalidating itself, or a state written in layout or draw.
--- Compare the counts between two builds over the same journey.
+-- What the main thread's frames were for: each Choreographer#doFrame by the kinds of work under it. Compose names its
+-- frame clock's dispatch "Recomposer:animation" (a fling, a scroll animation, any withFrameNanos) and the recomposer's
+-- loop of that frame "Recomposer:recompose", whether or not anything was invalid; a composition that did recompose
+-- applies its changes under "Compose:applyChanges". So a frame of a fling carries both Recomposer slices without having
+-- recomposed anything, and counts as "animation" here; "recompose" means a composition changed. Frames with a traversal
+-- and nothing else were asked for by an invalidated view or layer (a draw that keeps invalidating itself, or a state
+-- written in layout or draw). Compare the counts between two builds over the same journey.
 WITH frame AS (
   SELECT slice.id, slice.ts, slice.dur, slice.track_id
   FROM slice
@@ -160,20 +163,21 @@ kinds AS (
     frame.id,
     frame.dur,
     MAX(COALESCE(child.name = 'input', 0)) AS input,
-    MAX(COALESCE(child.name = 'animation', 0)) AS animation,
+    MAX(COALESCE(child.name = 'animation' OR child.name = 'Recomposer:animation', 0)) AS animation,
     MAX(COALESCE(child.name = 'traversal', 0)) AS traversal,
-    MAX(COALESCE(child.name GLOB 'Recomposer:*' OR child.name GLOB 'Compose:recompose*', 0)) AS recompose,
+    MAX(COALESCE(child.name = 'Compose:applyChanges', 0)) AS recompose,
     MAX(COALESCE(child.name GLOB '*prefetch*', 0)) AS prefetch
   FROM frame
-  LEFT JOIN slice AS child ON child.track_id = frame.track_id AND child.depth BETWEEN 1 AND 4
+  LEFT JOIN slice AS child ON child.track_id = frame.track_id AND child.depth BETWEEN 1 AND 8
     AND child.ts >= frame.ts AND child.ts < frame.ts + frame.dur
   GROUP BY frame.id
 )
 SELECT
   CASE
+    WHEN input AND recompose THEN 'input, recompose'
     WHEN input THEN 'input'
     WHEN recompose THEN 'recompose'
-    WHEN animation THEN 'animation'
+    WHEN animation THEN 'animation (a fling, no recomposition)'
     WHEN prefetch THEN 'prefetch only'
     WHEN traversal THEN 'invalidated draw or layout only'
     ELSE 'other'
@@ -183,4 +187,28 @@ SELECT
   ROUND(MAX(dur) / 1e6, 2) AS max_ms
 FROM kinds
 GROUP BY frame_for
+ORDER BY frames DESC;
+
+-- Compose's own slices inside the main thread's frames, summed: how many frames carry each and how long they take.
+-- "Compose:applyChanges" in many frames, with the JVM's ChatListRecompositionTest finding nothing recomposed while the
+-- list flings, points at something outside the chat list screen (the app's shell) or at what the test leaves out
+-- (pictures loading into rows); "Recomposer:animation" alone is the fling itself.
+SELECT
+  child.name AS slice,
+  COUNT(DISTINCT frame.id) AS frames,
+  COUNT(*) AS times,
+  ROUND(SUM(child.dur) / 1e6, 1) AS total_ms,
+  ROUND(MAX(child.dur) / 1e6, 2) AS max_ms
+FROM slice AS frame
+JOIN thread_track ON frame.track_id = thread_track.id
+JOIN thread USING (utid)
+JOIN process USING (upid)
+JOIN slice AS child ON child.track_id = frame.track_id AND child.depth > 0
+  AND child.ts >= frame.ts AND child.ts < frame.ts + frame.dur
+WHERE process.name LIKE 'dev.kyralabs.pingogram%'
+  AND thread.is_main_thread
+  AND frame.depth = 0
+  AND frame.name LIKE 'Choreographer#doFrame%'
+  AND (child.name GLOB 'Recomposer:*' OR child.name GLOB 'Compose:*' OR child.name GLOB 'compose:*')
+GROUP BY child.name
 ORDER BY frames DESC;

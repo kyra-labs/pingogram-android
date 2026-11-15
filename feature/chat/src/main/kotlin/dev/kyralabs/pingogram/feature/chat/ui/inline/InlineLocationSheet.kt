@@ -14,7 +14,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -28,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The question before the first query to an inline bot that asks for the user's location (`docs/DESIGN_SYSTEM.md` §6
- * "Inline bot location"), in the style of the Share location sheet's permission step: a [ModalBottomSheet] with the
+ * "Inline bot location"), in the style of the Share location sheet's permission step: a [PingogramBottomSheet] with the
  * question in `titleLargeEmphasized`, the location badge on `MaterialShapes.Cookie9Sided`, what is shared and when in
  * `bodyMedium` `onSurfaceVariant`, "Not now" at the start and "Share location" at the end. Where Android gives
  * Pingogram no location yet ([InlineLocationSheet.needsPermission]), "Share location" asks Android first (both location
@@ -65,7 +65,7 @@ internal fun InlineLocationBottomSheet(
     }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { answer(true) }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(InlineBotEvent.AnswerLocation(share = false)) },
         sheetState = sheetState,
     ) {

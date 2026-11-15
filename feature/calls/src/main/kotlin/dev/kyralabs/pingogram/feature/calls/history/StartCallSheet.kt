@@ -28,7 +28,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
@@ -62,6 +61,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -75,10 +75,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Start a call" (`docs/DESIGN_SYSTEM.md` §6 "Recent calls"): a [ModalBottomSheet] with "New group call" first, then
- * the user's contacts, each with a voice call button and, where the device has a camera, a video call button. A choice
- * closes it, then goes to [onChoose]; the scrim, dragging and back close it without one ([onDismiss]). The query is
- * forgotten once it closes.
+ * "Start a call" (`docs/DESIGN_SYSTEM.md` §6 "Recent calls"): a [PingogramBottomSheet] with "New group call" first,
+ * then the user's contacts, each with a voice call button and, where the device has a camera, a video call button. A
+ * choice closes it, then goes to [onChoose]; the scrim, dragging and back close it without one ([onDismiss]). The query
+ * is forgotten once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +94,7 @@ internal fun StartCallSheet(
     val scope = rememberCoroutineScope()
     val currentOnChoose by rememberUpdatedState(onChoose)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             viewModel.reset()
             currentOnDismiss()

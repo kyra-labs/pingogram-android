@@ -70,7 +70,7 @@ internal fun pollDescription(
                 }
             parts.joinToString(", ")
         }
-    val description = (bubble.content as MessageContent.Poll).description.text
+    val description = bubble.content.description.text
     return (
         listOfNotNull(pollKicker(resources, poll), description.ifEmpty { null }) +
             options +

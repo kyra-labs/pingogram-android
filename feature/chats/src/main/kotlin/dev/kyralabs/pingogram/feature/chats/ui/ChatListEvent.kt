@@ -18,6 +18,14 @@ sealed interface ChatListEvent {
         val isNearEnd: Boolean,
     ) : ChatListEvent
 
+    /**
+     * The list shows the rows of chats [chatIds] (its visible rows, reported as they change): a forum among them gets
+     * its unread topics counted ([ForumUnreadTopics]).
+     */
+    data class RowsShown(
+        val chatIds: Set<Long>,
+    ) : ChatListEvent
+
     /** "Try again" after loading the chats failed. */
     data object Retry : ChatListEvent
 
