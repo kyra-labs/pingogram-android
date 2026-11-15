@@ -86,6 +86,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   zoomed photo fades out with the screen instead. The layers crop to the moving bounds, so a photo cropped in its
  *   bubble uncrops as it grows.
  *
+ * With [onDragOut], a long press then a move drags the item's file into another app ([detectDragOutAfterLongPress]),
+ * not while the photo is zoomed in.
+ *
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a tap near the start or end side
  * ([SIDE_TAP_FRACTION] of the width, mirrored right to left) calls [onSideTap] instead, with whether it was the end
  * side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap only where it
@@ -104,6 +107,8 @@ internal fun MediaPage(
     zoom: ZoomState? = null,
     onSideTap: ((end: Boolean) -> Unit)? = null,
     onHold: ((held: Boolean) -> Unit)? = null,
+    onCancelStream: (() -> Unit)? = null,
+    onDragOut: (() -> Boolean)? = null,
 ) {
     val media = item.media
     val zoomState = zoom?.takeIf { media is ViewerMedia.Image && !item.isHidden }
@@ -112,7 +117,7 @@ internal fun MediaPage(
         modifier
             .fillMaxSize()
             .then(if (playing) Modifier.keepScreenOn() else Modifier)
-            .pageGestures(zoomState, onTap, onSideTap, onHold),
+            .pageGestures(zoomState, onTap, onSideTap, onHold, onDragOut),
     ) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
         val fitted = fittedSize(media.width, media.height, container)
@@ -138,7 +143,11 @@ internal fun MediaPage(
                 PlayButton(onPlay, Modifier.align(Alignment.Center))
             }
 
-            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
+            // A video in the player streams until its first frame: what came of it, then the seek bar shows it.
+            playback != null && media is ViewerMedia.Clip && !playback.showsFrame -> {
+                StreamingStatus(media.fileId, files[media.fileId], onCancelStream, Modifier.align(Alignment.Center))
+            }
+
             playback?.showsFrame != true -> {
                 DownloadProgress(media.fileId, files[media.fileId], Modifier.align(Alignment.Center))
             }
@@ -149,7 +158,7 @@ internal fun MediaPage(
 /**
  * Taps ([onTap], or [onSideTap] near a side) and, with [zoom], double taps that zoom around the tap and pinches
  * ([detectZoomGestures]). The taps are outside the pinch, so they see the moves the pinch consumed and take no pan for
- * a tap.
+ * a tap. With [onDragOut], a long press then a move drags the file out ([detectDragOutAfterLongPress]).
  */
 @Composable
 private fun Modifier.pageGestures(
@@ -157,14 +166,29 @@ private fun Modifier.pageGestures(
     onTap: () -> Unit,
     onSideTap: ((end: Boolean) -> Unit)?,
     onHold: ((held: Boolean) -> Unit)?,
+    onDragOut: (() -> Boolean)?,
 ): Modifier {
     val scope = rememberCoroutineScope()
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnSideTap by rememberUpdatedState(onSideTap)
     val currentOnHold by rememberUpdatedState(onHold)
+    val currentOnDragOut by rememberUpdatedState(onDragOut)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val holds = onHold != null
+    val pinches = if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier
+    // It consumes on the initial pass, before the taps and pinches see the move, wherever it sits in the chain.
+    val drags =
+        if (onDragOut == null) {
+            Modifier
+        } else {
+            Modifier.pointerInput(zoom) {
+                detectDragOutAfterLongPress(
+                    canStart = { zoom?.isZoomed != true },
+                    onDragOut = { currentOnDragOut?.invoke() == true },
+                )
+            }
+        }
     return pointerInput(zoom, rtl, holds) {
         val holdAfter = viewConfiguration.longPressTimeoutMillis
         detectTapGestures(
@@ -188,7 +212,7 @@ private fun Modifier.pageGestures(
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
-    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier)
+    }.then(pinches.then(drags))
 }
 
 /** Scaled and moved as [zoom] says, in the draw phase; unchanged without one. */

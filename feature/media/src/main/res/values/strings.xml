@@ -26,8 +26,16 @@
     <string name="media_pause">Pause</string>
     <string name="media_picture_in_picture">Picture-in-picture</string>
     <string name="media_pip_video">Video in picture-in-picture</string>
+    <!-- A video playing as it loads, until its first frame shows: how much of it came. -->
+    <!-- The button inside a streaming video's ring that stops it loading (board 25). -->
+    <string name="media_streaming_cancel">Stop loading</string>
+    <string name="media_streaming">Streaming · %1$s</string>
+    <!-- Under it: how much came of the whole file. -->
+    <string name="media_streaming_sizes">%1$s of %2$s · plays as it loads</string>
     <!-- The seek bar's value for screen readers: the time played, then the length. -->
     <string name="media_seek_state">%1$s of %2$s</string>
+    <!-- The one-time hint after the viewer's controls were hidden by a tap. -->
+    <string name="media_controls_hint">Tap to show controls</string>
     <string name="media_back_10">Back 10 seconds</string>
     <string name="media_forward_10">Forward 10 seconds</string>
     <string name="media_mute">Mute</string>
@@ -82,6 +90,10 @@
     <string name="media_copy_pending">Preparing to copy</string>
     <!-- The clipboard's label of a copied photo -->
     <string name="media_copy_label">Photo</string>
+    <!-- What a photo, video or GIF dragged out of the viewer into another app shows on its shadow. -->
+    <string name="media_drag_photo">Photo</string>
+    <string name="media_drag_video">Video</string>
+    <string name="media_drag_gif">GIF</string>
     <string name="media_copied">Photo copied</string>
     <string name="media_copy_failed">This photo can\'t be copied</string>
     <!-- The confirmation before the shown photo, video or GIF is deleted -->

@@ -195,6 +195,26 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `on this phone stays hidden while no tool has a row there`() {
+        val groups = HomeGroups.map { if (it === OnThisPhoneGroup) HomeGroup(it.title, emptyList(), it.footer) else it }
+        composeRule.setContent {
+            PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
+                Column {
+                    SettingsHomeGroups(
+                        summaries = SettingsPreviewData.homeSummaries,
+                        onOpen = {},
+                        selection = null,
+                        groups = groups,
+                    )
+                }
+            }
+        }
+
+        composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone))).assertCountEquals(0)
+        composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone_footer))).assertCountEquals(0)
+    }
+
+    @Test
     fun `on this phone lists reminders with how many are to come, and opens them`() {
         show(summaries = SettingsPreviewData.homeSummaries.copy(upcomingReminders = 3))
 
@@ -213,6 +233,15 @@ class SettingsHomeTest {
         composeRule.onNode(hasText(string(R.string.settings_keyword_alerts)) and hasClickAction()).performClick()
 
         assertEquals(listOf(SettingsPage.KeywordAlerts), opened)
+    }
+
+    @Test
+    fun `focus is on this phone`() {
+        show()
+
+        composeRule.onNodeWithText(string(R.string.settings_focus)).performClick()
+
+        assertEquals(listOf(SettingsPage.Focus), opened)
     }
 
     @Test

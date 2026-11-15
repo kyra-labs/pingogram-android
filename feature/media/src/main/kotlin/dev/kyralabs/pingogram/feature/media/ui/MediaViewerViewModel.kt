@@ -365,7 +365,9 @@ class MediaViewerViewModel internal constructor(
             }
 
             MediaViewerEvent.PlayPause, is MediaViewerEvent.HoldLivePhoto, is MediaViewerEvent.Seek,
-            is MediaViewerEvent.SeekBy, is MediaViewerEvent.SetMuted,
+            is MediaViewerEvent.SeekBy, is MediaViewerEvent.SetMuted, MediaViewerEvent.CancelStream,
+            // ControlsHidden is ControlsHintViewModel's, which the route hands it: nothing here.
+            MediaViewerEvent.ControlsHidden,
             -> {
                 onPlaybackEvent(event)
             }
@@ -482,6 +484,10 @@ class MediaViewerViewModel internal constructor(
 
             is MediaViewerEvent.SeekBy -> {
                 playback.seekBy(event.seconds)
+            }
+
+            MediaViewerEvent.CancelStream -> {
+                playback.cancelStream()
             }
 
             is MediaViewerEvent.SetMuted -> {

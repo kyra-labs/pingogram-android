@@ -1,8 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.drop
 
-import android.content.ClipData
 import android.content.res.Resources
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -13,7 +11,9 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
-import dev.kyralabs.pingogram.core.ui.file.tdlibFileUri
+import dev.kyralabs.pingogram.core.ui.file.DraggedFile
+import dev.kyralabs.pingogram.core.ui.file.rememberDragShadowStyle
+import dev.kyralabs.pingogram.core.ui.file.startFileDrag
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
@@ -86,8 +86,8 @@ private fun MessageContent.draggableFile(): Pair<Int, DragOutFile>? =
 /**
  * Drags a bubble's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop", the owner's board 35c): a long
  * press lifts the message for its actions, and moving the finger on starts Android's drag between apps with the
- * files' `content://` URIs and a read grant for them alone ([View.DRAG_FLAG_GLOBAL_URI_READ]), then closes the
- * actions. [start] answers whether a drag started; a message without such files keeps its actions open.
+ * files ([startFileDrag]), then closes the actions. [start] answers whether a drag started; a message without such
+ * files keeps its actions open.
  */
 @Stable
 internal class MessageDragOut(
@@ -118,7 +118,10 @@ internal fun rememberMessageDragOut(
     return remember(view, resources, shadow) {
         MessageDragOut(
             files = { messageId -> currentState.dragOutFiles(messageId) },
-            drag = { files -> view.startFileDrag(files, dragLabel(resources, files), shadow) },
+            drag = { files ->
+                val dragged = files.map { DraggedFile(it.path, it.mimeType) }
+                view.startFileDrag(dragged, dragLabel(resources, files), shadow)
+            },
             onStarted = { currentOnEvent(ChatEvent.DismissMessageActions) },
         )
     }
@@ -139,20 +142,6 @@ internal fun dragLabel(
     }
 }
 
-private fun View.startFileDrag(
-    files: List<DragOutFile>,
-    label: String,
-    shadow: DragShadowStyle,
-): Boolean {
-    val uris = files.mapNotNull { file -> context.tdlibFileUri(file.path)?.let { it to file.mimeType } }
-    if (uris.isEmpty()) return false
-    val types = uris.map { it.second }.distinct().toTypedArray()
-    val clip = ClipData(label, types, ClipData.Item(uris.first().first))
-    uris.drop(1).forEach { (uri, _) -> clip.addItem(ClipData.Item(uri)) }
-    return startDragAndDrop(clip, FileDragShadow(label, shadow), null, DRAG_FLAGS)
-}
-
-private const val DRAG_FLAGS = View.DRAG_FLAG_GLOBAL or View.DRAG_FLAG_GLOBAL_URI_READ
 private const val PHOTO_TYPE = "image/jpeg"
 private const val VIDEO_TYPE = "video/mp4"
 private const val GENERIC_TYPE = "application/octet-stream"

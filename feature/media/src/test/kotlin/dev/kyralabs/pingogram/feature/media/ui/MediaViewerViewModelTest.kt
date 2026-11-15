@@ -725,6 +725,34 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
+        fun `stopping a stream before its first frame takes it out of the player until a tap`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+
+                send(viewModel, MediaViewerEvent.CancelStream)
+                assertEquals(listOf("play:$videoPath:Video", "stop"), player.calls)
+                assertEquals(true, viewModel.content.playback!!.waitsForTap)
+                send(viewModel, MediaViewerEvent.Stopped, MediaViewerEvent.Started)
+                assertEquals(true, viewModel.content.playback!!.waitsForTap)
+
+                send(viewModel, MediaViewerEvent.PlayPause)
+                assertEquals("play:$videoPath:Video", player.calls.last())
+                assertEquals(false, viewModel.content.playback!!.waitsForTap)
+            }
+
+        @Test
+        fun `a video showing its frames is not stopped as a stream`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+                player.renderFirstFrame()
+
+                send(viewModel, MediaViewerEvent.CancelStream)
+
+                assertEquals(listOf("play:$videoPath:Video"), player.calls)
+                assertEquals(true, viewModel.content.playback!!.isPlaying)
+            }
+
+        @Test
         fun `mute takes the video's sound away and gives it back, shown in the state`() =
             runViewModelTest {
                 val viewModel = playingVideo()

@@ -94,6 +94,15 @@ class MediaViewerScreenTest {
     // Pages
 
     @Test
+    fun `a streaming video's ring has a button that stops it loading`() {
+        setScreen(MediaPreviewData.videoStreaming)
+
+        composeRule.onNodeWithContentDescription(string(R.string.media_streaming_cancel)).performClick()
+
+        assertEquals(MediaViewerEvent.CancelStream, events.last())
+    }
+
+    @Test
     fun `the pager starts on the current item`() {
         setScreen()
 

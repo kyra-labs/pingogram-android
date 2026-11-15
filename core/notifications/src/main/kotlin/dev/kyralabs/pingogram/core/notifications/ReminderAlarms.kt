@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -79,10 +80,15 @@ class ReminderAlarms internal constructor(
         current.filter { it.slot !in followed }.forEach { account ->
             followed[account.slot] =
                 scope.launch {
-                    account.reminders.collect { reminders ->
-                        val now = clock.now()
-                        work.sync(account.slot, reminders.filter { !it.isDone && it.at.isAfter(now) })
-                    }
+                    account.reminders
+                        .map { reminders ->
+                            val now = clock.now()
+                            reminders.filter { !it.isDone && it.at.isAfter(now) }
+                        }
+                        // Nothing to schedule or cancel while an account never had a reminder to ring: WorkManager
+                        // stays unstarted (its work of an earlier process checks its reminder before it rings).
+                        .dropWhile { it.isEmpty() }
+                        .collect { upcoming -> work.sync(account.slot, upcoming) }
                 }
         }
     }

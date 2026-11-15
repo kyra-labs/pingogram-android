@@ -169,6 +169,13 @@ internal object MediaPreviewData {
                 ),
         )
 
+    /** The video playing as it loads, a third of its 54 MB on the device, before its first frame (board 25). */
+    val videoStreaming: MediaViewerUiState.Content =
+        video.copy(
+            files = persistentMapOf(21 to FileState.Downloading(18_000_000, 54_000_000, isActive = true)),
+            playback = VideoPlayback(VIDEO, isPlaying = true, showsFrame = false, progress = { 0f }, canHandOff = true),
+        )
+
     /** The video while power saving keeps it from playing by itself: its play button waits for a tap. */
     val videoWaitingForTap: MediaViewerUiState.Content =
         video.copy(

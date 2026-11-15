@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
+  until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
   muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
@@ -27,11 +31,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
-  notifications still show, silently. The pages to set them up follow.
+  notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
+  starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
+  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring. While one is on,
+  the Chats header shows it ("Focus: Work hours · until 6:00 PM"); a tap opens a switcher to change the profile, turn
+  Focus off, or keep it on until the schedule ends, for an hour or until turned off. The page's "Show Focus in the chat
+  list header" hides it.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.
 - Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
   chats that protect their content.
+- The same works in the media viewer: long-press the photo, video or GIF and keep moving to drag it into another app.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and

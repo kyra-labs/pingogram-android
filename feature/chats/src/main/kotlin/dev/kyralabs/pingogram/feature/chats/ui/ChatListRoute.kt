@@ -23,6 +23,12 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
+import dev.kyralabs.pingogram.feature.chats.ui.focus.ChatListFocus
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchEffects
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchEvent
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitcherHost
+import dev.kyralabs.pingogram.feature.chats.ui.focus.LocalChatListFocus
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsUiState
@@ -59,6 +65,7 @@ internal fun ChatListRoute(
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
+    focusSwitch: FocusSwitchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Read by the header alone: a count changing recomposes nothing else.
@@ -91,18 +98,28 @@ internal fun ChatListRoute(
             onClose = { uploadShown = false },
         )
     }
-    ChatListDestination(
-        state = state,
-        viewModel = viewModel,
-        navigation = ChatListNavigation(onOpenArchive, onOpenChat, onOpenNewChat, onBack = {}),
-        modifier = modifier,
-        openChatId = openChatId,
-        header = { NotificationPromptHost() },
-        stories = stories.takeIf { hasStories },
-        onEditFolder = onEditFolder,
-        summary = { summary.value },
-        headerActions = headerActions,
-    )
+    // Read by the header's pill and the switcher alone.
+    val focusState = focusSwitch.uiState.collectAsStateWithLifecycle()
+    val focus =
+        remember(focusSwitch, focusState) {
+            ChatListFocus(pill = { focusState.value.pill }, onOpen = { focusSwitch.onEvent(FocusSwitchEvent.Open) })
+        }
+    FocusSwitcherHost(focusState, focusSwitch::onEvent, onManage = { headerActions?.openFocus?.invoke() })
+    CompositionLocalProvider(LocalChatListFocus provides focus) {
+        ChatListDestination(
+            state = state,
+            viewModel = viewModel,
+            navigation = ChatListNavigation(onOpenArchive, onOpenChat, onOpenNewChat, onBack = {}),
+            modifier = modifier,
+            openChatId = openChatId,
+            header = { NotificationPromptHost() },
+            stories = stories.takeIf { hasStories },
+            onEditFolder = onEditFolder,
+            summary = { summary.value },
+            headerActions = headerActions,
+            moreEffects = { snackbarHostState -> FocusSwitchEffects(focusSwitch.effects, snackbarHostState) },
+        )
+    }
 }
 
 /**
@@ -155,9 +172,11 @@ private fun ChatListDestination(
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     summary: () -> ChatListSummary = { ChatListSummary() },
     headerActions: ChatListHeaderActions? = null,
+    moreEffects: @Composable (SnackbarHostState) -> Unit = {},
     swipesViewModel: ChatSwipesViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    moreEffects(snackbarHostState)
     val swipes by swipesViewModel.swipes.collectAsStateWithLifecycle()
     // The folders beside the one shown, which only a swipe of the list shows: mapped only while that swipe is on.
     val neighbourLists =
