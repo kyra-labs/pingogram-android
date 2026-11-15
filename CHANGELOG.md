@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
