@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
+- Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
+  chats that protect their content.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or

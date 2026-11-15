@@ -485,6 +485,10 @@
     <string name="reminder_deleted">Reminder deleted</string>
     <!-- A reminder's day and time: "Sun, 9:00 AM". -->
     <string name="reminder_day_time">%1$s, %2$s</string>
+    <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
+    <string name="drop_title">Drop to send to %1$s</string>
+    <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
+    <string name="drop_files">Files. You can add a caption before sending.</string>
     <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
     <string name="bookmark_title">Bookmark</string>
     <string name="bookmark_tags">Tags</string>
