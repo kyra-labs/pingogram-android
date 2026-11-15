@@ -94,7 +94,7 @@ class ChatRecompositionTest {
                     item
                 }
             }
-        setScreen(group.copy(content = (group.content as ChatContent.Content).copy(items = items.toImmutableList())))
+        setScreen(group.copy(content = group.content.copy(items = items.toImmutableList())))
 
         repeat(SCROLL_FRAMES) {
             composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
