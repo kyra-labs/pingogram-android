@@ -152,7 +152,7 @@ import kotlinx.collections.immutable.toImmutableList
  *   ([reportComment]).
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
- *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ *   opens the page of them all (`PinnedMessagesRoute`, through the route's `LocalPinnedMessagesLauncher`).
  * - **Translation** (`REQUIREMENTS.md` FR-C3): where Telegram suggests translating the chat, the translate bar sits
  *   below the pinned messages bar ([TranslateBarSlot]); translated bubbles show the translation with its label in the
  *   meta, and "Translate" or "Show original" are among a message's actions.

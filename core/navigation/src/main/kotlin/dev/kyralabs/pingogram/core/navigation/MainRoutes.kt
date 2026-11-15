@@ -525,6 +525,23 @@ data class ScheduledMessagesRoute(
 )
 
 /**
+ * Every pinned message of chat [chatId] (of its forum topic [topicId], message thread [threadId], Saved Messages topic
+ * [savedTopicId] or direct messages topic [directTopicId], if one is given),
+ * `:feature:chat`: pushed above the conversation whose pinned bar's "All pinned messages" opens it, with the shared
+ * axis
+ * on X, newest first under their months, filtered and searched on the device, each to jump to, copy or unpin
+ * (`docs/DESIGN_SYSTEM.md` §6 "Pinned messages bar").
+ */
+@Serializable
+data class PinnedMessagesRoute(
+    val chatId: Long,
+    val topicId: Int? = null,
+    val threadId: Long? = null,
+    val savedTopicId: Long? = null,
+    val directTopicId: Long? = null,
+)
+
+/**
  * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
  * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
  * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a

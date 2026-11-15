@@ -15,6 +15,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
+- "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
+  photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
+  (Unpin all from its menu).
 
 ### Fixed
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,

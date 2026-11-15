@@ -46,6 +46,19 @@ class TdlibPinnedMessageRepositoryTest {
         }
 
     @Test
+    fun `the page's flow says why a load failed, and the bar's reads it as none`() =
+        runTest {
+            client.on(TdApi.SearchChatMessages::class, TdResult.Failure(TdError(500, "Network")))
+
+            repository.pinnedMessagesOrError(CHAT).test {
+                assertTrue(awaitItem() is Outcome.Failure)
+            }
+            repository.pinnedMessages(CHAT).test {
+                assertEquals(emptyList<Long>(), awaitItem().map { it.id })
+            }
+        }
+
+    @Test
     fun `adds a message pinned later, fetched from TDLib, and removes one unpinned`() =
         runTest {
             answerPinned(3)

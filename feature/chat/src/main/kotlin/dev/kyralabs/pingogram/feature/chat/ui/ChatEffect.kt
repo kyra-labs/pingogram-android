@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
@@ -114,6 +115,11 @@ sealed interface ChatEffect {
 
     /** What was picked for a poll's media is no photo, which polls take: a snackbar says so. */
     data object PollPhotoOnly : ChatEffect
+
+    /** Open the page of every pinned message of the conversation, [route] (`LocalPinnedMessagesLauncher`). */
+    data class OpenPinnedMessages(
+        val route: PinnedMessagesRoute,
+    ) : ChatEffect
 
     /** Open the statistics of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
     data class OpenPollStatistics(

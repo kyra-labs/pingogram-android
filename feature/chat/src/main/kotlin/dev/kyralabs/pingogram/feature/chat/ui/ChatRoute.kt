@@ -58,7 +58,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsVi
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialog
@@ -340,6 +340,7 @@ internal fun ChatEffects(
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     val haptics = LocalHapticFeedback.current
     val openPollStatistics by rememberUpdatedState(LocalPollStatisticsLauncher.current)
+    val openPinnedMessages by rememberUpdatedState(LocalPinnedMessagesLauncher.current)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -377,6 +378,11 @@ internal fun ChatEffects(
                     is ChatEffect.CopyText -> {
                         context.copyText(effect.text)
                         copiedNotice(resources)
+                    }
+
+                    is ChatEffect.OpenPinnedMessages -> {
+                        openPinnedMessages?.invoke(effect.route)
+                        ""
                     }
 
                     is ChatEffect.OpenPollStatistics -> {

@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
@@ -14,7 +16,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -28,19 +29,18 @@ import org.junit.jupiter.api.Test
 
 /**
  * The pinned messages bar of [ChatViewModel] (`REQUIREMENTS.md` FR-C9): what it shows, following the messages on screen
- * and cycling through the pins as its taps show each in the list, unpinning or hiding, and the sheet of every pinned
- * message.
+ * and cycling through the pins as its taps show each in the list, unpinning or hiding, and the page of every pinned
+ * message it opens and jumps from.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatPinnedMessagesTest : ChatViewModelHarness() {
     private val messagesOfAda = (1L..5L).map { message(it) }
 
-    /** The private chat with Ada, messages 1–5 loaded, [pinned] of them pinned, its sheet collected. */
+    /** The private chat with Ada, messages 1–5 loaded, [pinned] of them pinned. */
     private fun TestScope.pinning(vararg pinned: Long): ChatViewModel {
         users.setUsers(user(ADA, firstName = "Ada", lastName = "Lovelace"))
         pinnedMessages.setPinned(PRIVATE_CHAT, *messagesOfAda.filter { it.id in pinned }.toTypedArray())
         val viewModel = showing(chat(), history(*messagesOfAda.toTypedArray()))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.pinnedSheet.collect {} }
         runCurrent()
         return viewModel
     }
@@ -199,31 +199,39 @@ class ChatPinnedMessagesTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `the sheet lists every pinned message oldest first, and a tapped one shows in the list and in the bar`() =
+    fun `the list button opens the page of the conversation's pinned messages`() =
         runViewModelTest {
             val viewModel = pinning(1, 2, 4)
-            assertNull(viewModel.pinnedSheet.value)
 
-            send(viewModel, PinnedEvent.OpenList)
-            val sheet = checkNotNull(viewModel.pinnedSheet.value)
-            assertEquals(listOf(1L, 2L, 4L), sheet.rows.map { it.messageId })
-            assertEquals(4L, sheet.shownId)
-
-            send(viewModel, PinnedEvent.ShowFromList(1))
-            assertNull(viewModel.pinnedSheet.value)
-            assertEquals(AnchorTarget.Message(1), viewModel.anchor.target)
-            assertEquals(listOf<Any>(1L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
+            viewModel.effects.test {
+                send(viewModel, PinnedEvent.OpenList)
+                assertEquals(ChatEffect.OpenPinnedMessages(PinnedMessagesRoute(PRIVATE_CHAT)), awaitItem())
+            }
         }
 
     @Test
-    fun `dismissing the sheet closes it`() =
+    fun `a message the page jumps to shows in the list and in the bar, once`() =
         runViewModelTest {
-            val viewModel = pinning(4)
-            send(viewModel, PinnedEvent.OpenList)
+            val viewModel = pinning(1, 2, 4)
 
-            send(viewModel, PinnedEvent.DismissList)
+            pinnedJumps.request(PRIVATE_CHAT, null, 1)
+            runCurrent()
 
-            assertEquals(null as PinnedSheet?, viewModel.pinnedSheet.value)
+            assertEquals(AnchorTarget.Message(1), viewModel.anchor.target)
+            assertEquals(listOf<Any>(1L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
+            assertNull(pinnedJumps.take(PRIVATE_CHAT, null))
+        }
+
+    @Test
+    fun `a jump for another chat or topic is left for its conversation`() =
+        runViewModelTest {
+            val viewModel = pinning(1, 2, 4)
+
+            pinnedJumps.request(PRIVATE_CHAT, MessageTopic.Thread(9), 1)
+            runCurrent()
+
+            assertEquals(4L, viewModel.bar?.messageId)
+            assertEquals(1L, pinnedJumps.take(PRIVATE_CHAT, MessageTopic.Thread(9)))
         }
 
     @Test
