@@ -37,6 +37,8 @@ sealed interface CatchUpStage {
         val minutesLeft: Int,
         val current: CatchUpCard,
         val next: CatchUpCard? = null,
+        /** The reply field on [current]'s card, while it shows. */
+        val reply: CatchUpReplyState? = null,
     ) : CatchUpStage
 
     /**
@@ -68,6 +70,14 @@ data class CatchUpCard(
     val since: String?,
     val messages: ImmutableList<CatchUpMessage>? = persistentListOf(),
     val earlierCount: Int = 0,
+    /** What "Reply" answers: the newest message that mentions the user, else the newest unread one. */
+    val replyTo: CatchUpMessage? = null,
+)
+
+/** The reply field on a card: [isSending] while Telegram takes the reply. */
+@Immutable
+data class CatchUpReplyState(
+    val isSending: Boolean = false,
 )
 
 /** A message on a card: who sent it (null in a private chat or a channel), what it says in one line, and when. */
@@ -89,6 +99,17 @@ sealed interface CatchUpEvent {
 
     /** "Open chat": the shown chat's conversation opens; it counts as read once the conversation read it. */
     data object OpenChat : CatchUpEvent
+
+    /** "Reply": the card shows the reply field. */
+    data object Reply : CatchUpEvent
+
+    /** Closes the reply field. */
+    data object CancelReply : CatchUpEvent
+
+    /** "Send and go to next": [text] goes to the shown chat in reply, which then counts as read and replied. */
+    data class SendReply(
+        val text: String,
+    ) : CatchUpEvent
 
     /** "N earlier messages": the card shows the older unread messages loaded too. */
     data object ShowEarlier : CatchUpEvent
