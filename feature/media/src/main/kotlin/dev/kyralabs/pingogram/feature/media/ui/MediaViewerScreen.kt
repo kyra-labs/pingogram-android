@@ -347,10 +347,12 @@ private fun MediaPager(
         val pageZoom = zoom.takeIf { isShown && item.media is ViewerMedia.Image && !item.isHidden }
         val onTap = if (item.isHidden) ({ onEvent(MediaViewerEvent.RevealSpoiler(item.messageId)) }) else chrome::toggle
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
+        val playback = content.playback?.takeIf { it.messageId == item.messageId }
+        val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
         MediaPage(
             item = item,
             files = content.files,
-            playback = content.playback?.takeIf { it.messageId == item.messageId },
+            playback = playback,
             onTap = onTap,
             onPlay = { onEvent(MediaViewerEvent.PlayPause) },
             videoSurface = videoSurface,
@@ -372,13 +374,21 @@ private fun MediaPager(
                             pageZoom,
                             isShown && zoomed,
                             scope,
+                            LiveActions(playing = playback != null, onHold).takeIf { item.isLivePhoto },
                         ) { pagerState.animateScrollToPage(it, animationSpec = turn) },
                     onTap = onTap,
                 ),
             zoom = pageZoom,
+            onHold = onHold.takeIf { item.isLivePhoto },
         )
     }
 }
+
+/** A live photo's custom actions: "Play live photo", or "Stop live photo" while it [playing], through [hold]. */
+private class LiveActions(
+    val playing: Boolean,
+    val hold: (held: Boolean) -> Unit,
+)
 
 /** Page [index] of [count], showing [item] at [position] among the chat's media (null while unknown). */
 private class PageInfo(
@@ -421,15 +431,17 @@ private fun Modifier.pageSemantics(
 
 /**
  * The custom actions of a page for screen readers, built from the resources when the semantics are read: turn to the
- * older and newer page ([turn], in [scope]), and zoom the photo in and out with [zoom], on the motion scheme's default
- * spatial spring; out only while [zoomed] in.
+ * older and newer page ([turn], in [scope]), zoom the photo in and out with [zoom], on the motion scheme's default
+ * spatial spring (out only while [zoomed] in), and play or stop a live photo ([live]).
  */
+@Suppress("LongParameterList") // The page, its zoom, its live photo, and how to turn pages.
 @Composable
 private fun pageActions(
     page: PageInfo,
     zoom: ZoomState?,
     zoomed: Boolean,
     scope: CoroutineScope,
+    live: LiveActions?,
     turn: suspend (page: Int) -> Unit,
 ): (Resources) -> List<CustomAccessibilityAction> {
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
@@ -447,6 +459,15 @@ private fun pageActions(
                 .takeIf { page.index < page.count - 1 },
             zoom?.let { action(R.string.media_zoom_in) { it.step(ZOOM_STEP, spec, scope) } },
             zoom?.takeIf { zoomed }?.let { action(R.string.media_zoom_out) { it.step(1 / ZOOM_STEP, spec, scope) } },
+            live?.let {
+                if (it.playing) {
+                    action(R.string.media_live_stop) {
+                        it.hold(false)
+                    }
+                } else {
+                    action(R.string.media_live_play) { it.hold(true) }
+                }
+            },
         )
     }
 }
@@ -459,7 +480,7 @@ private fun pageDescription(
 ): String {
     val kind =
         when (item.media) {
-            is ViewerMedia.Image -> UiR.string.preview_photo
+            is ViewerMedia.Image -> if (item.isLivePhoto) R.string.media_live_photo else UiR.string.preview_photo
             is ViewerMedia.Clip -> UiR.string.preview_video
             is ViewerMedia.Gif -> UiR.string.preview_gif
         }

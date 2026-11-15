@@ -50,7 +50,8 @@ import java.text.NumberFormat
 
 /**
  * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
- * rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]), which Enter sends on a
+ * rows of the Chat appearance page, of Double-tap to react, of Chats shown first and of voice message transcription
+ * ([pages]), which Enter sends on a
  * hardware and on the on-screen keyboard, and raise to listen.
  */
 @Composable
@@ -80,6 +81,7 @@ internal fun ChatsGroup(
                 onClick = pages.onOpenShownFirst,
             )
         }
+        item { shapes -> TranscriptionItem(shapes, pages.onOpenTranscription) }
         item { shapes -> HardwareEnterItem(chats.sendKeys, shapes, onEvent) }
         item { shapes ->
             SwitchItem(
@@ -115,6 +117,21 @@ internal fun ChatsGroup(
             }
         }
     }
+}
+
+/** "Voice message transcription", which opens its page. */
+@Composable
+private fun TranscriptionItem(
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+) {
+    SettingsRow(
+        title = stringResource(R.string.settings_transcription),
+        shapes = shapes,
+        supportingContent = { Text(stringResource(R.string.settings_transcription_summary)) },
+        onClick = onClick,
+        opensPage = true,
+    )
 }
 
 /** "Send with Enter on a keyboard", its summary saying which keys send and which start a line. */

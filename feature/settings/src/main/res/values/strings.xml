@@ -1574,4 +1574,24 @@
     <string name="settings_profile_color_cyan">Cyan</string>
     <string name="settings_profile_color_blue">Blue</string>
     <string name="settings_profile_color_pink">Pink</string>
+    <!-- Voice message transcription (docs/DESIGN_SYSTEM.md §6, board 28d): the row in Appearance → Chats and its page. -->
+    <string name="settings_transcription">Voice message transcription</string>
+    <string name="settings_transcription_summary">Text of voice and round video messages, made on this phone</string>
+    <string name="settings_transcription_loading">Loading transcription settings</string>
+    <string name="settings_transcription_section_messages">Voice and round video messages</string>
+    <string name="settings_transcription_automatic">Transcribe voice messages automatically</string>
+    <string name="settings_transcription_automatic_summary">Text appears under every voice and round video message you receive</string>
+    <string name="settings_transcription_privacy_title">Uses Android’s own speech recognition, on this phone</string>
+    <string name="settings_transcription_privacy">Pingogram bundles no model, asks for no new permission and sends nothing anywhere. Works offline.</string>
+    <string name="settings_transcription_section_languages">Languages on this phone</string>
+    <string name="settings_transcription_language_ready">Ready</string>
+    <string name="settings_transcription_language_downloading">Downloading</string>
+    <string name="settings_transcription_language_not_on_device">Not available on this device</string>
+    <string name="settings_transcription_no_languages">Android lists no speech languages yet</string>
+    <string name="settings_transcription_language_settings">Android language settings</string>
+    <string name="settings_transcription_language_settings_summary">Android downloads and manages speech languages</string>
+    <string name="settings_transcription_footer">Needs Android 13 or newer; on older versions the Transcribe button isn’t shown. Telegram also offers transcription on its servers for Telegram Premium accounts. That’s separate.</string>
+    <string name="settings_transcription_unavailable">This phone can’t transcribe</string>
+    <string name="settings_transcription_unavailable_summary">Transcription needs Android 13 or newer with Android’s own speech recognition.</string>
+    <string name="settings_transcription_no_page">This phone has no page for speech languages</string>
 </resources>

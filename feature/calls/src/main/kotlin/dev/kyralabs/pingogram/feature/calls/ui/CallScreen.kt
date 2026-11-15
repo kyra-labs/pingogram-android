@@ -518,7 +518,6 @@ private fun CallTopBar(
             Modifier.align(Alignment.CenterEnd),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
-            if (state.canAddPeople) AddPeopleButton({ onEvent(CallEvent.OpenAddPeople) }, overlay = overlay)
             if (offered) {
                 ShareScreenButton(
                     sharing = state.video.isSharingScreen,
@@ -1183,7 +1182,8 @@ private fun rememberTouchExploration(): Boolean {
 
 /**
  * The call's controls on a `surfaceContainerHigh` panel, docked to the window's bottom with `extraLarge` top corners (a
- * card of its own in landscape): mute, the audio route and hold as labelled toggle buttons, then a wide hang-up pill.
+ * card of its own in landscape): mute, the audio route and the camera as labelled toggle buttons, then More with hold
+ * and "Add people" ([CallMoreButton]; board 27), then a wide hang-up pill.
  */
 @Composable
 private fun CallControlsPanel(
@@ -1230,14 +1230,7 @@ private fun CallControlsPanel(
                         ) { onEvent(CallEvent.ToggleCamera) }
                     }
                 }
-                LabeledButton(R.string.call_hold) {
-                    Toggle(
-                        checked = state.isOnHold,
-                        icon = UiR.drawable.ic_pause_filled,
-                        label = R.string.call_hold,
-                        enabled = canHold,
-                    ) { onEvent(CallEvent.ToggleHold) }
-                }
+                CallMoreButton(state.isOnHold, canHold, state.canAddPeople, onEvent)
             }
             Spacer(Modifier.height(MaterialTheme.spacing.extraLarge))
             HangUpButton { onEvent(CallEvent.HangUp) }
