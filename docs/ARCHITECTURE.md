@@ -825,8 +825,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   count). `recentTopics` gives a forum's loaded topics, the newest message first, from which the chat list counts the
   topics with unread messages for its badge (owner decision 2026-11-15): its first page, then pages of 100 until the
   loaded topics hold the chat's unread messages (a read topic can come before unread ones), at most five more; the
-  chat list's `ForumUnreadTopics` (a part of `ChatListViewModel`) asks only for the forums its rows showed
-  (`ChatListEvent.RowsShown`) while they have unread messages, and hands each its chat's unread count. `feature:chat`: `ChatRoute` decides what a chat opens to (`ChatOpeningViewModel`: a supergroup's `isForum` from
+  chat list's `ForumRowTopics` (a part of `ChatListViewModel`) asks only for the forums its rows showed
+  (`ChatListEvent.RowsShown`), hands each its chat's unread count, and gives the rows the count and the five newest
+  topics, which a forum's row names above its preview (`ForumRowPreview`, owner decision 2026-11-15). `feature:chat`: `ChatRoute` decides what a chat opens to (`ChatOpeningViewModel`: a supergroup's `isForum` from
   `GroupRepository`), drawing the conversation's first frame meanwhile: the conversation (`ConversationRoute`), a
   forum's topic list (`ForumTopicsRoute`, `ForumTopicsViewModel`), or for a message found in a forum the conversation of
   its topic. `ChatRoute(chatId, topicId)` of `core:navigation` is a topic's conversation: `ChatViewModel` with a

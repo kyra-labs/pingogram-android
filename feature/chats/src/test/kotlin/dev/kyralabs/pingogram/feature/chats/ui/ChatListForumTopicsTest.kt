@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.supergroup
 import kotlinx.collections.immutable.persistentMapOf
@@ -64,7 +65,7 @@ class ChatListForumTopicsTest : ChatListViewModelHarness() {
         }
 
     @Test
-    fun `a forum the list has not shown, or without unread messages, asks for nothing`() =
+    fun `a forum the list has not shown asks for nothing, a read one for its topics`() =
         runTest {
             setForums(FORUM, OTHER_FORUM, READ_FORUM)
             chats.setChats(
@@ -78,11 +79,11 @@ class ChatListForumTopicsTest : ChatListViewModelHarness() {
 
             send(viewModel, ChatListEvent.RowsShown(setOf(FORUM, READ_FORUM, GROUP)))
 
-            assertEquals(listOf(FORUM), forumTopics.requested)
+            assertEquals(setOf(FORUM, READ_FORUM), forumTopics.requested.toSet())
         }
 
     @Test
-    fun `a forum keeps its count once shown, and stops counting once read`() =
+    fun `a forum keeps its count once shown, and shows none once read`() =
         runTest {
             setForums(FORUM)
             chats.setChats(ChatListType.Main, forum(FORUM, unreadCount = 5))
@@ -96,7 +97,38 @@ class ChatListForumTopicsTest : ChatListViewModelHarness() {
             runCurrent()
 
             assertNull(viewModel.item(FORUM).unreadTopicCount)
-            assertTrue(forumTopics.observed.isEmpty())
+            // Its row still names its topics.
+            assertEquals(setOf(FORUM), forumTopics.observed)
+        }
+
+    @Test
+    fun `a forum's row names its five newest topics, those with unread messages marked`() =
+        runTest {
+            setForums(FORUM)
+            chats.setChats(ChatListType.Main, forum(FORUM, unreadCount = 4))
+            forumTopics.topicLists.value =
+                mapOf(
+                    FORUM to
+                        listOf(
+                            forumTopics.forumTopic(FORUM, 7, unreadCount = 0, color = TopicColor.Red),
+                            forumTopics.forumTopic(FORUM, 1, unreadCount = 3),
+                            forumTopics.forumTopic(FORUM, 5, unreadCount = 0),
+                            forumTopics.forumTopic(FORUM, 4, unreadCount = 1),
+                            forumTopics.forumTopic(FORUM, 3, unreadCount = 0),
+                            forumTopics.forumTopic(FORUM, 2, unreadCount = 0),
+                        ),
+                )
+            val viewModel = viewModel()
+            assertNull(viewModel.item(FORUM).topics)
+
+            send(viewModel, ChatListEvent.RowsShown(setOf(FORUM)))
+
+            val topics = viewModel.item(FORUM).topics
+            assertEquals(listOf(7, 1, 5, 4, 3), topics?.map { it.id })
+            assertEquals(listOf(false, true, false, true, false), topics?.map { it.isUnread })
+            // General has a symbol of its own, the others the color of their icon.
+            assertEquals(listOf(TopicColor.Red, null), topics?.take(2)?.map { it.color })
+            assertEquals(2, viewModel.item(FORUM).unreadTopicCount)
         }
 
     @Test

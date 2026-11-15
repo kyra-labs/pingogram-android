@@ -15,11 +15,13 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 
 /**
- * The forums' unread topics for the chat list ([unreadTopics], by chat id; null for a forum not counted yet), with the
- * forums whose count is observed now ([observed]) and every forum ever observed ([requested]); the rest is unused.
+ * The forums' topics for the chat list, by chat id: [topicLists] where set, else as many unread topics as [unreadTopics]
+ * says (null for a forum not loaded yet); with the forums observed now ([observed]) and every forum ever observed
+ * ([requested]); the rest is unused.
  */
 class FakeForumTopicRepository : ForumTopicRepository {
     val unreadTopics = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val topicLists = MutableStateFlow<Map<Long, List<ForumTopic>>>(emptyMap())
     val observed = mutableSetOf<Long>()
     val requested = mutableListOf<Long>()
 
@@ -30,9 +32,14 @@ class FakeForumTopicRepository : ForumTopicRepository {
         chatId: Long,
         unreadMessages: Flow<Int>,
     ): Flow<List<ForumTopic>?> =
-        combine(unreadTopics.map { it[chatId] }, unreadMessages) { count, messages ->
+        combine(
+            unreadTopics.map { it[chatId] },
+            topicLists.map { it[chatId] },
+            unreadMessages,
+        ) { count, list, messages ->
             this.unreadMessages[chatId] = messages
-            count?.let { List(it) { index -> unreadTopic(chatId, index + 1) } }
+            val generated: List<ForumTopic>? = count?.let { List(it) { index -> forumTopic(chatId, index + 1) } }
+            list ?: generated
         }.distinctUntilChanged()
             .onStart {
                 observed += chatId
@@ -87,21 +94,24 @@ class FakeForumTopicRepository : ForumTopicRepository {
         isHidden: Boolean,
     ): Outcome<Unit> = unused()
 
-    private fun unreadTopic(
+    /** Topic [id] of forum [chatId], named "Topic [id]", with [unreadCount] unread messages. */
+    fun forumTopic(
         chatId: Long,
         id: Int,
+        unreadCount: Int = 1,
+        color: TopicColor = TopicColor.Blue,
     ) = ForumTopic(
         chatId = chatId,
         id = id,
         name = "Topic $id",
-        icon = ForumTopicIcon(TopicColor.Blue, 0),
-        isGeneral = false,
+        icon = ForumTopicIcon(color, 0),
+        isGeneral = id == 1,
         isClosed = false,
         isHidden = false,
         isPinned = false,
         lastMessage = null,
         order = 0,
-        unreadCount = 1,
+        unreadCount = unreadCount,
         unreadMentionCount = 0,
         lastReadInboxMessageId = 0,
         lastReadOutboxMessageId = 0,

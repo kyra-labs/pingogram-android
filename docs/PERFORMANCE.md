@@ -534,6 +534,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
   P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
   the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
+- Forum rows naming their topics (2026-11-15, `docs/DESIGN_SYSTEM.md` §6 "Chat list row"): `ChatListScrollCostTest`
+  with every tenth row a forum that names three topics (its preview data's "Book club"), against the same rows without
+  the topic line, three alternating pairs on the shared 4-core machine: without P50 0.96–1.00 ms, P90 10.0–10.2 ms,
+  P99 15.3–16.4 ms, mean 2.74–2.85 ms; with P50 1.04–1.13 ms, P90 9.2–9.8 ms, P99 13.7–14.6 ms, mean 2.62–2.85 ms.
+  A forum's row composes and measures more (one layout of a tab, the other topics and the pill, each measured once),
+  but its third line leaves fewer rows on screen, so a scroll frame brings in fewer of them.
 - Story rings (2026-10-23, the same machine under other agents' builds, so only runs side by side compare):
   `ChatListScrollCostTest` with the rings row as the list's first item and without it, interleaved three times each:
   without P50 1.30 ms, P90 9.9–10.0 ms, P99 13.3–17.0 ms; with P50 1.38–1.46 ms, P90 10.0–11.1 ms, P99 12.5–15.9 ms.

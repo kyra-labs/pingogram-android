@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui.preview
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
 import dev.kyralabs.pingogram.feature.chats.ui.FolderTab
 import dev.kyralabs.pingogram.feature.chats.ui.HeaderAccount
 import dev.kyralabs.pingogram.feature.chats.ui.OutgoingStatus
+import dev.kyralabs.pingogram.feature.chats.ui.RowTopic
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
 import dev.kyralabs.pingogram.feature.chats.ui.rowActions
 import dev.kyralabs.pingogram.feature.chats.ui.selectionActions
@@ -159,8 +161,15 @@ internal object ChatListPreviewData {
                 preview = message("Next up: Hidden Figures", UiText.Plain("Mary")),
                 time = "Mar 2",
                 isMarkedAsUnread = true,
-                // A forum: its avatar is a rounded square.
+                // A forum: its avatar is a rounded square, and it names its newest topics above the preview.
                 avatarShape = AvatarShape.RoundedSquare,
+            ).copy(
+                topics =
+                    persistentListOf(
+                        RowTopic(id = 3, name = "Reading list", color = TopicColor.Green, isUnread = false),
+                        RowTopic(id = 1, name = "General", color = null, isUnread = false),
+                        RowTopic(id = 4, name = "Meetups", color = TopicColor.Violet, isUnread = false),
+                    ),
             ),
             row(
                 id = 10,
@@ -249,7 +258,16 @@ internal object ChatListPreviewData {
                         time = "9:02 AM",
                         unreadCount = 57,
                         avatarShape = AvatarShape.RoundedSquare,
-                    ).copy(unreadTopicCount = 3),
+                    ).copy(
+                        unreadTopicCount = 3,
+                        topics =
+                            persistentListOf(
+                                RowTopic(id = 5, name = "Bug reports", color = TopicColor.Red, isUnread = true),
+                                RowTopic(id = 1, name = "General", color = null, isUnread = true),
+                                RowTopic(id = 7, name = "Feature ideas", color = TopicColor.Blue, isUnread = false),
+                                RowTopic(id = 8, name = "Translations", color = TopicColor.Yellow, isUnread = true),
+                            ),
+                    ),
                     row(
                         id = 43,
                         title = "Moderators",
