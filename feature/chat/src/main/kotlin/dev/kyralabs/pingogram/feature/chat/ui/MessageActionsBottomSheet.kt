@@ -246,6 +246,7 @@ internal val MessageAction.label: Int
             MessageAction.Summarize -> R.string.message_action_summarize
             MessageAction.ShowFullText -> R.string.message_action_show_full_text
             MessageAction.Forward -> R.string.message_action_forward
+            MessageAction.Bookmark -> R.string.message_action_bookmark
             MessageAction.Edit -> R.string.message_action_edit
             MessageAction.Pin -> R.string.message_action_pin
             MessageAction.PinForSelf -> R.string.message_action_pin_for_self
@@ -272,6 +273,7 @@ internal val MessageAction.icon: Int
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
             MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_format_list_bulleted
             MessageAction.Forward -> UiR.drawable.ic_forward
+            MessageAction.Bookmark -> R.drawable.ic_bookmark
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
@@ -299,6 +301,7 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Summarize -> SummaryEvent.Summarize(messageId)
         MessageAction.ShowFullText -> SummaryEvent.ShowFullText(messageId)
         MessageAction.Forward -> ChatEvent.Forward(messageId)
+        MessageAction.Bookmark -> BookmarkEvent.Open(messageId)
         MessageAction.Edit -> ChatEvent.Edit(messageId)
         MessageAction.Pin -> ChatEvent.Pin(messageId)
         MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)
