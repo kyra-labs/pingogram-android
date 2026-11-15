@@ -159,6 +159,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Edit,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -180,6 +181,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Reply,
                         MessageAction.Copy,
                         MessageAction.Forward,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -218,6 +220,22 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `a message whose chat protects its content cannot be bookmarked, kept on the phone as it would be`() =
+            runViewModelTest {
+                allowing(saved = false)
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowMessageActions(2))
+
+                assertEquals(false, MessageAction.Bookmark in viewModel.sheet!!.actions)
+            }
+
+        @Test
+        fun `bookmark opens the bookmark sheet's event`() {
+            assertEquals(BookmarkEvent.Open(7), MessageAction.Bookmark.eventFor(7))
+        }
+
+        @Test
         fun `a message without a text or caption has nothing to copy or edit`() =
             runViewModelTest {
                 val sticker = outgoing(1).copy(content = MessageContent.Dice("🎲", value = 3))
@@ -231,6 +249,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Forward,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -252,6 +271,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Unpin,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -294,6 +314,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Copy,
                         MessageAction.Forward,
                         MessageAction.Pin,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
