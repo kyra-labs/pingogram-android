@@ -101,23 +101,7 @@ internal fun ProfileActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
-        if (actions.canDeleteChat) {
-            ActionPill(
-                icon = UiR.drawable.ic_delete,
-                label = stringResource(R.string.profile_action_delete_chat),
-                onClick = { onEvent(ProfileEvent.DeleteChat) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        actions.shareUsername?.let { username ->
-            // A bot's third pill: its link, as bots are not called (board 24d).
-            ActionPill(
-                icon = UiR.drawable.ic_share,
-                label = stringResource(R.string.profile_action_share),
-                onClick = { onEvent(ProfileEvent.ShareUsername(username)) },
-                modifier = Modifier.weight(1f),
-            )
-        }
+        DeleteOrSharePill(actions, onEvent)
         if (calls != null && callUserId != null) {
             // A voice call at once, or the voice and video menu where the user can get a video call.
             CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
