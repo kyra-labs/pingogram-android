@@ -641,7 +641,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   bookmarks (`Bookmark`: the message, when, its tags, a note and what the message said) and their tags (`BookmarkTag`,
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
-  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`. The page is
+  `BookmarksRoute` of `core:navigation` (`bookmarksScreen`, registered in `:app`, `BookmarksViewModel`: the tag filter in
+  its saved state, the chats from `ChatRepository`, asked for once where TDLib has not announced them), opened through
+  `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
+  (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
+  once a message is bookmarked).
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
