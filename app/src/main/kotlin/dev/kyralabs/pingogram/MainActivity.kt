@@ -331,7 +331,7 @@ class MainActivity : ComponentActivity() {
      * views, or what it shares.
      */
     private fun handle(intent: Intent?) {
-        NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        NotificationIntents.chatIdOf(intent)?.let { viewModel.openChat(it, NotificationIntents.messageIdOf(intent)) }
         if (NotificationIntents.opensLockedChats(intent)) viewModel.setLockedChatsToOpen(true)
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)

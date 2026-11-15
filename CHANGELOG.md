@@ -21,7 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
-  notification channel of its own, even in a muted chat, with "Snooze 1 h".
+  notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
+  moves it an hour on.
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and

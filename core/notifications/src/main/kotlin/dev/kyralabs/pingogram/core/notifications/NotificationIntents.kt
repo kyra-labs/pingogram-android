@@ -17,19 +17,31 @@ import android.net.Uri
  */
 object NotificationIntents {
     /**
-     * Opens chat [chatId] in the app, in its task: an activity already running gets it in `onNewIntent`. Null if the
-     * app has no launcher activity (never in the app; possible in tests).
+     * Opens chat [chatId] in the app, in its task, at message [messageId] where one is named (a reminder's): an
+     * activity already running gets it in `onNewIntent`. Null if the app has no launcher activity (never in the app;
+     * possible in tests).
      */
     fun openChat(
         context: Context,
         chatId: Long,
         slot: Int = 0,
+        messageId: Long? = null,
     ): Intent? =
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             action = Intent.ACTION_VIEW
             removeCategory(Intent.CATEGORY_LAUNCHER)
-            data = chatUri(chatId, slot)
+            data =
+                Uri
+                    .Builder()
+                    .scheme(SCHEME)
+                    .authority(CHAT_HOST)
+                    .appendPath("$chatId")
+                    .apply { if (slot != 0) appendQueryParameter(ACCOUNT_PARAMETER, "$slot") }
+                    // A message gets a pending intent of its own, so the chat's notification never takes its extras.
+                    .apply { messageId?.let { appendQueryParameter(MESSAGE_PARAMETER, "$it") } }
+                    .build()
             putExtra(EXTRA_CHAT_ID, chatId)
+            messageId?.let { putExtra(EXTRA_MESSAGE_ID, it) }
             putExtra(EXTRA_ACCOUNT, slot)
             // Back from the chat leads to the chat list of the app's one activity, never to a second instance.
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -40,8 +52,9 @@ object NotificationIntents {
         context: Context,
         chatId: Long,
         slot: Int = 0,
+        messageId: Long? = null,
     ): PendingIntent? =
-        openChat(context, chatId, slot)?.let { intent ->
+        openChat(context, chatId, slot, messageId)?.let { intent ->
             PendingIntent.getActivity(context, 0, intent, IMMUTABLE_FLAGS)
         }
 
@@ -98,6 +111,13 @@ object NotificationIntents {
         return intent?.takeIf { opensChat }?.getLongExtra(EXTRA_CHAT_ID, NO_CHAT)?.takeIf { it != NO_CHAT }
     }
 
+    /** The message [intent] opens its chat at ([openChat] with a message), or null. */
+    fun messageIdOf(intent: Intent?): Long? =
+        intent
+            ?.takeIf { chatIdOf(it) != null }
+            ?.getLongExtra(EXTRA_MESSAGE_ID, NO_MESSAGE)
+            ?.takeIf { it != NO_MESSAGE }
+
     /**
      * The account whose chat or locked chats [intent] opens ([chatIdOf], [opensLockedChats]): its slot, 0 for the
      * intents of versions before several accounts. Null for any other intent.
@@ -132,18 +152,6 @@ object NotificationIntents {
      */
     const val SHARE_TARGET_CATEGORY = "dev.kyralabs.pingogram.category.SHARE_TARGET"
 
-    private fun chatUri(
-        chatId: Long,
-        slot: Int,
-    ): Uri =
-        Uri
-            .Builder()
-            .scheme(SCHEME)
-            .authority(CHAT_HOST)
-            .appendPath("$chatId")
-            .apply { if (slot != 0) appendQueryParameter(ACCOUNT_PARAMETER, "$slot") }
-            .build()
-
     private const val IMMUTABLE_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
     private const val SCHEME = "pingogram"
@@ -151,11 +159,16 @@ object NotificationIntents {
     private const val LOCKED_CHATS_HOST = "locked-chats"
     private const val EXTRA_CHAT_ID = "dev.kyralabs.pingogram.extra.CHAT_ID"
     private const val EXTRA_ACCOUNT = "dev.kyralabs.pingogram.extra.ACCOUNT"
+    private const val EXTRA_MESSAGE_ID = "dev.kyralabs.pingogram.extra.MESSAGE_ID"
+    private const val MESSAGE_PARAMETER = "message"
     private const val ACCOUNT_PARAMETER = "account"
     private const val SHORTCUT_PREFIX = "chat_"
 
     // TDLib's chat ids are never 0.
     private const val NO_CHAT = 0L
+
+    // Nor are its message ids.
+    private const val NO_MESSAGE = 0L
 }
 
 /** A conversation shortcut's chat ([NotificationIntents.chatOfShortcut]) and the slot of its account. */

@@ -75,6 +75,7 @@ import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.navigateToFeedback
 import dev.kyralabs.pingogram.feature.profile.navigation.navigateToPollStatistics
 import dev.kyralabs.pingogram.link.LinkDispatcher
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.navigation.isFullScreen
@@ -142,7 +143,7 @@ fun PingogramApp(
     navController: NavHostController = rememberNavController(),
     navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
     tabReselection: TabReselection = remember { TabReselection() },
-    chatToOpen: Long? = null,
+    chatToOpen: ChatToOpen? = null,
     onChatOpened: () -> Unit = {},
     lockedChatsToOpen: Boolean = false,
     onLockedChatsOpened: () -> Unit = {},
