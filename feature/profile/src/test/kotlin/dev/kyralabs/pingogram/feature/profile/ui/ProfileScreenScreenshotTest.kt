@@ -130,8 +130,7 @@ class ProfileScreenScreenshotTest {
 
     @Test
     @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
-    fun strangerFontScale200() =
-        capture(ScreenshotVariant.Light, ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+    fun strangerFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.stranger)
 
     /** "Disable sharing" on in the private chat: the Info group says so. */
     @Test
