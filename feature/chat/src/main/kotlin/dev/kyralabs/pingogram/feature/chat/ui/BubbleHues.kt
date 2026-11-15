@@ -53,9 +53,9 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberMessageDragOut
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
-import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberMessageDragOut
 
 // Group bubbles (`docs/DESIGN_SYSTEM.md` §13.6): names and reply stripes in the sender's hue,
 // role labels, and the name above a vivid bubble.

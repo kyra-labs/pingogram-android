@@ -66,6 +66,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
@@ -76,7 +77,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
-import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 
 /**
  * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at

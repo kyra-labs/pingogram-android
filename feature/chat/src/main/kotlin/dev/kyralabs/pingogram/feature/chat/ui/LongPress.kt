@@ -60,7 +60,8 @@ private class LongPressElement(
             other.onSecondaryClick === onSecondaryClick &&
             other.onDragOut === onDragOut
 
-    override fun hashCode(): Int = (31 * onLongPress.hashCode() + onSecondaryClick.hashCode()) * 31 + onDragOut.hashCode()
+    override fun hashCode(): Int =
+        (31 * onLongPress.hashCode() + onSecondaryClick.hashCode()) * 31 + onDragOut.hashCode()
 }
 
 private class LongPressNode(
@@ -222,12 +223,17 @@ private suspend fun AwaitPointerEventScope.consumeUntilUp(
     do {
         val event = awaitPointerEvent(PointerEventPass.Initial)
         event.changes.forEach { it.consume() }
-        val change = event.changes.firstOrNull()
-        if (drag != null && dragFrom != null && change != null && change.pressed &&
-            (change.position - dragFrom).getDistance() > viewConfiguration.touchSlop
-        ) {
+        val moved =
+            dragFrom != null && event.changes.firstOrNull()?.movedFrom(dragFrom, viewConfiguration.touchSlop) == true
+        if (drag != null && moved) {
             drag()
             drag = null
         }
     } while (event.changes.any { it.pressed })
 }
+
+/** Whether this pointer is still down and beyond [slop] from [start]. */
+private fun PointerInputChange.movedFrom(
+    start: Offset,
+    slop: Float,
+): Boolean = pressed && (position - start).getDistance() > slop

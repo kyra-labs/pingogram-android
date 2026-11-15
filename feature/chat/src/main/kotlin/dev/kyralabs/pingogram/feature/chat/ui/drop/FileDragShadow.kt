@@ -70,22 +70,22 @@ internal fun rememberDragShadowStyle(): DragShadowStyle {
  */
 internal class FileDragShadow(
     label: String,
-    private val style: DragShadowStyle,
+    private val look: DragShadowStyle,
 ) : View.DragShadowBuilder() {
     private val paint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = style.content
-            textSize = style.textSize
-            typeface = style.typeface
+            color = look.content
+            textSize = look.textSize
+            typeface = look.typeface
         }
-    private val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = style.container }
-    private val text = TextUtils.ellipsize(label, paint, style.maxTextWidth, TextUtils.TruncateAt.END).toString()
-    private val cardWidth = paint.measureText(text) + style.padding * 2
-    private val cardHeight = paint.fontMetrics.run { descent - ascent } + style.padding * 2
+    private val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = look.container }
+    private val text = TextUtils.ellipsize(label, paint, look.maxTextWidth, TextUtils.TruncateAt.END).toString()
+    private val cardWidth = paint.measureText(text) + look.padding * 2
+    private val cardHeight = paint.fontMetrics.run { descent - ascent } + look.padding * 2
 
     // Room around the card for its tilt.
-    private val width = ceil(cardWidth + style.padding * 2).toInt()
-    private val height = ceil(cardHeight + style.padding * 2).toInt()
+    private val width = ceil(cardWidth + look.padding * 2).toInt()
+    private val height = ceil(cardHeight + look.padding * 2).toInt()
 
     override fun onProvideShadowMetrics(
         outShadowSize: Point,
@@ -99,8 +99,13 @@ internal class FileDragShadow(
         canvas.rotate(TILT_DEGREES, width / 2f, height / 2f)
         val left = (width - cardWidth) / 2
         val top = (height - cardHeight) / 2
-        canvas.drawRoundRect(RectF(left, top, left + cardWidth, top + cardHeight), style.corner, style.corner, background)
-        canvas.drawText(text, left + style.padding, top + style.padding - paint.fontMetrics.ascent, paint)
+        canvas.drawRoundRect(
+            RectF(left, top, left + cardWidth, top + cardHeight),
+            look.corner,
+            look.corner,
+            background,
+        )
+        canvas.drawText(text, left + look.padding, top + look.padding - paint.fontMetrics.ascent, paint)
     }
 }
 

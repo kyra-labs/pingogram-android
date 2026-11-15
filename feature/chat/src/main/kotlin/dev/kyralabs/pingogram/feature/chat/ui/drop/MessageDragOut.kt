@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.file.tdlibFileUri
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
@@ -46,36 +47,41 @@ internal data class DragOutFile(
  */
 internal fun ChatUiState.dragOutFiles(messageId: Long): List<DragOutFile> {
     if (!shortcuts.canForward) return emptyList()
+    val items = (content as? ChatContent.Content)?.items.orEmpty()
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == messageId } as? ChatItem.Bubble
     val contents = bubble?.album?.items ?: listOfNotNull(bubble?.content)
     return contents.mapNotNull { content -> content.dragOutFile(fileStates) }
 }
 
 private fun MessageContent.dragOutFile(states: Map<Int, FileState>): DragOutFile? {
-    val (fileId, file) =
-        when (this) {
-            is MessageContent.Photo -> {
-                val size = largestPhotoSize(photo.sizes)?.takeUnless { isSecret } ?: return null
+    val found = draggableFile()
+    val path = found?.let { (fileId, _) -> (states[fileId] as? FileState.Downloaded)?.path }
+    return path?.let { found.second.copy(path = it) }
+}
+
+/** The file of this content that can leave the chat, by TDLib id, its path still to fill in; null for none. */
+private fun MessageContent.draggableFile(): Pair<Int, DragOutFile>? =
+    when (this) {
+        is MessageContent.Photo -> {
+            largestPhotoSize(photo.sizes)?.takeUnless { isSecret }?.let { size ->
                 size.file.id to DragOutFile("", PHOTO_TYPE, DragOutKind.Photo)
             }
-
-            is MessageContent.Video -> {
-                if (isSecret) return null
-                video.file.id to DragOutFile("", video.mimeType.ifBlank { VIDEO_TYPE }, DragOutKind.Video)
-            }
-
-            is MessageContent.Document -> {
-                val type = document.mimeType.ifBlank { GENERIC_TYPE }
-                document.file.id to DragOutFile("", type, DragOutKind.Document, document.fileName.ifBlank { null })
-            }
-
-            else -> {
-                return null
-            }
         }
-    val path = (states[fileId] as? FileState.Downloaded)?.path ?: return null
-    return file.copy(path = path)
-}
+
+        is MessageContent.Video -> {
+            (video.file.id to DragOutFile("", VIDEO_TYPE, DragOutKind.Video))
+                .takeUnless { isSecret }
+        }
+
+        is MessageContent.Document -> {
+            val type = document.mimeType.ifBlank { GENERIC_TYPE }
+            document.file.id to DragOutFile("", type, DragOutKind.Document, document.fileName.ifBlank { null })
+        }
+
+        else -> {
+            null
+        }
+    }
 
 /**
  * Drags a bubble's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop", the owner's board 35c): a long
