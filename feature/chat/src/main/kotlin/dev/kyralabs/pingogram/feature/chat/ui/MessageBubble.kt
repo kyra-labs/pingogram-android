@@ -68,6 +68,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
@@ -163,6 +165,7 @@ internal fun MessageBubbleRow(
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe = rowSwipe(bubble, selecting = selection != null, resources, onEvent)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val reminder = LocalReminderChips.current?.labelFor(bubble.id)
     Row(
         modifier =
             modifier
@@ -171,7 +174,7 @@ internal fun MessageBubbleRow(
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription = bubbleDescription(strings, bubble)
+                    contentDescription = bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
@@ -189,7 +192,7 @@ internal fun MessageBubbleRow(
                                 uploads = uploads,
                                 onEvent = onEvent,
                                 canTranscribe = resources.canTranscribe,
-                            )
+                            ) + reminderActions(strings, bubble.id, reminder, onEvent)
                     }
                 },
         verticalAlignment = Alignment.CenterVertically,

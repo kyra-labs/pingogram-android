@@ -661,7 +661,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
   (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
   once a message is bookmarked). Its "Edit tags" pushes `BookmarkTagsRoute` (`BookmarkTagsViewModel`: the draft and the
-  question before deleting in its saved state).
+  question before deleting in its saved state). A card's long press opens that bookmark's sheet over the page
+  (`BookmarkSheetViewModel`, keyed by its chat as the conversation's; `BookmarksViewModel.editing`, the chat in its
+  saved state), and its search filters on the device (`BookmarkSearch`).
 - **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
@@ -1808,6 +1810,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
+- **Drag and drop** (the owner's board 35a): `feature:chat`'s `drop/` makes the conversation's message area
+  (`MessagesArea`) a Compose drag and drop target (`chatDropTarget`) where the chat takes attachments. It shows
+  `ChatDropZone` while a drag of files is under way (`ChatDropState`, from the drag's MIME types), reads the dropped
+  `content://` URIs with the drop's permission (`Activity.requestDragAndDropPermissions`, which lasts as long as the
+  activity) and hands them to `ChatViewModel` as a pick (`ChatEvent.AttachMedia` / `AttachFiles`), so the attach
+  preview prepares and cleans them up as picked files. Nothing is sent before Send there.
 
 ## Calls
 
@@ -1969,6 +1977,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 ## Home screen widget
 
 `docs/adr/0017-home-screen-widget.md`. Jetpack Glance, in `:app`'s `widget/` package; nothing polls.
+
+- **Unread counter** (board 33): `UnreadCounterWidget` (its receiver `UnreadCounterWidgetReceiver`) draws
+  `UnreadCounterContent` from the same `RecentChatsWidgetUpdater` content, which also carries the main list's unread
+  messages (`ChatRepository.unreadMessageCount`, TDLib's `updateUnreadMessageCount`) and the loaded chats' mentions;
+  `GlanceRecentChatsWidgets` counts, moves and redraws both widgets' ids.
 
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
   widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.

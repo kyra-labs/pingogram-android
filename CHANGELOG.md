@@ -12,23 +12,32 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
   an optional comment, where Telegram lets it be sent on.
+- With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
+  turn through their actions.
+- An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
+  read"; a tap opens your chats.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
+- A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
-  its search finds bookmarks by their chat, text, note or tags.
+  its search finds bookmarks by their chat, text, note or tags. Long-press a bookmark to change its tags or note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
-  notification channel of its own, even in a muted chat, with "Snooze 1 h".
+  notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
+  moves it an hour on.
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
+- A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
 - A reminder on the Reminders page opens its chat at the message it was set on.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the

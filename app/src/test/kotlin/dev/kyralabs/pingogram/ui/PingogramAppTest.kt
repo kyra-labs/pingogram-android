@@ -88,6 +88,7 @@ import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.scanner.navigation.navigateToQrScanner
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -145,7 +146,7 @@ class PingogramAppTest {
     private var uiState by mutableStateOf<MainActivityUiState>(MainActivityUiState.SignedIn)
 
     /** The chat a notification asked to open, cleared once the app reports it handled, as `MainActivity` does. */
-    private var chatToOpen by mutableStateOf<Long?>(null)
+    private var chatToOpen by mutableStateOf<ChatToOpen?>(null)
 
     private lateinit var navController: NavHostController
 
@@ -588,15 +589,15 @@ class PingogramAppTest {
     // Notifications (FR-N2)
 
     @Test
-    fun `a notification opens its chat above the chat list, from any tab, and back returns to the chats`() {
+    fun `a notification opens its chat at its message above the chat list, from any tab`() {
         tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        chatToOpen = 5
+        chatToOpen = ChatToOpen(5, messageId = 1_048_576)
         composeRule.waitForIdle()
 
-        assertEquals(5L, navController.currentBackStackEntry?.toRoute<ChatRoute>()?.chatId)
+        assertEquals(ChatRoute(5, messageId = 1_048_576), navController.currentBackStackEntry?.toRoute<ChatRoute>())
         val destinations = backStackDestinations()
         assertEquals(2, destinations.size)
         assertTrue(destinations[0].hasRoute<ChatsRoute>())
@@ -608,7 +609,7 @@ class PingogramAppTest {
         uiState = MainActivityUiState.SignedOut
         setApp()
 
-        chatToOpen = 5
+        chatToOpen = ChatToOpen(5)
         composeRule.waitForIdle()
 
         assertNull(chatToOpen)

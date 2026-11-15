@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -44,7 +45,8 @@ import javax.inject.Inject
  * The Bookmarks page (`docs/DESIGN_SYSTEM.md` §6 "Bookmarks", the owner's board 34b), kept on this phone
  * ([BookmarkRepository]): every bookmark, the newest first (owner decision 2026-11-15), filtered by one tag (in the
  * saved state), each with its chat as TDLib knows it ([ChatRepository], asked for where it does not) and what the
- * message said when it was saved. Removing offers "Undo", which saves the bookmark back as it was.
+ * message said when it was saved. Removing offers "Undo", which saves the bookmark back as it was; a card's "Edit tags"
+ * opens the bookmark's own sheet ([editing], its chat in the saved state).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -67,6 +69,8 @@ class BookmarksViewModel internal constructor(
 
     private val selectedTag = savedStateHandle.getStateFlow(KEY_TAG, NO_TAG)
     private val query = savedStateHandle.getStateFlow<String?>(KEY_QUERY, null)
+    private val editedChat = savedStateHandle.getStateFlow(KEY_EDITING, NO_CHAT)
+    private val toOpen = MutableStateFlow<Long?>(null)
     private var removed: Bookmark? = null
     private val askedChats = mutableSetOf<Long>()
 
@@ -100,6 +104,12 @@ class BookmarksViewModel internal constructor(
         }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BookmarksUiState.Loading)
 
+    /** The bookmark being edited in its sheet, else null. */
+    val editing: StateFlow<BookmarkEditing?> =
+        combine(editedChat, toOpen) { chatId, messageId ->
+            chatId.takeIf { it != NO_CHAT }?.let { BookmarkEditing(it, messageId) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     fun onEvent(event: BookmarksEvent) {
         when (event) {
             is BookmarksEvent.SelectTag -> savedStateHandle[KEY_TAG] = event.tagId ?: NO_TAG
@@ -109,6 +119,9 @@ class BookmarksViewModel internal constructor(
             BookmarksEvent.OpenSearch -> savedStateHandle[KEY_QUERY] = query.value.orEmpty()
             is BookmarksEvent.Search -> if (query.value != null) savedStateHandle[KEY_QUERY] = event.query
             BookmarksEvent.CloseSearch -> savedStateHandle[KEY_QUERY] = null
+            is BookmarksEvent.Edit -> edit(event.chatId, event.messageId)
+            BookmarksEvent.EditorOpened -> toOpen.value = null
+            BookmarksEvent.EditorClosed -> savedStateHandle[KEY_EDITING] = NO_CHAT
         }
     }
 
@@ -125,6 +138,14 @@ class BookmarksViewModel internal constructor(
                 }
             effectChannel.trySend(effect)
         }
+    }
+
+    private fun edit(
+        chatId: Long,
+        messageId: Long,
+    ) {
+        toOpen.value = messageId
+        savedStateHandle[KEY_EDITING] = chatId
     }
 
     private fun undo() {
@@ -192,6 +213,8 @@ class BookmarksViewModel internal constructor(
     private companion object {
         const val KEY_TAG = "bookmarks.tag"
         const val KEY_QUERY = "bookmarks.query"
+        const val KEY_EDITING = "bookmarks.editing"
+        const val NO_CHAT = 0L
         const val NO_TAG = 0L
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }

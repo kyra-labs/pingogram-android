@@ -105,6 +105,13 @@ internal object StoryViewerPreviewData {
             reactions = reactions.copy(chosen = ReactionType.Emoji("🔥"), isOpen = true),
         )
 
+    /** A photo still downloading (board 26): "Loading story…" in the frame, the reply bar already there. */
+    val loadingStory =
+        content(
+            StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = false),
+            caption = caption,
+        )
+
     /** A finger holds the photo (board 26): the chrome gone, the pause badge and "Release to continue". */
     val held = photo.copy(isPaused = true, isHeld = true)
 
@@ -149,6 +156,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
         sequenceOf(
             StoryViewerPreviewData.photo,
             StoryViewerPreviewData.held,
+            StoryViewerPreviewData.loadingStory,
             StoryViewerPreviewData.video,
             StoryViewerPreviewData.reacting,
             StoryViewerPreviewData.live,

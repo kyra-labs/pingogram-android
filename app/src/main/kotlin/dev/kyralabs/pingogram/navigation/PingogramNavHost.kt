@@ -102,7 +102,7 @@ internal fun PingogramNavHost(
     search: GlobalSearchState,
     modifier: Modifier = Modifier,
     headerActions: ChatListHeaderActions? = null,
-    chatToOpen: Long? = null,
+    chatToOpen: ChatToOpen? = null,
     onChatOpened: () -> Unit = {},
     lockedChatsToOpen: Boolean = false,
     onLockedChatsOpened: () -> Unit = {},
