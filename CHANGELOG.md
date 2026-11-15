@@ -39,6 +39,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
+- A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
