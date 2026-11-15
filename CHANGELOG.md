@@ -17,6 +17,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   messages automatically as they show, and see which speech languages Android has ready on the phone.
 
 ### Changed
+- In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
   later, a language button at the top opens Android's list of the app's languages.

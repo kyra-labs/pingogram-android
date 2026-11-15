@@ -43,6 +43,9 @@
     <string name="call_hang_up">Hang up</string>
     <string name="call_mute">Mute</string>
     <string name="call_hold">Hold</string>
+    <!-- The call panel's button that opens hold and "Add people", and the item that takes a held call back. -->
+    <string name="call_more">More</string>
+    <string name="call_resume">Resume</string>
     <string name="call_speaker">Speaker</string>
     <string name="call_audio">Audio</string>
     <!-- Video calls (docs/adr/0019-video-and-group-calls-scope.md): the panel's camera button and its label. -->
