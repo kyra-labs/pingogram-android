@@ -152,7 +152,7 @@ internal fun StoryPage(
                 StoryCaption(story, Modifier.align(Alignment.BottomCenter))
             }
         },
-        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent) },
+        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views) },
     )
 }
 

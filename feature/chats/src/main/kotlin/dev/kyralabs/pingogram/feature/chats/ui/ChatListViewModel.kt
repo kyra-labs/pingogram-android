@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
@@ -112,6 +113,7 @@ class ChatListViewModel internal constructor(
     archiveSettingsRepository: ArchiveSettingsRepository,
     communityRepository: CommunityRepository,
     forumTopicRepository: ForumTopicRepository,
+    catchUpChats: CatchUpChats,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -132,6 +134,7 @@ class ChatListViewModel internal constructor(
         archiveSettingsRepository: ArchiveSettingsRepository,
         communityRepository: CommunityRepository,
         forumTopicRepository: ForumTopicRepository,
+        catchUpChats: CatchUpChats,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -149,6 +152,7 @@ class ChatListViewModel internal constructor(
         archiveSettingsRepository,
         communityRepository,
         forumTopicRepository,
+        catchUpChats,
         clock,
         timePatterns,
         dispatcher,
@@ -355,8 +359,9 @@ class ChatListViewModel internal constructor(
 
     /**
      * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
-     * mention the user, and the signed-in user for its avatar. Apart from [uiState], so a count changing recomposes the
-     * header alone. Nothing in the archive, whose header has no status line.
+     * mention the user, the chats Catch-up would go through ([CatchUpChats]), and the signed-in user for its avatar.
+     * Apart from [uiState], so a count changing recomposes the header alone. Nothing in the archive, whose header has
+     * no status line.
      */
     val summary: StateFlow<ChatListSummary> =
         if (kind == ChatListKind.Archive) {
@@ -372,8 +377,19 @@ class ChatListViewModel internal constructor(
                 combine(userRepository.myUserId, userRepository.users) { id, users ->
                     id?.let(users::get)?.let { HeaderAccount(it.id, it.fullName(), it.profilePhoto) }
                 }.distinctUntilChanged()
-            combine(chatRepository.unreadChatCount(ChatListType.Main), mentions, account) { unread, mentioned, me ->
-                ChatListSummary(unreadChats = unread.unreadUnmutedCount, mentionChats = mentioned, account = me)
+            val catchUp = catchUpChats.chats.map { it.size }.distinctUntilChanged()
+            combine(
+                chatRepository.unreadChatCount(ChatListType.Main),
+                mentions,
+                account,
+                catchUp,
+            ) { unread, mentioned, me, catchUpCount ->
+                ChatListSummary(
+                    unreadChats = unread.unreadUnmutedCount,
+                    mentionChats = mentioned,
+                    account = me,
+                    catchUpChats = catchUpCount,
+                )
             }.distinctUntilChanged()
                 .flowOn(dispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListSummary())

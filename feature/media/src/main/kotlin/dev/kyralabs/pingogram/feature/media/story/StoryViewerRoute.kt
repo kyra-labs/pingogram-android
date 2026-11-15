@@ -75,6 +75,7 @@ internal fun StoryViewerRoute(
             snackbar = launch { snackbarHostState.showSnackbar(message) }
         }
     }
+    ViewersSheetHost(state, onClose = { viewModel.onEvent(StoryViewerEvent.ViewersOpen(false)) })
     StoryViewerScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -90,4 +91,18 @@ internal fun StoryViewerRoute(
             )
         },
     )
+}
+
+/** The list of who saw the user's own story, while [state] says it is open, with a view model of its own. */
+@Composable
+private fun ViewersSheetHost(
+    state: StoryViewerUiState,
+    onClose: () -> Unit,
+) {
+    val views = (state as? StoryViewerUiState.Content)?.takeIf { it.views?.isOpen == true } ?: return
+    val viewers: StoryViewersViewModel = hiltViewModel()
+    val storyId = views.story.storyId
+    LaunchedEffect(viewers, storyId) { viewers.show(storyId) }
+    val viewersState by viewers.uiState.collectAsStateWithLifecycle()
+    StoryViewersSheet(state = viewersState, onEvent = viewers::onEvent, onDismiss = onClose)
 }
