@@ -668,7 +668,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
   accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
-  phone.
+  phone. `feature:settings`' `KeywordAlertsRoute` (`KeywordAlertsViewModel`: the words, the empty page's suggestions
+  from `ProfileRepository.editableProfile`, read on the phone, and the folders being chosen in saved state) is a page
+  of Settings home's "On this phone" and of Settings → Notifications.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -1815,7 +1817,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `ChatDropZone` while a drag of files is under way (`ChatDropState`, from the drag's MIME types), reads the dropped
   `content://` URIs with the drop's permission (`Activity.requestDragAndDropPermissions`, which lasts as long as the
   activity) and hands them to `ChatViewModel` as a pick (`ChatEvent.AttachMedia` / `AttachFiles`), so the attach
-  preview prepares and cleans them up as picked files. Nothing is sent before Send there.
+  preview prepares and cleans them up as picked files. Nothing is sent before Send there. Out (board 35c): the bubble's
+  long-press node (`LongPress.kt`) hands a move past the touch slop after the long press to `MessageDragOut`
+  (`BubbleResources.dragOut`), which reads the bubble's downloaded files from the state at that moment
+  (`ChatUiState.dragOutFiles`, none where `MessageShortcuts.canForward` is false) and starts `View.startDragAndDrop`
+  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ`, its shadow drawn by `FileDragShadow`.
 
 ## Calls
 

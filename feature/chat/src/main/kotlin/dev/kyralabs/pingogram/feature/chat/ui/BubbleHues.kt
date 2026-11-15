@@ -53,6 +53,7 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberMessageDragOut
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -183,6 +184,7 @@ internal fun rememberChatBubbleResources(
         vivid,
         showsUpdateLink = state.showsUpdateLink,
         canTranscribe = state.canTranscribe,
+        dragOut = rememberMessageDragOut(state, onEvent),
         onDateTime = { unixTime -> onEvent(DateTimeEvent.Open(unixTime)) },
     ) { target -> onEvent(ChatEvent.OpenMention(target)) }
 }

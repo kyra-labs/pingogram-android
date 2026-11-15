@@ -199,7 +199,7 @@ internal fun NotificationSettingsScreen(
         }
         ReactionsGroup(
             contactJoined = state.contactJoined,
-            onOpenReactions = { onOpen(NotificationSettingsPage.Reactions) },
+            onOpen = onOpen,
             onContactJoinedChange = { onEvent(NotificationSettingsEvent.SetContactJoined(it)) },
         )
         // Not in the demo: the service would keep the real accounts' connection open (docs/adr/0034).
