@@ -12,6 +12,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
+- A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
