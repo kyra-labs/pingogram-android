@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -293,5 +294,75 @@ class CatchUpViewModelTest {
             viewModel.onEvent(CatchUpEvent.ShowSettings(false))
             runCurrent()
             assertEquals(false, viewModel.uiState.value.showsSettings)
+        }
+
+    @Test
+    fun `replying answers the mention, then marks the chat as read and counts it as replied`() =
+        runTest {
+            val group = ChatType.BasicGroup(basicGroupId = 7)
+            chats.setChats(
+                ChatListType.Main,
+                chat(id = 7, type = group, unreadCount = 3, unreadMentionCount = 1),
+            )
+            messages.setHistory(
+                7,
+                message(chatId = 7, id = 12),
+                message(chatId = 7, id = 11).copy(containsUnreadMention = true),
+                message(chatId = 7, id = 10),
+            )
+            val viewModel = createViewModel()
+            assertEquals(
+                11L,
+                viewModel.cards.current.replyTo
+                    ?.id,
+            )
+
+            viewModel.onEvent(CatchUpEvent.Reply)
+            runCurrent()
+            assertEquals(CatchUpReplyState(), viewModel.cards.reply)
+
+            viewModel.onEvent(CatchUpEvent.SendReply(" On it "))
+            runCurrent()
+
+            assertEquals(listOf(Triple(7L, "On it", ReplyTarget(messageId = 11))), messages.sent)
+            assertEquals(listOf<ChatCall>(ChatCall.MarkAsRead(7)), chats.calls)
+            assertEquals(
+                CatchUpStage.Done(chats = 1, minutes = 1, read = 0, replied = 1, skipped = 0),
+                viewModel.uiState.value.stage,
+            )
+        }
+
+    @Test
+    fun `a reply Telegram refuses keeps the field open and says why`() =
+        runTest {
+            chats.setChats(ChatListType.Main, unread(2))
+            messages.setHistory(2, message(chatId = 2, id = 5))
+            messages.sendOutcome = Outcome.Failure(DomainError.Network)
+            val viewModel = createViewModel()
+            val effects = effectsOf(viewModel)
+
+            viewModel.onEvent(CatchUpEvent.Reply)
+            viewModel.onEvent(CatchUpEvent.SendReply("Hi"))
+            runCurrent()
+
+            assertEquals(listOf<CatchUpEffect>(CatchUpEffect.ShowError(DomainError.Network)), effects)
+            assertEquals(CatchUpReplyState(), viewModel.cards.reply)
+            assertTrue(chats.calls.isEmpty())
+        }
+
+    @Test
+    fun `cancelling closes the reply field, which survives process death until then`() =
+        runTest {
+            chats.setChats(ChatListType.Main, unread(2))
+            val handle = SavedStateHandle()
+            createViewModel(handle).onEvent(CatchUpEvent.Reply)
+            runCurrent()
+
+            val restored = createViewModel(SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) }))
+            assertEquals(CatchUpReplyState(), restored.cards.reply)
+
+            restored.onEvent(CatchUpEvent.CancelReply)
+            runCurrent()
+            assertEquals(null, restored.cards.reply)
         }
 }

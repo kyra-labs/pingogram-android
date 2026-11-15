@@ -25,6 +25,12 @@ class FakeMessageRepository : MessageRepository {
     /** The chats whose newest messages were asked for, in order. */
     val loadedNewest = mutableListOf<Long>()
 
+    /** The texts sent: the chat, the text and what it replies to. */
+    val sent = mutableListOf<Triple<Long, String, ReplyTarget?>>()
+
+    /** The answer to [sendText]. */
+    var sendOutcome: Outcome<Unit> = Outcome.Success(Unit)
+
     fun setHistory(
         chatId: Long,
         vararg newestFirst: Message,
@@ -86,7 +92,10 @@ class FakeMessageRepository : MessageRepository {
         text: FormattedText,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> {
+        sent += Triple(chatId, text.text, replyTo)
+        return sendOutcome
+    }
 
     override suspend fun setDraft(
         chatId: Long,

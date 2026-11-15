@@ -64,8 +64,8 @@ internal fun CatchUpStack(
                 )
                 NextCard(stage.next, Modifier.matchParentSize().padding(horizontal = peek).offset(y = peek))
             }
-            Box(Modifier.fillMaxSize().catchUpSwipe(swipe)) {
-                CatchUpChatCard(stage.current, onEvent, Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().catchUpSwipe(swipe, enabled = stage.reply == null)) {
+                CatchUpChatCard(stage.current, onEvent, Modifier.fillMaxSize(), stage.reply)
                 Stamp(
                     text = stringResource(R.string.catch_up_stamp_read),
                     icon = UiR.drawable.ic_done_all,
@@ -92,14 +92,21 @@ internal fun CatchUpStack(
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.catch_up_swipe_hint),
-            modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodySmall,
-        )
+        if (stage.reply == null) {
+            SwipeHint()
+        }
     }
+}
+
+@Composable
+private fun SwipeHint() {
+    Text(
+        text = stringResource(R.string.catch_up_swipe_hint),
+        modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodySmall,
+    )
 }
 
 /** The next chat's card behind the shown one: its header alone, decorative. */

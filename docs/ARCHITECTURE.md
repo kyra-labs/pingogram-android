@@ -655,7 +655,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   bookmarks (`Bookmark`: the message, when, its tags, a note and what the message said) and their tags (`BookmarkTag`,
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
-  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`. The page is
+  `BookmarksRoute` of `core:navigation` (`bookmarksScreen`, registered in `:app`, `BookmarksViewModel`: the tag filter in
+  its saved state, the chats from `ChatRepository`, asked for once where TDLib has not announced them), opened through
+  `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
+  (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
+  once a message is bookmarked). Its "Edit tags" pushes `BookmarkTagsRoute` (`BookmarkTagsViewModel`: the draft and the
+  question before deleting in its saved state).
 - **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without

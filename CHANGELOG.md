@@ -13,13 +13,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
 - A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
-  a note.
+  a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
+  from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
   notification channel of its own, even in a muted chat, with "Snooze 1 h".
+- Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
+  it done or delete it, with "Undo".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
@@ -62,6 +67,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
+  says what is kept: you can still read your messages with them, but they can't receive new ones.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
