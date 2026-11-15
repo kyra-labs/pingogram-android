@@ -1820,7 +1820,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `ChatDropZone` while a drag of files is under way (`ChatDropState`, from the drag's MIME types), reads the dropped
   `content://` URIs with the drop's permission (`Activity.requestDragAndDropPermissions`, which lasts as long as the
   activity) and hands them to `ChatViewModel` as a pick (`ChatEvent.AttachMedia` / `AttachFiles`), so the attach
-  preview prepares and cleans them up as picked files. Nothing is sent before Send there.
+  preview prepares and cleans them up as picked files. Nothing is sent before Send there. Out (board 35c): the bubble's
+  long-press node (`LongPress.kt`) hands a move past the touch slop after the long press to `MessageDragOut`
+  (`BubbleResources.dragOut`), which reads the bubble's downloaded files from the state at that moment
+  (`ChatUiState.dragOutFiles`, none where `MessageShortcuts.canForward` is false) and starts `View.startDragAndDrop`
+  with their `FileProvider` URIs and `DRAG_FLAG_GLOBAL_URI_READ`, its shadow drawn by `FileDragShadow`.
 
 ## Calls
 
