@@ -635,6 +635,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
   names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
   the folder editor).
+- **Catch-up** (the owner's board 32, `docs/DESIGN_SYSTEM.md` §6 "Catch-up"): `feature:chats`' `catchup/`.
+  `CatchUpChats` reads the main list's unread chats in Catch-up's order (mentions first, then the most recent; muted
+  chats and channels only with `ChatListSettings.catchUpIncludesMuted`; never locked chats), which
+  `ChatListViewModel.summary` counts for the header's chip (`ChatListSummary.offersCatchUp`, from five) and
+  `CatchUpViewModel` takes once as its round (`CatchUpRound`, in the saved state). Its cards (`CatchUpSources`,
+  `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
+  and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
+  moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
 - **Bookmarks** (the owner's board 34, kept on this phone only): `core:domain`'s `BookmarkRepository`
   (`FileBookmarkRepository`, `core:data`, account-scoped: `bookmarks.txt` in the account's TDLib directory, which
   `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout; the demo's in memory) keeps the
