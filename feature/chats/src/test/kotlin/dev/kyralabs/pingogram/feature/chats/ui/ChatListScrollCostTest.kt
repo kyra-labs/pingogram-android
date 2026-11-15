@@ -2,8 +2,16 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -92,6 +100,98 @@ class ChatListScrollCostTest {
     @Test
     fun `scroll frames with Compose's default state`() = measure(scrollingState = false)
 
+    /**
+     * The frames of a list's first scroll, which the trace of 2026-11-15 found one 36 ms `keepAroundItems` frame in:
+     * for each list state, the list is composed anew, then scrolled for [FIRST_SCROLL_FRAMES] frames; printed per state
+     * as the median over [FIRST_SCROLL_RUNS] runs (the first left out, warming the JIT) of the longest frame and of
+     * all of them.
+     */
+    @OptIn(ExperimentalFoundationApi::class)
+    @Test
+    fun `first scroll frames with each cache window`() {
+        val windows =
+            linkedMapOf<String, () -> LazyListState>(
+                "default" to { LazyListState() },
+                "ahead 0.5, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.5f, behindFraction = 1f)) },
+                "ahead 0.25, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.25f, behindFraction = 1f)) },
+                "ahead 0.5, behind 0.5" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.5f, behindFraction = 0.5f)) },
+                "ahead 0, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0f, behindFraction = 1f)) },
+            )
+        var shown by mutableStateOf<String?>(null)
+        val items = items()
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                val name = shown
+                if (name != null) {
+                    key(name, runs) {
+                        listState = remember { windows.getValue(name)() }
+                        Screen(items, listState)
+                    }
+                }
+            }
+        }
+        val longest = windows.keys.associateWith { mutableListOf<Long>() }
+        val total = windows.keys.associateWith { mutableListOf<Long>() }
+        composeRule.mainClock.autoAdvance = false
+        repeat(FIRST_SCROLL_RUNS + 1) { run ->
+            windows.keys.forEach { name ->
+                runs++
+                composeRule.runOnIdle { shown = name }
+                repeat(SETTLE_FRAMES) {
+                    composeRule.mainClock.advanceTimeByFrame()
+                    composeRule.waitForIdle()
+                }
+                val frames = scroll(FIRST_SCROLL_FRAMES)
+                if (run > 0) {
+                    longest.getValue(name) += frames.max()
+                    total.getValue(name) += frames.sum()
+                }
+            }
+        }
+        windows.keys.forEach { name ->
+            println(
+                "First scroll ($name): longest frame ${longest.getValue(name).sorted()[FIRST_SCROLL_RUNS / 2]} µs, " +
+                    "all ${FIRST_SCROLL_FRAMES} frames ${total.getValue(name).sorted()[FIRST_SCROLL_RUNS / 2]} µs",
+            )
+        }
+    }
+
+    private var runs = 0
+
+    private fun items() =
+        (0 until ROWS)
+            .map { index ->
+                val base = ChatListPreviewData.items[index % ChatListPreviewData.items.size]
+                val photo =
+                    if (index % PLACEHOLDER_EVERY == 0) {
+                        null
+                    } else {
+                        val fileId = index % DISTINCT_PHOTOS + 1
+                        ProfilePhoto(FileRef(fileId, 0), FileRef(fileId + DISTINCT_PHOTOS, 0), minithumbnail = null)
+                    }
+                base.copy(id = FIRST_ID + index, photo = photo)
+            }.toImmutableList()
+
+    @Composable
+    private fun Screen(
+        items: kotlinx.collections.immutable.ImmutableList<ChatListItemModel>,
+        state: LazyListState,
+    ) {
+        ChatListScreen(
+            state =
+                ChatListUiState(
+                    content = ChatListContent.Content(items, pinnedCount = items.indexOfFirst { !it.isPinned }),
+                    connection = ConnectionStatus.Ready,
+                    folderTabs = ChatListPreviewData.folders,
+                ),
+            onEvent = {},
+            listState = state,
+            stories = { modifier ->
+                StoryRingsRow(rings = StoryRingsPreviewData.rings, onOpen = {}, onNearEnd = {}, modifier = modifier)
+            },
+        )
+    }
+
     private fun measure(scrollingState: Boolean) {
         val items =
             (0 until ROWS)
@@ -147,9 +247,9 @@ class ChatListScrollCostTest {
     }
 
     /** [FRAMES] frames scrolling by [STEP] px each; the main thread's CPU time of each, scroll and frame, in µs. */
-    private fun scroll(): List<Long> {
+    private fun scroll(frames: Int = FRAMES): List<Long> {
         val threads = ManagementFactory.getThreadMXBean()
-        return List(FRAMES) {
+        return List(frames) {
             val start = threads.currentThreadCpuTime
             // Scrolling measures the list at once, composing what comes into view, before the frame.
             composeRule.runOnIdle { listState.dispatchRawDelta(STEP) }
@@ -162,6 +262,9 @@ class ChatListScrollCostTest {
     private fun List<Long>.percentile(percent: Int) = this[(size - 1) * percent / PERCENT]
 
     private companion object {
+        const val FIRST_SCROLL_FRAMES = 20
+        const val FIRST_SCROLL_RUNS = 7
+        const val SETTLE_FRAMES = 30
         const val ROWS = 600
         const val FIRST_ID = 1_000L
         const val FRAMES = 120
