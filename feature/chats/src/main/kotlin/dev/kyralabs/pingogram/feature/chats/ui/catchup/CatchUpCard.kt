@@ -71,6 +71,7 @@ internal fun CatchUpChatCard(
     card: CatchUpCard,
     onEvent: (CatchUpEvent) -> Unit,
     modifier: Modifier = Modifier,
+    reply: CatchUpReplyState? = null,
 ) {
     val resources = LocalResources.current
     val region = resources.getQuantityString(R.plurals.catch_up_card, card.unreadCount, card.title, card.unreadCount)
@@ -96,7 +97,7 @@ internal fun CatchUpChatCard(
         ) {
             CardHeader(card)
             CardMessages(card, onEvent, Modifier.weight(1f).fillMaxWidth())
-            CardActions(onEvent)
+            if (reply != null) CatchUpReplyField(card.replyTo, reply, onEvent) else CardActions(onEvent)
         }
     }
 }
@@ -238,7 +239,10 @@ private fun CardMessage(message: CatchUpMessage) {
 
 private const val MESSAGE_LINES = 4
 
-/** "Mark as read", "Open chat" and "Skip" as a connected group; "Mark as read" alone on its row from 150% font. */
+/**
+ * "Mark as read", "Reply in place", "Open chat" and "Skip" as a connected group; "Mark as read" alone on its row from
+ * 150% font.
+ */
 @Composable
 private fun CardActions(onEvent: (CatchUpEvent) -> Unit) {
     val large = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
@@ -270,9 +274,16 @@ private fun CardActions(onEvent: (CatchUpEvent) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
             if (!large) markAsRead(Modifier.weight(1f))
             IconAction(
+                icon = UiR.drawable.ic_reply,
+                label = stringResource(R.string.catch_up_reply),
+                first = large,
+                last = false,
+                modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
+            ) { onEvent(CatchUpEvent.Reply) }
+            IconAction(
                 icon = R.drawable.ic_open_in_new,
                 label = stringResource(R.string.catch_up_open_chat),
-                first = large,
+                first = false,
                 last = false,
                 modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
             ) { onEvent(CatchUpEvent.OpenChat) }
@@ -318,4 +329,4 @@ private fun connected(shapes: ToggleButtonShapes) =
     ButtonShapes(shape = shapes.shape, pressedShape = shapes.pressedShape)
 
 private const val LARGE_FONT_SCALE = 1.5f
-private const val ICON_WEIGHT = 0.45f
+private const val ICON_WEIGHT = 0.35f

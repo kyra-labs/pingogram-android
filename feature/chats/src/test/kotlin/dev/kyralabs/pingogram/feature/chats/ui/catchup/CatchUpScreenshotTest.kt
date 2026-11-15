@@ -66,6 +66,19 @@ class CatchUpScreenshotTest {
     fun swipingToSkip() = capture("swipingToSkip", ScreenshotVariant.Dark, drag = -SWIPE_FRACTION)
 
     @Test
+    fun replyingLight() = capture("replyingLight", ScreenshotVariant.Light, CatchUpPreviewData.replying)
+
+    @Test
+    fun replyingDark() = capture("replyingDark", ScreenshotVariant.Dark, CatchUpPreviewData.replying)
+
+    @Test
+    fun replyingRtl() = capture("replyingRtl", ScreenshotVariant.Rtl, CatchUpPreviewData.replying)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1200dp-xxhdpi", fontScale = FONT_SCALE_200)
+    fun replyingFontScale200() = capture("replyingFontScale200", ScreenshotVariant.Light, CatchUpPreviewData.replying)
+
+    @Test
     fun amoled() = capture("amoled", ScreenshotVariant.Amoled)
 
     @Test

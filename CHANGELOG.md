@@ -27,6 +27,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the chat.
 - Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
   languages).
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
