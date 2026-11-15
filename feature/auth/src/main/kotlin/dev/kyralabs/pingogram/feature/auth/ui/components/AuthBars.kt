@@ -41,12 +41,14 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
+import dev.kyralabs.pingogram.core.ui.text.clockText
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
 import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.withTabularClock
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -165,9 +167,10 @@ internal fun ConnectionBanner(
 }
 
 /**
- * While Telegram asks to wait (`FLOOD_WAIT`): the time left, which the ViewModel counts down, and beside it a clock in
- * a [CountdownIndicator] that runs down from [totalSeconds]. Screen readers hear the time as a live region, at most
- * every 15 seconds ([announcedCountdownSeconds]) rather than every second.
+ * While Telegram asks to wait (`FLOOD_WAIT`): a warning on `tertiaryContainer` (owner decision 2026-11-15, board 23),
+ * the time left as a clock ("4:59", [clockText], tabular figures), which the ViewModel counts down, and beside it a
+ * clock in a [CountdownIndicator] that runs down from [totalSeconds]. Screen readers hear the time in words as a live
+ * region, at most every 15 seconds ([announcedCountdownSeconds]) rather than every second.
  */
 @Composable
 internal fun FloodWaitBanner(
@@ -179,7 +182,7 @@ internal fun FloodWaitBanner(
     AuthBanner(
         visible = seconds != null,
         modifier = modifier,
-        isError = true,
+        isWarning = true,
         icon = {
             CountdownIndicator(
                 secondsLeft = left,
@@ -192,8 +195,9 @@ internal fun FloodWaitBanner(
         },
     ) {
         val announcement = stringResource(R.string.auth_flood_wait, durationText(announcedCountdownSeconds(left)))
+        val clock = clockText(left)
         Text(
-            text = stringResource(R.string.auth_flood_wait, durationText(left)),
+            text = withTabularClock(stringResource(R.string.auth_flood_wait, clock), clock),
             style = MaterialTheme.typography.bodyMedium,
             modifier =
                 Modifier.clearAndSetSemantics {
@@ -204,13 +208,16 @@ internal fun FloodWaitBanner(
     }
 }
 
-/** A banner below the top bar, as wide as the step's content on wide windows: a leading [icon], then [content]. */
+/**
+ * A banner below the top bar, as wide as the step's content on wide windows: a leading [icon], then [content]; on
+ * `surfaceContainerHighest`, or `tertiaryContainer` for a warning ([isWarning]).
+ */
 @Composable
 private fun AuthBanner(
     visible: Boolean,
     icon: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    isError: Boolean = false,
+    isWarning: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val motion = MaterialTheme.motionScheme
@@ -231,8 +238,8 @@ private fun AuthBanner(
             Surface(
                 modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                color = if (isError) colors.errorContainer else colors.surfaceContainerHighest,
-                contentColor = if (isError) colors.onErrorContainer else colors.onSurfaceVariant,
+                color = if (isWarning) colors.tertiaryContainer else colors.surfaceContainerHighest,
+                contentColor = if (isWarning) colors.onTertiaryContainer else colors.onSurfaceVariant,
             ) {
                 Row(
                     modifier = Modifier.padding(MaterialTheme.spacing.medium),
