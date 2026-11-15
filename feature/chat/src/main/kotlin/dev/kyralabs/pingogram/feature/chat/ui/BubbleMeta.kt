@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ChipColors
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChip
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
@@ -50,10 +51,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * A translation's label ("Translated from Spanish" after the translate symbol, "Translating…" after a loading
  * indicator), a self-destruct timer ("30s" after a timer icon), a scheduled message's mark (the schedule-send symbol,
- * and "Daily" after the repeat symbol where it repeats), "edited", a reminder ([ReminderChip]), the time ("When online" for a message that waits
- * for the other user), and the state of an outgoing message, in `labelSmall` with tabular figures; a failed message's
- * state is its [NotSentLabel] instead. Shown where [ChatItem.Bubble.showsTime] says, which a translated bubble always
- * does.
+ * and "Daily" after the repeat symbol where it repeats), "edited", a reminder ([ReminderChip]), the time ("When
+ * online" for a message that waits for the other user), and the state of an outgoing message, in `labelSmall` with
+ * tabular figures; a failed message's state is its [NotSentLabel] instead. Shown where [ChatItem.Bubble.showsTime]
+ * says, which a translated bubble always does.
  */
 @Composable
 internal fun BubbleMeta(
@@ -61,7 +62,13 @@ internal fun BubbleMeta(
     colors: BubbleColors,
     modifier: Modifier = Modifier,
 ) {
-    MetaRow(bubble, colors.secondaryContent, statusTint = { it.tint(colors) }, modifier = modifier)
+    MetaRow(
+        bubble = bubble,
+        color = colors.secondaryContent,
+        statusTint = { it.tint(colors) },
+        chipColors = ChipColors(colors.block, colors.accent),
+        modifier = modifier,
+    )
 }
 
 /**
@@ -78,6 +85,7 @@ internal fun OverlayMeta(
         bubble = bubble,
         color = colors.onMediaOverlay,
         statusTint = { colors.onMediaOverlay },
+        chipColors = ChipColors.onBackground(),
         modifier =
             modifier
                 .background(colors.mediaOverlay, CircleShape)
@@ -99,6 +107,7 @@ internal fun SurfaceMeta(
         bubble = bubble,
         color = scheme.onSurfaceVariant,
         statusTint = { status -> if (status == OutgoingStatus.Read) scheme.primary else scheme.onSurfaceVariant },
+        chipColors = ChipColors.onBackground(),
         modifier = modifier,
     )
 }
@@ -108,6 +117,7 @@ private fun MetaRow(
     bubble: ChatItem.Bubble,
     color: Color,
     statusTint: @Composable (OutgoingStatus) -> Color,
+    chipColors: ChipColors,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -124,7 +134,7 @@ private fun MetaRow(
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
         // The message's reminder, before the time (the owner's board 29c).
         LocalReminderChips.current?.let { chips ->
-            chips.labelFor(bubble.id)?.let { ReminderChip(it, onClick = { chips.open(bubble.id) }) }
+            chips.labelFor(bubble.id)?.let { ReminderChip(it, chipColors, onClick = { chips.open(bubble.id) }) }
         }
         if (bubble.schedule is BubbleSchedule.WhenOnline) {
             Text(stringResource(R.string.scheduled_meta_when_online), color = color, maxLines = 1, style = style)

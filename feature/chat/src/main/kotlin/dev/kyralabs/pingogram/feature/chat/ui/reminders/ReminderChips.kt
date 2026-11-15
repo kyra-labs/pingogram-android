@@ -11,11 +11,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -48,24 +50,39 @@ internal class ReminderChips(
 /** The conversation's [ReminderChips], provided by its route; none outside it (previews, scheduled messages). */
 internal val LocalReminderChips = staticCompositionLocalOf<ReminderChips?> { null }
 
+/** The colors of a [ReminderChip]: its pill's [container] and the [content] on it. */
+@Immutable
+internal data class ChipColors(
+    val container: Color,
+    val content: Color,
+) {
+    companion object {
+        /** On media and the conversation's background, where the meta has no bubble. */
+        @Composable
+        fun onBackground(): ChipColors =
+            MaterialTheme.colorScheme.let { ChipColors(it.primaryContainer, it.onPrimaryContainer) }
+    }
+}
+
 /**
  * A message's reminder in its bubble's meta, before the time (the owner's board 29c): the alarm symbol and when it
- * rings ([label]) in `labelSmallEmphasized`, `onPrimaryContainer` on a `primaryContainer` pill. A tap opens the
+ * rings ([label]) in `labelSmallEmphasized`, on a pill in [colors] (in a bubble, its accent on its block color, which
+ * stands apart from every bubble's own; elsewhere `onPrimaryContainer` on `primaryContainer`). A tap opens the
  * reminder ([onClick]), on a 48 dp touch target that moves nothing; screen readers hear it in the bubble's description
  * and open it through the bubble's custom action ([reminderActions]).
  */
 @Composable
 internal fun ReminderChip(
     label: UiText,
+    colors: ChipColors,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scheme = MaterialTheme.colorScheme
     Row(
         modifier =
             modifier
                 .openTarget(R.string.reminder_chip_open, CircleShape, onClick)
-                .background(scheme.primaryContainer)
+                .background(colors.container)
                 .padding(horizontal = MaterialTheme.spacing.small),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
@@ -74,11 +91,11 @@ internal fun ReminderChip(
             painter = painterResource(UiR.drawable.ic_alarm),
             contentDescription = null,
             modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
-            tint = scheme.onPrimaryContainer,
+            tint = colors.content,
         )
         Text(
             text = label.resolve(),
-            color = scheme.onPrimaryContainer,
+            color = colors.content,
             maxLines = 1,
             style = MaterialTheme.typography.labelSmallEmphasized.userContent,
         )

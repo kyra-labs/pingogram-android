@@ -36,7 +36,9 @@ class ReminderChipTest {
     fun `a tap on the chip opens its reminder`() {
         var opened = 0
         composeRule.setContent {
-            PingogramTheme(dynamicColor = false) { ReminderChip(UiText.Plain("Sun, 9:00 AM"), onClick = { opened++ }) }
+            PingogramTheme(dynamicColor = false) {
+                ReminderChip(UiText.Plain("Sun, 9:00 AM"), ChipColors.onBackground(), onClick = { opened++ })
+            }
         }
 
         composeRule.onNodeWithText("Sun, 9:00 AM").performClick()
