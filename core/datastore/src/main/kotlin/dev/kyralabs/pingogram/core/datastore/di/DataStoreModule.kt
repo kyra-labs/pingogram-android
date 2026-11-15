@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreKeywordAlertsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
@@ -32,6 +33,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
@@ -66,6 +68,9 @@ interface DataStoreModule {
 
     @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
+
+    @Binds
+    fun keywordAlertsRepository(repository: DataStoreKeywordAlertsRepository): KeywordAlertsRepository
 
     @Binds
     fun transcriptionSettingsRepository(
