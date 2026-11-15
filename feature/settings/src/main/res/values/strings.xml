@@ -1483,6 +1483,8 @@
     <string name="settings_home_alerts_privacy">Alerts and privacy</string>
     <string name="settings_home_on_this_phone">On this phone</string>
     <string name="settings_home_on_this_phone_footer">Kept on this phone only. Never sent to Telegram.</string>
+    <string name="settings_bookmarks">Bookmarks</string>
+    <string name="settings_bookmarks_summary">Messages you saved with tags and notes</string>
     <!-- Message reminders, kept on this phone (the owner's board 29). -->
     <string name="settings_reminders">Reminders</string>
     <string name="settings_reminders_summary">Messages to come back to</string>

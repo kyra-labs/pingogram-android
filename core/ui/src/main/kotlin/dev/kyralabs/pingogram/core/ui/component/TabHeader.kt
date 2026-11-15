@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -36,7 +37,8 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *
  * - **Expanded**: the [title] in `displaySmallWide` (`MaterialTheme.experimentalTypography`, §13.2), and under it
  *   the [subtitle] where there is one (the Chats tab's status line), the bar as tall as both at the current font
- *   scale ([tabHeaderExpandedHeight]).
+ *   scale ([tabHeaderExpandedHeight]), the subtitle's line at least [subtitleMinHeight] tall (the Chats tab's
+ *   Catch-up chip).
  * - **Collapsed**: the dense bar's height (`sizes.denseTopAppBar`, §7) with the [title] in `titleLargeWide`; the
  *   [subtitle] gets `expanded = false` to say what it shows there, if anything.
  * - [navigationIcon] at the start (selection mode's close) and [actions] at the end: 48 dp tonal circles
@@ -51,6 +53,7 @@ fun TabHeader(
     title: @Composable (style: TextStyle) -> Unit,
     modifier: Modifier = Modifier,
     subtitle: (@Composable (expanded: Boolean) -> Unit)? = null,
+    subtitleMinHeight: Dp = 0.dp,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
@@ -80,7 +83,7 @@ fun TabHeader(
                 )
             },
             collapsedHeight = MaterialTheme.sizes.denseTopAppBar,
-            expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null),
+            expandedHeight = tabHeaderExpandedHeight(withSubtitle = subtitle != null, subtitleMinHeight),
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
@@ -113,17 +116,24 @@ fun TabHeaderTitle(
 
 /**
  * [TabHeader]'s expanded height: the collapsed row, then the title's line in `displaySmall`'s line height, then
- * [withSubtitle] a line as tall as `labelLarge`'s (the Chats tab's status line, or the connection pill in its place),
- * and the room below them, in the current font scale.
+ * [withSubtitle] a line as tall as `labelLarge`'s (the Chats tab's status line, or the connection pill in its place)
+ * and at least [subtitleMinHeight], and the room below them, in the current font scale.
  */
 @Composable
-fun tabHeaderExpandedHeight(withSubtitle: Boolean): Dp {
+fun tabHeaderExpandedHeight(
+    withSubtitle: Boolean,
+    subtitleMinHeight: Dp = 0.dp,
+): Dp {
     val typography = MaterialTheme.typography
     val spacing = MaterialTheme.spacing
     val lines =
         with(LocalDensity.current) {
             val title = typography.displaySmallEmphasized.lineHeight.toDp()
-            if (withSubtitle) title + typography.labelLarge.lineHeight.toDp() + spacing.extraSmall * 2 else title
+            if (withSubtitle) {
+                title + maxOf(typography.labelLarge.lineHeight.toDp() + spacing.extraSmall * 2, subtitleMinHeight)
+            } else {
+                title
+            }
         }
     return MaterialTheme.sizes.denseTopAppBar + lines + spacing.medium
 }

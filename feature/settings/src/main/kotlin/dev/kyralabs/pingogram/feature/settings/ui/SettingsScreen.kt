@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.BottomFade
+import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
@@ -221,10 +222,12 @@ private fun homeOpener(
     onOpenSubPage: (SettingsSubPage) -> Unit,
 ): (HomeDestination) -> Unit {
     val onOpenRecentCalls = LocalRecentCallsLauncher.current
+    val onOpenBookmarks = LocalBookmarksLauncher.current
     return { destination ->
         when (destination) {
             is HomeDestination.Page -> onOpenPage(destination.page)
             HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
+            HomeDestination.Bookmarks -> onOpenBookmarks?.invoke()
             is HomeDestination.SubPage -> onOpenSubPage(destination.subPage)
         }
     }

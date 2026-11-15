@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
@@ -130,5 +131,34 @@ internal class StoryViewerOwnStoryTest : StoryViewerViewModelHarness() {
                 assertEquals(StoryViewerEffect.ShowError(DomainError.Network), awaitItem())
             }
             assertEquals(ME to 30, own.shownStory)
+        }
+
+    @Test
+    fun `the user's own story shows how many saw and reacted, with the faces TDLib announced`() =
+        runViewModelTest {
+            users.myUserId.value = ME
+            users.setUsers(MediaFixtures.user(7, "Aisha"))
+            stories.setActive(active(ME, order = 20, maxRead = 0, ids = listOf(30)))
+            stories.setStory(
+                photoStory(30, ME, canBeDeleted = true)
+                    .copy(interactions = StoryInteractionInfo(24, 6, persistentListOf(7L, 8L))),
+            )
+            val own = viewModel(StoryViewerRoute(ME))
+
+            val views = own.content.views!!
+            assertEquals(24, views.viewCount)
+            assertEquals(6, views.reactionCount)
+            assertEquals(listOf(7L), views.recent.map { it.userId })
+
+            own.onEvent(StoryViewerEvent.ViewersOpen(true))
+            runCurrent()
+            assertTrue(own.content.views!!.isOpen)
+            assertTrue(own.content.isPaused)
+        }
+
+    @Test
+    fun `others' stories have no views pill`() =
+        runViewModelTest {
+            assertNull(viewModel().content.views)
         }
 }

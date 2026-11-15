@@ -241,6 +241,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
   through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
   `PingogramApp`.
+- **Focus profiles** (board 31, kept on this phone only): `core:domain`'s `FocusRepository` (`DataStoreFocusRepository`,
+  the settings file: the profiles, Focus set by hand, the last used) and `FocusClock`, which works out the profile on at
+  a moment from the schedules and Focus set by hand, so nothing needs an alarm. `FocusGate` (`DefaultFocusGate`,
+  provided by `core:datastore`'s `FocusModule` over the `WallClock`) answers whether a chat may alert or a call ring
+  now: `core:notifications`' renderer posts a chat it holds back silently (Focus changes notifications only).
+  Reminders ring through Focus: they read `FocusGate.active` and do not ask `allowsChat`.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one
@@ -635,13 +641,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
   names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
   the folder editor).
+- **Catch-up** (the owner's board 32, `docs/DESIGN_SYSTEM.md` §6 "Catch-up"): `feature:chats`' `catchup/`.
+  `CatchUpChats` reads the main list's unread chats in Catch-up's order (mentions first, then the most recent; muted
+  chats and channels only with `ChatListSettings.catchUpIncludesMuted`; never locked chats), which
+  `ChatListViewModel.summary` counts for the header's chip (`ChatListSummary.offersCatchUp`, from five) and
+  `CatchUpViewModel` takes once as its round (`CatchUpRound`, in the saved state). Its cards (`CatchUpSources`,
+  `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
+  and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
+  moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
 - **Bookmarks** (the owner's board 34, kept on this phone only): `core:domain`'s `BookmarkRepository`
   (`FileBookmarkRepository`, `core:data`, account-scoped: `bookmarks.txt` in the account's TDLib directory, which
   `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout; the demo's in memory) keeps the
   bookmarks (`Bookmark`: the message, when, its tags, a note and what the message said) and their tags (`BookmarkTag`,
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
-  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+  (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`. The page is
+  `BookmarksRoute` of `core:navigation` (`bookmarksScreen`, registered in `:app`, `BookmarksViewModel`: the tag filter in
+  its saved state, the chats from `ChatRepository`, asked for once where TDLib has not announced them), opened through
+  `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
+  (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
+  once a message is bookmarked).
 - **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
