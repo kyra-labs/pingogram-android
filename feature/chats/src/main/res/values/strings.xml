@@ -451,6 +451,11 @@
     <string name="catch_up_mark_as_read">Mark as read</string>
     <string name="catch_up_open_chat">Open chat</string>
     <string name="catch_up_skip">Skip</string>
+    <!-- The stamp on a card swiped toward marking it as read. -->
+    <string name="catch_up_stamp_read">READ</string>
+    <!-- The stamp on a card swiped toward skipping it. -->
+    <string name="catch_up_stamp_skip">SKIP</string>
+    <string name="catch_up_swipe_hint">Swipe away to mark as read · swipe back to skip</string>
     <string name="catch_up_done_title">All caught up</string>
     <!-- "12 chats in 4 minutes. Nice."; %2$s is [catch_up_done_minutes]. -->
     <plurals name="catch_up_done_summary">
