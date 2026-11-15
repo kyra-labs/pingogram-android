@@ -16,9 +16,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.MessageTranscription
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscribeButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -27,6 +30,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Self-destructing ones show only the blurred minithumbnail. Playback comes with the media viewer: tapping it calls
  * [onOpen].
  *
+ * Where the device can transcribe ([transcription]), the Transcribe button sits on the circle's top end; the
+ * transcript shows in a bubble under it (`VideoNoteTranscript`).
+ *
  * Screen readers hear "Video message, 0:12".
  */
 @Composable
@@ -34,6 +40,7 @@ internal fun MessageVideoNote(
     content: MessageContent.VideoNote,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    transcription: MessageTranscription? = null,
 ) {
     val videoNote = content.videoNote
     val side = MaterialTheme.sizes.videoNote
@@ -47,26 +54,37 @@ internal fun MessageVideoNote(
                     stringResource(R.string.content_kind_and_details, it, stringResource(R.string.content_not_played))
                 }
             }
-    Box(
-        modifier =
-            modifier
-                .size(side)
-                .clip(CircleShape)
-                .clickable(onClickLabel = stringResource(R.string.content_open), onClick = onOpen)
-                .semantics { contentDescription = description },
-    ) {
-        VideoThumbnail(
-            still = videoNote.still(),
-            displaySize = DpSize(side, side),
-            hidden = content.isSecret,
-            modifier = Modifier.matchParentSize(),
-        )
-        Box(Modifier.matchParentSize().clearAndSetSemantics {}) {
-            PlayBadge(Modifier.align(Alignment.Center))
-            MediaLabel(
-                text = duration,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = MaterialTheme.spacing.large),
-                dot = !content.isViewed,
+    Box(modifier) {
+        Box(
+            modifier =
+                Modifier
+                    .size(side)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = stringResource(R.string.content_open), onClick = onOpen)
+                    .semantics { contentDescription = description },
+        ) {
+            VideoThumbnail(
+                still = videoNote.still(),
+                displaySize = DpSize(side, side),
+                hidden = content.isSecret,
+                modifier = Modifier.matchParentSize(),
+            )
+            Box(Modifier.matchParentSize().clearAndSetSemantics {}) {
+                PlayBadge(Modifier.align(Alignment.Center))
+                MediaLabel(
+                    text = duration,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = MaterialTheme.spacing.large),
+                    dot = !content.isViewed,
+                )
+            }
+        }
+        // The Transcribe button on the circle's top end, clear of the time at its bottom end (board 28c).
+        if (transcription?.showsButton == true) {
+            TranscribeButton(
+                transcription = transcription,
+                colors = MaterialTheme.pingogramColors.incomingBubble,
+                isVideo = true,
+                modifier = Modifier.align(Alignment.TopEnd),
             )
         }
     }
