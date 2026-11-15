@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pingogram's own "speech to text" symbol, drawn in Material Symbols Rounded's grid (wght 400, opsz 24, FILL 0):
+     three rounded bars of a waveform beside three lines of text, as graphic_eq's bars are. The group moves the 960
+     grid's viewBox (0 -960 960 960) to 0,0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:autoMirrored="true"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M120-440v-80q0-17 11.5-28.5T160-560q17 0 28.5 11.5T200-520v80q0 17-11.5 28.5T160-400q-17 0-28.5-11.5T120-440ZM280-280v-400q0-17 11.5-28.5T320-720q17 0 28.5 11.5T360-680v400q0 17-11.5 28.5T320-240q-17 0-28.5-11.5T280-280ZM440-360v-240q0-17 11.5-28.5T480-640q17 0 28.5 11.5T520-600v240q0 17-11.5 28.5T480-320q-17 0-28.5-11.5T440-360ZM640-680h160q17 0 28.5 11.5T840-640q0 17-11.5 28.5T800-600H640q-17 0-28.5-11.5T600-640q0-17 11.5-28.5T640-680ZM640-520h160q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H640q-17 0-28.5-11.5T600-480q0-17 11.5-28.5T640-520ZM640-360h80q17 0 28.5 11.5T760-320q0 17-11.5 28.5T720-280h-80q-17 0-28.5-11.5T600-320q0-17 11.5-28.5T640-360Z" />
+    </group>
+</vector>

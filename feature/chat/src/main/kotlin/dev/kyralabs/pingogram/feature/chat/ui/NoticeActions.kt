@@ -77,13 +77,21 @@ internal class NoticeActions(
                 ""
             }
 
-            SelectionEffect.StoragePermissionDenied, VoiceEffect.MicrophoneDenied -> {
+            SelectionEffect.StoragePermissionDenied,
+            VoiceEffect.MicrophoneDenied,
+            TranscriptionEffect.MicrophoneDenied,
+            -> {
                 context.openAppSettings()
                 ""
             }
 
             VoiceEffect.ExplainMicrophone -> {
                 permissions.requestMicrophone()
+                ""
+            }
+
+            TranscriptionEffect.ExplainMicrophone -> {
+                permissions.requestMicrophoneToTranscribe()
                 ""
             }
 
@@ -95,11 +103,13 @@ internal class NoticeActions(
 
 /**
  * The system's permission requests the snackbars' actions start: the storage permission that saving needs on Android
- * 8–9 ([requestStorage]), and the microphone that voice messages need ([requestMicrophone]).
+ * 8–9 ([requestStorage]), the microphone that voice messages need ([requestMicrophone]), and the same permission that
+ * Android's speech recognizer needs to transcribe a message ([requestMicrophoneToTranscribe]).
  */
 internal class NoticePermissions(
     val requestStorage: () -> Unit,
     val requestMicrophone: () -> Unit,
+    val requestMicrophoneToTranscribe: () -> Unit,
 )
 
 /** How the screen opens a downloaded file in another app ([openFile]) and puts a text on the clipboard ([copyText]). */
@@ -129,6 +139,10 @@ internal fun rememberNoticeActions(
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             currentOnEvent(VoiceEvent.PermissionAnswered(granted))
         }
+    val transcription =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            currentOnEvent(TranscriptionEvent.PermissionAnswered(granted))
+        }
     return NoticeActions(
         context = LocalContext.current,
         activity = LocalActivity.current,
@@ -137,6 +151,7 @@ internal fun rememberNoticeActions(
             NoticePermissions(
                 requestStorage = { permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) },
                 requestMicrophone = { microphone.launch(Manifest.permission.RECORD_AUDIO) },
+                requestMicrophoneToTranscribe = { transcription.launch(Manifest.permission.RECORD_AUDIO) },
             ),
         onOpenChat = onOpenChat,
         files = files,

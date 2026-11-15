@@ -96,7 +96,6 @@ internal object AuthPreviewData {
             "By signing up for Telegram, you accept our Privacy Policy and agree not to use Telegram to spam, " +
                 "promote violence or post illegal content.",
         minUserAge = MIN_USER_AGE,
-        termsAccepted = !termsOpen,
         isTermsOfServiceOpen = termsOpen,
     )
 

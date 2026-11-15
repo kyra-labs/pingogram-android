@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.BubbleTranscript
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
@@ -101,6 +102,8 @@ data class ChatUiState(
     val translateBar: TranslateBar? = null,
     val scheduledBar: ScheduledBar? = null,
     val showsUpdateLink: Boolean = false,
+    /** Whether the device can transcribe voice and round video messages: Android 13+ with an on-device recognizer. */
+    val canTranscribe: Boolean = false,
 )
 
 /**
@@ -386,6 +389,8 @@ sealed interface ChatItem {
         /** The post the message suggests to a channel, in its direct messages, shown in a card below it. */
         val suggestedPost: SuggestedPostUi? = null,
         val translation: BubbleTranslation? = null,
+        /** A voice or round video message's transcript, made on the device; null while its text is not shown. */
+        val transcript: BubbleTranscript? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
         val pollClosesIn: Long? = null,

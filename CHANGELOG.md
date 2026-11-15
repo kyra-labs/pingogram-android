@@ -9,14 +9,24 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
+  later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
+  message's language is not on the phone, a link opens Android's language settings.
+
 ### Changed
+- Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
+  a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
+  Decline; Decline goes back to the phone number.
+- The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
+  The top bar's "3 of 128" is a chip.
+- Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
+  speed while it is not 1×.
+- Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
+  post. For someone who hides their account, a message says so.
 - Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
   Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
   can't be sure about, such as anonymous +888 ones, are never held back.
-- The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
-  The top bar's "3 of 128" is a chip.
-- Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
-  post. For someone who hides their account, a message says so.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.

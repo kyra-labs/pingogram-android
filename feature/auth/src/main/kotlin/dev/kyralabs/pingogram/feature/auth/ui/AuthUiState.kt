@@ -154,8 +154,9 @@ sealed interface AuthStepUiState {
     }
 
     /**
-     * FR-A5: a new account. Registering requires [termsAccepted]; [isTermsOfServiceOpen] shows the terms, which open
-     * by themselves when Telegram requires it.
+     * FR-A5: a new account. Registering accepts Telegram's terms of service, which the screen says
+     * (`docs/DESIGN_SYSTEM.md` §6 "Sign-up terms"); [isTermsOfServiceOpen] shows them in a dialog, which opens by
+     * itself where Telegram asks for them to be accepted explicitly (`show_popup`), and registering waits for that.
      *
      * @property minUserAge the minimum age to accept the terms; 0 if there is none.
      */
@@ -167,7 +168,6 @@ sealed interface AuthStepUiState {
         val lastNameError: DomainError?,
         val termsOfServiceText: String,
         val minUserAge: Int,
-        val termsAccepted: Boolean,
         val isTermsOfServiceOpen: Boolean,
     ) : AuthStepUiState
 
