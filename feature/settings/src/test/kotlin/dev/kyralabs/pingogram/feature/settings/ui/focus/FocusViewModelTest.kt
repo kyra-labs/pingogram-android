@@ -22,7 +22,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.DayOfWeek
@@ -127,5 +129,18 @@ class FocusViewModelTest {
 
             assertEquals(listOf(FocusEffect.ShowError(DomainError.Network)), effects)
             assertNull(repository.manual.value)
+        }
+
+    @Test
+    fun `the chat list's header shows Focus until the switch turns it off`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.uiState.value.showsInChatList)
+
+            viewModel.onEvent(FocusEvent.ShowInChatList(false))
+            runCurrent()
+
+            assertFalse(repository.showsInChatList.value)
+            assertFalse(viewModel.uiState.value.showsInChatList)
         }
 }

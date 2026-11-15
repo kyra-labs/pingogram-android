@@ -250,7 +250,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings`' `FocusRoute` (`FocusViewModel`: the profiles and the one on now, worked out each minute of
   `WallClock.minutes` while the page shows; a switch sets Focus by hand until the schedule's next change) sits in Settings
   home's "On this phone"; `FocusProfileRoute(profileId, template)` (`FocusEditViewModel`, the draft in saved state) is
-  its editor.
+  its editor. `feature:chats`' `FocusSwitchViewModel` (`ui/focus/`, hoisted by `ChatListRoute` beside
+  `ChatListViewModel`, so a change recomposes the header alone) gives the Chats header its pill
+  (`FocusRepository.showsInChatList`, handed down as `LocalChatListFocus`) and runs the switcher it opens (open in saved
+  state); its "Manage" opens `FocusRoute` through `ChatListHeaderActions.openFocus`. The profiles' symbols and shapes
+  are `core:ui`'s `FocusBadge`, shared by both.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one

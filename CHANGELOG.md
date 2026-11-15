@@ -31,8 +31,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
   starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
-  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
-  notifications still show, silently. The pages to set them up follow.
+  days and times (one across midnight is one range) or by hand, and whether calls from contacts ring. While one is on,
+  the Chats header shows it ("Focus: Work hours · until 6:00 PM"); a tap opens a switcher to change the profile, turn
+  Focus off, or keep it on until the schedule ends, for an hour or until turned off. The page's "Show Focus in the chat
+  list header" hides it.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.
 - Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or

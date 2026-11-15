@@ -407,6 +407,24 @@
     </plurals>
     <string name="stories_a11y_unseen">not seen</string>
     <string name="stories_a11y_seen">seen</string>
+    <!-- Focus (board 31): the pill under the Chats header's status line and the switcher it opens. -->
+    <string name="chat_list_focus_pill">Focus: %1$s</string>
+    <string name="chat_list_focus_pill_until">Focus: %1$s · until %2$s</string>
+    <string name="chat_list_focus_pill_spoken">%1$s. Tap to switch.</string>
+    <string name="chat_list_focus_switch">Switch Focus</string>
+    <string name="chat_list_focus_title">Focus</string>
+    <string name="chat_list_focus_manage">Manage</string>
+    <string name="chat_list_focus_off">Off</string>
+    <string name="chat_list_focus_off_summary">All notifications as usual</string>
+    <string name="chat_list_focus_until_schedule">Until %1$s (schedule)</string>
+    <string name="chat_list_focus_until">Until %1$s</string>
+    <string name="chat_list_focus_until_off">Until you turn it off</string>
+    <string name="chat_list_focus_starts">Starts at %1$s</string>
+    <string name="chat_list_focus_by_hand">By hand</string>
+    <string name="chat_list_focus_keep">Keep it on</string>
+    <string name="chat_list_focus_keep_until">Until %1$s</string>
+    <string name="chat_list_focus_keep_hour">1 hour</string>
+    <string name="chat_list_focus_keep_off">Until I turn it off</string>
     <!-- Catch-up (docs/DESIGN_SYSTEM.md §6 "Catch-up"): the chip in the chat list's header. -->
     <plurals name="catch_up_chip">
         <item quantity="one">Catch up · %d chat</item>

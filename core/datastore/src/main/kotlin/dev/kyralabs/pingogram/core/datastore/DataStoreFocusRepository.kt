@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -50,6 +51,9 @@ class DataStoreFocusRepository
 
         override val lastUsedId: Flow<Long?> = data.map { it[LAST_USED] }.distinctUntilChanged()
 
+        override val showsInChatList: Flow<Boolean> =
+            data.map { it[SHOWS_IN_CHAT_LIST] ?: true }.distinctUntilChanged()
+
         override suspend fun saveProfile(profile: FocusProfile): Outcome<Long> =
             write { preferences ->
                 val profiles = profilesOf(preferences).toMutableList()
@@ -82,6 +86,9 @@ class DataStoreFocusRepository
                     manual.profileId?.let { preferences[LAST_USED] = it }
                 }
             }
+
+        override suspend fun setShowsInChatList(shows: Boolean): Outcome<Unit> =
+            write { preferences -> preferences[SHOWS_IN_CHAT_LIST] = shows }
 
         private suspend fun <T> write(change: (MutablePreferences) -> T): Outcome<T> =
             try {
@@ -179,6 +186,7 @@ private val PROFILES = stringPreferencesKey("focus.profiles")
 private val MANUAL = stringPreferencesKey("focus.manual")
 private val LAST_USED = longPreferencesKey("focus.last_used")
 private val NEXT_ID = longPreferencesKey("focus.next_id")
+private val SHOWS_IN_CHAT_LIST = booleanPreferencesKey("focus.shows_in_chat_list")
 private const val LINE = "\n"
 private const val FIELD = "|"
 private const val LIST = ","

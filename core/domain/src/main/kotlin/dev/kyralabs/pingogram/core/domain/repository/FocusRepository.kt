@@ -20,6 +20,9 @@ interface FocusRepository {
     /** The profile turned on by hand last; null before any was. */
     val lastUsedId: Flow<Long?>
 
+    /** Whether the chat list's header shows the profile on now (on by default). */
+    val showsInChatList: Flow<Boolean>
+
     /** Saves [profile], a new one (id 0) at the end with the next id; returns its id. */
     suspend fun saveProfile(profile: FocusProfile): Outcome<Long>
 
@@ -28,4 +31,7 @@ interface FocusRepository {
 
     /** Sets Focus by hand ([manual]), or gives the schedule back (null); a profile turned on becomes the last used. */
     suspend fun setManual(manual: ManualFocus?): Outcome<Unit>
+
+    /** Shows the profile on now in the chat list's header, or not ([showsInChatList]). */
+    suspend fun setShowsInChatList(shows: Boolean): Outcome<Unit>
 }

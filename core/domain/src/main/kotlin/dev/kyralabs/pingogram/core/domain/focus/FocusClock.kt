@@ -73,6 +73,19 @@ object FocusClock {
             .minOrNull()
     }
 
+    /** When [schedule] next starts after [now] (Unix seconds); null if it runs on no day. */
+    fun nextStart(
+        schedule: FocusSchedule,
+        now: Instant,
+        zone: ZoneId,
+    ): Long? {
+        val today = now.atZone(zone).toLocalDate()
+        return (0..SEARCH_DAYS)
+            .mapNotNull { offset ->
+                schedule.edgesOn(today.plusDays(offset.toLong()), zone).firstOrNull()
+            }.firstOrNull { it > now.epochSecond }
+    }
+
     private fun FocusSchedule.covers(local: ZonedDateTime): Boolean {
         val minute = local.hour * MINUTES_PER_HOUR + local.minute
         val today = local.dayOfWeek
