@@ -465,6 +465,20 @@
     <string name="message_action_copy">Copy text</string>
     <!-- Opens the forward sheet, to send the message on to other chats. -->
     <string name="message_action_forward">Forward</string>
+    <string name="message_action_bookmark">Bookmark</string>
+    <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
+    <string name="bookmark_title">Bookmark</string>
+    <string name="bookmark_tags">Tags</string>
+    <string name="bookmark_new_tag">New tag</string>
+    <string name="bookmark_tag_name">Tag name</string>
+    <string name="bookmark_add_tag">Add</string>
+    <string name="bookmark_note">Note (optional)</string>
+    <string name="bookmark_on_this_phone">Bookmarks stay on this phone and are never sent to Telegram. Telegram\'s own Saved Messages tags are separate and need Telegram Premium.</string>
+    <string name="bookmark_cancel">Cancel</string>
+    <string name="bookmark_save">Save</string>
+    <string name="bookmark_remove">Remove bookmark</string>
+    <string name="bookmark_saved">Bookmarked</string>
+    <string name="bookmark_removed">Bookmark removed</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->

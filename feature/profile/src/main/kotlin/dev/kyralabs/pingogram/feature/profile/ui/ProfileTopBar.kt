@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -68,7 +69,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * past half way, and back, on the motion scheme's default spatial spring (`rememberMorphShape`, which snaps with
  * reduced motion); the morph progress is read in the draw phase, and the collapse only flips a derived boolean.
  *
- * Transparent on the page's color. Without [onBack] there is no back button.
+ * Transparent on the page's color. Without [onBack] there is no back button. [actions] go at the bar's end, told
+ * whether the bar is collapsed past half way (the profile's Call shows only then, and its ⋮ menu always).
  */
 @Composable
 internal fun ProfileTopBar(
@@ -76,6 +78,7 @@ internal fun ProfileTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    actions: @Composable RowScope.(collapsed: Boolean) -> Unit = {},
 ) {
     val collapsing by remember(scrollBehavior) { derivedStateOf { scrollBehavior.state.collapsedFraction > HALF } }
     val tint = profileTint(header?.profileColor)
@@ -98,6 +101,7 @@ internal fun ProfileTopBar(
                 }
             }
         },
+        actions = { actions(collapsing) },
         titleHorizontalAlignment = Alignment.CenterHorizontally,
         collapsedHeight = TopAppBarDefaults.LargeAppBarCollapsedHeight,
         expandedHeight = expandedHeight(),

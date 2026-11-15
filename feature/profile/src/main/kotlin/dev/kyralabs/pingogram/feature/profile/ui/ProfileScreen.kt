@@ -166,7 +166,12 @@ internal fun ProfilePage(
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = profilePageColor(),
-        topBar = { ProfileTopBar((page.state as? ProfileUiState.Content)?.header, scrollBehavior, onBack) },
+        topBar = {
+            val content = page.state as? ProfileUiState.Content
+            ProfileTopBar(content?.header, scrollBehavior, onBack) { collapsed ->
+                content?.let { ProfileTopBarActions(it.actions, collapsed, page.onEvent) }
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         ProfileBody(page, innerPadding, gridState, withMedia)

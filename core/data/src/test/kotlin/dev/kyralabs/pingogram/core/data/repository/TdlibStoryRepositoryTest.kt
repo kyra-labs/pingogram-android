@@ -308,6 +308,28 @@ class TdlibStoryRepositoryTest {
         }
 
     @Test
+    fun `deletes a story`() =
+        runTest {
+            client.on(TdApi.DeleteStory::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(Unit), repository().deleteStory(42, 3))
+
+            val deleted = client.sentOf<TdApi.DeleteStory>().single()
+            assertEquals(42L, deleted.storyPosterChatId)
+            assertEquals(3, deleted.storyId)
+        }
+
+    @Test
+    fun `a story the user may delete says so`() =
+        runTest {
+            client.on(TdApi.GetStory::class, TdResult.Success(story(id = 3, canBeDeleted = true)))
+
+            val story = (repository().story(42, 3).first() as Outcome.Success).value
+
+            assertTrue(story!!.canBeDeleted)
+        }
+
+    @Test
     fun `a refused reaction is a domain error`() =
         runTest {
             client.on(TdApi.SetStoryReaction::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 3")))

@@ -167,9 +167,19 @@ class ProfileScreenTest {
 
         composeRule.onNode(hasText(string(R.string.profile_action_message)) and hasClickAction()).performClick()
         composeRule.onNode(hasText(string(R.string.profile_action_mute)) and hasClickAction()).performClick()
-        composeRule.onNode(hasText(string(R.string.profile_action_secret_chat)) and hasClickAction()).performClick()
 
-        assertEquals(listOf(ProfileEvent.SendMessage, ProfileEvent.ToggleMute, ProfileEvent.StartSecretChat), events)
+        assertEquals(listOf(ProfileEvent.SendMessage, ProfileEvent.ToggleMute), events)
+    }
+
+    @Test
+    fun `secret chat is in the more options menu, not among the pills`() {
+        setScreen()
+
+        composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
+        composeRule.onNode(hasContentDescription(string(R.string.profile_more_options))).performClick()
+        composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.StartSecretChat), events)
     }
 
     @Test
@@ -265,6 +275,7 @@ class ProfileScreenTest {
         composeRule.onNodeWithText(string(R.string.profile_block)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_report)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
+        composeRule.onNode(hasContentDescription(string(R.string.profile_more_options))).assertDoesNotExist()
     }
 
     @Test
