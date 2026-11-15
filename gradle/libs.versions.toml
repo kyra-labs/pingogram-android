@@ -2,7 +2,7 @@
 # Compose artifacts take their versions from the BOM, except where noted.
 
 [versions]
-androidGradlePlugin = "9.4.1"
+androidGradlePlugin = "9.5.1"
 androidxActivity = "1.13.0"
 # benchmark-macro-junit4 and the baselineprofile Gradle plugin ship together; keep them on one version
 androidxBenchmark = "1.5.0"
