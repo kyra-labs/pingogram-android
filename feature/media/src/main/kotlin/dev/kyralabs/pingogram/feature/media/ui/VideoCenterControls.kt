@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
@@ -31,7 +32,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * A video's play or pause in the middle of the viewer (board 25), a large [FilledIconButton] in
  * `MaterialShapes.Cookie9Sided`, between "Back 10 seconds" and "Forward 10 seconds" as tonal icon buttons on the media
  * overlay. They keep their places in right-to-left layouts, as media timelines do not mirror. Nothing for a photo,
- * nor while the video waits for its first tap (its page shows that play button).
+ * nor while the video waits for its first tap (its page shows that play button) or [streams] before its first frame.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -40,9 +41,10 @@ internal fun VideoCenterControls(
     playback: VideoPlayback?,
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
+    streams: Boolean = false,
 ) {
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
-    if (controls == null || controls.waitsForTap) return
+    if (controls == null || controls.waitsForTap || streams) return
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = modifier,
@@ -123,7 +125,11 @@ internal fun BoxScope.CenterChrome(
     onEvent: (MediaViewerEvent) -> Unit,
 ) {
     Chrome(chrome.visible, dismiss, height, afterEnter = true, modifier = Modifier.align(Alignment.Center)) {
-        VideoCenterControls(content.current, content.playback, onEvent)
+        // Until a streaming video's first frame, its status takes the middle (StreamingStatus).
+        val media = content.current.media
+        val streams =
+            content.playback?.showsFrame == false && content.files[media.fileId] is FileState.Downloading
+        VideoCenterControls(content.current, content.playback, onEvent, streams = streams)
     }
 }
 

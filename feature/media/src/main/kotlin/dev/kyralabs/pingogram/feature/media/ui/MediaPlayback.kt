@@ -113,7 +113,7 @@ internal class MediaPlayback(
         if (on == autoplay) return
         autoplay = on
         val current = session ?: return
-        if (on && isStarted && !current.hasStarted) start(current) else publish()
+        if (on && isStarted && current.mayAutoplay) start(current) else publish()
     }
 
     /** The screen was started or stopped. */
@@ -123,9 +123,24 @@ internal class MediaPlayback(
         val current = session ?: return
         when {
             !started -> pause(current)
-            !current.hasStarted -> if (autoplay) start(current)
+            !current.hasStarted -> if (autoplay && current.mayAutoplay) start(current)
             current.target.kind == VideoKind.Gif -> resume(current)
         }
+    }
+
+    /**
+     * Stops a video still streaming before its first frame (board 25's Cancel): it leaves the player, whose reader
+     * stops the stream's download (what came stays), and waits for a tap to play, as without autoplay.
+     */
+    fun cancelStream() {
+        val current = session ?: return
+        if (!current.hasStarted || current.showsFrame) return
+        ticker.stop(session = null)
+        player.stop()
+        current.hasStarted = false
+        current.isPlaying = false
+        current.stoppedByUser = true
+        publish()
     }
 
     /** Plays or pauses the video in the player, or plays the item waiting for a tap. */
@@ -245,7 +260,7 @@ internal class MediaPlayback(
                     showsFrame = it.showsFrame,
                     progress = it.readProgress,
                     buffered = it.readBuffered,
-                    waitsForTap = !it.hasStarted && !autoplay,
+                    waitsForTap = !it.hasStarted && (!autoplay || it.stoppedByUser),
                     canHandOff = it.hasStarted && it.target.kind == VideoKind.Video,
                     speed = mutableSpeed.value,
                     isMuted = muted,
@@ -285,6 +300,12 @@ private class Session(
     var hasStarted = false
     var isPlaying = false
     var showsFrame = false
+
+    /** The user stopped it streaming ([MediaPlayback.cancelStream]): it waits for a tap even with autoplay. */
+    var stoppedByUser = false
+
+    /** Not given to the player yet, nor stopped by the user: autoplay may start it. */
+    val mayAutoplay: Boolean get() = !hasStarted && !stoppedByUser
 }
 
 /**

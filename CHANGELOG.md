@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
+  until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
 - The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
   once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any

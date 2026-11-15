@@ -121,6 +121,7 @@ class MediaViewerScreenshotTest(
                 "photo" to Shot(MediaPreviewData.photo),
                 "video" to Shot(MediaPreviewData.video),
                 "videoWaitingForTap" to Shot(MediaPreviewData.videoWaitingForTap),
+                "videoStreaming" to Shot(MediaPreviewData.videoStreaming),
                 "videoFaster" to Shot(MediaPreviewData.videoFaster),
                 "livePhoto" to Shot(MediaPreviewData.livePhoto),
                 "downloading" to Shot(MediaPreviewData.downloading, imagesLoading = true),
