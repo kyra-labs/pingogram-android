@@ -148,17 +148,27 @@ private fun badgeShape(index: Int): Shape =
         else -> MaterialShapes.Sunny.toShape()
     }
 
-/** Devices' summary counts the active sessions once known. */
+/** Devices' summary counts the active sessions once known, Reminders' the reminders still to come. */
 @Composable
 private fun entrySummary(
     entry: HomeEntry,
     summaries: SettingsHomeSummaries,
 ): String {
-    val count = summaries.sessionCount
-    return if (entry.destination == HomeDestination.Page(SettingsPage.ActiveSessions) && count != null) {
-        LocalResources.current.getQuantityString(R.plurals.settings_home_devices_count, count, count.toString())
-    } else {
-        stringResource(entry.summary)
+    val sessions = summaries.sessionCount
+    val reminders = summaries.upcomingReminders
+    val resources = LocalResources.current
+    return when {
+        entry.destination == HomeDestination.Page(SettingsPage.ActiveSessions) && sessions != null -> {
+            resources.getQuantityString(R.plurals.settings_home_devices_count, sessions, sessions.toString())
+        }
+
+        entry.destination == HomeDestination.Page(SettingsPage.Reminders) && reminders != null && reminders > 0 -> {
+            resources.getQuantityString(R.plurals.settings_reminders_upcoming, reminders, reminders.toString())
+        }
+
+        else -> {
+            stringResource(entry.summary)
+        }
     }
 }
 

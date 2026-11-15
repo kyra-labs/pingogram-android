@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AccountFreeze
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLanguageRepository
+import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,12 +31,14 @@ data class SettingsHomeSummaries(
     val storageBytes: Long? = null,
     val languageTag: String? = null,
     val freeze: AccountFreeze? = null,
+    val upcomingReminders: Int? = null,
 )
 
 /**
  * Reads [SettingsHomeSummaries] for the Settings home: the active sessions and the storage once
  * (TDLib answers both from its memory or database; `getActiveSessions`, `getStorageStatisticsFast`), the language as
- * it changes, and whether the account is frozen ([AccountFreezeRepository]) as TDLib announces it.
+ * it changes, whether the account is frozen ([AccountFreezeRepository]) as TDLib announces it, and how many message
+ * reminders are still to come ([ReminderRepository], the "On this phone" group's Reminders).
  */
 @HiltViewModel
 class SettingsHomeViewModel
@@ -45,6 +48,7 @@ class SettingsHomeViewModel
         private val storage: StorageRepository,
         private val language: AppLanguageRepository,
         private val accountFreeze: AccountFreezeRepository,
+        private val reminders: ReminderRepository,
     ) : ViewModel() {
         private val mutableSummaries = MutableStateFlow(SettingsHomeSummaries())
         val summaries: StateFlow<SettingsHomeSummaries> = mutableSummaries.asStateFlow()
@@ -63,6 +67,11 @@ class SettingsHomeViewModel
             }
             viewModelScope.launch {
                 accountFreeze.freeze.collect { freeze -> mutableSummaries.update { it.copy(freeze = freeze) } }
+            }
+            viewModelScope.launch {
+                reminders.reminders.collect { list ->
+                    mutableSummaries.update { it.copy(upcomingReminders = list.count { r -> !r.isDone }) }
+                }
             }
         }
     }
