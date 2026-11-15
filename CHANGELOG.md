@@ -20,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
+  has the Expressive components yet), the Android Gradle Plugin 9.5.1, AndroidX Core Telecom 1.1.0, KSP 2.3.13 and
+  Roborazzi 1.78.0.
 
 ### Fixed
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
