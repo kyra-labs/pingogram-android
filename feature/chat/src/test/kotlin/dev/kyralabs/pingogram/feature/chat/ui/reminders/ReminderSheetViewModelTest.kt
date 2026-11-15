@@ -231,4 +231,27 @@ class ReminderSheetViewModelTest {
             assertEquals(42L, viewModel.sheet.value?.messageId)
             assertTrue(effects.single() is ReminderEffect.ShowError)
         }
+
+    @Test
+    fun `the chips say when the chat's reminders not done yet ring, and follow them`() =
+        runTest {
+            reminders.saved.value =
+                listOf(
+                    MessageReminder(PRIVATE_CHAT, 42, Instant.parse("2026-10-18T20:00:00Z")),
+                    MessageReminder(PRIVATE_CHAT, 43, Instant.parse("2026-10-19T09:00:00Z")),
+                    MessageReminder(PRIVATE_CHAT, 44, Instant.parse("2026-10-19T09:00:00Z"), isDone = true),
+                    MessageReminder(PRIVATE_CHAT + 1, 45, Instant.parse("2026-10-19T09:00:00Z")),
+                )
+            val viewModel = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.chips.collect {} }
+
+            assertEquals(
+                mapOf(42L to UiText.Plain("8:00 PM"), 43L to day("Mon", "9:00 AM")),
+                viewModel.chips.value,
+            )
+
+            reminders.saved.value = reminders.saved.value.filterNot { it.messageId == 42L }
+            runCurrent()
+            assertEquals(mapOf(43L to day("Mon", "9:00 AM")), viewModel.chips.value)
+        }
 }
