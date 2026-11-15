@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionOf
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -99,6 +100,7 @@ internal fun MessageContentBody(
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     mediaDownloads: MediaDownloads = MediaDownloads(),
     showsUpdateLink: Boolean = false,
+    canTranscribe: Boolean = false,
 ) {
     val album = bubble.album
     val content = bubble.content
@@ -133,24 +135,52 @@ internal fun MessageContentBody(
         }
 
         content.isEdgeToEdge || content.isBare -> {
-            Box {
-                MediaContent(bubble.id, content, onEvent, modifier, mediaShape, mediaDownloads)
-                uploads[bubble.id]?.let { upload ->
-                    MediaUploadProgress(
-                        upload = upload,
-                        onCancel = { onEvent(ChatEvent.CancelUpload(listOf(bubble.id))) },
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-            }
+            BareOrEdgeToEdge(bubble, onEvent, modifier, mediaShape, uploads, mediaDownloads, canTranscribe)
         }
 
         content.downloadableFileId != null -> {
-            FileContent(bubble, fileState, playback, colors, onEvent, modifier, uploads[bubble.id])
+            FileContent(bubble, fileState, playback, colors, onEvent, modifier, uploads[bubble.id], canTranscribe)
         }
 
         else -> {
             InfoContent(bubble, colors, onEvent, modifier, showsUpdateLink)
+        }
+    }
+}
+
+/**
+ * Photos, videos, GIFs, stickers and the like, with the upload of one being sent; a round video message with its
+ * Transcribe button where the device can transcribe ([canTranscribe]).
+ */
+@Suppress("LongParameterList") // The message, how it shows, uploads and downloads, and whether it transcribes.
+@Composable
+private fun BareOrEdgeToEdge(
+    bubble: ChatItem.Bubble,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier,
+    mediaShape: CornerBasedShape,
+    uploads: ImmutableMap<Long, MessageUpload>,
+    mediaDownloads: MediaDownloads,
+    canTranscribe: Boolean,
+) {
+    val content = bubble.content
+    Box {
+        if (content is MessageContent.VideoNote) {
+            MessageVideoNote(
+                content = content,
+                onOpen = { onEvent(ChatEvent.OpenMedia(bubble.id)) },
+                modifier = modifier,
+                transcription = transcriptionOf(bubble, canTranscribe, onEvent),
+            )
+        } else {
+            MediaContent(bubble.id, content, onEvent, modifier, mediaShape, mediaDownloads)
+        }
+        uploads[bubble.id]?.let { upload ->
+            MediaUploadProgress(
+                upload = upload,
+                onCancel = { onEvent(ChatEvent.CancelUpload(listOf(bubble.id))) },
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }
@@ -226,6 +256,7 @@ private fun FileContent(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
     upload: MessageUpload? = null,
+    canTranscribe: Boolean = false,
 ) {
     val messageId = bubble.id
     val content = bubble.content
@@ -234,7 +265,16 @@ private fun FileContent(
     val onSeek = { fraction: Float -> onEvent(ChatEvent.Seek(messageId, fraction)) }
     when (content) {
         is MessageContent.VoiceNote -> {
-            MessageVoiceNote(content, fileState, playback, onPlayPause, onSeek, modifier, colors)
+            MessageVoiceNote(
+                content = content,
+                fileState = fileState,
+                playback = playback,
+                onPlayPause = onPlayPause,
+                onSeek = onSeek,
+                modifier = modifier,
+                colors = colors,
+                transcription = transcriptionOf(bubble, canTranscribe, onEvent),
+            )
         }
 
         is MessageContent.Audio -> {
