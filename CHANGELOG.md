@@ -20,6 +20,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
