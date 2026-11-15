@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.feature.chat.navigation.bookmarksScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToBookmarkTags
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.navigation.pinnedMessagesScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.scheduledMessagesScreen
@@ -41,5 +42,6 @@ internal fun NavGraphBuilder.chatScreens(
     bookmarksScreen(
         onBack = { navController.popBackStack() },
         onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId = messageId)) },
+        onEditTags = navController::navigateToBookmarkTags,
     )
 }

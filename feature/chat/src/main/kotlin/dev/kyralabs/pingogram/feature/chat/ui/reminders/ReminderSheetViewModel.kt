@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
+import dev.kyralabs.pingogram.core.ui.time.ReminderTimeLabels
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.ReminderEvent
 import kotlinx.collections.immutable.ImmutableMap

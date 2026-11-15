@@ -36,6 +36,8 @@ internal fun StoryViewerRoute(
     viewModel: StoryViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val screenReader = rememberScreenReader()
+    LaunchedEffect(viewModel, screenReader) { viewModel.onEvent(StoryViewerEvent.ScreenReader(screenReader)) }
     LifecycleStartEffect(viewModel) {
         viewModel.onEvent(StoryViewerEvent.Started(true))
         onStopOrDispose { viewModel.onEvent(StoryViewerEvent.Started(false)) }
