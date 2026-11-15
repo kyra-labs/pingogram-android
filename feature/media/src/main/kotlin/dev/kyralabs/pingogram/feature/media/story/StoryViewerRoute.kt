@@ -58,6 +58,10 @@ internal fun StoryViewerRoute(
                         resources.getString(R.string.story_reply_sent)
                     }
 
+                    StoryViewerEffect.StoryDeleted -> {
+                        resources.getString(R.string.story_deleted)
+                    }
+
                     StoryViewerEffect.PlaybackFailed -> {
                         resources.getString(R.string.story_playback_failed)
                     }

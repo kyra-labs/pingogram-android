@@ -28,6 +28,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Decline; Decline goes back to the phone number.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
