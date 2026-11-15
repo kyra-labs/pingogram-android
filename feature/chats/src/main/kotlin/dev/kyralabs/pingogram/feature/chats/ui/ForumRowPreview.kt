@@ -111,7 +111,10 @@ private fun NewestTopicTab(
     val radius = MaterialTheme.shapes.small
     val shape = remember(radius) { radius.copy(bottomStart = ZeroCorner, bottomEnd = ZeroCorner) }
     Row(
-        modifier = Modifier.background(colors.surfaceContainerHighest, shape).then(containerPadding()),
+        modifier =
+            Modifier
+                .background(colors.surfaceContainerHighest, shape)
+                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -140,7 +143,10 @@ private fun PreviewPill(
     val radius = MaterialTheme.shapes.small
     val shape = remember(radius) { radius.copy(topStart = ZeroCorner) }
     Row(
-        modifier = Modifier.background(colors.surfaceContainerHighest, shape).then(containerPadding()),
+        modifier =
+            Modifier
+                .background(colors.surfaceContainerHighest, shape)
+                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -158,10 +164,6 @@ private fun PreviewPill(
         InlineIcon(UiR.drawable.ic_chevron_right, colors.onSurfaceVariant, MaterialTheme.sizes.inlineIconSmall)
     }
 }
-
-@Composable
-private fun containerPadding(): Modifier =
-    Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall)
 
 /** A topic's symbol: General's hash, the others' speech bubble in the role of their color (§2.2). */
 @Composable
