@@ -212,3 +212,44 @@ WHERE process.name LIKE 'dev.kyralabs.pingogram%'
   AND (child.name GLOB 'Recomposer:*' OR child.name GLOB 'Compose:*' OR child.name GLOB 'compose:*')
 GROUP BY child.name
 ORDER BY frames DESC;
+
+-- The cache window's long frames (docs/PERFORMANCE.md §9, "Chat list scrolling"): every
+-- "compose:lazy:cache_window:keepAroundItems" over 2 ms, which composes, inside the frame's measure pass, the rows of
+-- the cache window (rememberScrollingListState: half a screen ahead, one behind) that no prefetch composed yet. When it
+-- ran (ms after the trace's first frame: the start of the journey, a fling, its turn back), how long, and what ran
+-- directly inside it, by slice name: one "compose:lazy:prefetch…" or "Compose:recompose…" per row composed tells how
+-- many rows it took, and their own children what each cost (text layouts, images).
+WITH first_frame AS (
+  SELECT MIN(slice.ts) AS ts
+  FROM slice
+  JOIN thread_track ON slice.track_id = thread_track.id
+  JOIN thread USING (utid)
+  JOIN process USING (upid)
+  WHERE process.name LIKE 'dev.kyralabs.pingogram%'
+    AND thread.is_main_thread
+    AND slice.depth = 0
+    AND slice.name LIKE 'Choreographer#doFrame%'
+),
+spikes AS (
+  SELECT slice.id, slice.ts, slice.dur, slice.track_id, slice.depth
+  FROM slice
+  JOIN thread_track ON slice.track_id = thread_track.id
+  JOIN thread USING (utid)
+  JOIN process USING (upid)
+  WHERE process.name LIKE 'dev.kyralabs.pingogram%'
+    AND slice.name = 'compose:lazy:cache_window:keepAroundItems'
+    AND slice.dur > 2e6
+)
+SELECT
+  ROUND((spikes.ts - first_frame.ts) / 1e6) AS at_ms,
+  ROUND(spikes.dur / 1e6, 1) AS keep_around_ms,
+  COALESCE(child.name, '(nothing traced inside)') AS inside,
+  COUNT(child.id) AS times,
+  ROUND(SUM(child.dur) / 1e6, 2) AS total_ms,
+  ROUND(MAX(child.dur) / 1e6, 2) AS max_ms
+FROM spikes
+CROSS JOIN first_frame
+LEFT JOIN slice AS child ON child.track_id = spikes.track_id AND child.depth = spikes.depth + 1
+  AND child.ts >= spikes.ts AND child.ts < spikes.ts + spikes.dur
+GROUP BY spikes.id, child.name
+ORDER BY spikes.ts, total_ms DESC;

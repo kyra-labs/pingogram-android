@@ -670,6 +670,29 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     - What is left of the 0.7 ms needs the next trace, read with the corrected summary: frames that apply changes would
       point at the app's shell or at pictures loading into rows, which the JVM test leaves out; otherwise the main
       thread waits for the RenderThread (`postAndWait`), as before #502.
+- The cache window's one long frame (2026-11-15). The owner's trace of `main` after #502 and #520
+  (`ChatListScrollBenchmark`, profile) met the budget: P90 7.1 ms, against 8.6 ms in the 2.2.0 baseline.
+  - **The main thread's remaining time** is waiting for the RenderThread (`postAndWait`, 0.67 ms a frame): drawing,
+    not app code. Only 30 of its 789 frames applied changes.
+  - **One frame of 39 ms** held a 36.1 ms `compose:lazy:cache_window:keepAroundItems`. In Compose 1.12.1 that section
+    calls `compose(index)` in the measure pass for every row of the cache window (half a screen ahead, one behind)
+    outside the viewport, so rows no prefetch composed yet are composed there, all in that frame.
+  - **The JVM does not reproduce it.** `ChatListScrollCostTest`'s "first scroll frames with each cache window"
+    composes the list anew and scrolls it, seven runs per state after one warming the JIT. Longest frame and all 20
+    frames, medians:
+
+    | List state | Longest frame | All 20 frames |
+    |---|---|---|
+    | Compose's default | 8.4 ms | 40.8 ms |
+    | ahead 0.5, behind 1 (Pingogram's) | 7.8 ms | 35.8 ms |
+    | ahead 0.25, behind 1 | 7.4 ms | 35.6 ms |
+    | ahead 0.5, behind 0.5 | 7.1 ms | 33.8 ms |
+    | ahead 0, behind 1 | 6.9 ms | 32.8 ms |
+
+    The cache window makes no first scroll frame longer there. The spike needs what only a phone pays the first time
+    (code not compiled yet, first text layouts, shaders), so the window stays as it is until a trace says which rows
+    it composed. `chat-list-scroll.sql` now lists every `keepAroundItems` over 2 ms with when it ran and what ran
+    inside it.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
