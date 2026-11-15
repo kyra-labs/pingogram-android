@@ -80,7 +80,9 @@ class FocusSwitchViewModel
             }
         }
 
-        /** Sets Focus by hand: [choice] gets the profile on now and the current "Keep it on", and returns what to set. */
+        /**
+         * Sets Focus by hand: [choice] gets the profile on now and the current "Keep it on", and returns what to set.
+         */
         private fun set(choice: (on: Long?, keep: FocusKeep) -> Pair<Long?, FocusKeep>) {
             viewModelScope.launch {
                 val now = clock.now()

@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsSelected
@@ -81,7 +82,13 @@ class FocusSwitchScreenTest {
             composeRule
                 .onNodeWithContentDescription("until 6:00 PM. Tap to switch.", substring = true)
                 .assertHasClickAction()
-        val target = with(composeRule.density) { pill.fetchSemanticsNode().touchBoundsInRoot.size.toDpSize() }
+        val target =
+            with(composeRule.density) {
+                pill
+                    .fetchSemanticsNode()
+                    .touchBoundsInRoot.size
+                    .toDpSize()
+            }
         assertTrue("$target", target.height >= 48.dp)
         pill.performClick()
 
@@ -195,7 +202,7 @@ class FocusSwitchScreenTest {
                         headerActions =
                             ChatListHeaderActions(
                                 search = GlobalSearchState(),
-                                searchOpen = mutableStateOf(false),
+                                searchOpen = remember { mutableStateOf(false) },
                                 openSearch = {},
                                 openAccount = {},
                             ),
@@ -226,5 +233,4 @@ class FocusSwitchScreenTest {
         }
         composeRule.waitForIdle()
     }
-
 }

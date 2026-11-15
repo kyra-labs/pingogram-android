@@ -23,7 +23,13 @@ internal object FocusPreviewData {
             switcherOpen = true,
             profiles =
                 persistentListOf(
-                    FocusSwitchProfile(1, "Work hours", FocusIcon.Work, true, FocusProfileStatus.UntilScheduleEnds(SIX_PM)),
+                    FocusSwitchProfile(
+                        id = 1,
+                        name = "Work hours",
+                        icon = FocusIcon.Work,
+                        isOn = true,
+                        status = FocusProfileStatus.UntilScheduleEnds(SIX_PM),
+                    ),
                     FocusSwitchProfile(2, "Sleep", FocusIcon.Sleep, false, FocusProfileStatus.StartsAt(HALF_PAST_TEN)),
                     FocusSwitchProfile(3, "Weekend", FocusIcon.Weekend, false, FocusProfileStatus.ByHand),
                 ),

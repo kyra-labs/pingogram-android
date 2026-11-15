@@ -79,7 +79,8 @@ internal fun FocusRoute(
  * shape, its name, how it runs and what it lets through, and a switch that turns it on or off by hand; the profile on
  * now on `primaryContainer` with "On now". Then "New profile". Without profiles, three shapes, "No Focus profiles yet"
  * and the templates, each opening the editor filled in. Last, "While Focus is on": whether the chat list's header shows
- * the profile on now, and a disabled row: Telegram has no status that tells people the user is focusing. Nothing shows until the profiles are read, a matter of milliseconds.
+ * the profile on now, and a disabled row: Telegram has no status that tells people the user is focusing. Nothing shows
+ * until the profiles are read, a matter of milliseconds.
  */
 @Composable
 internal fun FocusScreen(

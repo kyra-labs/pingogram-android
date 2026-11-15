@@ -214,14 +214,24 @@ class FocusSwitchViewModelTest {
 
             assertEquals(listOf(FocusSwitchEffect.ShowError(DomainError.Network)), effects)
             assertNull(repository.manual.value)
-            assertEquals("Work hours", viewModel.uiState.value.pill?.name)
+            assertEquals(
+                "Work hours",
+                viewModel.uiState.value.pill
+                    ?.name,
+            )
         }
 
     @Test
     fun `a schedule with no days starts never, so it reads by hand`() =
         runTest {
-            repository.profiles.value = persistentListOf(weekend.copy(schedule = FocusSchedule(persistentSetOf(), 0, 60)))
+            val never = FocusSchedule(persistentSetOf(), 0, 60)
+            repository.profiles.value = persistentListOf(weekend.copy(schedule = never))
 
-            assertEquals(FocusProfileStatus.ByHand, viewModel().uiState.value.profiles[0].status)
+            assertEquals(
+                FocusProfileStatus.ByHand,
+                viewModel()
+                    .uiState.value.profiles[0]
+                    .status,
+            )
         }
 }

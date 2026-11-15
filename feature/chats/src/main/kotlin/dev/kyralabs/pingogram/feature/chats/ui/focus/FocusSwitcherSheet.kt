@@ -20,6 +20,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
@@ -137,11 +138,8 @@ private fun FocusChoices(
         state.profiles.forEachIndexed { index, profile ->
             ChoiceRow(
                 selected = profile.isOn,
-                index = index,
-                count = count,
-                title = profile.name,
-                isUserContent = true,
-                summary = statusText(profile.status),
+                shapes = ListItemDefaults.segmentedShapes(index, count),
+                texts = ChoiceTexts(profile.name, statusText(profile.status), isUserContent = true),
                 leading = { on -> ProfileBadge(profile, on) },
                 onClick = {
                     if (!profile.isOn) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -151,11 +149,13 @@ private fun FocusChoices(
         }
         ChoiceRow(
             selected = noneOn,
-            index = count - 1,
-            count = count,
-            title = stringResource(R.string.chat_list_focus_off),
-            isUserContent = false,
-            summary = stringResource(R.string.chat_list_focus_off_summary),
+            shapes = ListItemDefaults.segmentedShapes(count - 1, count),
+            texts =
+                ChoiceTexts(
+                    title = stringResource(R.string.chat_list_focus_off),
+                    summary = stringResource(R.string.chat_list_focus_off_summary),
+                    isUserContent = false,
+                ),
             leading = { on -> OffBadge(on) },
             onClick = {
                 if (!noneOn) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -169,11 +169,8 @@ private fun FocusChoices(
 @Composable
 private fun ChoiceRow(
     selected: Boolean,
-    index: Int,
-    count: Int,
-    title: String,
-    isUserContent: Boolean,
-    summary: String,
+    shapes: ListItemShapes,
+    texts: ChoiceTexts,
     leading: @Composable (selected: Boolean) -> Unit,
     onClick: () -> Unit,
 ) {
@@ -181,7 +178,7 @@ private fun ChoiceRow(
     SegmentedListItem(
         selected = selected,
         onClick = onClick,
-        shapes = ListItemDefaults.segmentedShapes(index, count),
+        shapes = shapes,
         colors =
             ListItemDefaults.segmentedColors(
                 selectedContainerColor = colors.primaryContainer,
@@ -191,16 +188,23 @@ private fun ChoiceRow(
         modifier = Modifier.semantics { role = Role.RadioButton },
         leadingContent = { leading(selected) },
         trailingContent = { RadioButton(selected = selected, onClick = null) },
-        supportingContent = { Text(summary) },
+        supportingContent = { Text(texts.summary) },
     ) {
         Text(
-            text = title,
+            text = texts.title,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyLarge.let { if (isUserContent) it.userContent else it },
+            style = MaterialTheme.typography.bodyLarge.let { if (texts.isUserContent) it.userContent else it },
         )
     }
 }
+
+/** What a choice's row says: its [title] (a profile's name is user content) over its [summary]. */
+private class ChoiceTexts(
+    val title: String,
+    val summary: String,
+    val isUserContent: Boolean,
+)
 
 @Composable
 private fun ProfileBadge(
@@ -310,45 +314,6 @@ private fun statusText(status: FocusProfileStatus): String {
 
         FocusProfileStatus.ByHand -> {
             stringResource(R.string.chat_list_focus_by_hand)
-        }
-    }
-}
-
-/** [FocusSwitcherSheet] while the switcher is open; [state] is read here alone. */
-@Composable
-internal fun FocusSwitcherHost(
-    state: State<FocusSwitchUiState>,
-    onEvent: (FocusSwitchEvent) -> Unit,
-    onManage: () -> Unit,
-) {
-    val open by remember(state) { derivedStateOf { state.value.switcherOpen } }
-    if (open) {
-        FocusSwitcherSheet(
-            state = state.value,
-            onEvent = onEvent,
-            onManage = {
-                onEvent(FocusSwitchEvent.Close)
-                onManage()
-            },
-        )
-    }
-}
-
-/** Shows why a Focus change was not saved, in the chat list's snackbar. */
-@Composable
-internal fun FocusSwitchEffects(
-    effects: Flow<FocusSwitchEffect>,
-    snackbarHostState: SnackbarHostState,
-) {
-    val resources = LocalResources.current
-    val showErrorDetails = isDebuggable()
-    LaunchedEffect(effects) {
-        effects.collect { effect ->
-            when (effect) {
-                is FocusSwitchEffect.ShowError -> {
-                    launch { snackbarHostState.showSnackbar(errorMessage(resources, effect.error, showErrorDetails)) }
-                }
-            }
         }
     }
 }
