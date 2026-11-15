@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and

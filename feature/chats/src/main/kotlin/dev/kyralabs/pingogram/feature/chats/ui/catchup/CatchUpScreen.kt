@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -189,34 +190,11 @@ private fun CatchUpCards(
     onEvent: (CatchUpEvent) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = MaterialTheme.spacing.medium),
+        // Above the keyboard while the reply field has it.
+        modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = MaterialTheme.spacing.medium),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
         CatchUpProgress(stage.position, stage.total, Modifier.fillMaxWidth())
         CatchUpStack(stage, onEvent, Modifier.weight(1f).fillMaxWidth())
     }
-}
-
-@PingogramPreviews
-@Composable
-private fun CatchUpCardsPreview() {
-    PingogramPreview { CatchUpScreen(CatchUpPreviewData.cards, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun CatchUpDonePreview() {
-    PingogramPreview { CatchUpScreen(CatchUpPreviewData.done, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun CatchUpEmptyPreview() {
-    PingogramPreview { CatchUpScreen(CatchUpUiState(CatchUpStage.Empty), onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun CatchUpLoadingPreview() {
-    PingogramPreview { CatchUpScreen(CatchUpUiState(), onEvent = {}, onBack = {}) }
 }
