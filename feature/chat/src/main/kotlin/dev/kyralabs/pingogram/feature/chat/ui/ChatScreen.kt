@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -354,19 +355,7 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
-                // A photo, video or GIF going to or from the media viewer stays within the messages, below the bars.
-                Box(Modifier.weight(1f).sharedMediaViewport(contentPadding)) {
-                    ChatBody(
-                        state,
-                        onEvent,
-                        listState,
-                        bubbleResources,
-                        contentPadding.withTypingRoom(state.typing),
-                        nextChannel,
-                    )
-                    MessagesBottom(state.typing, listState, contentPadding)
-                    overlay()
-                }
+                MessagesArea(state, onEvent, listState, bubbleResources, contentPadding, nextChannel, overlay)
             }
         }
     }
@@ -457,7 +446,7 @@ private fun ChatScreenBottomBar(
  */
 @Suppress("LongParameterList") // The state, its list and what the bubbles share, the sheet's padding, the next channel.
 @Composable
-private fun BoxScope.ChatBody(
+internal fun BoxScope.ChatBody(
     state: ChatUiState,
     onEvent: (ChatEvent) -> Unit,
     listState: LazyListState,

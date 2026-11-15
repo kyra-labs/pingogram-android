@@ -27,6 +27,7 @@
     <string name="profile_action_mute">Mute</string>
     <string name="profile_action_unmute">Unmute</string>
     <string name="profile_action_secret_chat">Secret chat</string>
+    <string name="profile_more_options">More options</string>
 
     <!-- Profile photos -->
     <string name="profile_section_photos">Photos</string>
@@ -104,6 +105,17 @@
     <string name="profile_block">Block user</string>
     <string name="profile_unblock">Unblock user</string>
     <string name="profile_report">Report</string>
+    <!-- Board 24c: the card about someone not in the contacts who wrote first. %1$s is their first name. -->
+    <string name="profile_stranger_title">%1$s isn\'t in your contacts</string>
+    <string name="profile_stranger_no_groups">No groups in common</string>
+    <plurals name="profile_stranger_groups">
+        <item quantity="one">%d group in common</item>
+        <item quantity="other">%d groups in common</item>
+    </plurals>
+    <string name="profile_stranger_block">Block</string>
+    <string name="profile_stranger_add_contact">Add contact</string>
+    <!-- The phone row of someone whose privacy settings hide their number. %1$s is their first name. -->
+    <string name="profile_phone_hidden">Hidden by %1$s\'s privacy settings</string>
     <!-- Opens the export page of the chat (Export chat): its history into a folder the user picks. -->
     <string name="profile_export_chat">Export chat</string>
 
@@ -594,7 +606,16 @@
         <item quantity="other">You have %1$s boosts that aren\'t in use.</item>
     </plurals>
     <!-- The profile's call pill (REQUIREMENTS.md FR-V1). -->
+    <string name="profile_action_share">Share</string>
     <string name="profile_action_call">Call</string>
+    <!-- The one action on a deleted account's profile: deletes the private chat with it. -->
+    <string name="profile_action_delete_chat">Delete chat</string>
+    <string name="profile_delete_chat_title">Delete this chat?</string>
+    <string name="profile_delete_chat_text">Its messages are deleted for you. This can\'t be undone.</string>
+    <string name="profile_delete_chat_confirm">Delete</string>
+    <!-- On a deleted account's profile, in place of its information. -->
+    <string name="profile_deleted_title">This account was deleted</string>
+    <string name="profile_deleted_text">You can still read your messages with them. They can\'t receive new ones, and there\'s no profile to show.</string>
 
     <!-- A group's or channel's settings (REQUIREMENTS.md FR-P3) -->
     <string name="chat_settings_group">Group settings</string>

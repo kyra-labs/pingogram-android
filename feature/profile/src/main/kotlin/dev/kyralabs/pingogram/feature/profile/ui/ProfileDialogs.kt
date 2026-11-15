@@ -55,7 +55,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The profile's confirmations (`docs/DESIGN_SYSTEM.md` §6 "Dialogs": `AlertDialog`s): starting a secret chat, which
  * says that it lives on this device and the other person's only and is gone after logging out, with the lock icon; and
- * blocking the user, destructive, its confirm button in `error`. "Cancel" closes either.
+ * blocking the user, and deleting the chat with a deleted account, destructive, their confirm buttons in `error`.
+ * "Cancel" closes any of them.
  */
 @Composable
 internal fun ProfileDialogs(
@@ -88,6 +89,18 @@ internal fun ProfileDialogs(
                 confirm = stringResource(R.string.profile_block_confirm),
                 destructive = true,
                 onConfirm = { onEvent(ProfileEvent.ConfirmBlock) },
+                onDismiss = { onEvent(ProfileEvent.DismissDialog) },
+            )
+        }
+
+        ProfileDialog.DeleteChat -> {
+            ConfirmDialog(
+                icon = UiR.drawable.ic_delete,
+                title = stringResource(R.string.profile_delete_chat_title),
+                text = stringResource(R.string.profile_delete_chat_text),
+                confirm = stringResource(R.string.profile_delete_chat_confirm),
+                destructive = true,
+                onConfirm = { onEvent(ProfileEvent.ConfirmDeleteChat) },
                 onDismiss = { onEvent(ProfileEvent.DismissDialog) },
             )
         }

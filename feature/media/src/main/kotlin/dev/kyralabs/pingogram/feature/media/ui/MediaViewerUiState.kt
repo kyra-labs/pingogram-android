@@ -222,6 +222,8 @@ data class VideoPlayback(
     val canHandOff: Boolean = false,
     /** How fast videos play, one of [PlaybackSpeeds]; GIFs keep their pace whatever it says. */
     val speed: Float = 1f,
+    /** Whether the video plays without sound (the controls' mute button). */
+    val isMuted: Boolean = false,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -258,6 +260,16 @@ sealed interface MediaViewerEvent {
     data class HoldLivePhoto(
         val messageId: Long,
         val held: Boolean,
+    ) : MediaViewerEvent
+
+    /** −10 or +10 s: the video in the player moves [seconds] on (back where negative). */
+    data class SeekBy(
+        val seconds: Int,
+    ) : MediaViewerEvent
+
+    /** The mute button: videos play without sound, or with it again. */
+    data class SetMuted(
+        val muted: Boolean,
     ) : MediaViewerEvent
 
     /** Videos are to play at [speed] times their pace (one of [PlaybackSpeeds]): More's "Speed", or the speed chip. */

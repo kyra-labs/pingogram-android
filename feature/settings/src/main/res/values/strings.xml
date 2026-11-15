@@ -1483,6 +1483,36 @@
     <string name="settings_home_alerts_privacy">Alerts and privacy</string>
     <string name="settings_home_on_this_phone">On this phone</string>
     <string name="settings_home_on_this_phone_footer">Kept on this phone only. Never sent to Telegram.</string>
+    <string name="settings_bookmarks">Bookmarks</string>
+    <string name="settings_bookmarks_summary">Messages you saved with tags and notes</string>
+    <!-- Message reminders, kept on this phone (the owner's board 29). -->
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_reminders_summary">Messages to come back to</string>
+    <plurals name="settings_reminders_upcoming">
+        <item quantity="one">%1$s upcoming</item>
+        <item quantity="other">%1$s upcoming</item>
+    </plurals>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_loading">Loading reminders</string>
+    <string name="reminders_on_this_phone">Kept on this phone only</string>
+    <!-- The group of reminders not done yet, with how many: "Upcoming · 3". -->
+    <string name="reminders_upcoming">Upcoming · %1$d</string>
+    <string name="reminders_done">Done</string>
+    <string name="reminders_unknown_chat">Chat</string>
+    <!-- A reminder's message in a group, after who sent it: "Aisha: Train leaves 6:40". -->
+    <string name="reminders_preview_sender">%1$s: %2$s</string>
+    <!-- A reminder's note, as the user wrote it. -->
+    <string name="reminders_note">Note: %1$s</string>
+    <string name="reminders_mark_done">Mark done</string>
+    <string name="reminders_mark_not_done">Mark not done</string>
+    <string name="reminders_delete">Delete</string>
+    <string name="reminders_deleted">Reminder deleted</string>
+    <string name="reminders_undo">Undo</string>
+    <string name="reminders_sort">Sort reminders</string>
+    <string name="reminders_sort_time">By time</string>
+    <string name="reminders_sort_chat">By chat</string>
+    <string name="reminders_empty_title">No reminders yet</string>
+    <string name="reminders_empty_body">Long-press any message and choose Remind me. It comes back when you need it, even if the chat is muted. Stays on this phone. Not sent to Telegram.</string>
     <string name="settings_home_more">More</string>
     <string name="settings_home_app">App</string>
     <string name="settings_home_stickers_emoji">Stickers and emoji</string>
@@ -1661,4 +1691,43 @@
     <string name="settings_focus_delete_title">Delete this profile?</string>
     <string name="settings_focus_delete_text">If it\'s on, Focus turns off.</string>
     <string name="settings_focus_delete_confirm">Delete</string>
+    <!-- Keyword alerts (board 30), kept on this phone only. -->
+    <string name="settings_keyword_alerts">Keyword alerts</string>
+    <string name="settings_keyword_alerts_summary">Words that alert you, checked on this phone</string>
+    <string name="settings_keyword_alerts_intro">Get notified when a message contains one of these words, even in busy or muted chats.</string>
+    <string name="settings_keyword_alerts_add_word">Add word</string>
+    <string name="settings_keyword_alerts_add_word_hint">A word or phrase</string>
+    <string name="settings_keyword_alerts_add">Add</string>
+    <!-- %1$d: the most words, 20 -->
+    <plurals name="settings_keyword_alerts_full">
+        <item quantity="one">You can keep up to %1$d word. Remove it to add another.</item>
+        <item quantity="other">You can keep up to %1$d words. Remove one to add another.</item>
+    </plurals>
+    <!-- %1$s: an alert word; read by screen readers on the word's chip -->
+    <string name="settings_keyword_alerts_remove">%1$s, remove</string>
+    <string name="settings_keyword_alerts_matching">Matches whole words, in any letter case, with or without accents.</string>
+    <string name="settings_keyword_alerts_empty_title">No alert words yet</string>
+    <string name="settings_keyword_alerts_empty_body">Add a word and Pingogram will tell you when someone mentions it. Checked on this phone. Your words aren\'t sent anywhere.</string>
+    <string name="settings_keyword_alerts_try">Try</string>
+    <!-- Common words the empty page suggests, one tap adding each -->
+    <string name="settings_keyword_alerts_suggest_urgent">urgent</string>
+    <string name="settings_keyword_alerts_suggest_meeting">meeting</string>
+    <string name="settings_keyword_alerts_add_name">Add your name</string>
+    <string name="settings_keyword_alerts_add_username">Add your username</string>
+    <!-- %1$s: a suggested word -->
+    <string name="settings_keyword_alerts_add_named">Add %1$s</string>
+    <string name="settings_keyword_alerts_where">Where to look</string>
+    <string name="settings_keyword_alerts_where_all">All chats</string>
+    <string name="settings_keyword_alerts_where_folders">Chosen folders</string>
+    <string name="settings_keyword_alerts_where_folders_summary">Choose the folders to look in</string>
+    <string name="settings_keyword_alerts_no_folders">You have no chat folders</string>
+    <string name="settings_keyword_alerts_edit_folders">Edit</string>
+    <string name="settings_keyword_alerts_where_muted">Muted chats only</string>
+    <string name="settings_keyword_alerts_where_muted_summary">Chats you\'ve muted but still care about</string>
+    <string name="settings_keyword_alerts_alert">Alert</string>
+    <string name="settings_keyword_alerts_when_muted">Alert even when the chat is muted</string>
+    <string name="settings_keyword_alerts_when_muted_summary">Ignores mute for matching messages</string>
+    <string name="settings_keyword_alerts_in_chat_list">Show “Keyword alerts” in the chat list</string>
+    <string name="settings_keyword_alerts_in_chat_list_summary">A tab of only the chats with a match</string>
+    <string name="settings_keyword_alerts_folders_title">Look in these folders</string>
 </resources>

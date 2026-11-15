@@ -61,6 +61,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetHost
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialog
@@ -173,12 +177,16 @@ internal fun ConversationRoute(
         hiltViewModel<BookmarkSheetViewModel, BookmarkSheetViewModel.Factory>(key = "bookmark-$chatId") {
             it.create(chatId)
         },
+    reminderViewModel: ReminderSheetViewModel =
+        hiltViewModel<ReminderSheetViewModel, ReminderSheetViewModel.Factory>(key = "reminder-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
     // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
     val onEvent: (ChatEvent) -> Unit =
-        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel) {
+        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel) {
             { event ->
                 when (event) {
                     is SuggestedPostEvent -> {
@@ -188,6 +196,11 @@ internal fun ConversationRoute(
                     is BookmarkEvent -> {
                         viewModel.onEvent(ChatEvent.DismissMessageActions)
                         bookmarkViewModel.onEvent(event)
+                    }
+
+                    is ReminderEvent -> {
+                        viewModel.onEvent(ChatEvent.DismissMessageActions)
+                        reminderViewModel.onEvent(event)
                     }
 
                     else -> {
@@ -239,6 +252,7 @@ internal fun ConversationRoute(
     )
     BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
     BookmarkSheetHost(bookmarkViewModel, snackbarHostState)
+    ReminderSheetHost(reminderViewModel, snackbarHostState)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -246,11 +260,18 @@ internal fun ConversationRoute(
         }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    // The bubbles' reminder chips; a tap opens the reminder in the Remind me sheet.
+    val reminderLabels = reminderViewModel.chips.collectAsStateWithLifecycle()
+    val reminderChips =
+        remember(reminderViewModel, reminderLabels) {
+            ReminderChips(reminderLabels) { reminderViewModel.onEvent(ReminderEvent.Open(it)) }
+        }
     CompositionLocalProvider(
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
+        LocalReminderChips provides reminderChips,
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
