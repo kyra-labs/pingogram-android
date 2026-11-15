@@ -502,6 +502,22 @@
     <string name="bookmark_remove">Remove bookmark</string>
     <string name="bookmark_saved">Bookmarked</string>
     <string name="bookmark_removed">Bookmark removed</string>
+    <!-- The Bookmarks page (docs/DESIGN_SYSTEM.md §6 "Bookmarks"). -->
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_back">Back</string>
+    <string name="bookmarks_all">All</string>
+    <!-- A filter chip: a tag's name (or "All") and how many bookmarks it holds, "Trips 4". -->
+    <string name="bookmarks_filter">%1$s %2$d</string>
+    <string name="bookmarks_open_in_chat">Open in chat</string>
+    <string name="bookmarks_undo">Undo</string>
+    <string name="bookmarks_empty_title">Nothing bookmarked yet</string>
+    <string name="bookmarks_empty_body">Long-press a message and choose Bookmark to keep it here with tags and a note. Bookmarks stay on this phone.</string>
+    <!-- Saved Messages' card to the Bookmarks page: "Bookmarks · 27". -->
+    <plurals name="saved_bookmarks_card">
+        <item quantity="one">Bookmarks · %d</item>
+        <item quantity="other">Bookmarks · %d</item>
+    </plurals>
+    <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->

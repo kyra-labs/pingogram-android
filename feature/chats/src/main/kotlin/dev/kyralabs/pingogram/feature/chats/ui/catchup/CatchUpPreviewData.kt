@@ -23,6 +23,7 @@ internal object CatchUpPreviewData {
                     message(4, "Meera", "@you can you check the price for 4 people?", "9:14 AM"),
                 ),
             earlierCount = 5,
+            replyTo = message(4, "Meera", "@you can you check the price for 4 people?", "9:14 AM"),
         )
 
     private val beta =
@@ -39,6 +40,20 @@ internal object CatchUpPreviewData {
     val cards =
         CatchUpUiState(
             stage = CatchUpStage.Cards(position = 3, total = 12, minutesLeft = 4, current = trip, next = beta),
+        )
+
+    /** The card with the reply field open, answering the mention. */
+    val replying =
+        CatchUpUiState(
+            stage =
+                CatchUpStage.Cards(
+                    position = 3,
+                    total = 12,
+                    minutesLeft = 4,
+                    current = trip,
+                    next = beta,
+                    reply = CatchUpReplyState(),
+                ),
         )
 
     val done =
