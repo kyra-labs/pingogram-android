@@ -59,9 +59,10 @@ data class ReminderRow(
 
 /** What the user does on the page. */
 sealed interface RemindersEvent {
-    /** A reminder was tapped: its chat opens. */
+    /** A reminder was tapped: its chat opens at its message. */
     data class Open(
         val chatId: Long,
+        val messageId: Long,
     ) : RemindersEvent
 
     /** "Mark done" (a swipe toward the end, or the custom action), or "Mark not done" on one done. */
@@ -86,8 +87,10 @@ sealed interface RemindersEvent {
 
 /** The page's one-off effects. */
 sealed interface RemindersEffect {
-    data class OpenChat(
+    /** Open chat [chatId] at message [messageId]. */
+    data class OpenMessage(
         val chatId: Long,
+        val messageId: Long,
     ) : RemindersEffect
 
     /** A reminder was deleted; the snackbar offers "Undo". */
