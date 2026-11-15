@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",

@@ -28,6 +28,8 @@
     <string name="media_pip_video">Video in picture-in-picture</string>
     <!-- The seek bar's value for screen readers: the time played, then the length. -->
     <string name="media_seek_state">%1$s of %2$s</string>
+    <!-- The one-time hint after the viewer's controls were hidden by a tap. -->
+    <string name="media_controls_hint">Tap to show controls</string>
     <string name="media_back_10">Back 10 seconds</string>
     <string name="media_forward_10">Forward 10 seconds</string>
     <string name="media_mute">Mute</string>

@@ -177,30 +177,6 @@ private fun actionsOf(
 }
 
 /**
- * Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. While a screen
- * reader explores by touch ([keptShown], board 25), it always shows and taps leave it.
- */
-@Stable
-internal class ChromeState(
-    visible: Boolean = true,
-) {
-    private var shown by mutableStateOf(visible)
-
-    /** Set while TalkBack explores by touch: the chrome never hides then. */
-    var keptShown by mutableStateOf(false)
-
-    val visible: Boolean get() = shown || keptShown
-
-    fun toggle() {
-        if (!keptShown) shown = !shown
-    }
-
-    companion object {
-        val Saver: Saver<ChromeState, Boolean> = Saver(save = { it.shown }, restore = { ChromeState(it) })
-    }
-}
-
-/**
  * Where a drag of the page leaves to: down past a threshold of the page's [height], or with a fling, closes the viewer
  * ([onBack]); up hands the playing video to picture-in-picture ([onSwipeUp]) where it can, else it closes too.
  */
@@ -347,7 +323,7 @@ private fun MediaPager(
         val item = items[page]
         val isShown = page == pagerState.settledPage
         val pageZoom = zoom.takeIf { isShown && item.media is ViewerMedia.Image && !item.isHidden }
-        val onTap = if (item.isHidden) ({ onEvent(MediaViewerEvent.RevealSpoiler(item.messageId)) }) else chrome::toggle
+        val onTap = pageTap(item, chrome, onEvent)
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
         val playback = content.playback?.takeIf { it.messageId == item.messageId }
         val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
