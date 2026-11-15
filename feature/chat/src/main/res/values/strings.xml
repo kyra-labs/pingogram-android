@@ -518,6 +518,8 @@
     <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
     <!-- Editing the bookmarks' tags (docs/DESIGN_SYSTEM.md §6 "Bookmarks", board 34c). -->
     <string name="bookmarks_edit_tags">Edit tags</string>
+    <string name="bookmarks_search">Search bookmarks</string>
+    <string name="bookmarks_no_matches">No bookmarks found</string>
     <string name="bookmark_tags_title">Edit tags</string>
     <string name="bookmark_tags_footer">Tags show in this order when you bookmark a message and on the Bookmarks page. They stay on this phone.</string>
     <plurals name="bookmark_tag_count">
