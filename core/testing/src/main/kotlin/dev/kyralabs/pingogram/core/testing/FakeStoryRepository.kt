@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.model.StoryList
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -38,6 +39,10 @@ class FakeStoryRepository : StoryRepository {
     }
     var onReact: suspend (ReactionType?) -> Outcome<Unit> = { Outcome.Success(Unit) }
     var onReply: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** Who saw the user's own story, by page: none by default. */
+    var onViewers: suspend (query: String, onlyContacts: Boolean, reactionsFirst: Boolean, offset: String) ->
+    Outcome<StoryViewersPage> = { _, _, _, _ -> Outcome.Success(StoryViewersPage(0, 0, persistentListOf(), null)) }
 
     /** Deleting a story: success by default. */
     var onDelete: suspend (chatId: Long, storyId: Int) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
@@ -131,5 +136,16 @@ class FakeStoryRepository : StoryRepository {
     ): Outcome<Unit> {
         calls += "delete:$chatId:$storyId"
         return onDelete(chatId, storyId)
+    }
+
+    override suspend fun viewers(
+        storyId: Int,
+        query: String,
+        onlyContacts: Boolean,
+        reactionsFirst: Boolean,
+        offset: String,
+    ): Outcome<StoryViewersPage> {
+        calls += "viewers:$storyId:$query:$onlyContacts:$reactionsFirst:$offset"
+        return onViewers(query, onlyContacts, reactionsFirst, offset)
     }
 }
