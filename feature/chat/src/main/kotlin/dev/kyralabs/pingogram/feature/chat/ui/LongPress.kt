@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -30,34 +31,43 @@ import androidx.compose.ui.unit.toSize
  * swipe that starts first cancels it. A mouse's secondary button (a right click) calls [onSecondaryClick] at once, the
  * same way, and the content sees none of it (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so
  * the element's place is read only when a long press or a right click needs it, never while the list scrolls.
+ *
+ * Where there is [onDragOut], a finger that moves beyond the touch slop after the long press calls it once, to drag
+ * the element's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop").
  */
 internal fun Modifier.onLongPress(
     onLongPress: (Rect) -> Unit,
     onSecondaryClick: (Rect) -> Unit = onLongPress,
-): Modifier = this then LongPressElement(onLongPress, onSecondaryClick)
+    onDragOut: (() -> Boolean)? = null,
+): Modifier = this then LongPressElement(onLongPress, onSecondaryClick, onDragOut)
 
 private class LongPressElement(
     private val onLongPress: (Rect) -> Unit,
     private val onSecondaryClick: (Rect) -> Unit,
+    private val onDragOut: (() -> Boolean)?,
 ) : ModifierNodeElement<LongPressNode>() {
-    override fun create() = LongPressNode(onLongPress, onSecondaryClick)
+    override fun create() = LongPressNode(onLongPress, onSecondaryClick, onDragOut)
 
     override fun update(node: LongPressNode) {
         node.onLongPress = onLongPress
         node.onSecondaryClick = onSecondaryClick
+        node.onDragOut = onDragOut
     }
 
     override fun equals(other: Any?): Boolean =
         other is LongPressElement &&
             other.onLongPress === onLongPress &&
-            other.onSecondaryClick === onSecondaryClick
+            other.onSecondaryClick === onSecondaryClick &&
+            other.onDragOut === onDragOut
 
-    override fun hashCode(): Int = 31 * onLongPress.hashCode() + onSecondaryClick.hashCode()
+    override fun hashCode(): Int =
+        (31 * onLongPress.hashCode() + onSecondaryClick.hashCode()) * 31 + onDragOut.hashCode()
 }
 
 private class LongPressNode(
     var onLongPress: (Rect) -> Unit,
     var onSecondaryClick: (Rect) -> Unit,
+    var onDragOut: (() -> Boolean)?,
 ) : DelegatingNode() {
     init {
         delegate(
@@ -70,7 +80,7 @@ private class LongPressNode(
                         consumeUntilUp()
                     } else if (awaitLongPress(down)) {
                         onLongPress(windowBounds())
-                        consumeUntilUp()
+                        consumeUntilUp(dragFrom = down.position, onDrag = onDragOut)
                     }
                 }
             },
@@ -86,7 +96,7 @@ private class LongPressNode(
 /**
  * A bubble row's gestures: in selection mode ([selecting]) its taps and long presses [toggle] it; otherwise a long
  * press opens its actions ([showActions]) and, where it has a [swipe], a swipe toward the end replies (mirrored in
- * right-to-left layouts, [isRtl]).
+ * right-to-left layouts, [isRtl]); moving on after the long press drags its files out where there is [dragOut].
  */
 internal fun Modifier.bubbleGestures(
     selecting: Boolean,
@@ -94,11 +104,12 @@ internal fun Modifier.bubbleGestures(
     showActions: ActionsOpener,
     swipe: SwipeToReplyState?,
     isRtl: Boolean,
+    dragOut: (() -> Boolean)? = null,
 ): Modifier =
     when {
         selecting -> onSelectionTap(toggle)
-        swipe != null -> onLongPress(showActions, showActions.onSecondaryClick).swipeToReply(swipe, isRtl)
-        else -> onLongPress(showActions, showActions.onSecondaryClick)
+        swipe != null -> onLongPress(showActions, showActions.onSecondaryClick, dragOut).swipeToReply(swipe, isRtl)
+        else -> onLongPress(showActions, showActions.onSecondaryClick, dragOut)
     }
 
 /**
@@ -200,10 +211,29 @@ private suspend fun AwaitPointerEventScope.awaitLongPress(down: PointerInputChan
     return ended == null
 }
 
-/** Consumes every change in the initial pass until all pointers are up, so the content takes no tap. */
-private suspend fun AwaitPointerEventScope.consumeUntilUp() {
+/**
+ * Consumes every change in the initial pass until all pointers are up, so the content takes no tap. Where there is
+ * [onDrag], the first pointer moving beyond the touch slop from [dragFrom] calls it once.
+ */
+private suspend fun AwaitPointerEventScope.consumeUntilUp(
+    dragFrom: Offset? = null,
+    onDrag: (() -> Boolean)? = null,
+) {
+    var drag = onDrag?.takeIf { dragFrom != null }
     do {
         val event = awaitPointerEvent(PointerEventPass.Initial)
         event.changes.forEach { it.consume() }
+        val moved =
+            dragFrom != null && event.changes.firstOrNull()?.movedFrom(dragFrom, viewConfiguration.touchSlop) == true
+        if (drag != null && moved) {
+            drag()
+            drag = null
+        }
     } while (event.changes.any { it.pressed })
 }
+
+/** Whether this pointer is still down and beyond [slop] from [start]. */
+private fun PointerInputChange.movedFrom(
+    start: Offset,
+    slop: Float,
+): Boolean = pressed && (position - start).getDistance() > slop

@@ -944,4 +944,12 @@
     <string name="action_bar_blocked">Blocked</string>
     <string name="action_bar_contact_added">Added to your contacts</string>
     <string name="action_bar_phone_shared">Phone number shared</string>
+    <!-- The label of a photo, video or file dragged out of a bubble into another app (board 35c). -->
+    <string name="drag_out_photo">Photo</string>
+    <string name="drag_out_video">Video</string>
+    <string name="drag_out_file">File</string>
+    <plurals name="drag_out_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
 </resources>

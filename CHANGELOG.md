@@ -12,6 +12,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
   once on the phone.
+- Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
+  letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
+  muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
@@ -27,6 +30,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notifications still show, silently. The pages to set them up follow.
 - On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
   in the attach preview, ready for a caption.
+- Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
+  chats that protect their content.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and

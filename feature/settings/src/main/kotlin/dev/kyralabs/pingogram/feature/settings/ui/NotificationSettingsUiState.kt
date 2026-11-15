@@ -136,6 +136,9 @@ sealed interface NotificationSettingsPage {
     /** Whom the account hears of reactions and poll votes from. */
     data object Reactions : NotificationSettingsPage
 
+    /** Keyword alerts (board 30). */
+    data object KeywordAlerts : NotificationSettingsPage
+
     /** The chats of [scope] with settings of their own. */
     data class Exceptions(
         val scope: NotificationScope,
