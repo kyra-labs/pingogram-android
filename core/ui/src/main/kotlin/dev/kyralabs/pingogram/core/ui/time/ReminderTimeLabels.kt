@@ -13,8 +13,8 @@ import java.util.Locale
  * When a message reminder rings (the owner's board 29), in words for [zone], [locale] and the device's clock, with the
  * platform's patterns: the time alone today ("11:30 PM"), the weekday and the time within a week ("Sun, 9:00 AM"),
  * else the date too ("Mon, Nov 23, 9:00 AM"), a day and a time joined in the language's way
- * (`reminder_label_day_time`). [day] says the day alone, for a reminder done: "Today", the weekday within a week back or
- * ahead, else the date.
+ * (`reminder_label_day_time`). [day] says the day alone, for a reminder done: "Today", the weekday within a week back
+ * or ahead, else the date.
  */
 class ReminderTimeLabels(
     private val zone: ZoneId,
