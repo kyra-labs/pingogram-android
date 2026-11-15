@@ -60,6 +60,8 @@ import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import dev.kyralabs.pingogram.feature.media.ui.zoom.detectZoomGestures
 import dev.kyralabs.pingogram.feature.media.ui.zoom.fittedSize
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -75,6 +77,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   on the device; once the item is in the player ([playback]), [videoSurface] under them, uncovered when the first
  *   frame shows. The screen stays on while a video plays. While power saving keeps it from playing by itself
  *   ([VideoPlayback.waitsForTap]), a play button over it calls [onPlay].
+ * - **Live photos** (a photo with its motion) show "LIVE" at their top start ([LiveBadge]); pressed and held, [onHold]
+ *   is told, and the motion plays over the still while held (board 25). A hold does not toggle the chrome.
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
  * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
  *   conversation ([sharedMediaViewerBounds]), growing out of it as the viewer opens and shrinking back into it as it
@@ -99,6 +103,7 @@ internal fun MediaPage(
     modifier: Modifier = Modifier,
     zoom: ZoomState? = null,
     onSideTap: ((end: Boolean) -> Unit)? = null,
+    onHold: ((held: Boolean) -> Unit)? = null,
 ) {
     val media = item.media
     val zoomState = zoom?.takeIf { media is ViewerMedia.Image && !item.isHidden }
@@ -107,7 +112,7 @@ internal fun MediaPage(
         modifier
             .fillMaxSize()
             .then(if (playing) Modifier.keepScreenOn() else Modifier)
-            .pageGestures(zoomState, onTap, onSideTap),
+            .pageGestures(zoomState, onTap, onSideTap, onHold),
     ) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
         val fitted = fittedSize(media.width, media.height, container)
@@ -122,6 +127,7 @@ internal fun MediaPage(
                 .zoomedBy(zoomState),
         ) {
             MediaLayers(item, files, playback, videoSurface)
+            if (item.isLivePhoto) LiveBadge(Modifier.align(Alignment.TopStart).padding(MaterialTheme.spacing.medium))
         }
         when {
             item.isHidden -> {
@@ -150,14 +156,32 @@ private fun Modifier.pageGestures(
     zoom: ZoomState?,
     onTap: () -> Unit,
     onSideTap: ((end: Boolean) -> Unit)?,
+    onHold: ((held: Boolean) -> Unit)?,
 ): Modifier {
     val scope = rememberCoroutineScope()
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnSideTap by rememberUpdatedState(onSideTap)
+    val currentOnHold by rememberUpdatedState(onHold)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    return pointerInput(zoom, rtl) {
+    val holds = onHold != null
+    return pointerInput(zoom, rtl, holds) {
+        val holdAfter = viewConfiguration.longPressTimeoutMillis
         detectTapGestures(
+            // A live photo plays while held: once held for a long press, until let go.
+            onPress = {
+                if (holds) {
+                    val hold =
+                        scope.launch {
+                            delay(holdAfter)
+                            currentOnHold?.invoke(true)
+                        }
+                    tryAwaitRelease()
+                    if (hold.isCompleted) currentOnHold?.invoke(false) else hold.cancel()
+                }
+            },
+            // A hold never toggles the chrome.
+            onLongPress = if (holds) ({}) else null,
             onTap = { tap ->
                 val side = currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let { sideOf(tap.x, size.width, rtl) }
                 if (side == null) currentOnTap() else currentOnSideTap?.invoke(side)

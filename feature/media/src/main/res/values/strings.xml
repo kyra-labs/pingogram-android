@@ -53,6 +53,21 @@
     <string name="media_delete">Delete</string>
     <!-- The toolbar's button that opens the menu of further actions -->
     <string name="media_more">More options</string>
+    <!-- The badge on a live photo (iOS Live Photos, Android Motion Photos) in the viewer, in capitals as on the bubble. -->
+    <string name="media_live_badge">LIVE</string>
+    <!-- Screen readers: what a live photo's page is, in place of "Photo". -->
+    <string name="media_live_photo">Live photo, press and hold to play</string>
+    <!-- Screen readers: the page's custom actions that play a live photo's motion and stop it. -->
+    <string name="media_live_play">Play live photo</string>
+    <string name="media_live_stop">Stop live photo</string>
+    <!-- More's item that chooses how fast videos play, and the heading of its list. -->
+    <string name="media_speed">Speed</string>
+    <!-- A playback speed, e.g. "1.5×": %1$s is the number in the language's digits. -->
+    <string name="media_speed_value">%1$s×</string>
+    <!-- Screen readers: the chip among a video's controls while it plays faster or slower, e.g. "Playback speed 1.5×". -->
+    <string name="media_speed_chip">Playback speed %1$s</string>
+    <!-- Screen readers: the item that leaves the speeds for More's other items. -->
+    <string name="media_speed_back">Back to more options</string>
     <!-- Opens the conversation at the message of the shown photo or video -->
     <string name="media_show_in_chat">Show in chat</string>
     <!-- Puts the shown photo on the clipboard -->
