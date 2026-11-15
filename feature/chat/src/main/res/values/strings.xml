@@ -483,8 +483,6 @@
     <string name="reminder_set_for">Reminder set for %1$s</string>
     <string name="reminder_undo">Undo</string>
     <string name="reminder_deleted">Reminder deleted</string>
-    <!-- A reminder's day and time: "Sun, 9:00 AM". -->
-    <string name="reminder_day_time">%1$s, %2$s</string>
     <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
     <string name="drop_title">Drop to send to %1$s</string>
     <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
@@ -520,6 +518,8 @@
     <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
     <!-- Editing the bookmarks' tags (docs/DESIGN_SYSTEM.md §6 "Bookmarks", board 34c). -->
     <string name="bookmarks_edit_tags">Edit tags</string>
+    <string name="bookmarks_search">Search bookmarks</string>
+    <string name="bookmarks_no_matches">No bookmarks found</string>
     <string name="bookmark_tags_title">Edit tags</string>
     <string name="bookmark_tags_footer">Tags show in this order when you bookmark a message and on the Bookmarks page. They stay on this phone.</string>
     <plurals name="bookmark_tag_count">

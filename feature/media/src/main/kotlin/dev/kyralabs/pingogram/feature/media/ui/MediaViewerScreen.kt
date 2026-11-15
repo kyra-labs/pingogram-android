@@ -148,21 +148,12 @@ internal fun MediaViewerScreen(
                 val exits = DismissExits(height, onBack, swipeUp.takeIf { canPictureInPicture && content.playsVideo })
                 DismissibleContent(dismiss, zoom, exits) {
                     ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding))
+                    // Inside the dismissible content, so a swipe that starts on them still closes or goes to PiP.
+                    if (content != null) CenterChrome(content, chrome, dismiss, height, onEvent)
                 }
             }
         }
-        if (content?.actions?.showsStorageRationale == true) {
-            StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
-        }
-        val deleteConfirmation = content?.actions?.deleteConfirmation
-        if (content != null && deleteConfirmation != null) {
-            DeleteMediaDialog(
-                confirmation = deleteConfirmation,
-                media = content.current.media,
-                onConfirm = { onEvent(MediaViewerEvent.DeleteConfirmed(it)) },
-                onDismiss = { onEvent(MediaViewerEvent.DeleteDismissed) },
-            )
-        }
+        if (content != null) ViewerDialogs(content, onEvent)
     }
 }
 
@@ -290,10 +281,11 @@ private fun ViewerContent(
  * the background while a gesture closes the viewer (on a page [height] pixels tall).
  */
 @Composable
-private fun Chrome(
+internal fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
+    modifier: Modifier = Modifier,
     afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
@@ -305,7 +297,7 @@ private fun Chrome(
     visibleState.targetState = visible
     AnimatedVisibility(
         visibleState = visibleState,
-        modifier = Modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
+        modifier = modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
         enter = fadeIn(motionScheme.defaultEffectsSpec()),
         exit = fadeOut(motionScheme.fastEffectsSpec()),
     ) {

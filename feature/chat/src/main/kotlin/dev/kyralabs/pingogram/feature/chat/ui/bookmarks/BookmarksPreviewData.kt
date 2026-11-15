@@ -64,6 +64,16 @@ internal object BookmarksPreviewData {
             selectedTagId = 1,
             items = items.removingAt(1),
         )
+
+    /** Search open with "trip" typed. */
+    val searching =
+        content.copy(
+            query = "trip",
+            items = persistentListOf(items[0], items[2]),
+        )
+
+    /** Search that found nothing. */
+    val noMatches = content.copy(query = "recipes", items = persistentListOf())
 }
 
 @PingogramPreviews
@@ -88,4 +98,16 @@ private fun BookmarksEmptyPreview() {
 @Composable
 private fun BookmarksLoadingPreview() {
     PingogramPreview { BookmarksScreen(BookmarksUiState.Loading, onEvent = {}, onBack = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun BookmarksSearchingPreview() {
+    PingogramPreview { BookmarksScreen(BookmarksPreviewData.searching, onEvent = {}, onBack = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun BookmarksNoMatchesPreview() {
+    PingogramPreview { BookmarksScreen(BookmarksPreviewData.noMatches, onEvent = {}, onBack = {}) }
 }

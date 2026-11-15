@@ -227,17 +227,17 @@ class RemindersViewModelTest {
         }
 
     @Test
-    fun `opening a reminder opens its chat`() =
+    fun `opening a reminder opens its chat at its message`() =
         runTest {
             reminders.saved.value = listOf(MessageReminder(5, 1, friday))
             val viewModel = viewModel()
             val effects = mutableListOf<RemindersEffect>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
 
-            viewModel.onEvent(RemindersEvent.Open(5))
+            viewModel.onEvent(RemindersEvent.Open(5, 1))
             runCurrent()
 
-            assertEquals(listOf<RemindersEffect>(RemindersEffect.OpenChat(5)), effects)
+            assertEquals(listOf<RemindersEffect>(RemindersEffect.OpenMessage(5, 1)), effects)
         }
 
     private companion object {

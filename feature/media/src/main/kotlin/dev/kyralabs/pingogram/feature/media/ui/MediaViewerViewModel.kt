@@ -364,16 +364,14 @@ class MediaViewerViewModel internal constructor(
                 revealedSpoilers.update { it.adding(event.messageId) }
             }
 
-            MediaViewerEvent.PlayPause, is MediaViewerEvent.HoldLivePhoto -> {
+            MediaViewerEvent.PlayPause, is MediaViewerEvent.HoldLivePhoto, is MediaViewerEvent.Seek,
+            is MediaViewerEvent.SeekBy, is MediaViewerEvent.SetMuted,
+            -> {
                 onPlaybackEvent(event)
             }
 
             MediaViewerEvent.PictureInPicture -> {
                 toPictureInPicture()
-            }
-
-            is MediaViewerEvent.Seek -> {
-                playback.seek(event.fraction)
             }
 
             is MediaViewerEvent.SetSpeed -> {
@@ -476,6 +474,18 @@ class MediaViewerViewModel internal constructor(
                 heldLivePhoto.update { held ->
                     if (event.held) event.messageId else held.takeIf { it != event.messageId }
                 }
+            }
+
+            is MediaViewerEvent.Seek -> {
+                playback.seek(event.fraction)
+            }
+
+            is MediaViewerEvent.SeekBy -> {
+                playback.seekBy(event.seconds)
+            }
+
+            is MediaViewerEvent.SetMuted -> {
+                playback.setMuted(event.muted)
             }
 
             else -> {}
