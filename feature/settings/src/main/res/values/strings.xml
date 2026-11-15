@@ -1631,5 +1631,6 @@
     <string name="settings_keyword_alerts_when_muted_summary">Ignores mute for matching messages</string>
     <string name="settings_keyword_alerts_in_chat_list">Show “Keyword alerts” in the chat list</string>
     <string name="settings_keyword_alerts_in_chat_list_summary">A tab of only the chats with a match</string>
+    <string name="settings_keyword_alerts_muted_note">Muted chats get no push from Telegram, so their alerts come while Pingogram is connected. In other chats, the chat\'s own notification alerts you.</string>
     <string name="settings_keyword_alerts_folders_title">Look in these folders</string>
 </resources>

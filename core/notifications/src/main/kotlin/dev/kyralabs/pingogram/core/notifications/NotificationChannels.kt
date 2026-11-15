@@ -107,6 +107,17 @@ enum class PingogramChannel(
         R.string.notification_channel_reminders_description,
         NotificationManagerCompat.IMPORTANCE_HIGH,
     ),
+
+    /**
+     * Keyword alerts (the owner's board 30): a match in a muted chat, while "Alert even when the chat is muted" is on,
+     * in a channel of its own, so it rings whatever the chat's notifications are set to.
+     */
+    KeywordAlerts(
+        "keyword_alerts",
+        R.string.notification_channel_keyword_alerts,
+        R.string.notification_channel_keyword_alerts_description,
+        NotificationManagerCompat.IMPORTANCE_HIGH,
+    ),
     ;
 
     /**

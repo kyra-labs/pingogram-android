@@ -130,6 +130,34 @@ internal sealed interface NotificationAction {
                 putExtra(KEY_MESSAGE_IDS, conversation.messageIds.toLongArray())
             }
 
+        /**
+         * "Mark as read" of a notification that stands for no TDLib group (a keyword alert, board 30): reads
+         * [messageIds] of chat [chatId] in the account in [slot]; [requestCode] and its data tell it apart from the
+         * other such notifications'.
+         */
+        fun markAsReadIntent(
+            context: Context,
+            slot: Int,
+            chatId: Long,
+            messageIds: List<Long>,
+            requestCode: Int,
+        ): PendingIntent {
+            val intent =
+                Intent(context, NotificationActionReceiver::class.java)
+                    .setAction(INTENT_ACTION_PREFIX + ACTION_MARK_AS_READ)
+                    .putExtra(KEY_GROUP_ID, NO_GROUP)
+                    .putExtra(KEY_ACCOUNT, slot)
+                    .putExtra(KEY_CHAT_ID, chatId)
+                    .putExtra(KEY_MESSAGE_IDS, messageIds.toLongArray())
+                    .setData("$UNGROUPED_URI$slot/$requestCode".toUri())
+            return PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
         /** The broadcast when the user swipes [conversation]'s notification away. */
         fun dismissIntent(
             context: Context,
@@ -205,6 +233,12 @@ internal sealed interface NotificationAction {
 
         /** Another account's broadcasts' data, so their pending intents differ from the first account's. */
         private const val ACCOUNT_URI = "pingogram://notification-account/"
+
+        /** The data of broadcasts of notifications that stand for no TDLib group. */
+        private const val UNGROUPED_URI = "pingogram://notification-ungrouped/"
+
+        /** No TDLib notification group: TDLib numbers them from 1. */
+        private const val NO_GROUP = 0
         private const val KEY_CHAT_ID = "chat_id"
         private const val KEY_MESSAGE_IDS = "message_ids"
         private const val KEY_REPLY_TO = "reply_to"

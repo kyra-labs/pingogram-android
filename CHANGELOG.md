@@ -12,7 +12,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
-  muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
+  muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
+  muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" and "Mark as read"; matching runs
+  on the phone while Pingogram is connected.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
