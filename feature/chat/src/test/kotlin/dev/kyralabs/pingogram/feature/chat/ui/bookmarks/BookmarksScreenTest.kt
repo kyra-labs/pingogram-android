@@ -4,10 +4,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
+import androidx.compose.ui.test.performTouchInput
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.COMPACT
@@ -68,6 +71,27 @@ class BookmarksScreenTest {
         composeRule.onNodeWithText("Goa trip").performCustomAccessibilityActionWithLabel("Remove bookmark")
 
         assertEquals(listOf<BookmarksEvent>(BookmarksEvent.Remove(chatId = 1, messageId = 10)), events)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun `a card's long press and its custom action edit its tags`() {
+        show()
+
+        composeRule.onNodeWithText("Goa trip").performTouchInput { longClick() }
+        composeRule.onNodeWithText("Goa trip").performCustomAccessibilityActionWithLabel("Edit tags")
+
+        val edit = BookmarksEvent.Edit(chatId = 1, messageId = 10)
+        assertEquals(listOf<BookmarksEvent>(edit, edit), events)
+    }
+
+    @Test
+    fun `the search button opens search`() {
+        show()
+
+        composeRule.onNodeWithContentDescription("Search bookmarks").performClick()
+
+        assertEquals(listOf<BookmarksEvent>(BookmarksEvent.OpenSearch), events)
     }
 
     @Test

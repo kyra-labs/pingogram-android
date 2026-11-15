@@ -22,7 +22,10 @@ import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.time.ReminderTimeLabels
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.ReminderEvent
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -121,6 +124,20 @@ class ReminderSheetViewModel internal constructor(
                     }
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+    /**
+     * When each reminder of the chat that is not done yet rings, by message id, for the bubbles' chips
+     * ([ReminderChips]); worded again whenever the chat's reminders change.
+     */
+    val chips: StateFlow<ImmutableMap<Long, UiText>> =
+        reminders
+            .reminders(chatId)
+            .map { all ->
+                all.values
+                    .filterNot(MessageReminder::isDone)
+                    .associate { it.messageId to label(it.at) }
+                    .toImmutableMap()
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf())
 
     init {
         // After process death the sheet reads its message again.
