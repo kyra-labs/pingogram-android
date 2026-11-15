@@ -661,7 +661,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
   (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
   once a message is bookmarked). Its "Edit tags" pushes `BookmarkTagsRoute` (`BookmarkTagsViewModel`: the draft and the
-  question before deleting in its saved state).
+  question before deleting in its saved state). A card's long press opens that bookmark's sheet over the page
+  (`BookmarkSheetViewModel`, keyed by its chat as the conversation's; `BookmarksViewModel.editing`, the chat in its
+  saved state), and its search filters on the device (`BookmarkSearch`).
 - **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
