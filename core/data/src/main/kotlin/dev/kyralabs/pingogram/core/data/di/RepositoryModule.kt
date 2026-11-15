@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
+import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
@@ -201,6 +202,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
@@ -535,6 +537,9 @@ interface RepositoryModule {
 
     @Binds
     fun transcriptRepository(repository: FileTranscriptRepository): TranscriptRepository
+
+    @Binds
+    fun reminderRepository(repository: FileReminderRepository): ReminderRepository
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository

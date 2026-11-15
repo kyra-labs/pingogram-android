@@ -748,6 +748,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   main composer's field only (`ComposerField.onAiEdit`), whose menu shows it past three lines. A style link
   (`LinkTarget.TextCompositionStyle`) opens `TextStyleRoute` of `core:navigation` (`textStyleSheet`, registered in `:app`,
   `TextStyleViewModel`), which adds the style only on a tap.
+- **Message reminders** (`docs/DESIGN_SYSTEM.md` §6 "Message reminders", the owner's board 29): kept on the device only,
+  never sent to Telegram. `core:domain`'s `ReminderRepository` (`FileReminderRepository`, `core:data`, account-scoped,
+  `reminders.txt` in the account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only
+  to delete them at logout; the demo's in memory) keeps a `MessageReminder` per message: the chat, the message, the
+  time, the user's note and whether it is done, never the message's text, which stays in TDLib's database.
+  `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the process) follows every
+  account's reminders and keeps one-time WorkManager work per reminder not done whose time is ahead
+  (`WorkManagerReminderWork`: named after the account, the message and the time, so a moved reminder gets new work and
+  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6), so Doze may hold a ring
+  back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
+  `ReminderNotificationBuilder`'s notification in the app's "Reminders" channel; its "Snooze 1 h" goes to
+  `ReminderActionReceiver`, which moves the reminder an hour on.
 - **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on
   the device only. `core:domain`'s `VoiceTranscriber` (`AndroidVoiceTranscriber`, `core:data`'s `transcription/`, a
   singleton of `DeviceModule`) is Android's own on-device speech recognizer (`SpeechRecognizer.createOnDeviceSpeechRecognizer`,

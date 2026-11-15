@@ -6,6 +6,7 @@ import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
+import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
@@ -93,6 +94,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun transcriptCache(repository: FileTranscriptRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's reminders when it logs out. */
+    @Binds
+    @IntoSet
+    fun reminderCache(repository: FileReminderRepository): TdlibUpdateCache
 
     /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
     @Binds
