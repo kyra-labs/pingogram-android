@@ -29,6 +29,7 @@ sealed interface ProfileUiState {
         val actions: ProfileActions,
         val photos: ProfilePhotos = ProfilePhotos(),
         val dialog: ProfileDialog? = null,
+        val isDeletedAccount: Boolean = false,
     ) : ProfileUiState
 }
 
@@ -160,6 +161,7 @@ data class PersonalChannel(
  *   known, or where its content may not be saved.
  * @property callUserId the user "Call" calls (`REQUIREMENTS.md` FR-V1): a person, not oneself, whose privacy settings
  *   allow it; null otherwise.
+ * @property canDeleteChat the private chat with a deleted account can be deleted, its one action ("Delete chat").
  */
 @Immutable
 data class ProfileActions(
@@ -174,6 +176,7 @@ data class ProfileActions(
     val canReport: Boolean = false,
     val callUserId: Long? = null,
     val exportChatId: Long? = null,
+    val canDeleteChat: Boolean = false,
 )
 
 /** What the contact row does. */
@@ -210,6 +213,9 @@ sealed interface ProfileDialog {
     data class Block(
         val name: UiText,
     ) : ProfileDialog
+
+    /** Deleting the private chat with a deleted account. */
+    data object DeleteChat : ProfileDialog
 }
 
 /** What the user does on the profile, handled by [ProfileViewModel.onEvent]. */
@@ -234,6 +240,11 @@ sealed interface ProfileEvent {
     data object ConfirmBlock : ProfileEvent
 
     data object Unblock : ProfileEvent
+
+    /** Ask whether to delete the private chat with a deleted account. */
+    data object DeleteChat : ProfileEvent
+
+    data object ConfirmDeleteChat : ProfileEvent
 
     /** Close the dialog shown without doing anything. */
     data object DismissDialog : ProfileEvent
@@ -368,6 +379,9 @@ sealed interface ProfileEffect {
 
     /** Telegram wants messages to go with the report: a snackbar says how to report them. */
     data object ReportNeedsMessages : ProfileEffect
+
+    /** The private chat with a deleted account is gone: leave the profile, whose chat is no more. */
+    data object ChatDeleted : ProfileEffect
 }
 
 /** What [ProfileEffect.CopyText] copied, for its snackbar. */

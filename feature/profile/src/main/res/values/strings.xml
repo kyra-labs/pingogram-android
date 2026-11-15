@@ -596,6 +596,14 @@
     </plurals>
     <!-- The profile's call pill (REQUIREMENTS.md FR-V1). -->
     <string name="profile_action_call">Call</string>
+    <!-- The one action on a deleted account's profile: deletes the private chat with it. -->
+    <string name="profile_action_delete_chat">Delete chat</string>
+    <string name="profile_delete_chat_title">Delete this chat?</string>
+    <string name="profile_delete_chat_text">Its messages are deleted for you. This can\'t be undone.</string>
+    <string name="profile_delete_chat_confirm">Delete</string>
+    <!-- On a deleted account's profile, in place of its information. -->
+    <string name="profile_deleted_title">This account was deleted</string>
+    <string name="profile_deleted_text">You can still read your messages with them. They can\'t receive new ones, and there\'s no profile to show.</string>
 
     <!-- A group's or channel's settings (REQUIREMENTS.md FR-P3) -->
     <string name="chat_settings_group">Group settings</string>

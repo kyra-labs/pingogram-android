@@ -276,6 +276,11 @@ private fun LazyGridScope.profileItems(
     fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
     }
+    if (state.isDeletedAccount) {
+        fullWidth(key = DELETED, inset = inset, motion = motion) {
+            DeletedAccountCard(Modifier.padding(top = MaterialTheme.spacing.large))
+        }
+    }
     if (state.photos.totalCount > 1) {
         item(key = PHOTOS, span = { GridItemSpan(maxLineSpan) }, contentType = PHOTOS) {
             ProfilePhotosCarousel(
@@ -362,6 +367,7 @@ private fun ProfileError(
 internal const val PROFILE_GRID_TEST_TAG = "profile_grid"
 
 private const val ACTIONS = "actions"
+private const val DELETED = "deleted"
 private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
