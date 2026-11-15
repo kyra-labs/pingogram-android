@@ -88,9 +88,7 @@ class TdlibStoryPostRepository internal constructor(
                         posting.sent(file.id, file.remote.uploadedSize, file.sizeOrExpected())
                     }
 
-                    else -> {
-                        Unit
-                    }
+                    else -> {}
                 }
             }
         }
@@ -118,7 +116,7 @@ class TdlibStoryPostRepository internal constructor(
             when {
                 chat is Outcome.Failure -> chat
                 contents == null -> Outcome.Failure(DomainError.StoryVideoNotCut)
-                else -> postAll((chat as Outcome.Success).value, contents, caption, privacy.toTd())
+                else -> postAll(chat.value, contents, caption, privacy.toTd())
             }
         // The videos that were cut gave way to their parts once these were all posted.
         if (result is Outcome.Success) delete(contents.orEmpty().mapNotNull { it.cutFrom }.distinct())

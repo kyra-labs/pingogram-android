@@ -37,40 +37,44 @@ internal fun Details(
     val browser = listOf(request.browser, request.platform).filter { it.isNotBlank() }.joinToString(" · ")
     Column(Modifier.fillMaxWidth()) {
         ListItem(
-            headlineContent = { Text(request.domain, style = MaterialTheme.typography.bodyLarge.numericContent) },
             supportingContent = {
                 Text(
                     stringResource(if (request.isApp) R.string.settings_oauth_app else R.string.settings_oauth_website),
                 )
             },
             colors = colors,
-        )
+        ) {
+            Text(request.domain, style = MaterialTheme.typography.bodyLarge.numericContent)
+        }
         ListItem(
             overlineContent = {
                 Text(
                     stringResource(R.string.settings_oauth_gets, name.bidiIsolated()).bidiIsolated(),
                 )
             },
-            headlineContent = { Text(stringResource(R.string.settings_oauth_gets_what)) },
             supportingContent =
                 state.accountName?.let { account ->
                     { Text(stringResource(R.string.settings_oauth_as, account.bidiIsolated()).bidiIsolated()) }
                 },
             colors = colors,
-        )
+        ) {
+            Text(stringResource(R.string.settings_oauth_gets_what))
+        }
         if (browser.isNotEmpty()) {
             ListItem(
-                headlineContent = { Text(browser, style = MaterialTheme.typography.bodyLarge.userContent) },
                 supportingContent = { Text(stringResource(R.string.settings_oauth_browser)) },
                 colors = colors,
-            )
+            ) {
+                Text(browser, style = MaterialTheme.typography.bodyLarge.userContent)
+            }
         }
         if (request.location.isNotBlank()) {
             ListItem(
-                headlineContent = { Text(request.location, style = MaterialTheme.typography.bodyLarge.userContent) },
                 supportingContent = { Text(stringResource(R.string.settings_oauth_location)) },
                 colors = colors,
-            )
+            ) {
+                Text(request.location, style = MaterialTheme.typography.bodyLarge.userContent)
+            }
         }
     }
 }
@@ -115,7 +119,6 @@ private fun ToggleRow(
 ) {
     val haptics = LocalHapticFeedback.current
     ListItem(
-        headlineContent = { Text(title) },
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -125,7 +128,9 @@ private fun ToggleRow(
                 },
         trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
+    ) {
+        Text(title)
+    }
 }
 
 /** A wavy line while Telegram answers, which screen readers hear, in a place kept above the buttons. */

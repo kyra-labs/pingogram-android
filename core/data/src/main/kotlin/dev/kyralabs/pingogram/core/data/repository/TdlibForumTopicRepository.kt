@@ -325,7 +325,7 @@ internal data class TopicCache(
     ): TopicCache {
         val forum = forums[chatId] ?: return this
         val topics = page.topics.filterNotNull().map { it.toForumTopic() }
-        val merged = forum.topics.putAll(topics.associateBy { it.id })
+        val merged = forum.topics.puttingAll(topics.associateBy { it.id })
         // Where each topic stands in the pages, which list the pinned ones in the forum's pin order.
         val ranks =
             topics.foldIndexed(forum.ranks) { index, ranked, topic ->
@@ -360,12 +360,17 @@ internal data class TopicCache(
         val top = loaded.maxOf { it.order }
         val reordered = loaded.mapIndexed { index, topic -> topic.copy(order = top - index) }
         // Ranked before every page's topics, in the new order.
-        val ranks = forum.ranks.putAll(topicIds.withIndex().associate { (index, id) -> id to index - topicIds.size })
+        val ranks =
+            forum.ranks.puttingAll(
+                topicIds.withIndex().associate { (index, id) ->
+                    id to index - topicIds.size
+                },
+            )
         return copy(
             forums =
                 forums.putting(
                     chatId,
-                    forum.copy(topics = forum.topics.putAll(reordered.associateBy { it.id }), ranks = ranks),
+                    forum.copy(topics = forum.topics.puttingAll(reordered.associateBy { it.id }), ranks = ranks),
                 ),
         )
     }
