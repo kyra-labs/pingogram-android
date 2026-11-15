@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.Locale
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** Setting a reminder on a message (the owner's board 29b): the choices, setting, undoing, deleting. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -85,7 +86,7 @@ class ReminderSheetViewModelTest {
     private fun day(
         weekday: String,
         time: String,
-    ) = UiText.resource(R.string.reminder_day_time, weekday, time)
+    ) = UiText.resource(UiR.string.reminder_label_day_time, weekday, time)
 
     @Test
     fun `opening shows the message and the choices with their times, tomorrow morning chosen`() =
