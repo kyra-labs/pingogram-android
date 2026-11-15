@@ -193,11 +193,33 @@ class SettingsHomeTest {
     }
 
     @Test
-    fun `on this phone stays hidden while no tool has a row there`() {
-        show()
+    fun `a group without a row is not shown`() {
+        val empty = HomeGroup(OnThisPhoneGroup.title, emptyList(), OnThisPhoneGroup.footer)
+        composeRule.setContent {
+            PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
+                Column {
+                    SettingsHomeGroups(
+                        summaries = SettingsPreviewData.homeSummaries,
+                        onOpen = {},
+                        selection = null,
+                        groups = listOf(empty),
+                    )
+                }
+            }
+        }
 
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone))).assertCountEquals(0)
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone_footer))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `on this phone opens keyword alerts`() {
+        show()
+
+        composeRule.onNode(hasText(string(R.string.settings_home_on_this_phone))).assertExists()
+        composeRule.onNode(hasText(string(R.string.settings_keyword_alerts)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.KeywordAlerts), opened)
     }
 
     @Test

@@ -732,3 +732,7 @@ data class WelcomeMessagesRoute(
 /** The user's name color (the owner's board 22b), pushed above Edit profile. */
 @Serializable
 data object ProfileColorRoute
+
+/** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
+@Serializable
+data object KeywordAlertsRoute
