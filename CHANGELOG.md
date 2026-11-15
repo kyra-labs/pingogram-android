@@ -12,6 +12,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
+  at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+  notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
