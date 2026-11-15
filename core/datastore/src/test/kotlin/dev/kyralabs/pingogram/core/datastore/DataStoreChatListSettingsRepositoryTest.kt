@@ -150,6 +150,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `catch-up leaves muted chats out until they are included, and the choice is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertFalse(repository.settings.first().catchUpIncludesMuted)
+
+            assertEquals(Outcome.Success(Unit), repository.setCatchUpIncludesMuted(true))
+
+            assertEquals(ChatListSettings(catchUpIncludesMuted = true), repository.settings.first())
+            assertTrue(DataStoreChatListSettingsRepository(store).settings.first().catchUpIncludesMuted)
+        }
+
+    @Test
     fun `a folder tab style this version does not know reads as names`() =
         runTest {
             val store = dataStore()

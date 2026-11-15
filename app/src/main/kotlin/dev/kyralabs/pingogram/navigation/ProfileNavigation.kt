@@ -51,6 +51,8 @@ internal fun NavGraphBuilder.profile(
             )
         },
         profileMusic = { userId, isSelf, modifier -> ProfileMusicSection(userId, isSelf, modifier) },
+        // Deleting the chat with a deleted account takes the conversation below with it.
+        onChatDeleted = { navController.popBackStackToChats() },
     )
 }
 

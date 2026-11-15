@@ -102,6 +102,8 @@
     <string name="story_a11y_position">Story %1$d of %2$d by %3$s</string>
     <string name="story_next">Next story</string>
     <string name="story_previous">Previous story</string>
+    <!-- Under the pause badge while a finger holds a story. -->
+    <string name="story_release_to_continue">Release to continue</string>
     <string name="story_pause">Pause</string>
     <string name="story_resume">Resume</string>
     <string name="story_close">Close</string>
@@ -112,6 +114,38 @@
     <string name="story_reply_placeholder">Reply privately…</string>
     <string name="story_send">Send reply</string>
     <string name="story_reply_sent">Reply sent</string>
+    <!-- The views pill of the user's own story: "24 views", then with its reactions "24 views · ❤ 6". -->
+    <plurals name="story_views">
+        <item quantity="one">%d view</item>
+        <item quantity="other">%d views</item>
+    </plurals>
+    <string name="story_views_with_reactions">%1$s · ❤ %2$d</string>
+    <!-- Screen readers: the views pill, "Viewed by 24, 6 reactions. Opens the list of viewers". -->
+    <plurals name="story_views_description">
+        <item quantity="one">Viewed by %d</item>
+        <item quantity="other">Viewed by %d</item>
+    </plurals>
+    <plurals name="story_reactions">
+        <item quantity="one">%d reaction</item>
+        <item quantity="other">%d reactions</item>
+    </plurals>
+    <string name="story_views_pill_description">%1$s, %2$s. Opens the list of viewers</string>
+    <!-- The list of who saw the user's own story: its title, its search, its filters and its note. -->
+    <plurals name="story_viewers_title">
+        <item quantity="one">%d viewer</item>
+        <item quantity="other">%d viewers</item>
+    </plurals>
+    <string name="story_viewers_search">Search viewers</string>
+    <string name="story_viewers_all">All %1$d</string>
+    <string name="story_viewers_reactions">Reactions %1$d</string>
+    <string name="story_viewers_contacts">Contacts</string>
+    <string name="story_viewers_empty">Nobody has seen it yet</string>
+    <string name="story_viewers_none_found">No viewers found</string>
+    <string name="story_viewers_try_again">Try again</string>
+    <string name="story_viewers_note">Viewer lists are kept for 24 hours after the story ends. Seeing them after that is a Telegram Premium feature.</string>
+    <!-- Screen readers: a viewer's row, e.g. "Ada Lovelace, 2h, reacted ❤". -->
+    <string name="story_viewer_reacted">%1$s, %2$s, reacted %3$s</string>
+    <string name="story_viewer_row">%1$s, %2$s</string>
     <!-- The ⋮ button on the user's own story, and its item that deletes the story. -->
     <string name="story_more">More options</string>
     <string name="story_delete">Delete</string>

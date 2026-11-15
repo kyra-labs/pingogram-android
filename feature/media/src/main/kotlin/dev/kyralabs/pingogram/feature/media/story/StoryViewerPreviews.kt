@@ -102,6 +102,9 @@ internal object StoryViewerPreviewData {
             reactions = reactions.copy(chosen = ReactionType.Emoji("🔥"), isOpen = true),
         )
 
+    /** A finger holds the photo (board 26): the chrome gone, the pause badge and "Release to continue". */
+    val held = photo.copy(isPaused = true, isHeld = true)
+
     val failed = content(StoryMedia.Failed(DomainError.Network), reply = null, reactions = null)
 
     /** The user's own story with its ⋮ menu open (board 26): no reply field, no reactions. */
@@ -111,6 +114,23 @@ internal object StoryViewerPreviewData {
             reply = null,
             reactions = null,
         ).copy(own = OwnStoryUi(menuOpen = true))
+
+    /** The user's own story with its views pill: 24 views, 6 reactions, three faces. */
+    val ownViews =
+        ownMenu.copy(
+            own = OwnStoryUi(),
+            views =
+                StoryViewsUi(
+                    viewCount = 24,
+                    reactionCount = 6,
+                    recent =
+                        persistentListOf(
+                            StoryViewerFace(7, "Aisha", null),
+                            StoryViewerFace(8, "Meera", null),
+                            StoryViewerFace(9, "Rahul", null),
+                        ),
+                ),
+        )
 
     /** The user's own story, "Delete this story?" asking. */
     val ownDeleteAsked = ownMenu.copy(own = OwnStoryUi(deleteAsked = true))
@@ -125,6 +145,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
     override val values =
         sequenceOf(
             StoryViewerPreviewData.photo,
+            StoryViewerPreviewData.held,
             StoryViewerPreviewData.video,
             StoryViewerPreviewData.reacting,
             StoryViewerPreviewData.live,
@@ -132,6 +153,7 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
             StoryViewerPreviewData.failed,
             StoryViewerPreviewData.ownMenu,
             StoryViewerPreviewData.ownDeleteAsked,
+            StoryViewerPreviewData.ownViews,
             StoryViewerUiState.Loading,
         )
 }
