@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.domain.focus.FocusGate
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.NotificationContent
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -209,7 +211,10 @@ private fun AccountGraph.toNotificationAccount(): NotificationAccount =
         )
     }
 
-/** What every account's notifications are made with: the builder, the shortcuts, the avatars' settings. */
+/**
+ * What every account's notifications are made with: the builder, the shortcuts, the avatars' settings, and what Focus
+ * lets alert ([focus], board 31).
+ */
 internal class AccountNotificationParts
     @Inject
     constructor(
@@ -217,6 +222,7 @@ internal class AccountNotificationParts
         val shortcuts: ConversationShortcutsFactory,
         val appearance: AppearanceRepository,
         @param:Dispatcher(IO) val ioDispatcher: CoroutineDispatcher,
+        val focus: FocusGate,
     )
 
 /**
@@ -226,7 +232,8 @@ internal class AccountNotificationParts
  * [NotificationRepository.notifications] as they change, one change at a time:
  *
  * - A group that changed is posted again; one TDLib removed is cancelled. Only notifications not seen before may alert
- *   ([ChatNotificationAlerts]); restored ones never do.
+ *   ([ChatNotificationAlerts]); restored ones never do. While a Focus profile is on ([FocusGate], board 31), a chat it
+ *   holds back shows its notification silently: Focus changes notifications only.
  * - The groups of chats whose conversation is on screen are not shown at all: the user sees the messages arrive, and
  *   TDLib removes them as they are read. One still unread when the chat leaves the screen shows then, silently.
  * - Groups of locked chats ([ChatLockRepository], `docs/adr/0029-locked-chats.md`) are not shown as conversations:
@@ -253,6 +260,7 @@ internal class AccountNotificationRenderer(
     parts: AccountNotificationParts,
 ) {
     private val builder = parts.builder
+    private val focus = parts.focus
     private val shortcuts = parts.shortcuts.of(account.slot)
     private val factory =
         ConversationNotificationFactory(
@@ -377,7 +385,14 @@ internal class AccountNotificationRenderer(
         val now = Shown(group, visible, isLocked)
         if (previous == now && !(renamed && now.visible)) return LockedChange()
         shown[group.id] = now
-        val alert = !quiet && ChatNotificationAlerts.shouldAlert(previous?.group, group)
+        // Focus holds a chat's alert back, not its notification (board 31); a chat TDLib has not announced alerts.
+        val alert =
+            !quiet &&
+                ChatNotificationAlerts.shouldAlert(previous?.group, group) &&
+                account.chats
+                    .chat(group.chatId)
+                    .first()
+                    ?.let { focus.allowsChat(it) } != false
         show(group, previous, now, alert)
         return LockedChange(changed = isLocked || previous?.locked == true, alert = isLocked && alert)
     }

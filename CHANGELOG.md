@@ -13,6 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
   muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. The pages to set them up follow.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
@@ -23,6 +25,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's language is not on the phone, a link opens Android's language settings.
 - Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
   messages automatically as they show, and see which speech languages Android has ready on the phone.
+- Catch-up: from five unread chats, a chip under the chat list's title opens them one card at a time, those that
+  mention you first, then the most recent. Each card shows the newest unread messages, with "Mark as read", "Open chat"
+  and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
+  channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
+  the chat.
+- Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
+  languages).
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
@@ -32,6 +41,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
@@ -41,6 +51,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
+- Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
+  reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap

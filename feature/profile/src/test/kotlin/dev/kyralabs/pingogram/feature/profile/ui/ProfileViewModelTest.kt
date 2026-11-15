@@ -344,9 +344,15 @@ class ProfileViewModelTest {
         }
 
     @Test
-    fun `a bot shows its description, and offers no secret chat and no contact`() =
+    fun `a bot shows its description, shares its link, and offers no secret chat and no contact`() =
         runTest {
-            val bot = TdApiFixtures.user(id = BOT, firstName = "Finder", type = TdApi.UserTypeBot())
+            val bot =
+                TdApiFixtures.user(
+                    id = BOT,
+                    firstName = "Finder",
+                    usernames = listOf("finderbot"),
+                    type = TdApi.UserTypeBot(),
+                )
             val description = TdApi.BotInfo().also { it.description = "Finds stickers" }
             answerProfile(user = bot, info = TdResult.Success(fullInfo(bio = "", bot = description)))
             val viewModel = viewModel(userId = BOT)
@@ -357,6 +363,7 @@ class ProfileViewModelTest {
                 assertTrue(info.isBot)
                 assertFalse(actions.canStartSecretChat)
                 assertNull(actions.contact)
+                assertEquals("finderbot", actions.shareUsername)
             }
         }
 
