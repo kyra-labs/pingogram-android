@@ -44,6 +44,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
 import dev.kyralabs.pingogram.core.ui.component.performToggle
+import dev.kyralabs.pingogram.core.ui.component.shape
+import dev.kyralabs.pingogram.core.ui.component.symbol
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R

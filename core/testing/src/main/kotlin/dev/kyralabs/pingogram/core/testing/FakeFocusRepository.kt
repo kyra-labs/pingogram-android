@@ -17,6 +17,7 @@ class FakeFocusRepository(
     override val profiles = MutableStateFlow<ImmutableList<FocusProfile>>(profiles.toImmutableList())
     override val manual = MutableStateFlow<ManualFocus?>(null)
     override val lastUsedId = MutableStateFlow<Long?>(null)
+    override val showsInChatList = MutableStateFlow(true)
 
     /** What the changes fail with; null saves. */
     var failure: DomainError? = null
@@ -46,6 +47,12 @@ class FakeFocusRepository(
         failure?.let { return Outcome.Failure(it) }
         this.manual.value = manual
         manual?.profileId?.let { lastUsedId.value = it }
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun setShowsInChatList(shows: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        showsInChatList.value = shows
         return Outcome.Success(Unit)
     }
 }

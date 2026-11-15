@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,23 +26,30 @@ import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.ui.focus.ChatListFocus
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusPillChip
 
 /**
  * Under the title: on the [expanded] row the connection pill while not connected, else the status line while
- * something is unread; on the collapsed row only the connection's state, in one line. [summary] is read here alone.
+ * something is unread, and below them the Focus pill while a profile is on ([focus]); on the collapsed row only the
+ * connection's state, in one line. [summary] is read here alone.
  */
 @Composable
 internal fun HeaderSubtitle(
     connection: ConnectionStatus,
     summary: () -> ChatListSummary,
     expanded: Boolean,
+    focus: ChatListFocus? = null,
 ) {
     val notConnected = connection != ConnectionStatus.Ready
     when {
         expanded -> {
-            // One slot for both, so the pill and the status line take each other's place, its size on the scheme too.
-            StateCrossfade(targetState = notConnected, label = "headerSubtitle") { pill ->
-                if (pill) ConnectionPill(connection) else StatusLine(summary())
+            Column {
+                // One slot for both, so the pill and the status line take each other's place, its size on the scheme.
+                StateCrossfade(targetState = notConnected, label = "headerSubtitle") { pill ->
+                    if (pill) ConnectionPill(connection) else StatusLine(summary())
+                }
+                if (focus != null) FocusPillSlot(focus)
             }
         }
 
@@ -105,4 +114,23 @@ private fun StatusLine(summary: ChatListSummary) {
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.bodyMedium,
     )
+}
+
+/**
+ * The Focus pill below the status line while a profile is on (`docs/DESIGN_SYSTEM.md` §13.13, board 31), growing in
+ * and shrinking away on the scheme's springs; [focus]'s pill is read here alone.
+ */
+@Composable
+private fun FocusPillSlot(focus: ChatListFocus) {
+    val motion = MaterialTheme.motionScheme
+    AnimatedContent(
+        targetState = focus.pill(),
+        transitionSpec = {
+            fadeIn(motion.defaultEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec()) using
+                SizeTransform(clip = false) { _, _ -> motion.defaultSpatialSpec() }
+        },
+        label = "focusPill",
+    ) { pill ->
+        if (pill != null) FocusPillChip(pill, onOpen = focus.onOpen)
+    }
 }

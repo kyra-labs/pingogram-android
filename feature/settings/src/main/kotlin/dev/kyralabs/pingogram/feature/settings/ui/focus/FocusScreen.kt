@@ -21,16 +21,22 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.FocusBadge
 import dev.kyralabs.pingogram.core.ui.component.performToggle
+import dev.kyralabs.pingogram.core.ui.component.symbol
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -72,8 +78,8 @@ internal fun FocusRoute(
  * Settings → Focus (`docs/DESIGN_SYSTEM.md` §13.13, board 31): the profiles as a connected list, each its symbol on its
  * shape, its name, how it runs and what it lets through, and a switch that turns it on or off by hand; the profile on
  * now on `primaryContainer` with "On now". Then "New profile". Without profiles, three shapes, "No Focus profiles yet"
- * and the templates, each opening the editor filled in. Last, a disabled row: Telegram has no status that tells people
- * the user is focusing. Nothing shows until the profiles are read, a matter of milliseconds.
+ * and the templates, each opening the editor filled in. Last, "While Focus is on": whether the chat list's header shows
+ * the profile on now, and a disabled row: Telegram has no status that tells people the user is focusing. Nothing shows until the profiles are read, a matter of milliseconds.
  */
 @Composable
 internal fun FocusScreen(
@@ -119,7 +125,10 @@ internal fun FocusScreen(
                 }
             }
         }
-        TelegramStatusGroup()
+        WhileOnGroup(
+            showsInChatList = state.showsInChatList,
+            onShowsInChatListChange = { onEvent(FocusEvent.ShowInChatList(it)) },
+        )
     }
 }
 
@@ -249,10 +258,35 @@ private fun FocusTemplatesGroup(onOpenProfile: (id: Long, template: FocusTemplat
     }
 }
 
-/** A disabled row: Telegram has no status that tells people the user is focusing. */
+/**
+ * "While Focus is on": whether the chat list's header shows the profile on now, as a switch row, then a disabled row:
+ * Telegram has no status that tells people the user is focusing.
+ */
 @Composable
-private fun TelegramStatusGroup() {
-    SettingsGroup(title = stringResource(R.string.settings_focus_telegram)) {
+private fun WhileOnGroup(
+    showsInChatList: Boolean,
+    onShowsInChatListChange: (Boolean) -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    SettingsGroup(title = stringResource(R.string.settings_focus_while_on)) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_focus_in_chat_list),
+                shapes = shapes,
+                icon = UiR.drawable.ic_chat,
+                supportingContent = { Text(stringResource(R.string.settings_focus_in_chat_list_summary)) },
+                trailingContent = { CheckSwitch(checked = showsInChatList) },
+                onClick = {
+                    haptics.performToggle(!showsInChatList)
+                    onShowsInChatListChange(!showsInChatList)
+                },
+                modifier =
+                    Modifier.semantics {
+                        role = Role.Switch
+                        toggleableState = ToggleableState(showsInChatList)
+                    },
+            )
+        }
         item { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_focus_status),

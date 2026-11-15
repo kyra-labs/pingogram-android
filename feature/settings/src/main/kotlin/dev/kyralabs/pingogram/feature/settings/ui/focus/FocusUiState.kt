@@ -25,10 +25,14 @@ data class FocusProfileItem(
     override fun toString() = "FocusProfileItem(id=$id, icon=$icon, isOn=$isOn, …)"
 }
 
-/** The Focus page: its [profiles] in the user's order, or null until they are read (a matter of milliseconds). */
+/**
+ * The Focus page: its [profiles] in the user's order, or null until they are read (a matter of milliseconds), and
+ * whether the chat list's header shows the profile on now ([showsInChatList]).
+ */
 @Immutable
 data class FocusUiState(
     val profiles: ImmutableList<FocusProfileItem>? = null,
+    val showsInChatList: Boolean = true,
 )
 
 /** What the user does on the Focus page, handled by [FocusViewModel.onEvent]. */
@@ -37,6 +41,11 @@ sealed interface FocusEvent {
     data class Toggle(
         val id: Long,
         val on: Boolean,
+    ) : FocusEvent
+
+    /** Shows the profile on now in the chat list's header ([shows]), or not. */
+    data class ShowInChatList(
+        val shows: Boolean,
     ) : FocusEvent
 }
 

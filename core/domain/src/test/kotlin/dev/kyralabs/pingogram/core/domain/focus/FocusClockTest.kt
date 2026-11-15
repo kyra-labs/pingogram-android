@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.FocusSchedule
 import dev.kyralabs.pingogram.core.domain.model.FocusUntil
 import dev.kyralabs.pingogram.core.domain.model.ManualFocus
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -117,5 +118,13 @@ class FocusClockTest {
         assertEquals(at(16, 22, 30).epochSecond, FocusClock.nextChange(profiles, at(16, 18).epochSecond, zone))
         val saturday = listOf(work.copy(schedule = FocusSchedule(setOf(MONDAY, SATURDAY).toImmutableSet(), 60, 120)))
         assertEquals(at(21, 1).epochSecond, FocusClock.nextChange(saturday, at(17, 0).epochSecond, zone))
+    }
+
+    @Test
+    fun `a schedule next starts today, later in the week, or never`() {
+        assertEquals(at(16, 22, 30).epochSecond, FocusClock.nextStart(sleep.schedule!!, at(16, 10), zone))
+        // Friday evening: work starts again on Monday.
+        assertEquals(at(23, 9).epochSecond, FocusClock.nextStart(work.schedule!!, at(20, 19), zone))
+        assertNull(FocusClock.nextStart(FocusSchedule(persistentSetOf(), 0, 60), at(16, 10), zone))
     }
 }

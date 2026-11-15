@@ -37,7 +37,12 @@ class FocusViewModel
         val effects: Flow<FocusEffect> = effectChannel.receiveAsFlow()
 
         val uiState: StateFlow<FocusUiState> =
-            combine(repository.profiles, repository.manual, clock.minutes) { profiles, manual, now ->
+            combine(
+                repository.profiles,
+                repository.manual,
+                repository.showsInChatList,
+                clock.minutes,
+            ) { profiles, manual, showsInChatList, now ->
                 val on = FocusClock.active(profiles, manual, now, clock.zone())?.profile?.id
                 FocusUiState(
                     profiles
@@ -53,6 +58,7 @@ class FocusViewModel
                                 isOn = profile.id == on,
                             )
                         }.toImmutableList(),
+                    showsInChatList = showsInChatList,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), FocusUiState())
 
@@ -65,11 +71,20 @@ class FocusViewModel
                             setAt = clock.now().epochSecond,
                             until = FocusUntil.ScheduleChange,
                         )
-                    viewModelScope.launch {
-                        val saved = repository.setManual(manual)
-                        if (saved is Outcome.Failure) effectChannel.trySend(FocusEffect.ShowError(saved.error))
-                    }
+                    save { repository.setManual(manual) }
                 }
+
+                is FocusEvent.ShowInChatList -> {
+                    save { repository.setShowsInChatList(event.shows) }
+                }
+            }
+        }
+
+        /** Runs [change]; one that fails leaves things as they were, and a snackbar says why. */
+        private fun save(change: suspend () -> Outcome<Unit>) {
+            viewModelScope.launch {
+                val saved = change()
+                if (saved is Outcome.Failure) effectChannel.trySend(FocusEffect.ShowError(saved.error))
             }
         }
 

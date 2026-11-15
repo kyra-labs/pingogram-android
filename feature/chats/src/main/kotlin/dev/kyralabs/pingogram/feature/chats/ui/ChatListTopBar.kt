@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
@@ -36,6 +38,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +60,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
@@ -66,6 +70,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
+import dev.kyralabs.pingogram.feature.chats.ui.focus.LocalChatListFocus
 import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -137,6 +142,14 @@ internal fun ChatListTopBar(
 ) {
     val selectedCount = state.selection?.chatIds?.size
     val connection = state.connection
+    val focus = LocalChatListFocus.current
+    // Room for the Focus pill below the status line, growing and shrinking with it on the scheme's spring.
+    val pillShows by remember(focus) { derivedStateOf { focus?.pill?.invoke() != null } }
+    val pillRoom by animateDpAsState(
+        targetValue = if (pillShows && selectedCount == null) LocalMinimumInteractiveComponentSize.current else 0.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        label = "focusPillRoom",
+    )
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // Behind the bar: what the user touches there stays the bar's.
         ConnectedAnnouncement(connection, Modifier.matchParentSize())
@@ -152,7 +165,7 @@ internal fun ChatListTopBar(
                     )
                 },
                 subtitle = { expanded ->
-                    if (selectedCount == null) HeaderSubtitle(connection, summary, expanded)
+                    if (selectedCount == null) HeaderSubtitle(connection, summary, expanded, focus)
                 },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
                 actions = {
@@ -162,6 +175,7 @@ internal fun ChatListTopBar(
                         HeaderAccountButton(summary, actions)
                     }
                 },
+                subtitleExtraHeight = pillRoom,
             )
         }
     }
