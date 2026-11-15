@@ -16,8 +16,8 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
-import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
@@ -200,7 +200,15 @@ class TdlibStoryRepository
         ): Outcome<StoryViewersPage> =
             client
                 .request(
-                    TdApi.GetStoryInteractions(storyId, query, onlyContacts, false, reactionsFirst, offset, VIEWERS_PAGE),
+                    TdApi.GetStoryInteractions(
+                        storyId,
+                        query,
+                        onlyContacts,
+                        false,
+                        reactionsFirst,
+                        offset,
+                        VIEWERS_PAGE,
+                    ),
                 ).map { it.toViewersPage() }
 
         private companion object {

@@ -131,4 +131,3 @@ data class StoryViewersPage(
     val viewers: ImmutableList<StoryViewer>,
     val nextOffset: String?,
 )
-

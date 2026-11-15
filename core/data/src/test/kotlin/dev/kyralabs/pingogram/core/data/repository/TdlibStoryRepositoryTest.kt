@@ -6,11 +6,11 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
-import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
-import dev.kyralabs.pingogram.core.domain.model.StoryViewer
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewer
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -343,7 +343,12 @@ class TdlibStoryRepositoryTest {
                         1,
                         1,
                         arrayOf(
-                            TdApi.StoryInteraction(TdApi.MessageSenderUser(7), 100, null, view(TdApi.ReactionTypeEmoji("❤"))),
+                            TdApi.StoryInteraction(
+                                TdApi.MessageSenderUser(7),
+                                100,
+                                null,
+                                view(TdApi.ReactionTypeEmoji("❤")),
+                            ),
                             TdApi.StoryInteraction(TdApi.MessageSenderChat(-9), 90, null, view(null)),
                             TdApi.StoryInteraction(TdApi.MessageSenderUser(8), 80, null, view(null)),
                         ),
@@ -352,7 +357,16 @@ class TdlibStoryRepositoryTest {
                 ),
             )
 
-            val page = (repository().viewers(5, "ad", onlyContacts = true, reactionsFirst = true, offset = "") as Outcome.Success).value
+            val page =
+                (
+                    repository().viewers(
+                        5,
+                        "ad",
+                        onlyContacts = true,
+                        reactionsFirst = true,
+                        offset = "",
+                    ) as Outcome.Success
+                ).value
 
             assertEquals(3, page.totalCount)
             assertEquals(1, page.reactionCount)

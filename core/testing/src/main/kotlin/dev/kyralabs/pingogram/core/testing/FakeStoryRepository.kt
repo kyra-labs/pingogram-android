@@ -6,8 +6,8 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
-import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewersPage
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
