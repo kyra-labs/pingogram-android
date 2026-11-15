@@ -147,6 +147,20 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
         }
 
     @Test
+    fun `the header takes the chat's own profile color, none without one`() =
+        runTest {
+            answerSupergroup(isChannel = true)
+            val viewModel = viewModel()
+            val without = viewModel.content.header.profileColor
+
+            client.emit(TdApi.UpdateChatAccentColors(CHAT, 0, 0, null, 4, 0))
+            runCurrent()
+
+            assertEquals(-1, without)
+            assertEquals(4, viewModel.content.header.profileColor)
+        }
+
+    @Test
     fun `a private channel's reader sees no link, no members and no administration`() =
         runTest {
             answerSupergroup(

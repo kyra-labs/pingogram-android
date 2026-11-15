@@ -331,6 +331,10 @@ data object ReactionNotificationsRoute
 @Serializable
 data object QuickReactionRoute
 
+/** Voice message transcription on the device: its switch and languages, pushed above [AppearanceRoute]. */
+@Serializable
+data object TranscriptionSettingsRoute
+
 /** The chats the forward and share sheets show first, pushed above [AppearanceRoute]. */
 @Serializable
 data object ChatsShownFirstRoute
