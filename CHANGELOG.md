@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
+  a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
@@ -32,6 +34,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
+- Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
+  Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
+  can't be sure about, such as anonymous +888 ones, are never held back.
 - The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and

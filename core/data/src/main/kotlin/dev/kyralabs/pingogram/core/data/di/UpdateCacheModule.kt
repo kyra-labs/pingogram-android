@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
@@ -98,6 +99,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun reminderCache(repository: FileReminderRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
+    @Binds
+    @IntoSet
+    fun bookmarkCache(repository: FileBookmarkRepository): TdlibUpdateCache
 
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds
