@@ -77,6 +77,12 @@ internal val OnThisPhoneGroup: HomeGroup =
                     R.string.settings_bookmarks_summary,
                     R.drawable.ic_bookmark,
                 ),
+                page(
+                    SettingsPage.KeywordAlerts,
+                    R.string.settings_keyword_alerts,
+                    R.string.settings_keyword_alerts_summary,
+                    UiR.drawable.ic_notifications,
+                ),
             ),
         footer = R.string.settings_home_on_this_phone_footer,
     )

@@ -1622,4 +1622,44 @@
     <string name="settings_transcription_unavailable">This phone can’t transcribe</string>
     <string name="settings_transcription_unavailable_summary">Transcription needs Android 13 or newer with Android’s own speech recognition.</string>
     <string name="settings_transcription_no_page">This phone has no page for speech languages</string>
+
+    <!-- Keyword alerts (board 30), kept on this phone only. -->
+    <string name="settings_keyword_alerts">Keyword alerts</string>
+    <string name="settings_keyword_alerts_summary">Words that alert you, checked on this phone</string>
+    <string name="settings_keyword_alerts_intro">Get notified when a message contains one of these words, even in busy or muted chats.</string>
+    <string name="settings_keyword_alerts_add_word">Add word</string>
+    <string name="settings_keyword_alerts_add_word_hint">A word or phrase</string>
+    <string name="settings_keyword_alerts_add">Add</string>
+    <!-- %1$d: the most words, 20 -->
+    <plurals name="settings_keyword_alerts_full">
+        <item quantity="one">You can keep up to %1$d word. Remove it to add another.</item>
+        <item quantity="other">You can keep up to %1$d words. Remove one to add another.</item>
+    </plurals>
+    <!-- %1$s: an alert word; read by screen readers on the word's chip -->
+    <string name="settings_keyword_alerts_remove">%1$s, remove</string>
+    <string name="settings_keyword_alerts_matching">Matches whole words, in any letter case, with or without accents.</string>
+    <string name="settings_keyword_alerts_empty_title">No alert words yet</string>
+    <string name="settings_keyword_alerts_empty_body">Add a word and Pingogram will tell you when someone mentions it. Checked on this phone. Your words aren\'t sent anywhere.</string>
+    <string name="settings_keyword_alerts_try">Try</string>
+    <!-- Common words the empty page suggests, one tap adding each -->
+    <string name="settings_keyword_alerts_suggest_urgent">urgent</string>
+    <string name="settings_keyword_alerts_suggest_meeting">meeting</string>
+    <string name="settings_keyword_alerts_add_name">Add your name</string>
+    <string name="settings_keyword_alerts_add_username">Add your username</string>
+    <!-- %1$s: a suggested word -->
+    <string name="settings_keyword_alerts_add_named">Add %1$s</string>
+    <string name="settings_keyword_alerts_where">Where to look</string>
+    <string name="settings_keyword_alerts_where_all">All chats</string>
+    <string name="settings_keyword_alerts_where_folders">Chosen folders</string>
+    <string name="settings_keyword_alerts_where_folders_summary">Choose the folders to look in</string>
+    <string name="settings_keyword_alerts_no_folders">You have no chat folders</string>
+    <string name="settings_keyword_alerts_edit_folders">Edit</string>
+    <string name="settings_keyword_alerts_where_muted">Muted chats only</string>
+    <string name="settings_keyword_alerts_where_muted_summary">Chats you\'ve muted but still care about</string>
+    <string name="settings_keyword_alerts_alert">Alert</string>
+    <string name="settings_keyword_alerts_when_muted">Alert even when the chat is muted</string>
+    <string name="settings_keyword_alerts_when_muted_summary">Ignores mute for matching messages</string>
+    <string name="settings_keyword_alerts_in_chat_list">Show “Keyword alerts” in the chat list</string>
+    <string name="settings_keyword_alerts_in_chat_list_summary">A tab of only the chats with a match</string>
+    <string name="settings_keyword_alerts_folders_title">Look in these folders</string>
 </resources>

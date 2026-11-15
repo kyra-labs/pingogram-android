@@ -206,6 +206,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `on this phone opens keyword alerts`() {
+        show()
+
+        composeRule.onNode(hasText(string(R.string.settings_home_on_this_phone))).assertExists()
+        composeRule.onNode(hasText(string(R.string.settings_keyword_alerts)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.KeywordAlerts), opened)
+    }
+
+    @Test
     fun `on this phone shows a tool's row with the group's footer`() {
         val tool =
             page(

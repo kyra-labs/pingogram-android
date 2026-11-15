@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
+  letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
+  muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
