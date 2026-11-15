@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -68,7 +69,10 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.BookmarkEvent
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchTopBar
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -115,6 +119,36 @@ internal fun BookmarksRoute(
         }
     }
     BookmarksScreen(state, viewModel::onEvent, onBack, modifier, onEditTags, snackbarHostState)
+    val editing by viewModel.editing.collectAsStateWithLifecycle()
+    editing?.let { BookmarkEditor(it, viewModel::onEvent, snackbarHostState) }
+}
+
+/**
+ * A card's "Edit tags" (board 34b): the bookmark's own sheet ([BookmarkSheetViewModel], keyed by its chat, as the
+ * conversation's), opened at its message once, telling the page when it closed; its snackbars go to the page's.
+ */
+@Composable
+private fun BookmarkEditor(
+    editing: BookmarkEditing,
+    onEvent: (BookmarksEvent) -> Unit,
+    snackbarHostState: SnackbarHostState,
+) {
+    val sheetViewModel =
+        hiltViewModel<BookmarkSheetViewModel, BookmarkSheetViewModel.Factory>(
+            key = "bookmarks-page-${editing.chatId}",
+        ) { it.create(editing.chatId) }
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(sheetViewModel, editing.openMessageId) {
+        val messageId = editing.openMessageId ?: return@LaunchedEffect
+        sheetViewModel.onEvent(BookmarkEvent.Open(messageId))
+        currentOnEvent(BookmarksEvent.EditorOpened)
+    }
+    LaunchedEffect(sheetViewModel) {
+        // Once shown, the sheet closing ends the editing.
+        sheetViewModel.sheet.dropWhile { it == null }.first { it == null }
+        currentOnEvent(BookmarksEvent.EditorClosed)
+    }
+    BookmarkSheetHost(sheetViewModel, snackbarHostState)
 }
 
 /**
@@ -213,6 +247,7 @@ private fun BookmarksList(
                     item = item,
                     onOpen = { onEvent(BookmarksEvent.Open(item.chatId, item.messageId)) },
                     onRemove = { onEvent(BookmarksEvent.Remove(item.chatId, item.messageId)) },
+                    onEdit = { onEvent(BookmarksEvent.Edit(item.chatId, item.messageId)) },
                     modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
                 )
             }

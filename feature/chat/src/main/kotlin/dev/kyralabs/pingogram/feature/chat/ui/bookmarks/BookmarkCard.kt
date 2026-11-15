@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.bookmarks
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -40,8 +42,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * avatar (`avatarSmall`, in its kind's shape) and name in `titleSmallEmphasized`, when it was saved in `labelSmall`,
  * and "Remove bookmark" (`IconButtonDefaults.shapes()`); who sent the message in `labelLarge` `primary` over three
  * lines of it in `bodyMedium`; the note in `bodySmall` `onSurfaceVariant`; the tags as small pills with a dot of their
- * hue. A tap opens the message in its chat; screen readers hear the card as one item ("Open in chat" as its click)
- * with "Remove bookmark" as its custom action.
+ * hue. A tap opens the message in its chat, a long press its bookmark's sheet ("Edit tags", [onEdit]); screen readers
+ * hear the card as one item ("Open in chat" as its click) with "Edit tags" and "Remove bookmark" as its custom actions.
  */
 @Composable
 internal fun BookmarkCard(
@@ -49,18 +51,13 @@ internal fun BookmarkCard(
     onOpen: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    onEdit: () -> Unit = {},
 ) {
-    val resources = LocalResources.current
-    val openLabel = resources.getString(R.string.bookmarks_open_in_chat)
-    val remove = resources.getString(R.string.bookmark_remove)
+    val remove = LocalResources.current.getString(R.string.bookmark_remove)
+    val shape = MaterialTheme.shapes.large
     Card(
-        onClick = onOpen,
-        modifier =
-            modifier.fillMaxWidth().semantics {
-                onClick(label = openLabel) { onOpen().let { true } }
-                customActions = listOf(CustomAccessibilityAction(remove) { onRemove().let { true } })
-            },
-        shape = MaterialTheme.shapes.large,
+        modifier = modifier.fillMaxWidth().clip(shape).cardGestures(onOpen, onEdit, onRemove),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
@@ -99,6 +96,27 @@ internal fun BookmarkCard(
             }
             if (item.tags.isNotEmpty()) TagPills(item)
         }
+    }
+}
+
+/** A tap opens, a long press edits; screen readers hear "Open in chat" with "Edit tags" and "Remove bookmark". */
+@Composable
+private fun Modifier.cardGestures(
+    onOpen: () -> Unit,
+    onEdit: () -> Unit,
+    onRemove: () -> Unit,
+): Modifier {
+    val resources = LocalResources.current
+    val openLabel = resources.getString(R.string.bookmarks_open_in_chat)
+    val edit = resources.getString(R.string.bookmarks_edit_tags)
+    val remove = resources.getString(R.string.bookmark_remove)
+    return combinedClickable(onLongClickLabel = edit, onLongClick = onEdit, onClick = onOpen).semantics {
+        onClick(label = openLabel) { onOpen().let { true } }
+        customActions =
+            listOf(
+                CustomAccessibilityAction(edit) { onEdit().let { true } },
+                CustomAccessibilityAction(remove) { onRemove().let { true } },
+            )
     }
 }
 
