@@ -64,6 +64,16 @@ style:
       - '**/testGms/**'
       - '**/core/ui/src/main/kotlin/**/theme/**'
       - '**/core/testing/src/main/**'
+  ForbiddenImport:
+    # Every modal sheet goes through core:ui's PingogramBottomSheet, which keeps it below the status bar
+    # (docs/DESIGN_SYSTEM.md §6 "Bottom sheets"); only that wrapper calls Material's.
+    active: true
+    imports:
+      - value: 'androidx.compose.material3.ModalBottomSheet'
+        reason: 'Use dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet: it stops below the status bar.'
+    excludes:
+      - '**/test/**'
+      - '**/core/ui/src/main/kotlin/**/component/BottomSheet.kt'
   UnusedPrivateMember:
     # Private previews are only called by tooling (@Preview or our multi-preview annotation).
     ignoreAnnotated: ['Preview', 'PingogramPreviews']

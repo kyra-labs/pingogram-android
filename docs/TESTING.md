@@ -64,6 +64,8 @@ saying why.
   `AnimatedPane` without its spec, Coil's `crossfade`, an animated value read in composition rather than in a
   lambda…), and `:app` and `core:ui` code with literal tweens, durations or easings (`docs/DESIGN_SYSTEM.md` §5 and
   §5.1, `docs/plans/motion-expressive-plan.md` §4). Every check is on; `config/detekt/detekt.yml` lists them.
+- detekt's `ForbiddenImport` (`config/detekt/detekt.yml`) keeps `androidx.compose.material3.ModalBottomSheet` out of
+  production code: sheets go through `core:ui`'s `PingogramBottomSheet` (`docs/DESIGN_SYSTEM.md` §6 "Bottom sheets").
 - Kotlin compiler warnings fail the build in the modules that apply `pingogram.kotlin.warnings`
   (`allWarningsAsErrors`, main and test sources). The modules without it yet, and their warnings, are listed in
   `docs/audit/v1-readiness.md`; a module applies it once they are fixed.

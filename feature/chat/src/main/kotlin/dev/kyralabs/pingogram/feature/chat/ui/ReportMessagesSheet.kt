@@ -22,7 +22,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -40,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -48,8 +48,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SelectionPreviewData
 
 /**
- * Reporting messages to Telegram's moderators (`REQUIREMENTS.md` FR-C6 "report"): a [ModalBottomSheet] that shows the
- * step of TDLib's flow ([ReportSheet.step]): "Report" with a wavy progress indicator until the reasons come, then
+ * Reporting messages to Telegram's moderators (`REQUIREMENTS.md` FR-C6 "report"): a [PingogramBottomSheet] that shows
+ * the step of TDLib's flow ([ReportSheet.step]): "Report" with a wavy progress indicator until the reasons come, then
  * Telegram's question with its reasons as list items ([SelectionEvent.ChooseReportOption]), or a comment in the rounded
  * tonal text field (`docs/DESIGN_SYSTEM.md` §6 "Text fields") with "Send report" ([SelectionEvent.SendReportComment]),
  * enabled once there is a comment unless it is optional. Each step crossfades on the motion scheme's default effects
@@ -70,7 +70,7 @@ internal fun ReportMessagesSheet(
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(SelectionEvent.DismissReport) },
         sheetState = sheetState,
     ) {

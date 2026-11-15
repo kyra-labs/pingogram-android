@@ -24,7 +24,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -39,6 +38,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -64,7 +64,7 @@ internal fun AddToSetSheet(
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
             confirmValueChange = { it != SheetValue.Hidden || !sheet.busy },
         )
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(MakeStickerEvent.Sheet(AddToSetEvent.Dismiss)) },
         sheetState = sheetState,
     ) {

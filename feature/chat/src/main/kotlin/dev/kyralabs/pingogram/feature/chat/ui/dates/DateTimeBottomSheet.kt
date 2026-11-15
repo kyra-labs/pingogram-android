@@ -11,7 +11,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -34,7 +34,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A tapped date in a message (`docs/DESIGN_SYSTEM.md` §6 "Dates in messages"), a [ModalBottomSheet] as the
+ * A tapped date in a message (`docs/DESIGN_SYSTEM.md` §6 "Dates in messages"), a [PingogramBottomSheet] as the
  * conversation's other sheets: the date in full in `titleLargeEmphasized` (a heading) over the reader's time zone in
  * `bodyMedium` `onSurfaceVariant`, then "Add to calendar" and "Copy" as list items inset like the chat list's rows.
  * Dragging it down, the scrim and back close it ([DateTimeEvent.Dismiss]).
@@ -46,7 +46,7 @@ internal fun DateTimeBottomSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(DateTimeEvent.Dismiss) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(DateTimeEvent.Dismiss) }) {
         DateTimeContent(sheet, currentOnEvent)
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -37,12 +37,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.PinnedPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
- * Every pinned message of the chat (`REQUIREMENTS.md` FR-C9), a [ModalBottomSheet] opened from the bar's list button:
- * "Pinned messages" in `titleLargeEmphasized`, then the messages oldest first, as the conversation shows them, as list
- * items inset like the chat list's rows (`docs/DESIGN_SYSTEM.md` §4), the sender over two lines of the message; the one
- * the bar shows takes the list item's selected container (`secondaryContainer`, `large`), and the list opens at it. A
- * tap shows that message in the conversation ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down, the
- * scrim and back close it ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
+ * Every pinned message of the chat (`REQUIREMENTS.md` FR-C9), a [PingogramBottomSheet] opened from the bar's list
+ * button: "Pinned messages" in `titleLargeEmphasized`, then the messages oldest first, as the conversation shows them,
+ * as list items inset like the chat list's rows (`docs/DESIGN_SYSTEM.md` §4), the sender over two lines of the message;
+ * the one the bar shows takes the list item's selected container (`secondaryContainer`, `large`), and the list opens at
+ * it. A tap shows that message in the conversation ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down,
+ * the scrim and back close it ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +51,7 @@ internal fun PinnedMessagesSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(PinnedEvent.DismissList) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(PinnedEvent.DismissList) }) {
         PinnedSheetContent(sheet, currentOnEvent)
     }
 }

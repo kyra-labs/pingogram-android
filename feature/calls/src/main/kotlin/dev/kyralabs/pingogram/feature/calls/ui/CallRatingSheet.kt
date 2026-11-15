@@ -29,7 +29,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,6 +59,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.CallProblem
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -67,8 +67,8 @@ import dev.kyralabs.pingogram.feature.calls.R
 import kotlinx.coroutines.launch
 
 /**
- * "Rate this call" (`docs/DESIGN_SYSTEM.md` §6 "Call rating"), a [ModalBottomSheet] over the ended call that Telegram
- * asked to have rated: one to five stars, what went wrong for one to three, and a note that the rating goes to
+ * "Rate this call" (`docs/DESIGN_SYSTEM.md` §6 "Call rating"), a [PingogramBottomSheet] over the ended call that
+ * Telegram asked to have rated: one to five stars, what went wrong for one to three, and a note that the rating goes to
  * Telegram to help improve calls. It never blocks: dragging it down, the scrim, back and "Not now" close it without
  * rating ([onDismiss]); "Send" closes it, then rates ([onRate], the problems only below four stars).
  */
@@ -84,7 +84,7 @@ internal fun CallRatingSheet(
     val scope = rememberCoroutineScope()
     val currentOnRate by rememberUpdatedState(onRate)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
-    ModalBottomSheet(onDismissRequest = { currentOnDismiss() }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnDismiss() }, sheetState = sheetState) {
         CallRatingContent(
             isVideo = isVideo,
             onSend = { stars, problems ->

@@ -20,7 +20,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -45,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -62,7 +62,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Who saw a group message and who reacted to it (`docs/DESIGN_SYSTEM.md` §6 "Seen by and reactions"), a
- * [ModalBottomSheet] as the conversation's other sheets, from the message's "Seen by" or "Reactions".
+ * [PingogramBottomSheet] as the conversation's other sheets, from the message's "Seen by" or "Reactions".
  *
  * - **Title**: "Seen by" on the viewers' tab, "Reactions" on the others, in `titleLargeEmphasized`, a heading.
  * - **Tabs** ([InteractionsTabRow]), where there is more than one: "Seen" and its count, "All" and each reaction with
@@ -87,7 +87,7 @@ internal fun MessageInteractionsBottomSheet(
     val currentOnEvent by rememberUpdatedState(onEvent)
     // The sheet's window keeps the conversation's direction, also where only the composition sets it.
     val direction = LocalLayoutDirection.current
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(InteractionsEvent.Dismiss) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(InteractionsEvent.Dismiss) }) {
         CompositionLocalProvider(LocalLayoutDirection provides direction) {
             // The sheet is a window of its own: its snackbars show in it, over its rows.
             Box {
