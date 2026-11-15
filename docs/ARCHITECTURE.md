@@ -646,7 +646,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   its saved state, the chats from `ChatRepository`, asked for once where TDLib has not announced them), opened through
   `core:ui`'s `LocalBookmarksLauncher`, which `PingogramApp` provides: Settings › On this phone's row
   (`SettingsHomeViewModel` counts the bookmarks) and Saved Messages' card (`SavedBookmarksViewModel`, shown on "All"
-  once a message is bookmarked).
+  once a message is bookmarked). Its "Edit tags" pushes `BookmarkTagsRoute` (`BookmarkTagsViewModel`: the draft and the
+  question before deleting in its saved state).
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -22,14 +23,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +70,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun BookmarksRoute(
     onBack: () -> Unit,
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
+    onEditTags: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: BookmarksViewModel = hiltViewModel(),
 ) {
@@ -97,7 +104,7 @@ internal fun BookmarksRoute(
             }
         }
     }
-    BookmarksScreen(state, viewModel::onEvent, onBack, modifier, snackbarHostState)
+    BookmarksScreen(state, viewModel::onEvent, onBack, modifier, onEditTags, snackbarHostState)
 }
 
 /**
@@ -113,6 +120,7 @@ internal fun BookmarksScreen(
     onEvent: (BookmarksEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onEditTags: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
@@ -133,6 +141,7 @@ internal fun BookmarksScreen(
                         Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.bookmarks_back))
                     }
                 },
+                actions = { EditTagsButton(onEditTags) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
         },
@@ -215,6 +224,22 @@ private fun TagFilters(
                     },
                 shapes = FilterChipDefaults.shapes(),
             )
+        }
+    }
+}
+
+/** "Edit tags" (board 34b): a `FilledTonalIconButton` with the label symbol and its tooltip. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditTagsButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.bookmarks_edit_tags)
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+    ) {
+        FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+            Icon(painterResource(UiR.drawable.ic_edit), contentDescription = label)
         }
     }
 }

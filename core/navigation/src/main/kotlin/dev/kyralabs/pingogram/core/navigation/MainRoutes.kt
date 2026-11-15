@@ -739,3 +739,7 @@ data object ProfileColorRoute
  */
 @Serializable
 data object BookmarksRoute
+
+/** The bookmarks' tag editor (the owner's board 34c), pushed above the Bookmarks page. */
+@Serializable
+data object BookmarkTagsRoute
