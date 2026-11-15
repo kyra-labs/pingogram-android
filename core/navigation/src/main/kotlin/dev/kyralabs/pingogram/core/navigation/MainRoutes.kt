@@ -359,6 +359,13 @@ data object ArchiveRoute
 data object ArchiveSettingsRoute
 
 /**
+ * Catch-up (`docs/DESIGN_SYSTEM.md` §6 "Catch-up", the owner's board 32): the unread chats one card at a time,
+ * `:feature:chats`, pushed above the Chats tab from the Catch-up chip of its header.
+ */
+@Serializable
+data object CatchUpRoute
+
+/**
  * Starting a chat (`REQUIREMENTS.md` FR-L7): new group, new channel and new contact, then the contacts,
  * `:feature:chats`, pushed above the Chats tab from its "New chat" button or its empty state.
  */

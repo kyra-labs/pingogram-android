@@ -54,4 +54,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(folderTabStyle = style)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(catchUpIncludesMuted = include)
+        return Outcome.Success(Unit)
+    }
 }

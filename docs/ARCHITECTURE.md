@@ -635,6 +635,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatSwipes.chatTypeIcons` hands to the rows, and what the folder tabs show (`folderTabStyle`: names, icons and
   names, or icons alone; `ChatSwipes.folderTabStyle`, the symbols from `core:ui`'s `folderIconDrawable`, shared with
   the folder editor).
+- **Catch-up** (the owner's board 32, `docs/DESIGN_SYSTEM.md` §6 "Catch-up"): `feature:chats`' `catchup/`.
+  `CatchUpChats` reads the main list's unread chats in Catch-up's order (mentions first, then the most recent; muted
+  chats and channels only with `ChatListSettings.catchUpIncludesMuted`; never locked chats), which
+  `ChatListViewModel.summary` counts for the header's chip (`ChatListSummary.offersCatchUp`, from five) and
+  `CatchUpViewModel` takes once as its round (`CatchUpRound`, in the saved state). Its cards (`CatchUpSources`,
+  `CatchUpCardMapper`) read each chat, its history (`MessageRepository.loadNewest`, from TDLib's local database first)
+  and the users; "Mark as read" is `ChatRepository.markAsRead`, for the shown chat only, and a chat read anywhere else
+  moves on by itself. `CatchUpRoute` of `core:navigation` is registered in `:app` beside the archive.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a

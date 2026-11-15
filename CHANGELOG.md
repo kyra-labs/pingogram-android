@@ -9,6 +9,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Catch-up: from five unread chats, a chip under the chat list's title opens them one card at a time, those that
+  mention you first, then the most recent. Each card shows the newest unread messages, with "Mark as read", "Open chat"
+  and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
+  channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
+  the chat.
+
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
