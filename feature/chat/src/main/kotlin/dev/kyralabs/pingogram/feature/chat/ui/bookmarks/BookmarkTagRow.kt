@@ -66,9 +66,9 @@ internal fun BookmarkTagRow(
     tag: TagRow,
     moves: TagMoves,
     dragged: Boolean,
-    handleModifier: Modifier,
     onEvent: (BookmarkTagsEvent) -> Unit,
     modifier: Modifier = Modifier,
+    handleModifier: Modifier = Modifier,
 ) {
     val resources = LocalResources.current
     val count = pluralStringResource(R.plurals.bookmark_tag_count, tag.count, tag.count)
