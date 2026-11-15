@@ -637,6 +637,7 @@ class ProfileViewModel internal constructor(
             callUserId = user.id.takeIf { isRegular && !isSelf && info?.canBeCalled == true },
             exportChatId = exportChatIdOf(user),
             canDeleteChat = isDeleted && chat != null,
+            shareUsername = botLinkOf(user),
         )
     }
 
@@ -646,6 +647,10 @@ class ProfileViewModel internal constructor(
     /** The private chat "Export chat" exports: none where its content may not be saved, or with a deleted account. */
     private fun Sources.exportChatIdOf(user: User): Long? =
         chat?.takeIf { !it.hasProtectedContent && !user.isDeleted }?.id
+
+    /** The username a bot's "Share" pill shares; null for anyone but a bot (board 24d). */
+    private fun botLinkOf(user: User): String? =
+        user.usernames.firstOrNull()?.takeIf { user.type == UserType.Bot && !user.isDeleted }
 
     private fun Sources.header(user: User): ProfileHeader {
         val isDeleted = user.isDeleted

@@ -69,7 +69,8 @@ internal fun ProfileActionsRow(
     val isMuted = actions.isMuted
     val calls = LocalCallStarter.current
     val callUserId = actions.callUserId.takeIf { calls != null }
-    val hasChatPills = actions.canMessage || isMuted != null || actions.canDeleteChat
+    val hasChatPills =
+        actions.canMessage || isMuted != null || actions.canDeleteChat || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -105,6 +106,15 @@ internal fun ProfileActionsRow(
                 icon = UiR.drawable.ic_delete,
                 label = stringResource(R.string.profile_action_delete_chat),
                 onClick = { onEvent(ProfileEvent.DeleteChat) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        actions.shareUsername?.let { username ->
+            // A bot's third pill: its link, as bots are not called (board 24d).
+            ActionPill(
+                icon = UiR.drawable.ic_share,
+                label = stringResource(R.string.profile_action_share),
+                onClick = { onEvent(ProfileEvent.ShareUsername(username)) },
                 modifier = Modifier.weight(1f),
             )
         }

@@ -238,6 +238,7 @@ internal val MessageAction.label: Int
             MessageAction.Resend -> R.string.message_action_resend
             MessageAction.Reply -> R.string.message_action_reply
             MessageAction.ReplyElsewhere -> R.string.message_action_reply_elsewhere
+            MessageAction.RemindMe -> R.string.message_action_remind
             MessageAction.Copy -> R.string.message_action_copy
             MessageAction.CopyLink -> R.string.message_action_copy_link
             MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
@@ -268,6 +269,7 @@ internal val MessageAction.icon: Int
             MessageAction.Resend -> UiR.drawable.ic_refresh
             MessageAction.Reply -> UiR.drawable.ic_reply
             MessageAction.ReplyElsewhere -> R.drawable.ic_chat_paste_go
+            MessageAction.RemindMe -> UiR.drawable.ic_alarm
             MessageAction.Copy -> UiR.drawable.ic_content_copy
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
@@ -294,6 +296,7 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)
         MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(messageId)
+        MessageAction.RemindMe -> ReminderEvent.Open(messageId)
         MessageAction.Copy -> ChatEvent.Copy(messageId)
         MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(messageId)
         MessageAction.Translate -> TranslationEvent.Translate(messageId)
