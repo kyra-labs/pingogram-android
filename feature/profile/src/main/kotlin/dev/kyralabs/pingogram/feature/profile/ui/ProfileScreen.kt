@@ -273,6 +273,7 @@ private fun LazyGridScope.profileItems(
             music(state.header.userId, state.actions.isSelf, Modifier)
         }
     }
+    strangerItem(state, page, inset, motion)
     fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
     }
@@ -323,6 +324,25 @@ private fun LazyGridScope.profileItems(
     }
 }
 
+/** The card about someone not in the contacts who wrote first, read before the actions as it says why they matter. */
+private fun LazyGridScope.strangerItem(
+    state: ProfileUiState.Content,
+    page: ProfilePageParts,
+    inset: Dp,
+    motion: ItemMotion,
+) {
+    val stranger = state.stranger ?: return
+    fullWidth(key = STRANGER, inset = inset, motion = motion) {
+        ProfileStrangerCard(
+            stranger = stranger,
+            actions = state.actions,
+            onEvent = page.onEvent,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+            onAddContact = page.onEditContact,
+        )
+    }
+}
+
 /** A full-width item of the grid, inset by [inset] at its sides and [top] above it. */
 private fun LazyGridScope.fullWidth(
     key: String,
@@ -368,6 +388,7 @@ internal const val PROFILE_GRID_TEST_TAG = "profile_grid"
 
 private const val ACTIONS = "actions"
 private const val DELETED = "deleted"
+private const val STRANGER = "stranger"
 private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"

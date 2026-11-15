@@ -56,6 +56,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- The profile of someone not in your contacts who wrote first shows a card with how many groups you share and Block,
+  Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 

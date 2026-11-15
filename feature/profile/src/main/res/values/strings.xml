@@ -105,6 +105,17 @@
     <string name="profile_block">Block user</string>
     <string name="profile_unblock">Unblock user</string>
     <string name="profile_report">Report</string>
+    <!-- Board 24c: the card about someone not in the contacts who wrote first. %1$s is their first name. -->
+    <string name="profile_stranger_title">%1$s isn\'t in your contacts</string>
+    <string name="profile_stranger_no_groups">No groups in common</string>
+    <plurals name="profile_stranger_groups">
+        <item quantity="one">%d group in common</item>
+        <item quantity="other">%d groups in common</item>
+    </plurals>
+    <string name="profile_stranger_block">Block</string>
+    <string name="profile_stranger_add_contact">Add contact</string>
+    <!-- The phone row of someone whose privacy settings hide their number. %1$s is their first name. -->
+    <string name="profile_phone_hidden">Hidden by %1$s\'s privacy settings</string>
     <!-- Opens the export page of the chat (Export chat): its history into a folder the user picks. -->
     <string name="profile_export_chat">Export chat</string>
 

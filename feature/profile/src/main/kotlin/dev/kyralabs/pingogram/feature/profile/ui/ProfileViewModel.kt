@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatActionBar
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
@@ -574,6 +575,7 @@ class ProfileViewModel internal constructor(
         overlay: Overlay,
     ): ProfileUiState.Content {
         val isBot = user.type == UserType.Bot
+        val phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" }
         return ProfileUiState.Content(
             header = header(user),
             info =
@@ -581,7 +583,13 @@ class ProfileViewModel internal constructor(
                     bio = bio(info, isBot),
                     isBot = isBot,
                     usernames = user.usernames,
-                    phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" },
+                    phoneNumber = phoneNumber,
+                    // Once the full info is known, so the row does not show before Telegram sent the number.
+                    phoneHiddenBy =
+                        user.firstName.takeIf {
+                            phoneNumber == null && info != null &&
+                                isPersonOtherThanMe(user)
+                        },
                     birthday = info?.birthdate?.let(::birthday),
                     personalChannel = personalChannel?.let { PersonalChannel(it.id, it.title) },
                     birthdaySuggestion = info?.let { birthdaySuggestionOf(user, it, overlay) },
@@ -592,8 +600,19 @@ class ProfileViewModel internal constructor(
             actions = actions(user, overlay),
             dialog = overlay.dialog,
             isDeletedAccount = user.isDeleted,
+            stranger = strangerOf(user),
         )
     }
+
+    /** The card about someone not in the contacts who wrote first (the owner's board 24c); null for anyone else. */
+    private fun Sources.strangerOf(user: User): ProfileStranger? =
+        ProfileStranger(user.firstName, info?.groupsInCommon ?: 0).takeIf {
+            chat?.actionBar is ChatActionBar.ReportAddBlock && !user.isContact && isPersonOtherThanMe(user)
+        }
+
+    /** [user] is a person (not a bot or a deleted account) other than the current user. */
+    private fun Sources.isPersonOtherThanMe(user: User): Boolean =
+        user.type == UserType.Regular && !user.isDeleted && user.id != myUserId
 
     /** What can be done on the profile of [user]: nothing to block, report or start a secret chat with oneself. */
     private fun Sources.actions(
@@ -667,8 +686,7 @@ class ProfileViewModel internal constructor(
         }
 
     /** [user] is a contact the current user keeps notes about and may suggest a birthday to: a person, not oneself. */
-    private fun Sources.isContactOf(user: User): Boolean =
-        user.isContact && user.type == UserType.Regular && !user.isDeleted && user.id != myUserId
+    private fun Sources.isContactOf(user: User): Boolean = user.isContact && isPersonOtherThanMe(user)
 
     /** The note row of a contact (a regular user, not oneself); null for anyone else. */
     private fun Sources.contactNoteOf(
