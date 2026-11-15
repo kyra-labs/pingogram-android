@@ -70,7 +70,7 @@ class ReminderNotificationBuilder
                 )
             val message = preview ?: context.getString(R.string.reminder_notification_deleted)
             val text = listOf(message, reminder.note).filter { it.isNotBlank() }.joinToString("\n")
-            val open = NotificationIntents.openChatPendingIntent(context, reminder.chatId, slot)
+            val open = NotificationIntents.openChatPendingIntent(context, reminder.chatId, slot, reminder.messageId)
             return NotificationCompat
                 .Builder(context, PingogramChannel.Reminders.id)
                 .setSmallIcon(R.drawable.ic_notification)

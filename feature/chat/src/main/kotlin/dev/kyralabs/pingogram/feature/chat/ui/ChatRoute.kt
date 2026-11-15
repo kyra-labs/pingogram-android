@@ -61,6 +61,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetHost
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
@@ -258,11 +260,18 @@ internal fun ConversationRoute(
         }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    // The bubbles' reminder chips; a tap opens the reminder in the Remind me sheet.
+    val reminderLabels = reminderViewModel.chips.collectAsStateWithLifecycle()
+    val reminderChips =
+        remember(reminderViewModel, reminderLabels) {
+            ReminderChips(reminderLabels) { reminderViewModel.onEvent(ReminderEvent.Open(it)) }
+        }
     CompositionLocalProvider(
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
+        LocalReminderChips provides reminderChips,
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {

@@ -248,6 +248,10 @@ data object PasskeysRoute
 @Serializable
 data object LockedChatsRoute
 
+/** The message reminders kept on this phone (the owner's board 29), from Settings home's "On this phone" group. */
+@Serializable
+data object RemindersRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute
@@ -753,3 +757,18 @@ data class FocusProfileRoute(
     val profileId: Long = 0,
     val template: String? = null,
 )
+
+/** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
+@Serializable
+data object KeywordAlertsRoute
+
+/**
+ * The messages bookmarked on this phone (the owner's board 34), `:feature:chat`: pushed above Settings › On this phone
+ * or Saved Messages, with the shared axis on X, the newest first, filtered by tag.
+ */
+@Serializable
+data object BookmarksRoute
+
+/** The bookmarks' tag editor (the owner's board 34c), pushed above the Bookmarks page. */
+@Serializable
+data object BookmarkTagsRoute

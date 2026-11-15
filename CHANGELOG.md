@@ -10,15 +10,41 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
+  letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
+  muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
+- With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
+  turn through their actions.
+- An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
+  read"; a tap opens your chats.
+- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
+  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
+- Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
+  stories no longer move on by themselves.
+- A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. Settings → On this phone → Focus lists them, turns one on or off by hand, and
   starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders it lets through, a schedule of
   days and times (one across midnight is one range) or by hand, and whether calls from contacts ring.
+  notifications still show, silently. The pages to set them up follow.
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
+- Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
+  chats that protect their content.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
-  a note.
+  a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
+  from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
+  its search finds bookmarks by their chat, text, note or tags. Long-press a bookmark to change its tags or note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
   at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
-  notification channel of its own, even in a muted chat, with "Snooze 1 h".
+  notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
+  moves it an hour on.
+- Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
+  it done or delete it, with "Undo".
+- A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
+- A reminder on the Reminders page opens its chat at the message it was set on.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.
@@ -29,6 +55,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
   channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
   the chat.
+- Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
+  languages).
 
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
@@ -38,6 +66,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
@@ -47,6 +76,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
+- Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
+  reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
 - Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
@@ -56,6 +87,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
+  says what is kept: you can still read your messages with them, but they can't receive new ones.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
