@@ -253,12 +253,9 @@ private fun AvatarPlaceholder(
         },
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            behindPhoto != null -> {
-                Unit
-            }
-
-            showsInitials -> {
+        // Behind a photo the background draws the initials itself (lazyInitials), so nothing is composed here.
+        if (behindPhoto == null) {
+            if (showsInitials) {
                 Text(
                     text = initials,
                     color = colors.content,
@@ -266,9 +263,7 @@ private fun AvatarPlaceholder(
                     softWrap = false,
                     style = rememberInitialsStyle(size),
                 )
-            }
-
-            else -> {
+            } else {
                 Icon(
                     painter = painterResource(icon ?: R.drawable.ic_person_filled),
                     contentDescription = null,
