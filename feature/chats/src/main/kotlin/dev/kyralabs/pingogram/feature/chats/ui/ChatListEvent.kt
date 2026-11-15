@@ -20,7 +20,7 @@ sealed interface ChatListEvent {
 
     /**
      * The list shows the rows of chats [chatIds] (its visible rows, reported as they change): a forum among them gets
-     * its unread topics counted ([ForumUnreadTopics]).
+     * its topics loaded ([ForumRowTopics]).
      */
     data class RowsShown(
         val chatIds: Set<Long>,

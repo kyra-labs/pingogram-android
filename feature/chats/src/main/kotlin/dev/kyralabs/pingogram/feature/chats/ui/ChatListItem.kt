@@ -48,7 +48,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * One chat in a chat list (`REQUIREMENTS.md` FR-L2, `docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the avatar, the
  * name with its badges, a one-line preview ([ChatPreviewText]), and the time with the unread badges at the end
- * ([ChatMeta]). At large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
+ * ([ChatMeta]). A forum's row names its newest topics above the preview, three lines tall ([ForumRowPreview]). At
+ * large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
  * column is only as wide as the badges and the name keeps most of its line; the row stays two lines tall. The preview
  * stays one plain text: the list item reads its baselines while it measures, to tell one line from several. For the
  * main list, the archive and folders alike; swipe actions and selection wrap or extend it.
@@ -103,8 +104,7 @@ internal fun ChatListItem(
     // The row of docs/DESIGN_SYSTEM.md §13.3: the kind of chat before its name, the mute icon only while nothing is
     // unread, the time in `primary` while unread and not muted, the kind of message before its text.
     val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
-    val contentIcon = (item.preview as? ChatPreview.Message)?.contentIcon
-    val supporting = @Composable { ChatPreviewText(shownPreview, contentIcon) }
+    val supporting = @Composable { RowSupporting(item, shownPreview) }
     val headline = @Composable { ChatRowTitle(item, title) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)

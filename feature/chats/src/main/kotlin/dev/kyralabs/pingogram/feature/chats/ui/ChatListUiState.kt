@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
@@ -196,6 +197,8 @@ sealed interface FolderTab {
  * @property actions what the user can do to the chat, in the order screen readers list them ([rowActions]); the row's
  *   swipes are two of them ([startSwipeAction], [endSwipeAction]).
  * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
+ * @property topics a forum's topics, the newest message first, which its row names on a line of its own above the
+ *   preview, as Telegram's apps do (owner decision 2026-11-15); null where it is no forum, or before they are loaded.
  */
 @Immutable
 data class ChatListItemModel(
@@ -219,12 +222,25 @@ data class ChatListItemModel(
     val actions: ImmutableList<ChatRowAction>,
     val avatarShape: AvatarShape = AvatarShape.Circle,
     val unreadTopicCount: Int? = null,
+    val topics: ImmutableList<RowTopic>? = null,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread
 
     override fun toString() = "ChatListItemModel(id=$id, unreadCount=$unreadCount, …)"
 }
+
+/**
+ * A topic a forum's row names: its [name], the [color] of its icon (null for General, which has a symbol of its own),
+ * and whether it has unread messages ([isUnread]).
+ */
+@Immutable
+data class RowTopic(
+    val id: Int,
+    val name: String,
+    val color: TopicColor?,
+    val isUnread: Boolean,
+)
 
 /** A badge after a chat's title, from Telegram's verification of the user, group or channel. */
 enum class TitleBadge {

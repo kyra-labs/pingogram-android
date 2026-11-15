@@ -207,7 +207,7 @@ class ChatListViewModel internal constructor(
         )
 
     private val forumTopics =
-        ForumUnreadTopics(forumTopicRepository.takeIf { kind == ChatListKind.Chats }, groupRepository)
+        ForumRowTopics(forumTopicRepository.takeIf { kind == ChatListKind.Chats }, groupRepository)
 
     private val selectedList: Flow<ChatListType> =
         when (kind) {
@@ -245,8 +245,8 @@ class ChatListViewModel internal constructor(
                 loads.map { it[list] ?: ListLoad() }.distinctUntilChanged(),
                 communities.of(list),
                 forumTopics.of(chats),
-            ) { chats, snapshot, load, groups, unreadTopics ->
-                ListState(list, content(list, chats, snapshot, load, groups, unreadTopics))
+            ) { chats, snapshot, load, groups, topics ->
+                ListState(list, content(list, chats, snapshot, load, groups, topics))
             }
         }
 
@@ -472,7 +472,7 @@ class ChatListViewModel internal constructor(
         }
     }
 
-    /** What the list shows: whether it nears its end ([onNearEndChanged]), and which rows ([ForumUnreadTopics]). */
+    /** What the list shows: whether it nears its end ([onNearEndChanged]), and which rows ([ForumRowTopics]). */
     private fun onListShown(event: ChatListEvent) {
         when (event) {
             is ChatListEvent.NearEndChanged -> onNearEndChanged(event.isNearEnd)
@@ -619,13 +619,13 @@ class ChatListViewModel internal constructor(
         snapshot: RowSnapshot,
         load: ListLoad,
         groups: CommunityGroups,
-        unreadTopics: Map<Long, Int> = emptyMap(),
+        forumTopics: Map<Long, ForumRowSummary> = emptyMap(),
         mapper: ChatListItemMapper = this.mapper,
     ): ChatListContent {
         val error = load.error
         return when {
             chats.isNotEmpty() -> {
-                val mapped = mapper.map(chats, RowSources(list, snapshot, timeFormatter(), unreadTopics))
+                val mapped = mapper.map(chats, RowSources(list, snapshot, timeFormatter(), forumTopics))
                 val pinnedCount = mapped.pinnedCount()
                 val (items, entries) = groupCommunities(mapped, pinnedCount, groups)
                 ChatListContent.Content(items, pinnedCount = pinnedCount, communities = entries)
