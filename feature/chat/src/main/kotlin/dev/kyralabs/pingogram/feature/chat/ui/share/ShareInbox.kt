@@ -41,8 +41,8 @@ class ShareInbox
         fun offer(content: SharedContent): Long {
             val id = nextId++
             offers.update { offers ->
-                val kept = if (offers.size < MAX_OFFERS) offers else offers.remove(offers.keys.min())
-                kept.put(id, content)
+                val kept = if (offers.size < MAX_OFFERS) offers else offers.removing(offers.keys.min())
+                kept.putting(id, content)
             }
             return id
         }
@@ -52,11 +52,11 @@ class ShareInbox
             chatId: Long,
             content: SharedContent,
         ) {
-            deliveries.update { it.put(chatId, content) }
+            deliveries.update { it.putting(chatId, content) }
         }
 
         /** The share offered as [shareId], which only one sheet takes; null once taken, or after process death. */
-        internal fun take(shareId: Long): SharedContent? = offers.getAndUpdate { it.remove(shareId) }[shareId]
+        internal fun take(shareId: Long): SharedContent? = offers.getAndUpdate { it.removing(shareId) }[shareId]
 
         /** What waits for chat [chatId]'s conversation, as it comes; null while nothing does. */
         internal fun deliveredTo(chatId: Long): Flow<SharedContent?> =
@@ -70,7 +70,7 @@ class ShareInbox
             var claimed = false
             deliveries.update { deliveries ->
                 claimed = deliveries[chatId] === content
-                if (claimed) deliveries.remove(chatId) else deliveries
+                if (claimed) deliveries.removing(chatId) else deliveries
             }
             return claimed
         }

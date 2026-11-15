@@ -23,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -48,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -64,7 +64,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The share sheet (`REQUIREMENTS.md` FR-N2, direct share; `docs/DESIGN_SYSTEM.md` §6 "Share sheet"): a
- * [ModalBottomSheet] with the forward sheet's parts, for what another app shared or a `t.me/share` link. Its title,
+ * [PingogramBottomSheet] with the forward sheet's parts, for what another app shared or a `t.me/share` link. Its title,
  * what is shared below it (the start of the text, how many photos and videos or files), the search field and the
  * chats, Saved Messages first, each toggled by a tap as in the forward sheet. Once a chat is picked, the bottom grows
  * in on the default spatial spring:
@@ -105,7 +105,7 @@ internal fun ShareBottomSheet(
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(ShareEvent.QueryChanged(it)) }
     }
     var linking by remember { mutableStateOf<TextRange?>(null) }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ShareEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ShareEvent.Dismiss) }, sheetState = sheetState) {
         ShareContent(
             sheet = sheet,
             query = query,

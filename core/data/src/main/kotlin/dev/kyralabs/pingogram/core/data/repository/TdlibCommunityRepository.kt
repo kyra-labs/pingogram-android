@@ -73,7 +73,13 @@ class TdlibCommunityRepository
                 known.state.value.details[id]
                     ?.let { send(Outcome.Success(it)) }
                 val details = client.request(TdApi.GetCommunityFullInfo(id)).map { it.toCommunityDetails() }
-                if (details is Outcome.Success) known.update { it.copy(details = it.details.put(id, details.value)) }
+                if (details is Outcome.Success) {
+                    known.update {
+                        it.copy(
+                            details = it.details.putting(id, details.value),
+                        )
+                    }
+                }
                 send(details)
             }.distinctUntilChanged()
 
@@ -227,5 +233,7 @@ private fun reduceKnown(
     update: TdApi.Update,
 ): KnownCommunities {
     if (update !is TdApi.UpdateCommunityFullInfo || update.communityFullInfo == null) return known
-    return known.copy(details = known.details.put(update.communityId, update.communityFullInfo.toCommunityDetails()))
+    return known.copy(
+        details = known.details.putting(update.communityId, update.communityFullInfo.toCommunityDetails()),
+    )
 }

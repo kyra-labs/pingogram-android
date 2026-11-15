@@ -274,21 +274,24 @@ internal object StoryRingsPreviewData {
 
     /** The user's stories being posted, 62% sent. */
     val posting =
-        rings.toPersistentList().set(
+        rings.toPersistentList().replacingAt(
             0,
             rings[0].copy(upload = StoryRingUpload(persistentListOf(-1, -2), progress = 0.62f)),
         )
 
     /** One of the user's stories failed. */
     val failed =
-        rings.toPersistentList().set(
+        rings.toPersistentList().replacingAt(
             0,
             rings[0].copy(upload = StoryRingUpload(persistentListOf(-1), progress = null, failed = 1)),
         )
 
     /** The user without a story of their own: their ring offers to post one. */
     val withoutOwnStory =
-        rings.toPersistentList().set(0, StoryRing(1, "Me", null, hasUnread = false, storyCount = 0, isMine = true))
+        rings.toPersistentList().replacingAt(
+            0,
+            StoryRing(1, "Me", null, hasUnread = false, storyCount = 0, isMine = true),
+        )
 }
 
 internal class StoryRingsPreviewStates : PreviewParameterProvider<ImmutableList<StoryRing>> {

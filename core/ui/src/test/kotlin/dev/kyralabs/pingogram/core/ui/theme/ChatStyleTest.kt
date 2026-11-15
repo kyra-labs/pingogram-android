@@ -45,7 +45,7 @@ class ChatStyleTest {
                 .fonts
                 .map { font ->
                     (font as GoogleSansFlexFont).variationSettings.settings.single { it.axisName == "opsz" }
-                }.map { (it as FontVariation.Setting).toVariationValue(density) }
+                }.map { it.toVariationValue(density) }
         assertTrue(opticalSizes.isNotEmpty())
         opticalSizes.forEach { assertEquals(style.fontSize.value, it, 0.001f) }
     }

@@ -21,7 +21,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -35,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -44,7 +44,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * "About this ad" of a sponsored message (`REQUIREMENTS.md` §2; `docs/DESIGN_SYSTEM.md` §6 "Sponsored message"): a
- * [ModalBottomSheet] that says what sponsored messages are, who placed this one and what more Telegram tells about
+ * [PingogramBottomSheet] that says what sponsored messages are, who placed this one and what more Telegram tells about
  * it, with "Report ad" where it can be reported. A note says that Telegram Premium subscribers can turn ads off:
  * information only, never an offer or a link.
  *
@@ -66,7 +66,7 @@ internal fun SponsoredMessageSheet(
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { currentOnEvent(SponsoredEvent.DismissInfo) },
         sheetState = sheetState,
     ) {

@@ -8,12 +8,22 @@ import org.junit.rules.ExternalResource
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
-/** Declares [ComponentActivity] to Robolectric, as ui-test-manifest would, so a compose rule can launch it. */
-class ComponentActivityRegistration : ExternalResource() {
+/**
+ * Declares [ComponentActivity] to Robolectric, as ui-test-manifest would, so a compose rule can launch it.
+ * [withoutActionBar] gives it a theme without an action bar, so a capture of the whole screen shows only the content,
+ * as the app's edge-to-edge activity does.
+ */
+class ComponentActivityRegistration(
+    private val withoutActionBar: Boolean = false,
+) : ExternalResource() {
     override fun before() {
         val application = RuntimeEnvironment.getApplication()
-        shadowOf(application.packageManager)
-            .addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
+        val packageManager = shadowOf(application.packageManager)
+        val activity = packageManager.addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
+        if (withoutActionBar) {
+            activity.theme = android.R.style.Theme_Material_Light_NoActionBar
+            packageManager.addOrUpdateActivity(activity)
+        }
     }
 }
 

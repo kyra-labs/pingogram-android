@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -28,6 +29,7 @@ import org.robolectric.Shadows.shadowOf
  * action with its semantic action and no user interface, both handled by a broadcast rather than an activity.
  */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class AndroidAutoNotificationTest {
     private suspend fun TestScope.notification(): Notification {
         val harness = NotificationsHarness(this)
@@ -72,7 +74,7 @@ class AndroidAutoNotificationTest {
 
             assertEquals(NotificationAction.KEY_TEXT, reply.remoteInputs!!.single().resultKey)
             assertFalse(reply.showsUserInterface)
-            assertTrue(shadowOf(reply.actionIntent).isBroadcastIntent)
+            assertTrue(shadowOf(reply.actionIntent).isBroadcast)
         }
 
     @Test
@@ -81,6 +83,6 @@ class AndroidAutoNotificationTest {
             val markAsRead = notification().action(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
 
             assertFalse(markAsRead.showsUserInterface)
-            assertTrue(shadowOf(markAsRead.actionIntent).isBroadcastIntent)
+            assertTrue(shadowOf(markAsRead.actionIntent).isBroadcast)
         }
 }

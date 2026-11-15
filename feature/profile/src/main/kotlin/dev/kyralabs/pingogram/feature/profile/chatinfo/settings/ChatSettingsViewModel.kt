@@ -20,6 +20,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -131,6 +132,9 @@ class ChatSettingsViewModel internal constructor(
         }
     }
 
+    // flatMapLatest is still experimental in kotlinx.coroutines; new settings drop the linked chat's title still on its
+    // way for the old ones.
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun load() {
         loadJob?.cancel()
         mutableUiState.value = ChatSettingsUiState.Loading

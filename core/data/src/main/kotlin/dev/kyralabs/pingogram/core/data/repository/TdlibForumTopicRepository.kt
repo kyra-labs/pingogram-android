@@ -70,6 +70,15 @@ class TdlibForumTopicRepository
         override fun topics(chatId: Long): Flow<ForumTopicList> =
             observing(chatId) { cache -> cache.forums[chatId]?.list() ?: EMPTY_LIST }
 
+        override fun unreadTopicCount(chatId: Long): Flow<Int?> =
+            observing(chatId, countUnread = true) { cache ->
+                cache.forums[chatId]
+                    ?.takeIf { it.next != null }
+                    ?.topics
+                    ?.values
+                    ?.count { it.unreadCount > 0 }
+            }
+
         override fun topic(
             chatId: Long,
             topicId: Int,
@@ -149,15 +158,18 @@ class TdlibForumTopicRepository
 
         /**
          * What [select] takes of the cache, then every change, while forum [chatId] counts one more observer; topic
-         * [fetch] of it is fetched first when it is not loaded.
+         * [fetch] of it is fetched first when it is not loaded, and with [countUnread] the pages that count its unread
+         * topics are loaded ([loadUnreadPages]).
          */
         private fun <T> observing(
             chatId: Long,
             fetch: Int? = null,
+            countUnread: Boolean = false,
             select: (TopicCache) -> T,
         ): Flow<T> =
             flow {
                 store.update { cache -> cache.observing(chatId) }
+                if (countUnread) scope.launch { loadUnreadPages(chatId) }
                 try {
                     if (fetch != null && store.state.value.forums[chatId]
                             ?.topics
@@ -170,6 +182,21 @@ class TdlibForumTopicRepository
                     store.update { cache -> cache.releasing(chatId) }
                 }
             }
+
+        /**
+         * Loads forum [chatId]'s first page of topics if none is loaded, then the next ones while every loaded topic is
+         * unread, up to [UNREAD_COUNT_PAGES] pages: the newest topics come first, so the first read one ends the unread
+         * ones. Stops at a failure, and once nobody observes the forum.
+         */
+        private suspend fun loadUnreadPages(chatId: Long) {
+            repeat(UNREAD_COUNT_PAGES) {
+                val forum = store.state.value.forums[chatId] ?: return
+                val needed =
+                    forum.next == null ||
+                        (forum.next != PageOffsets.END && forum.topics.values.all { it.unreadCount > 0 })
+                if (!needed || loadMore(chatId) is Outcome.Failure) return
+            }
+        }
 
         private fun refetchLater(target: Pair<Long, Int>) {
             scope.launch { refetch(target.first, target.second) }
@@ -213,6 +240,9 @@ class TdlibForumTopicRepository
         private companion object {
             /** Topics per page: a screen and a half of rows. */
             const val PAGE_SIZE = 20
+
+            /** The most pages loaded to count a forum's unread topics: 100 topics. */
+            const val UNREAD_COUNT_PAGES = 5
 
             val EMPTY_LIST = ForumTopicList(persistentListOf(), reachedEnd = false)
         }
@@ -313,7 +343,7 @@ internal data class TopicCache(
     ): TopicCache {
         val forum = forums[chatId] ?: return this
         val topics = page.topics.filterNotNull().map { it.toForumTopic() }
-        val merged = forum.topics.putAll(topics.associateBy { it.id })
+        val merged = forum.topics.puttingAll(topics.associateBy { it.id })
         val done = topics.isEmpty() || merged.size >= page.totalCount
         val next =
             if (done) {
@@ -343,7 +373,11 @@ internal data class TopicCache(
         val top = loaded.maxOf { it.order }
         val reordered = loaded.mapIndexed { index, topic -> topic.copy(order = top - index) }
         return copy(
-            forums = forums.putting(chatId, forum.copy(topics = forum.topics.putAll(reordered.associateBy { it.id }))),
+            forums =
+                forums.putting(
+                    chatId,
+                    forum.copy(topics = forum.topics.puttingAll(reordered.associateBy { it.id })),
+                ),
         )
     }
 

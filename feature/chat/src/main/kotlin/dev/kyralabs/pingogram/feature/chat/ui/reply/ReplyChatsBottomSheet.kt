@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -26,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -41,7 +41,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ReplyPreviewData
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
- * The chat picker of "Reply in another chat" (`docs/DESIGN_SYSTEM.md` §6 "Message actions"): a [ModalBottomSheet]
+ * The chat picker of "Reply in another chat" (`docs/DESIGN_SYSTEM.md` §6 "Message actions"): a [PingogramBottomSheet]
  * with the forward sheet's parts, as the bot buttons' "Choose a chat": "Reply in another chat"
  * (`titleLargeEmphasized`), one line of the message it replies to (`bodyMedium` `onSurfaceVariant`), the search field
  * and the chats where the user can write, Saved Messages first. One tap picks a chat ([ReplyEvent.PickChat]): it opens
@@ -61,7 +61,7 @@ internal fun ReplyChatsBottomSheet(
     LaunchedEffect(query) {
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(ReplyEvent.SearchChats(it)) }
     }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ReplyEvent.DismissChats) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ReplyEvent.DismissChats) }, sheetState = sheetState) {
         ReplyChatsContent(sheet, query, onEvent)
     }
 }

@@ -99,27 +99,27 @@ internal class ChatRichMessages(
         toggled.update { all ->
             val sections = all[messageId].orEmpty()
             val changed = if (sectionId in sections) sections - sectionId else sections + sectionId
-            if (changed.isEmpty()) all.remove(messageId) else all.put(messageId, changed.toPersistentSet())
+            if (changed.isEmpty()) all.removing(messageId) else all.putting(messageId, changed.toPersistentSet())
         }
         savedState[KEY_TOGGLED] = ArrayList(toggled.value.map { (id, sections) -> "$id:${sections.joinToString(",")}" })
     }
 
     private fun showAll(messageId: Long) {
-        showingAll.update { it.add(messageId) }
+        showingAll.update { it.adding(messageId) }
         savedState[KEY_SHOWING_ALL] = showingAll.value.toLongArray()
     }
 
     /** Loads the full message once; a second tap while it loads does nothing. */
     private fun loadFull(messageId: Long) {
         if (loads.containsKey(messageId)) return
-        loading.update { it.add(messageId) }
+        loading.update { it.adding(messageId) }
         loads[messageId] =
             scope.launch {
                 try {
                     val result = messages.loadFullRichMessage(chatId, messageId)
                     if (result is Outcome.Failure) onEffect(ChatEffect.ShowError(result.error))
                 } finally {
-                    loading.update { it.remove(messageId) }
+                    loading.update { it.removing(messageId) }
                     loads.remove(messageId)
                 }
             }

@@ -218,6 +218,7 @@ internal fun ChatsListDetail(
                             onOpenMedia = onOpenMedia,
                             // The chat messages were forwarded to replaces this one, or is pushed with one pane.
                             onOpenChat = opener::openChat,
+                            onOpenMessage = opener::openMessage,
                             onOpenProfile = opener::openProfile,
                             onOpenChatInfo = opener::openChatInfo,
                             onBack = backUnless(listVisible && shownChatId != null, opener::closeChat),

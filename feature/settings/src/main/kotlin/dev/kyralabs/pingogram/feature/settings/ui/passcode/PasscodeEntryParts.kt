@@ -138,9 +138,7 @@ private fun Modifier.fadedBy(alpha: () -> Float): Modifier =
     drawWithContent {
         val faded = alpha()
         when {
-            faded <= 0f -> {
-                Unit
-            }
+            faded <= 0f -> {}
 
             faded >= 1f -> {
                 drawContent()

@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,6 +59,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicLimits
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -84,10 +84,10 @@ internal fun TopicManagementDialogs(
 }
 
 /**
- * The editor of a new topic or of a topic's name, a [ModalBottomSheet] that opens expanded and scrolls where the window
- * is short: "New topic" or "Edit topic" in `titleLargeEmphasized`; the topic's icon in the color picked beside the
- * name in the rounded tonal `TextField`, its length against Telegram's limit below it ("4 / 128"), or why the name is
- * refused (a polite live region); for a new topic, Telegram's six colors as named chips ([TopicColorChip]) and why
+ * The editor of a new topic or of a topic's name, a [PingogramBottomSheet] that opens expanded and scrolls where the
+ * window is short: "New topic" or "Edit topic" in `titleLargeEmphasized`; the topic's icon in the color picked beside
+ * the name in the rounded tonal `TextField`, its length against Telegram's limit below it ("4 / 128"), or why the name
+ * is refused (a polite live region); for a new topic, Telegram's six colors as named chips ([TopicColorChip]) and why
  * they show in the theme's colors; for an existing one, that its color stays. While Telegram is asked, a wavy linear
  * progress indicator; then "Cancel" at the start and "Create" or "Save" at the end, which the keyboard's action
  * sends too. Dragging it down, the scrim and back close it ([TopicEvent.DismissEditor]).
@@ -101,7 +101,7 @@ internal fun TopicEditorSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(TopicEvent.DismissEditor) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(TopicEvent.DismissEditor) }, sheetState = sheetState) {
         TopicEditorContent(editor, currentOnEvent)
     }
 }

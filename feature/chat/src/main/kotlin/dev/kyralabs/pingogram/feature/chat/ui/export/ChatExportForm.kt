@@ -16,11 +16,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -224,6 +226,16 @@ internal fun SizeLimitSegment(
     val title = stringResource(R.string.chat_export_size_limit)
     val limit = sizeLimitText(step)
     val haptics = LocalHapticFeedback.current
+    // One step per limit. The state follows the form while the finger does not hold it.
+    val sliderState =
+        remember {
+            SliderState(
+                step.toFloat(),
+                ExportSizeLimits.size - 2,
+                0f..ExportSizeLimits.lastIndex.toFloat(),
+            )
+        }
+    LaunchedEffect(step) { if (!sliderState.isDragging) sliderState.value = step.toFloat() }
     ExportSegment(shapes) {
         SegmentedListItem(
             shapes = shapes,
@@ -234,8 +246,9 @@ internal fun SizeLimitSegment(
             Text(title)
         }
         Slider(
-            value = step.toFloat(),
+            state = sliderState,
             onValueChange = { value ->
+                sliderState.value = value
                 val next = value.roundToInt().coerceIn(ExportSizeLimits.indices)
                 if (next != step) {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -253,8 +266,6 @@ internal fun SizeLimitSegment(
                         stateDescription = limit
                     },
             enabled = enabled,
-            valueRange = 0f..ExportSizeLimits.lastIndex.toFloat(),
-            steps = ExportSizeLimits.size - 2,
         )
     }
 }

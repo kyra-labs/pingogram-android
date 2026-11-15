@@ -16,7 +16,6 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -40,6 +39,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -76,7 +76,7 @@ private fun CloseDateDialog(
 
 /**
  * The form of a new poll (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "New poll", boards 5a and 5b): a
- * [ModalBottomSheet] that opens expanded, "New poll" with the send split button pinned above what scrolls: the
+ * [PingogramBottomSheet] that opens expanded, "New poll" with the send split button pinned above what scrolls: the
  * question, the photo ([pollMediaItem]), an optional description, the answer options ([pollOptionItems]: links,
  * reordering, up to Telegram's limit), a quiz's explanation, the settings and when the poll closes
  * ([pollSettingItems]).
@@ -136,7 +136,7 @@ internal fun PollFormSheet(
                 onPickCloseDate = { pickingCloseDate = true },
             )
         }
-    ModalBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissPoll) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { onEvent(ChatEvent.DismissPoll) }, sheetState = sheetState) {
         PollForm(sheet = sheet, editor = editor, canSend = canSend, actions = actions, now = now)
     }
     if (scheduling) {

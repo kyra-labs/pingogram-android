@@ -59,7 +59,10 @@ private fun messageStates(
             OutgoingStatus.Read -> add(resources.getString(R.string.chat_list_a11y_read))
             null -> Unit
         }
-        if (item.unreadCount > 0) {
+        val topics = item.unreadTopicCount
+        if (topics != null) {
+            add(resources.getQuantityString(R.plurals.chat_list_a11y_unread_topics, topics, topics))
+        } else if (item.unreadCount > 0) {
             add(resources.getQuantityString(R.plurals.chat_list_a11y_unread, item.unreadCount, item.unreadCount))
         } else if (item.isMarkedAsUnread) {
             add(resources.getString(R.string.chat_list_a11y_marked_unread))

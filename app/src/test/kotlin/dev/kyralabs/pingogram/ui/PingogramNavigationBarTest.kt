@@ -9,6 +9,7 @@ import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -103,6 +105,28 @@ class PingogramNavigationBarTest {
         iconTab(R.string.nav_chats).assertIsNotSelected()
         iconTab(R.string.nav_contacts).assertIsNotSelected()
         composeRule.onNode(hasText(string(R.string.nav_chats))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the labels are measured off the first frame as the first frame asks for them, then never again`() {
+        NavigationLabelWidths.clear()
+        NavigationLabelWidths.warmUp(RuntimeEnvironment.getApplication())
+        var key: NavigationLabelWidths.Key? = null
+        var measured = 0
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                val firstFrame = rememberNavigationLabelsKey()
+                val measurer = rememberTextMeasurer()
+                key = firstFrame
+                measured = remember { NavigationLabelWidths.measure(firstFrame, measurer) }
+            }
+        }
+        composeRule.waitForIdle()
+        val firstFrame = checkNotNull(key)
+
+        // The first frame's key is the warm-up's, with the width it would have measured itself.
+        assertEquals(measured, NavigationLabelWidths.cached(firstFrame))
+        assertEquals(measured, NavigationLabelWidths.widthPx(firstFrame) { error("measured again") })
     }
 
     @Test

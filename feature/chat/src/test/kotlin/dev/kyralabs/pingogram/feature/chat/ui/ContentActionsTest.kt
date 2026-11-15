@@ -45,6 +45,18 @@ class ContentActionsTest {
     private val documentFile = document.document.file.id
 
     @Test
+    fun `a forwarded message's source opens through a custom action, none without one`() {
+        val photo = ContentPreviewData.photo(minithumbnail = null)
+        val source = ForwardSource.Profile(7)
+
+        assertEquals(
+            ContentAction(R.string.chat_forward_open_source, ChatEvent.OpenForwardSource(source)),
+            forwardSourceAction(bubble(photo).copy(forwardSource = source)),
+        )
+        assertEquals(null, forwardSourceAction(bubble(photo)))
+    }
+
+    @Test
     fun `media opens in the viewer`() {
         val photo = ContentPreviewData.photo(minithumbnail = null)
 

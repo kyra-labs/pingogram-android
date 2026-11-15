@@ -264,6 +264,11 @@ class FakeChatActionRepository : ChatActionRepository {
     override val actionsByChat: Flow<ImmutableMap<Long, ImmutableList<SenderAction>>> = actions
 
     override fun actions(chatId: Long): Flow<ImmutableList<SenderAction>> = unused()
+
+    override fun actions(
+        chatId: Long,
+        topic: MessageTopic,
+    ): Flow<ImmutableList<SenderAction>> = unused()
 }
 
 class FakeConnectionRepository : ConnectionRepository {
