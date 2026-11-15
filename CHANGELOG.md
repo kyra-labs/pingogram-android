@@ -11,7 +11,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
-  until its first frame shows.
+  until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
 - The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,

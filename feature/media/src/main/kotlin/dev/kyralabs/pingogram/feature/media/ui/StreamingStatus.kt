@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -22,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -33,18 +36,21 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A video that plays as it loads (`docs/adr/0028-streaming-media.md`, board 25), until its first frame: the download's
  * determinate wavy ring on a `MaterialShapes.Cookie9Sided` of the media overlay, over "Streaming · 34%" and
- * "18.4 of 54 MB · plays as it loads" on a pill of it. The text follows each whole percent; screen readers hear it in
- * quarters, politely. Nothing for a file already on the device.
+ * "18.4 of 54 MB · plays as it loads" on a pill of it, and inside the ring a cancel button ([onCancel], "Stop loading")
+ * that stops the stream: the video then waits for a tap to play. The text follows each whole percent; screen readers
+ * hear it in quarters, politely. Nothing for a file already on the device.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun StreamingStatus(
     fileId: Int,
     state: FileState?,
+    onCancel: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     if (state !is FileState.Downloading) return
@@ -63,11 +69,7 @@ internal fun StreamingStatus(
     val spoken = stringResource(R.string.media_streaming, format.format(quarter / QUARTERS.toDouble()))
     val colors = MaterialTheme.pingogramColors
     Column(
-        modifier =
-            modifier.clearAndSetSemantics {
-                contentDescription = spoken
-                liveRegion = LiveRegionMode.Polite
-            },
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
@@ -80,10 +82,29 @@ internal fun StreamingStatus(
         ) {
             CircularWavyProgressIndicator(
                 progress = progress,
-                modifier = Modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize),
+                modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
             )
+            if (onCancel != null) {
+                IconButton(
+                    onClick = onCancel,
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onMediaOverlay),
+                ) {
+                    Icon(
+                        painterResource(UiR.drawable.ic_close),
+                        contentDescription = stringResource(R.string.media_streaming_cancel),
+                    )
+                }
+            }
         }
-        StatusText(title, detail)
+        StatusText(
+            title,
+            detail,
+            Modifier.clearAndSetSemantics {
+                contentDescription = spoken
+                liveRegion = LiveRegionMode.Polite
+            },
+        )
     }
 }
 
@@ -92,11 +113,12 @@ internal fun StreamingStatus(
 private fun StatusText(
     title: String,
     detail: String?,
+    modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.pingogramColors
     Column(
         modifier =
-            Modifier
+            modifier
                 .background(colors.mediaOverlay, MaterialTheme.shapes.large)
                 .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
         horizontalAlignment = Alignment.CenterHorizontally,

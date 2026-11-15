@@ -27,6 +27,8 @@
     <string name="media_picture_in_picture">Picture-in-picture</string>
     <string name="media_pip_video">Video in picture-in-picture</string>
     <!-- A video playing as it loads, until its first frame shows: how much of it came. -->
+    <!-- The button inside a streaming video's ring that stops it loading (board 25). -->
+    <string name="media_streaming_cancel">Stop loading</string>
     <string name="media_streaming">Streaming · %1$s</string>
     <!-- Under it: how much came of the whole file. -->
     <string name="media_streaming_sizes">%1$s of %2$s · plays as it loads</string>

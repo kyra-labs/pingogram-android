@@ -333,6 +333,7 @@ private fun MediaPager(
             playback = playback,
             onTap = onTap,
             onPlay = { onEvent(MediaViewerEvent.PlayPause) },
+            onCancelStream = { onEvent(MediaViewerEvent.CancelStream) },
             videoSurface = videoSurface,
             onSideTap =
                 { end: Boolean ->

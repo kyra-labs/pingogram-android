@@ -104,6 +104,7 @@ internal fun MediaPage(
     zoom: ZoomState? = null,
     onSideTap: ((end: Boolean) -> Unit)? = null,
     onHold: ((held: Boolean) -> Unit)? = null,
+    onCancelStream: (() -> Unit)? = null,
 ) {
     val media = item.media
     val zoomState = zoom?.takeIf { media is ViewerMedia.Image && !item.isHidden }
@@ -140,7 +141,7 @@ internal fun MediaPage(
 
             // A video in the player streams until its first frame: what came of it, then the seek bar shows it.
             playback != null && media is ViewerMedia.Clip && !playback.showsFrame -> {
-                StreamingStatus(media.fileId, files[media.fileId], Modifier.align(Alignment.Center))
+                StreamingStatus(media.fileId, files[media.fileId], onCancelStream, Modifier.align(Alignment.Center))
             }
 
             playback?.showsFrame != true -> {
