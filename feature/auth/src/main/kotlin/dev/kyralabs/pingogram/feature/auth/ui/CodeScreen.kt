@@ -3,11 +3,16 @@ package dev.kyralabs.pingogram.feature.auth.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
@@ -18,6 +23,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
@@ -27,6 +35,7 @@ import dev.kyralabs.pingogram.core.ui.phone.loginCodeDescription
 import dev.kyralabs.pingogram.core.ui.phone.loginCodeResendText
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
+import dev.kyralabs.pingogram.core.ui.text.clockText
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -55,6 +64,7 @@ fun CodeScreen(
     onEvent: (AuthEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isHelpOpen by rememberSaveable { mutableStateOf(false) }
     AuthStepLayout(
         title = stringResource(R.string.auth_code_title),
         badgeShape = MaterialShapes.Sunny,
@@ -71,6 +81,13 @@ fun CodeScreen(
             )
         },
         secondaryAction = {
+            AuthTextButton(
+                text = stringResource(R.string.auth_code_help),
+                onClick = { isHelpOpen = true },
+            )
+        },
+        // Beside where the code went, as it is about the number it went to (board 23).
+        explanation = {
             AuthTextButton(
                 text = stringResource(R.string.auth_change_number),
                 onClick = { onEvent(AuthEvent.ChangePhoneNumber) },
@@ -94,6 +111,45 @@ fun CodeScreen(
         }
         ResendCode(state = state, canSubmit = canSubmit, pendingAction = pendingAction, onEvent = onEvent)
     }
+    if (isHelpOpen) CodeHelpDialog(state, canSubmit, onEvent, onDismiss = { isHelpOpen = false })
+}
+
+/**
+ * "Didn't get the code?" (board 23): an [AlertDialog] that names the number the code went to and says codes can take
+ * a minute; "Change number", and while a new code can be asked for another way, that way ("Send the code by SMS"),
+ * otherwise "OK".
+ */
+@Composable
+private fun CodeHelpDialog(
+    state: AuthStepUiState.Code,
+    canSubmit: Boolean,
+    onEvent: (AuthEvent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val nextType = state.nextType?.takeIf { state.canResend && canSubmit }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.auth_code_help)) },
+        text = { Text(stringResource(R.string.auth_code_help_text, state.phoneNumber.bidiIsolated())) },
+        dismissButton = {
+            AuthTextButton(
+                text = stringResource(R.string.auth_change_number),
+                onClick = {
+                    onDismiss()
+                    onEvent(AuthEvent.ChangePhoneNumber)
+                },
+            )
+        },
+        confirmButton = {
+            AuthTextButton(
+                text = if (nextType != null) loginCodeResendText(nextType) else stringResource(R.string.auth_ok),
+                onClick = {
+                    onDismiss()
+                    if (nextType != null) onEvent(AuthEvent.ResendCode)
+                },
+            )
+        },
+    )
 }
 
 /**
@@ -133,8 +189,9 @@ private fun ResendCode(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 CountdownIndicator(secondsLeft = state.resendInSeconds, totalSeconds = state.resendTotalSeconds)
+                val clock = clockText(state.resendInSeconds)
                 Text(
-                    text = stringResource(UiR.string.login_code_resend_in, durationText(state.resendInSeconds)),
+                    text = withTabularClock(stringResource(UiR.string.login_code_resend_in, clock), clock),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
@@ -175,3 +232,17 @@ private fun CodeScreenFragmentPreview() {
 private fun CodeScreenPhrasePreview() {
     AuthScreenPreview(AuthPreviewData.codePhrase)
 }
+
+/**
+ * [text] with its [clock] part in tabular figures, so a countdown keeps its width as it counts
+ * (`docs/DESIGN_SYSTEM.md` §3.2); the rest of the sentence keeps the font's own spacing.
+ */
+internal fun withTabularClock(
+    text: String,
+    clock: String,
+): AnnotatedString =
+    buildAnnotatedString {
+        append(text)
+        val start = text.indexOf(clock)
+        if (start >= 0) addStyle(SpanStyle(fontFeatureSettings = "tnum"), start, start + clock.length)
+    }

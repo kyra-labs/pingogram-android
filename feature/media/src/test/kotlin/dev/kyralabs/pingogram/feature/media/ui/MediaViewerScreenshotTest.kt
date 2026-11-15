@@ -20,8 +20,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the media viewer (`docs/TESTING.md`), light and dark on a compact phone and light on an expanded window:
- * a photo with its chrome and caption, a video with its controls (and its speed chip at 1.5×), a photo still
- * downloading, the chrome hidden, the error, and the floating toolbar: Share, Save and More; with Forward too, More's
+ * a photo with its chrome and caption, a video with its controls (and its speed chip at 1.5×), a live photo, a photo
+ * still downloading, the chrome hidden, the error, and the floating toolbar: Share, Save and More; with Forward, More's
  * menu with Delete in its own group (board 25), and the delete confirmation; Share waiting for the download; and More
  * alone in a chat that protects its content. The viewer is dark in either theme, so light and dark
  * differ only where the app's theme shows through (none here). Inspection mode, so Coil shows solid colors for the
@@ -122,6 +122,7 @@ class MediaViewerScreenshotTest(
                 "video" to Shot(MediaPreviewData.video),
                 "videoWaitingForTap" to Shot(MediaPreviewData.videoWaitingForTap),
                 "videoFaster" to Shot(MediaPreviewData.videoFaster),
+                "livePhoto" to Shot(MediaPreviewData.livePhoto),
                 "downloading" to Shot(MediaPreviewData.downloading, imagesLoading = true),
                 "chromeHidden" to Shot(MediaPreviewData.photo, hideChrome = true),
                 "error" to Shot(MediaPreviewData.error),
