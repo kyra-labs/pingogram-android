@@ -530,6 +530,27 @@ class MediaViewerScreenTest {
     }
 
     @Test
+    fun `a live photo says so, plays while held and through its actions`() {
+        setScreen(MediaPreviewData.livePhoto)
+        val page = composeRule.onNode(hasContentDescription(string(R.string.media_live_photo), substring = true))
+
+        page.assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_live_badge))).assertDoesNotExist() // Decorative.
+        page.performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+            move()
+        }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+        page.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = false), events.last())
+        page.performCustomAction(string(R.string.media_live_play))
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+    }
+
+    @Test
     fun `a video cannot be copied`() {
         setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
 

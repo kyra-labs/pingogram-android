@@ -20,8 +20,15 @@
 
     <!-- Welcome (FR-A1) -->
     <string name="auth_welcome_title" translatable="false">Pingogram</string>
-    <string name="auth_welcome_tagline">A fast, private Telegram client for Android.</string>
-    <string name="auth_welcome_disclaimer">Pingogram is an independent, open-source app. It isn\'t made by Telegram.</string>
+    <string name="auth_welcome_tagline">Your Telegram account, in Material 3 Expressive.</string>
+    <string name="auth_welcome_disclaimer">An unofficial client, not made by Telegram.</string>
+    <!-- Welcome's illustration: two sample messages beside Pingogram's logo, decorative (screen readers skip them). -->
+    <string name="auth_welcome_sample_incoming">Ready for the trip? 🚆</string>
+    <string name="auth_welcome_sample_outgoing">Always ✨</string>
+    <string name="auth_welcome_sample_initials_one" translatable="false">AK</string>
+    <string name="auth_welcome_sample_initials_two" translatable="false">LF</string>
+    <!-- Welcome's language button for screen readers; %1$s is the language the app shows, e.g. "English". -->
+    <string name="auth_app_language">App language: %1$s</string>
     <string name="auth_start_messaging">Start messaging</string>
     <string name="auth_welcome_agreement">By continuing, you agree to Telegram\'s Terms of Service and Privacy Policy.</string>
 
@@ -42,6 +49,10 @@
     <string name="auth_code_title">Enter the code</string>
     <string name="auth_code_open_fragment">Open Fragment</string>
     <string name="auth_change_number">Wrong number?</string>
+    <string name="auth_code_help">Didn\'t get the code?</string>
+    <string name="auth_ok">OK</string>
+    <!-- %1$s is the phone number the code went to, e.g. "+44 7911 123456". -->
+    <string name="auth_code_help_text">Check that %1$s is your number. A code can take a minute to arrive, and you can ask for a new one another way once the countdown ends.</string>
 
     <!-- 2-step verification password (FR-A4) -->
     <string name="auth_password_title">Two-step verification</string>
@@ -69,8 +80,9 @@
     <string name="auth_registration_description">This number has no Telegram account yet. Enter your name to create one.</string>
     <string name="auth_first_name">First name</string>
     <string name="auth_last_name">Last name (optional)</string>
-    <string name="auth_accept_terms">I accept Telegram\'s Terms of Service</string>
-    <string name="auth_read_terms">Read the Terms of Service</string>
+    <!-- Under a new account's name: %1$s is "Terms of Service" (auth_terms_of_service), a link to Telegram's terms. -->
+    <string name="auth_signup_terms_notice">By signing up you agree to the %1$s.</string>
+    <string name="auth_terms_read_full">Read the full terms</string>
     <string name="auth_create_account">Create account</string>
     <plurals name="auth_terms_min_age">
         <item quantity="one">You must be at least %d year old to use Telegram.</item>

@@ -179,6 +179,8 @@ internal class BubbleResources(
     val share: ShareButtonStyle,
     /** Whether a message this version cannot show offers "Update Pingogram" ([ChatUiState.showsUpdateLink]). */
     val showsUpdateLink: Boolean = false,
+    /** Whether voice and round video messages show the Transcribe button ([ChatUiState.canTranscribe]). */
+    val canTranscribe: Boolean = false,
 )
 
 /**
@@ -193,6 +195,7 @@ internal fun rememberBubbleResources(
     lift: MessageLiftState = remember { MessageLiftState() },
     vividHues: Boolean = true,
     showsUpdateLink: Boolean = false,
+    canTranscribe: Boolean = false,
     onDateTime: (unixTime: Long) -> Unit = {},
     onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
@@ -216,6 +219,7 @@ internal fun rememberBubbleResources(
         swipe,
         share,
         showsUpdateLink,
+        canTranscribe,
     ) {
         BubbleResources(
             theme,
@@ -230,6 +234,7 @@ internal fun rememberBubbleResources(
             swipe,
             share,
             showsUpdateLink,
+            canTranscribe,
         )
     }
 }

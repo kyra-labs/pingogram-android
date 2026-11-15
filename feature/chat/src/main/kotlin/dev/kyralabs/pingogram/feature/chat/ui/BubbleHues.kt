@@ -182,6 +182,7 @@ internal fun rememberChatBubbleResources(
         lift,
         vivid,
         showsUpdateLink = state.showsUpdateLink,
+        canTranscribe = state.canTranscribe,
         onDateTime = { unixTime -> onEvent(DateTimeEvent.Open(unixTime)) },
     ) { target -> onEvent(ChatEvent.OpenMention(target)) }
 }
