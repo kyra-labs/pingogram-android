@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -50,7 +51,8 @@ import java.lang.management.ManagementFactory
  * ([rememberScrollingListState]) and with Compose's default one. A
  * measurement, not a check: it runs only with `-Ppingogram.scrollCost` (`./gradlew :feature:chats:testDebugUnitTest
  * -Ppingogram.scrollCost --tests '*ScrollCostTest*' --rerun`), and its numbers are relative: compare two runs on the
- * same machine, each test in its own run, as the JIT carries over between tests of one run. Robolectric neither draws
+ * same machine, each test in its own run, as the JIT carries over between tests of one run. Its first scroll is
+ * measured apart, with each cache window ("first scroll frames with each cache window"). Robolectric neither draws
  * nor runs Compose's prefetch between frames as a phone does, so only composition and measuring are seen.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -106,16 +108,15 @@ class ChatListScrollCostTest {
      * as the median over [FIRST_SCROLL_RUNS] runs (the first left out, warming the JIT) of the longest frame and of
      * all of them.
      */
-    @OptIn(ExperimentalFoundationApi::class)
     @Test
     fun `first scroll frames with each cache window`() {
         val windows =
             linkedMapOf<String, () -> LazyListState>(
                 "default" to { LazyListState() },
-                "ahead 0.5, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.5f, behindFraction = 1f)) },
-                "ahead 0.25, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.25f, behindFraction = 1f)) },
-                "ahead 0.5, behind 0.5" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0.5f, behindFraction = 0.5f)) },
-                "ahead 0, behind 1" to { LazyListState(LazyLayoutCacheWindow(aheadFraction = 0f, behindFraction = 1f)) },
+                "ahead 0.5, behind 1" to { window(0.5f, 1f) },
+                "ahead 0.25, behind 1" to { window(0.25f, 1f) },
+                "ahead 0.5, behind 0.5" to { window(0.5f, 0.5f) },
+                "ahead 0, behind 1" to { window(0f, 1f) },
             )
         var shown by mutableStateOf<String?>(null)
         val items = items()
@@ -158,10 +159,18 @@ class ChatListScrollCostTest {
 
     private var runs = 0
 
+    /** A list state whose cache window reaches [ahead] of a viewport ahead and [behind] of one behind. */
+    @OptIn(ExperimentalFoundationApi::class)
+    private fun window(
+        ahead: Float,
+        behind: Float,
+    ) = LazyListState(LazyLayoutCacheWindow(aheadFraction = ahead, behindFraction = behind))
+
     private fun items() =
         (0 until ROWS)
             .map { index ->
                 val base = ChatListPreviewData.items[index % ChatListPreviewData.items.size]
+                // A photo for most chats, as on a phone, from a few distinct files Coil's memory cache soon holds.
                 val photo =
                     if (index % PLACEHOLDER_EVERY == 0) {
                         null
@@ -172,9 +181,10 @@ class ChatListScrollCostTest {
                 base.copy(id = FIRST_ID + index, photo = photo)
             }.toImmutableList()
 
+    /** The chat list showing [items] in [state], below the story rings, as the Chats tab has them. */
     @Composable
     private fun Screen(
-        items: kotlinx.collections.immutable.ImmutableList<ChatListItemModel>,
+        items: ImmutableList<ChatListItemModel>,
         state: LazyListState,
     ) {
         ChatListScreen(
@@ -193,46 +203,11 @@ class ChatListScrollCostTest {
     }
 
     private fun measure(scrollingState: Boolean) {
-        val items =
-            (0 until ROWS)
-                .map { index ->
-                    val base = ChatListPreviewData.items[index % ChatListPreviewData.items.size]
-                    // A photo for most chats, as on a phone, from a few distinct files Coil's memory cache soon holds.
-                    val photo =
-                        if (index % PLACEHOLDER_EVERY == 0) {
-                            null
-                        } else {
-                            val fileId = index % DISTINCT_PHOTOS + 1
-                            ProfilePhoto(FileRef(fileId, 0), FileRef(fileId + DISTINCT_PHOTOS, 0), minithumbnail = null)
-                        }
-                    base.copy(id = FIRST_ID + index, photo = photo)
-                }.toImmutableList()
+        val items = items()
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 listState = if (scrollingState) rememberScrollingListState() else rememberLazyListState()
-                ChatListScreen(
-                    state =
-                        ChatListUiState(
-                            content =
-                                ChatListContent.Content(
-                                    items,
-                                    pinnedCount = items.indexOfFirst { !it.isPinned },
-                                ),
-                            connection = ConnectionStatus.Ready,
-                            folderTabs = ChatListPreviewData.folders,
-                        ),
-                    onEvent = {},
-                    listState = listState,
-                    // The Chats tab's first row, as it has stories.
-                    stories = { modifier ->
-                        StoryRingsRow(
-                            rings = StoryRingsPreviewData.rings,
-                            onOpen = {},
-                            onNearEnd = {},
-                            modifier = modifier,
-                        )
-                    },
-                )
+                Screen(items, listState)
             }
         }
         composeRule.waitForIdle()
