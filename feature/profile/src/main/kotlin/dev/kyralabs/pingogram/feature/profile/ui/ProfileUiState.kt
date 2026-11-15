@@ -160,6 +160,8 @@ data class PersonalChannel(
  *   known, or where its content may not be saved.
  * @property callUserId the user "Call" calls (`REQUIREMENTS.md` FR-V1): a person, not oneself, whose privacy settings
  *   allow it; null otherwise.
+ * @property shareUsername a bot's username, which its "Share" pill shares as a `t.me` link (the owner's board 24d);
+ *   null for everyone else, whose pills are Message, Mute and Call.
  */
 @Immutable
 data class ProfileActions(
@@ -174,6 +176,7 @@ data class ProfileActions(
     val canReport: Boolean = false,
     val callUserId: Long? = null,
     val exportChatId: Long? = null,
+    val shareUsername: String? = null,
 )
 
 /** What the contact row does. */

@@ -595,6 +595,7 @@
         <item quantity="other">You have %1$s boosts that aren\'t in use.</item>
     </plurals>
     <!-- The profile's call pill (REQUIREMENTS.md FR-V1). -->
+    <string name="profile_action_share">Share</string>
     <string name="profile_action_call">Call</string>
 
     <!-- A group's or channel's settings (REQUIREMENTS.md FR-P3) -->

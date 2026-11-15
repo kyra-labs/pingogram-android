@@ -601,8 +601,13 @@ class ProfileViewModel internal constructor(
             canReport = !isSelf && !isDeleted && chat != null,
             callUserId = user.id.takeIf { isRegular && !isSelf && info?.canBeCalled == true },
             exportChatId = chat?.takeIf { !it.hasProtectedContent }?.id,
+            shareUsername = botLinkOf(user),
         )
     }
+
+    /** The username a bot's "Share" pill shares; null for anyone but a bot (board 24d). */
+    private fun botLinkOf(user: User): String? =
+        user.usernames.firstOrNull()?.takeIf { user.type == UserType.Bot && !user.isDeleted }
 
     private fun Sources.header(user: User): ProfileHeader {
         val isDeleted = user.isDeleted

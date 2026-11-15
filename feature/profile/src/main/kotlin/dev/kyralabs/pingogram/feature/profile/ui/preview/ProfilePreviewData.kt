@@ -133,7 +133,14 @@ object ProfilePreviewData {
                     isBot = true,
                     usernames = persistentListOf("stickerfinderbot"),
                 ),
-            actions = ProfileActions(canMessage = true, isMuted = true, isBlocked = false, canReport = true),
+            actions =
+                ProfileActions(
+                    canMessage = true,
+                    isMuted = true,
+                    isBlocked = false,
+                    canReport = true,
+                    shareUsername = "stickerfinderbot",
+                ),
         )
 
     val deleted =
