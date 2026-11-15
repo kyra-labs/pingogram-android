@@ -200,7 +200,12 @@ class TdlibForumTopicRepositoryTest {
     fun `the unread count follows a topic read and a new message`() =
         runTest {
             client.on(TdApi.GetForumTopics::class, page(topic(5, unread = 3), topic(4)))
-            client.on(TdApi.GetForumTopic::class) { TdResult.Success(topic(5, unread = 0)) }
+            // Topic 5 read elsewhere; General, which the first page leaves out, has nothing unread.
+            client.on(TdApi.GetForumTopic::class) { request ->
+                TdResult.Success(
+                    if (request.forumTopicId == 5) topic(5, unread = 0) else topic(1, info = info(1, isGeneral = true)),
+                )
+            }
             val repository = repository()
 
             repository.unreadTopicCount(FORUM).test {
