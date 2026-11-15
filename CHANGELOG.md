@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
+  read"; a tap opens your chats.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
@@ -29,6 +31,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notification channel of its own, even in a muted chat, with "Snooze 1 h".
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
+- A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
 - A reminder on the Reminders page opens its chat at the message it was set on.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
