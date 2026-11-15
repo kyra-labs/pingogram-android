@@ -54,6 +54,7 @@ internal object AuthPreviewData {
         error: DomainError? = null,
         isChangingNumber: Boolean = false,
         pickerOpen: Boolean = false,
+        expectedLength: Int? = null,
     ) = AuthStepUiState.PhoneNumber(
         callingCode = "44",
         number = number,
@@ -62,6 +63,7 @@ internal object AuthPreviewData {
         error = error,
         isChangingNumber = isChangingNumber,
         countryPicker = if (pickerOpen) CountryPickerUiState("", countries, unitedKingdom.isoCode) else null,
+        expectedLength = expectedLength,
     )
 
     fun code(
@@ -94,7 +96,6 @@ internal object AuthPreviewData {
             "By signing up for Telegram, you accept our Privacy Policy and agree not to use Telegram to spam, " +
                 "promote violence or post illegal content.",
         minUserAge = MIN_USER_AGE,
-        termsAccepted = !termsOpen,
         isTermsOfServiceOpen = termsOpen,
     )
 
@@ -106,6 +107,9 @@ internal object AuthPreviewData {
     val phoneNumberEmpty =
         state(AuthStepUiState.PhoneNumber("", "", null, null, null, isChangingNumber = false, countryPicker = null))
     val phoneNumberError = state(phoneNumber(number = "791", error = DomainError.PhoneNumberInvalid))
+
+    /** "Next" pressed once with a number shorter than the United Kingdom's 10 digits: the warning under the field. */
+    val phoneNumberTooShort = state(phoneNumber(number = "7911123", expectedLength = UK_NUMBER_LENGTH))
     val phoneNumberFloodWait = state(phoneNumber(), floodWaitSeconds = FLOOD_WAIT_SECONDS)
     val phoneNumberSubmittingOffline =
         state(
@@ -182,6 +186,7 @@ internal object AuthPreviewData {
             "phoneNumber" to phoneNumber,
             "phoneNumberEmpty" to phoneNumberEmpty,
             "phoneNumberError" to phoneNumberError,
+            "phoneNumberTooShort" to phoneNumberTooShort,
             "phoneNumberFloodWait" to phoneNumberFloodWait,
             "phoneNumberSubmittingOffline" to phoneNumberSubmittingOffline,
             "countryPicker" to countryPicker,
@@ -206,6 +211,8 @@ internal object AuthPreviewData {
             "premiumRequired" to premiumRequired,
         )
 }
+
+private const val UK_NUMBER_LENGTH = 10
 
 /** A phone in landscape, for `@Preview(device = …)`: medium width, compact height. */
 internal const val LANDSCAPE_PHONE = "spec:width=891dp,height=411dp,orientation=landscape"

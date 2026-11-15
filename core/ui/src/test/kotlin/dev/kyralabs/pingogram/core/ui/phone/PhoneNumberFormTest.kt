@@ -70,4 +70,40 @@ class PhoneNumberFormTest {
         assertEquals("US", canadian.withNumberInput("212").withPhoneNumberInfo(info).countryIso)
         assertEquals("--- --- ----", canadian.withPhoneNumberInfo(info).numberFormat)
     }
+
+    @Test
+    fun `a number shorter than its country's format is too short, and warned about once`() {
+        val info = PhoneNumberInfo(britain, "44", "7911 12----", isAnonymous = false)
+        val short = form.withCountry("GB").withNumberInput("791112").withPhoneNumberInfo(info)
+
+        val warned = short.warnedIfTooShort()
+
+        assertEquals(10, short.expectedLength)
+        assertTrue(short.isTooShort)
+        assertTrue(warned!!.isShortWarned)
+        assertNull(warned.warnedIfTooShort())
+        assertFalse(warned.withNumberInput("7911123").isShortWarned)
+    }
+
+    @Test
+    fun `nothing is too short where the device is not sure`() {
+        val anonymous = PhoneNumberInfo(null, "888", "0812 ----", isAnonymous = true)
+        val unknown = PhoneNumberInfo(null, "999", "12", isAnonymous = false)
+
+        assertNull(
+            form
+                .withCallingCodeInput("888")
+                .withNumberInput("0812")
+                .withPhoneNumberInfo(anonymous)
+                .expectedLength,
+        )
+        assertNull(
+            form
+                .withCallingCodeInput("999")
+                .withNumberInput("12")
+                .withPhoneNumberInfo(unknown)
+                .expectedLength,
+        )
+        assertFalse(form.withCountry("GB").isTooShort)
+    }
 }

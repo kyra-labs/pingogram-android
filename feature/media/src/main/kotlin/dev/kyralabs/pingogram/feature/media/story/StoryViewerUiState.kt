@@ -18,7 +18,8 @@ sealed interface StoryViewerUiState {
      * The [posters] to swipe between, [current] among them, and the [story] of the current one; [isPaused] while a
      * finger holds the story, a sheet or the keyboard is up or the screen is stopped; [isMuted] for videos. [reply] is
      * the reply field, null where the story cannot be replied to (channels, the user's own); [reactions] the reactions
-     * the user may put on the story, null while not known.
+     * the user may put on the story, null while not known; [own] the ⋮ menu of a story the user may delete, null for
+     * others.
      */
     data class Content(
         val posters: ImmutableList<StoryPosterUi>,
@@ -28,6 +29,7 @@ sealed interface StoryViewerUiState {
         val isMuted: Boolean,
         val reply: StoryReplyUi?,
         val reactions: StoryReactionsUi?,
+        val own: OwnStoryUi? = null,
     ) : StoryViewerUiState
 }
 
@@ -112,6 +114,17 @@ sealed interface StoryMedia {
     ) : StoryMedia
 }
 
+/**
+ * The ⋮ menu of the user's own story (board 26, owner decision 2026-11-15: Delete is there): whether it is open
+ * ([menuOpen]), whether "Delete this story?" asks ([deleteAsked]), and [isDeleting] while TDLib deletes it.
+ */
+@Immutable
+data class OwnStoryUi(
+    val menuOpen: Boolean = false,
+    val deleteAsked: Boolean = false,
+    val isDeleting: Boolean = false,
+)
+
 /** The reply field: [isSending] while a reply goes out. */
 @Immutable
 data class StoryReplyUi(
@@ -190,6 +203,23 @@ sealed interface StoryViewerEvent {
     ) : StoryViewerEvent
 
     data object Retry : StoryViewerEvent
+
+    /** What the user does with their own story's ⋮ menu; each pauses the story while it shows. */
+    sealed interface Own : StoryViewerEvent {
+        /** Opens or closes the menu ([open]). */
+        data class MenuOpen(
+            val open: Boolean,
+        ) : Own
+
+        /** "Delete" in the menu: the question asks first. */
+        data object Delete : Own
+
+        /** "Cancel", or the question dismissed. */
+        data object DeleteDismissed : Own
+
+        /** "Delete" in the question: the story goes for everyone, and the viewer moves on. */
+        data object DeleteConfirmed : Own
+    }
 }
 
 /** One-off side effects of [StoryViewerViewModel], handled once by the route. */
@@ -199,6 +229,9 @@ sealed interface StoryViewerEffect {
 
     /** A reply was sent: a snackbar says so. */
     data object ReplySent : StoryViewerEffect
+
+    /** The user's own story was deleted: a snackbar says so. */
+    data object StoryDeleted : StoryViewerEffect
 
     /** The player could not play the video: its picture shows for a photo's time, and a snackbar says why. */
     data object PlaybackFailed : StoryViewerEffect

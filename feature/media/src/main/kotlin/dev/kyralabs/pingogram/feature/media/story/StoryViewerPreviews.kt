@@ -104,6 +104,17 @@ internal object StoryViewerPreviewData {
 
     val failed = content(StoryMedia.Failed(DomainError.Network), reply = null, reactions = null)
 
+    /** The user's own story with its ⋮ menu open (board 26): no reply field, no reactions. */
+    val ownMenu =
+        content(
+            StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = true),
+            reply = null,
+            reactions = null,
+        ).copy(own = OwnStoryUi(menuOpen = true))
+
+    /** The user's own story, "Delete this story?" asking. */
+    val ownDeleteAsked = ownMenu.copy(own = OwnStoryUi(deleteAsked = true))
+
     const val PREVIEW_PROGRESS = 0.4f
 
     /** Three hours. */
@@ -119,6 +130,8 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
             StoryViewerPreviewData.live,
             StoryViewerPreviewData.unsupported,
             StoryViewerPreviewData.failed,
+            StoryViewerPreviewData.ownMenu,
+            StoryViewerPreviewData.ownDeleteAsked,
             StoryViewerUiState.Loading,
         )
 }

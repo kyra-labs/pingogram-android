@@ -17,6 +17,9 @@ import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
@@ -29,6 +32,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.CompletableDeferred
@@ -109,6 +113,10 @@ abstract class ChatViewModelHarness {
     internal val deviceLocation = FakeDeviceLocationRepository()
     protected val locationConsent = InlineLocationConsent()
     protected val translations = FakeTranslationRepository()
+    protected val transcriber = FakeVoiceTranscriber()
+    protected val transcripts = FakeTranscriptRepository()
+    protected val transcriptionSettings = FakeTranscriptionSettingsRepository()
+    private val transcription get() = TranscriptionRepositories(transcriber, transcripts, transcriptionSettings, files)
 
     /** Texts are in English, the user's language, unless a test says otherwise. */
     protected val languageDetector = FakeDeviceLanguageDetector(default = LanguageDetection.Detected("en"))
@@ -197,6 +205,7 @@ abstract class ChatViewModelHarness {
                 topic = topic,
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
                 appInfo = appInfo,
+                transcriptionRepositories = transcription,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

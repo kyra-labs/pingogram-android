@@ -66,7 +66,6 @@ private fun AuthModel.laterStepScreen(step: AuthStep): AuthStepUiState =
                 lastNameError = registration.lastNameError,
                 termsOfServiceText = step.termsOfService.text,
                 minUserAge = step.termsOfService.minUserAge,
-                termsAccepted = registration.termsAccepted,
                 isTermsOfServiceOpen = registration.isTermsOpen == true,
             )
         }
@@ -137,6 +136,7 @@ private fun AuthModel.phoneScreen(isChangingNumber: Boolean) =
         error = phone.error,
         isChangingNumber = isChangingNumber,
         countryPicker = phone.picker,
+        expectedLength = phone.expectedLength.takeIf { phone.isShortWarned && phone.isTooShort },
     )
 
 private fun AuthModel.displayPhoneNumber(raw: String): String =

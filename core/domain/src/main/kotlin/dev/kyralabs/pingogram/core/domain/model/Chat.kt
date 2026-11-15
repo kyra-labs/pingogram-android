@@ -90,6 +90,11 @@ data class Chat(
      * `updateChatActionBar`); null for none.
      */
     val actionBar: ChatActionBar? = null,
+    /**
+     * The color of the chat's profile header, chosen by a channel or group (td_api.tl `chat.profile_accent_color_id`,
+     * `updateChatAccentColors`); -1 for none.
+     */
+    val profileAccentColorId: Int = -1,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

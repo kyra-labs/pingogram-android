@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -34,6 +35,7 @@ import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -64,6 +66,11 @@ interface DataStoreModule {
 
     @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
+
+    @Binds
+    fun transcriptionSettingsRepository(
+        repository: DataStoreTranscriptionSettingsRepository,
+    ): TranscriptionSettingsRepository
 
     @Binds
     fun callSettingsRepository(repository: DataStoreCallSettingsRepository): CallSettingsRepository

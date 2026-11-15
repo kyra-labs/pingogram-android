@@ -9,6 +9,12 @@ sealed interface AuthEffect {
         val url: String,
     ) : AuthEffect
 
+    /**
+     * Opens Android's list of the app's languages (Android 13 and later), where a language picked applies at once:
+     * Android creates the activity again in it.
+     */
+    data object OpenAppLanguages : AuthEffect
+
     /** Opens the user's email app with a new message. */
     data class SendEmail(
         val address: String,

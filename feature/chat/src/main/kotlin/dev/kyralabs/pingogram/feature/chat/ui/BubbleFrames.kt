@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
@@ -46,6 +47,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardButtons
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostCard
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.VideoNoteTranscript
 import kotlin.math.max
 
 // The frames of a message without a bubble (emoji only, bare content), and the reaction badges on a bubble's corner and
@@ -271,6 +273,7 @@ internal fun BareBubble(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    canTranscribe: Boolean = false,
 ) {
     Column(
         modifier = modifier,
@@ -279,8 +282,21 @@ internal fun BareBubble(
     ) {
         BubbleHeader(bubble, colors, onEvent)
         Box {
-            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
+            MessageContentBody(
+                bubble,
+                fileState = null,
+                Playback.Stopped,
+                colors,
+                onEvent,
+                canTranscribe = canTranscribe,
+            )
             if (bubble.showsTime) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
+        }
+        // A round video message's transcript, in a bubble of its own under the circle (§6).
+        if (bubble.content is MessageContent.VideoNote) {
+            bubble.transcript?.let { transcript ->
+                VideoNoteTranscript(bubble.id, transcript, colors, onEvent)
+            }
         }
     }
 }

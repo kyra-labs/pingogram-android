@@ -45,6 +45,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdayErrorsEffect
 import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.birthday.LocalBirthdaySuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetHost
+import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
@@ -65,6 +67,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialo
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
@@ -166,13 +169,31 @@ internal fun ConversationRoute(
         hiltViewModel<AiEditorViewModel, AiEditorViewModel.Factory>(key = "ai-editor-$chatId") {
             it.create(chatId)
         },
+    bookmarkViewModel: BookmarkSheetViewModel =
+        hiltViewModel<BookmarkSheetViewModel, BookmarkSheetViewModel.Factory>(key = "bookmark-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    // A suggested post's answers go to a view model of their own (docs/DESIGN_SYSTEM.md §6 "Suggested posts").
+    // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
+    // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
     val onEvent: (ChatEvent) -> Unit =
-        remember(viewModel, suggestedPostsViewModel) {
+        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel) {
             { event ->
-                if (event is SuggestedPostEvent) suggestedPostsViewModel.onEvent(event) else viewModel.onEvent(event)
+                when (event) {
+                    is SuggestedPostEvent -> {
+                        suggestedPostsViewModel.onEvent(event)
+                    }
+
+                    is BookmarkEvent -> {
+                        viewModel.onEvent(ChatEvent.DismissMessageActions)
+                        bookmarkViewModel.onEvent(event)
+                    }
+
+                    else -> {
+                        viewModel.onEvent(event)
+                    }
+                }
             }
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -217,6 +238,7 @@ internal fun ConversationRoute(
         onPickReplacement = launchers::replace,
     )
     BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
+    BookmarkSheetHost(bookmarkViewModel, snackbarHostState)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -434,6 +456,10 @@ internal fun ChatEffects(
 
                     is PollEffect.QuizAnswered -> {
                         haptics.quizAnswered(effect.correct)
+                    }
+
+                    is TranscriptionEffect -> {
+                        context.transcriptionNotice(effect, resources)
                     }
                 }
             if (message.isNotEmpty()) {

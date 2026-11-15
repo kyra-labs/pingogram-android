@@ -176,6 +176,38 @@ internal object MediaPreviewData {
                 VideoPlayback(VIDEO, isPlaying = false, showsFrame = false, progress = { 0f }, waitsForTap = true),
         )
 
+    /** The video playing at 1.5×: its controls show the speed chip, More its speed. */
+    val videoFaster: MediaViewerUiState.Content =
+        video.copy(
+            playback =
+                VideoPlayback(
+                    VIDEO,
+                    isPlaying = true,
+                    showsFrame = false,
+                    progress = { VIDEO_PROGRESS },
+                    canHandOff = true,
+                    speed = FASTER,
+                ),
+            actions = MediaActions(canSave = true, speed = FASTER),
+        )
+
+    /** A live photo (board 25): "LIVE" at its top start; its motion plays while it is held. */
+    val livePhoto: MediaViewerUiState.Content =
+        photo.copy(
+            items =
+                persistentListOf(
+                    photoItem.copy(
+                        media =
+                            ViewerMedia.Image(
+                                samplePhoto,
+                                samplePhoto.sizes.last(),
+                                motion = sampleVideo.copy(duration = 2, supportsStreaming = false),
+                            ),
+                    ),
+                    videoItem,
+                ),
+        )
+
     /** A spoiler not revealed yet. */
     val spoiler: MediaViewerUiState.Content = photo.copy(currentIndex = 3)
 
@@ -186,6 +218,8 @@ internal object MediaPreviewData {
     val loading = MediaViewerUiState.Loading
 
     private const val VIDEO_PROGRESS = 0.33f
+
+    private const val FASTER = 1.5f
 }
 
 /**

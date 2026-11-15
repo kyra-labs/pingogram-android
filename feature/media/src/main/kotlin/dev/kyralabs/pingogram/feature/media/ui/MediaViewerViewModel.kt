@@ -222,8 +222,13 @@ class MediaViewerViewModel internal constructor(
      */
     private val startedAt = mutableSetOf<Long>()
 
+    /** The live photo held now, whose motion plays while it is ([MediaViewerEvent.HoldLivePhoto]); null for none. */
+    private val heldLivePhoto = MutableStateFlow<Long?>(null)
+
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
+            // The speed chosen before process death holds again.
+            savedStateHandle.get<Float>(KEY_SPEED)?.takeIf { it in PlaybackSpeeds }?.let(::setSpeed)
             // Picture-in-picture gave this video back: it plays on from where the window left it.
             val returned = pictureInPicture.takeReturn(chatId, route.messageId)
             if (returned != null) {
@@ -287,11 +292,13 @@ class MediaViewerViewModel internal constructor(
             sharing.state(currentId),
             deletion.state(currentId),
             deletion.canForward(currentId),
-        ) { actions, deletion, canForward ->
+            playback.speed,
+        ) { actions, deletion, canForward, speed ->
             actions.copy(
                 canForward = canForward,
                 canDelete = deletion.canDelete,
                 deleteConfirmation = deletion.confirmation,
+                speed = speed,
             )
         }
 
@@ -328,7 +335,9 @@ class MediaViewerViewModel internal constructor(
         viewModelScope.launch { mediaRepository.deletedMessages(chatId).collect(::onDeleted) }
         viewModelScope.launch { powerSaving.collect { playback.setAutoplay(!it.noAutoplay) } }
         viewModelScope.launch {
-            combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
+            combine(viewer, files, heldLivePhoto, ::Triple).collect { (viewer, files, held) ->
+                focus(viewer, files, held)
+            }
         }
         loadOpened(viewer.value.currentId)
     }
@@ -355,8 +364,8 @@ class MediaViewerViewModel internal constructor(
                 revealedSpoilers.update { it.adding(event.messageId) }
             }
 
-            MediaViewerEvent.PlayPause -> {
-                playback.playPause()
+            MediaViewerEvent.PlayPause, is MediaViewerEvent.HoldLivePhoto -> {
+                onPlaybackEvent(event)
             }
 
             MediaViewerEvent.PictureInPicture -> {
@@ -367,20 +376,16 @@ class MediaViewerViewModel internal constructor(
                 playback.seek(event.fraction)
             }
 
+            is MediaViewerEvent.SetSpeed -> {
+                setSpeed(event.speed)
+            }
+
             MediaViewerEvent.Share, MediaViewerEvent.Save, MediaViewerEvent.Copy -> {
                 event.mediaAction?.let(sharing::start)
             }
 
-            MediaViewerEvent.Delete -> {
-                deletion.request()
-            }
-
-            is MediaViewerEvent.DeleteConfirmed -> {
-                deletion.confirm(event.forEveryone)
-            }
-
-            MediaViewerEvent.DeleteDismissed -> {
-                deletion.dismiss()
+            MediaViewerEvent.Delete, is MediaViewerEvent.DeleteConfirmed, MediaViewerEvent.DeleteDismissed -> {
+                onDeletionEvent(event)
             }
 
             MediaViewerEvent.ShowInChat -> {
@@ -458,6 +463,49 @@ class MediaViewerViewModel internal constructor(
         savedStateHandle[KEY_CURRENT] = messageId
         failedEdges.clear()
         loadMoreIfNear()
+    }
+
+    /** Play or pause tapped, or a live photo held or let go. */
+    private fun onPlaybackEvent(event: MediaViewerEvent) {
+        when (event) {
+            MediaViewerEvent.PlayPause -> {
+                playback.playPause()
+            }
+
+            is MediaViewerEvent.HoldLivePhoto -> {
+                heldLivePhoto.update { held ->
+                    if (event.held) event.messageId else held.takeIf { it != event.messageId }
+                }
+            }
+
+            else -> {}
+        }
+    }
+
+    /** Delete asked for, its question answered, or dismissed. */
+    private fun onDeletionEvent(event: MediaViewerEvent) {
+        when (event) {
+            MediaViewerEvent.Delete -> {
+                deletion.request()
+            }
+
+            is MediaViewerEvent.DeleteConfirmed -> {
+                deletion.confirm(event.forEveryone)
+            }
+
+            MediaViewerEvent.DeleteDismissed -> {
+                deletion.dismiss()
+            }
+
+            else -> {}
+        }
+    }
+
+    /** Videos play at [speed] from now on, kept across process death; a speed the viewer does not offer is ignored. */
+    private fun setSpeed(speed: Float) {
+        if (speed !in PlaybackSpeeds) return
+        savedStateHandle[KEY_SPEED] = speed
+        playback.setSpeed(speed)
     }
 
     private fun retry() {
@@ -578,6 +626,7 @@ class MediaViewerViewModel internal constructor(
     private fun focus(
         viewer: Viewer,
         files: ImmutableMap<Int, FileState>,
+        heldLivePhoto: Long?,
     ) {
         val window = viewer.window
         val index = window?.indexOf(viewer.currentId) ?: -1
@@ -589,7 +638,7 @@ class MediaViewerViewModel internal constructor(
         }
         val message = window.messages[index]
         val media = message.content.toViewerMedia()
-        val target = media?.playTarget(message.id, files)
+        val target = media?.playTarget(message.id, files, livePhotoHeld = heldLivePhoto == message.id)
         downloads.focus(
             window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 },
             index,
@@ -622,6 +671,9 @@ class MediaViewerViewModel internal constructor(
     internal companion object {
         /** The current item's message id, which survives process death. */
         const val KEY_CURRENT = "media.currentMessageId"
+
+        /** The speed videos play at, kept across process death while the viewer shows. */
+        const val KEY_SPEED = "media.speed"
 
         /** How close to either end of what is loaded the current item comes before the next page there loads. */
         const val PREFETCH_DISTANCE = 5
@@ -769,7 +821,7 @@ private fun SendChannel<MediaViewerEffect>.showError(error: DomainError) {
     if (error != DomainError.Silent) trySend(MediaViewerEffect.ShowError(error))
 }
 
-/** A live photo's motion once on the device, muted and looping as a GIF plays. */
+/** A live photo's motion once on the device, muted as a GIF plays. */
 private fun motionTarget(
     messageId: Long,
     motion: Video,
@@ -782,11 +834,12 @@ private fun motionTarget(
 /**
  * What the player plays for this media: a video that supports it as it streams, whether on the device or not, so the
  * target stays the same as it downloads (`docs/adr/0028-streaming-media.md`); another video's or a GIF's file once it
- * is on the device; nothing for a photo.
+ * is on the device; a live photo's motion while it is held ([livePhotoHeld]); nothing for another photo.
  */
 private fun ViewerMedia.playTarget(
     messageId: Long,
     files: Map<Int, FileState>,
+    livePhotoHeld: Boolean,
 ): PlayTarget? {
     val downloaded = (files[fileId] as? FileState.Downloaded)?.path?.let(PlaySource::File)
     return when {
@@ -806,7 +859,7 @@ private fun ViewerMedia.playTarget(
             PlayTarget(messageId, downloaded, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
         }
 
-        this is ViewerMedia.Image && motion != null -> {
+        this is ViewerMedia.Image && motion != null && livePhotoHeld -> {
             motionTarget(messageId, motion, files)
         }
 

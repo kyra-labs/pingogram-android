@@ -151,6 +151,9 @@ class StoryViewerViewModel internal constructor(
     private val effectChannel = Channel<StoryViewerEffect>(Channel.BUFFERED)
     val effects: Flow<StoryViewerEffect> = effectChannel.receiveAsFlow()
 
+    private val ownStory =
+        OwnStoryActions(storyRepository, viewModelScope, effectChannel) { paused -> setPaused(Pause.Menu, paused) }
+
     private val timeline =
         StoryTimeline(
             player = videoPlayer,
@@ -226,8 +229,8 @@ class StoryViewerViewModel internal constructor(
         }
 
     private val chrome: Flow<Chrome> =
-        combine(pauses, muted, reactions, interaction) { pauses, muted, reactions, interaction ->
-            Chrome(pauses.isNotEmpty(), muted, reactions, interaction)
+        combine(pauses, muted, reactions, interaction, ownStory.state) { pauses, muted, reactions, interaction, own ->
+            Chrome(pauses.isNotEmpty(), muted, reactions, interaction, own)
         }
 
     private val me: Flow<Long?> = userRepository.myUserId
@@ -308,6 +311,10 @@ class StoryViewerViewModel internal constructor(
 
             is StoryViewerEvent.React -> {
                 react(event.reaction)
+            }
+
+            is StoryViewerEvent.Own -> {
+                onOwnStoryEvent(event)
             }
 
             StoryViewerEvent.Retry -> {
@@ -649,6 +656,7 @@ class StoryViewerViewModel internal constructor(
         currentActive = null
         interaction.update { it.copy(reactionsOpen = false) }
         setPaused(Pause.Reactions, false)
+        ownStory.closeMenu()
         position.value = Position(index, storyId = null)
     }
 
@@ -690,6 +698,12 @@ class StoryViewerViewModel internal constructor(
             }
             interaction.update { it.copy(isSendingReply = false) }
         }
+    }
+
+    /** The ⋮ menu of the user's own story, and its Delete with its question. */
+    private fun onOwnStoryEvent(event: StoryViewerEvent.Own) {
+        val key = currentKeyNow()
+        ownStory.onEvent(event, key) { deleted -> if (currentKeyNow() == deleted) next() }
     }
 
     private fun react(reaction: ReactionType.Emoji) {
@@ -743,6 +757,7 @@ class StoryViewerViewModel internal constructor(
             isMuted = chrome.isMuted,
             reply = replyOf(story, chat, isOwn, chrome.interaction),
             reactions = story?.takeUnless { isOwn }?.let { reactionsOf(it, chrome) },
+            own = chrome.own.takeIf { story?.canBeDeleted == true },
         )
     }
 
@@ -794,6 +809,7 @@ class StoryViewerViewModel internal constructor(
         Paging,
         Typing,
         Reactions,
+        Menu,
         Back,
     }
 
@@ -820,6 +836,7 @@ class StoryViewerViewModel internal constructor(
         val isMuted: Boolean,
         val reactions: ImmutableList<ReactionType.Emoji>?,
         val interaction: Interaction,
+        val own: OwnStoryUi,
     )
 
     private companion object {
