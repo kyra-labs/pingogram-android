@@ -14,8 +14,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   turn through their actions.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
-- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
-  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
   stories no longer move on by themselves.
 - Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
