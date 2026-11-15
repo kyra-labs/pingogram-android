@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
+  read"; a tap opens your chats.
 - The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
   and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
