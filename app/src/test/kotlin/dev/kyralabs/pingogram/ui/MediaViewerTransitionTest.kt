@@ -185,6 +185,32 @@ class MediaViewerTransitionTest {
         assertEquals("the list composed", emptyList<String>(), lists)
     }
 
+    @Test
+    fun `the conversation takes a tap one frame after closing starts`() {
+        setApp()
+        awaitNode(adaRow)
+        composeRule.onNode(adaRow).performClick()
+        awaitPhotoBubble()
+        val open =
+            composeRule
+                .onNode(photoBubble)
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .single { it.label == string(ChatR.string.content_open) }
+        composeRule.runOnUiThread { open.action() }
+        composeRule.waitForIdle()
+        composeRule.onNode(viewerPage).assertExists()
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeRule.mainClock.advanceTimeByFrame()
+        // The photo is still on its way back into its bubble; the conversation's back button takes the tap anyway.
+        composeRule.onNode(hasContentDescription(string(ChatR.string.chat_back))).performClick()
+        composeRule.mainClock.advanceTimeByFrame()
+
+        assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == false)
+    }
+
     /**
      * The frames of the transform: from [from] until the overlay's entry composes again (the transition settled, or the
      * overlay is gone).

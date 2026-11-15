@@ -1133,6 +1133,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the photo grows into a page that already shows it: the viewer holds it until its first page is there, which
   `ChatMediaRepository.opened` answers with the opened message alone (`getMessage`, from TDLib's memory), the pages
   on either side following from it.
+  An overlay going out takes no touches, focus or screen readers from its first frame (`OverlayNavigator`'s
+  `GoingOut`: its node reports no size, its content keeps its place and fades), so the screen below takes a tap while
+  the photo is still on its way back. Both sides of the transform are clipped to where the conversation shows its
+  messages (`sharedMediaViewport`, on the box around the message list, below the top bars and above the composer,
+  published in `SharedMediaShapes`), more so as the media nears its bubble, so it never draws over the bars.
 - Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
   on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops

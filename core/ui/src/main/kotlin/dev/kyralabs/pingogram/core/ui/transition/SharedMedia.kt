@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.node.ModifierNodeElement
@@ -99,6 +100,9 @@ fun ProvideNavAnimatedVisibilityScope(
 @Stable
 class SharedMediaShapes {
     private val published = HashMap<Long, PublishedMediaShapeNode>()
+
+    /** Where the conversation shows its messages ([sharedMediaViewport]), which the media's way is clipped to. */
+    internal val viewports = SharedMediaViewports()
 
     // The transitions of the viewer's pages that show each message's media and share it with its bubble, the newest
     // last; snapshot state, which each bubble reads for its own message.
@@ -183,6 +187,8 @@ fun Modifier.sharedMediaBounds(
             visibilityScope = viewer,
             resizeMode = BubbleResizeMode,
             fastFade = true,
+            // At the bubble while this side shows.
+            viewport = ViewportClipping(shapes.viewports, atBubbleWhenShown = true),
         )
     return if (shared !== this) {
         shared.then(PublishedMediaShapeElement(shapes, messageId, shape))
@@ -204,7 +210,15 @@ fun Modifier.sharedMediaViewerBounds(
 ): Modifier {
     val shapes = LocalSharedMediaShapes.current
     val counterpart = remember(shapes, messageId) { viewerCounterpart(shapes, messageId) }
-    val shared = containerTransformOf(SharedMediaKey(messageId), FullBleedShape, counterpart, enabled)
+    val shared =
+        containerTransformOf(
+            SharedMediaKey(messageId),
+            FullBleedShape,
+            counterpart,
+            enabled,
+            // At the bubble while this side, the viewer's, does not show.
+            viewport = shapes?.let { ViewportClipping(it.viewports, atBubbleWhenShown = false) },
+        )
     // The bubble's media follows this page's coming and going, on the same transition.
     val transition = LocalNavAnimatedVisibilityScope.current?.transition
     if (shared !== this && shapes != null && transition != null) {
@@ -296,6 +310,7 @@ private fun Modifier.containerTransformOf(
     fastFade: Boolean = false,
     screenGrowth: Boolean = false,
     isScreen: Boolean = false,
+    viewport: ViewportClipping? = null,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
     val shares = enabled && !isReducedMotion()
@@ -311,7 +326,8 @@ private fun Modifier.containerTransformOf(
             transitionSpec = { if ((targetState == EnterExitState.Visible) == isScreen) growing else spatial },
             label = "containerTransformShape",
         ) { if (it == EnterExitState.Visible) 1f else 0f }
-    val clip = remember(shape, counterpart, shown) { MorphingClip(counterpart, shape) { shown.value } }
+    val clip =
+        remember(shape, counterpart, shown, viewport) { MorphingClip(counterpart, shape, viewport) { shown.value } }
     val boundsSpec = motionScheme.defaultSpatialSpec<Rect>()
     val growingBounds = if (screenGrowth) motionScheme.slowSpatialSpec<Rect>() else boundsSpec
     // The bounds grow on the slow spring and shrink on the default one, whichever side is measured.
@@ -424,15 +440,30 @@ internal class PublishedMediaShapeNode(
 }
 
 /**
+ * How a side of a shared media's transform is clipped toward the conversation's [viewports] ([viewportClip]): at the
+ * bubble while the side shows when [atBubbleWhenShown] (the bubble's side), while it does not otherwise (the viewer's).
+ */
+internal data class ViewportClipping(
+    val viewports: SharedMediaViewports,
+    val atBubbleWhenShown: Boolean,
+) {
+    fun atBubble(shown: Float): Float = if (atBubbleWhenShown) shown else 1f - shown
+}
+
+/**
  * A rounded rectangle over the shared bounds whose corners go from those of [from] to those of [to] as [fraction] goes
- * from 0 to 1, both read while the bounds move, in the draw phase. A spring's overshoot is kept within the two.
+ * from 0 to 1, both read while the bounds move, in the draw phase. A spring's overshoot is kept within the two. With
+ * [viewport], it is also cut to the conversation's viewport as the media nears its bubble ([viewportClip]).
  */
 internal class MorphingClip(
     private val from: () -> CornerBasedShape,
     private val to: CornerBasedShape,
+    private val viewport: ViewportClipping? = null,
     private val fraction: () -> Float,
 ) : SharedTransitionScope.OverlayClip {
     private val path = Path()
+    private val viewportPath = Path()
+    private val clipped = Path()
 
     override fun getClipPath(
         sharedContentState: SharedTransitionScope.SharedContentState,
@@ -464,6 +495,12 @@ internal class MorphingClip(
                 bottomLeft = if (ltr) bottomStart else bottomEnd,
             ),
         )
-        return path
+        val cut =
+            viewport?.let { viewportClip(it.viewports.current, bounds, it.atBubble(fraction())) } ?: return path
+        viewportPath.rewind()
+        viewportPath.addRect(cut)
+        clipped.rewind()
+        clipped.op(path, viewportPath, PathOperation.Intersect)
+        return clipped
     }
 }
