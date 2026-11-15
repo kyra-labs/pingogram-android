@@ -116,13 +116,17 @@ internal class NotificationsHarness(
     }
 }
 
-/** A [FocusGate] that holds back the chats in [heldBack], as a Focus profile on would. */
+/**
+ * A [FocusGate] that holds back the chats in [heldBack], as a Focus profile on would, and lets calls ring as
+ * [callsRing] says (from contacts, or not).
+ */
 class FakeFocusGate : FocusGate {
     var heldBack: Set<Long> = emptySet()
+    var callsRing: (isContact: Boolean) -> Boolean = { true }
 
     override suspend fun active(): ActiveFocus? = null
 
     override suspend fun allowsChat(chat: Chat): Boolean = chat.id !in heldBack
 
-    override suspend fun allowsCall(isContact: Boolean): Boolean = true
+    override suspend fun allowsCall(isContact: Boolean): Boolean = callsRing(isContact)
 }

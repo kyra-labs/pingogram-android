@@ -13,6 +13,7 @@
     <string name="notification_channel_ongoing_calls_description">The call you are in</string>
     <!-- The incoming call notification's text, under the caller's name. -->
     <string name="call_notification_incoming">Incoming voice call</string>
+    <string name="call_notification_incoming_focus">Incoming call · Focus is on</string>
     <!-- The name of a voice chat's notification while its chat's title is not known yet. -->
     <string name="call_notification_voice_chat">Voice chat</string>
     <string name="call_notification_stop_sharing">Stop sharing</string>
