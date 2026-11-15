@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Test
@@ -60,6 +61,22 @@ class ProfileScreenScreenshotTest {
 
     @Test
     fun deleted() = capture(ScreenshotVariant.Dark, ProfilePreviewData.deleted, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun deletedLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.deleted, ProfilePreviewData.emptyMedia)
+
+    @Test
+    fun deletedRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.deleted, ProfilePreviewData.emptyMedia)
+
+    /** On the first tab, which needs no scrolling into view at 200%, so every machine captures the same frame. */
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun deletedFontScale200() =
+        capture(
+            ScreenshotVariant.Light,
+            ProfilePreviewData.deleted,
+            ProfilePreviewData.emptyMedia.copy(selected = SharedMediaKind.entries.first()),
+        )
 
     @Test
     fun scamFiles() =

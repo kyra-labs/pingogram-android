@@ -8,11 +8,13 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,6 +48,7 @@ abstract class ChatListViewModelHarness {
     protected val archiveSettings = FakeArchiveSettingsRepository()
     protected val communities = FakeCommunityRepository()
     protected val forumTopics = FakeForumTopicRepository()
+    protected val chatListSettings = FakeChatListSettingsRepository()
     protected val clock = FakeWallClock(NOW)
     protected val timePatterns = FakeTimePatterns()
     protected val savedState = SavedStateHandle()
@@ -88,6 +91,7 @@ abstract class ChatListViewModelHarness {
         archiveSettingsRepository = archiveSettings,
         communityRepository = communities,
         forumTopicRepository = forumTopics,
+        catchUpChats = CatchUpChats(chats, chatListSettings, chatLock),
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = StandardTestDispatcher(testScheduler),

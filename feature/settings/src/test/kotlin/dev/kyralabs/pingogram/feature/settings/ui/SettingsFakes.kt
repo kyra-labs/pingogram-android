@@ -36,6 +36,8 @@ class FakeTimePatterns(
                 "Hm" to "HH:mm",
                 "hm" to "h:mm a",
                 "MMMd" to "MMM d",
+                "EEE" to "EEE",
+                "EEEMMMd" to "EEE, MMM d",
                 "yMd" to "M/d/y",
                 "yMMMdhm" to "MMM d, y, h:mm a",
                 "yMMMdHm" to "MMM d, y, HH:mm",

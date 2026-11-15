@@ -31,6 +31,17 @@ class NotificationIntentsTest {
     }
 
     @Test
+    fun `a reminder's intent opens its chat at the message, apart from the chat's own intent`() {
+        val chat = NotificationIntents.openChat(context, chatId = 1)!!
+        val message = NotificationIntents.openChat(context, chatId = 1, messageId = 1_048_576)!!
+
+        assertEquals(1L, NotificationIntents.chatIdOf(message))
+        assertEquals(1_048_576L, NotificationIntents.messageIdOf(message))
+        assertNull(NotificationIntents.messageIdOf(chat))
+        assertEquals(false, chat.filterEquals(message))
+    }
+
+    @Test
     fun `an intent replayed from the recent apps opens nothing`() {
         val intent =
             NotificationIntents

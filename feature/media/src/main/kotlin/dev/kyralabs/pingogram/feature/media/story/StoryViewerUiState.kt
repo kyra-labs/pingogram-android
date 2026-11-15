@@ -19,7 +19,7 @@ sealed interface StoryViewerUiState {
      * finger holds the story, a sheet or the keyboard is up or the screen is stopped; [isMuted] for videos. [reply] is
      * the reply field, null where the story cannot be replied to (channels, the user's own); [reactions] the reactions
      * the user may put on the story, null while not known; [own] the ⋮ menu of a story the user may delete, null for
-     * others.
+     * others; [views] the views pill of the user's own story, in the reply field's place, null for others.
      */
     data class Content(
         val posters: ImmutableList<StoryPosterUi>,
@@ -30,6 +30,9 @@ sealed interface StoryViewerUiState {
         val reply: StoryReplyUi?,
         val reactions: StoryReactionsUi?,
         val own: OwnStoryUi? = null,
+        val views: StoryViewsUi? = null,
+        /** A finger holds the story (board 26): the chrome hides and a pause badge says to let go. */
+        val isHeld: Boolean = false,
     ) : StoryViewerUiState
 }
 
@@ -125,6 +128,27 @@ data class OwnStoryUi(
     val isDeleting: Boolean = false,
 )
 
+/**
+ * The views pill of the user's own story (board 26, owner decision 2026-11-15: it takes the bar's full width): how
+ * many saw it ([viewCount]) and reacted ([reactionCount]), the faces of who saw it last ([recent], at most three),
+ * and whether the list of viewers is open ([isOpen]).
+ */
+@Immutable
+data class StoryViewsUi(
+    val viewCount: Int,
+    val reactionCount: Int,
+    val recent: ImmutableList<StoryViewerFace>,
+    val isOpen: Boolean = false,
+)
+
+/** A viewer's face in the views pill: user [userId], [name] and [photo]. */
+@Immutable
+data class StoryViewerFace(
+    val userId: Long,
+    val name: String,
+    val photo: ProfilePhoto?,
+)
+
 /** The reply field: [isSending] while a reply goes out. */
 @Immutable
 data class StoryReplyUi(
@@ -155,6 +179,11 @@ sealed interface StoryViewerEvent {
 
     /** A tap on the start side. */
     data object Previous : StoryViewerEvent
+
+    /** A screen reader explores by touch ([on]), or stopped: stories then wait for "Next story". */
+    data class ScreenReader(
+        val on: Boolean,
+    ) : StoryViewerEvent
 
     /** A finger holds the story ([held]), or let go. */
     data class Hold(
@@ -203,6 +232,11 @@ sealed interface StoryViewerEvent {
     ) : StoryViewerEvent
 
     data object Retry : StoryViewerEvent
+
+    /** Opens or closes the list of who saw the user's own story ([open]), which pauses it while it shows. */
+    data class ViewersOpen(
+        val open: Boolean,
+    ) : StoryViewerEvent
 
     /** What the user does with their own story's ⋮ menu; each pauses the story while it shows. */
     sealed interface Own : StoryViewerEvent {

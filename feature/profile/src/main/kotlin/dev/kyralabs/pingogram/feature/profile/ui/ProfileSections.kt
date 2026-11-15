@@ -56,8 +56,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * the mute toggle and "Call" (where the user can be called, through [LocalCallStarter]; a menu of a voice and a video
  * call where the user can get a video call, [CallButtonMenu]) as `FilledTonalButton`s, each its icon over its label,
  * sharing the row's width, all with `ButtonDefaults.shapes()`' press morph. "Secret chat" is in the top bar's ⋮ menu.
- * The mute toggle gives a `ToggleOn` or `ToggleOff` haptic. Pills that do not apply are left out; the row is empty for
- * a deleted account.
+ * The mute toggle gives a `ToggleOn` or `ToggleOff` haptic. Pills that do not apply are left out; a deleted account's
+ * one pill is "Delete chat", which asks first.
  */
 @Composable
 internal fun ProfileActionsRow(
@@ -69,7 +69,8 @@ internal fun ProfileActionsRow(
     val isMuted = actions.isMuted
     val calls = LocalCallStarter.current
     val callUserId = actions.callUserId.takeIf { calls != null }
-    val hasChatPills = actions.canMessage || isMuted != null
+    val hasChatPills =
+        actions.canMessage || isMuted != null || actions.canDeleteChat || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -100,6 +101,7 @@ internal fun ProfileActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
+        DeleteOrSharePill(actions, onEvent)
         if (calls != null && callUserId != null) {
             // A voice call at once, or the voice and video menu where the user can get a video call.
             CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
