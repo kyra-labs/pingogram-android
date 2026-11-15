@@ -24,6 +24,9 @@ sealed interface AuthEvent {
     /** Pingogram's own privacy policy: what the app does with the user's data. */
     data object OpenPingogramPrivacyPolicy : AuthEvent
 
+    /** Welcome's language button: Android's list of the app's languages (Android 13 and later). */
+    data object OpenAppLanguages : AuthEvent
+
     // The demo for app store reviewers (docs/adr/0034-demo-mode-for-store-review.md)
 
     /** The Welcome screen's logo held for about a second: asks whether to open the demo. */
