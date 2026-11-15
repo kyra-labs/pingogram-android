@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
+  messages automatically as they show, and see which speech languages Android has ready on the phone.
+
 ### Changed
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
