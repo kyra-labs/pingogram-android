@@ -642,6 +642,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
   (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+- **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
+  (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
+  `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
+  accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
+  phone.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
