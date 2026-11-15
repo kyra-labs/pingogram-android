@@ -10,8 +10,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
+  until its first frame shows.
 - Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
   notifications still show, silently. The pages to set them up follow.
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
+- With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
+  turn through their actions.
+- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
+  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or

@@ -83,27 +83,37 @@ internal fun StreamingStatus(
                 modifier = Modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize),
             )
         }
-        Column(
-            modifier =
-                Modifier
-                    .background(colors.mediaOverlay, MaterialTheme.shapes.large)
-                    .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        StatusText(title, detail)
+    }
+}
+
+/** "Streaming · 33%" over [detail] on a pill of the media overlay. */
+@Composable
+private fun StatusText(
+    title: String,
+    detail: String?,
+) {
+    val colors = MaterialTheme.pingogramColors
+    Column(
+        modifier =
+            Modifier
+                .background(colors.mediaOverlay, MaterialTheme.shapes.large)
+                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            title,
+            color = colors.onMediaOverlay,
+            style = MaterialTheme.typography.labelLargeEmphasized.copy(fontFeatureSettings = "tnum"),
+            textAlign = TextAlign.Center,
+        )
+        if (detail != null) {
             Text(
-                title,
+                detail,
                 color = colors.onMediaOverlay,
-                style = MaterialTheme.typography.labelLargeEmphasized.copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 textAlign = TextAlign.Center,
             )
-            if (detail != null) {
-                Text(
-                    detail,
-                    color = colors.onMediaOverlay,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    textAlign = TextAlign.Center,
-                )
-            }
         }
     }
 }

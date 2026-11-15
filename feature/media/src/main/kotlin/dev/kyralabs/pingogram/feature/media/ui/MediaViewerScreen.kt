@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -108,6 +109,8 @@ internal fun MediaViewerScreen(
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }
+        val touchExploration = rememberTouchExploration()
+        SideEffect { chrome.keptShown = touchExploration }
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
         val leave = remember(dismiss, onBack) { { dismiss.dismiss(onBack) } }
@@ -148,21 +151,12 @@ internal fun MediaViewerScreen(
                 val exits = DismissExits(height, onBack, swipeUp.takeIf { canPictureInPicture && content.playsVideo })
                 DismissibleContent(dismiss, zoom, exits) {
                     ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding))
+                    // Inside the dismissible content, so a swipe that starts on them still closes or goes to PiP.
+                    if (content != null) CenterChrome(content, chrome, dismiss, height, onEvent)
                 }
             }
         }
-        if (content?.actions?.showsStorageRationale == true) {
-            StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
-        }
-        val deleteConfirmation = content?.actions?.deleteConfirmation
-        if (content != null && deleteConfirmation != null) {
-            DeleteMediaDialog(
-                confirmation = deleteConfirmation,
-                media = content.current.media,
-                onConfirm = { onEvent(MediaViewerEvent.DeleteConfirmed(it)) },
-                onDismiss = { onEvent(MediaViewerEvent.DeleteDismissed) },
-            )
-        }
+        if (content != null) ViewerDialogs(content, onEvent)
     }
 }
 
@@ -179,23 +173,6 @@ private fun actionsOf(
     val speed = content.actions.speed.takeIf { media is ViewerMedia.Clip }
     return {
         ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, speed, onEvent)
-    }
-}
-
-/** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
-@Stable
-internal class ChromeState(
-    visible: Boolean = true,
-) {
-    var visible by mutableStateOf(visible)
-        private set
-
-    fun toggle() {
-        visible = !visible
-    }
-
-    companion object {
-        val Saver: Saver<ChromeState, Boolean> = Saver(save = { it.visible }, restore = { ChromeState(it) })
     }
 }
 
@@ -290,10 +267,11 @@ private fun ViewerContent(
  * the background while a gesture closes the viewer (on a page [height] pixels tall).
  */
 @Composable
-private fun Chrome(
+internal fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
+    modifier: Modifier = Modifier,
     afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
@@ -305,7 +283,7 @@ private fun Chrome(
     visibleState.targetState = visible
     AnimatedVisibility(
         visibleState = visibleState,
-        modifier = Modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
+        modifier = modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
         enter = fadeIn(motionScheme.defaultEffectsSpec()),
         exit = fadeOut(motionScheme.fastEffectsSpec()),
     ) {
@@ -345,7 +323,7 @@ private fun MediaPager(
         val item = items[page]
         val isShown = page == pagerState.settledPage
         val pageZoom = zoom.takeIf { isShown && item.media is ViewerMedia.Image && !item.isHidden }
-        val onTap = if (item.isHidden) ({ onEvent(MediaViewerEvent.RevealSpoiler(item.messageId)) }) else chrome::toggle
+        val onTap = pageTap(item, chrome, onEvent)
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
         val playback = content.playback?.takeIf { it.messageId == item.messageId }
         val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
@@ -362,7 +340,7 @@ private fun MediaPager(
                     if (target in items.indices) {
                         scope.launch { pagerState.animateScrollToPage(target, animationSpec = turn) }
                     }
-                }.takeIf { !item.isHidden },
+                }.takeIf { !item.isHidden && !chrome.keptShown },
             modifier =
                 Modifier.pageSemantics(
                     page = info,
@@ -376,7 +354,7 @@ private fun MediaPager(
                             scope,
                             LiveActions(playing = playback != null, onHold).takeIf { item.isLivePhoto },
                         ) { pagerState.animateScrollToPage(it, animationSpec = turn) },
-                    onTap = onTap,
+                    onTap = onTap.takeUnless { chrome.keptShown && !item.isHidden },
                 ),
             zoom = pageZoom,
             onHold = onHold.takeIf { item.isLivePhoto },
@@ -409,7 +387,7 @@ private fun Modifier.pageSemantics(
     chromeVisible: Boolean,
     zoomed: Boolean,
     actions: (Resources) -> List<CustomAccessibilityAction>,
-    onTap: () -> Unit,
+    onTap: (() -> Unit)?,
 ): Modifier {
     val resources = LocalResources.current
     return semantics {
@@ -421,9 +399,12 @@ private fun Modifier.pageSemantics(
                 chromeVisible -> R.string.media_hide_controls
                 else -> R.string.media_show_controls
             }
-        onClick(label = resources.getString(clickLabel)) {
-            onTap()
-            true
+        // With TalkBack the controls always show: the page has no tap to hide them (board 25).
+        if (onTap != null) {
+            onClick(label = resources.getString(clickLabel)) {
+                onTap()
+                true
+            }
         }
         customActions = actions(resources)
     }
