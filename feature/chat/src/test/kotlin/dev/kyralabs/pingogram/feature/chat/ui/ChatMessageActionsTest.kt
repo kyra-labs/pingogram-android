@@ -160,6 +160,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
                         MessageAction.Bookmark,
+                        MessageAction.RemindMe,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -182,6 +183,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Copy,
                         MessageAction.Forward,
                         MessageAction.Bookmark,
+                        MessageAction.RemindMe,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -228,11 +230,17 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
                 assertEquals(false, MessageAction.Bookmark in viewModel.sheet!!.actions)
+                assertEquals(false, MessageAction.RemindMe in viewModel.sheet!!.actions)
             }
 
         @Test
         fun `bookmark opens the bookmark sheet's event`() {
             assertEquals(BookmarkEvent.Open(7), MessageAction.Bookmark.eventFor(7))
+        }
+
+        @Test
+        fun `remind me opens the reminder sheet's event`() {
+            assertEquals(ReminderEvent.Open(7), MessageAction.RemindMe.eventFor(7))
         }
 
         @Test
@@ -250,6 +258,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
                         MessageAction.Bookmark,
+                        MessageAction.RemindMe,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -272,6 +281,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Edit,
                         MessageAction.Unpin,
                         MessageAction.Bookmark,
+                        MessageAction.RemindMe,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -315,6 +325,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Forward,
                         MessageAction.Pin,
                         MessageAction.Bookmark,
+                        MessageAction.RemindMe,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),

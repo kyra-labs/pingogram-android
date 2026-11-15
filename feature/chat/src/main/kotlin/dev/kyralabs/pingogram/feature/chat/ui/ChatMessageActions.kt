@@ -534,7 +534,8 @@ private fun pollActions(
 }
 
 /**
- * Bookmarking and saving [message]'s files where the chat lets it be saved (bookmarks never in secret chats),
+ * Bookmarking, a reminder and saving [message]'s files where the chat lets it be saved (bookmarks and reminders
+ * never in secret chats),
  * selecting, reporting and deleting where TDLib allows.
  */
 private fun ActionContext.laterActions(
@@ -542,8 +543,12 @@ private fun ActionContext.laterActions(
     properties: MessageProperties,
 ): List<MessageAction> =
     buildList {
-        // Bookmarks keep what the message says on this device: never for a secret chat or content kept from saving.
-        if (properties.canBeSaved && chat.type !is ChatType.Secret) add(MessageAction.Bookmark)
+        // Bookmarks and reminders keep what the message says on this device: never for a secret chat or content kept
+        // from saving.
+        if (properties.canBeSaved && chat.type !is ChatType.Secret) {
+            add(MessageAction.Bookmark)
+            add(MessageAction.RemindMe)
+        }
         val hasFiles = albumOf(message).any { it.downloadsFile != null }
         if (properties.canBeSaved && hasFiles) add(MessageAction.SaveToDownloads)
         add(MessageAction.Select)

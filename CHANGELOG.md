@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Message reminders, kept on this phone only: "Remind me" in a message's actions rings at a time you choose (in an
+  hour, this evening, tomorrow morning, next week, or a date and time), with an optional note, in its own "Reminders"
+  notification channel, with "Open" and "Snooze 1 hour".
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and

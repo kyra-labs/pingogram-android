@@ -642,6 +642,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   colored by a sender hue). `feature:chat`'s `bookmarks/`: "Bookmark" in a message's actions (where the chat lets its
   content be saved, never a secret chat) sends `BookmarkEvent.Open`, which `ChatRoute` hands to `BookmarkSheetViewModel`
   (keyed by the chat; the message and the chosen tags in its saved state) instead of `ChatViewModel`.
+- **Message reminders** (the owner's board 29, kept on this phone only): `core:domain`'s `ReminderRepository`
+  (`FileReminderRepository`, `core:data`, account-scoped: `reminders.txt` in the account's TDLib directory, deleted with
+  it and at logout; the demo's in memory) keeps one `Reminder` per message (when, a note, what the message said, done).
+  `feature:chat`'s `reminders/`: "Remind me" in a message's actions sends `ReminderEvent.Open`, which `ChatRoute` hands to
+  `ReminderSheetViewModel` (keyed by the chat; the message, the choice and a picked time in its saved state; the quick
+  choices' times from `presetAt`). `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the
+  process) follows every account's reminders through `AccountGraphs` and keeps one unique one-time work per reminder due
+  (`reminder_<slot>_<chat>_<message>`, tagged with its time, replaced when the time moves, cancelled when done or deleted);
+  `ReminderWorker` posts `ReminderNotificationBuilder`'s notification in `PingogramChannel.Reminders` and marks it done,
+  and its "Snooze 1 hour" (`ReminderActionReceiver`) moves it later. Its "Open" names the message
+  (`NotificationIntents.openChat`'s `messageId`, `openedMessageIdOf`), which `MainActivityViewModel.messageToOpen` hands
+  to `OpenChatEffect`. No exact alarm (owner decision 2026-11-15): Doze defers the work to its next maintenance window.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a

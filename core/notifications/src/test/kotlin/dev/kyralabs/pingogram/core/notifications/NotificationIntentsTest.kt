@@ -23,6 +23,17 @@ class NotificationIntentsTest {
     }
 
     @Test
+    fun `a reminder's intent opens its chat at the message, apart from the chat's other intents`() {
+        val atMessage = checkNotNull(NotificationIntents.openChat(context, chatId = 1, messageId = 42))
+        val plain = checkNotNull(NotificationIntents.openChat(context, chatId = 1))
+
+        assertEquals(1L, NotificationIntents.chatIdOf(atMessage))
+        assertEquals(42L, openedMessageIdOf(atMessage))
+        assertEquals(null, openedMessageIdOf(plain))
+        assertEquals(false, atMessage.filterEquals(plain))
+    }
+
+    @Test
     fun `each chat has an intent of its own`() {
         val first = NotificationIntents.openChat(context, chatId = 1)!!
         val second = NotificationIntents.openChat(context, chatId = 2)!!

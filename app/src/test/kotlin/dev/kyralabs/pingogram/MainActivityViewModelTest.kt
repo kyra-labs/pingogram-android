@@ -260,6 +260,23 @@ class MainActivityViewModelTest {
         }
 
     @Test
+    fun `a reminder's chat opens at its message, and a later chat without one forgets it`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.openChat(100, messageId = 42)
+            assertEquals(100L, viewModel.chatToOpen.value)
+            assertEquals(42L, viewModel.messageToOpen.value)
+
+            viewModel.openChat(200)
+            assertEquals(null, viewModel.messageToOpen.value)
+
+            viewModel.openChat(100, messageId = 42)
+            viewModel.onChatOpened()
+            assertEquals(null, viewModel.messageToOpen.value)
+        }
+
+    @Test
     fun `locked chats to open wait until they are opened`() =
         runTest {
             val viewModel = viewModel()

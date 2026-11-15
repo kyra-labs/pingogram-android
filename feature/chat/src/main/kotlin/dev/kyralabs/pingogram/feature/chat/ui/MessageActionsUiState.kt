@@ -142,6 +142,9 @@ enum class MessageAction {
     /** Bookmark it on this device, with tags and a note (`bookmarks.BookmarkSheetViewModel`, the owner's board 34). */
     Bookmark,
 
+    /** A reminder of it on this device (`reminders.ReminderSheetViewModel`, the owner's board 29). */
+    RemindMe,
+
     /** Edit its text or caption in the composer. */
     Edit,
 
