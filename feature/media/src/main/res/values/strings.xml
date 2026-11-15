@@ -107,6 +107,16 @@
     <string name="story_reply_placeholder">Reply privately…</string>
     <string name="story_send">Send reply</string>
     <string name="story_reply_sent">Reply sent</string>
+    <!-- The ⋮ button on the user's own story, and its item that deletes the story. -->
+    <string name="story_more">More options</string>
+    <string name="story_delete">Delete</string>
+    <!-- The question before deleting the user's own story. -->
+    <string name="story_delete_title">Delete this story?</string>
+    <string name="story_delete_body">It goes for everyone who can see it, and its views and reactions with it.</string>
+    <string name="story_delete_confirm">Delete</string>
+    <string name="story_delete_cancel">Cancel</string>
+    <!-- Snackbar once the user's own story was deleted. -->
+    <string name="story_deleted">Story deleted</string>
     <string name="story_react">React</string>
     <!-- %1$s is the emoji the user reacted with. -->
     <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>

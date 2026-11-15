@@ -113,6 +113,8 @@ internal fun StoryViewerScreen(
                     }
                 }
             }
+            val own = (state as? StoryViewerUiState.Content)?.own
+            if (own?.deleteAsked == true) DeleteStoryDialog(own.isDeleting, onEvent)
         }
     }
 }
