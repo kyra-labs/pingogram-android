@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -437,6 +438,9 @@ object ActiveAccountModule {
 
     @Provides
     fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()
+
+    @Provides
+    fun keywordHitRepository(accounts: Accounts): KeywordHitRepository = accounts.active.keywordHitRepository()
 
     @Provides
     fun customEmojiRepository(accounts: Accounts): CustomEmojiRepository = accounts.active.customEmojiRepository()

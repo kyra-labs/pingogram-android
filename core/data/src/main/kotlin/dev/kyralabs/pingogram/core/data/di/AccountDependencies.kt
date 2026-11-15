@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
@@ -56,6 +57,9 @@ interface AccountDependencies {
     fun contactSyncSettingsRepository(): ContactSyncSettingsRepository
 
     fun lockedChatIdsRepository(): LockedChatIdsRepository
+
+    /** Keyword alerts' words and where they look are the app's; each account matches its own messages with them. */
+    fun keywordAlertsRepository(): KeywordAlertsRepository
 
     fun pushTokenSource(): Optional<PushTokenSource>
 

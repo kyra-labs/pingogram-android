@@ -68,6 +68,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibInlineBotRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibInviteLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibJoinRequestRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibKeywordHitRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLoginEmailRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
@@ -177,6 +178,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -543,6 +545,9 @@ interface RepositoryModule {
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository
+
+    @Binds
+    fun keywordHitRepository(repository: TdlibKeywordHitRepository): KeywordHitRepository
 
     @Binds
     fun customEmojiRepository(repository: TdlibCustomEmojiRepository): CustomEmojiRepository

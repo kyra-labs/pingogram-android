@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepos
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibKeywordHitRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
@@ -104,6 +105,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun bookmarkCache(repository: FileBookmarkRepository): TdlibUpdateCache
+
+    /** It matches new messages with the keyword alert words, and deletes the account's matches when it logs out. */
+    @Binds
+    @IntoSet
+    fun keywordHitCache(repository: TdlibKeywordHitRepository): TdlibUpdateCache
 
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds
