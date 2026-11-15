@@ -539,9 +539,8 @@ internal object GroupFingerprint {
                         append(",push")
                     }
 
-                    else -> {
-                        Unit
-                    }
+                    // Other content adds nothing to the fingerprint.
+                    else -> {}
                 }
             }
         }
