@@ -30,6 +30,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in the attach preview, ready for a caption.
 - Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
   chats that protect their content.
+- The same works in the media viewer: long-press the photo, video or GIF and keep moving to drag it into another app.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
