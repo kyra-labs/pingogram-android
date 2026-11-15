@@ -111,6 +111,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         views = views(newest),
         checklist = checklistUi(content),
         pollClosesIn = pollClosesIn(),
+        forwardSource = message.forwardInfo?.origin?.toForwardSource(),
         giveaway = giveawayUi(content),
     )
 }

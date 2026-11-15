@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -52,6 +51,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The forward sheet (`REQUIREMENTS.md` FR-C6; `docs/DESIGN_SYSTEM.md` §6 "Forward sheet"): a [ModalBottomSheet]
+ * The forward sheet (`REQUIREMENTS.md` FR-C6; `docs/DESIGN_SYSTEM.md` §6 "Forward sheet"): a [PingogramBottomSheet]
  * (`extraLarge` top corners) with its title, a search field, and the chats the messages can go to, Saved Messages
  * first; once a chat is picked, the forward options, the comment field and the send button come in below the list.
  *
@@ -115,7 +115,7 @@ internal fun ForwardBottomSheet(
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(ForwardEvent.QueryChanged(it)) }
     }
     var linking by remember { mutableStateOf<TextRange?>(null) }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ForwardEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ForwardEvent.Dismiss) }, sheetState = sheetState) {
         ForwardContent(
             sheet = sheet,
             query = query,

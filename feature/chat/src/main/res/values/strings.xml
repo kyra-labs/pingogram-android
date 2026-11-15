@@ -65,6 +65,11 @@
     <string name="chat_forwarded_from">Forwarded from %1$s</string>
     <!-- A channel or chat a message was forwarded from (%1$s), with the signature of its author (%2$s). -->
     <string name="chat_forwarded_name_signed">%1$s (%2$s)</string>
+    <!-- What tapping "Forwarded from …" does, spoken by screen readers and the bubble's custom action: it opens the
+         profile, chat or post the message was forwarded from. -->
+    <string name="chat_forward_open_source">Open source</string>
+    <!-- A snackbar after tapping "Forwarded from …" of someone whose privacy settings hide their account. -->
+    <string name="chat_forward_source_hidden">This person hides their account in forwarded messages</string>
     <!-- Reply quotes whose replied message cannot be shown (yet). -->
     <string name="chat_reply_loading">Loading…</string>
     <string name="chat_reply_deleted">Deleted message</string>

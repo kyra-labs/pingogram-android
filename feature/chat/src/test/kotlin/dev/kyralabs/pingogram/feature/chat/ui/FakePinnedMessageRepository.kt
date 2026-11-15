@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
@@ -9,6 +10,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -37,9 +39,24 @@ class FakePinnedMessageRepository : PinnedMessageRepository {
         return pins.map { it[chatId].orEmpty().toImmutableList() }.distinctUntilChanged()
     }
 
+    /** What loading answers for the page: the pins, or this error while it is set. */
+    val loadError = MutableStateFlow<DomainError?>(null)
+
+    override fun pinnedMessagesOrError(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Flow<Outcome<ImmutableList<Message>>> {
+        topics += topic
+        return combine(pins, loadError) { pins, error ->
+            if (error != null) Outcome.Failure(error) else Outcome.Success(pins[chatId].orEmpty().toImmutableList())
+        }.distinctUntilChanged()
+    }
+
+    var onUnpinAll: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
     override suspend fun unpinAll(chatId: Long): Outcome<Unit> {
         unpinnedAll += chatId
-        return Outcome.Success(Unit)
+        return onUnpinAll(chatId)
     }
 }
 

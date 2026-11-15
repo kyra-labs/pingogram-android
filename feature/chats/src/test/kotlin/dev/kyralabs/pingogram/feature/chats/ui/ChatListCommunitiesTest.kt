@@ -41,7 +41,7 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
             val entry = viewModel.communities().single()
             assertEquals(listOf(3L, 5L), entry.chats.map { it.id })
             assertEquals(1, entry.before)
-            assertEquals(5, entry.unreadCount)
+            assertEquals(2, entry.unreadChatCount)
             assertEquals("Kyra Labs", entry.name)
             assertFalse(entry.isExpanded)
         }
@@ -215,7 +215,7 @@ class ChatListCommunitiesTest : ChatListViewModelHarness() {
                 name = "Kyra Labs",
                 photo = null,
                 chats = persistentListOf(row(3), row(5)),
-                unreadCount = 0,
+                unreadChatCount = 0,
                 isMuted = false,
                 isExpanded = true,
                 before = 1,

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -13,7 +14,10 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
 import dev.kyralabs.pingogram.core.testing.inTopic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -94,6 +98,209 @@ class TdlibForumTopicRepositoryTest {
         ) { repository.topics(FORUM).collect { latest = it } }
         return { checkNotNull(latest) }
     }
+
+    @Test
+    fun `pinned topics keep the pages' pin order, whatever their order values`() =
+        runTest {
+            client.on(
+                TdApi.GetForumTopics::class,
+                page(
+                    topic(1, info = info(1, isGeneral = true)),
+                    topic(20, isPinned = true, order = 1, lastMessageId = 10),
+                    topic(32, isPinned = true, order = 5, lastMessageId = 90),
+                    topic(64, isPinned = true, order = 9, lastMessageId = 95),
+                    topic(7, lastMessageId = 99),
+                ),
+            )
+            val repository = repository()
+            val topics = observed(repository)
+
+            repository.loadMore(FORUM)
+
+            assertEquals(listOf(1, 20, 32, 64, 7), topics().topics.map { it.id })
+        }
+
+    @Test
+    fun `a hidden General left out of the pages is fetched, as every forum has one`() =
+        runTest {
+            client.on(TdApi.GetForumTopics::class, page(topic(5), topic(4)))
+            client.on(TdApi.GetForumTopic::class) {
+                TdResult.Success(
+                    topic(1, info = info(1, isGeneral = true, isClosed = true, isHidden = true), unread = 2),
+                )
+            }
+            val repository = repository()
+            val topics = observed(repository)
+
+            repository.loadMore(FORUM)
+
+            val general = topics().topics.first()
+            assertTrue(general.isGeneral && general.isHidden)
+            assertEquals(2, general.unreadCount)
+            assertEquals(1, client.sentOf<TdApi.GetForumTopic>().single().forumTopicId)
+        }
+
+    @Test
+    fun `a topic's own mute is kept, and one that follows the forum has none`() =
+        runTest {
+            val muted =
+                topic(5).apply {
+                    notificationSettings =
+                        TdApi.ChatNotificationSettings().apply { muteFor = 3600 }
+                }
+            val following =
+                topic(4).apply {
+                    notificationSettings =
+                        TdApi.ChatNotificationSettings().apply { useDefaultMuteFor = true }
+                }
+            client.on(TdApi.GetForumTopics::class, page(muted, following))
+            val repository = repository()
+            val topics = observed(repository)
+
+            repository.loadMore(FORUM)
+
+            assertEquals(3600, topics().topics.single { it.id == 5 }.muteFor)
+            assertEquals(null, topics().topics.single { it.id == 4 }.muteFor)
+        }
+
+    @Test
+    fun `lists the first page's topics newest first, once it holds the forum's unread messages`() =
+        runTest {
+            client.on(
+                TdApi.GetForumTopics::class,
+                page(
+                    topic(5, unread = 3, lastMessageId = 50),
+                    topic(4, lastMessageId = 60),
+                    topic(3, unread = 120, lastMessageId = 70),
+                    total = 9,
+                    next = 7,
+                ),
+            )
+            val repository = repository()
+
+            repository.recentTopics(FORUM, flowOf(123)).test {
+                assertEquals(null, awaitItem())
+                assertEquals(listOf(3, 4, 5), awaitItem()?.map { it.id })
+            }
+            // The loaded topics hold the forum's 123 unread messages: no further page to load.
+            assertEquals(1, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `loads past a read topic until the loaded topics hold the forum's unread messages`() =
+        runTest {
+            var pages = 0
+            client.on(TdApi.GetForumTopics::class) {
+                pages++
+                when (pages) {
+                    // The newest topics are read; the unread ones come further down.
+                    1 -> page(topic(10), topic(11), topic(12, unread = 2), total = 9, next = 1)
+
+                    2 -> page(topic(20), topic(21, unread = 4), total = 9, next = 2)
+
+                    else -> page(topic(30, unread = 1), topic(31), total = 9, next = 3)
+                }
+            }
+            val repository = repository()
+            var latest: List<ForumTopic>? = null
+
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.recentTopics(FORUM, flowOf(7)).collect { latest = it }
+            }
+            runCurrent()
+
+            assertEquals(setOf(12, 21, 30), latest?.filter { it.unreadCount > 0 }?.map { it.id }?.toSet())
+            // The list's first page, then pages of 100 topics, td_api.tl's most, to find them in few requests.
+            assertEquals(listOf(20, 100, 100), client.sentOf<TdApi.GetForumTopics>().map { it.limit })
+        }
+
+    @Test
+    fun `loads at most five more pages to find the unread topics`() =
+        runTest {
+            var pages = 0
+            client.on(TdApi.GetForumTopics::class) {
+                pages++
+                page(topic(pages * 10, unread = 1), topic(pages * 10 + 1, unread = 1), total = 1000, next = pages)
+            }
+            val repository = repository()
+            var latest: List<ForumTopic>? = null
+
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.recentTopics(FORUM, flowOf(1000)).collect { latest = it }
+            }
+            runCurrent()
+
+            assertEquals(12, latest?.size)
+            assertEquals(6, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `loads more once the forum's unread messages grow past the loaded topics`() =
+        runTest {
+            var pages = 0
+            client.on(TdApi.GetForumTopics::class) {
+                pages++
+                if (pages == 1) {
+                    page(topic(10, unread = 2), topic(11), total = 9, next = 1)
+                } else {
+                    page(topic(20, unread = 3), total = 9, next = 2)
+                }
+            }
+            val repository = repository()
+            val unreadMessages = MutableStateFlow(2)
+            var latest: List<ForumTopic>? = null
+
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.recentTopics(FORUM, unreadMessages).collect { latest = it }
+            }
+            runCurrent()
+            assertEquals(setOf(10, 11), latest?.map { it.id }?.toSet())
+
+            unreadMessages.value = 5
+            runCurrent()
+
+            assertEquals(setOf(10, 11, 20), latest?.map { it.id }?.toSet())
+            assertEquals(2, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `the unread count follows a topic read and a new message`() =
+        runTest {
+            client.on(TdApi.GetForumTopics::class, page(topic(5, unread = 3), topic(4)))
+            // Topic 5 read elsewhere; General, which the first page leaves out, has nothing unread.
+            client.on(TdApi.GetForumTopic::class) { request ->
+                TdResult.Success(
+                    if (request.forumTopicId == 5) topic(5, unread = 0) else topic(1, info = info(1, isGeneral = true)),
+                )
+            }
+            val repository = repository()
+
+            repository.recentTopics(FORUM, flowOf(3)).map { topics -> topics?.count { it.unreadCount > 0 } }.test {
+                assertEquals(null, awaitItem())
+                assertEquals(1, awaitItem())
+
+                client.emit(updateNewMessage(message(id = 41, chatId = FORUM).inTopic(TdApi.MessageTopicForum(4))))
+                assertEquals(2, awaitItem())
+
+                client.emit(
+                    TdApi.UpdateForumTopic(FORUM, 5, false, 50, 0, 0, 0, 0, TdApi.ChatNotificationSettings(), null),
+                )
+                assertEquals(1, awaitItem())
+            }
+        }
+
+    @Test
+    fun `a forum whose topics cannot be loaded has no count`() =
+        runTest {
+            client.on(TdApi.GetForumTopics::class, TdResult.Failure(TdError(400, "CHANNEL_PRIVATE")))
+            val repository = repository()
+
+            repository.recentTopics(FORUM, flowOf(3)).test {
+                assertEquals(null, awaitItem())
+                runCurrent()
+                expectNoEvents()
+            }
+        }
 
     @Test
     fun `loads the first page in the forum's order`() =
@@ -332,7 +539,10 @@ class TdlibForumTopicRepositoryTest {
     @Test
     fun `fetches a topic again when its read state changes`() =
         runTest {
-            client.on(TdApi.GetForumTopics::class, page(topic(2, unread = 4)))
+            client.on(
+                TdApi.GetForumTopics::class,
+                page(topic(1, info = info(1, isGeneral = true)), topic(2, unread = 4)),
+            )
             client.on(TdApi.GetForumTopic::class, TdResult.Success(topic(2, unread = 1)))
             val repository = repository()
             val topics = observed(repository)
@@ -341,7 +551,7 @@ class TdlibForumTopicRepositoryTest {
             client.emit(TdApi.UpdateForumTopic(FORUM, 2, false, 15, 0, 0, 0, 0, TdApi.ChatNotificationSettings(), null))
             runCurrent()
 
-            assertEquals(1, topics().topics.single().unreadCount)
+            assertEquals(1, topics().topics.single { it.id == 2 }.unreadCount)
             assertEquals(2, client.sentOf<TdApi.GetForumTopic>().single().forumTopicId)
         }
 

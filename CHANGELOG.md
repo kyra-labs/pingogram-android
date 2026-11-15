@@ -9,8 +9,30 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
+  post. For someone who hides their account, a message says so.
+- The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
+- A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
+  entry counts its chats with unread messages, in a speech-bubble badge.
+- A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
+  tab joined to the message, the others after it, those with unread messages in bold.
+- "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
+  photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
+  (Unpin all from its menu).
+
 ### Fixed
+- Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
+  italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
+- A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
+  composer, and the conversation takes taps as soon as the media viewer starts closing instead of up to a second
+  later.
+- Tall bottom sheets (Send to, Forward, the attach menu and the others) stop below the status bar again instead of
+  rising behind it.
 - In a forum, a topic's top bar shows only who is typing in that topic, no longer someone typing in another topic.
+- A forum's topic list shows a hidden General topic, closed, as Telegram does; keeps the pinned topics in the forum's
+  order; shows a muted topic's counts in the muted colors; and shows a topic's own custom emoji icon.
+- The microphone turns into send without a hitch when typing starts, and the text field keeps its width meanwhile.
 
 ## [2.2.0] - 2026-11-15
 

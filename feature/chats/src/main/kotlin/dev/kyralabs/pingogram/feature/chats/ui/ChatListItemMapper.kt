@@ -45,11 +45,15 @@ internal class RowSnapshot(
     val now: Instant,
 )
 
-/** What the rows of one emission are made from: the [snapshot], the list shown (for pins), and how to format times. */
+/**
+ * What the rows of one emission are made from: the [snapshot], the list shown (for pins), how to format times, and the
+ * forums' topics by chat id ([forumTopics], those loaded so far).
+ */
 internal class RowSources(
     val list: ChatListType,
     val snapshot: RowSnapshot,
     val timeFormatter: ChatListTimeFormatter,
+    val forumTopics: Map<Long, ForumRowSummary> = emptyMap(),
 )
 
 /**
@@ -102,6 +106,7 @@ private data class RowInputs(
     val supergroup: Supergroup?,
     val secretChat: SecretChat?,
     val actions: ImmutableList<SenderAction>?,
+    val forumTopics: ForumRowSummary?,
     val referencedUsers: List<User?>,
     val myUserId: Long?,
     val now: Instant,
@@ -118,6 +123,7 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         supergroup = (chat.type as? ChatType.Supergroup)?.let { snapshot.supergroups[it.supergroupId] },
         secretChat = (chat.type as? ChatType.Secret)?.let { snapshot.secretChats[it.secretChatId] },
         actions = actions,
+        forumTopics = forumTopics[chat.id],
         referencedUsers = referencedUserIds(chat, actions).map(users::get),
         myUserId = snapshot.myUserId,
         now = snapshot.now,
@@ -167,6 +173,9 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         isMuted = chat.isMuted,
         isPinned = isPinned,
         unreadCount = chat.unreadCount,
+        // A forum whose messages are all read has no topic to count, whatever the last count said.
+        unreadTopicCount = forumTopics?.unreadTopicCount?.takeIf { it > 0 && chat.unreadCount > 0 },
+        topics = forumTopics?.topics?.takeIf { it.isNotEmpty() },
         hasUnreadMention = chat.unreadMentionCount > 0,
         hasUnreadReactions = chat.unreadReactionCount > 0,
         isMarkedAsUnread = chat.isMarkedAsUnread,

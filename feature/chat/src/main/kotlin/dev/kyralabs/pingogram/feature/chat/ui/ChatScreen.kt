@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewport
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.LocalChatActionBar
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
@@ -151,7 +152,7 @@ import kotlinx.collections.immutable.toImmutableList
  *   ([reportComment]).
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
- *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ *   opens the page of them all (`PinnedMessagesRoute`, through the route's `LocalPinnedMessagesLauncher`).
  * - **Translation** (`REQUIREMENTS.md` FR-C3): where Telegram suggests translating the chat, the translate bar sits
  *   below the pinned messages bar ([TranslateBarSlot]); translated bubbles show the translation with its label in the
  *   meta, and "Translate" or "Show original" are among a message's actions.
@@ -353,7 +354,8 @@ private fun ChatScaffold(
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
-                Box(Modifier.weight(1f)) {
+                // A photo, video or GIF going to or from the media viewer stays within the messages, below the bars.
+                Box(Modifier.weight(1f).sharedMediaViewport(contentPadding)) {
                     ChatBody(
                         state,
                         onEvent,

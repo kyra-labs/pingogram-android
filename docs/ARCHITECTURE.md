@@ -652,7 +652,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the newest pin at or above the newest message on screen), cycles through the pins as taps show each in the list
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
-  hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+  hides. "All pinned messages" opens the page of every pin, `PinnedMessagesRoute` of `core:navigation`
+  (`ChatEffect.OpenPinnedMessages`, which the route hands to `feature:chat`'s `LocalPinnedMessagesLauncher`, provided by
+  `:app`): `PinnedMessagesViewModel` (`PinnedMessageRepository.pinnedMessagesOrError`, so a failed load shows; the
+  filter and the search in its saved state) maps the cards (`PinnedCards.kt`), and "Jump to message" goes back through
+  `PinnedJumps` (a singleton, in memory, like `ShareInbox`), which the conversation of that chat and topic takes.
 - **Seen by and reactions** (FR-C6): `core:domain`'s `MessageInteractionRepository` (`TdlibMessageInteractionRepository`,
   `core:data`, no cache) lists who saw a group message (`getMessageViewers`, all at once, the latest view first) and who
   added its reactions (`getMessageAddedReactions`, every kind or one, paged by `next_offset`); `MSG_TOO_OLD` and
@@ -818,7 +822,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ForumTopicRepository` (`TdlibForumTopicRepository`, `core:data`: an `UpdateStore` of the forums someone observes,
   dropped with their last observer, so no `TdlibUpdateCache`) pages `getForumTopics`, follows `updateForumTopicInfo`,
   `updateForumTopic` and new messages, and fetches a topic again (`getForumTopic`) where no update says all (its unread
-  count). `feature:chat`: `ChatRoute` decides what a chat opens to (`ChatOpeningViewModel`: a supergroup's `isForum` from
+  count). `recentTopics` gives a forum's loaded topics, the newest message first, from which the chat list counts the
+  topics with unread messages for its badge (owner decision 2026-11-15): its first page, then pages of 100 until the
+  loaded topics hold the chat's unread messages (a read topic can come before unread ones), at most five more; the
+  chat list's `ForumRowTopics` (a part of `ChatListViewModel`) asks only for the forums its rows showed
+  (`ChatListEvent.RowsShown`), hands each its chat's unread count, and gives the rows the count and the five newest
+  topics, which a forum's row names above its preview (`ForumRowPreview`, owner decision 2026-11-15). `feature:chat`: `ChatRoute` decides what a chat opens to (`ChatOpeningViewModel`: a supergroup's `isForum` from
   `GroupRepository`), drawing the conversation's first frame meanwhile: the conversation (`ConversationRoute`), a
   forum's topic list (`ForumTopicsRoute`, `ForumTopicsViewModel`), or for a message found in a forum the conversation of
   its topic. `ChatRoute(chatId, topicId)` of `core:navigation` is a topic's conversation: `ChatViewModel` with a
@@ -1130,6 +1139,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the photo grows into a page that already shows it: the viewer holds it until its first page is there, which
   `ChatMediaRepository.opened` answers with the opened message alone (`getMessage`, from TDLib's memory), the pages
   on either side following from it.
+  An overlay going out takes no touches, focus or screen readers from its first frame (`OverlayNavigator`'s
+  `GoingOut`: its node reports no size, its content keeps its place and fades), so the screen below takes a tap while
+  the photo is still on its way back. Both sides of the transform are clipped to where the conversation shows its
+  messages (`sharedMediaViewport`, on the box around the message list, below the top bars and above the composer,
+  published in `SharedMediaShapes`), more so as the media nears its bubble, so it never draws over the bars.
 - Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
   on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops

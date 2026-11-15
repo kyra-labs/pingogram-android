@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
@@ -54,6 +55,15 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open chat [chatId] at message [messageId]: the original of a post forwarded from a channel. */
+    data class OpenMessage(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
+
+    /** "Forwarded from …" of a user who hides their account was tapped: a snackbar says nothing can open. */
+    data object ForwardSourceHidden : ChatEffect
+
     /** Open channel [chatId], the next unread one, in this conversation's place, so back leads where it did. */
     data class OpenNextChannel(
         val chatId: Long,
@@ -105,6 +115,11 @@ sealed interface ChatEffect {
 
     /** What was picked for a poll's media is no photo, which polls take: a snackbar says so. */
     data object PollPhotoOnly : ChatEffect
+
+    /** Open the page of every pinned message of the conversation, [route] (`LocalPinnedMessagesLauncher`). */
+    data class OpenPinnedMessages(
+        val route: PinnedMessagesRoute,
+    ) : ChatEffect
 
     /** Open the statistics of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
     data class OpenPollStatistics(

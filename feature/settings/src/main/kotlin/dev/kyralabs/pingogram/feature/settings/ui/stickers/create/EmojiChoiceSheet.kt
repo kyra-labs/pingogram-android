@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -30,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.EmojiGroup
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -50,7 +50,10 @@ internal fun EmojiChoiceSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(NewStickerSetEvent.CloseEmoji) }, sheetState = sheetState) {
+    PingogramBottomSheet(
+        onDismissRequest = { currentOnEvent(NewStickerSetEvent.CloseEmoji) },
+        sheetState = sheetState,
+    ) {
         EmojiChoices(index, groups, onEvent)
     }
 }

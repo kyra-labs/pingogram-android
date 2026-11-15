@@ -106,7 +106,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
@@ -288,7 +287,7 @@ import java.util.Locale
  *   history, what is sent goes into it, its name in the header, its unread state, and its pins.
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
  *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
- *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
+ *   and the page of them all (`PinnedMessagesRoute`, opened through [ChatEffect.OpenPinnedMessages]).
  * - **Translation** ([ChatTranslation], `REQUIREMENTS.md` FR-C3): a message's "Translate" and "Show original", the
  *   translations in place of the bubbles' texts (copied only into the bubbles they change), and the translate bar
  *   ([ChatUiState.translateBar]) where Telegram suggests translating the chat, which translates the messages on screen.
@@ -1148,9 +1147,6 @@ class ChatViewModel internal constructor(
             onShow = window::showMessage,
         )
 
-    /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
-    val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
-
     private val scheduled =
         ChatScheduledMessages(
             chatId = chatId,
@@ -1306,6 +1302,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
+            is ChatEvent.OpenForwardSource -> event.source.open(chatId, window::showMessage, effectChannel::trySend)
             ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
             ChatEvent.ReportChat -> reporting.start(emptyList(), wholeChat = true)
             is ChatEvent.OpenMention -> mentions.open(event.target)

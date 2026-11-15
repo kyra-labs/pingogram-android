@@ -25,7 +25,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
  * a group's or channel's info page (its title) through [onOpenChatInfo], the chat's scheduled messages (its bar)
  * through [onOpenScheduledMessages]. With [focusComposer], the conversation's composer takes the focus once it shows.
  * The next unread channel, which a read channel offers, opens through [onOpenNextChat] in this chat's place, or
- * through [onOpenChat] without it.
+ * through [onOpenChat] without it. The original of a post forwarded from a channel opens through [onOpenMessage], or
+ * its chat through [onOpenChat] without it.
  *
  * A locked chat (`docs/adr/0029-locked-chats.md`) shows the passcode entry in its place until it is opened, through
  * `core:ui`'s `LocalLockedChatGate`, which `:app` provides.
@@ -46,6 +47,7 @@ internal fun ChatRoute(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     LocalLockedChatGate.current(chatId) {
         OpenedChat(
@@ -62,6 +64,7 @@ internal fun ChatRoute(
             focusComposer = focusComposer,
             onOpenScheduledMessages = onOpenScheduledMessages,
             onOpenNextChat = onOpenNextChat,
+            onOpenMessage = onOpenMessage,
         )
     }
 }
@@ -83,6 +86,7 @@ private fun OpenedChat(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     val conversationAt: @Composable (MessageTopic?, Long?) -> Unit = { shown, at ->
         ConversationRoute(
@@ -99,6 +103,7 @@ private fun OpenedChat(
             focusComposer = focusComposer,
             onOpenScheduledMessages = onOpenScheduledMessages,
             onOpenNextChat = onOpenNextChat,
+            onOpenMessage = onOpenMessage,
         )
     }
     val conversation: @Composable (MessageTopic?) -> Unit = { shown -> conversationAt(shown, messageId) }

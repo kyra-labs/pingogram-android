@@ -71,6 +71,18 @@
         <item quantity="one">%d unread message</item>
         <item quantity="other">%d unread messages</item>
     </plurals>
+    <!-- A forum's row for screen readers: its newest topics, which the row names above its last message. -->
+    <string name="chat_list_a11y_topics">Topics: %1$s</string>
+    <!-- A forum's row for screen readers: how many of its topics have unread messages, which its badge counts. -->
+    <plurals name="chat_list_a11y_unread_topics">
+        <item quantity="one">%d topic with unread messages</item>
+        <item quantity="other">%d topics with unread messages</item>
+    </plurals>
+    <!-- A community's entry for screen readers: how many of its chats have unread messages, which its badge counts. -->
+    <plurals name="chat_list_a11y_unread_community_chats">
+        <item quantity="one">%d chat with unread messages</item>
+        <item quantity="other">%d chats with unread messages</item>
+    </plurals>
     <!-- A folder tab for screen readers: %1$s is its name, %2$s its unread chats ("2 unread chats"). -->
     <string name="chat_list_a11y_tab">%1$s, %2$s</string>
     <plurals name="chat_list_a11y_unread_chats">

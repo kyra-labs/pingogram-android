@@ -376,31 +376,22 @@ private fun Modifier.tabIndicator(
 /**
  * Whether every tab can show its label in [maxWidth], the bar's room beside the New chat button. Measured for the
  * widest selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another
- * tab never switches between labels and icons.
+ * tab never switches between labels and icons. The labels' width comes from [NavigationLabelWidths], which measured it
+ * off the first frame, or once per process.
  */
 @Composable
 private fun labelsFit(maxWidth: Dp): Boolean {
-    val textMeasurer = rememberTextMeasurer()
-    val typography = MaterialTheme.typography
     val spacing = MaterialTheme.spacing
     val density = LocalDensity.current
-    val labels = TopLevelDestination.entries.map { stringResource(it.label) }
-    return remember(textMeasurer, typography, spacing, density, labels, maxWidth) {
-        with(density) {
-            fun width(
-                label: String,
-                emphasized: Boolean,
-            ): Int {
-                val style = if (emphasized) typography.labelLargeEmphasized else typography.labelLarge
-                return textMeasurer.measure(label, style, maxLines = 1).size.width
-            }
-            val labelsWidth = labels.sumOf { width(it, emphasized = false) }.toDp()
-            val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
-            val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
-            val icon = ICON_SIZE + spacing.small
-            val toolbarPadding = spacing.small * 2
-            labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding <= maxWidth
-        }
+    val key = rememberNavigationLabelsKey()
+    // Measured off the first frame by NavigationLabelWidths.warmUp; measured here only where it did not.
+    val textMeasurer = rememberTextMeasurer(cacheSize = 0)
+    val labelsWidth = remember(key) { NavigationLabelWidths.widthPx(key) { textMeasurer } }
+    return with(density) {
+        val tabPadding = spacing.medium * 2 * (key.labels.size - 1) + spacing.large * 2
+        val icon = ICON_SIZE + spacing.small
+        val toolbarPadding = spacing.small * 2
+        labelsWidth.toDp() + tabPadding + icon + toolbarPadding <= maxWidth
     }
 }
 

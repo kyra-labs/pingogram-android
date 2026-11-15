@@ -131,7 +131,7 @@ internal fun shortNameOf(
     }
 
 /** The looked-up user or chat [sender] is; null if not known. */
-private fun refOf(
+internal fun refOf(
     sender: MessageSender,
     chat: Chat,
     people: ChatPeople,

@@ -1,0 +1,121 @@
+package dev.kyralabs.pingogram.feature.chats.ui
+
+import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ForumTopic
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicIcon
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
+import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+
+/**
+ * The forums' topics for the chat list, by chat id: [topicLists] where set, else as many unread topics as [unreadTopics]
+ * says (null for a forum not loaded yet); with the forums observed now ([observed]) and every forum ever observed
+ * ([requested]); the rest is unused.
+ */
+class FakeForumTopicRepository : ForumTopicRepository {
+    val unreadTopics = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val topicLists = MutableStateFlow<Map<Long, List<ForumTopic>>>(emptyMap())
+    val observed = mutableSetOf<Long>()
+    val requested = mutableListOf<Long>()
+
+    /** The unread messages each forum's count was last asked to hold, by chat id. */
+    val unreadMessages = mutableMapOf<Long, Int>()
+
+    override fun recentTopics(
+        chatId: Long,
+        unreadMessages: Flow<Int>,
+    ): Flow<List<ForumTopic>?> =
+        combine(
+            unreadTopics.map { it[chatId] },
+            topicLists.map { it[chatId] },
+            unreadMessages,
+        ) { count, list, messages ->
+            this.unreadMessages[chatId] = messages
+            val generated: List<ForumTopic>? = count?.let { List(it) { index -> forumTopic(chatId, index + 1) } }
+            list ?: generated
+        }.distinctUntilChanged()
+            .onStart {
+                observed += chatId
+                requested += chatId
+            }.onCompletion { observed -= chatId }
+
+    override fun topics(chatId: Long): Flow<ForumTopicList> = unused()
+
+    override suspend fun loadMore(chatId: Long): Outcome<Unit> = unused()
+
+    override fun topic(
+        chatId: Long,
+        topicId: Int,
+    ): Flow<ForumTopic?> = unused()
+
+    override suspend fun createTopic(
+        chatId: Long,
+        name: String,
+        color: TopicColor,
+    ): Outcome<Int> = unused()
+
+    override suspend fun renameTopic(
+        chatId: Long,
+        topicId: Int,
+        name: String,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun setClosed(
+        chatId: Long,
+        topicId: Int,
+        isClosed: Boolean,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun setPinned(
+        chatId: Long,
+        topicId: Int,
+        isPinned: Boolean,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun reorderPinned(
+        chatId: Long,
+        topicIds: List<Int>,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun deleteTopic(
+        chatId: Long,
+        topicId: Int,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun setGeneralHidden(
+        chatId: Long,
+        isHidden: Boolean,
+    ): Outcome<Unit> = unused()
+
+    /** Topic [id] of forum [chatId], named "Topic [id]", with [unreadCount] unread messages. */
+    fun forumTopic(
+        chatId: Long,
+        id: Int,
+        unreadCount: Int = 1,
+        color: TopicColor = TopicColor.Blue,
+    ) = ForumTopic(
+        chatId = chatId,
+        id = id,
+        name = "Topic $id",
+        icon = ForumTopicIcon(color, 0),
+        isGeneral = id == 1,
+        isClosed = false,
+        isHidden = false,
+        isPinned = false,
+        lastMessage = null,
+        order = 0,
+        unreadCount = unreadCount,
+        unreadMentionCount = 0,
+        lastReadInboxMessageId = 0,
+        lastReadOutboxMessageId = 0,
+    )
+
+    private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the chat list")
+}

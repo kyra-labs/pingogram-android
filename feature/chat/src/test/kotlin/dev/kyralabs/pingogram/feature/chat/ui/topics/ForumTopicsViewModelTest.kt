@@ -4,9 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicIcon
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -46,6 +49,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.Locale
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The topic list of [ForumTopicsViewModel] (`REQUIREMENTS.md` FR-C9): the header, the rows, the pages as the end comes
@@ -243,14 +247,73 @@ class ForumTopicsViewModelTest {
     private val ForumTopicsViewModel.management get() = uiState.value.management
 
     @Test
-    fun `a member without rights gets no menus but their own topic's, no New topic, and no hidden General`() =
+    fun `a topic's own mute, else its forum's, takes the muted colors`() =
+        runTest {
+            chats.setChats(forumChat.copy(isMuted = true))
+            topics.setTopics(
+                FORUM_CHAT,
+                forumTopic(1, "General", isGeneral = true, unreadCount = 2),
+                forumTopic(5, "Loud", unreadCount = 3).copy(muteFor = 0),
+                forumTopic(6, "Quiet", unreadCount = 1).copy(muteFor = 3600),
+            )
+
+            val viewModel = viewModel()
+
+            assertEquals(mapOf(1 to true, 5 to false, 6 to true), viewModel.rows.associate { it.id to it.isMuted })
+        }
+
+    @Test
+    fun `a topic's own custom emoji icon is kept for its row`() =
+        runTest {
+            chats.setChats(forumChat)
+            topics.setTopics(
+                FORUM_CHAT,
+                forumTopic(5, "Releases").copy(icon = ForumTopicIcon(TopicColor.Red, customEmojiId = 77)),
+            )
+
+            val viewModel = viewModel()
+
+            assertEquals(TopicIcon(TopicColor.Red, isGeneral = false, customEmojiId = 77), viewModel.rows.single().icon)
+        }
+
+    @Test
+    fun `a poll option added is worded in the row, not as a chat event`() =
+        runTest {
+            users.setUsers(user(ADA, firstName = "Ravindu"))
+            chats.setChats(forumChat)
+            val added =
+                message(
+                    9,
+                    chatId = FORUM_CHAT,
+                    content = MessageContent.Service(ServiceAction.PollOptionAdded(4, "Just checking the votes")),
+                )
+            topics.setTopics(FORUM_CHAT, forumTopic(5, "Polls", lastMessage = added))
+
+            val viewModel = viewModel()
+
+            assertEquals(
+                UiText.resource(
+                    UiR.string.preview_added_poll_option,
+                    UiText.Plain("Ravindu").bidiIsolated(),
+                    "Just checking the votes".bidiIsolated(),
+                ),
+                viewModel.rows.single().preview,
+            )
+        }
+
+    @Test
+    fun `a member without rights gets no menus but their own topic's, no New topic, and a hidden General closed`() =
         runTest {
             managedForum(role = MemberRole.Member)
 
             val viewModel = viewModel()
 
             assertFalse(viewModel.uiState.value.canCreate)
-            assertEquals(listOf(5, 3, 7, 8), viewModel.rows.map { it.id })
+            // Telegram shows a hidden General above the list, closed, to everyone.
+            assertEquals(listOf(1, 5, 3, 7, 8), viewModel.rows.map { it.id })
+            val general = viewModel.rows[0]
+            assertTrue(general.isClosed)
+            assertFalse(general.isHidden)
             assertEquals(listOf(7), viewModel.rows.filter { it.menu != null }.map { it.id })
             assertFalse((viewModel.content as TopicsContent.Content).canReorder)
         }

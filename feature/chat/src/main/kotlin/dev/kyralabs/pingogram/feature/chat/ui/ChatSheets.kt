@@ -12,7 +12,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollAlert
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsBottomSheet
@@ -35,8 +34,6 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     sendAsSheet?.let { SendAsBottomSheet(it, viewModel::onEvent) }
     val secretChatSheet by viewModel.secretChatSheet.collectAsStateWithLifecycle()
     secretChatSheet?.let { SecretChatBottomSheet(it, viewModel::onEvent) }
-    val pinnedSheet by viewModel.pinnedSheet.collectAsStateWithLifecycle()
-    pinnedSheet?.let { PinnedMessagesSheet(it, viewModel::onEvent) }
     val botButtonDialog by viewModel.botButtonDialog.collectAsStateWithLifecycle()
     botButtonDialog?.let { BotButtonDialogHost(it, viewModel.botButtonPassword, viewModel::onEvent) }
     val switchInlineSheet by viewModel.switchInlineSheet.collectAsStateWithLifecycle()

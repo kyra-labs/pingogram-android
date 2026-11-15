@@ -49,6 +49,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     key's Keystore unwrap takes most of that time, and the two used to run one after the other.
   - `PingogramApplication` parses Google Sans Flex and makes the typefaces of every style on `Default`
     (`warmUpGoogleSansFlex`). The first frame used to make them while it measured its text.
+  - Then it measures the floating navigation bar's labels with them (`NavigationLabelWidths.warmUp`, 2026-11-15), whose
+    width decides whether the tabs show their names (`labelsFit`). The first frame used to measure the three labels in
+    two styles, which made it slower without a baseline profile after #494 (`StartupBenchmark` with
+    `CompilationMode.None`: cold +19%, the warm first frame +18–22%). The width is kept for the process, so a warm start
+    measures nothing; a first frame that asks for other labels or styles (high contrast, another language before
+    Android 13) measures them itself, the same way, so the tabs never switch between names and icons after.
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
@@ -528,6 +534,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
   P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
   the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
+- Forum rows naming their topics (2026-11-15, `docs/DESIGN_SYSTEM.md` §6 "Chat list row"): `ChatListScrollCostTest`
+  with every tenth row a forum that names three topics (its preview data's "Book club"), against the same rows without
+  the topic line, three alternating pairs on the shared 4-core machine: without P50 0.96–1.00 ms, P90 10.0–10.2 ms,
+  P99 15.3–16.4 ms, mean 2.74–2.85 ms; with P50 1.04–1.13 ms, P90 9.2–9.8 ms, P99 13.7–14.6 ms, mean 2.62–2.85 ms.
+  A forum's row composes and measures more (one layout of a tab, the other topics and the pill, each measured once),
+  but its third line leaves fewer rows on screen, so a scroll frame brings in fewer of them.
 - Story rings (2026-10-23, the same machine under other agents' builds, so only runs side by side compare):
   `ChatListScrollCostTest` with the rings row as the list's first item and without it, interleaved three times each:
   without P50 1.30 ms, P90 9.9–10.0 ms, P99 13.3–17.0 ms; with P50 1.38–1.46 ms, P90 10.0–11.1 ms, P99 12.5–15.9 ms.
@@ -664,6 +676,29 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     - What is left of the 0.7 ms needs the next trace, read with the corrected summary: frames that apply changes would
       point at the app's shell or at pictures loading into rows, which the JVM test leaves out; otherwise the main
       thread waits for the RenderThread (`postAndWait`), as before #502.
+- The cache window's one long frame (2026-11-15). The owner's trace of `main` after #502 and #520
+  (`ChatListScrollBenchmark`, profile) met the budget: P90 7.1 ms, against 8.6 ms in the 2.2.0 baseline.
+  - **The main thread's remaining time** is waiting for the RenderThread (`postAndWait`, 0.67 ms a frame): drawing,
+    not app code. Only 30 of its 789 frames applied changes.
+  - **One frame of 39 ms** held a 36.1 ms `compose:lazy:cache_window:keepAroundItems`. In Compose 1.12.1 that section
+    calls `compose(index)` in the measure pass for every row of the cache window (half a screen ahead, one behind)
+    outside the viewport, so rows no prefetch composed yet are composed there, all in that frame.
+  - **The JVM does not reproduce it.** `ChatListScrollCostTest`'s "first scroll frames with each cache window"
+    composes the list anew and scrolls it, seven runs per state after one warming the JIT. Longest frame and all 20
+    frames, medians:
+
+    | List state | Longest frame | All 20 frames |
+    |---|---|---|
+    | Compose's default | 8.4 ms | 40.8 ms |
+    | ahead 0.5, behind 1 (Pingogram's) | 7.8 ms | 35.8 ms |
+    | ahead 0.25, behind 1 | 7.4 ms | 35.6 ms |
+    | ahead 0.5, behind 0.5 | 7.1 ms | 33.8 ms |
+    | ahead 0, behind 1 | 6.9 ms | 32.8 ms |
+
+    The cache window makes no first scroll frame longer there. The spike needs what only a phone pays the first time
+    (code not compiled yet, first text layouts, shaders), so the window stays as it is until a trace says which rows
+    it composed. `chat-list-scroll.sql` now lists every `keepAroundItems` over 2 ms with when it ran and what ran
+    inside it.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

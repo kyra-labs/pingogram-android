@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.model.GiveawayInfo
 import dev.kyralabs.pingogram.core.domain.model.GiveawayParticipantStatus
 import dev.kyralabs.pingogram.core.domain.model.GiveawayPrize
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -39,7 +39,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.GiveawayEvent
 import java.util.Locale
 
 /**
- * The details of a giveaway ("Learn more", `docs/DESIGN_SYSTEM.md` §6 "Giveaways"), a [ModalBottomSheet] as the
+ * The details of a giveaway ("Learn more", `docs/DESIGN_SYSTEM.md` §6 "Giveaways"), a [PingogramBottomSheet] as the
  * conversation's other sheets: "About this giveaway" in `titleLargeEmphasized` over the prize, then what TDLib knows
  * for the user: while it runs, when the winners are picked and whether the user takes part (and why not); once over,
  * when they were picked, whether the user won (a Telegram Premium gift code is shown to activate in another Telegram
@@ -54,7 +54,7 @@ internal fun GiveawayInfoBottomSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(GiveawayEvent.DismissInfo) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(GiveawayEvent.DismissInfo) }) {
         GiveawayInfoContent(sheet, currentOnEvent)
     }
 }

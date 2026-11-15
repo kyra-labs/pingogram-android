@@ -41,7 +41,11 @@ internal fun TdApi.ForumTopic.toForumTopic(): ForumTopic =
         lastReadInboxMessageId = lastReadInboxMessageId,
         lastReadOutboxMessageId = lastReadOutboxMessageId,
         isOutgoing = info.isOutgoing,
+        muteFor = notificationSettings.topicMuteFor(),
     )
+
+/** For how long a topic's own setting mutes it; null where it follows its forum's. */
+internal fun TdApi.ChatNotificationSettings?.topicMuteFor(): Int? = this?.takeUnless { it.useDefaultMuteFor }?.muteFor
 
 /** [this] topic with what [info] says now: its name, icon and state. */
 internal fun ForumTopic.withInfo(info: TdApi.ForumTopicInfo): ForumTopic =

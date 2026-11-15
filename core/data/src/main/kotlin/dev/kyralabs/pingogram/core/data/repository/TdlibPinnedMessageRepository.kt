@@ -14,12 +14,14 @@ import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository.Com
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -49,37 +51,44 @@ class TdlibPinnedMessageRepository
             chatId: Long,
             topic: MessageTopic?,
         ): Flow<ImmutableList<Message>> =
-            channelFlow<ImmutableList<Message>> {
+            pinnedMessagesOrError(chatId, topic).map { it.getOrNull() ?: persistentListOf() }.distinctUntilChanged()
+
+        override fun pinnedMessagesOrError(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Flow<Outcome<ImmutableList<Message>>> =
+            channelFlow<Outcome<ImmutableList<Message>>> {
                 val updates = Channel<TdApi.Update>(Channel.UNLIMITED)
                 // UNDISPATCHED: subscribed before the request below is sent, so no update falls in between.
                 launch(start = CoroutineStart.UNDISPATCHED) {
                     client.updates.collect { if (it.pinsChatId() == chatId) updates.send(it) }
                 }
-                var pinned = load(chatId, topic)
-                send(pinned)
+                val loaded = load(chatId, topic)
+                send(loaded)
+                var pinned = loaded.getOrNull() ?: persistentListOf()
                 for (update in updates) {
                     pinned = applying(pinned, update, topic)
-                    send(pinned)
+                    send(Outcome.Success(pinned))
                 }
             }.distinctUntilChanged()
 
         override suspend fun unpinAll(chatId: Long): Outcome<Unit> =
             client.request(TdApi.UnpinAllChatMessages(chatId)).map {}
 
-        /** The newest [MAX_PINNED] pinned messages (of [topic], if not null), newest first; none if TDLib fails. */
+        /** The newest [MAX_PINNED] pinned messages (of [topic], if not null), newest first, or why TDLib failed. */
         private suspend fun load(
             chatId: Long,
             topic: MessageTopic?,
-        ): PersistentList<Message> {
+        ): Outcome<PersistentList<Message>> {
             val filter = TdApi.SearchMessagesFilterPinned()
             val search = TdApi.SearchChatMessages(chatId, topic?.toTdMessageTopic(), "", null, 0, 0, MAX_PINNED, filter)
-            return client
-                .request(search)
-                .map { found -> found.messages.filterNotNull().map { it.toMessage() } }
-                .getOrNull()
-                .orEmpty()
-                .sortedByDescending { it.id }
-                .toPersistentList()
+            return client.request(search).map { found ->
+                found.messages
+                    .filterNotNull()
+                    .map { it.toMessage() }
+                    .sortedByDescending { it.id }
+                    .toPersistentList()
+            }
         }
 
         private suspend fun applying(
