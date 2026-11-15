@@ -243,7 +243,7 @@ class ForumTopicsViewModelTest {
     private val ForumTopicsViewModel.management get() = uiState.value.management
 
     @Test
-    fun `a member without rights gets no menus but their own topic's, no "New topic", and no hidden General`() =
+    fun `a member without rights gets no menus but their own topic's, no New topic, and no hidden General`() =
         runTest {
             managedForum(role = MemberRole.Member)
 
@@ -305,7 +305,7 @@ class ForumTopicsViewModelTest {
         }
 
     @Test
-    fun `"New topic" creates the topic with the name and color picked, and opens it`() =
+    fun `New topic creates the topic with the name and color picked, and opens it`() =
         runTest {
             managedForum()
             val viewModel = viewModel()
@@ -371,7 +371,7 @@ class ForumTopicsViewModelTest {
         }
 
     @Test
-    fun `"Edit name" renames the topic`() =
+    fun `Edit name renames the topic`() =
         runTest {
             managedForum()
             val viewModel = viewModel()

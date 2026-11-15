@@ -151,7 +151,7 @@ class ShareViewModel internal constructor(
     }
 
     private fun toggle(chatId: Long) {
-        selected.update { if (chatId in it) it.remove(chatId) else it.add(chatId) }
+        selected.update { if (chatId in it) it.removing(chatId) else it.adding(chatId) }
     }
 
     /** The one chat picked opens with the share; several get it, after the comment. Nothing while none is picked. */

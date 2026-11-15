@@ -130,14 +130,8 @@ class AndroidDeviceLocationRepositoryTest {
     fun `a recent last-known location comes first, an old one never`() =
         runTest {
             grant(Manifest.permission.ACCESS_FINE_LOCATION)
-            shadowOf(manager).setLastKnownLocation(
-                LocationManager.GPS_PROVIDER,
-                location(LocationManager.GPS_PROVIDER, 30f, ageMillis = 60_000),
-            )
-            shadowOf(manager).setLastKnownLocation(
-                LocationManager.NETWORK_PROVIDER,
-                location(LocationManager.NETWORK_PROVIDER, 10f, ageMillis = 600_000),
-            )
+            shadowOf(manager).simulateLocation(location(LocationManager.GPS_PROVIDER, 30f, ageMillis = 60_000))
+            shadowOf(manager).simulateLocation(location(LocationManager.NETWORK_PROVIDER, 10f, ageMillis = 600_000))
 
             val collected = collect()
 

@@ -283,7 +283,6 @@ private fun OriginalQualityRow(
 ) {
     val haptics = LocalHapticFeedback.current
     ListItem(
-        headlineContent = { Text(stringResource(R.string.attach_original)) },
         supportingContent = { Text(stringResource(R.string.attach_original_summary)) },
         trailingContent = {
             Switch(
@@ -307,7 +306,9 @@ private fun OriginalQualityRow(
                     )
                     onChange(checked)
                 },
-    )
+    ) {
+        Text(stringResource(R.string.attach_original))
+    }
 }
 
 /** The caption field and the send split button, which waits until every item of [preview] is ready. */

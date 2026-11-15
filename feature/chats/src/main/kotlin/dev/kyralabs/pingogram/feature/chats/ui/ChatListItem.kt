@@ -207,11 +207,11 @@ internal fun listItemColors(
         // visible in dark theme and vanished with AMOLED, which moves the container ladder down one tone (owner
         // decision 2026-11-07).
         grouped -> {
-            colors.copy(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+            colors.copy(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = colors.contentColor)
         }
 
         else -> {
-            colors.copy(containerColor = colors.containerColor.copy(alpha = 0f))
+            colors.copy(containerColor = colors.containerColor.copy(alpha = 0f), contentColor = colors.contentColor)
         }
     }
 }
@@ -316,9 +316,7 @@ internal fun ChatTitle(
                 WarningLabel(stringResource(R.string.chat_list_badge_fake))
             }
 
-            null -> {
-                Unit
-            }
+            null -> {}
         }
         if (isMuted) {
             InlineIcon(UiR.drawable.ic_notifications_off, colors.onSurfaceVariant, MaterialTheme.sizes.inlineIconSmall)

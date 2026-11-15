@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.testing.StoryFixtures.updateStoryDeleted
 import dev.kyralabs.pingogram.core.testing.StoryFixtures.videoContent
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Test
  * Stories: the cache of `updateChatActiveStories` and its order, loading the lists, a chat's active stories and a
  * story with their updates, marking a story viewed, reactions, replies, and errors.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibStoryRepositoryTest {
     private val client = FakeTdlibClient()
 
