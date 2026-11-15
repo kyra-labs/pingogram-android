@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -313,36 +314,6 @@ internal fun RowScope.SenderAvatarColumn(
         Spacer(Modifier.width(size))
     }
     Spacer(Modifier.width(MaterialTheme.spacing.small))
-}
-
-/**
- * Opens the profile of user [userId] ([ChatEvent.OpenProfile]) when this sender's name or avatar is clicked, where
- * there is a user (`docs/audit/accessibility.md` A4): a button ("Open profile") on a 48 dp touch target that moves
- * nothing ([touchTarget]), focusable by the keyboard, with Material's pressed, hover and focus states clipped to
- * [shape]. The label is read from the resources in the semantics block, only when something reads it.
- */
-@Composable
-internal fun Modifier.openProfileTarget(
-    userId: Long?,
-    shape: Shape,
-    onEvent: (ChatEvent) -> Unit,
-): Modifier {
-    if (userId == null) return this
-    val interactions = remember { MutableInteractionSource() }
-    val resources = LocalResources.current
-    val open = remember(userId, onEvent) { { onEvent(ChatEvent.OpenProfile(userId)) } }
-    return touchTarget(
-        Modifier
-            .clickable(interactions, indication = null, onClick = open)
-            .semantics {
-                role = Role.Button
-                onClick(label = resources.getString(R.string.chat_open_profile)) {
-                    open()
-                    true
-                }
-            },
-    ).clip(shape)
-        .indication(interactions, ripple(focusRingShape = shape))
 }
 
 /**

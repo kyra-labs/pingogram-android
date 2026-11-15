@@ -107,7 +107,8 @@ import java.util.Locale
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. The bar of the chat's scheduled messages opens their list through [onOpenScheduledMessages]
  * (without it there is no bar). A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which
- * the app navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
+ * the app navigates with; the original of a post forwarded from a channel opens through [onOpenMessage] ([onOpenChat]
+ * without it). With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
  * text field takes the focus once it shows.
  */
 @Suppress(
@@ -131,6 +132,7 @@ internal fun ConversationRoute(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -186,6 +188,7 @@ internal fun ConversationRoute(
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
     val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
+    val currentOnOpenMessage by rememberUpdatedState(onOpenMessage)
     val launchers = rememberAttachLaunchers(viewModel::onEvent, snackbarHostState)
     val attach =
         rememberAttachInputs(
@@ -205,6 +208,7 @@ internal fun ConversationRoute(
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
         onOpenNextChat = { currentOnOpenNextChat(it) },
+        onOpenMessage = { chat, message -> currentOnOpenMessage?.invoke(chat, message) ?: currentOnOpenChat(chat) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onShareLocation = { attach.onPick(AttachOption.Location) },
@@ -286,23 +290,23 @@ internal fun ConversationRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
- * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], which
- * asks for the camera permission first and says in a snackbar why no camera app opened; a bot's keyboard button that
- * asks for the location opens the "Location" sheet through [onShareLocation]. After forwarding a snackbar says to
- * how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another chat; or for
- * how many it failed, and why. A sponsored message's
- * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
- * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
- * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
- * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
- * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
- * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
- * once it is refused, and say to hold the button or that recording failed. A message's link goes to the clipboard
- * through [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited
- * message's opens through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group
- * message and who reacted to it opens through [onOpenInteractions].
- * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
- * (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm` (right) or `Reject` (wrong).
+ * [onOpenThread], the next unread channel to [onOpenNextChat] and a forwarded post's original to [onOpenMessage]; the
+ * camera app opens through [onLaunchCamera], which asks for the camera permission first and says in a snackbar why no
+ * camera app opened; a bot's keyboard button that asks for the location opens the "Location" sheet through
+ * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action that opens it
+ * through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's link opens
+ * through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting one is a
+ * snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several texts at
+ * once, thank for a report, and say how saving to Downloads went, with an action that opens the one file saved; the
+ * storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it where the
+ * system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the microphone
+ * permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings once it is
+ * refused, and say to hold the button or that recording failed. A message's link goes to the clipboard through
+ * [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited message's opens
+ * through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group message and who reacted
+ * to it opens through [onOpenInteractions]. A message that failed to send while the screen is shown gets a `Reject`
+ * haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm`
+ * (right) or `Reject` (wrong).
  */
 @Suppress(
     // One branch per effect, all in one place: the compiler sees none is missed.
@@ -318,6 +322,7 @@ internal fun ChatEffects(
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenNextChat: (chatId: Long) -> Unit = onOpenChat,
+    onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -351,7 +356,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
-                    ChatEffect.PollPhotoOnly, is ChatEffect.SponsoredNotice,
+                    ChatEffect.PollPhotoOnly, ChatEffect.ForwardSourceHidden, is ChatEffect.SponsoredNotice,
                     is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
@@ -385,6 +390,11 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenNextChannel -> {
                         onOpenNextChat(effect.chatId)
+                        ""
+                    }
+
+                    is ChatEffect.OpenMessage -> {
+                        onOpenMessage(effect.chatId, effect.messageId)
                         ""
                     }
 
@@ -504,6 +514,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
         ChatEffect.PollPhotoOnly -> R.string.poll_photo_only
+        ChatEffect.ForwardSourceHidden -> R.string.chat_forward_source_hidden
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed
