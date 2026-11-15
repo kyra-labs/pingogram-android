@@ -9,8 +9,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
+  later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
+  message's language is not on the phone, a link opens Android's language settings.
+
 ### Changed
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
+- Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
+  a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
+  Decline; Decline goes back to the phone number.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
