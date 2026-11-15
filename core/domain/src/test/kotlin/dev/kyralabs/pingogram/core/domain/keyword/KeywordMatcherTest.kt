@@ -1,0 +1,58 @@
+package dev.kyralabs.pingogram.core.domain.keyword
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/** Keyword alerts' matching (board 30): whole words, any case, accents ignored, where in the text. */
+class KeywordMatcherTest {
+    @Test
+    fun `finds a whole word in any letter case, where it is written`() {
+        val text = "The public LAUNCH is moving."
+
+        val match = KeywordMatcher(listOf("launch")).firstMatch(text)!!
+
+        assertEquals("launch", match.word)
+        assertEquals("LAUNCH", text.substring(match.start, match.end))
+    }
+
+    @Test
+    fun `a word inside another word does not match`() {
+        val matcher = KeywordMatcher(listOf("launch", "0.9.4"))
+
+        assertNull(matcher.firstMatch("We relaunched it"))
+        assertNull(matcher.firstMatch("launches tomorrow"))
+        assertNull(matcher.firstMatch("version 0.9.45"))
+        assertEquals("0.9.4", matcher.firstMatch("0.9.4 rollout is at 50%")!!.word)
+    }
+
+    @Test
+    fun `accents are ignored either way, and the match keeps the text's own letters`() {
+        val text = "Meet at the Café, then résumé review"
+
+        val matches = KeywordMatcher(listOf("cafe", "resume")).matches(text)
+
+        assertEquals(listOf("Café", "résumé"), matches.map { text.substring(it.start, it.end) })
+        val naive = KeywordMatcher(listOf("NAIVE")).firstMatch("so naïve")!!
+        assertEquals("naïve", "so naïve".substring(naive.start, naive.end))
+    }
+
+    @Test
+    fun `phrases, usernames and every match in order, the longer where two overlap`() {
+        val text = "@ada, the Pingogram Pro deal: Pingogram is back"
+
+        val matches = KeywordMatcher(listOf("Pingogram", "pingogram pro", "@ada")).matches(text)
+
+        assertEquals(listOf("@ada", "pingogram pro", "Pingogram"), matches.map { it.word })
+        assertNull(KeywordMatcher(listOf("@ada")).firstMatch("x@ada"))
+    }
+
+    @Test
+    fun `blank words look for nothing`() {
+        val matcher = KeywordMatcher(listOf("  ", ""))
+
+        assertTrue(matcher.isEmpty)
+        assertTrue(matcher.matches("anything").isEmpty())
+    }
+}

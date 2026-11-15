@@ -33,6 +33,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
+- Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
+  edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
@@ -46,12 +48,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
+- A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
+  scrolls, the top bar keeps a Call button where the person can be called.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
 - A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
 - "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
   photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
   (Unpin all from its menu).
+- The profile of someone not in your contacts who wrote first shows a card with how many groups you share and Block,
+  Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 
