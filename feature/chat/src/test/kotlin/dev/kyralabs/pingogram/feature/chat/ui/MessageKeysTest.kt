@@ -295,7 +295,7 @@ class MessageKeysTest {
     }
 
     @Test
-    fun `"Forwarded from" is a button that opens where the message comes from`() {
+    fun `Forwarded from is a button that opens where the message comes from`() {
         val source = ForwardSource.Chat(-300, messageId = 9)
         val bubble =
             groupBubble().copy(
