@@ -138,6 +138,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.ChatTranscripts
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.withTranscripts
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
@@ -376,6 +379,7 @@ class ChatViewModel internal constructor(
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
     private val appInfo: AppInfo = AppInfo(versionName = ""),
+    transcriptionRepositories: TranscriptionRepositories? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -419,6 +423,7 @@ class ChatViewModel internal constructor(
         giveawayRepository: GiveawayRepository,
         targetPreferences: TargetPreferences,
         appInfo: AppInfo,
+        transcriptionRepositories: TranscriptionRepositories,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -468,6 +473,7 @@ class ChatViewModel internal constructor(
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
         appInfo = appInfo,
+        transcriptionRepositories = transcriptionRepositories,
     )
 
     /**
@@ -925,6 +931,19 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    /** Voice message transcription on the device; none where tests leave it out. */
+    private val transcripts =
+        transcriptionRepositories?.let { repositories ->
+            ChatTranscripts(
+                chatId = chatId,
+                repositories = repositories,
+                history = history,
+                savedState = savedStateHandle,
+                scope = viewModelScope,
+                onEffect = { effectChannel.trySend(it) },
+            )
+        }
+
     private val polls =
         ChatPolls(
             chatId = chatId,
@@ -1240,7 +1259,9 @@ class ChatViewModel internal constructor(
                 state.withTranslations(translations)
             }.combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
-            .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
+            .combine(transcripts?.bubbles ?: flowOf(persistentMapOf())) { state, transcripts ->
+                state.withTranscripts(transcripts, canTranscribe = this.transcripts?.isAvailable == true)
+            }.combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
             .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
@@ -1326,6 +1347,7 @@ class ChatViewModel internal constructor(
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
             is SummaryEvent -> summaries.onEvent(event)
+            is TranscriptionEvent -> transcripts?.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
             is GiveawayEvent -> giveaways.onEvent(event)
@@ -1464,6 +1486,7 @@ class ChatViewModel internal constructor(
         views.setVisible(messageIds)
         pinned.setVisible(messageIds)
         translation.setVisible(messageIds)
+        transcripts?.onVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
         val messages =
             history.replayCache

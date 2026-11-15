@@ -71,6 +71,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
 import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -187,6 +188,7 @@ internal fun MessageBubbleRow(
                                 shortcuts = resources.shortcuts,
                                 uploads = uploads,
                                 onEvent = onEvent,
+                                canTranscribe = resources.canTranscribe,
                             )
                     }
                 },
@@ -303,6 +305,7 @@ private fun bubbleActions(
     shortcuts: MessageShortcuts,
     uploads: ImmutableMap<Long, MessageUpload>,
     onEvent: (ChatEvent) -> Unit,
+    canTranscribe: Boolean = false,
 ): List<CustomAccessibilityAction> {
     fun action(
         label: String,
@@ -328,6 +331,7 @@ private fun bubbleActions(
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val transcript = transcriptActions(resources, bubble, canTranscribe).map { (label, event) -> action(label, event) }
     val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
     val giveaway = giveawayActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
@@ -354,7 +358,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
+    } + original + transcript + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
@@ -398,7 +402,7 @@ private fun MessageBubble(
             }
 
             FrameKind.Bare -> {
-                BareBubble(bubble, style.colors, onEvent, modifier)
+                BareBubble(bubble, style.colors, onEvent, modifier, canTranscribe = resources.canTranscribe)
             }
 
             FrameKind.Media -> {
@@ -467,6 +471,7 @@ private fun PaddedBubble(
                             onEvent = onEvent,
                             uploads = uploads,
                             showsUpdateLink = resources.showsUpdateLink,
+                            canTranscribe = resources.canTranscribe,
                         )
                     }
                 },

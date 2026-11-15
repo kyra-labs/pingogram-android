@@ -763,6 +763,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   account's TDLib directory, which `AccountStorage` deletes with it; a `TdlibUpdateCache` only to delete them at logout;
   the demo's in memory). Whether others' messages are transcribed as they show, and whether a transcript said "On this
   phone" yet, are `TranscriptionSettingsRepository` (`DataStoreTranscriptionSettingsRepository`, the settings file).
+  `feature:chat`'s `ChatTranscripts` (a part of `ChatViewModel`, `transcription/`, given them through
+  `TranscriptionRepositories`) copies each bubble's `BubbleTranscript` into it (`withTranscripts`, as translations are)
+  and `ChatUiState.canTranscribe` into the bubbles' resources: a tap downloads the file at visible priority and
+  transcribes it, one message at a time; with the setting on, other people's voice and round video messages on screen
+  (`ChatEvent.MessagesVisible`) are transcribed once each, never asking for the permission. Which bubbles show their
+  text, hid it or show it whole are in the saved state.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
