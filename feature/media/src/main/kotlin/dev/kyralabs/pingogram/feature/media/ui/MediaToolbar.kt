@@ -50,7 +50,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Forward** where TDLib allows it ([MediaActions.canForward]; never protected content): the forward sheet;
  * - **Share** and **Save** where Telegram lets the content leave it ([MediaActions.canSave]);
  * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo ([photoFileId]) that may leave
- *   Telegram, "Copy" and "Make a sticker" (boards 14a, 14b); then, in a group of its own in `error`, "Delete" where
+ *   Telegram, "Copy" and "Make a sticker" (boards 14a, 14b), and for a video "Speed" ([speed], whose item opens the
+ *   speeds in the menu's place); then, in a group of its own in `error`, "Delete" where
  *   TDLib allows it ([MediaActions.canDelete]), which asks first (owner decision 2026-11-15, board 25: deleting is
  *   destructive and rare, so it leaves the toolbar).
  *
@@ -63,6 +64,7 @@ internal fun ViewerToolbar(
     actions: MediaActions,
     photoFileId: Int?,
     file: ItemFile?,
+    speed: Float?,
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,6 +102,7 @@ internal fun ViewerToolbar(
         MoreMenu(
             photoFileId = photoFileId?.takeIf { actions.canSave },
             canDelete = actions.canDelete,
+            speed = speed,
             copyEnabled = idle,
             copyPending = Pending(actions.pending == MediaAction.Copy, stringResource(R.string.media_copy_pending)),
             file = file,
@@ -118,12 +121,18 @@ internal fun ViewerToolbar(
 private fun MoreMenu(
     photoFileId: Int?,
     canDelete: Boolean,
+    speed: Float?,
     copyEnabled: Boolean,
     copyPending: Pending,
     file: ItemFile?,
     onEvent: (MediaViewerEvent) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var showsSpeeds by rememberSaveable { mutableStateOf(false) }
+    val close = {
+        expanded = false
+        showsSpeeds = false
+    }
     Box {
         ToolbarButton(
             icon = UiR.drawable.ic_more_vert,
@@ -132,14 +141,19 @@ private fun MoreMenu(
             pending = copyPending,
             file = file,
         )
-        DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
-            val groups = if (canDelete) 2 else 1
+        DropdownMenuPopup(expanded = expanded, onDismissRequest = close) {
             val choose = { event: MediaViewerEvent ->
-                expanded = false
+                close()
                 onEvent(event)
             }
+            if (showsSpeeds && speed != null) {
+                SpeedPage(speed, onBack = { showsSpeeds = false }, onPick = { choose(MediaViewerEvent.SetSpeed(it)) })
+                return@DropdownMenuPopup
+            }
+            val groups = if (canDelete) 2 else 1
             DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groups)) {
-                EverydayItems(photoFileId, copyEnabled, choose)
+                EverydayItems(photoFileId, copyEnabled, hasSpeed = speed != null, choose)
+                if (speed != null) SpeedItem(speed) { showsSpeeds = true }
             }
             if (canDelete) {
                 DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = groups)) {
@@ -161,9 +175,18 @@ private fun MoreMenu(
 private fun EverydayItems(
     photoFileId: Int?,
     copyEnabled: Boolean,
+    hasSpeed: Boolean,
     choose: (MediaViewerEvent) -> Unit,
 ) {
-    val count = if (photoFileId != null) PHOTO_MENU_SIZE else 1
+    // A video's "Speed" follows "Show in chat" in the same group; a photo has no speed.
+    val count =
+        if (photoFileId != null) {
+            PHOTO_MENU_SIZE
+        } else if (hasSpeed) {
+            2
+        } else {
+            1
+        }
     MenuItem(
         icon = UiR.drawable.ic_chat,
         label = stringResource(R.string.media_show_in_chat),
@@ -184,6 +207,42 @@ private fun EverydayItems(
             index = 2,
             count = count,
         ) { choose(MediaViewerEvent.MakeSticker(photoFileId)) }
+    }
+}
+
+/** "Speed", with the current [speed] at its end, after "Show in chat": it shows the speeds instead. */
+@Composable
+private fun SpeedItem(
+    speed: Float,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        onClick = onClick,
+        text = { Text(stringResource(R.string.media_speed)) },
+        shape = MenuDefaults.itemShape(1, 2).shape,
+        leadingIcon = { Icon(painter = painterResource(UiR.drawable.ic_tune), contentDescription = null) },
+        trailingContent = { Text(speedText(speed)) },
+    )
+}
+
+/** The speeds in More's place: "Speed" with a back arrow, which shows More's items again, then [SpeedItems]. */
+@Composable
+private fun SpeedPage(
+    speed: Float,
+    onBack: () -> Unit,
+    onPick: (Float) -> Unit,
+) {
+    val count = PlaybackSpeeds.size + 1
+    val back = stringResource(R.string.media_speed_back)
+    // The arrow names the item for screen readers: "Back to more options, Speed".
+    DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
+        DropdownMenuItem(
+            onClick = onBack,
+            text = { Text(stringResource(R.string.media_speed)) },
+            shape = MenuDefaults.itemShape(0, count).shape,
+            leadingIcon = { Icon(painterResource(UiR.drawable.ic_arrow_back), contentDescription = back) },
+        )
+        SpeedItems(current = speed, first = 1, count = count, onPick = onPick)
     }
 }
 
@@ -294,6 +353,7 @@ private fun ViewerToolbarPreview() {
             actions = MediaActions(canForward = true, canSave = true, canDelete = true),
             photoFileId = 1,
             file = null,
+            speed = null,
             onEvent = {},
         )
     }
