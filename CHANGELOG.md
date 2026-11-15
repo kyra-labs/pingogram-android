@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
 - Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
   a note.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and

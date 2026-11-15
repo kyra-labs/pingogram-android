@@ -466,6 +466,10 @@
     <!-- Opens the forward sheet, to send the message on to other chats. -->
     <string name="message_action_forward">Forward</string>
     <string name="message_action_bookmark">Bookmark</string>
+    <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
+    <string name="drop_title">Drop to send to %1$s</string>
+    <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
+    <string name="drop_files">Files. You can add a caption before sending.</string>
     <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
     <string name="bookmark_title">Bookmark</string>
     <string name="bookmark_tags">Tags</string>
