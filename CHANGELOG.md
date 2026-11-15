@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   entry counts its chats with unread messages, in a speech-bubble badge.
 
 ### Fixed
+- Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
+  italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
 - A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
   composer, and the conversation takes taps as soon as the media viewer starts closing instead of up to a second
   later.
