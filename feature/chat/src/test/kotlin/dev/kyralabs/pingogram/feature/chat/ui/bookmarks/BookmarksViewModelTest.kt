@@ -140,6 +140,70 @@ class BookmarksViewModelTest {
         }
 
     @Test
+    fun `search finds bookmarks by every word, in their chats, notes and tags, without accents`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.onEvent(BookmarksEvent.OpenSearch)
+
+            viewModel.onEvent(BookmarksEvent.Search("LOVELACE réad"))
+            assertEquals(listOf(100L), viewModel.content().items.map { it.messageId })
+
+            viewModel.onEvent(BookmarksEvent.Search("trips"))
+            assertEquals(listOf(200L), viewModel.content().items.map { it.messageId })
+
+            viewModel.onEvent(BookmarksEvent.Search("ideas nothing"))
+            assertTrue(viewModel.content().hasNoMatches)
+        }
+
+    @Test
+    fun `search keeps the tag filter, survives process death and closing it shows everything again`() =
+        runTest {
+            val handle = SavedStateHandle()
+            createViewModel(handle).run {
+                onEvent(BookmarksEvent.SelectTag(10))
+                onEvent(BookmarksEvent.OpenSearch)
+                onEvent(BookmarksEvent.Search("message"))
+            }
+            runCurrent()
+
+            val restored = createViewModel(handle)
+            assertEquals("message", restored.content().query)
+            assertEquals(listOf(100L), restored.content().items.map { it.messageId })
+
+            restored.onEvent(BookmarksEvent.SelectTag(null))
+            restored.onEvent(BookmarksEvent.CloseSearch)
+            assertEquals(null, restored.content().query)
+            assertEquals(3, restored.content().items.size)
+        }
+
+    @Test
+    fun `text typed while search is closed changes nothing`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(BookmarksEvent.Search("ada"))
+
+            assertEquals(null, viewModel.content().query)
+        }
+
+    @Test
+    fun `a card's edit opens its bookmark's sheet once, which a process death keeps without opening it again`() =
+        runTest {
+            val handle = SavedStateHandle()
+            val viewModel = createViewModel(handle)
+
+            viewModel.onEvent(BookmarksEvent.Edit(chatId = 1, messageId = 100))
+            assertEquals(BookmarkEditing(1, 100), viewModel.editing.value)
+
+            viewModel.onEvent(BookmarksEvent.EditorOpened)
+            assertEquals(BookmarkEditing(1, null), viewModel.editing.value)
+            assertEquals(BookmarkEditing(1, null), createViewModel(handle).editing.value)
+
+            viewModel.onEvent(BookmarksEvent.EditorClosed)
+            assertEquals(null, viewModel.editing.value)
+        }
+
+    @Test
     fun `a removed tag no longer filters`() =
         runTest {
             val viewModel = createViewModel()

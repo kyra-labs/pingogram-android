@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.bookmarks
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -39,14 +41,22 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -59,6 +69,10 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.BookmarkEvent
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchTopBar
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -105,6 +119,36 @@ internal fun BookmarksRoute(
         }
     }
     BookmarksScreen(state, viewModel::onEvent, onBack, modifier, onEditTags, snackbarHostState)
+    val editing by viewModel.editing.collectAsStateWithLifecycle()
+    editing?.let { BookmarkEditor(it, viewModel::onEvent, snackbarHostState) }
+}
+
+/**
+ * A card's "Edit tags" (board 34b): the bookmark's own sheet ([BookmarkSheetViewModel], keyed by its chat, as the
+ * conversation's), opened at its message once, telling the page when it closed; its snackbars go to the page's.
+ */
+@Composable
+private fun BookmarkEditor(
+    editing: BookmarkEditing,
+    onEvent: (BookmarksEvent) -> Unit,
+    snackbarHostState: SnackbarHostState,
+) {
+    val sheetViewModel =
+        hiltViewModel<BookmarkSheetViewModel, BookmarkSheetViewModel.Factory>(
+            key = "bookmarks-page-${editing.chatId}",
+        ) { it.create(editing.chatId) }
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(sheetViewModel, editing.openMessageId) {
+        val messageId = editing.openMessageId ?: return@LaunchedEffect
+        sheetViewModel.onEvent(BookmarkEvent.Open(messageId))
+        currentOnEvent(BookmarksEvent.EditorOpened)
+    }
+    LaunchedEffect(sheetViewModel) {
+        // Once shown, the sheet closing ends the editing.
+        sheetViewModel.sheet.dropWhile { it == null }.first { it == null }
+        currentOnEvent(BookmarksEvent.EditorClosed)
+    }
+    BookmarkSheetHost(sheetViewModel, snackbarHostState)
 }
 
 /**
@@ -123,27 +167,47 @@ internal fun BookmarksScreen(
     onEditTags: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    val content = state as? BookmarksUiState.Content
+    val isSearching = content?.query != null
+    // Only a tap on the search button opens the keyboard, not a rotation with search open.
+    var focusSearch by remember { mutableStateOf(false) }
+    BackHandler(enabled = isSearching) { onEvent(BookmarksEvent.CloseSearch) }
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.bookmarks_title),
-                        modifier = Modifier.semantics { heading() },
-                        style = MaterialTheme.typography.titleLargeEmphasized,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
-                        Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.bookmarks_back))
-                    }
-                },
-                actions = { EditTagsButton(onEditTags) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            )
+            if (isSearching) {
+                BookmarksSearchBar(content.query.orEmpty(), onEvent, focusSearch)
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.bookmarks_title),
+                            modifier = Modifier.semantics { heading() },
+                            style = MaterialTheme.typography.titleLargeEmphasized,
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
+                            Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.bookmarks_back))
+                        }
+                    },
+                    actions = {
+                        if (content != null) {
+                            SearchButton {
+                                focusSearch = true
+                                onEvent(BookmarksEvent.OpenSearch)
+                            }
+                        }
+                        EditTagsButton(onEditTags)
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        ),
+                )
+            }
         },
     ) { padding ->
         ContentSheet(innerPadding = padding) { contentPadding ->
@@ -177,11 +241,13 @@ private fun BookmarksList(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             item(key = FILTERS, contentType = FILTERS) { TagFilters(state, onEvent) }
+            if (state.hasNoMatches) item(key = NO_MATCHES, contentType = NO_MATCHES) { NoMatches() }
             items(state.items, key = { "${it.chatId}:${it.messageId}" }, contentType = { CARD }) { item ->
                 BookmarkCard(
                     item = item,
                     onOpen = { onEvent(BookmarksEvent.Open(item.chatId, item.messageId)) },
                     onRemove = { onEvent(BookmarksEvent.Remove(item.chatId, item.messageId)) },
+                    onEdit = { onEvent(BookmarksEvent.Edit(item.chatId, item.messageId)) },
                     modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
                 )
             }
@@ -228,6 +294,60 @@ private fun TagFilters(
     }
 }
 
+/**
+ * The search field in the top bar's place (board 34b): the conversation's search bar ([ChatSearchTopBar]), its text
+ * sent to the page as it changes; back closes search. It takes the focus where [focusOnShow].
+ */
+@Composable
+private fun BookmarksSearchBar(
+    query: String,
+    onEvent: (BookmarksEvent) -> Unit,
+    focusOnShow: Boolean,
+) {
+    val field = rememberSaveable(saver = TextFieldState.Saver) { TextFieldState(query) }
+    LaunchedEffect(field) {
+        snapshotFlow { field.text.toString() }.collect { onEvent(BookmarksEvent.Search(it)) }
+    }
+    ChatSearchTopBar(
+        query = field,
+        height = TopAppBarDefaults.TopAppBarExpandedHeight,
+        onClose = { onEvent(BookmarksEvent.CloseSearch) },
+        focusOnShow = focusOnShow,
+    )
+}
+
+/** What a search that found nothing says, as a polite live region. */
+@Composable
+private fun NoMatches() {
+    Text(
+        text = stringResource(R.string.bookmarks_no_matches),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.large)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyLarge,
+    )
+}
+
+/** "Search bookmarks" (board 34b): a `FilledTonalIconButton` with the search symbol and its tooltip. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.bookmarks_search)
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+    ) {
+        FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+            Icon(painterResource(UiR.drawable.ic_search), contentDescription = label)
+        }
+    }
+}
+
 /** "Edit tags" (board 34b): a `FilledTonalIconButton` with the label symbol and its tooltip. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -259,4 +379,5 @@ private fun BookmarksEmpty() {
 
 private const val FILTERS = "filters"
 private const val CARD = "card"
+private const val NO_MATCHES = "noMatches"
 private const val ALL = "all"

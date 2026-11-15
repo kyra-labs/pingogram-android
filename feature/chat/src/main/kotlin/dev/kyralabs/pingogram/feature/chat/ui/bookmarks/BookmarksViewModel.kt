@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -44,7 +45,8 @@ import javax.inject.Inject
  * The Bookmarks page (`docs/DESIGN_SYSTEM.md` §6 "Bookmarks", the owner's board 34b), kept on this phone
  * ([BookmarkRepository]): every bookmark, the newest first (owner decision 2026-11-15), filtered by one tag (in the
  * saved state), each with its chat as TDLib knows it ([ChatRepository], asked for where it does not) and what the
- * message said when it was saved. Removing offers "Undo", which saves the bookmark back as it was.
+ * message said when it was saved. Removing offers "Undo", which saves the bookmark back as it was; a card's "Edit tags"
+ * opens the bookmark's own sheet ([editing], its chat in the saved state).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -66,6 +68,9 @@ class BookmarksViewModel internal constructor(
     ) : this(savedStateHandle, bookmarks, chats, BookmarkTimes(clock, timePatterns, Locale::getDefault), dispatcher)
 
     private val selectedTag = savedStateHandle.getStateFlow(KEY_TAG, NO_TAG)
+    private val query = savedStateHandle.getStateFlow<String?>(KEY_QUERY, null)
+    private val editedChat = savedStateHandle.getStateFlow(KEY_EDITING, NO_CHAT)
+    private val toOpen = MutableStateFlow<Long?>(null)
     private var removed: Bookmark? = null
     private val askedChats = mutableSetOf<Long>()
 
@@ -87,16 +92,23 @@ class BookmarksViewModel internal constructor(
             }
 
     val uiState: StateFlow<BookmarksUiState> =
-        combine(bookmarks.bookmarks, bookmarks.tags, chatsOfBookmarks, selectedTag, times.minutes) {
-            all,
-            tags,
-            known,
-            selected,
-            now,
-            ->
-            stateOf(all, tags, known, selected.takeIf { it != NO_TAG && tags.any { tag -> tag.id == it } }, now)
+        combine(
+            bookmarks.bookmarks,
+            bookmarks.tags,
+            chatsOfBookmarks,
+            combine(selectedTag, query, ::Pair),
+            times.minutes,
+        ) { all, tags, known, (selected, words), now ->
+            val tag = selected.takeIf { it != NO_TAG && tags.any { tag -> tag.id == it } }
+            stateOf(all, tags, known, Shown(tag, words), now)
         }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BookmarksUiState.Loading)
+
+    /** The bookmark being edited in its sheet, else null. */
+    val editing: StateFlow<BookmarkEditing?> =
+        combine(editedChat, toOpen) { chatId, messageId ->
+            chatId.takeIf { it != NO_CHAT }?.let { BookmarkEditing(it, messageId) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun onEvent(event: BookmarksEvent) {
         when (event) {
@@ -104,6 +116,12 @@ class BookmarksViewModel internal constructor(
             is BookmarksEvent.Open -> effectChannel.trySend(BookmarksEffect.OpenMessage(event.chatId, event.messageId))
             is BookmarksEvent.Remove -> remove(event.chatId, event.messageId)
             BookmarksEvent.UndoRemove -> undo()
+            BookmarksEvent.OpenSearch -> savedStateHandle[KEY_QUERY] = query.value.orEmpty()
+            is BookmarksEvent.Search -> if (query.value != null) savedStateHandle[KEY_QUERY] = event.query
+            BookmarksEvent.CloseSearch -> savedStateHandle[KEY_QUERY] = null
+            is BookmarksEvent.Edit -> edit(event.chatId, event.messageId)
+            BookmarksEvent.EditorOpened -> toOpen.value = null
+            BookmarksEvent.EditorClosed -> savedStateHandle[KEY_EDITING] = NO_CHAT
         }
     }
 
@@ -120,6 +138,14 @@ class BookmarksViewModel internal constructor(
                 }
             effectChannel.trySend(effect)
         }
+    }
+
+    private fun edit(
+        chatId: Long,
+        messageId: Long,
+    ) {
+        toOpen.value = messageId
+        savedStateHandle[KEY_EDITING] = chatId
     }
 
     private fun undo() {
@@ -139,21 +165,25 @@ class BookmarksViewModel internal constructor(
         all: List<Bookmark>,
         tags: List<BookmarkTag>,
         known: Map<Long, Chat>,
-        selected: Long?,
+        shown: Shown,
         now: Instant,
     ): BookmarksUiState {
+        val selected = shown.tagId
         if (all.isEmpty()) return BookmarksUiState.Empty
         val formatter = times.formatter()
         val filters =
             listOf(BookmarkFilter(null, "", color = 0, count = all.size)) +
                 tags.map { tag -> BookmarkFilter(tag.id, tag.name, tag.color, all.count { tag.id in it.tagIds }) }
         val byId = tags.associateBy { it.id }
-        val shown = if (selected == null) all else all.filter { selected in it.tagIds }
+        val tagged = if (selected == null) all else all.filter { selected in it.tagIds }
+        val search = BookmarkSearch.of(shown.query.orEmpty(), times.locale())
         return BookmarksUiState.Content(
             filters = filters.toImmutableList(),
             selectedTagId = selected,
+            query = shown.query,
             items =
-                shown
+                tagged
+                    .filter { bookmark -> search.matches(bookmark, known[bookmark.chatId], byId) }
                     .map { bookmark ->
                         val chat = known[bookmark.chatId]
                         BookmarkItem(
@@ -182,10 +212,19 @@ class BookmarksViewModel internal constructor(
 
     private companion object {
         const val KEY_TAG = "bookmarks.tag"
+        const val KEY_QUERY = "bookmarks.query"
+        const val KEY_EDITING = "bookmarks.editing"
+        const val NO_CHAT = 0L
         const val NO_TAG = 0L
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+/** What the page lets through: one tag ([tagId], null for all) and the search's words ([query], null while closed). */
+private data class Shown(
+    val tagId: Long?,
+    val query: String?,
+)
 
 /** The avatar's shape of a bookmark's chat, by its kind (a circle while TDLib does not know it). */
 private fun Chat?.avatarShape(): AvatarShape {
@@ -207,6 +246,9 @@ internal class BookmarkTimes(
 
     /** The minute, then each new one. */
     val minutes: Flow<Instant> get() = clock.minutes
+
+    /** The reader's language now. */
+    fun locale(): Locale = locale.invoke()
 
     fun formatter(): ChatTimeFormatter {
         val zone = clock.zone()
