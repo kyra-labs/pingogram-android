@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -224,7 +225,12 @@ class ReminderSheetViewModel internal constructor(
                 }
             }
             preview.value =
-                id to LoadedPreview(name(message.sender), messagePreviewText(message, users.myUserId.value, name))
+                // The sender only in groups: in a private chat or a channel the chat's name already says who wrote.
+                id to
+                LoadedPreview(
+                    sender = name(message.sender).takeIf { chat?.type.isGroup() },
+                    text = messagePreviewText(message, users.myUserId.value, name),
+                )
         }
     }
 
@@ -319,3 +325,5 @@ internal data class LoadedPreview(
     val sender: UiText?,
     val text: UiText,
 )
+
+private fun ChatType?.isGroup(): Boolean = this is ChatType.BasicGroup || (this is ChatType.Supergroup && !isChannel)

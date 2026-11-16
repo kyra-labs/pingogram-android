@@ -193,7 +193,7 @@ internal fun MessageBubbleRow(
                                 uploads = uploads,
                                 onEvent = onEvent,
                                 canTranscribe = resources.canTranscribe,
-                            ) + reminderActions(strings, bubble.id, reminder, onEvent)
+                            ) + reminderActions(strings, bubble, reminder, resources.shortcuts, onEvent)
                     }
                 },
         verticalAlignment = Alignment.CenterVertically,

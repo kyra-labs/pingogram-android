@@ -46,7 +46,8 @@ internal fun FocusPillChip(
         label = {
             Text(
                 text = label,
-                maxLines = 1,
+                // Two lines at large font scales (board 31): the header makes room for the pill as it measures.
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelLargeEmphasized,
             )

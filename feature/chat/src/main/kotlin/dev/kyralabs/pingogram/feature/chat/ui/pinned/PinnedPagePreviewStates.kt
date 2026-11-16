@@ -41,6 +41,7 @@ internal object PinnedPagePreviewData {
         text: String,
         file: PinnedFile? = null,
         link: PinnedLink? = null,
+        clip: PinnedClip? = null,
         bold: Int = 0,
     ) = PinnedCard(
         messageId = id,
@@ -63,6 +64,7 @@ internal object PinnedPagePreviewData {
             ),
         file = file,
         link = link,
+        clip = clip,
     )
 
     val cards =
@@ -85,6 +87,15 @@ internal object PinnedPagePreviewData {
                 "Nov 12, 6:05 PM",
                 "Debug build for testers",
                 file = PinnedFile("pingogram-2.2.0-arm64-v8a.apk", 52_000_000, "APK"),
+            ),
+            card(
+                20,
+                20,
+                "Riya Sharma",
+                1,
+                "Nov 8, 4:12 PM",
+                "How the floating folder bar moves",
+                clip = PinnedClip(fileId = 0, width = 1280, height = 720, duration = 42),
             ),
             card(
                 21,
