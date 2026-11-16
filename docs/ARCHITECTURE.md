@@ -678,7 +678,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
   phone. `feature:settings`' `KeywordAlertsRoute` (`KeywordAlertsViewModel`: the words, the empty page's suggestions
   from `ProfileRepository.editableProfile`, read on the phone, and the folders being chosen in saved state) is a page
-  of Settings home's "On this phone" and of Settings → Notifications.
+  of Settings home's "On this phone" and of Settings → Notifications. The matches are the account's:
+  `KeywordHitRepository` (`TdlibKeywordHitRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of
+  `updateNewMessage`) matches each new message someone else sent, in the chats the settings look at, as TDLib announces
+  it while Pingogram is connected, keeps the last week's matches in `keyword_hits.txt` of the account's TDLib directory
+  (deleted at logout; the demo's in memory) and announces each with its text (`alerts`, never written or logged).
+  `core:notifications`' `KeywordAlertNotifier` (started by `PingogramApplication`) posts those of muted chats in the
+  `KeywordAlerts` channel while "Alert even when the chat is muted" is on, never for a locked chat or the chat on screen,
+  and cancels each once its message is read.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
