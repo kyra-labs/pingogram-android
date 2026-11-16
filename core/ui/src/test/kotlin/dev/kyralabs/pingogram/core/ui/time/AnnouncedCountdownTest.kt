@@ -16,4 +16,12 @@ class AnnouncedCountdownTest {
     fun `zero and longer times are left to durationText`() {
         assertEquals(listOf(0L, 60L, 299L), listOf(0L, 60L, 299L).map(::announcedCountdownSeconds))
     }
+
+    @Test
+    fun `once a minute, announcements round up to whole minutes`() {
+        assertEquals(
+            listOf(0L, 60L, 60L, 120L, 300L),
+            listOf(0L, 1L, 60L, 61L, 299L).map(::announcedEveryMinute),
+        )
+    }
 }

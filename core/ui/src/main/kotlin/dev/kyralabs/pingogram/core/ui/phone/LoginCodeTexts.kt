@@ -107,3 +107,30 @@ fun loginCodeResendText(type: AuthCodeType): String =
             stringResource(R.string.login_code_resend_fragment)
         }
     }
+
+/**
+ * The resend countdown by [type], the next way Telegram offers ("Resend code by SMS in 0:42", board 23d), [time] being
+ * the time left as shown or spoken; the plain "You can get a new code in …" for a way without a wording of its own.
+ */
+@Composable
+fun loginCodeResendInText(
+    type: AuthCodeType,
+    time: String,
+): String =
+    when (type) {
+        is AuthCodeType.Sms, is AuthCodeType.SmsWord, is AuthCodeType.SmsPhrase, is AuthCodeType.Firebase -> {
+            stringResource(R.string.login_code_resend_sms_in, time)
+        }
+
+        is AuthCodeType.Call, is AuthCodeType.FlashCall, is AuthCodeType.MissedCall -> {
+            stringResource(R.string.login_code_resend_call_in, time)
+        }
+
+        is AuthCodeType.TelegramMessage -> {
+            stringResource(R.string.login_code_resend_telegram_in, time)
+        }
+
+        is AuthCodeType.Fragment -> {
+            stringResource(R.string.login_code_resend_in, time)
+        }
+    }

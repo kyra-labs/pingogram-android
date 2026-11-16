@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -36,6 +37,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -112,6 +114,25 @@ class CatchUpViewModelTest {
             assertEquals(3, viewModel.cards.total)
             assertEquals(3L, viewModel.cards.next?.chatId)
             assertEquals(listOf(4L, 3L), messages.loadedNewest)
+        }
+
+    @Test
+    fun `offers reply in place only where the user may write`() =
+        runTest {
+            chats.setChats(
+                ChatListType.Main,
+                unread(2, at = 20),
+                unread(3, at = 10).copy(permissions = ChatPermissions.None),
+            )
+
+            val viewModel = createViewModel()
+            assertTrue(viewModel.cards.current.canReply)
+
+            viewModel.onEvent(CatchUpEvent.Skip)
+            runCurrent()
+
+            assertEquals(3L, viewModel.cards.current.chatId)
+            assertFalse(viewModel.cards.current.canReply)
         }
 
     @Test
