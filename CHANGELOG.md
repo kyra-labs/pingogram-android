@@ -90,6 +90,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
+  Telegram", and a poll's "Retract vote" the undo symbol.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
