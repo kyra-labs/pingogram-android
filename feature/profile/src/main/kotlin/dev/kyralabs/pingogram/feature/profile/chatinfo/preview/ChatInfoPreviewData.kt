@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
@@ -94,6 +95,7 @@ object ChatInfoPreviewData {
                     photo = null,
                     status = UiText.Plain("Public group · 1,024 members"),
                     isVerified = true,
+                    avatarShape = AvatarShape.Group,
                 ),
             kind = GroupKind.Supergroup,
             description =
@@ -107,7 +109,7 @@ object ChatInfoPreviewData {
             administration =
                 ChatAdministration(
                     canEditInfo = true,
-                    canEditPermissions = true,
+                    allowedPermissions = 11,
                     administratorCount = 3,
                     canManageInviteLinks = true,
                     bannedCount = 2,
@@ -124,6 +126,7 @@ object ChatInfoPreviewData {
                     name = UiText.Plain("Compose Weekly"),
                     photo = null,
                     status = UiText.Plain("Private channel · 18,302 subscribers"),
+                    avatarShape = AvatarShape.Channel,
                 ),
             kind = GroupKind.Channel,
             description = FormattedText("What changed in Jetpack Compose this week.", persistentListOf()),
