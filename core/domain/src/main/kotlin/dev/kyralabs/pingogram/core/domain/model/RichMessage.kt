@@ -314,7 +314,7 @@ private class FormattedTextJoiner {
             RichBlock.Divider,
             RichBlock.Unsupported,
             -> {
-                Unit
+                // Nothing to read: these blocks carry no text of their own.
             }
         }
     }
