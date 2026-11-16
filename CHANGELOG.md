@@ -90,6 +90,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
+  for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
+  its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
