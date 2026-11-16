@@ -303,7 +303,9 @@ class GroupCallViewModel
                     confirming.value = true
                 }
 
-                microphone.isGranted() -> {
+                // Watching a live story asks for no microphone (owner decision, #611): the viewer joins muted and
+                // cannot speak in it, so the engine never opens the microphone.
+                action == GroupCallActivity.ACTION_WATCH_LIVE_STORY || microphone.isGranted() -> {
                     join()
                 }
 
