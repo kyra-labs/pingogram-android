@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui.catchup
 
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -8,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.WriteAccess
+import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
@@ -16,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.text.shortName
+import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
 import dev.kyralabs.pingogram.feature.chats.ui.isChannel
@@ -51,10 +55,10 @@ internal class CatchUpSources
                 chatRepository.chat(chatId),
                 messageRepository.history(chatId),
                 userRepository.users,
-                groupRepository.supergroups,
+                combine(groupRepository.basicGroups, groupRepository.supergroups, ::CatchUpGroups),
                 minutes,
-            ) { chat, history, users, supergroups, now ->
-                chat?.let { mapper.card(it, history, users, supergroups, now, showsEarlier) }
+            ) { chat, history, users, groups, now ->
+                chat?.let { mapper.card(it, history, users, groups, now, showsEarlier) }
             }
     }
 
@@ -75,7 +79,7 @@ internal class CatchUpCardMapper(
         chat: Chat,
         history: ChatHistory,
         users: Map<Long, User>,
-        supergroups: Map<Long, Supergroup>,
+        groups: CatchUpGroups,
         now: Instant,
         showsEarlier: Boolean,
     ): CatchUpCard {
@@ -85,7 +89,8 @@ internal class CatchUpCardMapper(
         val shown = unread.take(if (showsEarlier) EXPANDED_MESSAGES else SHOWN_MESSAGES)
         val loading = history.messages.isEmpty() && !history.reachedStart
         val name = senderNames(chat, users)
-        val supergroup = (chat.type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] }
+        val supergroup = (chat.type as? ChatType.Supergroup)?.let { groups.supergroups[it.supergroupId] }
+        val hue = senderHues(users)
         return CatchUpCard(
             chatId = chat.id,
             title = chat.title,
@@ -103,7 +108,7 @@ internal class CatchUpCardMapper(
                 if (loading) {
                     null
                 } else {
-                    shown.asReversed().map { it.toCardMessage(chat, name, time, now) }.toImmutableList()
+                    shown.asReversed().map { it.toCardMessage(chat, name, hue, time, now) }.toImmutableList()
                 },
             earlierCount =
                 if (showsEarlier) {
@@ -119,13 +124,16 @@ internal class CatchUpCardMapper(
             replyTo =
                 (unread.firstOrNull { it.containsUnreadMention } ?: unread.firstOrNull())
                     ?.takeUnless { loading }
-                    ?.toCardMessage(chat, name, time, now, withSender = true),
+                    ?.toCardMessage(chat, name, hue, time, now, withSender = true),
+            canReply = chat.writeAccess(users, groups) == WriteAccess.Allowed,
         )
     }
 
+    @Suppress("LongParameterList") // A message's line takes the chat's and the formatter's parts.
     private fun Message.toCardMessage(
         chat: Chat,
         name: (MessageSender) -> UiText?,
+        hue: (MessageSender) -> Int,
         time: ChatListTimeFormatter,
         now: Instant,
         withSender: Boolean = false,
@@ -134,7 +142,35 @@ internal class CatchUpCardMapper(
         sender = if (chat.isGroup || withSender) name(sender) else null,
         text = messagePreviewText(this, myUserId = null, name = name),
         time = time.format(date, now),
+        senderHue = hue(sender),
     )
+
+    /** A sender's hue (§13.6): their Telegram accent color, or their id without one. */
+    private fun senderHues(users: Map<Long, User>): (MessageSender) -> Int =
+        { sender ->
+            when (sender) {
+                is MessageSender.User -> SenderHues.indexOf(users[sender.userId]?.accentColorId ?: -1, sender.userId)
+                is MessageSender.Chat -> SenderHues.indexOf(-1, sender.chatId)
+            }
+        }
+
+    private fun Chat.writeAccess(
+        users: Map<Long, User>,
+        groups: CatchUpGroups,
+    ): WriteAccess {
+        val type = type
+        val user =
+            when (type) {
+                is ChatType.Private -> users[type.userId]
+                is ChatType.Secret -> users[type.userId]
+                else -> null
+            }
+        return writeAccess(
+            user = user,
+            basicGroup = (type as? ChatType.BasicGroup)?.let { groups.basicGroups[it.basicGroupId] },
+            supergroup = (type as? ChatType.Supergroup)?.let { groups.supergroups[it.supergroupId] },
+        )
+    }
 
     private fun senderNames(
         chat: Chat,
@@ -160,3 +196,9 @@ internal class CatchUpCardMapper(
         const val EXPANDED_MESSAGES = 30
     }
 }
+
+/** The groups a card needs: whether the user may write in its chat, and a forum's avatar shape. */
+internal data class CatchUpGroups(
+    val basicGroups: Map<Long, BasicGroup> = emptyMap(),
+    val supergroups: Map<Long, Supergroup> = emptyMap(),
+)

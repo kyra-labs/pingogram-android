@@ -1,6 +1,8 @@
 // Fakes (FakeTdlibClient), fixtures and test rules, used only from test source sets.
 plugins {
     alias(libs.plugins.pingogram.android.library)
+    // Kotlin warnings fail the build here (docs/audit/v1-readiness.md).
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 dependencies {

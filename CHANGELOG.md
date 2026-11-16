@@ -11,6 +11,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
 - Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
   no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
@@ -93,6 +95,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
+  have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
+  everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
+  stack one under the other.
 - Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
   for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
   its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
