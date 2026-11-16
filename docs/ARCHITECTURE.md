@@ -254,7 +254,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatListViewModel`, so a change recomposes the header alone) gives the Chats header its pill
   (`FocusRepository.showsInChatList`, handed down as `LocalChatListFocus`) and runs the switcher it opens (open in saved
   state); its "Manage" opens `FocusRoute` through `ChatListHeaderActions.openFocus`. The profiles' symbols and shapes
-  are `core:ui`'s `FocusBadge`, shared by both.
+  are `core:ui`'s `FocusBadge`, shared by both. The editor's "Also allow" chats and their picker are
+  `FocusAllowedChats`, a part of `FocusEditViewModel`. Quick Settings: `:app`'s `tile/` `FocusTileService` follows the
+  profiles while Quick Settings shows it (`FocusTileState`), and a tap runs `core:domain`'s `FocusToggle` (provided by
+  `FocusModule`: the last used profile on, or off), or opens Settings → Focus while there is no profile; its long press
+  (Android's `QS_TILE_PREFERENCES`, which `MainActivity` takes, `FocusTile.pageOf`) asks `feature:chats`'
+  `FocusSwitcherRequests` (a singleton, in memory) for the switcher and has the shell show the Chats tab, as a locked
+  chat's notification opens Locked chats (`MainActivityViewModel.pageToOpen`, `OpenPageEffect`). `NewMessageTileService`
+  sends the app shortcut's `tg://new` to `MainActivity`.
 - **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
   (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
   share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one

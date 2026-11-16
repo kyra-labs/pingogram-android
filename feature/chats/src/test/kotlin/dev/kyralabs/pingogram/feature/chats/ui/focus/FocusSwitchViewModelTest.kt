@@ -61,6 +61,7 @@ class FocusSwitchViewModelTest {
     private val repository = FakeFocusRepository(listOf(work, sleep, weekend))
     private val clock = FakeWallClock(now)
     private val savedStateHandle = SavedStateHandle()
+    private val requests = FocusSwitcherRequests()
 
     private fun at(
         day: Int,
@@ -79,7 +80,7 @@ class FocusSwitchViewModelTest {
     }
 
     private fun TestScope.viewModel(): FocusSwitchViewModel {
-        val viewModel = FocusSwitchViewModel(repository, clock, savedStateHandle)
+        val viewModel = FocusSwitchViewModel(repository, clock, savedStateHandle, requests)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
@@ -233,5 +234,23 @@ class FocusSwitchViewModelTest {
                     .uiState.value.profiles[0]
                     .status,
             )
+        }
+
+    @Test
+    fun `the tile's long press opens the switcher once`() =
+        runTest {
+            requests.request()
+            val viewModel = viewModel()
+
+            assertTrue(viewModel.uiState.value.switcherOpen)
+            assertFalse(requests.requested.value)
+
+            viewModel.onEvent(FocusSwitchEvent.Close)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.switcherOpen)
+
+            requests.request()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.switcherOpen)
         }
 }
