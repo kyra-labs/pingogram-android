@@ -72,6 +72,8 @@ data class CatchUpCard(
     val earlierCount: Int = 0,
     /** What "Reply" answers: the newest message that mentions the user, else the newest unread one. */
     val replyTo: CatchUpMessage? = null,
+    /** The user may write in the chat, so "Reply in place" shows. */
+    val canReply: Boolean = true,
 )
 
 /** The reply field on a card: [isSending] while Telegram takes the reply. */
@@ -80,13 +82,17 @@ data class CatchUpReplyState(
     val isSending: Boolean = false,
 )
 
-/** A message on a card: who sent it (null in a private chat or a channel), what it says in one line, and when. */
+/**
+ * A message on a card: who sent it (null in a private chat or a channel) and their hue ([senderHue], `SenderHues`),
+ * what it says in one line, and when.
+ */
 @Immutable
 data class CatchUpMessage(
     val id: Long,
     val sender: UiText?,
     val text: UiText,
     val time: String,
+    val senderHue: Int = 0,
 )
 
 /** What the screen reads from Catch-up. */

@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
 - Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
   no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
