@@ -92,6 +92,7 @@ data class PinnedCard(
     val text: FormattedText,
     val kind: UiText? = null,
     val photo: Photo? = null,
+    val clip: PinnedClip? = null,
     val file: PinnedFile? = null,
     val link: PinnedLink? = null,
     val canCopy: Boolean = true,
@@ -109,6 +110,20 @@ data class PinnedFile(
 ) {
     override fun toString() = "PinnedFile(size=$size, …)"
 }
+
+/**
+ * A pinned video, GIF or round video: its still picture (file [fileId], [width] × [height]), its length in [duration]
+ * seconds, and whether it is a GIF ([isGif], labelled "GIF" rather than its length) or a round video ([isRound]).
+ */
+@Immutable
+data class PinnedClip(
+    val fileId: Int,
+    val width: Int,
+    val height: Int,
+    val duration: Int,
+    val isGif: Boolean = false,
+    val isRound: Boolean = false,
+)
 
 /** A pinned message's link preview: its [host] ("play.google.com"), [title] and [description]; each may be empty. */
 @Immutable

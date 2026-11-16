@@ -77,6 +77,7 @@ internal fun PinnedCardItem(
         ) {
             CardHeader(card)
             card.photo?.let { CardPhoto(it) }
+            card.clip?.let { CardClip(it) }
             CardText(card)
             card.file?.let { CardFile(it) }
             card.link?.let { CardLink(it) }
@@ -187,41 +188,6 @@ private fun CardText(card: PinnedCard) {
     }
 }
 
-/** The photo as wide as the card, as tall as its aspect ratio (at most `mediaMaxHeight`), `large` corners. */
-@Composable
-private fun CardPhoto(photo: Photo) {
-    val sizePx = with(LocalDensity.current) { MaterialTheme.sizes.mediaMaxWidth.roundToPx() }
-    val best = remember(photo, sizePx) { photo.sizes.firstOrNull { it.width >= sizePx } ?: photo.sizes.lastOrNull() }
-    val ratio = best?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: 1f
-    val context = LocalPlatformContext.current
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(
-                    max = MaterialTheme.sizes.mediaMaxHeight,
-                ).aspectRatio(ratio)
-                .clip(MaterialTheme.shapes.large),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-    ) {
-        best?.let { size ->
-            AsyncImage(
-                model =
-                    remember(context, size.file.id, sizePx) {
-                        ImageRequest
-                            .Builder(context)
-                            .data(TdlibFileImage(size.file.id))
-                            .size(sizePx)
-                            .build()
-                    },
-                contentDescription = stringResource(UiR.string.preview_photo),
-                contentScale = ContentScale.Crop,
-                colorFilter = MaterialTheme.pingogramColors.mediaColorFilter,
-            )
-        }
-    }
-}
-
 /** A file: its icon on a `primaryContainer` tile, its name over its size and kind, on the card's inner container. */
 @Composable
 private fun CardFile(file: PinnedFile) {
@@ -247,7 +213,7 @@ private fun CardFile(file: PinnedFile) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painterResource(UiR.drawable.ic_description),
+                painterResource(UiR.drawable.ic_download),
                 contentDescription = null,
                 tint = colors.onPrimaryContainer,
             )
