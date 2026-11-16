@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -34,6 +35,7 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -109,7 +111,7 @@ internal fun ViewerTopBar(
         navigationIcon = {
             IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(
-                    painter = painterResource(UiR.drawable.ic_arrow_back),
+                    painter = painterResource(UiR.drawable.ic_close),
                     contentDescription = stringResource(R.string.media_back),
                 )
             }
@@ -210,20 +212,23 @@ internal fun ViewerBottomBar(
 }
 
 /**
- * The caption with its formatting (links open, spoilers show when tapped), at most [COLLAPSED_LINES] lines; tapping
- * it shows all of it, scrolling within about [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and tapping again shows
- * less: a button for screen readers, with its expand or collapse action.
- * It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts collapsed.
- * The stories viewer shows its captions with it too.
+ * The caption with its formatting (links open, spoilers show when tapped), at most [collapsedLines] lines, followed by
+ * "Show more" while it is cut (board 25); tapping it or the caption shows all of it, scrolling within about
+ * [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and "Show less" (or the caption again) shows less. Screen readers get
+ * the caption as a button with its expand or collapse action; the text button is the same action for sight, hidden
+ * from them. It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts
+ * collapsed. The stories viewer shows its captions with it too.
  */
 @Composable
 internal fun ExpandableCaption(
     caption: FormattedText,
     key: Long,
     modifier: Modifier = Modifier,
+    collapsedLines: Int = COLLAPSED_LINES,
 ) {
     var expanded by rememberSaveable(key) { mutableStateOf(false) }
     var spoilersRevealed by rememberSaveable(key) { mutableStateOf(false) }
+    var cut by remember(key) { mutableStateOf(false) }
     val styles = rememberFormattedTextStyles()
     val text =
         remember(caption, styles, spoilersRevealed) {
@@ -235,137 +240,44 @@ internal fun ExpandableCaption(
                 .toDp()
         }
     val label = stringResource(if (expanded) R.string.media_caption_collapse else R.string.media_caption_expand)
-    Text(
-        text = text,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
-                .heightIn(max = windowHeight * EXPANDED_MAX_HEIGHT_FRACTION)
-                .verticalScroll(rememberScrollState(), enabled = expanded)
-                .clickable(onClickLabel = label, role = Role.Button) { expanded = !expanded }
-                // Screen readers get its state as the expand or collapse action.
-                .semantics {
-                    if (expanded) {
-                        collapse {
-                            expanded = false
-                            true
-                        }
-                    } else {
-                        expand {
-                            expanded = true
-                            true
-                        }
-                    }
-                },
-        maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_LINES,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodyMedium.userContent,
-    )
-}
-
-/**
- * Seek the current video (`REQUIREMENTS.md` FR-C10, board 25; its play or pause and ±10 s are in the middle,
- * [VideoCenterControls]): the time played, an expressive [Slider] and the length, left to right in every language, then
- * the speed chip ([SpeedChip]) while the speed is not 1×, mute and picture-in-picture. The slider follows the playback
- * in its layout and draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it;
- * letting go seeks there. Its inactive track shows in `outline` how far the player has the video
- * ([VideoPlayback.buffered], read in the draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`).
- * Screen readers hear it as "0:48 of 2:31" and move it 10 s at a time. The times recompose only when the second
- * changes.
- */
-@Composable
-internal fun VideoControls(
-    playback: VideoPlayback,
-    durationSeconds: Int,
-    onEvent: (MediaViewerEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    canPictureInPicture: Boolean = false,
-) {
-    val sliderState = remember(playback.messageId) { SliderState(value = playback.progress()) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val touching by rememberUpdatedState(sliderState.isDragging || pressed)
-    val progress = playback.progress
-    LaunchedEffect(sliderState, progress) {
-        snapshotFlow { progress() }.collect { fraction -> if (!touching) sliderState.value = fraction }
-    }
-    val played by remember(sliderState, durationSeconds) {
-        derivedStateOf { (sliderState.value * durationSeconds).toInt() }
-    }
-    val locale = LocalConfiguration.current.locales[0]
-    val seekLabel = stringResource(R.string.media_seek)
-    val seekState =
-        stringResource(
-            R.string.media_seek_state,
-            formatDuration(played, locale),
-            formatDuration(durationSeconds, locale),
-        )
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Media timelines fill left to right in every language (board 25).
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TimeText(formatDuration(played, locale))
-                Slider(
-                    state = sliderState,
-                    onValueChange = { sliderState.value = it },
-                    modifier =
-                        Modifier.weight(1f).clearAndSetSemantics {
-                            contentDescription = seekLabel
-                            stateDescription = seekState
-                            progressBarRangeInfo = ProgressBarRangeInfo(sliderState.value, 0f..1f)
-                            // Screen readers move it 10 s at a time, as "Back" and "Forward 10 seconds" do.
-                            setProgress { target ->
-                                val step = if (target >= sliderState.value) SEEK_STEP_SECONDS else -SEEK_STEP_SECONDS
-                                onEvent(MediaViewerEvent.SeekBy(step))
+    Column(modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())) {
+        Text(
+            text = text,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = windowHeight * EXPANDED_MAX_HEIGHT_FRACTION)
+                    .verticalScroll(rememberScrollState(), enabled = expanded)
+                    .clickable(onClickLabel = label, role = Role.Button) { expanded = !expanded }
+                    // Screen readers get its state as the expand or collapse action.
+                    .semantics {
+                        if (expanded) {
+                            collapse {
+                                expanded = false
                                 true
                             }
-                        },
-                    onValueChangeFinished = { onEvent(MediaViewerEvent.Seek(sliderState.value)) },
-                    interactionSource = interactionSource,
-                    track = { state -> BufferedTrack(state, playback.buffered) },
-                )
-                TimeText(formatDuration(durationSeconds, locale))
+                        } else if (cut) {
+                            expand {
+                                expanded = true
+                                true
+                            }
+                        }
+                    },
+            maxLines = if (expanded) Int.MAX_VALUE else collapsedLines,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { if (!expanded) cut = it.hasVisualOverflow },
+            style = MaterialTheme.typography.bodyMedium.userContent,
+        )
+        if (cut || expanded) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.clearAndSetSemantics {},
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(if (expanded) R.string.media_caption_less else R.string.media_caption_more))
             }
         }
-        if (playback.speed != 1f) SpeedChip(playback.speed) { onEvent(MediaViewerEvent.SetSpeed(it)) }
-        MuteButton(playback.isMuted) { onEvent(MediaViewerEvent.SetMuted(!playback.isMuted)) }
-        if (canPictureInPicture) PictureInPictureButton(onClick = { onEvent(MediaViewerEvent.PictureInPicture) })
     }
-}
-
-/** Picture-in-picture, an icon button named for screen readers and in a [PlainTooltip] on a long press or hover. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PictureInPictureButton(onClick: () -> Unit) {
-    val label = stringResource(R.string.media_picture_in_picture)
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-        tooltip = { PlainTooltip { Text(label) } },
-        state = rememberTooltipState(),
-    ) {
-        IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
-            Icon(painterResource(R.drawable.ic_picture_in_picture), contentDescription = label)
-        }
-    }
-}
-
-/** A time beside the slider: `labelSmall` with tabular figures, so it does not jitter as it counts. */
-@Composable
-private fun TimeText(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-        maxLines = 1,
-    )
 }
 
 /** Lines of a collapsed caption. */

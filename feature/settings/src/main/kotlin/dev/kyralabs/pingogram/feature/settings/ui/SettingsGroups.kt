@@ -205,6 +205,7 @@ internal fun SettingsSegment(
  * Either way screen readers read it as one item. With [selected] as well (a page row of Settings home beside the open
  * page, `docs/DESIGN_SYSTEM.md` §7) it is selectable, in the list item's selected colors and shape while [selected]
  * is true. With [opensPage] (a row that opens another page) it ends in a chevron where it has no [trailingContent].
+ * Without an [icon], [leading] is its leading content where it draws its own (a Focus profile's badge).
  */
 @Suppress("LongParameterList") // A list item's slots and states, and the icon's tone.
 @Composable
@@ -221,13 +222,14 @@ internal fun SettingsRow(
     iconTone: SettingsIconTone? = null,
     selected: Boolean? = null,
     opensPage: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     // A row that opens another page ends in a chevron (docs/DESIGN_SYSTEM.md §13.10).
     val trailingContent = trailingContent ?: if (opensPage) ({ PageChevron() }) else null
     val leadingContent: (@Composable () -> Unit)? =
         icon?.let {
             { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled, selected = selected == true) }
-        }
+        } ?: leading
     if (onClick != null && selected != null) {
         SegmentedListItem(
             selected = selected,

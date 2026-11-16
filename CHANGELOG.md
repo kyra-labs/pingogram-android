@@ -97,7 +97,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
-- A profile's block row names the person: "Block Aisha" and "Unblock Aisha". A bot's still says "Stop and block bot".
+- Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
+  Telegram", and a poll's "Retract vote" the undo symbol.
 - The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
   "Show chat names" are gone from its menu and from screen readers' actions.
 - Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
@@ -123,6 +124,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
   later, a language button at the top opens Android's list of the app's languages.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
@@ -136,6 +141,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   speed while it is not 1×.
 - Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
   edge, outside the code, so every scanner reads it.
+- Settings → Focus: "ON NOW" is a pill beside the profile's name, screen readers hear each profile as one card
+  with its switch as an action, the templates show their symbols on their shapes, and the Weekend template turns on
+  by hand. In the editor every icon sits on its own shape, the days fit one row, and From and To are tiles side by
+  side.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
@@ -172,6 +181,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 - The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
+- A profile's block row names the person: "Block Aisha" and "Unblock Aisha". A bot's still says "Stop and block bot".
 
 ### Fixed
 - The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.

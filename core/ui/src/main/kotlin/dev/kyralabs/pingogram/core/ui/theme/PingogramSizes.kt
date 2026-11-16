@@ -119,6 +119,8 @@ import androidx.compose.ui.unit.dp
  * @property experimentalAccountAvatar the account's avatar on the experimental look's account card in Settings.
  * @property rowChipMaxWidth the widest a chip at the end of a chat list row gets (a keyword alert's word), so the
  *   title keeps its line.
+ * @property sideTapZone the edge of a viewer's page, at each side, where a tap turns the page (board 25), at most a
+ *   third of the page's width.
  */
 @Immutable
 data class PingogramSizes(
@@ -193,6 +195,7 @@ data class PingogramSizes(
     val experimentalAccountAvatar: Dp = 76.dp,
     val headerAction: Dp = 48.dp,
     val rowChipMaxWidth: Dp = 96.dp,
+    val sideTapZone: Dp = 96.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }
