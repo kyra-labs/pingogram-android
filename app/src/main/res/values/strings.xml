@@ -83,4 +83,11 @@
     <string name="demo_banner_label">Demo</string>
     <string name="demo_banner_separator" translatable="false">" · "</string>
     <string name="demo_banner_text">Sample chats on this device. Not connected to Telegram.</string>
+
+    <!-- Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33): their labels at most about 15 characters -->
+    <string name="tile_focus">Focus</string>
+    <string name="tile_focus_off">Off</string>
+    <!-- The Focus tile's subtitle while a profile is on: its name (%1$s) and when it ends (%2$s, a time such as 18:00) -->
+    <string name="tile_focus_until">%1$s · until %2$s</string>
+    <string name="tile_new_message">New message</string>
 </resources>

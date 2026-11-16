@@ -9,10 +9,11 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.datastore.DataStoreFocusRepository
 import dev.kyralabs.pingogram.core.domain.focus.DefaultFocusGate
 import dev.kyralabs.pingogram.core.domain.focus.FocusGate
+import dev.kyralabs.pingogram.core.domain.focus.FocusToggle
 import dev.kyralabs.pingogram.core.domain.repository.FocusRepository
 import javax.inject.Singleton
 
-/** The Focus profiles of the settings file ([DataStoreModule]) and what they let through (board 31). */
+/** The Focus profiles of the settings file ([DataStoreModule]), what they let through, the tile's toggle (board 31). */
 @Module
 @InstallIn(SingletonComponent::class)
 interface FocusModule {
@@ -27,5 +28,12 @@ interface FocusModule {
             repository: FocusRepository,
             clock: WallClock,
         ): FocusGate = DefaultFocusGate(repository, clock)
+
+        /** The Quick Settings tile's one tap: the last used profile on, or Focus off. */
+        @Provides
+        fun focusToggle(
+            repository: FocusRepository,
+            clock: WallClock,
+        ): FocusToggle = FocusToggle(repository, clock)
     }
 }
