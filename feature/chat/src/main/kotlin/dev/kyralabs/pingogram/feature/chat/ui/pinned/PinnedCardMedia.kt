@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -44,8 +45,8 @@ internal fun CardPhoto(photo: Photo) {
     val ratio = best?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: 1f
     CardPicture(
         fileId = best?.file?.id,
-        ratio = ratio,
         description = stringResource(UiR.string.preview_photo),
+        modifier = Modifier.mediaFrame(ratio, MaterialTheme.sizes.mediaMaxHeight),
     )
 }
 
@@ -67,7 +68,6 @@ internal fun CardClip(clip: PinnedClip) {
         if (clip.isRound) {
             CardPicture(
                 fileId = clip.fileId,
-                ratio = 1f,
                 description = kind,
                 modifier = Modifier.size(MaterialTheme.sizes.mediaMinSize),
                 shape = CircleShape,
@@ -75,8 +75,12 @@ internal fun CardClip(clip: PinnedClip) {
         } else {
             CardPicture(
                 fileId = clip.fileId,
-                ratio = clip.width.toFloat() / clip.height.coerceAtLeast(1),
                 description = kind,
+                modifier =
+                    Modifier.mediaFrame(
+                        clip.width.toFloat() / clip.height.coerceAtLeast(1),
+                        MaterialTheme.sizes.mediaMaxHeight,
+                    ),
             )
         }
         ClipLabel(label, Modifier.padding(MaterialTheme.spacing.small))
@@ -109,17 +113,18 @@ private fun ClipLabel(
     }
 }
 
-/** File [fileId]'s picture, cropped to [ratio] (or [modifier]'s size), dimmed in dark theme as the chat's media. */
+/** As wide as the card and as tall as [ratio] makes it, at most [maxHeight] (`sizes.mediaMaxHeight`). */
+private fun Modifier.mediaFrame(
+    ratio: Float,
+    maxHeight: Dp,
+): Modifier = fillMaxWidth().heightIn(max = maxHeight).aspectRatio(ratio)
+
+/** File [fileId]'s picture, cropped to [modifier]'s size, dimmed in dark theme as the chat's media. */
 @Composable
 private fun CardPicture(
     fileId: Int?,
-    ratio: Float,
     description: String,
-    modifier: Modifier =
-        Modifier
-            .fillMaxWidth()
-            .heightIn(max = MaterialTheme.sizes.mediaMaxHeight)
-            .aspectRatio(ratio),
+    modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
 ) {
     val sizePx = with(LocalDensity.current) { MaterialTheme.sizes.mediaMaxWidth.roundToPx() }
