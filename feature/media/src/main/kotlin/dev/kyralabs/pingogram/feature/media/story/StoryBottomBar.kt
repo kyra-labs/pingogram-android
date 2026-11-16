@@ -232,6 +232,13 @@ private fun StoryReactionButton(
     ) {
         if (chosen != null) {
             Text(chosen, style = MaterialTheme.typography.titleLarge, modifier = Modifier.clearAndSetSemantics {})
+        } else if (reactions.isOpen) {
+            // Filled in `primary` while the reactions show (board 26).
+            Icon(
+                painter = painterResource(UiR.drawable.ic_favorite_filled),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         } else {
             Icon(painter = painterResource(UiR.drawable.ic_favorite), contentDescription = null)
         }

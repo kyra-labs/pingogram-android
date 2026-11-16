@@ -99,6 +99,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
   "OK" and "NO" keep their bubble.
+- Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
+  readers hear "Match 2 of 4" each time the match bar steps to another match.
 - Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
   Telegram", and a poll's "Retract vote" the undo symbol.
 - The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
@@ -165,6 +167,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   timer every second, and the rating's stars as "Rating, 4 of 5".
 - A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
   says what is kept: you can still read your messages with them, but they can't receive new ones.
+- The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
+  titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
+  ago, with "React" as an action; a story that can't be shown says the viewer moves on.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile

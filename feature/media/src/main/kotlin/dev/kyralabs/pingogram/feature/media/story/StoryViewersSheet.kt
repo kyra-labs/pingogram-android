@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ButtonDefaults
@@ -38,12 +39,15 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
@@ -185,6 +189,7 @@ private fun ViewersFilters(
             StoryViewersFilter.Contacts to stringResource(R.string.story_viewers_contacts),
         )
     LazyRow(
+        modifier = Modifier.selectableGroup(),
         contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.large),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
     ) {
@@ -194,6 +199,7 @@ private fun ViewersFilters(
                 onClick = { onEvent(StoryViewersEvent.Filter(filter)) },
                 label = { Text(label) },
                 shapes = FilterChipDefaults.shapes(),
+                modifier = Modifier.semantics { role = Role.RadioButton },
             )
         }
     }
@@ -230,7 +236,8 @@ private fun ViewersList(
 
 @Composable
 private fun ViewerRow(row: StoryViewerRow) {
-    val age = storyAge(row.ageSeconds)
+    // "2 hours ago" (board 26), written out as screen readers hear it.
+    val age = storyAgeSpoken(row.ageSeconds, LocalConfiguration.current.locales[0])
     val description =
         if (row.reaction != null) {
             stringResource(R.string.story_viewer_reacted, row.name, age, row.reaction)
