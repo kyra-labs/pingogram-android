@@ -295,6 +295,8 @@ class ProfileViewModelTest {
                 assertTrue(canStartSecretChat)
                 assertEquals(ContactAction.Edit, contact)
                 assertEquals(false, isBlocked)
+                // The block row names the person by their first name: "Block Ada".
+                assertEquals("Ada", blockName)
                 assertTrue(canReport)
                 // "Export chat" exports the private chat.
                 assertEquals(ada.id, exportChatId)
@@ -365,6 +367,15 @@ class ProfileViewModelTest {
                 assertNull(actions.contact)
                 assertEquals("finderbot", actions.shareUsername)
             }
+        }
+
+    @Test
+    fun `the block row names someone without a first name by their last name`() =
+        runTest {
+            answerProfile(user = TdApiFixtures.user(id = ADA, firstName = "", lastName = "Lovelace"))
+            val viewModel = viewModel()
+
+            assertEquals("Lovelace", viewModel.content.actions.blockName)
         }
 
     @Test

@@ -189,6 +189,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 - The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
+- A profile's block row names the person: "Block Aisha" and "Unblock Aisha". A bot's still says "Stop and block bot".
 
 ### Fixed
 - The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.
