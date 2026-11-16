@@ -15,15 +15,15 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiImage
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.topicHue
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A topic's icon in a circle as large as the chat list's avatars (`sizes.avatarRow`): the General topic's "#" and the
- * other topics' bubble, in the tonal pair of the topic's color ([topicTone]), never Telegram's own colors; in
+ * other topics' bubble, in the sender hue of the topic's color ([topicTone]), never Telegram's own colors; in
  * `primary` [onSelection], on a row in its selected colors. A topic's own custom emoji ([TopicIcon.customEmojiId])
  * takes its place once [LocalCustomEmoji] has loaded it, as large, single-color ones in the content color; the circle
  * with its symbol stands in until then, and where it never loads.
@@ -66,28 +66,17 @@ internal fun TopicIconBadge(
 }
 
 /**
- * The container and content colors of a topic's icon (`docs/DESIGN_SYSTEM.md` §2.2): Telegram's six topic colors by
- * the nearest of the theme's tonal pairs, blue `primaryContainer`, green and yellow `secondaryContainer`, violet, rose
- * and red `tertiaryContainer`; the General topic `surfaceContainerHighest`, as Telegram shows it grey.
+ * The container and content colors of a topic's icon on its own (`docs/DESIGN_SYSTEM.md` §2.2, owner decision
+ * 2026-11-16): Telegram's six topic colors in the sender hue of their name ([topicHue]), its vivid fill with the symbol
+ * in the fill's text color, never Telegram's own colors; the General topic `surfaceContainerHighest`, as Telegram shows
+ * it grey.
  */
 @Composable
 internal fun topicTone(icon: TopicIcon): Pair<Color, Color> {
-    val colors = MaterialTheme.colorScheme
-    return when {
-        icon.isGeneral -> {
-            colors.surfaceContainerHighest to colors.onSurfaceVariant
-        }
-
-        icon.color == TopicColor.Blue -> {
-            colors.primaryContainer to colors.onPrimaryContainer
-        }
-
-        icon.color == TopicColor.Green || icon.color == TopicColor.Yellow -> {
-            colors.secondaryContainer to colors.onSecondaryContainer
-        }
-
-        else -> {
-            colors.tertiaryContainer to colors.onTertiaryContainer
-        }
+    if (icon.isGeneral) {
+        val colors = MaterialTheme.colorScheme
+        return colors.surfaceContainerHighest to colors.onSurfaceVariant
     }
+    val vivid = topicHue(icon.color).vivid
+    return vivid.container to vivid.content
 }

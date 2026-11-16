@@ -90,6 +90,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Forum topics' six colors are drawn in six of the theme's sender hues (blue, gold, green, violet, pink, red), so
+  they all look different in light, dark, AMOLED and high contrast, in the topic list, the topic editor and the chat
+  list's forum rows.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
