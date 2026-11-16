@@ -97,6 +97,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
+  "OK" and "NO" keep their bubble.
 - Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
   readers hear "Match 2 of 4" each time the match bar steps to another match.
 - Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
