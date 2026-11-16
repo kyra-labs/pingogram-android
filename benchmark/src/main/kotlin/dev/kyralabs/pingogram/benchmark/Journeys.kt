@@ -67,7 +67,7 @@ internal fun MacrobenchmarkScope.scrollConversation(list: UiObject2) {
 }
 
 /** [FLINGS] flings of [list] in [direction], each followed by a wait until the app is idle. */
-private fun MacrobenchmarkScope.fling(
+internal fun MacrobenchmarkScope.fling(
     list: UiObject2,
     direction: Direction,
 ) {

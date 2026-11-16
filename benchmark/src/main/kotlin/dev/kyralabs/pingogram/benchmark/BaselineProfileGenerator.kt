@@ -13,7 +13,8 @@ import org.junit.runner.RunWith
  *
  * The startup profile covers the start up to the chat list; the Baseline Profile adds scrolling the chat list,
  * opening and scrolling a conversation, and opening it again from the chat list with its history cached, as
- * `OpenChatBenchmark` does.
+ * `OpenChatBenchmark` does; then Catch-up's cards and the Bookmarks page, where the account has them (at least five
+ * unread chats that are not muted, and a bookmarked message), reading no chat on the way.
  */
 @RunWith(AndroidJUnit4::class)
 class BaselineProfileGenerator {
@@ -38,6 +39,20 @@ class BaselineProfileGenerator {
             scrollConversation(openSavedMessages())
             returnToChatList()
             openSavedMessages()
+            returnToChatList()
+        }
+    }
+
+    @Test
+    fun catchUpAndBookmarks() {
+        rule.collect(packageName = TARGET_PACKAGE) {
+            pressHome()
+            startActivityAndWait()
+            if (openCatchUp() != null) {
+                skipCatchUpCards()
+                returnToChatList()
+            }
+            openBookmarks()?.let { scrollBookmarks(it) }
             returnToChatList()
         }
     }
