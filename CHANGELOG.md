@@ -97,6 +97,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
+  Telegram", and a poll's "Retract vote" the undo symbol.
 - The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
   "Show chat names" are gone from its menu and from screen readers' actions.
 - Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
@@ -139,6 +141,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   speed while it is not 1×.
 - Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
   edge, outside the code, so every scanner reads it.
+- Settings → Focus: "ON NOW" is a pill beside the profile's name, screen readers hear each profile as one card
+  with its switch as an action, the templates show their symbols on their shapes, and the Weekend template turns on
+  by hand. In the editor every icon sits on its own shape, the days fit one row, and From and To are tiles side by
+  side.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
@@ -157,6 +163,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   timer every second, and the rating's stars as "Rating, 4 of 5".
 - A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
   says what is kept: you can still read your messages with them, but they can't receive new ones.
+- The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
+  titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
+  ago, with "React" as an action; a story that can't be shown says the viewer moves on.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile

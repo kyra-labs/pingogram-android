@@ -116,7 +116,12 @@
     <string name="story_viewer_title">Stories</string>
     <string name="story_viewer_loading">Loading stories</string>
     <!-- Read by screen readers as each story shows: "Story 2 of 5 by Ada". -->
-    <string name="story_a11y_position">Story %1$d of %2$d by %3$s</string>
+    <string name="story_yours">Your story</string>
+    <string name="story_a11y_photo">Photo story from %1$s, %2$s</string>
+    <string name="story_a11y_video">Video story from %1$s, %2$s</string>
+    <string name="story_a11y_live">Live story from %1$s, %2$s</string>
+    <string name="story_a11y_story">Story from %1$s, %2$s</string>
+    <string name="story_a11y_place">Story %1$d of %2$d</string>
     <string name="story_next">Next story</string>
     <string name="story_previous">Previous story</string>
     <!-- A story whose picture or video is still downloading (board 26). -->
@@ -197,7 +202,7 @@
     <string name="story_unsupported_title">Can\'t show this story</string>
     <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
     <string name="story_unavailable_title">Story unavailable</string>
-    <string name="story_unavailable_body">This story was deleted or has expired.</string>
+    <string name="story_unavailable_body">This story was deleted, has expired, or its poster changed who can see it. Moving on to the next story…</string>
     <!-- Posting a story, picking its photos and videos (docs/adr/0036-posting-stories.md). -->
     <string name="new_story_title">New story</string>
     <string name="new_story_close">Close</string>

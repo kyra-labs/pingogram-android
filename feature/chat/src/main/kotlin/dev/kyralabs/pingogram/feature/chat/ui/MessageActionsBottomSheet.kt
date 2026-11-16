@@ -273,13 +273,13 @@ internal val MessageAction.icon: Int
             MessageAction.Copy -> UiR.drawable.ic_content_copy
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
-            MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_format_list_bulleted
+            MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_summarize
             MessageAction.Forward -> UiR.drawable.ic_forward
             MessageAction.Bookmark -> R.drawable.ic_bookmark
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
-            MessageAction.RetractVote -> UiR.drawable.ic_history
+            MessageAction.RetractVote -> UiR.drawable.ic_undo
             MessageAction.StopPoll -> R.drawable.ic_block
             MessageAction.PollStatistics -> UiR.drawable.ic_bar_chart
             MessageAction.SaveToDownloads -> UiR.drawable.ic_download
