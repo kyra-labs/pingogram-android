@@ -82,6 +82,7 @@ object ProfilePreviewData {
                     contact = ContactAction.Edit,
                     isBlocked = false,
                     canReport = true,
+                    blockName = "Ada",
                 ),
             photos =
                 ProfilePhotos(
@@ -127,6 +128,7 @@ object ProfilePreviewData {
                     contact = ContactAction.Add,
                     isBlocked = false,
                     canReport = true,
+                    blockName = "Dev",
                 ),
             stranger = ProfileStranger(firstName = "Dev", groupsInCommon = 2),
         )
@@ -167,6 +169,8 @@ object ProfilePreviewData {
                     isBlocked = false,
                     canReport = true,
                     shareUsername = "stickerfinderbot",
+                    isBot = true,
+                    blockName = "Sticker",
                 ),
         )
 
