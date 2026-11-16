@@ -94,6 +94,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
+  0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
+  during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
+  error symbol before its warning.
 - Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
   have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
   everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
