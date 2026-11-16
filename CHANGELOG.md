@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
 - Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
   no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
@@ -97,6 +99,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
   announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
   without naming the chat or showing the message.
+- The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
+  0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
+  during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
+  error symbol before its warning.
 - Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
   have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
   everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
