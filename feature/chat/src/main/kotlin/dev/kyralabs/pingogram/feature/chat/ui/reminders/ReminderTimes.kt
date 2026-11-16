@@ -17,7 +17,7 @@ enum class ReminderChoice {
     /** 9:00 tomorrow. */
     TomorrowMorning,
 
-    /** 9:00 next Monday. */
+    /** 9:00 on the first day of next week, as the language counts it (Monday in most, Sunday in some). */
     NextWeek,
 
     /** The moment picked with the date and time pickers. */
@@ -26,7 +26,9 @@ enum class ReminderChoice {
 
 /**
  * When each quick choice rings, as of [now] in [zone]: owner decision 2026-11-15, morning is 9:00 and evening 20:00,
- * not configurable for now. An hour from now keeps the minute, without seconds.
+ * not configurable for now. An hour from now keeps the minute, without seconds. Next week starts on [firstDayOfWeek],
+ * the language's first day (owner decision 2026-11-16, `WeekFields.of(locale)`), so on the last day of a week it is
+ * tomorrow.
  */
 internal object ReminderTimes {
     val MORNING: LocalTime = LocalTime.of(9, 0)
@@ -37,6 +39,7 @@ internal object ReminderTimes {
         choice: ReminderChoice,
         now: Instant,
         zone: ZoneId,
+        firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     ): Instant? {
         val today = now.atZone(zone)
         return when (choice) {
@@ -57,7 +60,7 @@ internal object ReminderTimes {
             }
 
             ReminderChoice.NextWeek -> {
-                today.with(TemporalAdjusters.next(DayOfWeek.MONDAY)).with(MORNING).toInstant()
+                today.with(TemporalAdjusters.next(firstDayOfWeek)).with(MORNING).toInstant()
             }
 
             ReminderChoice.Custom -> {

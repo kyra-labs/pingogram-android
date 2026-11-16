@@ -60,7 +60,10 @@ class ReminderSheetViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.createViewModel(handle: SavedStateHandle = SavedStateHandle()): ReminderSheetViewModel {
+    private fun TestScope.createViewModel(
+        handle: SavedStateHandle = SavedStateHandle(),
+        locale: Locale = Locale.US,
+    ): ReminderSheetViewModel {
         val viewModel =
             ReminderSheetViewModel(
                 chatId = PRIVATE_CHAT,
@@ -71,7 +74,7 @@ class ReminderSheetViewModelTest {
                 users = users,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
-                locale = { Locale.US },
+                locale = { locale },
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sheet.collect {} }
         return viewModel
@@ -104,13 +107,30 @@ class ReminderSheetViewModelTest {
                     ReminderOption(ReminderChoice.InOneHour, UiText.Plain("10:41 AM")),
                     ReminderOption(ReminderChoice.ThisEvening, UiText.Plain("8:00 PM")),
                     ReminderOption(ReminderChoice.TomorrowMorning, day("Mon", "9:00 AM")),
-                    ReminderOption(ReminderChoice.NextWeek, day("Mon", "9:00 AM")),
+                    // Owner decision 2026-11-16: next week starts on the language's first day, Sunday in US English.
+                    ReminderOption(ReminderChoice.NextWeek, day("Sun", "9:00 AM")),
                     ReminderOption(ReminderChoice.Custom, null),
                 ),
                 sheet.options,
             )
             assertEquals(ReminderChoice.TomorrowMorning, sheet.chosen)
             assertEquals(false, sheet.isExisting)
+        }
+
+    @Test
+    fun `next week starts on the language's first day, worded by its weekday`() =
+        runTest {
+            // US English with weeks that start on Monday (a Unicode extension), which is tomorrow here.
+            val viewModel = createViewModel(locale = Locale.forLanguageTag("en-US-u-fw-mon"))
+
+            viewModel.onEvent(ReminderEvent.Open(42))
+            runCurrent()
+
+            val nextWeek =
+                viewModel.sheet.value!!
+                    .options
+                    .single { it.choice == ReminderChoice.NextWeek }
+            assertEquals(day("Mon", "9:00 AM"), nextWeek.time)
         }
 
     @Test

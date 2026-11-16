@@ -474,6 +474,8 @@
     <string name="reminder_this_evening">This evening</string>
     <string name="reminder_tomorrow_morning">Tomorrow morning</string>
     <string name="reminder_next_week">Next week</string>
+    <!-- The reminder sheet's "Next week" with when it rings: its weekday and time, e.g. "Next week · Mon, 9:00 AM". -->
+    <string name="reminder_next_week_at">Next week · %1$s</string>
     <string name="reminder_pick">Pick a date and time</string>
     <string name="reminder_note">Note (optional)</string>
     <string name="reminder_on_this_phone">Stays on this phone. Not sent to Telegram.</string>

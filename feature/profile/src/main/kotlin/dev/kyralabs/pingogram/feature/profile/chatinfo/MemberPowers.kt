@@ -66,7 +66,7 @@ internal fun memberItem(
                     },
                 photo = user?.profilePhoto,
                 avatarId = sender.userId,
-                placeholderIcon = if (isDeleted) UiR.drawable.ic_person_filled else null,
+                placeholderIcon = if (isDeleted) UiR.drawable.ic_person_off_filled else null,
                 status =
                     when {
                         user == null || isDeleted -> null

@@ -13,8 +13,8 @@ import java.util.Locale
  * When a message reminder rings (the owner's board 29), in words for [zone], [locale] and the device's clock, with the
  * platform's patterns: the time alone today ("11:30 PM"), the weekday and the time within a week ("Sun, 9:00 AM"),
  * else the date too ("Mon, Nov 23, 9:00 AM"), a day and a time joined in the language's way
- * (`reminder_label_day_time`). [day] says the day alone, for a reminder done: "Today", the weekday within a week back
- * or ahead, else the date.
+ * (`reminder_label_day_time`); [weekdayAndTime] the weekday whatever the day. [day] says the day alone, for a
+ * reminder done: "Today", the weekday within a week back or ahead, else the date.
  */
 class ReminderTimeLabels(
     private val zone: ZoneId,
@@ -42,6 +42,15 @@ class ReminderTimeLabels(
             days in 1 until WEEK -> UiText.resource(R.string.reminder_label_day_time, weekday.format(moment), timeOfDay)
             else -> UiText.resource(R.string.reminder_label_day_time, date.format(moment), timeOfDay)
         }
+    }
+
+    /**
+     * [at] as its weekday and time whatever day it is ("Mon, 9:00 AM"): "Next week" names the week already, so the
+     * date would only repeat it (owner decision 2026-11-16, "Next week · Mon 9:00").
+     */
+    fun weekdayAndTime(at: Instant): UiText {
+        val moment = at.atZone(zone)
+        return UiText.resource(R.string.reminder_label_day_time, weekday.format(moment), time.format(moment))
     }
 
     /** The day of [at] as of [now], without its time: "Today", the weekday within a week, else the date. */

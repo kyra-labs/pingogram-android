@@ -40,7 +40,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.temporal.WeekFields
 import java.util.Locale
 
 /**
@@ -184,7 +186,10 @@ class ReminderSheetViewModel internal constructor(
                 if (choice == ReminderChoice.Custom) {
                     ReminderOption(choice, pickedAt.takeIf { it != 0L }?.let { label(Instant.ofEpochSecond(it)) })
                 } else {
-                    ReminderTimes.at(choice, clock.now(), clock.zone())?.let { ReminderOption(choice, label(it)) }
+                    ReminderTimes.at(choice, clock.now(), clock.zone(), firstDayOfWeek())?.let { at ->
+                        val time = if (choice == ReminderChoice.NextWeek) labels().weekdayAndTime(at) else label(at)
+                        ReminderOption(choice, time)
+                    }
                 }
             }.toImmutableList()
 
@@ -228,7 +233,7 @@ class ReminderSheetViewModel internal constructor(
             if (chosen == ReminderChoice.Custom) {
                 picked.value.takeIf { it != 0L }?.let(Instant::ofEpochSecond)
             } else {
-                ReminderTimes.at(chosen, now, clock.zone())
+                ReminderTimes.at(chosen, now, clock.zone(), firstDayOfWeek())
             }
         return at?.takeIf { it.isAfter(now) }
     }
@@ -290,15 +295,19 @@ class ReminderSheetViewModel internal constructor(
     }
 
     /** [at] in words, with the labels for the current time zone, language and clock setting. */
-    private fun label(at: Instant): UiText {
+    private fun label(at: Instant): UiText = labels().label(at, clock.now())
+
+    /** The labels for the current time zone, language and clock setting, made again only when one of them changed. */
+    private fun labels(): ReminderTimeLabels {
         val zone = clock.zone()
         val locale = locale()
         val is24HourClock = timePatterns.is24HourClock()
-        val current =
-            labels?.takeIf { it.isFor(zone, locale, is24HourClock) }
-                ?: ReminderTimeLabels(zone, locale, is24HourClock, timePatterns).also { labels = it }
-        return current.label(at, clock.now())
+        return labels?.takeIf { it.isFor(zone, locale, is24HourClock) }
+            ?: ReminderTimeLabels(zone, locale, is24HourClock, timePatterns).also { labels = it }
     }
+
+    /** The first day of the week in the language of the moment (owner decision 2026-11-16). */
+    private fun firstDayOfWeek(): DayOfWeek = WeekFields.of(locale()).firstDayOfWeek
 
     private companion object {
         const val KEY_MESSAGE = "reminder.message"

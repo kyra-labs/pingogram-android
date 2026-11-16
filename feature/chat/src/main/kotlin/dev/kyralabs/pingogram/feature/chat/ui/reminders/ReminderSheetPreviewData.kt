@@ -18,7 +18,7 @@ internal object ReminderSheetPreviewData {
                 persistentListOf(
                     ReminderOption(ReminderChoice.InOneHour, UiText.Plain("11:30 PM")),
                     ReminderOption(ReminderChoice.TomorrowMorning, UiText.Plain("Sun, 9:00 AM")),
-                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, Nov 23, 9:00 AM")),
+                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, 9:00 AM")),
                     ReminderOption(ReminderChoice.Custom, null),
                 ),
             chosen = ReminderChoice.TomorrowMorning,
@@ -34,7 +34,7 @@ internal object ReminderSheetPreviewData {
                     ReminderOption(ReminderChoice.InOneHour, UiText.Plain("4:30 PM")),
                     ReminderOption(ReminderChoice.ThisEvening, UiText.Plain("8:00 PM")),
                     ReminderOption(ReminderChoice.TomorrowMorning, UiText.Plain("Sun, 9:00 AM")),
-                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, Nov 23, 9:00 AM")),
+                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, 9:00 AM")),
                     ReminderOption(ReminderChoice.Custom, null),
                 ),
             chosen = ReminderChoice.ThisEvening,
@@ -47,7 +47,7 @@ internal object ReminderSheetPreviewData {
                 persistentListOf(
                     ReminderOption(ReminderChoice.InOneHour, UiText.Plain("11:30 PM")),
                     ReminderOption(ReminderChoice.TomorrowMorning, UiText.Plain("Sun, 9:00 AM")),
-                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, Nov 23, 9:00 AM")),
+                    ReminderOption(ReminderChoice.NextWeek, UiText.Plain("Mon, 9:00 AM")),
                     ReminderOption(ReminderChoice.Custom, UiText.Plain("Fri, 6:00 PM")),
                 ),
             chosen = ReminderChoice.Custom,
