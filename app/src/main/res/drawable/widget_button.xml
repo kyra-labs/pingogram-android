@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Quick compose widget's buttons (board 33): a rounded rectangle, tinted by the widget with its theme role. A
+     drawable rather than Glance's cornerRadius, which launchers before Android 12 ignore. 20 dp: the launcher's 28 dp
+     corner less the widget's 8 dp padding, so inner and outer corners stay concentric. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="20dp" />
+</shape>

@@ -77,6 +77,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceStartOrAsk
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -456,6 +457,11 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenMessage -> {
                         onOpenMessage(effect.chatId, effect.messageId)
+                        ""
+                    }
+
+                    ChatEffect.RecordVoiceNow -> {
+                        onEvent(voiceStartOrAsk(context))
                         ""
                     }
 

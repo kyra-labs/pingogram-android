@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A Quick compose widget for the home screen: "New" at 1 × 1, "Message" and "Voice" from 2 × 1. "Voice" asks which
+  chat to record in, then opens it already recording a voice message, locked, for you to send or delete.
 - The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
   an optional comment, where Telegram lets it be sent on.
 - A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")

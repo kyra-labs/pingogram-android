@@ -14,7 +14,9 @@ import kotlinx.coroutines.launch
  * [ShareInbox] delivers to the chat (a Direct Share target, the one chat picked in the share sheet) goes into the
  * composer while the conversation is on screen ([onScreen]), for the user to send: a text into the field, after what it
  * holds ([ChatComposer.addShared]); files into the attach preview, the text as their caption
- * ([ChatAttachments.addShared]). Nothing is sent here. Runs in [scope], the view model's, from [start] on.
+ * ([ChatAttachments.addShared]); a voice message to record (the Quick compose widget's "Voice", board 33) through
+ * [onVoiceNote], which starts a locked recording. Nothing is sent here. Runs in [scope], the view model's, from [start]
+ * on.
  */
 internal class ChatShares(
     private val chatId: Long,
@@ -23,6 +25,7 @@ internal class ChatShares(
     private val composer: ChatComposer,
     private val attachments: ChatAttachments,
     private val scope: CoroutineScope,
+    private val onVoiceNote: () -> Unit = {},
 ) {
     /** Starts taking what is shared into the chat, once. */
     fun start() {
@@ -34,7 +37,9 @@ internal class ChatShares(
     }
 
     private fun add(content: SharedContent) {
-        if (content.files.isEmpty()) {
+        if (content.voiceNote) {
+            onVoiceNote()
+        } else if (content.files.isEmpty()) {
             composer.addShared(content.text)
         } else {
             attachments.addShared(content.files, content.kind, content.text)

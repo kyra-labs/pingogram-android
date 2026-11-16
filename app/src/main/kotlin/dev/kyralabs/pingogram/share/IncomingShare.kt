@@ -33,6 +33,10 @@ data class IncomingShare(
  * Files are `content://` URIs only, read later with the grant they came with; never `file://` ones, and never those
  * of a provider of Pingogram itself ([isOwnContent]), which would let another app make Pingogram send its own files
  * (TDLib's, say) without the user knowing where they came from. At most [SharedContent.MAX_FILES].
+ *
+ * The Quick compose widget's "Voice" (board 33) sends [ACTION_NEW_VOICE_MESSAGE]: a share with nothing in it but a
+ * voice message to record ([SharedContent.voiceNote]), whose sheet opens the chat picked with the recording under way.
+ * Any app could send it, as the activity is exported; it records nothing until the user picks a chat.
  */
 internal fun shareOf(
     intent: Intent?,
@@ -40,9 +44,21 @@ internal fun shareOf(
 ): IncomingShare? {
     val share =
         intent
-            ?.takeIf { it.action == Intent.ACTION_SEND || it.action == Intent.ACTION_SEND_MULTIPLE }
+            ?.takeIf { it.action in SHARE_ACTIONS }
             ?.takeIf { it.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0 }
             ?: return null
+    return if (share.action == ACTION_NEW_VOICE_MESSAGE) {
+        IncomingShare(SharedContent(voiceNote = true))
+    } else {
+        sentShareOf(share, isOwnContent)
+    }
+}
+
+/** What an `ACTION_SEND` or `ACTION_SEND_MULTIPLE` [share] carries, as [shareOf] says. */
+private fun sentShareOf(
+    share: Intent,
+    isOwnContent: (Uri) -> Boolean,
+): IncomingShare? {
     val text =
         share
             .getCharSequenceExtra(Intent.EXTRA_TEXT)
@@ -90,3 +106,8 @@ internal fun Context.isOwnContent(uri: Uri): Boolean {
     val authority = uri.authority ?: return false
     return packageManager.resolveContentProvider(authority, 0)?.packageName == packageName
 }
+
+/** The action of the Quick compose widget's "Voice": pick a chat, then record a voice message in it. */
+internal const val ACTION_NEW_VOICE_MESSAGE = "dev.kyralabs.pingogram.action.NEW_VOICE_MESSAGE"
+
+private val SHARE_ACTIONS = setOf(Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE, ACTION_NEW_VOICE_MESSAGE)

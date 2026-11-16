@@ -248,6 +248,19 @@
                 android:resource="@xml/unread_counter_widget_info" />
         </receiver>
 
+        <!-- The Quick compose widget (board 33): buttons into the app, nothing drawn from data; it takes nothing else. -->
+        <receiver
+            android:name=".widget.QuickComposeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_compose_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_compose_widget_info" />
+        </receiver>
+
         <!-- The Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33). BIND_QUICK_SETTINGS_TILE is
              what only the system holds, so only it may bind them; the app asks for no permission for them. -->
         <service
