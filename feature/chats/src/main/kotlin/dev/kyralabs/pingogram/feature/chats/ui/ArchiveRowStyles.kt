@@ -59,13 +59,15 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** The row's styles for screen readers, as its menu offers them: compact or full, and hide. */
+/**
+ * The row's menu for screen readers, as its long press offers it: "Hide from chat list". The row is always compact
+ * (`docs/DESIGN_SYSTEM.md` §13.3), so it offers no other style.
+ */
 internal fun styleActions(
-    entry: ArchiveEntry,
     resources: Resources,
     onStyle: (ArchiveRowStyle) -> Unit,
 ): List<CustomAccessibilityAction> =
-    archiveMenuItems(entry.isCompact).map { item ->
+    ArchiveMenuItems.map { item ->
         CustomAccessibilityAction(resources.getString(item.label)) {
             onStyle(item.style)
             true
@@ -79,27 +81,19 @@ private class ArchiveMenuItem(
     val style: ArchiveRowStyle,
 )
 
-/** "Make compact" (or "Show chat names" on a compact row), then "Hide from chat list". */
-private fun archiveMenuItems(isCompact: Boolean): List<ArchiveMenuItem> =
-    listOf(
-        if (isCompact) {
-            ArchiveMenuItem(R.string.chat_list_archive_row_expand, R.drawable.ic_unfold_more, ArchiveRowStyle.Full)
-        } else {
-            ArchiveMenuItem(R.string.chat_list_archive_row_collapse, R.drawable.ic_unfold_less, ArchiveRowStyle.Compact)
-        },
-        ArchiveMenuItem(R.string.chat_list_archive_row_hide, UiR.drawable.ic_visibility_off, ArchiveRowStyle.Hidden),
-    )
+/** "Hide from chat list", the menu's one item (owner decision 2026-11-16). */
+private val ArchiveMenuItems =
+    listOf(ArchiveMenuItem(R.string.chat_list_archive_row_hide, UiR.drawable.ic_visibility_off, ArchiveRowStyle.Hidden))
 
-/** The archive row's menu, an expressive [DropdownMenuPopup] of one group ([archiveMenuItems]). */
+/** The archive row's menu, an expressive [DropdownMenuPopup] of one group ([ArchiveMenuItems]). */
 @Composable
 internal fun ArchiveRowMenu(
     expanded: Boolean,
-    isCompact: Boolean,
     onDismiss: () -> Unit,
     onStyle: (ArchiveRowStyle) -> Unit,
 ) {
     DropdownMenuPopup(expanded = expanded, onDismissRequest = onDismiss) {
-        val items = archiveMenuItems(isCompact)
+        val items = ArchiveMenuItems
         DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
             items.forEachIndexed { index, item ->
                 DropdownMenuItem(

@@ -157,6 +157,41 @@ class GroupCallViewModelTest {
         }
 
     @Test
+    fun `a live story joins without the microphone permission, asking nothing and opening no microphone`() =
+        runTest(dispatcher) {
+            microphone = false
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        GroupCallActivity.EXTRA_ACTION to GroupCallActivity.ACTION_WATCH_LIVE_STORY,
+                        GroupCallActivity.EXTRA_CHAT_ID to CHAT_ID,
+                        GroupCallActivity.EXTRA_GROUP_CALL_ID to LIVE_CALL_ID,
+                    ),
+                )
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_WATCH_LIVE_STORY, handle)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value !is GroupCallUiState.NeedsMicrophone)
+            assertEquals(listOf(LIVE_CALL_ID), repository.liveStoryJoins)
+            assertEquals(listOf(false), engine.groupMicrophones)
+            assertTrue(effects.isEmpty())
+        }
+
+    @Test
+    fun `a voice chat still asks for the microphone, and opens it once joined`() =
+        runTest(dispatcher) {
+            microphone = false
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN)
+            assertTrue(viewModel.uiState.value is GroupCallUiState.NeedsMicrophone)
+
+            viewModel.onEvent(GroupCallEvent.MicrophoneResult(granted = true, canAskAgain = true))
+            runCurrent()
+            assertEquals(listOf(true), engine.groupMicrophones)
+        }
+
+    @Test
     fun `asks for the microphone first, then joins once allowed`() =
         runTest(dispatcher) {
             microphone = false

@@ -490,13 +490,19 @@ private fun RowScope.HeaderRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() },
         )
+        // Screen readers hear the status without the timer, which would be announced every second (board 27).
+        val spoken = statusText(state, withDuration = false)
         Text(
             text = statusText(state),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            modifier =
+                Modifier.clearAndSetSemantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = spoken
+                },
         )
     }
     if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
@@ -515,9 +521,15 @@ private fun GroupCallChat.displayTitle(): String =
         else -> title.ifBlank { stringResource(R.string.voice_chat) }
     }
 
-/** "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05". */
+/**
+ * "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05" ("12 participants" without
+ * [withDuration], or "Connected" while the count is not known).
+ */
 @Composable
-internal fun statusText(state: GroupCallUiState.InCall): String {
+internal fun statusText(
+    state: GroupCallUiState.InCall,
+    withDuration: Boolean = true,
+): String {
     val count =
         state.participantCount?.let {
             pluralStringResource(
@@ -531,10 +543,23 @@ internal fun statusText(state: GroupCallUiState.InCall): String {
             )
         }
     return when (val stage = state.stage) {
-        GroupCallStage.Joining -> stringResource(R.string.group_call_joining)
-        GroupCallStage.Reconnecting -> stringResource(R.string.call_status_reconnecting)
-        GroupCallStage.Connected -> listOfNotNull(count, state.duration).joinToString(" · ")
-        is GroupCallStage.Ended -> endText(stage.reason)
+        GroupCallStage.Joining -> {
+            stringResource(R.string.group_call_joining)
+        }
+
+        GroupCallStage.Reconnecting -> {
+            stringResource(R.string.call_status_reconnecting)
+        }
+
+        GroupCallStage.Connected -> {
+            listOfNotNull(count, state.duration.takeIf { withDuration })
+                .joinToString(" · ")
+                .ifEmpty { stringResource(R.string.call_status_connected_spoken) }
+        }
+
+        is GroupCallStage.Ended -> {
+            endText(stage.reason)
+        }
     }
 }
 
@@ -733,7 +758,7 @@ private fun Controls(
                         label = "microphone",
                     ) { canUnmute ->
                         if (canUnmute) {
-                            LabeledButton(R.string.call_mute) {
+                            LabeledButton(stringResource(R.string.call_mute)) {
                                 Toggle(
                                     checked = state.isMuted,
                                     icon =
@@ -742,7 +767,7 @@ private fun Controls(
                                 ) { onEvent(GroupCallEvent.ToggleMute) }
                             }
                         } else {
-                            LabeledButton(R.string.group_call_raise_hand) {
+                            LabeledButton(stringResource(R.string.group_call_raise_hand)) {
                                 Toggle(
                                     checked = state.isHandRaised,
                                     icon = R.drawable.ic_back_hand,
@@ -767,7 +792,7 @@ private fun CameraButton(
     on: Boolean,
     onEvent: (GroupCallEvent) -> Unit,
 ) {
-    LabeledButton(R.string.call_camera) {
+    LabeledButton(stringResource(R.string.call_camera)) {
         Toggle(
             checked = on,
             icon = if (on) R.drawable.ic_videocam_filled else R.drawable.ic_videocam_off_filled,
