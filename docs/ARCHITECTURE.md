@@ -1747,7 +1747,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in. A reminder's
   and a keyword alert's name their message too (`NotificationIntents.openChat`'s `messageId`, read back with
-  `messageIdOf`), which `ChatRoute.messageId` opens at.
+  `messageIdOf`), which `ChatRoute.messageId` opens at. Where a keyword alert opened the chat, `feature:chat`'s
+  `KeywordMatchViewModel` (`keyword/`, keyed by the chat and that message, over `KeywordHitRepository`) shows the
+  conversation's match bar through `LocalKeywordMatchBar`, its steps going to the conversation as `ChatEvent.OpenReply`.
 - Every account (`docs/adr/0031-multiple-accounts.md`): `NotificationRenderer` follows `core:domain`'s `AccountGraphs`
   (`DefaultAccountGraphs`, `core:data`: each account's `AccountRepositories`, once the registry is read) and runs an
   `AccountNotificationRenderer` per account, from that account's repositories. An account's notifications have their

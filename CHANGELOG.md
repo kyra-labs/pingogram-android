@@ -21,6 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
   muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" (at the message) and "Mark as
   read"; matching runs on the phone while Pingogram is connected.
+- A chat opened from a keyword alert shows "Keyword: launch · 1 of 4" at the top, whose arrows step through the chat's
+  matches of the last week.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
