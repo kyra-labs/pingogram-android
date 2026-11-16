@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -46,7 +47,7 @@ internal fun CatchUpChip(
     Button(
         onClick = onClick,
         modifier =
-            modifier.heightIn(height).semantics { contentDescription = label },
+            modifier.heightIn(height).testTag(CATCH_UP_CHIP_TEST_TAG).semantics { contentDescription = label },
         shapes = ButtonDefaults.shapesFor(height),
         contentPadding = ButtonDefaults.contentPaddingFor(height),
     ) {
@@ -77,3 +78,6 @@ internal fun CatchUpChip(
         )
     }
 }
+
+/** For the benchmarks' journeys (`docs/PERFORMANCE.md` §9), which find the chip by it. */
+private const val CATCH_UP_CHIP_TEST_TAG = "catch_up_chip"

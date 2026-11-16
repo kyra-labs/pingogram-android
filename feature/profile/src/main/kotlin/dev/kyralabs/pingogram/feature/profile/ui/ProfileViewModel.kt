@@ -638,6 +638,7 @@ class ProfileViewModel internal constructor(
             exportChatId = exportChatIdOf(user),
             canDeleteChat = isDeleted && chat != null,
             shareUsername = botLinkOf(user),
+            isBot = user.type == UserType.Bot,
         )
     }
 

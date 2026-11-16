@@ -16,11 +16,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -73,7 +75,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The pinned messages bar at the top of the conversation's sheet (`REQUIREMENTS.md` FR-C9, `docs/DESIGN_SYSTEM.md` §6):
  * a tonal strip (`surfaceContainerHigh`, `large` corners) with "Pinned message" (and "2 of 5" where there are several,
  * counted from the oldest, so the newest is "5 of 5") in `labelMedium` `primary` over one line of the message, its
- * sender in `onSurface` before the preview in `onSurfaceVariant`, `bodyMedium`.
+ * sender in `onSurface` before the preview in `onSurfaceVariant`, `bodyMedium`; before them a small picture of a photo,
+ * video, GIF or round video, or a file's tile ([PinnedThumbnailTile], the owner's board P1).
  *
  * - **Segments** along its start, one per pinned message in the list's order, the oldest at the top and the newest at
  *   the bottom (at most [MAX_SEGMENTS] at a time, the window following the shown one), the shown one in `primary`, the
@@ -182,7 +185,7 @@ private fun PinnedText(
 ) {
     val motion = MaterialTheme.motionScheme
     AnimatedContent(
-        targetState = Shown(bar.messageId, bar.position, label, preview),
+        targetState = Shown(bar.messageId, bar.position, label, preview, bar.thumbnail),
         modifier = modifier,
         transitionSpec = {
             // To an older message the text comes from above, as the older message is above in the list.
@@ -198,23 +201,39 @@ private fun PinnedText(
         contentKey = { it.messageId },
         label = "pinnedMessage",
     ) { shown ->
-        Column {
-            Text(
-                text = shown.label,
-                color = MaterialTheme.colorScheme.primary,
-                // Two lines at large font scales, so "4 of 5" is never cut off.
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Text(
-                text = shown.preview,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium.userContent,
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            shown.thumbnail?.let { thumbnail ->
+                PinnedThumbnailTile(thumbnail)
+                Spacer(Modifier.width(MaterialTheme.spacing.small))
+            }
+            PinnedLines(shown.label, shown.preview, Modifier.weight(1f))
         }
+    }
+}
+
+/** "Pinned · 4 of 5" over one line of the message. */
+@Composable
+private fun PinnedLines(
+    label: String,
+    preview: AnnotatedString,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.primary,
+            // Two lines at large font scales, so "4 of 5" is never cut off.
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Text(
+            text = preview,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium.userContent,
+        )
     }
 }
 
@@ -224,6 +243,7 @@ private data class Shown(
     val position: Int,
     val label: String,
     val preview: AnnotatedString,
+    val thumbnail: PinnedThumbnail?,
 )
 
 /** "Pinned message", or "Pinned message 2 of 5" where there are several, counted from the oldest. */
@@ -281,6 +301,12 @@ private fun PinnedMessagesBarPreview() {
 @Composable
 private fun PinnedMessagesBarManyPreview() {
     PingogramPreview { PinnedMessagesBar(PinnedPreviewData.many, onEvent = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun PinnedMessagesBarFilePreview() {
+    PingogramPreview { PinnedMessagesBar(PinnedPreviewData.file, onEvent = {}) }
 }
 
 /**

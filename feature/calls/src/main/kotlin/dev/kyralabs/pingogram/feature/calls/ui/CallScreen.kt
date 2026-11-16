@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.calculateTargetValue
@@ -566,7 +567,7 @@ private fun VideoHeader(
         CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
-                KeyEmojis(state.emojis, keyExplanation(state.person.name))
+                KeyEmojis(state.emojis, keyExplanation(state.person.name), overVideo = true)
             }
         }
     }
@@ -637,25 +638,28 @@ private fun keyExplanation(name: String): String =
     stringResource(R.string.call_key_explanation, name.ifBlank { stringResource(R.string.call_someone) })
 
 /**
- * The four emojis of the call's key in a pill; tapping it says what they are for. Read as one item: "Encryption key:
- * 😀 🐶 🍎 🚗".
+ * The four emojis of the call's key in a pill, with what they are for below it (board 27: the line shows, and a tap
+ * makes the emojis large to compare); over video ([overVideo]) the line shows only once tapped, so it does not cover
+ * the picture. Read as one item: "Encryption key: 😀 🐶 🍎 🚗".
  */
 @Composable
 internal fun KeyEmojis(
     emojis: List<String>,
     explanation: String,
+    overVideo: Boolean = false,
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var large by rememberSaveable { mutableStateOf(false) }
     val description = stringResource(R.string.call_key_description, emojis.joinToString(" "))
+    val label = stringResource(if (large) R.string.call_key_smaller else R.string.call_key_compare)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
             modifier =
                 Modifier
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceBright)
-                    .clickable(role = Role.Button, onClickLabel = stringResource(R.string.call_key_explain)) {
-                        expanded = !expanded
-                    }.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
+                    .clickable(role = Role.Button, onClickLabel = label) { large = !large }
+                    .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
+                    .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
                     .semantics { contentDescription = description },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -666,9 +670,12 @@ internal fun KeyEmojis(
                 modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
             )
             Spacer(Modifier.size(MaterialTheme.spacing.small))
-            Text(emojis.joinToString(" "), style = MaterialTheme.typography.titleLarge)
+            Text(
+                emojis.joinToString(" "),
+                style = if (large) MaterialTheme.typography.displaySmall else MaterialTheme.typography.titleLarge,
+            )
         }
-        CallGrowingVisibility(visible = expanded) {
+        CallGrowingVisibility(visible = !overVideo || large) {
             Text(
                 explanation,
                 style = MaterialTheme.typography.bodyMedium,
@@ -746,15 +753,24 @@ private fun rememberRingTurn(ringing: Boolean): () -> Float {
     return remember(rotation) { { rotation.value } }
 }
 
-/** The call's stage, or its timer and the connection's quality once connected; a polite live region. */
+/**
+ * The call's stage, or its timer and the connection's quality once connected. A polite live region that says the
+ * stage and the connection, never the timer (board 27: "not announced every second"): "Connected" once as the call
+ * connects, then nothing until the stage or the connection changes.
+ */
 @Composable
 private fun CallStatus(
     state: CallUiState.InCall,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     val stage = state.stage
+    val description = spokenStatus(state)
     Row(
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        modifier =
+            Modifier.clearAndSetSemantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = description
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (stage == CallStage.Connected || stage == CallStage.Reconnecting) {
@@ -782,6 +798,25 @@ private fun CallStatus(
             textAlign = TextAlign.Center,
         )
     }
+}
+
+/** What screen readers hear of [CallStatus]: the stage ("Connected" once connected) and the connection, no timer. */
+@Composable
+private fun spokenStatus(state: CallUiState.InCall): String {
+    val stage = state.stage
+    val spoken =
+        when {
+            stage == CallStage.Connected && state.isOnHold -> stringResource(R.string.call_status_on_hold)
+            stage == CallStage.Connected -> stringResource(R.string.call_status_connected_spoken)
+            else -> stageText(stage, state.isOutgoing, state.isVideoCall)
+        }
+    val signal =
+        when (stage) {
+            CallStage.Connected -> stringResource(R.string.call_signal_good)
+            CallStage.Reconnecting -> stringResource(R.string.call_signal_weak)
+            else -> null
+        }
+    return listOfNotNull(spoken, signal).distinct().joinToString(", ")
 }
 
 @Composable
@@ -1145,7 +1180,7 @@ private fun AnswerButtons(
     onDecline: () -> Unit,
 ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        LabeledButton(R.string.call_decline) {
+        LabeledButton(stringResource(R.string.call_decline)) {
             HeroButton(
                 icon = R.drawable.ic_call_end_filled,
                 label = R.string.call_decline,
@@ -1154,7 +1189,7 @@ private fun AnswerButtons(
                 onClick = onDecline,
             )
         }
-        LabeledButton(R.string.call_answer) {
+        LabeledButton(stringResource(R.string.call_answer)) {
             HeroButton(
                 icon = UiR.drawable.ic_call_filled,
                 label = R.string.call_answer,
@@ -1207,7 +1242,7 @@ private fun CallControlsPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                LabeledButton(R.string.call_mute) {
+                LabeledButton(stringResource(R.string.call_mute)) {
                     Toggle(
                         checked = state.isMuted,
                         icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
@@ -1216,7 +1251,7 @@ private fun CallControlsPanel(
                 }
                 RouteButton(state.route, state.routes) { onEvent(CallEvent.SelectRoute(it)) }
                 if (state.video.hasCamera) {
-                    LabeledButton(R.string.call_camera) {
+                    LabeledButton(stringResource(R.string.call_camera)) {
                         Toggle(
                             checked = state.video.camera != null,
                             icon =

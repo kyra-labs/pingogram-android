@@ -128,6 +128,8 @@ internal fun MediaError(
         content = colors.onErrorContainer,
         title = stringResource(R.string.profile_media_error),
         body = errorText(error.error),
+        // A failure is announced at once (board 24h), an empty tab politely.
+        announce = LiveRegionMode.Assertive,
     ) {
         Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.profile_retry), style = MaterialTheme.typography.labelLargeEmphasized)
@@ -146,6 +148,7 @@ private fun MediaNotice(
     content: Color,
     title: String,
     body: String,
+    announce: LiveRegionMode = LiveRegionMode.Polite,
     action: (@Composable () -> Unit)? = null,
 ) {
     val spacing = MaterialTheme.spacing
@@ -169,7 +172,7 @@ private fun MediaNotice(
         )
         Text(
             text = body,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            modifier = Modifier.semantics { liveRegion = announce },
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,

@@ -176,11 +176,16 @@ class FakeCallEngine : CallEngine {
 
     val groupSessions = mutableListOf<FakeGroupCallSession>()
 
+    /** Whether each group call was opened with the microphone, in the order their sessions were made. */
+    val groupMicrophones = mutableListOf<Boolean>()
+
     override suspend fun createGroupCall(
         groupCallId: Int,
         muted: Boolean,
+        withMicrophone: Boolean,
     ): GroupCallSession {
         if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        groupMicrophones += withMicrophone
         return FakeGroupCallSession(groupCallId, muted).also { groupSessions += it }
     }
 

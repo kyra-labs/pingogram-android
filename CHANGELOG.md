@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
+- The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
+  pinned messages page shows a pinned video's or GIF's picture with its length.
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
+- Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
+  no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
   asks you to choose its chat in the app.
 - The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
@@ -90,13 +97,24 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
-- The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
-  titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
-  ago, with "React" as an action; a story that can't be shown says the viewer moves on.
-- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
-  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
-  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
-  actions read "Previous" and "Next".
+- The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
+  "Show chat names" are gone from its menu and from screen readers' actions.
+- Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
+  buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
+  avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
+  announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
+  without naming the chat or showing the message.
+- The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
+  0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
+  during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
+  error symbol before its warning.
+- Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
+  have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
+  everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
+  stack one under the other.
+- Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
+  for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
+  its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
@@ -104,17 +122,30 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
   later, a language button at the top opens Android's list of the app's languages.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
 - A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
+  message tile in Quick Settings says "Pingogram" under its name.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
 - Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
   edge, outside the code, so every scanner reads it.
+- The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
+  titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
+  ago, with "React" as an action; a story that can't be shown says the viewer moves on.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
@@ -128,12 +159,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
 - A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
   says what is kept: you can still read your messages with them, but they can't receive new ones.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
   scrolls, the top bar keeps a Call button where the person can be called.
+- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
+  opens the microphone there. Voice chats and group calls still ask as before.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
 - A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
@@ -148,6 +184,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
+- The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.
+- When a photo or video takes more than half a second to load into the media viewer, it fades in with the viewer
+  instead of jumping into the middle of its grow-from-the-message animation; closing still shrinks it back.
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
   italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
 - A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the

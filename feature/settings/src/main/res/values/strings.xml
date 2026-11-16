@@ -1711,7 +1711,14 @@
     </plurals>
     <!-- %1$s: an alert word; read by screen readers on the word's chip -->
     <string name="settings_keyword_alerts_remove">%1$s, remove</string>
-    <string name="settings_keyword_alerts_matching">Matches whole words, in any letter case, with or without accents.</string>
+    <!-- %1$s: an alert word, %2$d: how many unread messages matched it in the last 7 days; read by screen readers on its chip -->
+    <plurals name="settings_keyword_alerts_remove_matches">
+        <item quantity="one">%1$s, %2$d match, remove</item>
+        <item quantity="other">%1$s, %2$d matches, remove</item>
+    </plurals>
+    <string name="settings_keyword_alerts_matching">Matches whole words, in any letter case, with or without accents. The numbers are this week\'s matches you haven\'t read yet, counted on this phone.</string>
+    <!-- The empty state's sample word on its illustration -->
+    <string name="settings_keyword_alerts_sample">launch</string>
     <string name="settings_keyword_alerts_empty_title">No alert words yet</string>
     <string name="settings_keyword_alerts_empty_body">Add a word and Pingogram will tell you when someone mentions it. Checked on this phone. Your words aren\'t sent anywhere.</string>
     <string name="settings_keyword_alerts_try">Try</string>
