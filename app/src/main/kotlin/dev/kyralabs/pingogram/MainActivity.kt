@@ -68,6 +68,7 @@ import dev.kyralabs.pingogram.ui.DemoFrame
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
 import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
+import dev.kyralabs.pingogram.widget.ConversationWidgetSetup
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -334,7 +335,8 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, the Telegram link it
-     * views, what it shares, or the Focus page or switcher the Focus tile asks for.
+     * views, what it shares, the Focus page or switcher the Focus tile asks for, or a Conversation widget's chat
+     * picker.
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let { viewModel.openChat(it, NotificationIntents.messageIdOf(intent)) }
@@ -343,6 +345,7 @@ class MainActivity : ComponentActivity() {
             if (page == PageToOpen.FocusSwitcher) focusSwitcherRequests.request()
             viewModel.setPageToOpen(page)
         }
+        ConversationWidgetSetup.appWidgetIdOf(intent)?.let { viewModel.setPageToOpen(PageToOpen.WidgetChat(it)) }
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
     }

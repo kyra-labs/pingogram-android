@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
+  asks you to choose its chat in the app.
 - A live story in the stories viewer says "LIVE" after the poster's name, shows its segment in red, and names the
   live stream with how many are watching, beside "Watch live" and a button to skip it.
 - Zoomed into a photo, the media viewer shows how far ("2.5×", fading after a moment), a mini-map of where you are in

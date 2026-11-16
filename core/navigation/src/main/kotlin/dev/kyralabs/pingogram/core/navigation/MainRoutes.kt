@@ -520,6 +520,15 @@ data class ShareRoute(
 )
 
 /**
+ * The chat picker of the Conversation widget [appWidgetId] (board 33), which the widget's "Choose a chat" opens: a
+ * dialog destination of `:app` above whatever shows.
+ */
+@Serializable
+data class WidgetChatPickerRoute(
+    val appWidgetId: Int,
+)
+
+/**
  * Exporting the history of chat [chatId] (`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`), `:feature:chat`: a
  * settings-style page pushed above the profile or the info page it is opened from, with the shared axis on X, where the
  * user picks the format, the media, the dates and the folder, then follows the export running in the background.

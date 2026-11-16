@@ -261,6 +261,20 @@
                 android:resource="@xml/quick_compose_widget_info" />
         </receiver>
 
+        <!-- The Conversation widget (board 33): one chat's messages and a reply, from its own updater; it takes nothing
+             else. Its "Choose a chat" opens MainActivity, whose chat picker checks the widget is this app's. -->
+        <receiver
+            android:name=".widget.ConversationWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_conversation_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/conversation_widget_info" />
+        </receiver>
+
         <!-- The Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33). BIND_QUICK_SETTINGS_TILE is
              what only the system holds, so only it may bind them; the app asks for no permission for them. -->
         <service
