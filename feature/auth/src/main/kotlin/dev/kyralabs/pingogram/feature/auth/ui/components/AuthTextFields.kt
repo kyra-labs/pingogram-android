@@ -52,10 +52,12 @@ internal fun AuthCodeField(
     modifier: Modifier = Modifier,
     isNumeric: Boolean = true,
     contentType: ContentType? = null,
+    enabled: Boolean = true,
 ) {
     TextField(
         value = value,
         onValueChange = onValueChange,
+        enabled = enabled,
         modifier =
             modifier
                 .fillMaxWidth()

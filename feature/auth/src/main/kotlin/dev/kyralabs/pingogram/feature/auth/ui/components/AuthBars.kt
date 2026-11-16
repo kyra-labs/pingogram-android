@@ -45,7 +45,7 @@ import dev.kyralabs.pingogram.core.ui.text.clockText
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
+import dev.kyralabs.pingogram.core.ui.time.announcedEveryMinute
 import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.withTabularClock
@@ -170,7 +170,7 @@ internal fun ConnectionBanner(
  * While Telegram asks to wait (`FLOOD_WAIT`): a warning on `tertiaryContainer` (owner decision 2026-11-15, board 23),
  * the time left as a clock ("4:59", [clockText], tabular figures), which the ViewModel counts down, and beside it a
  * clock in a [CountdownIndicator] that runs down from [totalSeconds]. Screen readers hear the time in words as a live
- * region, at most every 15 seconds ([announcedCountdownSeconds]) rather than every second.
+ * region, once a minute ([announcedEveryMinute], board 23e) rather than every second.
  */
 @Composable
 internal fun FloodWaitBanner(
@@ -194,7 +194,7 @@ internal fun FloodWaitBanner(
             }
         },
     ) {
-        val announcement = stringResource(R.string.auth_flood_wait, durationText(announcedCountdownSeconds(left)))
+        val announcement = stringResource(R.string.auth_flood_wait, durationText(announcedEveryMinute(left)))
         val clock = clockText(left)
         Text(
             text = withTabularClock(stringResource(R.string.auth_flood_wait, clock), clock),

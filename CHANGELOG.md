@@ -90,6 +90,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
+  0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
+  during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
+  error symbol before its warning.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
