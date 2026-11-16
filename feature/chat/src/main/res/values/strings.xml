@@ -765,6 +765,7 @@
     <string name="search_no_messages_for_day">No messages on this day or before it</string>
     <!-- Screen readers hear this in the description of the message the search shows. -->
     <string name="chat_bubble_search_match">matches your search</string>
+    <string name="chat_bubble_keyword_match">has a word of your keyword alerts</string>
     <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
     <string name="bot_keyboard_show">Show bot keyboard</string>
     <string name="bot_keyboard_hide">Show keyboard</string>
