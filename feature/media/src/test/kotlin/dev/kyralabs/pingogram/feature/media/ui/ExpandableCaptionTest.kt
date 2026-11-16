@@ -8,6 +8,8 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -54,7 +56,36 @@ class ExpandableCaptionTest {
         caption.assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Expand))
     }
 
+    @Test
+    fun `a long caption ends in Show more, which shows all of it, then Show less`() {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                ExpandableCaption(caption = FormattedText(CAPTION, persistentListOf()), key = 1L)
+            }
+        }
+
+        composeRule.onNodeWithText("Show more", useUnmergedTree = true).performClick()
+        composeRule.onNode(hasText(CAPTION)).assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Collapse))
+        composeRule.onNodeWithText("Show less", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Show more", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun `a caption that fits offers nothing more`() {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                ExpandableCaption(caption = FormattedText(SHORT, persistentListOf()), key = 1L)
+            }
+        }
+
+        composeRule.onNode(hasText(SHORT)).assert(SemanticsMatcher.keyNotDefined(SemanticsActions.Expand))
+        composeRule.onNodeWithText("Show more", useUnmergedTree = true).assertDoesNotExist()
+    }
+
     private companion object {
-        const val CAPTION = "The view from the summit, after a long climb through the clouds and the morning rain."
+        val CAPTION =
+            List(4) { "The view from the summit, after a long climb through the clouds and the morning rain." }
+                .joinToString(" ")
+        const val SHORT = "The summit."
     }
 }
