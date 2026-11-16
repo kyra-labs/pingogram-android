@@ -145,8 +145,8 @@ internal val isAppLanguageListAvailable: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
- * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with an info icon; announced
- * when it appears.
+ * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with the "wifi off" symbol;
+ * announced when it appears.
  */
 @Composable
 internal fun ConnectionBanner(
@@ -156,7 +156,7 @@ internal fun ConnectionBanner(
     AuthBanner(
         visible = isOffline,
         modifier = modifier,
-        icon = { Icon(painterResource(UiR.drawable.ic_info), contentDescription = null) },
+        icon = { Icon(painterResource(R.drawable.ic_wifi_off), contentDescription = null) },
     ) {
         Text(
             text = stringResource(R.string.auth_offline_banner),

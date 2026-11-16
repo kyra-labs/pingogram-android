@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.reminders
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 
@@ -34,6 +35,21 @@ class ReminderTimesTest {
         val now = "2026-11-21T17:00:00Z"
         assertEquals(Instant.parse("2026-11-22T03:30:00Z"), at(ReminderChoice.TomorrowMorning, now))
         assertEquals(Instant.parse("2026-11-23T03:30:00Z"), at(ReminderChoice.NextWeek, now))
+    }
+
+    @Test
+    fun `next week starts on the first day of the week given`() {
+        // Saturday, 10:30 PM in Kolkata: a week that starts on Sunday starts tomorrow.
+        val now = Instant.parse("2026-11-21T17:00:00Z")
+        assertEquals(
+            Instant.parse("2026-11-22T03:30:00Z"),
+            ReminderTimes.at(ReminderChoice.NextWeek, now, zone, DayOfWeek.SUNDAY),
+        )
+        // Monday, 10:30 AM: a week that starts on Monday starts in seven days.
+        assertEquals(
+            Instant.parse("2026-11-30T03:30:00Z"),
+            ReminderTimes.at(ReminderChoice.NextWeek, Instant.parse("2026-11-23T05:00:00Z"), zone, DayOfWeek.MONDAY),
+        )
     }
 
     @Test

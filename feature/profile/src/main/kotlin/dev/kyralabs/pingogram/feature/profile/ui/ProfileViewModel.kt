@@ -658,7 +658,7 @@ class ProfileViewModel internal constructor(
             userId = user.id,
             name = if (isDeleted) UiText.resource(UiR.string.user_deleted_account) else user.fullName(),
             photo = user.profilePhoto,
-            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_filled else null,
+            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_off_filled else null,
             status =
                 when {
                     isDeleted -> null

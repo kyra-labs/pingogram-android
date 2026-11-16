@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.time.ReminderTimeLabels
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.ReminderEvent
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
@@ -135,7 +136,7 @@ class ReminderSheetViewModel internal constructor(
             .map { all ->
                 all.values
                     .filterNot(MessageReminder::isDone)
-                    .associate { it.messageId to label(it.at) }
+                    .associate { it.messageId to labels().label(it.at, clock.now()) }
                     .toImmutableMap()
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf())
 
@@ -178,15 +179,22 @@ class ReminderSheetViewModel internal constructor(
     }
 
     /** The choices offered as of now, each with when it rings; "This evening" left out after 20:00. */
-    private fun options(pickedAt: Long) =
-        ReminderChoice.entries
+    private fun options(pickedAt: Long): ImmutableList<ReminderOption> {
+        val now = clock.now()
+        val labels = labels()
+        return ReminderChoice.entries
             .mapNotNull { choice ->
                 if (choice == ReminderChoice.Custom) {
-                    ReminderOption(choice, pickedAt.takeIf { it != 0L }?.let { label(Instant.ofEpochSecond(it)) })
+                    val picked = pickedAt.takeIf { it != 0L }?.let { labels.label(Instant.ofEpochSecond(it), now) }
+                    ReminderOption(choice, picked)
                 } else {
-                    ReminderTimes.at(choice, clock.now(), clock.zone())?.let { ReminderOption(choice, label(it)) }
+                    ReminderTimes.at(choice, now, clock.zone(), locale().firstDayOfWeek())?.let { at ->
+                        val nextWeek = choice == ReminderChoice.NextWeek
+                        ReminderOption(choice, if (nextWeek) labels.weekdayAndTime(at) else labels.label(at, now))
+                    }
                 }
             }.toImmutableList()
+    }
 
     private fun open(id: Long) {
         savedStateHandle[KEY_MESSAGE] = id
@@ -228,7 +236,7 @@ class ReminderSheetViewModel internal constructor(
             if (chosen == ReminderChoice.Custom) {
                 picked.value.takeIf { it != 0L }?.let(Instant::ofEpochSecond)
             } else {
-                ReminderTimes.at(chosen, now, clock.zone())
+                ReminderTimes.at(chosen, now, clock.zone(), locale().firstDayOfWeek())
             }
         return at?.takeIf { it.isAfter(now) }
     }
@@ -247,7 +255,7 @@ class ReminderSheetViewModel internal constructor(
                 is Outcome.Success -> {
                     lastSet = reminder to before
                     close()
-                    effectChannel.trySend(ReminderEffect.Set(label(at)))
+                    effectChannel.trySend(ReminderEffect.Set(labels().label(at, clock.now())))
                 }
 
                 is Outcome.Failure -> {
@@ -289,15 +297,13 @@ class ReminderSheetViewModel internal constructor(
         savedStateHandle[KEY_PICKED] = 0L
     }
 
-    /** [at] in words, with the labels for the current time zone, language and clock setting. */
-    private fun label(at: Instant): UiText {
+    /** The labels for the current time zone, language and clock setting, made again only when one of them changed. */
+    private fun labels(): ReminderTimeLabels {
         val zone = clock.zone()
         val locale = locale()
         val is24HourClock = timePatterns.is24HourClock()
-        val current =
-            labels?.takeIf { it.isFor(zone, locale, is24HourClock) }
-                ?: ReminderTimeLabels(zone, locale, is24HourClock, timePatterns).also { labels = it }
-        return current.label(at, clock.now())
+        return labels?.takeIf { it.isFor(zone, locale, is24HourClock) }
+            ?: ReminderTimeLabels(zone, locale, is24HourClock, timePatterns).also { labels = it }
     }
 
     private companion object {

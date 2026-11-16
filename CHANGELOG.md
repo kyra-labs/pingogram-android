@@ -65,14 +65,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
   from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
   its search finds bookmarks by their chat, text, note or tags. Long-press a bookmark to change its tags or note.
-- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week or
-  at a time you pick, with a note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week
+  ("Next week · Mon, 9:00 AM": the first day of next week as your language counts it) or at a time you pick, with a
+  note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
   notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
   moves it an hour on.
 - Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
   it done or delete it, with "Undo".
 - A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
 - A reminder on the Reminders page opens its chat at the message it was set on.
+- The sign-in screens' offline banner shows the "Wi-Fi off" symbol, and a deleted account's avatar a crossed-out
+  person, both Material Symbols.
 - Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
   later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
   message's language is not on the phone, a link opens Android's language settings.

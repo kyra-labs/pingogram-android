@@ -223,9 +223,18 @@ private fun ChoiceRow(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = { Icon(painterResource(option.choice.icon), contentDescription = null) },
         trailingContent = { RadioButton(selected = selected, onClick = null) },
-        supportingContent = option.time?.let { time -> { Text(time.resolve()) } },
+        // "Next week" carries its day and time in its name (owner decision 2026-11-16), so it has no second line.
+        supportingContent =
+            option.time?.takeIf { option.choice != ReminderChoice.NextWeek }?.let { time -> { Text(time.resolve()) } },
     ) {
-        Text(stringResource(option.choice.label))
+        val time = option.time
+        Text(
+            if (option.choice == ReminderChoice.NextWeek && time != null) {
+                stringResource(R.string.reminder_next_week_at, time.resolve())
+            } else {
+                stringResource(option.choice.label)
+            },
+        )
     }
 }
 

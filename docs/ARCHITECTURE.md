@@ -813,8 +813,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `core:notifications`' `ReminderAlarms` (started by `PingogramApplication` 5 s after the process) follows every
   account's reminders and keeps one-time WorkManager work per reminder not done whose time is ahead
   (`WorkManagerReminderWork`: named after the account, the message and the time, so a moved reminder gets new work and
-  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6), so Doze may hold a ring
-  back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
+  the old is cancelled), no alarm and no exact-alarm permission (`docs/PERFORMANCE.md` §6; owner decision 2026-11-16: a
+  few minutes late is fine), so Doze may hold a ring back. `ReminderWorker` checks that the reminder still stands as scheduled, waits for TDLib, and posts
   `ReminderNotificationBuilder`'s notification in the app's "Reminders" channel; its "Snooze 1 h" goes to
   `ReminderActionReceiver`, which moves the reminder an hour on.
 - **Voice message transcription** (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28): on

@@ -177,7 +177,7 @@ object ProfilePreviewData {
                     userId = 9,
                     name = UiText.resource(UiR.string.user_deleted_account),
                     photo = null,
-                    placeholderIcon = UiR.drawable.ic_person_filled,
+                    placeholderIcon = UiR.drawable.ic_person_off_filled,
                 ),
             info = ProfileInfo(),
             actions = ProfileActions(canDeleteChat = true),
