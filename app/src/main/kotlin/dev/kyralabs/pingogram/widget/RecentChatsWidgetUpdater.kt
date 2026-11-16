@@ -113,7 +113,7 @@ class RecentChatsWidgetUpdater
             scope.launch {
                 // Asking the launcher which widgets are placed (a binder call, then a state read per widget) and
                 // loading their content wait too, unless a widget asks first (a process started for it).
-                merge(flow { emit(started.await()) }, placed.filterNotNull()).first()
+                merge(flow { emit(started.await()) }, placed.filterNotNull().map { }).first()
                 if (placed.value == null) placed.compareAndSet(null, widgets.slots())
                 placed
                     .filterNotNull()
@@ -126,7 +126,10 @@ class RecentChatsWidgetUpdater
                         widgets.updateAll()
                     }
             }
-            scope.launch { accounts.collect { known -> moveWidgetsOfGone(known.keys) } }
+            // Once the placed widgets are known: those of an account that left the device meanwhile move too.
+            scope.launch {
+                combine(accounts, placed.filterNotNull()) { known, _ -> known.keys }.collect(::moveWidgetsOfGone)
+            }
         }
 
         /** A widget of the account in [slot] asked for its content. */

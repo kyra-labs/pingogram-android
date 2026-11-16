@@ -108,7 +108,7 @@ class ConversationWidgetUpdater
             scope.launch {
                 // Asking the launcher which widgets are placed (a binder call, then a state read per widget) and
                 // loading their content wait too, unless a widget asks first (a process started for it).
-                merge(flow { emit(started.await()) }, placed.filterNotNull()).first()
+                merge(flow { emit(started.await()) }, placed.filterNotNull().map { }).first()
                 if (placed.value == null) placed.compareAndSet(null, widgets.keys())
                 placed
                     .filterNotNull()

@@ -60,8 +60,9 @@ class ConversationWidgetUpdaterTest {
     ) : ConversationWidgets {
         val placed = keys.toMutableSet()
         var updates = 0
+        var asked = 0
 
-        override suspend fun keys() = placed.toSet()
+        override suspend fun keys() = placed.toSet().also { asked++ }
 
         override suspend fun updateAll() {
             updates++
@@ -242,6 +243,42 @@ class ConversationWidgetUpdaterTest {
             assertEquals(ConversationContent.Loading, updater.currentContent(KEY))
             assertEquals(0, widgets.updates)
             assertTrue(client.sentOf<TdApi.GetChatHistory>().isEmpty())
+        }
+
+    @Test
+    fun `asks the launcher nothing and loads nothing while the app starts`() =
+        runTest {
+            history()
+            val widgets = FakeWidgets(KEY)
+            val updater = updater(widgets)
+            chat()
+            advanceTimeBy(RecentChatsWidgetUpdater.START_UPDATE_DELAY - 1.seconds)
+            runCurrent()
+
+            assertEquals(0, widgets.asked)
+            assertTrue(client.sentOf<TdApi.GetChatHistory>().isEmpty())
+            assertEquals(ConversationContent.Loading, updater.currentContent(KEY))
+
+            settle()
+
+            assertEquals(1, widgets.asked)
+            assertTrue(updater.currentContent(KEY) is ConversationContent.Chat)
+        }
+
+    @Test
+    fun `a widget that asks while the app starts gets its content at once`() =
+        runTest {
+            history()
+            val widgets = FakeWidgets(KEY)
+            val updater = updater(widgets)
+            chat()
+            updater.onWidgetShown(KEY)
+            advanceTimeBy(2.seconds)
+            runCurrent()
+
+            assertEquals(0, widgets.asked)
+            assertTrue(updater.currentContent(KEY) is ConversationContent.Chat)
+            assertEquals(0, widgets.updates)
         }
 
     private companion object {
