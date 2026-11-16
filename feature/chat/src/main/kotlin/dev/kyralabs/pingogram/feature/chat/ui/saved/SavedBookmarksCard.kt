@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -51,6 +52,7 @@ internal fun SavedBookmarksCard(
                 .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall)
+                .testTag(SAVED_BOOKMARKS_TEST_TAG)
                 .semantics { role = Role.Button },
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -109,3 +111,6 @@ internal fun rememberBookmarksCard(
 private fun SavedBookmarksCardPreview() {
     PingogramPreview { Surface { SavedBookmarksCard(count = 27, onOpen = {}) } }
 }
+
+/** For the benchmarks' journeys (`docs/PERFORMANCE.md` §9), which open the Bookmarks page through it. */
+private const val SAVED_BOOKMARKS_TEST_TAG = "saved_bookmarks"
