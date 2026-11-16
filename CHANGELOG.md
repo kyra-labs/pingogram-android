@@ -145,6 +145,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
 - A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
   says what is kept: you can still read your messages with them, but they can't receive new ones.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
