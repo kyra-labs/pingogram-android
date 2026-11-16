@@ -30,22 +30,27 @@ class KeywordAlertChats
         alertsRepository: KeywordAlertsRepository,
         chatLock: ChatLockRepository,
     ) {
-        /** Each chat's newest match, the newest first, then every change; empty while the tab is off. */
+        /**
+         * Each chat's newest match, the newest first, then every change; empty while the tab is off, which reads no
+         * matches at all (they are a file of the account's).
+         */
         internal val matches: Flow<List<KeywordHit>> =
-            combine(
-                alertsRepository.settings.map { it.showInChatList }.distinctUntilChanged(),
-                hitRepository.recent,
-                chatLock.lockedChatIds,
-            ) { shows, hits, locked ->
-                if (!shows) {
-                    emptyList()
-                } else {
-                    hits
-                        .sortedWith(compareByDescending<KeywordHit> { it.date }.thenByDescending { it.messageId })
-                        .distinctBy { it.chatId }
-                        .filterNot { it.chatId in locked }
-                }
-            }.distinctUntilChanged()
+            alertsRepository.settings
+                .map { it.showInChatList }
+                .distinctUntilChanged()
+                .flatMapLatest { shows ->
+                    if (!shows) {
+                        flowOf(emptyList())
+                    } else {
+                        combine(hitRepository.recent, chatLock.lockedChatIds) { hits, locked ->
+                            hits
+                                .sortedWith(
+                                    compareByDescending<KeywordHit> { it.date }.thenByDescending { it.messageId },
+                                ).distinctBy { it.chatId }
+                                .filterNot { it.chatId in locked }
+                        }
+                    }
+                }.distinctUntilChanged()
 
         /** The chats of [matches], in their order, those TDLib knows. */
         internal val chats: Flow<List<Chat>> =
