@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.PageToOpen
 import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
+import dev.kyralabs.pingogram.core.navigation.WidgetReplyRoute
 
 /**
  * Opens [chat], a chat a notification asked for, once the main graph shows, after `SessionNavigationEffect`
@@ -45,7 +46,8 @@ internal fun OpenChatEffect(
  *   above the chat list; the page asks for the passcode first.
  * - The Chats tab, whose Focus switcher the Focus tile's long press opened through `FocusSwitcherRequests` (board 31).
  * - Settings → Focus, which the Focus tile opens while there is no profile to turn on.
- * - A Conversation widget's chat picker, which its "Choose a chat" asks for (board 33), above whatever shows.
+ * - A Conversation widget's chat picker, which its "Choose a chat" asks for (board 33), and its reply sheet, which its
+ *   Reply asks for in the chat's account, above whatever shows.
  */
 @Composable
 internal fun OpenPageEffect(
@@ -66,6 +68,7 @@ internal fun OpenPageEffect(
                 PageToOpen.Focus -> navController.navigateAboveChats(FocusRoute)
                 PageToOpen.FocusSwitcher -> navController.navigateToTopLevelDestination(TopLevelDestination.Chats)
                 is PageToOpen.WidgetChat -> navController.navigate(WidgetChatPickerRoute(page.appWidgetId))
+                is PageToOpen.WidgetReply -> navController.navigate(WidgetReplyRoute(page.chatId))
             }
         }
         currentOnHandled()

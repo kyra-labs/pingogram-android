@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.widget
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -97,7 +98,6 @@ internal fun WidgetChatPickerSheet(
     onPick: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val spacing = MaterialTheme.spacing
     PingogramBottomSheet(
         onDismissRequest = onDismiss,
         sheetState =
@@ -106,6 +106,19 @@ internal fun WidgetChatPickerSheet(
                 enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
             ),
     ) {
+        WidgetChatPickerContent(state, onQueryChange, onPick)
+    }
+}
+
+/** What the picker's sheet holds: its title, the search field and the chats, or why there are none yet. */
+@Composable
+internal fun WidgetChatPickerContent(
+    state: WidgetChatPickerState,
+    onQueryChange: (String) -> Unit,
+    onPick: (Long) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    Column {
         Text(
             text = stringResource(R.string.widget_conversation_picker_title),
             modifier = Modifier.padding(horizontal = spacing.large).semantics { heading() },
