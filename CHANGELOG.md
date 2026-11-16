@@ -156,6 +156,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
+- The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.
 - When a photo or video takes more than half a second to load into the media viewer, it fades in with the viewer
   instead of jumping into the middle of its grow-from-the-message animation; closing still shrinks it back.
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
