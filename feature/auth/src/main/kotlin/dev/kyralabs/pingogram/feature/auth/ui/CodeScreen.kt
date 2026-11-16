@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.phone.loginCodeDescription
+import dev.kyralabs.pingogram.core.ui.phone.loginCodeResendInText
 import dev.kyralabs.pingogram.core.ui.phone.loginCodeResendText
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -39,13 +40,13 @@ import dev.kyralabs.pingogram.core.ui.text.clockText
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
 import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.LocalAuthFloodWait
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 import dev.kyralabs.pingogram.feature.auth.ui.preview.LANDSCAPE_PHONE
@@ -76,7 +77,10 @@ fun CodeScreen(
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitCode) },
-                enabled = canSubmit && state.code.isNotBlank(),
+                // Until the code is complete, where its length is known (board 23d); it sends itself then.
+                enabled =
+                    canSubmit && state.code.isNotBlank() &&
+                        state.codeLength.let { it == null || state.code.length >= it },
                 inProgress = pendingAction == AuthAction.SubmitCode,
             )
         },
@@ -102,6 +106,8 @@ fun CodeScreen(
             onDone = { onEvent(AuthEvent.SubmitCode) },
             isNumeric = state.type.isNumeric,
             contentType = ContentType.SmsOtpCode,
+            // Nothing to type while Telegram asks to wait (board 23e).
+            enabled = !LocalAuthFloodWait.current,
         )
         if (state.type is AuthCodeType.Fragment) {
             AuthTextButton(
@@ -153,9 +159,10 @@ private fun CodeHelpDialog(
 }
 
 /**
- * The resend countdown, its progress running down beside it ([CountdownIndicator]), then the button for a new code by
- * [AuthStepUiState.Code.nextType]. A polite live region: screen readers hear the countdown at most every 15 seconds
- * ([announcedCountdownSeconds]) and the button once it replaces it.
+ * The resend countdown ("Resend code by SMS in 0:42"), its progress running down beside it ([CountdownIndicator]),
+ * then the button for a new code by [AuthStepUiState.Code.nextType]. Screen readers hear the countdown when they reach
+ * it, and the button once it replaces it (board 23d: the countdown is announced only at 0): the live region is set only
+ * once the button shows.
  */
 @Composable
 private fun ResendCode(
@@ -168,7 +175,7 @@ private fun ResendCode(
     // The countdown and the button cross-fade as the wait ends (docs/DESIGN_SYSTEM.md §5).
     StateCrossfade(
         targetState = state.canResend,
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        modifier = Modifier.semantics { if (state.canResend) liveRegion = LiveRegionMode.Polite },
         label = "ResendCode",
     ) { canResend ->
         if (canResend) {
@@ -179,11 +186,7 @@ private fun ResendCode(
                 inProgress = pendingAction == AuthAction.ResendCode,
             )
         } else {
-            val announcement =
-                stringResource(
-                    UiR.string.login_code_resend_in,
-                    durationText(announcedCountdownSeconds(state.resendInSeconds)),
-                )
+            val announcement = loginCodeResendInText(nextType, durationText(state.resendInSeconds))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
                 verticalAlignment = Alignment.CenterVertically,
@@ -191,7 +194,7 @@ private fun ResendCode(
                 CountdownIndicator(secondsLeft = state.resendInSeconds, totalSeconds = state.resendTotalSeconds)
                 val clock = clockText(state.resendInSeconds)
                 Text(
-                    text = withTabularClock(stringResource(UiR.string.login_code_resend_in, clock), clock),
+                    text = withTabularClock(loginCodeResendInText(nextType, clock), clock),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },

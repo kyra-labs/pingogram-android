@@ -33,5 +33,12 @@ fun announcedCountdownSeconds(seconds: Long): Long =
         seconds
     }
 
+/**
+ * Whole seconds of a countdown as screen readers hear it once a minute (board 23e: a flood wait's countdown is
+ * announced every minute, not every second): rounded up to whole minutes, which never claims less time than is left.
+ */
+fun announcedEveryMinute(seconds: Long): Long =
+    if (seconds > 0) (seconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE * SECONDS_PER_MINUTE else 0
+
 private const val SECONDS_PER_MINUTE = 60L
 private const val ANNOUNCEMENT_STEP_SECONDS = 15L
