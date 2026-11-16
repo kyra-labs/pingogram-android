@@ -1,6 +1,6 @@
 # 0036 — Posting stories: the Photo Picker and the camera app, TDLib's `postStory`, long videos cut at key frames
 
-Status: proposed (owner decisions to confirm, 2026-11-10) ·
+Status: accepted (owner decisions 2026-11-10, confirmed 2026-11-16) ·
 Date: 2026-11-10 ·
 Milestone: after `v2.0.0` (`docs/ROADMAP.md`; stories were read only in M6, `docs/ARCHITECTURE.md` "Stories")
 
@@ -41,7 +41,7 @@ into 60 s stories posted one after another.
 - **Where it lives.** `feature:media`, beside the stories viewer (`storypost/`), whose full-bleed photo and video
   parts it reuses: `NewStoryRoute` of `core:navigation`, full screen, opened from the "Your story" ring
   (`feature:chats`' `StoryRingsRow`, the rings being this work's, not the chat list's), which then shows first even
-  while the user has no active story, with an add badge (Owner decision to confirm (2026-11-10)): a tap opens the user's
+  while the user has no active story, with an add badge (Owner decision (2026-11-10, confirmed 2026-11-16)): a tap opens the user's
   stories where there are some and posting where there are none, and its long press always opens posting.
   The picked items, their order, the caption's text and the privacy choice are in its `SavedStateHandle`; the files are
   copied into the upload cache (`uploads/<uuid>/`) by `core:data`'s `AttachmentPreparer` as picked photos are (upright
@@ -70,7 +70,7 @@ into 60 s stories posted one after another.
   `TransferRepository` counts their files as the user's transfers too (today it counts the files of messages being
   sent), so `TransfersWorker` keeps the app running when it goes to the background
   (`docs/adr/0009-background-transfers.md`).
-- **Left out.** Owner decision to confirm (2026-11-10): story editing tools in a later PR. "Add text", "Add sticker"
+- **Left out.** Owner decision (2026-11-10, confirmed 2026-11-16): story editing tools in a later PR. "Add text", "Add sticker"
   and "Draw" (the composer's story areas and stickers, td_api.tl `inputStoryAreas`, `added_sticker_file_ids`) are not
   in this work. Also left out: posting as a channel, albums when posting, reposting another story, and the other
   active periods.
@@ -80,7 +80,7 @@ into 60 s stories posted one after another.
 - No new permission, dependency or library; no network but TDLib.
 - Posting is three pull requests: picking (10a), composing and posting (10b), and the ring's progress (10c). Each adds
   its `docs/DESIGN_SYSTEM.md` §6 rows and §13.11 notes.
-- Owner decisions to confirm (2026-11-10):
+- Owner decisions (2026-11-10, confirmed 2026-11-16):
   1. Story editing tools (text, stickers, drawing) in a later PR.
   2. Cutting long videos on the phone at key frames, without encoding again; parts may be a little shorter than 60 s.
   3. The caption only on the first of several items.

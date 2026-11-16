@@ -3,7 +3,7 @@
 Date: 2026-11-07 · Status: accepted by the owner on 2026-11-07 (the brief of that day); the switch was retired on
 2026-11-08, when the owner made the experimental look Pingogram's only look (see "Retired" below). Points marked "Owner decision to
 confirm (2026-11-07)" here and in `docs/DESIGN_SYSTEM.md` §13 are Pingogram's reading where the owner's design shows
-something the owner has not decided.
+something the owner has not decided; the owner confirmed all of them on 2026-11-16.
 
 ## Context
 
@@ -34,7 +34,7 @@ An **opt-in switch**, "Experimental UI", off by default, and **one UI with style
   for its duration). The change happens on Settings home, where the user is looking at the switch; the view models,
   scroll positions and saved state stay.
 - **Where it shows**: Settings home. In the standard look a switch row "Experimental UI" with a "Beta" label, in a
-  group of its own before "Log out" (Owner decision to confirm (2026-11-07): the brief names the row, not its place);
+  group of its own before "Log out" (the switch was removed on 2026-11-08, when this look became the only one);
   in the experimental look the design's labs card under the account card.
 - **How screens branch**: a composable that looks different reads `LocalExperimentalUi` and picks its style at the
   smallest scope that differs (a color, a shape, a slot), keeping its state, events, view model, keys, content types
