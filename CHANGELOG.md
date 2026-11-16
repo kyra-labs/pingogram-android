@@ -90,6 +90,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
