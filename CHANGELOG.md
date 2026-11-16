@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
 - The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
   pinned messages page shows a pinned video's or GIF's picture with its length.
 - Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
