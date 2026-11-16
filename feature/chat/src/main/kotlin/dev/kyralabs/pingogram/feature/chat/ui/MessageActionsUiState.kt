@@ -93,6 +93,7 @@ data class MessageShortcuts(
     val canCopyLink: Boolean = false,
     val linksInThread: Boolean = false,
     val canForward: Boolean = false,
+    val canRemind: Boolean = false,
 )
 
 /** What the actions sheet offers for a message, each only where TDLib allows it. */
@@ -247,7 +248,7 @@ sealed interface DeleteScope {
  * What screen readers and the bubbles get directly in this chat: replying where the user can write ([canWrite]),
  * copying, replying in another chat and forwarding where its content may leave it (not secret chats for the latter
  * two), message links in supergroups and channels, to the message in the topic or thread where the conversation is
- * one ([inThread]).
+ * one ([inThread]), and reminders, which secret chats leave out as the notification would show their messages.
  */
 internal fun Chat.shortcuts(
     canWrite: Boolean,
@@ -259,4 +260,5 @@ internal fun Chat.shortcuts(
     canForward = !hasProtectedContent && type !is ChatType.Secret,
     canCopyLink = type is ChatType.Supergroup,
     linksInThread = inThread,
+    canRemind = type !is ChatType.Secret,
 )

@@ -7,7 +7,9 @@ import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
@@ -44,6 +46,7 @@ class ReminderSheetViewModelTest {
     private val reminders = FakeReminderRepository()
     private val messages = FakeMessageRepository()
     private val users = FakeUserRepository()
+    private val chats = FakeChatRepository()
 
     // Sunday, October 18, 9:41:30 AM UTC.
     private val clock = FakeWallClock(NOW)
@@ -63,14 +66,15 @@ class ReminderSheetViewModelTest {
     private fun TestScope.createViewModel(
         handle: SavedStateHandle = SavedStateHandle(),
         locale: Locale = Locale.US,
+        chatId: Long = PRIVATE_CHAT,
     ): ReminderSheetViewModel {
         val viewModel =
             ReminderSheetViewModel(
-                chatId = PRIVATE_CHAT,
+                chatId = chatId,
                 savedStateHandle = handle,
                 reminders = reminders,
                 messages = messages,
-                chats = FakeChatRepository(),
+                chats = chats,
                 users = users,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
@@ -92,6 +96,18 @@ class ReminderSheetViewModelTest {
     ) = UiText.resource(UiR.string.reminder_label_day_time, weekday, time)
 
     @Test
+    fun `in a group the message follows its sender's name`() =
+        runTest {
+            chats.chats.value = mapOf(GROUP_CHAT to ChatFixtures.groupChat)
+            val viewModel = createViewModel(chatId = GROUP_CHAT)
+
+            viewModel.onEvent(ReminderEvent.Open(42))
+            runCurrent()
+
+            assertEquals(UiText.Plain("Ada Lovelace"), viewModel.sheet.value!!.sender)
+        }
+
+    @Test
     fun `opening shows the message and the choices with their times, tomorrow morning chosen`() =
         runTest {
             val viewModel = createViewModel()
@@ -100,7 +116,8 @@ class ReminderSheetViewModelTest {
             runCurrent()
 
             val sheet = viewModel.sheet.value!!
-            assertEquals(UiText.Plain("Ada Lovelace"), sheet.sender)
+            // A private chat's name already says who wrote: the sender shows in groups only (board 29b).
+            assertNull(sheet.sender)
             assertEquals(UiText.Plain("Message 42"), sheet.text)
             assertEquals(
                 listOf(
