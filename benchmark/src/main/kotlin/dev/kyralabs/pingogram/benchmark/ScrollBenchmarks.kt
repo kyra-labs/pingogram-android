@@ -78,11 +78,43 @@ class ConversationScrollBenchmark {
 }
 
 /**
+ * Frame times while the Bookmarks page's cards scroll (`docs/DESIGN_SYSTEM.md` §6 "Bookmarks"). It opens the page
+ * through Saved Messages' card, which shows once a message is bookmarked: bookmark a few screens of messages first,
+ * some with notes and tags. Needs a signed-in app on the device (`docs/PERFORMANCE.md` §9).
+ */
+@RunWith(AndroidJUnit4::class)
+class BookmarksScrollBenchmark {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
+
+    @Test
+    fun scrollCompilationNone() = scroll(CompilationMode.None())
+
+    @Test
+    fun scrollBaselineProfile() = scroll(CompilationMode.Partial(BaselineProfileMode.Require))
+
+    private fun scroll(compilationMode: CompilationMode) {
+        rule.measureRepeated(
+            packageName = TARGET_PACKAGE,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = compilationMode,
+            iterations = ITERATIONS,
+            setupBlock = {
+                coldStart()
+                openBookmarks() ?: error("Saved Messages shows no Bookmarks card. Bookmark a few messages first.")
+            },
+        ) {
+            scrollBookmarks(bookmarksList())
+        }
+    }
+}
+
+/**
  * Starts the app cold in a setup block: kills it, then starts the launcher activity. Not `StartupMode.COLD`: with a
  * startup mode, Macrobenchmark kills the process again after the setup block, so the measured block would find the
  * app gone (no chat list, or a stale message list).
  */
-private fun MacrobenchmarkScope.coldStart() {
+internal fun MacrobenchmarkScope.coldStart() {
     killProcess()
     pressHome()
     startActivityAndWait()

@@ -1232,7 +1232,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   viewer's own transition (`SharedMediaShapes.viewerTransition`, a child transition of the viewer page's, inverted),
   so both sides of the container transform move on one transition, frame by frame. An overlay is composed hidden first
   and comes in once its content is ready (`PostponeOverlayEnter`, at most `OVERLAY_ENTER_TIMEOUT_MILLIS`, 500 ms), so
-  the photo grows into a page that already shows it: the viewer holds it until its first page is there, which
+  the photo grows into a page that already shows it (a page that comes later, as the overlay stopped waiting, shares nothing until the way in ended, fading in with it instead, `sharedMediaViewerBounds`): the viewer holds it until its first page is there, which
   `ChatMediaRepository.opened` answers with the opened message alone (`getMessage`, from TDLib's memory), the pages
   on either side following from it.
   An overlay going out takes no touches, focus or screen readers from its first frame (`OverlayNavigator`'s
