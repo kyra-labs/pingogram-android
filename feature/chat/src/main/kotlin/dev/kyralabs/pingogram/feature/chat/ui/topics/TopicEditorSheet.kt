@@ -238,10 +238,10 @@ private fun ColorPicker(
 }
 
 /**
- * One topic color, as the Theme page's chips: a `sizes.themeChip` circle in the color's tonal pair with the topic
- * symbol, its name below it in `labelMedium`; while [selected] the circle morphs into `MaterialShapes.Cookie9Sided` on
- * the default spatial spring (snapping with reduced motion) and shows a check. A radio button named after the color
- * for screen readers; a pick ticks (`SegmentTick`).
+ * One topic color, as the Theme page's chips: a `sizes.themeChip` circle in the color's sender hue ([topicTone]) with
+ * the topic symbol, its name below it in `labelMedium`; while [selected] the circle morphs into
+ * `MaterialShapes.Cookie9Sided` on the default spatial spring (snapping with reduced motion) and shows a check. A radio
+ * button named after the color for screen readers; a pick ticks (`SegmentTick`).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

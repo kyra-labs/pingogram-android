@@ -97,6 +97,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Forum topics' six colors are drawn in six of the theme's sender hues (blue, gold, green, violet, pink, red), so
+  they all look different in light, dark, AMOLED and high contrast, in the topic list, the topic editor and the chat
+  list's forum rows.
 - A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
   "OK" and "NO" keep their bubble.
 - Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
