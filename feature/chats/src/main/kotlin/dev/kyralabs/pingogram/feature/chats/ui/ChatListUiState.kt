@@ -148,6 +148,9 @@ data class CommunityEntry(
     override fun toString() = "CommunityEntry(id=$id, chats=${chats.size}, isExpanded=$isExpanded, …)"
 }
 
+/** The folder id of the "Keyword alerts" tab ([FolderTab.KeywordAlerts]), which no TDLib folder has. */
+internal const val KEYWORD_ALERTS_FOLDER_ID = Int.MIN_VALUE
+
 /** A tab above the chat list. */
 @Immutable
 sealed interface FolderTab {
@@ -157,11 +160,28 @@ sealed interface FolderTab {
     /** Any chat of the tab's list is unread, muted ones included: its menu offers "Mark all as read". */
     val hasUnread: Boolean
 
+    /** The folder the tab selects: null for "All chats", [KEYWORD_ALERTS_FOLDER_ID] for "Keyword alerts". */
+    val folderId: Int?
+
     /** The main list. */
     data class AllChats(
         override val unreadCount: Int,
         override val hasUnread: Boolean = unreadCount > 0,
-    ) : FolderTab
+    ) : FolderTab {
+        override val folderId: Int? get() = null
+    }
+
+    /**
+     * "Keyword alerts" (board 30, owner decision 2026-11-15): the [chatCount] chats with a match of the user's keyword
+     * alerts in the last week, last among the tabs while there are any and the user asked for the tab. No menu.
+     */
+    data class KeywordAlerts(
+        val chatCount: Int,
+    ) : FolderTab {
+        override val unreadCount: Int get() = chatCount
+        override val hasUnread: Boolean get() = false
+        override val folderId: Int get() = KEYWORD_ALERTS_FOLDER_ID
+    }
 
     /**
      * Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji), and TDLib's name of its
@@ -174,6 +194,8 @@ sealed interface FolderTab {
         override val hasUnread: Boolean = unreadCount > 0,
         val iconName: String = "",
     ) : FolderTab {
+        override val folderId: Int get() = id
+
         override fun toString() = "Folder(id=$id, unreadCount=$unreadCount, …)"
     }
 }
@@ -205,6 +227,8 @@ sealed interface FolderTab {
  * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
  * @property topics a forum's topics, the newest message first, which its row names on a line of its own above the
  *   preview, as Telegram's apps do (owner decision 2026-11-15); null where it is no forum, or before they are loaded.
+ * @property keyword the word of the user's keyword alerts the chat matched, as a chip, on the "Keyword alerts" tab
+ *   only (board 30); null elsewhere.
  */
 @Immutable
 data class ChatListItemModel(
@@ -229,6 +253,7 @@ data class ChatListItemModel(
     val avatarShape: AvatarShape = AvatarShape.Circle,
     val unreadTopicCount: Int? = null,
     val topics: ImmutableList<RowTopic>? = null,
+    val keyword: String? = null,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread

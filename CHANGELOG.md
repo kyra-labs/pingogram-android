@@ -21,6 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
   muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" (at the message) and "Mark as
   read"; matching runs on the phone while Pingogram is connected.
+- With "Show Keyword alerts in the chat list" on, the folder tabs end in "Keyword alerts" while chats had a match in
+  the last week: those chats, the newest match first, each with its word, opening at the match.
 - A chat opened from a keyword alert shows "Keyword: launch · 1 of 4" at the top, whose arrows step through the chat's
   matches of the last week.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
