@@ -45,6 +45,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.ActionPill
+import dev.kyralabs.pingogram.feature.profile.ui.ActionPillRow
 import dev.kyralabs.pingogram.feature.profile.ui.IdRow
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
@@ -74,10 +75,7 @@ internal fun ChatInfoActionsRow(
         .collectAsStateWithLifecycle(null)
     val voiceChatPill = voiceChats != null && (voiceChat != null || actions.canStartVoiceChat)
     if (isMuted == null && !actions.canLeave && !voiceChatPill) return
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-    ) {
+    ActionPillRow(modifier) {
         if (isMuted != null) {
             ActionPill(
                 icon = if (isMuted) UiR.drawable.ic_notifications else UiR.drawable.ic_notifications_off,
@@ -244,7 +242,7 @@ private fun LinkRow(
         shapes = shapes,
         colors = profileRowColors(),
         supportingContent = {
-            Text(stringResource(if (link.isPublic) R.string.chat_info_link else R.string.chat_info_invite_link))
+            Text(stringResource(if (link.isPublic) R.string.chat_info_public_link else R.string.chat_info_invite_link))
         },
         trailingContent = {
             IconButton(onClick = { onEvent(ChatInfoEvent.ShareLink) }, shapes = IconButtonDefaults.shapes()) {
@@ -349,8 +347,21 @@ internal fun ChatAdministrationGroup(
                 if (administration.isChannel) R.string.chat_settings_channel else R.string.chat_settings_group,
                 ChatInfoPage.Settings,
             ).takeIf { administration.canEditSettings },
-            page("permissions", R.string.chat_info_permissions, ChatInfoPage.Permissions)
-                .takeIf { administration.canEditPermissions },
+            administration.allowedPermissions?.let { allowed ->
+                ProfileRow("permissions") { shapes ->
+                    ChatInfoActionRow(
+                        text = stringResource(R.string.chat_info_permissions),
+                        shapes = shapes,
+                        onClick = { onEvent(ChatInfoEvent.Open(ChatInfoPage.Permissions)) },
+                        detail =
+                            stringResource(
+                                R.string.chat_info_permissions_allowed,
+                                numbers.format(allowed),
+                                numbers.format(Permission.entries.size),
+                            ),
+                    )
+                }
+            },
             administration.administratorCount?.let {
                 members("admins", R.string.chat_info_administrators, MemberFilter.Administrators, it)
             },
@@ -429,6 +440,7 @@ internal fun ChatInfoMoreGroup(
                         ),
                     shapes = shapes,
                     onClick = { onEvent(ChatInfoEvent.Delete) },
+                    detail = stringResource(R.string.chat_info_delete_detail),
                     enabled = !actions.isBusy,
                     contentColor = MaterialTheme.colorScheme.error,
                 )
