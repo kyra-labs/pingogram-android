@@ -8,10 +8,13 @@ package dev.kyralabs.pingogram.feature.chat.ui
 sealed interface VoiceEvent : ChatEvent {
     /**
      * Start recording, the microphone permission being granted: held ([locked] false) while the finger stays on the
-     * button, or [locked] at once when the button is activated without touch (a screen reader, a keyboard).
+     * button, or [locked] at once when the button is activated without touch (a screen reader, a keyboard). A
+     * [voiceOnly] recording is a voice message even while the button records video messages: the Quick compose
+     * widget's "Voice" (board 33) asked for one.
      */
     data class Start(
         val locked: Boolean = false,
+        val voiceOnly: Boolean = false,
     ) : VoiceEvent
 
     /** The microphone was pressed without the permission: a snackbar explains why it is needed, offering to ask. */

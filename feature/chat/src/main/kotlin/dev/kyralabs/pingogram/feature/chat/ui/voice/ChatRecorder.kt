@@ -197,7 +197,7 @@ internal class ChatRecorder(
     private suspend fun carryOut(event: VoiceEvent) {
         when (event) {
             is VoiceEvent.Start -> {
-                begin(event.locked)
+                begin(event.locked, voiceOnly = event.voiceOnly)
             }
 
             VoiceEvent.Lock -> {
@@ -228,9 +228,12 @@ internal class ChatRecorder(
         }
     }
 
-    private suspend fun begin(locked: Boolean) {
+    private suspend fun begin(
+        locked: Boolean,
+        voiceOnly: Boolean,
+    ) {
         if (session != null) return
-        val session = Session(isLocked = locked, isVideo = mode.value.video, isFront = front)
+        val session = Session(isLocked = locked, isVideo = mode.value.video && !voiceOnly, isFront = front)
         this.session = session
         onStart()
         publish()
