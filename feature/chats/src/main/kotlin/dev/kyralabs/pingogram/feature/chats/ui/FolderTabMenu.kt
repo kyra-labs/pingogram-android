@@ -66,10 +66,10 @@ internal fun FolderTab.labelOf(action: FolderTabAction): Int =
         }
     }
 
-/** The actions of [tab]'s menu, in their order; empty means no menu. */
+/** The actions of [tab]'s menu, in their order; empty means no menu, as on "Keyword alerts". */
 internal fun FolderTab.actions(canEditFolders: Boolean): ImmutableList<FolderTabAction> =
     listOfNotNull(
-        FolderTabAction.EditFolder.takeIf { canEditFolders },
+        FolderTabAction.EditFolder.takeIf { canEditFolders && this !is FolderTab.KeywordAlerts },
         FolderTabAction.MarkAllAsRead.takeIf { hasUnread },
     ).toImmutableList()
 

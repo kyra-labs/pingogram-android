@@ -33,8 +33,9 @@ sealed interface ChatListEffect {
     /** Opens the New chat screen. */
     data object OpenNewChat : ChatListEffect
 
-    /** Opens the conversation of chat [chatId]. */
+    /** Opens the conversation of chat [chatId], at message [messageId] if any (a keyword alert's match). */
     data class OpenChat(
         val chatId: Long,
+        val messageId: Long? = null,
     ) : ChatListEffect
 }

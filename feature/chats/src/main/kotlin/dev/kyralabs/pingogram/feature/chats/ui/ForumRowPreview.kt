@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CornerSize
@@ -42,7 +43,16 @@ internal fun RowSupporting(
     if (topics != null) {
         ForumRowPreview(topics, preview, contentIcon)
     } else {
-        ChatPreviewText(preview, contentIcon)
+        val keyword = item.keyword?.takeIf { timeOnPreviewLine() }
+        if (keyword == null) {
+            ChatPreviewText(preview, contentIcon)
+        } else {
+            // At large font scales a keyword alert's word goes under the preview (board 30), not beside the title.
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
+                ChatPreviewText(preview, contentIcon)
+                KeywordChip(keyword, capped = false)
+            }
+        }
     }
 }
 

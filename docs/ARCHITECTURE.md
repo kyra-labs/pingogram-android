@@ -692,7 +692,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (deleted at logout; the demo's in memory) and announces each with its text (`alerts`, never written or logged).
   `core:notifications`' `KeywordAlertNotifier` (started by `PingogramApplication`) posts those of muted chats in the
   `KeywordAlerts` channel while "Alert even when the chat is muted" is on, never for a locked chat or the chat on screen,
-  and cancels each once its message is read.
+  and cancels each once its message is read. The chat list's "Keyword alerts" tab (while "Show Keyword alerts in the
+  chat list" is on and there are matches) is `feature:chats`' `KeywordAlertChats` (each chat's newest match, the
+  newest first, without locked chats), a part of `ChatListViewModel` behind a folder id no TDLib folder has
+  (`KEYWORD_ALERTS_FOLDER_ID`), so the tabs, swipes and slides take it as a folder; its rows carry the word
+  (`ChatListItemModel.keyword`) and open at the match (`ChatListEffect.OpenChat.messageId`, `ChatListPane`'s
+  `onOpenMessage`).
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a

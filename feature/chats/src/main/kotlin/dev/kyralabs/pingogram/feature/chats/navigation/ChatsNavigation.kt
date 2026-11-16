@@ -55,7 +55,8 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  *
  * The header (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar") holds global search's button and the signed-in user's
  * avatar, which do what [headerActions] says: open search and grow into it, open the Settings tab and its account
- * menu.
+ * menu. A row of the "Keyword alerts" tab (board 30) opens its chat at its match through [onOpenMessage], as a found
+ * message opens; without it, as any row.
  */
 @Composable
 fun ChatListPane(
@@ -68,6 +69,7 @@ fun ChatListPane(
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     ChatListRoute(
         onOpenArchive = onOpenArchive,
@@ -79,6 +81,7 @@ fun ChatListPane(
         openChatId = openChatId,
         onEditFolder = onEditFolder,
         headerActions = headerActions,
+        onOpenMessage = onOpenMessage,
     )
 }
 

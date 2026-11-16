@@ -32,6 +32,10 @@
     <string name="chat_list_loading">Loading chats</string>
     <!-- The folder tab of the main chat list. -->
     <string name="chat_list_all_chats">All chats</string>
+    <!-- The chat list tab of the chats with a match of the user's keyword alerts (board 30). -->
+    <string name="chat_list_keyword_alerts">Keyword alerts</string>
+    <!-- Screen readers, after a chat's preview on the "Keyword alerts" tab: the word it matched. -->
+    <string name="chat_list_a11y_keyword">Keyword: %1$s</string>
     <string name="chat_list_empty_title">No chats yet</string>
     <string name="chat_list_empty_body">When you start a conversation or join a group, it shows up here.</string>
     <string name="chat_list_folder_empty_title">No chats in this folder</string>
