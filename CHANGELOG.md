@@ -93,6 +93,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
   titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
   ago, with "React" as an action; a story that can't be shown says the viewer moves on.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
