@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -49,7 +51,8 @@ import javax.inject.Inject
  * of the account kept on this phone ([ReminderRepository]), each with its chat ([ChatRepository]) and the message as
  * the chat list previews it, read once from TDLib ([MessageRepository.message]) and kept for the page's life. Upcoming
  * ones (not done, past ones first) over done ones, by time or by chat as the saved state says. Marking done and back,
- * and deleting with "Undo", are written at once.
+ * and deleting with "Undo", are written at once. The reminders of locked chats are left out while the chats are hidden
+ * ([ChatLockRepository.hiddenChatIds]), as their names and messages are, and the page waits until that is known.
  */
 @Suppress("LongParameterList") // The reminders, what they show of their chats and messages, and the clock.
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,6 +63,7 @@ class RemindersViewModel internal constructor(
     private val chats: ChatRepository,
     private val messages: MessageRepository,
     private val users: UserRepository,
+    private val chatLocks: ChatLockRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val locale: () -> Locale,
@@ -71,9 +75,10 @@ class RemindersViewModel internal constructor(
         chats: ChatRepository,
         messages: MessageRepository,
         users: UserRepository,
+        chatLocks: ChatLockRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
-    ) : this(savedStateHandle, reminders, chats, messages, users, clock, timePatterns, Locale::getDefault)
+    ) : this(savedStateHandle, reminders, chats, messages, users, chatLocks, clock, timePatterns, Locale::getDefault)
 
     private val sort = savedStateHandle.getStateFlow(KEY_SORT, ReminderSort.ByTime.name)
 
@@ -87,8 +92,9 @@ class RemindersViewModel internal constructor(
     val effects: Flow<RemindersEffect> = effectChannel.receiveAsFlow()
 
     val uiState: StateFlow<RemindersUiState> =
-        reminders.reminders
-            .onEach { list -> list.forEach(::loadPreview) }
+        combine(reminders.reminders, chatLocks.hiddenChatIds.filterNotNull()) { list, hidden ->
+            list.filterNot { it.chatId in hidden }
+        }.onEach { list -> list.forEach(::loadPreview) }
             .flatMapLatest { list ->
                 val chatIds = list.map { it.chatId }.distinct()
                 val chatsShown: Flow<Map<Long, Chat>> =
