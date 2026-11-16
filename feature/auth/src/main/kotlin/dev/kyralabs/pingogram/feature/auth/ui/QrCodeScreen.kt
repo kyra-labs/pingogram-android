@@ -26,7 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.CollectionItemInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.collectionInfo
+import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
@@ -66,6 +70,7 @@ fun QrCodeScreen(
         badgeShape = MaterialShapes.Clover4Leaf,
         badgeIcon = UiR.drawable.ic_photo_camera_filled,
         modifier = modifier,
+        description = stringResource(R.string.auth_qr_description),
         secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_qr_use_phone),
@@ -74,7 +79,11 @@ fun QrCodeScreen(
             )
         },
         explanation = {
-            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
+            // An ordered list for screen readers (board 23h): "1, Open Telegram on your phone, 1 of 3".
+            Column(
+                modifier = Modifier.semantics { collectionInfo = CollectionInfo(rowCount = QR_STEPS, columnCount = 1) },
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+            ) {
                 QrInstruction(number = 1, text = stringResource(R.string.auth_qr_step_open))
                 QrInstruction(number = 2, text = stringResource(R.string.auth_qr_step_settings))
                 QrInstruction(number = 3, text = stringResource(R.string.auth_qr_step_confirm))
@@ -151,7 +160,11 @@ private fun QrInstruction(
     val locale = LocalConfiguration.current.locales[0]
     val numberText = remember(locale, number) { NumberFormat.getIntegerInstance(locale).format(number) }
     Row(
-        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        modifier =
+            Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                collectionItemInfo =
+                    CollectionItemInfo(rowIndex = number - 1, rowSpan = 1, columnIndex = 0, columnSpan = 1)
+            },
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -174,6 +187,7 @@ private fun QrInstruction(
     }
 }
 
+private const val QR_STEPS = 3
 private const val QR_FRAME_WIDTH_FRACTION = 0.8f
 private const val COMPACT_HEIGHT_SCALE = 0.7f
 
