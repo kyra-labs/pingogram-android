@@ -89,11 +89,11 @@ class KeywordAlertNotifierTest {
             assertEquals(PingogramChannel.KeywordAlerts.id, notification.channelId)
             assertEquals("Chat 1", notification.extras.getCharSequence(NotificationCompat.EXTRA_TITLE).toString())
             assertEquals(
-                "Keyword: launch",
+                "Keyword: launch · muted",
                 notification.extras
                     .getCharSequence(NotificationCompat.EXTRA_SUB_TEXT)
                     .toString()
-                    .filter { it.isLetterOrDigit() || it == ' ' || it == ':' },
+                    .filter { it.isLetterOrDigit() || it == ' ' || it == ':' || it == '·' },
             )
             val text = notification.extras.getCharSequence(NotificationCompat.EXTRA_TEXT) as Spanned
             val bold = text.getSpans(0, text.length, StyleSpan::class.java).single()

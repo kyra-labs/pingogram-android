@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.keywords
 import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 
@@ -18,6 +19,7 @@ internal object KeywordAlertsPreviewStates {
                     where = KeywordScope.Folders(persistentSetOf(1)),
                 ),
             folders = folders,
+            matchCounts = persistentMapOf("launch" to 4, "Pingogram" to 12, "0.9.4" to 0, "@ada" to 1),
         )
 
     val empty =
