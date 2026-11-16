@@ -164,31 +164,13 @@ class ChatListMenusTest {
     // The archive row
 
     @Test
-    fun `the archive row's long press makes it compact or hides it`() {
+    fun `the archive row's long press offers only to hide it`() {
         setScreen(ChatListPreviewData.contentWithArchive)
 
         archiveRow().performTouchInput { longClick() }
-        composeRule.onNodeWithText(string(R.string.chat_list_archive_row_collapse)).performClick()
-        archiveRow().performTouchInput { longClick() }
         composeRule.onNodeWithText(string(R.string.chat_list_archive_row_hide)).performClick()
 
-        assertEquals(
-            listOf(
-                ChatListEvent.SetArchiveRowStyle(ArchiveRowStyle.Compact),
-                ChatListEvent.SetArchiveRowStyle(ArchiveRowStyle.Hidden),
-            ),
-            events,
-        )
-    }
-
-    @Test
-    fun `a compact archive row shows the names again`() {
-        setScreen(ChatListPreviewData.contentWithCompactArchive)
-
-        archiveRow().performTouchInput { longClick() }
-        composeRule.onNodeWithText(string(R.string.chat_list_archive_row_expand)).performClick()
-
-        assertEquals(listOf(ChatListEvent.SetArchiveRowStyle(ArchiveRowStyle.Full)), events)
+        assertEquals(listOf(ChatListEvent.SetArchiveRowStyle(ArchiveRowStyle.Hidden)), events)
     }
 
     @Test
@@ -229,13 +211,12 @@ class ChatListMenusTest {
     }
 
     @Test
-    fun `screen readers get the archive row's styles as custom actions`() {
+    fun `screen readers get the archive row's menu as a custom action, and hear the chats' names`() {
         setScreen(ChatListPreviewData.contentWithArchive)
 
-        archiveRow().assertCustomActions(
-            string(R.string.chat_list_archive_row_collapse),
-            string(R.string.chat_list_archive_row_hide),
-        )
+        archiveRow().assertCustomActions(string(R.string.chat_list_archive_row_hide))
+        val description = archiveRow().fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
+        assertTrue(description, "Rocket Club" in description)
         archiveRow().runCustomAction(string(R.string.chat_list_archive_row_hide))
 
         assertEquals(listOf(ChatListEvent.SetArchiveRowStyle(ArchiveRowStyle.Hidden)), events)

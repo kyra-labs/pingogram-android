@@ -187,7 +187,8 @@ class NtgCallsEngine
         override suspend fun createGroupCall(
             groupCallId: Int,
             muted: Boolean,
-        ): GroupCallSession = openGroupCall(groupKey(groupCallId), muted) { calls().createCall(it) }
+            withMicrophone: Boolean,
+        ): GroupCallSession = openGroupCall(groupKey(groupCallId), muted, withMicrophone) { calls().createCall(it) }
 
         override suspend fun createConference(
             muted: Boolean,
@@ -202,6 +203,7 @@ class NtgCallsEngine
         private suspend fun openGroupCall(
             id: Long,
             muted: Boolean,
+            withMicrophone: Boolean = true,
             create: (Long) -> String,
         ): GroupCallSession =
             withContext(engineThread) {
@@ -210,7 +212,8 @@ class NtgCallsEngine
                 val session = NtgGroupCallSession(id, payload)
                 groupSessions[id] = session
                 try {
-                    engine.setStreamSources(id, StreamMode.CAPTURE, session.capture())
+                    // Without the microphone (watching a live story) nothing is captured: only the speaker opens.
+                    if (withMicrophone) engine.setStreamSources(id, StreamMode.CAPTURE, session.capture())
                     engine.setStreamSources(id, StreamMode.PLAYBACK, session.playback())
                     if (muted) engine.mute(id)
                 } catch (e: RuntimeException) {

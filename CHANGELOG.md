@@ -99,6 +99,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Forum topics' six colors are drawn in six of the theme's sender hues (blue, gold, green, violet, pink, red), so
   they all look different in light, dark, AMOLED and high contrast, in the topic list, the topic editor and the chat
   list's forum rows.
+- The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
+  "Show chat names" are gone from its menu and from screen readers' actions.
 - Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
   buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
   avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
@@ -128,6 +130,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
+  message tile in Quick Settings says "Pingogram" under its name.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
@@ -146,12 +150,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
   attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
   offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
 - A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
   says what is kept: you can still read your messages with them, but they can't receive new ones.
 - A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
   scrolls, the top bar keeps a Call button where the person can be called.
+- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
+  opens the microphone there. Voice chats and group calls still ask as before.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
 - A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.

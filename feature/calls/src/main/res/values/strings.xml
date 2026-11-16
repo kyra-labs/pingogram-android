@@ -17,6 +17,7 @@
     <string name="call_status_ringing">Ringing…</string>
     <string name="call_status_connecting">Connecting…</string>
     <string name="call_status_connected">In call</string>
+    <string name="call_status_connected_spoken">Connected</string>
     <string name="call_status_reconnecting">Reconnecting…</string>
     <string name="call_status_on_hold">On hold</string>
     <string name="call_status_ended">Call ended</string>
@@ -31,8 +32,9 @@
     <string name="call_signal_weak">Weak connection</string>
 
     <!-- The key's emojis at the top of the call screen. %1$s: the four emojis. -->
+    <string name="call_key_compare">Make the emojis larger</string>
+    <string name="call_key_smaller">Make the emojis smaller</string>
     <string name="call_key_description">Encryption key: %1$s</string>
-    <string name="call_key_explain">Explain the emojis</string>
     <!-- %1$s: the other person's name. -->
     <string name="group_call_key_explanation">If everyone in the call sees the same emojis, it is end-to-end encrypted.</string>
     <string name="call_key_explanation">If %1$s sees the same emojis, your call is end-to-end encrypted.</string>
@@ -145,6 +147,7 @@
     <string name="recent_calls_duration">lasted %1$s</string>
     <!-- Rate this call (docs/DESIGN_SYSTEM.md §6 "Call rating"), over the ended call when Telegram asks for it. -->
     <string name="call_rating_title">Rate this call</string>
+    <string name="call_rating_group">Rating, %1$d of %2$d</string>
     <plurals name="call_rating_stars">
         <item quantity="one">%d star</item>
         <item quantity="other">%d stars</item>
