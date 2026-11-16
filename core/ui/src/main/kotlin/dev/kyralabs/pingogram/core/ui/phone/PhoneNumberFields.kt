@@ -3,12 +3,14 @@ package dev.kyralabs.pingogram.core.ui.phone
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -21,15 +23,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.R
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 
 /**
@@ -130,7 +136,7 @@ fun PhoneNumberFields(
                 label = { Text(stringResource(R.string.phone_number)) },
                 placeholder = numberFormat?.let { format -> { Text(format.replace('-', '0')) } },
                 isError = error != null,
-                supportingText = error?.let { { Text(it) } },
+                supportingText = error?.let { { FieldWarning(it) } },
                 visualTransformation = transformation,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
@@ -139,6 +145,25 @@ fun PhoneNumberFields(
                 colors = colors,
             )
         }
+    }
+}
+
+/**
+ * The number's error or warning ("Too short for India…", board 23c): the error symbol before it, so it does not rely on
+ * color, and a polite live region, so screen readers hear it as it appears.
+ */
+@Composable
+private fun FieldWarning(text: String) {
+    Row(
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_error),
+            contentDescription = null,
+            modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+        )
+        Text(text)
     }
 }
 
