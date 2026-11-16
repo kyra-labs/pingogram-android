@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.auth.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -34,10 +35,13 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
@@ -225,8 +229,10 @@ internal fun AuthActionRow(
  * the bottom end. [hero] makes it the medium (56 dp) button of a hero moment instead, Welcome's "Start messaging"
  * (`docs/DESIGN_SYSTEM.md` §6). While its request runs ([inProgress]) it shows a [LoadingIndicator] in place of the
  * label, keeping its width, and keeps [text] for screen readers. [interactionSource] lets the screen react to presses
- * too. [trailingIcon] follows the label at the button's icon size, decorative (Welcome's forward arrow).
+ * too. [trailingIcon] follows the label at the button's icon size, decorative (Welcome's forward arrow). With
+ * [progressText], the progress shows beside it ("Checking…", board 23f), said once by screen readers.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AuthPrimaryButton(
     text: String,
@@ -237,25 +243,48 @@ internal fun AuthPrimaryButton(
     hero: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
     @DrawableRes trailingIcon: Int? = null,
+    progressText: String? = null,
 ) {
     val height = if (hero) ButtonDefaults.MediumContainerHeight else ButtonDefaults.MinHeight
+    // From 150% font "Checking…" no longer fits beside the indicator: the indicator alone shows (board 23f).
+    val shownProgress = progressText?.takeIf { inProgress && LocalDensity.current.fontScale < PROGRESS_TEXT_MAX_SCALE }
     Button(
         onClick = { if (!inProgress) onClick() },
         shapes = if (hero) ButtonDefaults.shapesFor(height) else ButtonDefaults.shapes(),
         modifier =
             modifier
                 .heightIn(min = height)
-                .semantics { if (inProgress) contentDescription = text },
+                .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
+                .semantics {
+                    if (inProgress) {
+                        // What the button is doing, said once as it starts ("Checking…"), else its own name.
+                        contentDescription = progressText ?: text
+                        if (progressText != null) liveRegion = LiveRegionMode.Polite
+                    }
+                },
         enabled = enabled || inProgress,
         contentPadding = if (hero) ButtonDefaults.contentPaddingFor(height) else ButtonDefaults.ContentPadding,
         interactionSource = interactionSource,
     ) {
-        ButtonLabel(
-            text = text,
-            style = MaterialTheme.typography.labelLargeEmphasized,
-            inProgress = inProgress,
-            indicatorSize = ButtonDefaults.iconSizeFor(height),
-        )
+        if (shownProgress != null) {
+            LoadingIndicator(
+                modifier = Modifier.size(ButtonDefaults.iconSizeFor(height)),
+                color = LocalContentColor.current,
+            )
+            Spacer(Modifier.width(ButtonDefaults.iconSpacingFor(height)))
+            Text(
+                text = shownProgress,
+                style = MaterialTheme.typography.labelLargeEmphasized,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        } else {
+            ButtonLabel(
+                text = text,
+                style = MaterialTheme.typography.labelLargeEmphasized,
+                inProgress = inProgress,
+                indicatorSize = ButtonDefaults.iconSizeFor(height),
+            )
+        }
         if (trailingIcon != null) {
             Spacer(Modifier.width(ButtonDefaults.iconSpacingFor(height)))
             Icon(
@@ -357,3 +386,5 @@ internal fun Modifier.squareAroundContent(): Modifier =
         val side = max(placeable.width, placeable.height)
         layout(side, side) { placeable.place((side - placeable.width) / 2, (side - placeable.height) / 2) }
     }
+
+private const val PROGRESS_TEXT_MAX_SCALE = 1.5f

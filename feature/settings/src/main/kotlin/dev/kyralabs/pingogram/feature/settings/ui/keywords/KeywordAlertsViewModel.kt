@@ -8,12 +8,15 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
+import dev.kyralabs.pingogram.core.domain.model.KeywordHit
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +24,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -39,18 +44,21 @@ class KeywordAlertsViewModel internal constructor(
     folders: Flow<ImmutableList<ChatFolder>>,
     profile: suspend () -> EditableProfile?,
     private val savedStateHandle: SavedStateHandle,
+    matches: Flow<List<KeywordHit>> = flowOf(emptyList()),
 ) : ViewModel() {
     @Inject
     constructor(
         repository: KeywordAlertsRepository,
         chatRepository: ChatRepository,
         profileRepository: ProfileRepository,
+        keywordHitRepository: KeywordHitRepository,
         savedStateHandle: SavedStateHandle,
     ) : this(
         repository,
         chatRepository.folders,
         { (profileRepository.editableProfile() as? Outcome.Success)?.value },
         savedStateHandle,
+        keywordHitRepository.recent,
     )
 
     private val effectChannel = Channel<KeywordAlertsEffect>(Channel.BUFFERED)
@@ -64,7 +72,8 @@ class KeywordAlertsViewModel internal constructor(
             folders,
             account,
             savedStateHandle.getStateFlow<IntArray?>(KEY_CHOOSING, null),
-        ) { settings, chatFolders, accountWords, choosing ->
+            matches.map { hits -> hits.groupingBy { KeywordMatcher.keyOf(it.word) }.eachCount() },
+        ) { settings, chatFolders, accountWords, choosing, counts ->
             val kept = settings.words.map(KeywordMatcher::keyOf).toSet()
             val suggestions = accountWords.filter { KeywordMatcher.keyOf(it.word) !in kept }
             KeywordAlertsUiState(
@@ -72,6 +81,10 @@ class KeywordAlertsViewModel internal constructor(
                 folders = chatFolders.map { KeywordFolder(it.id, it.title.text) }.toImmutableList(),
                 suggestions = suggestions.toImmutableList(),
                 choosingFolders = choosing?.toList()?.toPersistentSet(),
+                matchCounts =
+                    settings.words
+                        .associateWith { counts[KeywordMatcher.keyOf(it)] ?: 0 }
+                        .toImmutableMap(),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), KeywordAlertsUiState())
 
