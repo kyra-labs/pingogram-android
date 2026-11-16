@@ -147,7 +147,7 @@ internal fun AiBadge() {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(UiR.drawable.ic_edit),
+            painter = painterResource(UiR.drawable.ic_auto_awesome),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
         )
