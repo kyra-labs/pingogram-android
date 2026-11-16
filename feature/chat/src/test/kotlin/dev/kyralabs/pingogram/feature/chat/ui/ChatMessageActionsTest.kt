@@ -1223,7 +1223,13 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 val viewModel = privateChat()
 
                 assertEquals(
-                    MessageShortcuts(canReply = true, canCopy = true, canReplyElsewhere = true, canForward = true),
+                    MessageShortcuts(
+                        canReply = true,
+                        canCopy = true,
+                        canReplyElsewhere = true,
+                        canForward = true,
+                        canRemind = true,
+                    ),
                     viewModel.state.shortcuts,
                 )
             }
@@ -1241,6 +1247,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         canReplyElsewhere = true,
                         canCopyLink = true,
                         canForward = true,
+                        canRemind = true,
                     ),
                     viewModel.state.shortcuts,
                 )

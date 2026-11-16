@@ -30,6 +30,8 @@
         <item quantity="one">%1$d pinned · newest first</item>
         <item quantity="other">%1$d pinned · newest first</item>
     </plurals>
+    <!-- The page's back button, for screen readers. -->
+    <string name="pinned_back">Back to chat</string>
     <string name="pinned_search">Search pinned messages</string>
     <string name="pinned_more">More options</string>
     <string name="pinned_unpin_all">Unpin all</string>
