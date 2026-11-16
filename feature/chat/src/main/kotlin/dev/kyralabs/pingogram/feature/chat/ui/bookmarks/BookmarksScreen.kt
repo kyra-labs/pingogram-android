@@ -50,6 +50,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -236,7 +237,11 @@ private fun BookmarksList(
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
-            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxSize(),
+            modifier =
+                Modifier
+                    .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
+                    .fillMaxSize()
+                    .testTag(BOOKMARKS_LIST_TEST_TAG),
             contentPadding = contentPadding,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
@@ -381,3 +386,6 @@ private const val FILTERS = "filters"
 private const val CARD = "card"
 private const val NO_MATCHES = "noMatches"
 private const val ALL = "all"
+
+/** For the benchmarks' journeys (`docs/PERFORMANCE.md` §9), which scroll the cards. */
+private const val BOOKMARKS_LIST_TEST_TAG = "bookmarks_list"
