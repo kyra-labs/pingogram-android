@@ -125,8 +125,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
-- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
-  opens the microphone there. Voice chats and group calls still ask as before.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
   reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
@@ -144,6 +142,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   entry counts its chats with unread messages, in a speech-bubble badge.
 - A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
   scrolls, the top bar keeps a Call button where the person can be called.
+- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
+  opens the microphone there. Voice chats and group calls still ask as before.
 - A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
   tab joined to the message, the others after it, those with unread messages in bold.
 - A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
