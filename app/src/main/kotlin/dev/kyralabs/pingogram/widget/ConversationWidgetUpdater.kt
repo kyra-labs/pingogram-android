@@ -27,10 +27,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -103,6 +106,9 @@ class ConversationWidgetUpdater
             // As the recent chats' first redraw: Glance's worker would start WorkManager during the app's start.
             val started = scope.async { delay(RecentChatsWidgetUpdater.START_UPDATE_DELAY) }
             scope.launch {
+                // Asking the launcher which widgets are placed (a binder call, then a state read per widget) and
+                // loading their content wait too, unless a widget asks first (a process started for it).
+                merge(flow { emit(started.await()) }, placed.filterNotNull().map { }).first()
                 if (placed.value == null) placed.compareAndSet(null, widgets.keys())
                 placed
                     .filterNotNull()
