@@ -2046,7 +2046,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`WidgetChatPickerViewModel`: the shown account's main list without secret and locked chats, filtered on the
   device), whose pick `ConversationWidgetSetup.choose` keeps in the widget once it checked the id is a Conversation
   widget of this app; the app then goes to the background, showing the widget. `WidgetAccount` carries each account's
-  `MessageRepository` for it.
+  `MessageRepository` for it. Reply sends `MainActivity` `WidgetReply.ACTION_REPLY` with the chat and its account,
+  which `AccountRestart` switches to first (`accountOf`), then `PageToOpen.WidgetReply`, opened as the picker is, as
+  `WidgetReplyRoute`, a dialog destination of `:app` (`WidgetReplyViewModel`: the chat from `ChatRepository`, the text
+  sent with `MessageRepository.sendText` only on the send button's tap); once sent, the app goes to the background.
 
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
   widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.

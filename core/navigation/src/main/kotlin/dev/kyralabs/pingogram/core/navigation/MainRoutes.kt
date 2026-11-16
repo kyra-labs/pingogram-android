@@ -529,6 +529,15 @@ data class WidgetChatPickerRoute(
 )
 
 /**
+ * The small reply sheet of chat [chatId] (board 33, owner decision 2026-11-15), which a Conversation widget's Reply
+ * opens: a dialog destination of `:app` above whatever shows, in the chat's account.
+ */
+@Serializable
+data class WidgetReplyRoute(
+    val chatId: Long,
+)
+
+/**
  * Exporting the history of chat [chatId] (`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`), `:feature:chat`: a
  * settings-style page pushed above the profile or the info page it is opened from, with the shared axis on X, where the
  * user picks the format, the media, the dates and the folder, then follows the export running in the background.

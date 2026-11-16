@@ -64,6 +64,10 @@
     <string name="widget_conversation_picker_search">Search chats</string>
     <string name="widget_conversation_picker_clear">Clear search</string>
     <string name="widget_conversation_picker_none">No chats found</string>
+    <!-- The small reply sheet the widget's Reply opens: "Reply to" over the chat's name -->
+    <string name="widget_reply_to">Reply to</string>
+    <string name="widget_reply_placeholder">Message</string>
+    <string name="widget_reply_send">Send</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>

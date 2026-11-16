@@ -114,7 +114,7 @@ class MainActivityViewModel internal constructor(
      * A page something outside the app asked to open, until the app opened it, or dropped it because nobody is logged
      * in ([setPageToOpen] null): Locked chats, which a locked chat's notification opens
      * (`docs/adr/0029-locked-chats.md`), Focus, which its Quick Settings tile opens (board 31), or a Conversation
-     * widget's chat picker (board 33); like [chatToOpen], once logged in and never in the login flow.
+     * widget's chat picker or reply sheet (board 33); like [chatToOpen], once logged in and never in the login flow.
      */
     val pageToOpen: StateFlow<PageToOpen?> = mutablePageToOpen.asStateFlow()
 
@@ -206,5 +206,10 @@ sealed interface PageToOpen {
     /** The chat picker of the Conversation widget [appWidgetId], from its "Choose a chat" (board 33). */
     data class WidgetChat(
         val appWidgetId: Int,
+    ) : PageToOpen
+
+    /** The reply sheet of chat [chatId], from a Conversation widget's Reply (board 33), in the chat's account. */
+    data class WidgetReply(
+        val chatId: Long,
     ) : PageToOpen
 }
