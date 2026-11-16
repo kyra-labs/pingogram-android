@@ -182,6 +182,16 @@
     <string name="story_live_title">Live now</string>
     <string name="story_live_body">Watch it on the voice chat screen. Others watching may see that you joined.</string>
     <string name="story_live_watch">Watch live</string>
+    <!-- A live story's chip after the poster's name, in the stories viewer's top bar (board 26). -->
+    <string name="story_live_chip">LIVE</string>
+    <string name="story_live_skip">Skip live story</string>
+    <!-- What screen readers hear of a live story: "Rahul Shetty is live: Sunset from the ferry". -->
+    <string name="story_live_is_live_title">%1$s is live: %2$s</string>
+    <string name="story_live_is_live">%1$s is live</string>
+    <plurals name="story_live_watching">
+        <item quantity="one">%d watching</item>
+        <item quantity="other">%d watching</item>
+    </plurals>
     <string name="story_unsupported_title">Can\'t show this story</string>
     <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
     <string name="story_unavailable_title">Story unavailable</string>

@@ -14,6 +14,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   asks you to choose its chat in the app.
 - The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
   back to the home screen.
+- A live story in the stories viewer says "LIVE" after the poster's name, shows its segment in red, and names the
+  live stream with how many are watching, beside "Watch live" and a button to skip it.
 - Zoomed into a photo, the media viewer shows how far ("2.5×", fading after a moment), a mini-map of where you are in
   the photo and "Double-tap to fit", in place of its toolbar.
 - A Quick compose widget for the home screen: "New" at 1 × 1, "Message" and "Voice" from 2 × 1. "Voice" asks which

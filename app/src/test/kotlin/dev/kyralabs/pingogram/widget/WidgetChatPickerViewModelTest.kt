@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.widget
 
+import android.app.Application
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
@@ -25,11 +26,13 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The Conversation widget's chat picker ([WidgetChatPickerViewModel], board 33). */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class WidgetChatPickerViewModelTest {
     private val chosen = mutableListOf<Triple<Int, Int, Long>>()
     private val chats = MutableStateFlow(listOf(chat(TRIP, "Trip — Coorg", group), chat(CAFE, "Café crew", group)))

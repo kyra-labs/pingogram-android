@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -37,6 +38,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -155,6 +158,7 @@ internal abstract class StoryViewerViewModelHarness {
         handle: SavedStateHandle = SavedStateHandle(),
         started: Boolean = true,
         albums: StoryAlbumRepository? = null,
+        liveCall: (Int) -> Flow<GroupCall?> = { flowOf(null) },
     ): StoryViewerViewModel {
         val viewModel =
             StoryViewerViewModel(
@@ -169,6 +173,7 @@ internal abstract class StoryViewerViewModelHarness {
                 applicationScope = backgroundScope,
                 videoPlayer = player,
                 albumRepository = albums,
+                liveCall = liveCall,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

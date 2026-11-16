@@ -101,10 +101,15 @@ sealed interface StoryMedia {
         val hasSound: Boolean,
     ) : StoryMedia
 
-    /** A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen. */
+    /**
+     * A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen; the call's [title]
+     * (empty without one) and how many are [watching] (0 until the call is known).
+     */
     data class Live(
         val chatId: Long,
         val groupCallId: Int,
+        val title: String = "",
+        val watching: Int = 0,
     ) : StoryMedia
 
     /** Content Pingogram can't show yet. */
