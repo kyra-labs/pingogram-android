@@ -7,6 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import dev.kyralabs.pingogram.core.data.account.AccountRegistry
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.widget.WidgetReply
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -132,7 +133,8 @@ private fun Accounts.switching(): AccountSwitching =
 
 /**
  * The account [intent] belongs to: a notification's or a conversation shortcut's ([NotificationIntents.accountOf]),
- * or a share's to a Direct Share target ([NotificationIntents.chatOfShortcut]). Null for intents of no account in
+ * a share's to a Direct Share target ([NotificationIntents.chatOfShortcut]), or a Conversation widget's Reply
+ * ([WidgetReply.chatOf]). Null for intents of no account in
  * particular, which open in the shown one.
  */
 internal fun accountOf(intent: Intent?): Int? {
@@ -141,4 +143,5 @@ internal fun accountOf(intent: Intent?): Int? {
     val sharedTo = intent?.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID)
     return NotificationIntents.accountOf(intent)
         ?: NotificationIntents.chatOfShortcut(sharedTo)?.slot?.takeIf { sharing && !fromHistory }
+        ?: WidgetReply.chatOf(intent)?.slot
 }

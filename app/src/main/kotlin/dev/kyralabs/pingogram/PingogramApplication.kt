@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.startup.asyncTraceSection
 import dev.kyralabs.pingogram.ui.NavigationLabelWidths
+import dev.kyralabs.pingogram.widget.ConversationWidgetUpdater
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
@@ -58,6 +59,10 @@ class PingogramApplication :
     /** Keeps the home screen widget of recent chats current while one is placed. */
     @Inject
     lateinit var recentChatsWidgetUpdater: dagger.Lazy<RecentChatsWidgetUpdater>
+
+    /** Keeps the Conversation widgets (board 33) current while one is placed. */
+    @Inject
+    lateinit var conversationWidgetUpdater: dagger.Lazy<ConversationWidgetUpdater>
 
     /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
     @Inject
@@ -159,6 +164,7 @@ class PingogramApplication :
                 shareTargetShortcuts.get().start()
                 // Redraws the home screen widget when the chats change, only while a widget is placed.
                 recentChatsWidgetUpdater.get().start()
+                conversationWidgetUpdater.get().start()
                 // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
                 storageOptimization.get().start()
                 // Schedules the message reminders' rings, a few seconds after the start too.

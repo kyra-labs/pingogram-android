@@ -121,7 +121,7 @@ private fun ColumnScope.Conversation(chat: ConversationContent.Chat) {
             else -> shown.forEach { MessageLine(it, inline = wide) }
         }
     }
-    if (chat.canReply) ReplyRow(chat, open)
+    if (chat.canReply) ReplyRow(chat, actionStartActivity(WidgetReply.intent(context, chat.chatId, chat.slot)))
 }
 
 /** The avatar, the title and the unread count, in the muted colors while the chat is muted. */

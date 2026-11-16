@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
+  asks you to choose its chat in the app.
+- The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
+  back to the home screen.
 - A live story in the stories viewer says "LIVE" after the poster's name, shows its segment in red, and names the
   live stream with how many are watching, beside "Watch live" and a button to skip it.
 - Zoomed into a photo, the media viewer shows how far ("2.5×", fading after a moment), a mini-map of where you are in
@@ -130,6 +134,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
+- The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
+  so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,

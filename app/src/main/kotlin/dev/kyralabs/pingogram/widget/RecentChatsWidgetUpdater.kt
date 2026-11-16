@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
@@ -278,8 +279,8 @@ class RecentChatsWidgetUpdater
     }
 
 /**
- * What the widget reads of one account: its login, chats, users, supergroups (which are forums), locked chats, and
- * avatars from its files.
+ * What the widgets read of one account: its login, chats, users, groups (which supergroups are forums, and where the
+ * user may write), locked chats, avatars from its files, and a chat's messages for the Conversation widget.
  */
 internal data class WidgetAccount(
     val auth: AuthRepository,
@@ -288,6 +289,7 @@ internal data class WidgetAccount(
     val groups: GroupRepository,
     val chatLock: ChatLockRepository,
     val avatars: AvatarIcons,
+    val messages: MessageRepository,
 )
 
 /** Whether this chat is a forum, whose avatar is a rounded square. */
@@ -323,6 +325,7 @@ internal class WidgetAccounts
                     groups = repositories.groupRepository(),
                     chatLock = repositories.chatLockRepository(),
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
+                    messages = repositories.messageRepository(),
                 )
             }
     }

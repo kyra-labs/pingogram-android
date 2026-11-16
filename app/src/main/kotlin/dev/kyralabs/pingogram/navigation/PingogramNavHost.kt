@@ -32,6 +32,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
+import dev.kyralabs.pingogram.core.navigation.WidgetReplyRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
@@ -55,6 +57,8 @@ import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStory
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
 import dev.kyralabs.pingogram.ui.ChatsListDetail
+import dev.kyralabs.pingogram.widget.widgetChatPicker
+import dev.kyralabs.pingogram.widget.widgetReply
 
 /**
  * The app's single `NavHost`: the login flow ([AuthRoute]) and the signed-in app ([MainGraph]). [uiState] (signed in
@@ -276,6 +280,10 @@ private fun NavGraphBuilder.mainGraph(
         mediaViewer(navController)
         stories(navController, shares)
         share(navController)
+        // A Conversation widget's "Choose a chat" (board 33), a sheet above whatever shows.
+        widgetChatPicker(onClose = { navController.popBackStack<WidgetChatPickerRoute>(inclusive = true) })
+        // A Conversation widget's Reply (board 33), its small reply sheet above whatever shows.
+        widgetReply(onClose = { navController.popBackStack<WidgetReplyRoute>(inclusive = true) })
     }
 }
 
