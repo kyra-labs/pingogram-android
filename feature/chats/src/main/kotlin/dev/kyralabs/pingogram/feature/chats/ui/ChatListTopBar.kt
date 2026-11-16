@@ -144,10 +144,13 @@ internal fun ChatListTopBar(
     val selectedCount = state.selection?.chatIds?.size
     val connection = state.connection
     val focus = LocalChatListFocus.current
-    // Room for the Focus pill below the status line, growing and shrinking with it on the scheme's spring.
+    // Room for the Focus pill below the status line, growing and shrinking with it on the scheme's spring: its touch
+    // target's height, or more where its label takes two lines (large font scales).
     val pillShows by remember(focus) { derivedStateOf { focus?.pill?.invoke() != null } }
+    val pillTarget = LocalMinimumInteractiveComponentSize.current
+    val pillHeight = focus?.pillHeight?.takeIf { it != Dp.Unspecified } ?: pillTarget
     val pillRoom by animateDpAsState(
-        targetValue = if (pillShows && selectedCount == null) LocalMinimumInteractiveComponentSize.current else 0.dp,
+        targetValue = if (pillShows && selectedCount == null) maxOf(pillTarget, pillHeight) else 0.dp,
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "focusPillRoom",
     )
