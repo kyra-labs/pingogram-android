@@ -425,4 +425,96 @@
     <string name="chat_list_focus_keep_until">Until %1$s</string>
     <string name="chat_list_focus_keep_hour">1 hour</string>
     <string name="chat_list_focus_keep_off">Until I turn it off</string>
+    <!-- Catch-up (docs/DESIGN_SYSTEM.md §6 "Catch-up"): the chip in the chat list's header. -->
+    <plurals name="catch_up_chip">
+        <item quantity="one">Catch up · %d chat</item>
+        <item quantity="other">Catch up · %d chats</item>
+    </plurals>
+    <!-- The chip as screen readers hear it. -->
+    <plurals name="catch_up_chip_description">
+        <item quantity="one">Catch up, %d unread chat</item>
+        <item quantity="other">Catch up, %d unread chats</item>
+    </plurals>
+    <string name="catch_up_title">Catch up</string>
+    <string name="catch_up_close">Close catch-up</string>
+    <string name="catch_up_settings">Catch-up settings</string>
+    <!-- Under the title: "3 of 12 · about 4 min left"; %3$s is [catch_up_minutes_left]. -->
+    <string name="catch_up_position">%1$d of %2$d · %3$s</string>
+    <plurals name="catch_up_minutes_left">
+        <item quantity="one">about %d min left</item>
+        <item quantity="other">about %d min left</item>
+    </plurals>
+    <!-- The progress bar as screen readers hear it. -->
+    <string name="catch_up_progress">Chat %1$d of %2$d</string>
+    <!-- A card as screen readers name it: the chat's name, then its unread messages. -->
+    <plurals name="catch_up_card">
+        <item quantity="one">%1$s, %2$d unread</item>
+        <item quantity="other">%1$s, %2$d unread</item>
+    </plurals>
+    <plurals name="catch_up_unread">
+        <item quantity="one">%d unread</item>
+        <item quantity="other">%d unread</item>
+    </plurals>
+    <plurals name="catch_up_mentions">
+        <item quantity="one">%d mention</item>
+        <item quantity="other">%d mentions</item>
+    </plurals>
+    <!-- After the counts on a card: when its first unread message came, "since 9:02". -->
+    <string name="catch_up_since">since %s</string>
+    <string name="catch_up_separator">" · "</string>
+    <plurals name="catch_up_earlier">
+        <item quantity="one">%d earlier message</item>
+        <item quantity="other">%d earlier messages</item>
+    </plurals>
+    <string name="catch_up_mark_as_read">Mark as read</string>
+    <string name="catch_up_reply">Reply in place</string>
+    <string name="catch_up_reply_placeholder">Reply</string>
+    <!-- Over the message a reply answers: "Reply to Meera"; %s is who sent it. -->
+    <string name="catch_up_reply_to">Reply to %s</string>
+    <string name="catch_up_reply_to_message">Reply to this message</string>
+    <string name="catch_up_reply_cancel">Cancel reply</string>
+    <string name="catch_up_send_and_next">Send and go to next</string>
+    <string name="catch_up_reply_note">Sending also marks this chat as read and moves to the next one.</string>
+    <string name="catch_up_open_chat">Open chat</string>
+    <string name="catch_up_skip">Skip</string>
+    <!-- The stamp on a card swiped toward marking it as read. -->
+    <string name="catch_up_stamp_read">READ</string>
+    <!-- The stamp on a card swiped toward skipping it. -->
+    <string name="catch_up_stamp_skip">SKIP</string>
+    <string name="catch_up_swipe_hint">Swipe away to mark as read · swipe back to skip</string>
+    <string name="catch_up_done_title">All caught up</string>
+    <!-- "12 chats in 4 minutes. Nice."; %2$s is [catch_up_done_minutes]. -->
+    <plurals name="catch_up_done_summary">
+        <item quantity="one">%1$d chat in %2$s. Nice.</item>
+        <item quantity="other">%1$d chats in %2$s. Nice.</item>
+    </plurals>
+    <plurals name="catch_up_done_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <!-- Under a count of "All caught up": the chats marked as read. -->
+    <plurals name="catch_up_done_read">
+        <item quantity="one">read</item>
+        <item quantity="other">read</item>
+    </plurals>
+    <!-- Under a count of "All caught up": the chats replied to. -->
+    <plurals name="catch_up_done_replied">
+        <item quantity="one">replied</item>
+        <item quantity="other">replied</item>
+    </plurals>
+    <!-- Under a count of "All caught up": the chats skipped. -->
+    <plurals name="catch_up_done_skipped">
+        <item quantity="one">skipped</item>
+        <item quantity="other">skipped</item>
+    </plurals>
+    <string name="catch_up_back">Back to chats</string>
+    <plurals name="catch_up_review_skipped">
+        <item quantity="one">Review %d skipped chat</item>
+        <item quantity="other">Review %d skipped chats</item>
+    </plurals>
+    <string name="catch_up_empty_title">Nothing to catch up on</string>
+    <string name="catch_up_empty_body">No unread chats are waiting. Muted chats and channels are left out unless you include them.</string>
+    <string name="catch_up_settings_title">Catch-up</string>
+    <string name="catch_up_include_muted">Include muted chats and channels</string>
+    <string name="catch_up_include_muted_summary">Catch-up shows them too. The setting stays on this device.</string>
 </resources>

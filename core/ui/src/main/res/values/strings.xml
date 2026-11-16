@@ -414,4 +414,7 @@
     <string name="photo_capture_permission_needed">Pingogram needs the camera permission to open your camera app</string>
     <!-- The snackbar's action once Android no longer asks for the camera permission: the app's settings page. -->
     <string name="photo_capture_settings">Settings</string>
+    <!-- A message reminder's day and time: "Sun, 9:00 AM" (the owner's board 29). -->
+    <string name="reminder_label_day_time">%1$s, %2$s</string>
+    <string name="reminder_label_today">Today</string>
 </resources>

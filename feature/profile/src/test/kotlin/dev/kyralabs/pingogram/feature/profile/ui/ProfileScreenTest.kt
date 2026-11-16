@@ -167,9 +167,29 @@ class ProfileScreenTest {
 
         composeRule.onNode(hasText(string(R.string.profile_action_message)) and hasClickAction()).performClick()
         composeRule.onNode(hasText(string(R.string.profile_action_mute)) and hasClickAction()).performClick()
-        composeRule.onNode(hasText(string(R.string.profile_action_secret_chat)) and hasClickAction()).performClick()
 
-        assertEquals(listOf(ProfileEvent.SendMessage, ProfileEvent.ToggleMute, ProfileEvent.StartSecretChat), events)
+        assertEquals(listOf(ProfileEvent.SendMessage, ProfileEvent.ToggleMute), events)
+    }
+
+    @Test
+    fun `secret chat is in the more options menu, not among the pills`() {
+        setScreen()
+
+        composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
+        composeRule.onNode(hasContentDescription(string(R.string.profile_more_options))).performClick()
+        composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.StartSecretChat), events)
+    }
+
+    @Test
+    fun `a bot's pills are Message, Mute and Share, which shares its link`() {
+        setScreen(ProfilePreviewData.bot, ProfilePreviewData.emptyMedia)
+
+        composeRule.onNodeWithText(string(R.string.profile_action_share)).performClick()
+
+        assertEquals(listOf<ProfileEvent>(ProfileEvent.ShareUsername("stickerfinderbot")), events)
+        composeRule.onNodeWithText(string(R.string.profile_action_call)).assertDoesNotExist()
     }
 
     @Test
@@ -228,6 +248,28 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `the stranger card blocks, reports and adds the contact`() {
+        setScreen(ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+        composeRule.onNodeWithText("isn't in your contacts", substring = true).assertExists()
+        composeRule.onNodeWithText("2 groups in common").assertExists()
+        composeRule.onNodeWithText(string(R.string.profile_stranger_block)).performClick()
+        // The card's "Report" comes first; the More group repeats it below.
+        composeRule.onAllNodesWithText(string(R.string.profile_report))[0].performClick()
+        composeRule.onNodeWithText(string(R.string.profile_stranger_add_contact)).performClick()
+
+        assertEquals(listOf(ProfileEvent.Block, ProfileEvent.Report), events)
+        assertEquals(1, editedContacts)
+    }
+
+    @Test
+    fun `a phone number hidden by privacy settings says so`() {
+        setScreen(ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia)
+
+        composeRule.onNodeWithText("s privacy settings", substring = true).assertExists()
+    }
+
+    @Test
     fun `without a contact editor the contact row is left out`() {
         setScreen(withContactEditor = false)
 
@@ -237,12 +279,19 @@ class ProfileScreenTest {
     }
 
     @Test
-    fun `a deleted account offers neither blocking nor reporting`() {
+    fun `a deleted account offers only deleting the chat, and says what is kept`() {
         setScreen(state = ProfilePreviewData.deleted, media = ProfilePreviewData.emptyMedia)
 
         composeRule.onNodeWithText(string(R.string.profile_block)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_report)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_action_message)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_action_mute)).assertDoesNotExist()
+        composeRule.onNode(hasContentDescription(string(R.string.profile_more_options))).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.profile_deleted_title)).assertIsDisplayed()
+
+        composeRule.onNodeWithText(string(R.string.profile_action_delete_chat)).performClick()
+        assertTrue(events.toString(), ProfileEvent.DeleteChat in events)
     }
 
     @Test

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -86,17 +87,20 @@ class MainActivityViewModel internal constructor(
             .map { it.isSet && it.hideContent }
             .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
-    private val mutableChatToOpen = MutableStateFlow<Long?>(null)
+    private val mutableChatToOpen = MutableStateFlow<ChatToOpen?>(null)
 
     /**
      * The chat a notification or a conversation shortcut asked to open, until the app opened it ([onChatOpened]):
      * once the account is known to be logged in, and never in the login flow.
      */
-    val chatToOpen: StateFlow<Long?> = mutableChatToOpen.asStateFlow()
+    val chatToOpen: StateFlow<ChatToOpen?> = mutableChatToOpen.asStateFlow()
 
-    /** Asks to open chat [chatId]; a later request replaces one not opened yet. */
-    fun openChat(chatId: Long) {
-        mutableChatToOpen.value = chatId
+    /** Asks to open chat [chatId], at [messageId] where named; a later request replaces one not opened yet. */
+    fun openChat(
+        chatId: Long,
+        messageId: Long? = null,
+    ) {
+        mutableChatToOpen.value = ChatToOpen(chatId, messageId)
     }
 
     /** The chat of [chatToOpen] was opened, or dropped because nobody is logged in. */

@@ -337,7 +337,7 @@ class MainActivity : ComponentActivity() {
      * views, what it shares, or the Focus page or switcher the Focus tile asks for.
      */
     private fun handle(intent: Intent?) {
-        NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        NotificationIntents.chatIdOf(intent)?.let { viewModel.openChat(it, NotificationIntents.messageIdOf(intent)) }
         if (NotificationIntents.opensLockedChats(intent)) viewModel.setPageToOpen(PageToOpen.LockedChats)
         FocusTile.pageOf(intent)?.let { page ->
             if (page == PageToOpen.FocusSwitcher) focusSwitcherRequests.request()

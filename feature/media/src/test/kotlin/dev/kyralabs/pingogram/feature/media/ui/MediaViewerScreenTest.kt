@@ -22,6 +22,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -91,6 +92,15 @@ class MediaViewerScreenTest {
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
 
     // Pages
+
+    @Test
+    fun `a streaming video's ring has a button that stops it loading`() {
+        setScreen(MediaPreviewData.videoStreaming)
+
+        composeRule.onNodeWithContentDescription(string(R.string.media_streaming_cancel)).performClick()
+
+        assertEquals(MediaViewerEvent.CancelStream, events.last())
+    }
 
     @Test
     fun `the pager starts on the current item`() {
@@ -243,6 +253,19 @@ class MediaViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun `a video's controls play, move 10 seconds either way and mute`() {
+        setScreen(MediaPreviewData.video)
+
+        composeRule.onNodeWithContentDescription("Back 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Forward 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Mute").performClick()
+
+        assertTrue(MediaViewerEvent.SeekBy(-10) in events)
+        assertTrue(MediaViewerEvent.SeekBy(10) in events)
+        assertTrue(MediaViewerEvent.SetMuted(true) in events)
     }
 
     @Test

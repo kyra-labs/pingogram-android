@@ -61,6 +61,7 @@ class SettingsHomeTest {
         state: SettingsUiState = SettingsPreviewData.content,
         phoneNumbersHidden: Boolean = false,
         themeMode: ThemeMode = ThemeMode.Light,
+        summaries: SettingsHomeSummaries = SettingsPreviewData.homeSummaries,
     ) {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
@@ -73,7 +74,7 @@ class SettingsHomeTest {
                         onEvent = { events += it },
                         onOpenPage = { opened += it },
                         onOpenSubPage = { openedSubPages += it },
-                        summaries = SettingsPreviewData.homeSummaries,
+                        summaries = summaries,
                     )
                 }
             }
@@ -211,6 +212,27 @@ class SettingsHomeTest {
 
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone))).assertCountEquals(0)
         composeRule.onAllNodes(hasText(string(R.string.settings_home_on_this_phone_footer))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `on this phone lists reminders with how many are to come, and opens them`() {
+        show(summaries = SettingsPreviewData.homeSummaries.copy(upcomingReminders = 3))
+
+        composeRule.onNodeWithText(string(R.string.settings_home_on_this_phone)).assertExists()
+        composeRule.onNodeWithText("3 upcoming").assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_reminders)).performClick()
+
+        assertEquals(listOf(SettingsPage.Reminders), opened)
+    }
+
+    @Test
+    fun `on this phone opens keyword alerts`() {
+        show()
+
+        composeRule.onNode(hasText(string(R.string.settings_home_on_this_phone))).assertExists()
+        composeRule.onNode(hasText(string(R.string.settings_keyword_alerts)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.KeywordAlerts), opened)
     }
 
     @Test

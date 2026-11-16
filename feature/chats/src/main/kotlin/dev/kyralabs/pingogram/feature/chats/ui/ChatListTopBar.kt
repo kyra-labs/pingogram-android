@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -165,8 +166,18 @@ internal fun ChatListTopBar(
                     )
                 },
                 subtitle = { expanded ->
-                    if (selectedCount == null) HeaderSubtitle(connection, summary, expanded, focus)
+                    if (selectedCount == null) {
+                        HeaderSubtitle(
+                            connection = connection,
+                            summary = summary,
+                            expanded = expanded,
+                            focus = focus,
+                            onCatchUp = { actions?.openCatchUp?.invoke() },
+                        )
+                    }
                 },
+                // The Catch-up chip's line (owner decision 2026-11-15), whether it shows or not, so nothing moves.
+                subtitleMinHeight = ButtonDefaults.ExtraSmallContainerHeight,
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
                 actions = {
                     if (selectedCount == null) {

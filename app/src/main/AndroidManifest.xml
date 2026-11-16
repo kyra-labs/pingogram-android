@@ -235,6 +235,19 @@
                 android:resource="@xml/recent_chats_widget_info" />
         </receiver>
 
+        <!-- The unread counter widget (board 33), drawn from the same updater; it takes nothing else either. -->
+        <receiver
+            android:name=".widget.UnreadCounterWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_unread_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/unread_counter_widget_info" />
+        </receiver>
+
         <!-- The Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33). BIND_QUICK_SETTINGS_TILE is
              what only the system holds, so only it may bind them; the app asks for no permission for them. -->
         <service

@@ -5,11 +5,14 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
@@ -26,6 +29,7 @@ import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChip
 import dev.kyralabs.pingogram.feature.chats.ui.focus.ChatListFocus
 import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusPillChip
 
@@ -40,6 +44,7 @@ internal fun HeaderSubtitle(
     summary: () -> ChatListSummary,
     expanded: Boolean,
     focus: ChatListFocus? = null,
+    onCatchUp: () -> Unit = {},
 ) {
     val notConnected = connection != ConnectionStatus.Ready
     when {
@@ -47,7 +52,7 @@ internal fun HeaderSubtitle(
             Column {
                 // One slot for both, so the pill and the status line take each other's place, its size on the scheme.
                 StateCrossfade(targetState = notConnected, label = "headerSubtitle") { pill ->
-                    if (pill) ConnectionPill(connection) else StatusLine(summary())
+                    if (pill) ConnectionPill(connection) else StatusLine(summary(), onCatchUp)
                 }
                 if (focus != null) FocusPillSlot(focus)
             }
@@ -69,11 +74,30 @@ internal fun HeaderSubtitle(
 /**
  * The status line (owner decision 2026-11-06): the main list's unread chats in `primary` and the emphasized weight,
  * then "· 3 mentions" in `onSurfaceVariant`, in `bodyMedium`; one text, so screen readers read it once. Nothing while
- * nothing is unread.
+ * nothing is unread. From five chats to catch up on, the Catch-up chip ([CatchUpChip], owner decision 2026-11-15)
+ * follows it, [onCatchUp] opening Catch-up.
  */
 @Composable
-private fun StatusLine(summary: ChatListSummary) {
-    if (!summary.hasStatus) return
+private fun StatusLine(
+    summary: ChatListSummary,
+    onCatchUp: () -> Unit,
+) {
+    if (!summary.hasStatus && !summary.offersCatchUp) return
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // The chip keeps its size; the counts give way to it at large font scales.
+        if (summary.hasStatus) StatusText(summary, Modifier.weight(1f, fill = false))
+        if (summary.offersCatchUp) CatchUpChip(summary.catchUpChats, onCatchUp)
+    }
+}
+
+@Composable
+private fun StatusText(
+    summary: ChatListSummary,
+    modifier: Modifier = Modifier,
+) {
     val resources = LocalResources.current
     val colors = MaterialTheme.colorScheme
     val emphasized = MaterialTheme.typography.bodyMediumEmphasized.fontWeight
@@ -109,6 +133,7 @@ private fun StatusLine(summary: ChatListSummary) {
         }
     Text(
         text = text,
+        modifier = modifier,
         color = colors.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

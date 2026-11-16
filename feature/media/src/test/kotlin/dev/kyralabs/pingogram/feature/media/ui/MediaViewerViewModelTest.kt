@@ -709,6 +709,63 @@ class MediaViewerViewModelTest : MediaViewerViewModelHarness() {
             }
 
         @Test
+        fun `back and forward 10 seconds move the video within its length`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+                player.durationMillis = 60_000
+
+                send(viewModel, MediaViewerEvent.Seek(0.5f), MediaViewerEvent.SeekBy(10), MediaViewerEvent.SeekBy(-10))
+                send(viewModel, MediaViewerEvent.SeekBy(-60))
+
+                assertEquals(
+                    listOf("seek:30000", "seek:40000", "seek:30000", "seek:0"),
+                    player.calls.filter { it.startsWith("seek") },
+                )
+                assertEquals(0f, viewModel.content.playback!!.progress())
+            }
+
+        @Test
+        fun `stopping a stream before its first frame takes it out of the player until a tap`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+
+                send(viewModel, MediaViewerEvent.CancelStream)
+                assertEquals(listOf("play:$videoPath:Video", "stop"), player.calls)
+                assertEquals(true, viewModel.content.playback!!.waitsForTap)
+                send(viewModel, MediaViewerEvent.Stopped, MediaViewerEvent.Started)
+                assertEquals(true, viewModel.content.playback!!.waitsForTap)
+
+                send(viewModel, MediaViewerEvent.PlayPause)
+                assertEquals("play:$videoPath:Video", player.calls.last())
+                assertEquals(false, viewModel.content.playback!!.waitsForTap)
+            }
+
+        @Test
+        fun `a video showing its frames is not stopped as a stream`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+                player.renderFirstFrame()
+
+                send(viewModel, MediaViewerEvent.CancelStream)
+
+                assertEquals(listOf("play:$videoPath:Video"), player.calls)
+                assertEquals(true, viewModel.content.playback!!.isPlaying)
+            }
+
+        @Test
+        fun `mute takes the video's sound away and gives it back, shown in the state`() =
+            runViewModelTest {
+                val viewModel = playingVideo()
+
+                send(viewModel, MediaViewerEvent.SetMuted(true))
+                assertEquals(true, viewModel.content.playback!!.isMuted)
+                send(viewModel, MediaViewerEvent.SetMuted(false))
+
+                assertEquals(listOf("muted:true", "muted:false"), player.calls.filter { it.startsWith("muted") })
+                assertEquals(false, viewModel.content.playback!!.isMuted)
+            }
+
+        @Test
         fun `a speed plays the video at it, shows in the state and is kept for the next one`() =
             runViewModelTest {
                 val viewModel = playingVideo()

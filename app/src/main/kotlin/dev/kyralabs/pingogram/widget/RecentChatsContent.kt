@@ -32,8 +32,14 @@ sealed interface RecentChatsContent {
     /** A passcode lock is set: the widget names no chat and shows no message. */
     data object Locked : RecentChatsContent
 
+    /**
+     * The first [chats]; [unreadMessages], TDLib's count of the unmuted chats' unread messages in the main list, and
+     * [mentions], the unread mentions of its loaded chats, for the unread counter widget.
+     */
     data class Chats(
         val chats: List<WidgetChat>,
+        val unreadMessages: Int = 0,
+        val mentions: Int = 0,
     ) : RecentChatsContent
 }
 

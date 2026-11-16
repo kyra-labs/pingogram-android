@@ -25,6 +25,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordAlertsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordAlertsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordFoldersContent
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockScreen
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockUiState
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerContent
@@ -77,6 +80,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSet
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -259,6 +263,17 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun focusChatPicker() = check { FocusChatPickerContent(FocusPreviewStates.chatPicker, onEvent = {}) }
+
+    @Test
+    fun keywordAlerts() = check { KeywordAlertsScreen(KeywordAlertsPreviewStates.words, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun keywordAlertsEmpty() =
+        check { KeywordAlertsScreen(KeywordAlertsPreviewStates.empty, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun keywordFolders() =
+        check { KeywordFoldersContent(KeywordAlertsPreviewStates.words, persistentSetOf(1), onEvent = {}) }
 
     @Test
     fun chatsShownFirstPicker() = check { ShownFirstPickerContent(ChatsShownFirstPreviewStates.picker, onEvent = {}) }
