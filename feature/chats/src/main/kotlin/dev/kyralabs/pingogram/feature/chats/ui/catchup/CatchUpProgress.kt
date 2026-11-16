@@ -20,7 +20,8 @@ import dev.kyralabs.pingogram.feature.chats.R
 
 /**
  * The round's progress: one segment per chat (`sizes.pinnedIndicator` tall, round ends, `spacing.extraSmall` apart),
- * those handled and the shown one in `primary`, the rest in `surfaceContainerHighest`, drawn in the draw phase; past
+ * those handled in `primary`, the shown one in `primary` at half its strength (the owner's board 32b), the rest in
+ * `surfaceContainerHighest`, drawn in the draw phase; past
  * [MAX_SEGMENTS] chats one bar filled to the position. Screen readers hear "Chat 3 of 12" as its range.
  */
 @Composable
@@ -31,6 +32,7 @@ internal fun CatchUpProgress(
 ) {
     val description = stringResource(R.string.catch_up_progress, position, total)
     val done = MaterialTheme.colorScheme.primary
+    val shown = done.copy(alpha = SHOWN_ALPHA)
     val rest = MaterialTheme.colorScheme.surfaceContainerHighest
     val gap = with(LocalDensity.current) { MaterialTheme.spacing.extraSmall.toPx() }
     Canvas(
@@ -47,11 +49,20 @@ internal fun CatchUpProgress(
             val left = index * (width + gap)
             drawRoundRect(rest, Offset(left, 0f), Size(width, size.height), radius)
             val filled = if (segments == 1) width * position / total.coerceAtLeast(1) else width
-            if (segments == 1 || index < position) {
-                drawRoundRect(done, Offset(left, 0f), Size(filled, size.height), radius)
+            when {
+                segments == 1 || index < position - 1 -> {
+                    drawRoundRect(done, Offset(left, 0f), Size(filled, size.height), radius)
+                }
+
+                index == position - 1 -> {
+                    drawRoundRect(shown, Offset(left, 0f), Size(width, size.height), radius)
+                }
             }
         }
     }
 }
 
 private const val MAX_SEGMENTS = 24
+
+/** The shown chat's segment: `primary` at half its strength. */
+private const val SHOWN_ALPHA = 0.5f

@@ -47,13 +47,11 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -97,7 +95,7 @@ internal fun CatchUpChatCard(
         ) {
             CardHeader(card)
             CardMessages(card, onEvent, Modifier.weight(1f).fillMaxWidth())
-            if (reply != null) CatchUpReplyField(card.replyTo, reply, onEvent) else CardActions(onEvent)
+            if (reply != null) CatchUpReplyField(card.replyTo, reply, onEvent) else CardActions(card.canReply, onEvent)
         }
     }
 }
@@ -199,52 +197,62 @@ private fun CardMessages(
     }
 }
 
-/** "Meera  Okay final plan…  9:02": the sender in the emphasized weight, the text, the time in `labelSmall`. */
+/**
+ * "Meera" on its own line in their hue's ink (§13.6, `labelLargeEmphasized`), then the text and the time in
+ * `labelSmall`; one item for screen readers.
+ */
 @Composable
 private fun CardMessage(message: CatchUpMessage) {
     val resources = LocalResources.current
-    val emphasized = MaterialTheme.typography.bodyMediumEmphasized.fontWeight
     val sender = message.sender?.resolve(resources)
-    val text = message.text.resolve(resources)
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest, MaterialTheme.shapes.large)
-                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.Bottom,
+                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
+                .semantics(mergeDescendants = true) {},
     ) {
-        Text(
-            text =
-                buildAnnotatedString {
-                    if (sender != null) {
-                        withStyle(SpanStyle(fontWeight = emphasized)) { append(sender) }
-                        append(' ')
-                    }
-                    append(text)
-                },
-            modifier = Modifier.weight(1f),
-            maxLines = MESSAGE_LINES,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium.userContent,
-        )
-        Text(
-            text = message.time,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall,
-        )
+        if (sender != null) {
+            Text(
+                text = sender,
+                color = MaterialTheme.pingogramColors.senderHues[message.senderHue].ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLargeEmphasized.userContent,
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                text = message.text.resolve(resources),
+                modifier = Modifier.weight(1f),
+                maxLines = MESSAGE_LINES,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium.userContent,
+            )
+            Text(
+                text = message.time,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
     }
 }
 
 private const val MESSAGE_LINES = 4
 
 /**
- * "Mark as read", "Reply in place", "Open chat" and "Skip" as a connected group; "Mark as read" alone on its row from
- * 150% font.
+ * "Mark as read", "Reply in place" (where the user may write in the chat, [canReply]), "Open chat" and "Skip" as a
+ * connected group; "Mark as read" alone on its row from 150% font.
  */
 @Composable
-private fun CardActions(onEvent: (CatchUpEvent) -> Unit) {
+private fun CardActions(
+    canReply: Boolean,
+    onEvent: (CatchUpEvent) -> Unit,
+) {
     val large = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     val markAsRead =
         @Composable { modifier: Modifier ->
@@ -273,17 +281,19 @@ private fun CardActions(onEvent: (CatchUpEvent) -> Unit) {
         if (large) markAsRead(Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
             if (!large) markAsRead(Modifier.weight(1f))
-            IconAction(
-                icon = UiR.drawable.ic_reply,
-                label = stringResource(R.string.catch_up_reply),
-                first = large,
-                last = false,
-                modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
-            ) { onEvent(CatchUpEvent.Reply) }
+            if (canReply) {
+                IconAction(
+                    icon = UiR.drawable.ic_reply,
+                    label = stringResource(R.string.catch_up_reply),
+                    first = large,
+                    last = false,
+                    modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
+                ) { onEvent(CatchUpEvent.Reply) }
+            }
             IconAction(
                 icon = R.drawable.ic_open_in_new,
                 label = stringResource(R.string.catch_up_open_chat),
-                first = false,
+                first = large && !canReply,
                 last = false,
                 modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
             ) { onEvent(CatchUpEvent.OpenChat) }

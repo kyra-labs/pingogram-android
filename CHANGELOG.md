@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
   asks you to choose its chat in the app.
 - The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
