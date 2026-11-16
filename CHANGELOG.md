@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
+  pinned messages page shows a pinned video's or GIF's picture with its length.
 - Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
   and offers "Reply in place" only where you can write.
 - Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
@@ -94,6 +96,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
+  buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
+  avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
+  announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
+  without naming the chat or showing the message.
 - The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
   0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
   during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
@@ -118,6 +125,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
+  message tile in Quick Settings says "Pingogram" under its name.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.

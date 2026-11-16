@@ -106,7 +106,15 @@ internal class ChatPinnedMessages(
             } else {
                 val message = pins[index]
                 val position = pins.size - 1 - index
-                PinnedBar(message.id, position, pins.size, named.senderOf(message), named.previewOf(message), canUnpin)
+                PinnedBar(
+                    messageId = message.id,
+                    position = position,
+                    count = pins.size,
+                    sender = named.senderOf(message),
+                    preview = named.previewOf(message),
+                    canUnpin = canUnpin,
+                    thumbnail = message.content.pinnedThumbnail(),
+                )
             }
         }.onStart { emit(null) }
             .distinctUntilChanged()
