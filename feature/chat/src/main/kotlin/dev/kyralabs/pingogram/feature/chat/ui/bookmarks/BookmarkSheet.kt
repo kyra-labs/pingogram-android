@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -112,11 +114,7 @@ internal fun BookmarkSheetContent(
                 shape = TextFieldDefaults.roundedShape,
                 colors = TextFieldDefaults.tonalColors(),
             )
-            Text(
-                text = stringResource(R.string.bookmark_on_this_phone),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            OnThisPhone()
             if (state.isSaving) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
             SheetButtons(
                 state = state,
@@ -147,13 +145,13 @@ private fun SheetHeader() {
                 Modifier
                     .size(MaterialTheme.sizes.avatarRow)
                     .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_bookmark_filled),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = MaterialTheme.colorScheme.onPrimary,
             )
         }
         Text(
@@ -324,8 +322,35 @@ private fun SheetButtons(
             }
         }
         Button(onClick = onSave, enabled = !state.isSaving && state.text != null, shapes = ButtonDefaults.shapes()) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_bookmark_filled),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
             Text(stringResource(R.string.bookmark_save), style = MaterialTheme.typography.labelLargeEmphasized)
         }
+    }
+}
+
+/** That bookmarks stay on this phone, after the phone symbol (board 34a). */
+@Composable
+private fun OnThisPhone() {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_smartphone),
+            contentDescription = null,
+            modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.bookmark_on_this_phone),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

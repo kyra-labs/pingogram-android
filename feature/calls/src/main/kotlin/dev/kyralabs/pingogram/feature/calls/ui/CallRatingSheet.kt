@@ -237,7 +237,12 @@ private fun Stars(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    Row(modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
+    // The group says the rating so far, "Rating, 4 of 5" (board 27).
+    val groupLabel = stringResource(R.string.call_rating_group, stars, MAX_STARS)
+    Row(
+        modifier.selectableGroup().semantics { contentDescription = groupLabel },
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+    ) {
         for (star in 1..MAX_STARS) {
             val filled = star <= stars
             val description = pluralStringResource(R.plurals.call_rating_stars, star, star)

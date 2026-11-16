@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Media viewer (REQUIREMENTS.md FR-C10) -->
-    <string name="media_back">Back</string>
+    <string name="media_back">Close</string>
     <!-- Where the shown photo or video is among the chat's: "3 of 120" -->
     <string name="media_position">%1$d of %2$d</string>
     <!-- Joins the parts of a page's description for screen readers: "Photo, 3 of 120" -->
@@ -23,8 +23,8 @@
     <!-- The zoom level while a photo is zoomed in: "2.5×". -->
     <string name="media_zoom_level">%1$s×</string>
     <string name="media_zoom_fit_hint">Double-tap to fit</string>
-    <string name="media_show_older">Show older</string>
-    <string name="media_show_newer">Show newer</string>
+    <string name="media_show_older">Previous</string>
+    <string name="media_show_newer">Next</string>
     <string name="media_play">Play</string>
     <string name="media_pause">Pause</string>
     <string name="media_picture_in_picture">Picture-in-picture</string>
@@ -45,6 +45,8 @@
     <string name="media_seek">Playback position</string>
     <string name="media_caption_expand">Show the whole caption</string>
     <string name="media_caption_collapse">Show less of the caption</string>
+    <string name="media_caption_more">Show more</string>
+    <string name="media_caption_less">Show less</string>
     <string name="media_downloading">Downloading</string>
     <string name="media_playback_failed">This video can\'t be played</string>
     <!-- The toolbar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->

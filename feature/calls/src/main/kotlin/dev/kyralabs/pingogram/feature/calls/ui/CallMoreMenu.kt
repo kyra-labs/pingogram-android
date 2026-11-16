@@ -40,7 +40,7 @@ internal fun CallMoreButton(
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val held = stringResource(R.string.call_status_on_hold)
-    LabeledButton(R.string.call_more) {
+    LabeledButton(stringResource(R.string.call_more)) {
         Box {
             FilledTonalIconButton(
                 onClick = { expanded = true },
