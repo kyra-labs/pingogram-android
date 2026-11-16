@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Zoomed into a photo, the media viewer shows how far ("2.5×", fading after a moment), a mini-map of where you are in
   the photo and "Double-tap to fit", in place of its toolbar.
+- A Quick compose widget for the home screen: "New" at 1 × 1, "Message" and "Voice" from 2 × 1. "Voice" asks which
+  chat to record in, then opens it already recording a voice message, locked, for you to send or delete.
 - The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
   an optional comment, where Telegram lets it be sent on.
 - A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
@@ -23,8 +25,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
   muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" (at the message) and "Mark as
   read"; matching runs on the phone while Pingogram is connected.
+- With "Show Keyword alerts in the chat list" on, the folder tabs end in "Keyword alerts" while chats had a match in
+  the last week: those chats, the newest match first, each with its word, opening at the match.
 - A chat opened from a keyword alert shows "Keyword: launch · 1 of 4" at the top, whose arrows step through the chat's
-  matches of the last week.
+  matches of the last week; the message shown is outlined, its word highlighted.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All

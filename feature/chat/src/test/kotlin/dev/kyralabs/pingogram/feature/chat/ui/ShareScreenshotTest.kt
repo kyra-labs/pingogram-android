@@ -86,6 +86,7 @@ class ShareScreenshotTest(
             mapOf(
                 "link" to (SharePreviewData.link to FormattedText.Empty),
                 "oneChat" to (SharePreviewData.oneChat to FormattedText.Empty),
+                "voiceNote" to (SharePreviewData.voiceNote to FormattedText.Empty),
                 "photosToTwoChats" to
                     (SharePreviewData.photosToTwoChats to FormattedText("For the album", persistentListOf())),
             )

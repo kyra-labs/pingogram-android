@@ -250,7 +250,7 @@ private fun openApp(context: Context): Action =
     )
 
 /** Opens New chat as the app shortcut does: the Telegram link `tg://new`, through the app's link handling. */
-private fun newChatIntent(context: Context): Intent =
+internal fun newChatIntent(context: Context): Intent =
     Intent(Intent.ACTION_VIEW, NEW_CHAT_LINK.toUri(), context, MainActivity::class.java)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 

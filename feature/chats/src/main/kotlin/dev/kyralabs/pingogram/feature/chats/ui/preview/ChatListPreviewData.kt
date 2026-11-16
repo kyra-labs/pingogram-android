@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.DeleteForEveryone
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
 import dev.kyralabs.pingogram.feature.chats.ui.FolderTab
 import dev.kyralabs.pingogram.feature.chats.ui.HeaderAccount
+import dev.kyralabs.pingogram.feature.chats.ui.KEYWORD_ALERTS_FOLDER_ID
 import dev.kyralabs.pingogram.feature.chats.ui.OutgoingStatus
 import dev.kyralabs.pingogram.feature.chats.ui.RowTopic
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
@@ -383,6 +384,45 @@ internal object ChatListPreviewData {
     val deletePrivateChatDialog = content.copy(deleteDialog = deletePrivateChat)
 
     val leaveGroupDialog = content.copy(deleteDialog = leaveGroup)
+
+    /**
+     * The "Keyword alerts" tab selected (board 30): the three chats with a match of the last week, the newest first,
+     * each with the word it matched as a chip.
+     */
+    val keywordAlerts: ChatListUiState =
+        ChatListUiState(
+            content =
+                ChatListContent.Content(
+                    persistentListOf(
+                        row(
+                            id = 41,
+                            title = "Kyra Labs Updates",
+                            preview = message("Spenzia's public launch is moving to 1 December"),
+                            time = "2:32 PM",
+                            isMuted = true,
+                            avatarShape = AvatarShape.Channel,
+                        ).copy(keyword = "launch"),
+                        row(
+                            id = 42,
+                            title = "Pingogram Beta",
+                            preview = message("0.9.4 rollout is at 50%", UiText.Plain("Arjun")),
+                            time = "1:05 PM",
+                            unreadCount = 3,
+                            avatarShape = AvatarShape.Group,
+                        ).copy(keyword = "0.9.4"),
+                        row(
+                            id = 43,
+                            title = "Hash Hackers Deals",
+                            preview = message("Pingogram Pro lifetime deal is back"),
+                            time = "11:40 AM",
+                            isMuted = true,
+                            avatarShape = AvatarShape.Channel,
+                        ).copy(keyword = "Pingogram"),
+                    ),
+                ),
+            folderTabs = (folders + FolderTab.KeywordAlerts(chatCount = 3)).toImmutableList(),
+            selectedFolderId = KEYWORD_ALERTS_FOLDER_ID,
+        )
 
     /** The archive shows the rows from Orbital Mechanics Weekly on. */
     private const val ARCHIVED_FROM = 4

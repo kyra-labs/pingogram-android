@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHo
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordMatchViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.LocalKeywordMatchBar
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.rememberKeywordMatchSlot
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
@@ -77,9 +78,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceStartOrAsk
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.time.Instant
@@ -277,6 +281,14 @@ internal fun ConversationRoute(
     val keywordMatch =
         rememberKeywordMatchSlot(keywordMatchViewModel) { viewModel.onEvent(ChatEvent.OpenReply(it)) }
             .takeIf { topic == null }
+    // The match the bar shows marks its word in its bubble.
+    LaunchedEffect(keywordMatchViewModel, viewModel, topic) {
+        if (topic != null) return@LaunchedEffect
+        keywordMatchViewModel.bar
+            .map { bar -> bar?.let { KeywordShown(it.messageId, it.word) } }
+            .distinctUntilChanged()
+            .collect { viewModel.onEvent(ChatEvent.KeywordMatchShown(it)) }
+    }
     CompositionLocalProvider(
         LocalKeywordMatchBar provides keywordMatch,
         LocalCustomEmoji provides customEmoji,
@@ -456,6 +468,11 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenMessage -> {
                         onOpenMessage(effect.chatId, effect.messageId)
+                        ""
+                    }
+
+                    ChatEffect.RecordVoiceNow -> {
+                        onEvent(voiceStartOrAsk(context))
                         ""
                     }
 

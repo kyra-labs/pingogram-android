@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
+import dev.kyralabs.pingogram.feature.chats.ui.keyword.KeywordAlertChats
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
@@ -114,6 +115,7 @@ class ChatListViewModel internal constructor(
     communityRepository: CommunityRepository,
     forumTopicRepository: ForumTopicRepository,
     catchUpChats: CatchUpChats,
+    private val keywordChats: KeywordAlertChats,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -135,6 +137,7 @@ class ChatListViewModel internal constructor(
         communityRepository: CommunityRepository,
         forumTopicRepository: ForumTopicRepository,
         catchUpChats: CatchUpChats,
+        keywordChats: KeywordAlertChats,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -153,6 +156,7 @@ class ChatListViewModel internal constructor(
         communityRepository,
         forumTopicRepository,
         catchUpChats,
+        keywordChats,
         clock,
         timePatterns,
         dispatcher,
@@ -213,6 +217,31 @@ class ChatListViewModel internal constructor(
     private val forumTopics =
         ForumRowTopics(forumTopicRepository.takeIf { kind == ChatListKind.Chats }, groupRepository)
 
+    /** How many chats the "Keyword alerts" tab lists; 0 hides it (always in the archive). */
+    private val keywordMatchCount: Flow<Int> =
+        if (kind == ChatListKind.Chats) {
+            keywordChats.matches.map { it.size }.distinctUntilChanged()
+        } else {
+            flowOf(0)
+        }
+
+    /**
+     * The message each chat of the "Keyword alerts" tab opens at, its newest match, which a tap on its row opens at;
+     * read on the main thread.
+     */
+    private val keywordMessages: StateFlow<Map<Long, Long>> =
+        if (kind == ChatListKind.Chats) {
+            keywordChats.matches
+                .map { hits -> hits.associate { it.chatId to it.messageId } }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        } else {
+            MutableStateFlow(emptyMap())
+        }
+
+    /** [keywordMessages] while the "Keyword alerts" tab shows; none otherwise, so other rows open their chat. */
+    private val shownKeywordMessages: Map<Long, Long>
+        get() = if (currentList == KEYWORD_ALERTS_LIST) keywordMessages.value else emptyMap()
+
     private val selectedList: Flow<ChatListType> =
         when (kind) {
             ChatListKind.Archive -> {
@@ -220,8 +249,16 @@ class ChatListViewModel internal constructor(
             }
 
             ChatListKind.Chats -> {
-                combine(savedStateHandle.getStateFlow<Int?>(KEY_FOLDER, null), chatRepository.folders) { id, folders ->
-                    if (id != null && folders.any { it.id == id }) ChatListType.Folder(id) else ChatListType.Main
+                combine(
+                    savedStateHandle.getStateFlow<Int?>(KEY_FOLDER, null),
+                    chatRepository.folders,
+                    keywordMatchCount.map { it > 0 }.distinctUntilChanged(),
+                ) { id, folders, hasKeywordMatches ->
+                    when {
+                        id == KEYWORD_ALERTS_FOLDER_ID && hasKeywordMatches -> KEYWORD_ALERTS_LIST
+                        id != null && folders.any { it.id == id } -> ChatListType.Folder(id)
+                        else -> ChatListType.Main
+                    }
                 }.distinctUntilChanged()
             }
         }
@@ -242,7 +279,7 @@ class ChatListViewModel internal constructor(
 
     private val listState: Flow<ListState> =
         selectedList.flatMapLatest { list ->
-            val chats = chatRepository.chatList(list).without(lockedChatIds)
+            val chats = chatsOf(list, chatRepository, keywordChats).without(lockedChatIds)
             combine(
                 chats,
                 rowSources,
@@ -251,24 +288,30 @@ class ChatListViewModel internal constructor(
                 forumTopics.of(chats),
             ) { chats, snapshot, load, groups, topics ->
                 ListState(list, content(list, chats, snapshot, load, groups, topics))
-            }
+            }.combine(keywordWordsOf(list, keywordChats)) { state, words -> state.withKeywords(words) }
         }
 
     private val folderTabs: Flow<ImmutableList<FolderTab>> =
         if (kind == ChatListKind.Archive) {
             flowOf(persistentListOf())
         } else {
-            chatRepository.folders.flatMapLatest { folders ->
-                if (folders.isEmpty()) {
-                    flowOf(persistentListOf())
-                } else {
-                    val lists = listOf(ChatListType.Main) + folders.map { ChatListType.Folder(it.id) }
-                    val unread = combine(lists.map(chatRepository::unreadChatCount)) { it.toList() }
-                    combine(unread, chatRepository.mainChatListPosition) { counts, mainPosition ->
-                        folderTabs(folders, counts, mainPosition)
+            combine(chatRepository.folders, keywordMatchCount.map { it > 0 }, ::Pair)
+                .distinctUntilChanged()
+                .flatMapLatest { (folders, hasKeywordMatches) ->
+                    if (folders.isEmpty() && !hasKeywordMatches) {
+                        flowOf(persistentListOf())
+                    } else {
+                        val lists = listOf(ChatListType.Main) + folders.map { ChatListType.Folder(it.id) }
+                        val unread = combine(lists.map(chatRepository::unreadChatCount)) { it.toList() }
+                        combine(unread, chatRepository.mainChatListPosition, keywordMatchCount) {
+                            counts,
+                            mainPosition,
+                            keywordCount,
+                            ->
+                            folderTabs(folders, counts, mainPosition, keywordCount)
+                        }
                     }
                 }
-            }
         }
 
     private val archive: Flow<ArchivePlace> =
@@ -333,7 +376,7 @@ class ChatListViewModel internal constructor(
                     } else {
                         val mapper = ChatListItemMapper()
                         combine(
-                            chatRepository.chatList(type).without(lockedChatIds),
+                            chatsOf(type, chatRepository, keywordChats).without(lockedChatIds),
                             rowSources,
                             loads.map { it[type] ?: ListLoad() }.distinctUntilChanged(),
                             communities.of(type),
@@ -434,7 +477,7 @@ class ChatListViewModel internal constructor(
                 if (selection.isActive(shown)) {
                     selection.toggle(event.chatId, shown)
                 } else {
-                    effectChannel.trySend(ChatListEffect.OpenChat(event.chatId))
+                    effectChannel.trySend(ChatListEffect.OpenChat(event.chatId, shownKeywordMessages[event.chatId]))
                 }
             }
 
@@ -509,7 +552,13 @@ class ChatListViewModel internal constructor(
      * the end of this list loads the next one, as the chats it added (if any) did not move the end away; a failed page
      * waits for [ChatListEvent.Retry] or the end coming near again.
      */
+
     private fun loadPage(list: ChatListType) {
+        if (list == KEYWORD_ALERTS_LIST) {
+            // Its chats are those with a match, which TDLib has announced: nothing to load.
+            loads.update { it.putting(list, ListLoad(hasLoadedPage = true, isComplete = true)) }
+            return
+        }
         val load = loads.value[list] ?: ListLoad()
         if (load.isLoading || load.isComplete) return
         loads.update { it.putting(list, load.copy(isLoading = true, error = null)) }
@@ -681,7 +730,15 @@ class ChatListViewModel internal constructor(
     private class ListState(
         val list: ChatListType,
         val content: ChatListContent,
-    )
+    ) {
+        /** These rows with the word each chat matched ([ChatListItemModel.keyword]); as they are without words. */
+        fun withKeywords(words: Map<Long, String>): ListState {
+            val rows = content as? ChatListContent.Content
+            if (words.isEmpty() || rows == null) return this
+            val items = rows.items.map { row -> words[row.id]?.let { row.copy(keyword = it) } ?: row }
+            return ListState(list, rows.copy(items = items.toImmutableList()))
+        }
+    }
 
     /** The archive row's [entry] (null while the archive is empty) and how the row shows ([style]). */
     private data class ArchivePlace(
@@ -731,6 +788,9 @@ class ChatListViewModel internal constructor(
         const val FIRST_PAGE_SIZE = 20
 
         private const val KEY_FOLDER = "chatList.folderId"
+
+        /** The list of the "Keyword alerts" tab: a folder no TDLib folder is, whose chats come from the matches. */
+        val KEYWORD_ALERTS_LIST = ChatListType.Folder(KEYWORD_ALERTS_FOLDER_ID)
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
@@ -750,6 +810,7 @@ private fun folderTabs(
     folders: List<ChatFolder>,
     unread: List<UnreadChatCount>,
     mainPosition: Int,
+    keywordChatCount: Int,
 ): ImmutableList<FolderTab> {
     val tabs: MutableList<FolderTab> =
         folders.mapIndexedTo(mutableListOf()) { index, folder ->
@@ -764,8 +825,28 @@ private fun folderTabs(
         }
     val main = unread[0]
     tabs.add(mainPosition.coerceIn(0, folders.size), FolderTab.AllChats(main.unreadUnmutedCount, main.unreadCount > 0))
+    if (keywordChatCount > 0) tabs.add(FolderTab.KeywordAlerts(keywordChatCount))
     return tabs.toImmutableList()
 }
+
+/** [list]'s chats: TDLib's, or for the "Keyword alerts" tab those with a match ([KeywordAlertChats]). */
+private fun chatsOf(
+    list: ChatListType,
+    chatRepository: ChatRepository,
+    keywordChats: KeywordAlertChats,
+): Flow<List<Chat>> =
+    if (list == ChatListViewModel.KEYWORD_ALERTS_LIST) keywordChats.chats else chatRepository.chatList(list)
+
+/** The word each chat of [list] matched, for its chip: only on the "Keyword alerts" tab. */
+private fun keywordWordsOf(
+    list: ChatListType,
+    keywordChats: KeywordAlertChats,
+): Flow<Map<Long, String>> =
+    if (list == ChatListViewModel.KEYWORD_ALERTS_LIST) {
+        keywordChats.matches.map { hits -> hits.associate { it.chatId to it.word } }
+    } else {
+        flowOf(emptyMap())
+    }
 
 /** These chats without those of [locked]. */
 private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> =

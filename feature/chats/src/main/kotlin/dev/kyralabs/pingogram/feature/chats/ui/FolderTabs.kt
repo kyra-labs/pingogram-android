@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import kotlinx.collections.immutable.ImmutableList
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The folder tabs (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6, §13.3; owner decision 2026-11-13): one
@@ -305,16 +306,20 @@ private fun FolderToggleButton(
     }
 }
 
-/** The folder's symbol (`core:ui`'s `folderIconDrawable`; "All chats" takes Telegram's "All"), decorative. */
+/**
+ * The folder's symbol (`core:ui`'s `folderIconDrawable`; "All chats" takes Telegram's "All", "Keyword alerts" the
+ * keyword match bar's tag), decorative.
+ */
 @Composable
 private fun TabIcon(tab: FolderTab) {
-    val name =
+    val icon =
         when (tab) {
-            is FolderTab.AllChats -> ALL_CHATS_ICON
-            is FolderTab.Folder -> tab.iconName
+            is FolderTab.AllChats -> folderIconDrawable(ALL_CHATS_ICON)
+            is FolderTab.Folder -> folderIconDrawable(tab.iconName)
+            is FolderTab.KeywordAlerts -> UiR.drawable.ic_tag
         }
     Icon(
-        painter = painterResource(folderIconDrawable(name)),
+        painter = painterResource(icon),
         contentDescription = null,
         modifier = Modifier.size(ButtonDefaults.iconSizeFor(ToggleButtonDefaults.MinHeight)),
     )
@@ -350,15 +355,13 @@ private fun TabBadge(
     }
 }
 
-private val FolderTab.folderId: Int?
-    get() = (this as? FolderTab.Folder)?.id
-
 @Composable
 @ReadOnlyComposable
 private fun FolderTab.label(): String =
     when (this) {
         is FolderTab.AllChats -> stringResource(R.string.chat_list_all_chats)
         is FolderTab.Folder -> title
+        is FolderTab.KeywordAlerts -> stringResource(R.string.chat_list_keyword_alerts)
     }
 
 /** "Work, 2 unread chats" for screen readers. */

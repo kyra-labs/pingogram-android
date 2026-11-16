@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -56,7 +58,7 @@ internal fun ChatMeta(
                 )
             }
         }
-        UnreadBadges(item)
+        UnreadBadges(item, showsKeyword = showTime)
     }
 }
 
@@ -94,7 +96,10 @@ private fun OutgoingStatusIcon(status: OutgoingStatus) {
  * of a pinned chat with nothing unread.
  */
 @Composable
-private fun UnreadBadges(item: ChatListItemModel) {
+private fun UnreadBadges(
+    item: ChatListItemModel,
+    showsKeyword: Boolean,
+) {
     val colors = MaterialTheme.colorScheme
     val container = if (item.isMuted) colors.surfaceVariant else colors.primary
     val content = if (item.isMuted) colors.onSurfaceVariant else colors.onPrimary
@@ -102,6 +107,8 @@ private fun UnreadBadges(item: ChatListItemModel) {
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // At large font scales the chip moves under the preview (RowSupporting), so the title keeps its line.
+        item.keyword?.takeIf { showsKeyword }?.let { KeywordChip(it) }
         if (item.hasUnreadReactions) {
             Badge(containerColor = container, contentColor = content) { BadgeIcon(UiR.drawable.ic_favorite_filled) }
         }
@@ -126,6 +133,32 @@ private fun UnreadBadges(item: ChatListItemModel) {
                 InlineIcon(UiR.drawable.ic_push_pin, colors.onSurfaceVariant, MaterialTheme.sizes.inlineIconSmall)
             }
         }
+    }
+}
+
+/**
+ * The word of the user's keyword alerts a chat of the "Keyword alerts" tab matched (board 30): the tag and the word on
+ * a `tertiaryContainer` pill (the board's gold), at most `sizes.rowChipMaxWidth` wide at the row's end ([capped]),
+ * the word ellipsized.
+ */
+@Composable
+internal fun KeywordChip(
+    word: String,
+    capped: Boolean = true,
+) {
+    val colors = MaterialTheme.colorScheme
+    Badge(
+        modifier = if (capped) Modifier.widthIn(max = MaterialTheme.sizes.rowChipMaxWidth) else Modifier,
+        containerColor = colors.tertiaryContainer,
+        contentColor = colors.onTertiaryContainer,
+    ) {
+        BadgeIcon(UiR.drawable.ic_tag)
+        Text(
+            text = word,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelSmallEmphasized.userContent,
+        )
     }
 }
 

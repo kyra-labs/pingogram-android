@@ -675,6 +675,9 @@
     <!-- Screen readers: the shared text shown below the title, %1$s. -->
     <!-- What the share sheet sends when the stories viewer shares a story. -->
     <string name="share_story">1 story</string>
+    <!-- The share sheet opened by the Quick compose widget's "Voice" (board 33): a tap on a chat opens it recording. -->
+    <string name="share_voice_title">Record a voice message</string>
+    <string name="share_voice_hint">Tap a chat to start recording in it</string>
     <string name="share_text_description">Shared text: %1$s</string>
     <!-- When the user can send messages in none of their chats. -->
     <string name="share_no_chats">No chats to send to</string>
@@ -765,6 +768,7 @@
     <string name="search_no_messages_for_day">No messages on this day or before it</string>
     <!-- Screen readers hear this in the description of the message the search shows. -->
     <string name="chat_bubble_search_match">matches your search</string>
+    <string name="chat_bubble_keyword_match">has a word of your keyword alerts</string>
     <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
     <string name="bot_keyboard_show">Show bot keyboard</string>
     <string name="bot_keyboard_hide">Show keyboard</string>

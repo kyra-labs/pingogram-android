@@ -388,9 +388,11 @@ private fun MessageBubble(
     val frameKind = frameKindOf(bubble)
     val bare = frameKind.isBare
     val bareShape = MaterialTheme.shapes.large
-    // A message that mentions the user is ringed in `primary` (docs/DESIGN_SYSTEM.md §13.6).
-    val mentionRing = bubble.mentionsMe && resources.theme.hues.isNotEmpty()
-    val ringColor = MaterialTheme.colorScheme.primary
+    // A message that mentions the user is ringed in `primary` (docs/DESIGN_SYSTEM.md §13.6), the keyword alert match
+    // the match bar shows in `tertiary` (board 30, §13.13).
+    val keywordRing = bubble.keywordMatches.isNotEmpty()
+    val mentionRing = keywordRing || (bubble.mentionsMe && resources.theme.hues.isNotEmpty())
+    val ringColor = if (keywordRing) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
     val frame: @Composable (Modifier) -> Unit = { outer ->
         // The focus ring in the frame's shape: the bubble's, or around content without a bubble.
         val frameShape = if (bare) bareShape else shape
@@ -647,6 +649,7 @@ private fun BubbleText(
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     matchColor = MaterialTheme.colorScheme.tertiary,
                     mentionColor = MaterialTheme.colorScheme.primary,
+                    keywordColor = MaterialTheme.colorScheme.tertiaryContainer,
                 )
             } else {
                 Modifier

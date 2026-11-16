@@ -166,6 +166,23 @@ class ShareViewModelTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `a voice message to record opens the chat tapped at once, with nothing to send`() =
+        runViewModelTest {
+            val voice = SharedContent(voiceNote = true)
+            val viewModel = shareViewModel(voice)
+            assertTrue(viewModel.sheet.value!!.isVoiceNote)
+
+            send(viewModel, ShareEvent.ToggleTarget(GROUP_CHAT))
+
+            assertEquals(ShareClose.OpenChat(GROUP_CHAT), viewModel.closed.value)
+            val delivered = CompletableDeferred<SharedContent?>()
+            backgroundScope.launch { inbox.deliveredTo(GROUP_CHAT).collect { delivered.complete(it) } }
+            runCurrent()
+            assertEquals(voice, delivered.await())
+            assertTrue(shares.calls.isEmpty())
+        }
+
+    @Test
     fun `several chats get the share after the send, the comment first, even once the sheet is gone`() =
         runViewModelTest {
             val answer = CompletableDeferred<ShareResult>()

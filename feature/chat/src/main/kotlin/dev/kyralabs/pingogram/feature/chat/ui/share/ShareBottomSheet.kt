@@ -189,9 +189,16 @@ private fun ShareHeader(sheet: ShareSheet) {
     val spacing = MaterialTheme.spacing
     val resources = LocalResources.current
     Column(Modifier.fillMaxWidth().padding(horizontal = spacing.large).padding(bottom = spacing.medium)) {
-        Text(text = stringResource(R.string.share_title), style = MaterialTheme.typography.titleLargeEmphasized)
+        Text(
+            text = stringResource(if (sheet.isVoiceNote) R.string.share_voice_title else R.string.share_title),
+            style = MaterialTheme.typography.titleLargeEmphasized,
+        )
         val files =
             when {
+                sheet.isVoiceNote -> {
+                    stringResource(R.string.share_voice_hint)
+                }
+
                 sheet.isStory -> {
                     stringResource(R.string.share_story)
                 }
@@ -322,6 +329,23 @@ private fun ShareSheetOneChatPreview() {
         Column {
             ShareContent(
                 SharePreviewData.oneChat,
+                remember { TextFieldState() },
+                remember { ComposerText() },
+                {},
+                {},
+                {},
+            )
+        }
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun ShareSheetVoiceNotePreview() {
+    PingogramPreview {
+        Column {
+            ShareContent(
+                SharePreviewData.voiceNote,
                 remember { TextFieldState() },
                 remember { ComposerText() },
                 {},

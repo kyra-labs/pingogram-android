@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
@@ -54,6 +55,22 @@ class ChatSharesTest : ChatViewModelHarness() {
 
             assertEquals("Look https://example.com", viewModel.composerText.content.text)
             assertEquals(listOf(bold), viewModel.composerText.content.entities)
+            assertTrue(messages.sent.isEmpty())
+        }
+
+    @Test
+    fun `a voice message to record starts the recording once the conversation shows`() =
+        runViewModelTest {
+            val viewModel = privateChat()
+            shareInbox.deliver(PRIVATE_CHAT, SharedContent(voiceNote = true))
+            runCurrent()
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.Started)
+
+                assertEquals(ChatEffect.RecordVoiceNow, awaitItem())
+            }
+            assertEquals("", viewModel.composerText.content.text)
             assertTrue(messages.sent.isEmpty())
         }
 

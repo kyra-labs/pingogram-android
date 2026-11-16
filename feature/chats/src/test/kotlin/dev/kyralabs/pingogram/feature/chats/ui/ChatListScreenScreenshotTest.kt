@@ -58,7 +58,10 @@ class ChatListScreenScreenshotTest(
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName in setOf("selecting", "connecting", "contentWithFolders", "archiveRow", "communities"))
+        assumeTrue(
+            stateName in
+                setOf("selecting", "connecting", "contentWithFolders", "archiveRow", "communities", "keywordAlerts"),
+        )
         capture(ScreenshotVariant.Light, "fontScale200")
     }
 
@@ -151,6 +154,7 @@ class ChatListScreenScreenshotTest(
                 "contentWithFolders" to ChatListPreviewData.contentWithFolders,
                 "content" to ChatListPreviewData.content,
                 "communities" to ChatListPreviewData.withCommunities,
+                "keywordAlerts" to ChatListPreviewData.keywordAlerts,
                 "archiveRow" to ChatListPreviewData.contentWithArchive,
                 "selecting" to ChatListPreviewData.selecting,
                 "connecting" to ChatListPreviewData.connecting,
