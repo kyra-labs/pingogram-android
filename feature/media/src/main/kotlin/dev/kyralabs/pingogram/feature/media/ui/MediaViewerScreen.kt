@@ -335,6 +335,7 @@ private fun MediaPager(
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
         val playback = content.playback?.takeIf { it.messageId == item.messageId }
         val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
+        val live = LiveActions(playing = playback != null, onHold).takeIf { item.isLivePhoto }
         MediaPage(
             item = item,
             files = content.files,
@@ -344,12 +345,8 @@ private fun MediaPager(
             onCancelStream = { onEvent(MediaViewerEvent.CancelStream) },
             videoSurface = videoSurface,
             onSideTap =
-                { end: Boolean ->
-                    val target = page + if (end) 1 else -1
-                    if (target in items.indices) {
-                        scope.launch { pagerState.animateScrollToPage(target, animationSpec = turn) }
-                    }
-                }.takeIf { !item.isHidden && !chrome.keptShown },
+                sideTurn(page, items.size) { scope.launch { pagerState.animateScrollToPage(it, animationSpec = turn) } }
+                    .takeIf { !item.isHidden && !chrome.keptShown },
             modifier =
                 Modifier.pageSemantics(
                     page = info,
@@ -361,8 +358,12 @@ private fun MediaPager(
                             pageZoom,
                             isShown && zoomed,
                             scope,
-                            LiveActions(playing = playback != null, onHold).takeIf { item.isLivePhoto },
-                        ) { pagerState.animateScrollToPage(it, animationSpec = turn) },
+                            live,
+                            content.actions.takeIf { isShown },
+                            onEvent,
+                        ) {
+                            pagerState.animateScrollToPage(it, animationSpec = turn)
+                        },
                     onTap = onTap.takeUnless { chrome.keptShown && !item.isHidden },
                 ),
             zoom = pageZoom,
@@ -423,9 +424,10 @@ private fun Modifier.pageSemantics(
 /**
  * The custom actions of a page for screen readers, built from the resources when the semantics are read: turn to the
  * older and newer page ([turn], in [scope]), zoom the photo in and out with [zoom], on the motion scheme's default
- * spatial spring (out only while [zoomed] in), and play or stop a live photo ([live]).
+ * spatial spring (out only while [zoomed] in), play or stop a live photo ([live]), and save, share or delete the shown
+ * media ([media]), as the toolbar does.
  */
-@Suppress("LongParameterList") // The page, its zoom, its live photo, and how to turn pages.
+@Suppress("LongParameterList") // The page, its zoom, its live photo, its actions, and how to turn pages.
 @Composable
 private fun pageActions(
     page: PageInfo,
@@ -433,6 +435,8 @@ private fun pageActions(
     zoomed: Boolean,
     scope: CoroutineScope,
     live: LiveActions?,
+    media: MediaActions?,
+    onEvent: (MediaViewerEvent) -> Unit,
     turn: suspend (page: Int) -> Unit,
 ): (Resources) -> List<CustomAccessibilityAction> {
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
@@ -459,6 +463,16 @@ private fun pageActions(
                     action(R.string.media_live_play) { it.hold(true) }
                 }
             },
+            // The toolbar's own actions, on the photo itself (board 25), while none is under way.
+            media
+                ?.takeIf {
+                    it.canSave && it.pending == null
+                }?.let { action(R.string.media_save) { onEvent(MediaViewerEvent.Save) } },
+            media
+                ?.takeIf {
+                    it.canSave && it.pending == null
+                }?.let { action(R.string.media_share) { onEvent(MediaViewerEvent.Share) } },
+            media?.takeIf { it.canDelete }?.let { action(R.string.media_delete) { onEvent(MediaViewerEvent.Delete) } },
         )
     }
 }

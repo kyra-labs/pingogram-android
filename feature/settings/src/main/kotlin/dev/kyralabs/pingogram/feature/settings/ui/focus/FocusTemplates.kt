@@ -18,8 +18,6 @@ private const val WORK_START = 9 * HOUR
 private const val WORK_END = 18 * HOUR
 private const val SLEEP_START = 22 * HOUR + 30
 private const val SLEEP_END = 7 * HOUR
-private const val WEEKEND_START = 10 * HOUR
-private const val WEEKEND_END = 20 * HOUR
 
 @StringRes
 internal fun FocusTemplate.title(): Int =
@@ -83,8 +81,9 @@ internal fun FocusTemplate.profile(name: String): FocusProfile =
             profile(
                 name,
                 FocusIcon.Weekend,
-                FocusSchedule(persistentSetOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), WEEKEND_START, WEEKEND_END),
-                calls = false,
+                // Turned on by hand (board 31f): weekends are not the same hours each week.
+                schedule = null,
+                calls = true,
             )
         }
 
