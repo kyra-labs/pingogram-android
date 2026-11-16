@@ -316,7 +316,7 @@ private fun TabIcon(tab: FolderTab) {
         when (tab) {
             is FolderTab.AllChats -> folderIconDrawable(ALL_CHATS_ICON)
             is FolderTab.Folder -> folderIconDrawable(tab.iconName)
-            is FolderTab.KeywordAlerts -> UiR.drawable.ic_tag
+            is FolderTab.KeywordAlerts -> UiR.drawable.ic_sell
         }
     Icon(
         painter = painterResource(icon),

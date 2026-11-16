@@ -152,7 +152,7 @@ internal fun KeywordChip(
         containerColor = colors.tertiaryContainer,
         contentColor = colors.onTertiaryContainer,
     ) {
-        BadgeIcon(UiR.drawable.ic_tag)
+        BadgeIcon(UiR.drawable.ic_sell)
         Text(
             text = word,
             maxLines = 1,

@@ -33,6 +33,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,10 +51,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The keyword match bar (board 30): at the top of the conversation's sheet, inset as its other bars, a tonal strip on
- * `surfaceContainerHigh` with `large` corners: the tag symbol in `tertiary`, "Keyword: launch · 1 of 4" in `labelLarge`
- * (ellipsized before the buttons), then "Older match" (↑), "Newer match" (↓) and "Close" as icon buttons, the arrows
- * the same way in right-to-left layouts. Screen readers hear a pane, "Keyword matches", with its labelled buttons;
- * the conversation's jump to the message moves their focus there.
+ * `surfaceContainerHigh` with `large` corners: the `sell` symbol in `tertiary`, "Keyword: launch · 1 of 4" in
+ * `labelLarge` (the word ellipsized before the count and the buttons), then "Older match" (↑), "Newer match" (↓) and
+ * "Close" as icon buttons, the arrows the same way in right-to-left layouts. Screen readers hear a pane, "Keyword
+ * matches", with its labelled buttons; the count is a polite live region, "Match 2 of 4", so each step is heard while
+ * the focus stays on the button pressed.
  */
 @Composable
 internal fun KeywordMatchBarRow(
@@ -72,15 +76,33 @@ internal fun KeywordMatchBarRow(
                 .padding(start = spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(painterResource(UiR.drawable.ic_tag), contentDescription = null, tint = colors.tertiary)
-        Text(
-            text = stringResource(R.string.keyword_match_title, bar.word.bidiIsolated(), bar.position, bar.count),
+        Icon(painterResource(UiR.drawable.ic_sell), contentDescription = null, tint = colors.tertiary)
+        Row(
             modifier = Modifier.weight(1f).padding(horizontal = spacing.medium, vertical = spacing.small),
-            color = colors.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelLarge.userContent,
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val style = MaterialTheme.typography.labelLarge.userContent
+            Text(
+                text = stringResource(R.string.keyword_match_word, bar.word.bidiIsolated()),
+                modifier = Modifier.weight(1f, fill = false),
+                color = colors.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = style,
+            )
+            val spoken = stringResource(R.string.keyword_match_position_spoken, bar.position, bar.count)
+            Text(
+                text = stringResource(R.string.keyword_match_position, bar.position, bar.count),
+                modifier =
+                    Modifier.semantics {
+                        contentDescription = spoken
+                        liveRegion = LiveRegionMode.Polite
+                    },
+                color = colors.onSurface,
+                maxLines = 1,
+                style = style,
+            )
+        }
         BarButton(R.drawable.ic_keyboard_arrow_up, R.string.keyword_match_older, bar.hasOlder) {
             onEvent(KeywordMatchEvent.Older)
         }
