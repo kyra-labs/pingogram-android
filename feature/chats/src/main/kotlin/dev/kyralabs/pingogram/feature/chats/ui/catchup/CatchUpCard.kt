@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -77,7 +78,7 @@ internal fun CatchUpChatCard(
     val skip = resources.getString(R.string.catch_up_skip)
     Card(
         modifier =
-            modifier.semantics {
+            modifier.testTag(CATCH_UP_CARD_TEST_TAG).semantics {
                 paneTitle = region
                 // The swipes' equivalents.
                 customActions =
@@ -302,7 +303,7 @@ private fun CardActions(
                 label = stringResource(R.string.catch_up_skip),
                 first = false,
                 last = true,
-                modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT),
+                modifier = Modifier.weight(if (large) 1f else ICON_WEIGHT).testTag(CATCH_UP_SKIP_TEST_TAG),
             ) { onEvent(CatchUpEvent.Skip) }
         }
     }
@@ -340,3 +341,7 @@ private fun connected(shapes: ToggleButtonShapes) =
 
 private const val LARGE_FONT_SCALE = 1.5f
 private const val ICON_WEIGHT = 0.35f
+
+// For the benchmarks' journeys (`docs/PERFORMANCE.md` §9): Skip reads no chat, so they step through cards with it.
+private const val CATCH_UP_CARD_TEST_TAG = "catch_up_card"
+private const val CATCH_UP_SKIP_TEST_TAG = "catch_up_skip"
