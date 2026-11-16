@@ -122,6 +122,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
   later, a language button at the top opens Android's list of the app's languages.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
 - Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
   a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
   Decline; Decline goes back to the phone number.
