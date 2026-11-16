@@ -141,6 +141,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
+- The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
   italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
 - A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
