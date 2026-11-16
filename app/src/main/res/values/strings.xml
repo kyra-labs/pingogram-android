@@ -47,6 +47,17 @@
     <string name="widget_compose_voice">Voice</string>
     <string name="widget_compose_new_description">New message</string>
     <string name="widget_compose_voice_description">New voice message</string>
+    <!-- The Conversation widget (board 33): one chat's newest messages and a reply. -->
+    <string name="widget_conversation_label">Conversation</string>
+    <string name="widget_conversation_choose">Choose a chat</string>
+    <string name="widget_conversation_sign_in">Sign in to Pingogram first</string>
+    <string name="widget_conversation_failed">Can\'t update right now</string>
+    <string name="widget_conversation_retry">Tap to retry</string>
+    <string name="widget_conversation_empty">No messages yet</string>
+    <!-- The reply field's placeholder -->
+    <string name="widget_conversation_reply">Reply…</string>
+    <!-- Spoken by screen readers for the reply button: "Reply to Trip" -->
+    <string name="widget_conversation_reply_to">Reply to %1$s</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>
