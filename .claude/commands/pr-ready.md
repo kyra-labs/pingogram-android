@@ -8,4 +8,5 @@ Prepare the current branch for a pull request:
 3. Make sure CHANGELOG.md Unreleased lists the user-visible changes.
 4. Write the PR title (Conventional Commit style) and a PR description that fills
    .github/PULL_REQUEST_TEMPLATE.md, including what to test manually.
-5. Do NOT push. Show me the summary.
+5. Push the branch, open the PR (draft if `check` did not pass), then follow 'Merging into `main`'
+   in CLAUDE.md and report the link.
