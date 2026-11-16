@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.tile
 
+import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import android.service.quicksettings.TileService
@@ -17,12 +18,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 /** The Focus tile (board 31): what it shows, and which page its intents open. */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class FocusTileTest {
     private val work =
         FocusProfile(
