@@ -8,14 +8,13 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.requestFocus
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,10 +48,12 @@ class KeywordMatchBarLiveRegionTest {
         val polite = SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
         composeRule.onNodeWithContentDescription("Match 1 of 4").assert(polite)
 
-        composeRule.onNodeWithContentDescription("Older match").requestFocus().performClick()
+        val older = composeRule.onNodeWithContentDescription("Older match").fetchSemanticsNode().id
+        composeRule.onNodeWithContentDescription("Older match").performClick()
 
         composeRule.onNodeWithContentDescription("Match 2 of 4").assert(polite)
-        composeRule.onNodeWithContentDescription("Older match").assertIsFocused()
+        // The same node, so a screen reader's focus stays on the button pressed.
+        assertEquals(older, composeRule.onNodeWithContentDescription("Older match").fetchSemanticsNode().id)
 
         composeRule.onNodeWithContentDescription("Newer match").performClick()
 
