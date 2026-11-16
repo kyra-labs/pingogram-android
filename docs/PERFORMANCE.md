@@ -58,7 +58,14 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
-    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads.
+    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads. Since
+    2026-11-16 the widget updaters (recent chats, Conversation) also wait that long before asking the launcher which
+    widgets are placed (a binder call, then a Glance state read per widget) and loading their chats, unless a widget
+    asks for its content first (a process started for it).
+  - The chat list's folder tabs show no "Keyword alerts" tab until the matches are read (`ChatListViewModel`'s
+    `keywordMatchCount` starts at 0), and nothing reads them while the tab is turned off, so its first content never
+    waits for the account's `keyword_hits.txt`. Focus's header pill is a view model of its own over the settings file,
+    which the splash screen already waits for; the Quick Settings tiles bind only when Quick Settings opens.
 - Done after the v0.5.0 benchmarks (review of 2026-10-25), waiting for a trace before and after on the owner's phone
   (`tools/perfetto/startup.sh` or `startup.ps1`, below):
   - **Notifications at a cold start.** TDLib restores the active notifications at every start. `NotificationRenderer`
@@ -350,7 +357,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 ## 9. Measurement & tooling
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
-  `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`; generates Baseline Profiles.
+  `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`, `OpenMediaBenchmark`,
+  `CatchUpBenchmark`, `BookmarksScrollBenchmark`; generates Baseline Profiles.
   It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
   `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
   generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
@@ -368,6 +376,15 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
   `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+- Catch-up and the Bookmarks page (`benchmark/.../ToolJourneys.kt`, 2026-11-16) read no chat either: Catch-up shows
+  the unread chats without marking them, and the journeys step through its cards with "Skip" only (never "Mark as
+  read", "Reply in place" or "Open chat"); the Bookmarks page opens from Saved Messages' card. The Baseline Profile's
+  `catchUpAndBookmarks` takes each where it shows and skips it otherwise. The benchmarks need them: Catch-up's chip
+  shows from five unread chats that are not muted, so leave as many unread on the account (the benchmark fails
+  otherwise, saying so), and Saved Messages' card shows once a message is bookmarked, so bookmark a few screens of
+  messages, some with notes and tags. `CatchUpBenchmark` measures the frames of three cards skipped one after
+  another, `BookmarksScrollBenchmark` those of the page's cards flung down and back up; no budget yet: the first run
+  on the owner's phone sets one.
 - Each run skips the other kind of test (Macrobenchmark's rules check `androidx.benchmark.enabledRules`), and the
   connected test task counts those skips as failures. So run only the kind each command is for:
   `./gradlew :app:generateBaselineProfile -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true

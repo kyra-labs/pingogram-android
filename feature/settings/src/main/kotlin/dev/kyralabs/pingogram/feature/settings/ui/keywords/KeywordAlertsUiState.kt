@@ -5,8 +5,10 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 
 /** A chat folder keyword alerts may look in: its [id] and [title]. */
 @Immutable
@@ -30,7 +32,8 @@ data class KeywordSuggestion(
 
 /**
  * Keyword alerts' page (board 30): the [settings] (null until read), the user's chat [folders], what the empty page
- * suggests ([suggestions]), and the folders being chosen in the sheet ([choosingFolders], null while it is closed).
+ * suggests ([suggestions]), the folders being chosen in the sheet ([choosingFolders], null while it is closed), and
+ * how many messages each word matched in the last week that are not read yet ([matchCounts], by word).
  */
 @Immutable
 data class KeywordAlertsUiState(
@@ -38,6 +41,7 @@ data class KeywordAlertsUiState(
     val folders: ImmutableList<KeywordFolder> = persistentListOf(),
     val suggestions: ImmutableList<KeywordSuggestion> = persistentListOf(),
     val choosingFolders: ImmutableSet<Int>? = null,
+    val matchCounts: ImmutableMap<String, Int> = persistentMapOf(),
 ) {
     /** Whether another word may be added. */
     val canAdd: Boolean get() = (settings?.words?.size ?: 0) < KeywordAlertSettings.MAX_WORDS

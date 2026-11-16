@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
   pinned messages page shows a pinned video's or GIF's picture with its length.
+- Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
+  no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
   asks you to choose its chat in the app.
 - The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
@@ -92,6 +94,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
+  for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
+  its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
+- Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
+  starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
+  before showing its first chats.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
@@ -140,6 +148,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
+- When a photo or video takes more than half a second to load into the media viewer, it fades in with the viewer
+  instead of jumping into the middle of its grow-from-the-message animation; closing still shrinks it back.
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
   italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
 - A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
