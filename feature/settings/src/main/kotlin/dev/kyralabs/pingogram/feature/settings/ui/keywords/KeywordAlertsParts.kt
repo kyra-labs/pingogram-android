@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Checkbox
@@ -35,6 +37,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,14 +48,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
 import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
@@ -68,29 +80,52 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.openSystemSettings
 import dev.kyralabs.pingogram.feature.settings.ui.pickerRowLook
+import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The parts of the keyword alerts page (KeywordAlertsScreen), board 30.
 
-/** A word: its text (user content, one line) and a close symbol; a tap removes it ("launch, Remove"). */
+/**
+ * A word: its text (user content, one line), how many unread messages matched it this week ([matches], left out at 0)
+ * and a close symbol; a tap removes it ("launch, 4 matches, remove").
+ */
 @Composable
 internal fun KeywordChip(
     word: String,
+    matches: Int,
     onRemove: () -> Unit,
 ) {
-    val label = stringResource(R.string.settings_keyword_alerts_remove, word.bidiIsolated())
+    val isolated = word.bidiIsolated()
+    val label =
+        if (matches > 0) {
+            pluralStringResource(R.plurals.settings_keyword_alerts_remove_matches, matches, isolated, matches)
+        } else {
+            stringResource(R.string.settings_keyword_alerts_remove, isolated)
+        }
     val maxWidth = MaterialTheme.sizes.mediaMinSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
     InputChip(
         selected = false,
         onClick = onRemove,
         label = {
-            Text(
-                word,
-                modifier = Modifier.widthIn(max = maxWidth),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = LocalTextStyle.current.userContent,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    word,
+                    modifier = Modifier.widthIn(max = maxWidth),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = LocalTextStyle.current.userContent,
+                )
+                if (matches > 0) {
+                    Text(
+                        NumberFormat.getIntegerInstance().format(matches),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
         },
         shapes = InputChipDefaults.shapes(),
         modifier =
@@ -164,35 +199,63 @@ internal fun KeywordsEmpty(
     }
 }
 
-/** The bell on a `Cookie12Sided` badge over "No alert words yet" (a heading) and what alerts do. */
+/**
+ * The bell on a `Cookie9Sided` in `primary` inside a `Cookie12Sided` in `primaryContainer`, a "launch" tag on its edge
+ * (decorative), over "No alert words yet" (a heading, a polite live region) and what alerts do.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun EmptyHeading() {
-    Box(
-        Modifier
-            .size(MaterialTheme.sizes.headlineBadge)
-            .clip(MaterialShapes.Cookie12Sided.toShape())
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painterResource(UiR.drawable.ic_notifications),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+    val colors = MaterialTheme.colorScheme
+    Box(Modifier.clearAndSetSemantics {}, contentAlignment = Alignment.BottomEnd) {
+        Box(
+            Modifier
+                .size(MaterialTheme.sizes.avatarProfile)
+                .clip(MaterialShapes.Cookie12Sided.toShape())
+                .background(colors.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .size(MaterialTheme.sizes.headlineBadge)
+                    .clip(MaterialShapes.Cookie9Sided.toShape())
+                    .background(colors.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painterResource(UiR.drawable.ic_notifications), contentDescription = null, tint = colors.onPrimary)
+            }
+        }
+        Text(
+            stringResource(R.string.settings_keyword_alerts_sample),
+            modifier =
+                Modifier
+                    .background(colors.tertiaryContainer, CircleShape)
+                    .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
+            color = colors.onTertiaryContainer,
+            style = MaterialTheme.typography.labelMediumEmphasized,
         )
     }
-    Text(
-        stringResource(R.string.settings_keyword_alerts_empty_title),
-        modifier = Modifier.semantics { heading() },
-        style = MaterialTheme.typography.titleMediumEmphasized,
-        textAlign = TextAlign.Center,
-    )
-    Text(
-        stringResource(R.string.settings_keyword_alerts_empty_body),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium,
-        textAlign = TextAlign.Center,
-    )
+    Column(
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+    ) {
+        Text(
+            stringResource(R.string.settings_keyword_alerts_empty_title),
+            style = MaterialTheme.typography.titleMediumEmphasized,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(R.string.settings_keyword_alerts_empty_body),
+            color = colors.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 /** A suggestion: [word] after an add symbol, [label] for screen readers ("Add your name"). */
@@ -280,13 +343,17 @@ internal fun KeywordWhereGroup(
     }
 }
 
-/** "Alert": whether muted chats alert too, and the chat list's tab. */
+/**
+ * "Alert": whether muted chats alert too, the chat list's tab, and "Sound and vibration", which opens the channel's
+ * settings in Android ("Turned off…" in `error` while Android blocks it).
+ */
 @Composable
 internal fun KeywordAlertGroup(
     settings: KeywordAlertSettings,
     onEvent: (KeywordAlertsEvent) -> Unit,
 ) {
     val context = LocalContext.current
+    val blocked = rememberChannelBlocked(PingogramChannel.KeywordAlerts.id)
     SettingsGroup(
         title = stringResource(R.string.settings_keyword_alerts_alert),
         footer = stringResource(R.string.settings_keyword_alerts_muted_note),
@@ -313,7 +380,17 @@ internal fun KeywordAlertGroup(
             SettingsRow(
                 title = stringResource(R.string.settings_notifications_sound),
                 shapes = shapes,
-                supportingContent = { Text(stringResource(R.string.settings_notifications_sound_summary)) },
+                supportingContent = {
+                    if (blocked) {
+                        Text(
+                            stringResource(R.string.settings_notifications_sound_blocked),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        Text(stringResource(R.string.settings_notifications_sound_summary))
+                    }
+                },
+                trailingContent = { Icon(painterResource(R.drawable.ic_open_in_new), contentDescription = null) },
                 onClick = {
                     context.openSystemSettings(
                         Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
@@ -381,3 +458,17 @@ internal fun KeywordFoldersContent(
 
 private const val TITLE = "title"
 private const val DONE = "done"
+
+/** Whether Android blocks notification channel [id], read again whenever the page resumes (the user may change it). */
+@Composable
+private fun rememberChannelBlocked(id: String): Boolean {
+    val context = LocalContext.current
+    var blocked by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(context, id) {
+        blocked =
+            NotificationManagerCompat.from(context).getNotificationChannelCompat(id)?.importance ==
+            NotificationManagerCompat.IMPORTANCE_NONE
+        onPauseOrDispose {}
+    }
+    return blocked
+}

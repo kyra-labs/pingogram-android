@@ -21,6 +21,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidPath
@@ -227,6 +228,62 @@ class SharedMediaTest {
 
         assertFalse(shapes.isInViewer(MESSAGE))
         composeRule.onNodeWithTag("viewer").assertDoesNotExist()
+        composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a viewer page that comes while its overlay is on its way in shares its media only once it is in`() {
+        var showViewer by mutableStateOf(false)
+        var pageArrived by mutableStateOf(false)
+        lateinit var shapes: SharedMediaShapes
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        shapes = LocalSharedMediaShapes.current!!
+                        Box {
+                            Box(
+                                Modifier
+                                    .size(48.dp)
+                                    .sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                                    .testTag("bubble"),
+                            )
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    // The first page comes late, as when TDLib answers after the overlay's hold.
+                                    if (pageArrived) {
+                                        Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE).testTag("viewer"))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.mainClock.autoAdvance = false
+        showViewer = true
+        repeat(4) { composeRule.mainClock.advanceTimeByFrame() }
+        pageArrived = true
+        // With the clock held, the page's state reaches the composition only once announced.
+        Snapshot.sendApplyNotifications()
+        repeat(2) { composeRule.mainClock.advanceTimeByFrame() }
+
+        assertFalse("shared mid-way in", shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+
+        assertTrue("not shared once in", shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("viewer").assertIsDisplayed()
+
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertFalse(shapes.isInViewer(MESSAGE))
         composeRule.onNodeWithTag("bubble").assertIsDisplayed()
     }
 

@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -34,6 +35,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.collectionInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -83,8 +87,9 @@ internal fun KeywordAlertsRoute(
 
 /**
  * Keyword alerts (`docs/DESIGN_SYSTEM.md` §13.13, board 30), a settings page: what they do, "Add word" (a filled field
- * and "Add", disabled until something is typed or once there are 20 words), the words as chips a tap removes, or, with
- * none, a short explanation and one-tap suggestions; then where to look and the switches. Nothing shows until the
+ * and "Add" at its end, disabled until something is typed or once there are 20 words), the words as chips a tap
+ * removes, each with its matches this week, then where to look and the switches; or, with none, a short explanation and
+ * one-tap suggestions alone. Nothing shows until the
  * settings are read, a matter of milliseconds.
  */
 @Suppress("LongParameterList") // The page's state and events, back, and the parts the route keeps for the field.
@@ -110,17 +115,18 @@ internal fun KeywordAlertsScreen(
             Modifier.padding(bottom = MaterialTheme.spacing.small),
         )
         AddWordRow(word, state.canAdd) { onEvent(KeywordAlertsEvent.Add(it)) }
+        // The empty page shows only the field and the suggestions (board 30b): the settings come with the first word.
         if (settings.words.isEmpty()) {
             KeywordsEmpty(state, onEvent)
         } else {
-            KeywordWords(settings, onEvent)
+            KeywordWords(state, settings, onEvent)
+            KeywordWhereGroup(state, settings, onEvent)
+            KeywordAlertGroup(settings, onEvent)
         }
-        KeywordWhereGroup(state, settings, onEvent)
-        KeywordAlertGroup(settings, onEvent)
     }
 }
 
-/** "Add word": the field (one line, user content) and "Add", which the keyboard's Done also presses. */
+/** "Add word": the field (one line, user content) with "Add" at its end, which the keyboard's Done also presses. */
 @Composable
 private fun AddWordRow(
     word: TextFieldState,
@@ -129,55 +135,63 @@ private fun AddWordRow(
 ) {
     val typed = word.text.isNotBlank()
     val add = { if (typed && canAdd) onAdd(word.text.toString()) }
-    Row(
+    TextField(
+        state = word,
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextField(
-            state = word,
-            modifier = Modifier.weight(1f),
-            enabled = canAdd,
-            label = { Text(stringResource(R.string.settings_keyword_alerts_add_word)) },
-            placeholder = { Text(stringResource(R.string.settings_keyword_alerts_add_word_hint)) },
-            supportingText =
-                if (canAdd) {
-                    null
-                } else {
-                    {
-                        val most = KeywordAlertSettings.MAX_WORDS
-                        Text(pluralStringResource(R.plurals.settings_keyword_alerts_full, most, most))
-                    }
-                },
-            textStyle = LocalTextStyle.current.userContent,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = { if (length > KeywordAlertSettings.MAX_WORD_LENGTH) revertAllChanges() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            onKeyboardAction = { add() },
-            shape = TextFieldDefaults.roundedShape,
-            colors = TextFieldDefaults.tonalColors(),
-        )
-        Button(onClick = add, enabled = typed && canAdd, shapes = ButtonDefaults.shapes()) {
-            Text(
-                stringResource(R.string.settings_keyword_alerts_add),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
-        }
-    }
+        enabled = canAdd,
+        label = { Text(stringResource(R.string.settings_keyword_alerts_add_word)) },
+        placeholder = { Text(stringResource(R.string.settings_keyword_alerts_add_word_hint)) },
+        trailingIcon = {
+            TextButton(
+                onClick = add,
+                enabled = typed && canAdd,
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.padding(end = MaterialTheme.spacing.extraSmall),
+            ) {
+                Text(
+                    stringResource(R.string.settings_keyword_alerts_add),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
+            }
+        },
+        supportingText =
+            if (canAdd) {
+                null
+            } else {
+                {
+                    val most = KeywordAlertSettings.MAX_WORDS
+                    Text(pluralStringResource(R.plurals.settings_keyword_alerts_full, most, most))
+                }
+            },
+        textStyle = LocalTextStyle.current.userContent,
+        lineLimits = TextFieldLineLimits.SingleLine,
+        inputTransformation = { if (length > KeywordAlertSettings.MAX_WORD_LENGTH) revertAllChanges() },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        onKeyboardAction = { add() },
+        shape = TextFieldDefaults.roundedShape,
+        colors = TextFieldDefaults.tonalColors(),
+    )
 }
 
-/** The words as chips that a tap removes, then how matching works. */
+/** The words as chips that a tap removes, each with its matches this week, then how matching works. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun KeywordWords(
+    state: KeywordAlertsUiState,
     settings: KeywordAlertSettings,
     onEvent: (KeywordAlertsEvent) -> Unit,
 ) {
     FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.medium),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.medium)
+                .semantics { collectionInfo = CollectionInfo(rowCount = settings.words.size, columnCount = 1) },
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
     ) {
-        settings.words.forEach { word -> KeywordChip(word) { onEvent(KeywordAlertsEvent.Remove(word)) } }
+        settings.words.forEach { word ->
+            KeywordChip(word, state.matchCounts[word] ?: 0) { onEvent(KeywordAlertsEvent.Remove(word)) }
+        }
     }
     SettingsFooter(stringResource(R.string.settings_keyword_alerts_matching))
 }

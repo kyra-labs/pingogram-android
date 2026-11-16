@@ -210,17 +210,28 @@ fun Modifier.sharedMediaViewerBounds(
 ): Modifier {
     val shapes = LocalSharedMediaShapes.current
     val counterpart = remember(shapes, messageId) { viewerCounterpart(shapes, messageId) }
+    val transition = LocalNavAnimatedVisibilityScope.current?.transition
+    // A page that first composes while its screen is already on its way in (the viewer's first page came after the
+    // overlay stopped waiting for it, core:ui's OVERLAY_ENTER_TIMEOUT_MILLIS) shares nothing until the way in ended:
+    // it fades in with its screen, rather than its media jumping into the middle of a transform from the bubble. The
+    // way out is the container transform again. Only such a page reads the transition's state in composition.
+    val joinedLate =
+        remember(transition) {
+            transition != null &&
+                transition.targetState == EnterExitState.Visible &&
+                transition.currentState != EnterExitState.Visible
+        }
+    val comingIn = joinedLate && transition?.currentState != EnterExitState.Visible
     val shared =
         containerTransformOf(
             SharedMediaKey(messageId),
             FullBleedShape,
             counterpart,
-            enabled,
+            enabled && !comingIn,
             // At the bubble while this side, the viewer's, does not show.
             viewport = shapes?.let { ViewportClipping(it.viewports, atBubbleWhenShown = false) },
         )
     // The bubble's media follows this page's coming and going, on the same transition.
-    val transition = LocalNavAnimatedVisibilityScope.current?.transition
     if (shared !== this && shapes != null && transition != null) {
         DisposableEffect(shapes, messageId, transition) {
             shapes.enterViewer(messageId, transition)
