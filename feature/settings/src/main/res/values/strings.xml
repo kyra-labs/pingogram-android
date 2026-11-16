@@ -1631,6 +1631,10 @@
     <string name="settings_focus_new_profile">New profile</string>
     <string name="settings_focus_edit">Edit profile</string>
     <string name="settings_focus_on_now">On now</string>
+    <string name="settings_focus_state_on">On</string>
+    <string name="settings_focus_state_off">Off</string>
+    <string name="settings_focus_turn_on">Turn on</string>
+    <string name="settings_focus_turn_off">Turn off</string>
     <string name="settings_focus_by_hand">Turned on by hand</string>
     <string name="settings_focus_on_schedule">On a schedule</string>
     <string name="settings_focus_by_hand_choice">By hand</string>
@@ -1660,7 +1664,7 @@
     <string name="settings_focus_template_sleep">Sleep</string>
     <string name="settings_focus_template_sleep_summary">Every night, 10:30 to 7</string>
     <string name="settings_focus_template_weekend">Weekend</string>
-    <string name="settings_focus_template_weekend_summary">Saturdays and Sundays, 10 to 8</string>
+    <string name="settings_focus_template_weekend_summary">By hand · calls from contacts still ring</string>
     <string name="settings_focus_template_blank">Start from scratch</string>
     <string name="settings_focus_template_blank_summary">Choose everything yourself</string>
     <string name="settings_focus_while_on">While Focus is on</string>

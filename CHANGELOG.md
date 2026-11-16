@@ -90,6 +90,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Settings → Focus: "ON NOW" is a pill beside the profile's name, screen readers hear each profile as one card
+  with its switch as an action, the templates show their symbols on their shapes, and the Weekend template turns on
+  by hand. In the editor every icon sits on its own shape, the days fit one row, and From and To are tiles side by
+  side.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
