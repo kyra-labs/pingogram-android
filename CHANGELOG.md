@@ -90,6 +90,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
+  "OK" and "NO" keep their bubble.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.

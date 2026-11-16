@@ -183,7 +183,7 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `a group's short word in capitals shouts, other messages do not`() =
+    fun `a group's short word of three capital letters or more shouts, other messages do not`() =
         runViewModelTest {
             users.setUsers(user(ADA), user(GRACE))
 
@@ -200,18 +200,22 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
                     groupChat,
                     history(
                         text(1, "LOL"),
-                        text(2, "OK!"),
-                        text(3, "Hi"),
-                        text(4, "NOT NOW"),
-                        text(5, "LOLOLOL"),
-                        text(6, "123"),
+                        text(2, "YES"),
+                        text(3, "SHIP!"),
+                        text(4, "OK"),
+                        text(5, "NO"),
+                        text(6, "A1"),
+                        text(7, "Hi"),
+                        text(8, "NOT NOW"),
+                        text(9, "LOLOLOL"),
+                        text(10, "123"),
                     ),
                 )
             runCurrent()
 
             assertEquals(
-                listOf(true, true, false, false, false, false),
-                (1L..6L).map { viewModel.bubble(it).isShout },
+                listOf(true, true, true, false, false, false, false, false, false, false),
+                (1L..10L).map { viewModel.bubble(it).isShout },
             )
         }
 
