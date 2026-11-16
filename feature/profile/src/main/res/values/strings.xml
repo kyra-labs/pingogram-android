@@ -104,6 +104,8 @@
     <string name="profile_edit_contact">Edit contact</string>
     <string name="profile_block">Block user</string>
     <string name="profile_unblock">Unblock user</string>
+    <!-- A bot's block row (board 24d). -->
+    <string name="profile_block_bot">Stop and block bot</string>
     <string name="profile_report">Report</string>
     <!-- Board 24c: the card about someone not in the contacts who wrote first. %1$s is their first name. -->
     <string name="profile_stranger_title">%1$s isn\'t in your contacts</string>
@@ -207,7 +209,8 @@
 
     <!-- Information rows; each label goes under its value. -->
     <string name="chat_info_description">Description</string>
-    <string name="chat_info_link">Link</string>
+    <!-- A public group's or channel's t.me link (board 24f). -->
+    <string name="chat_info_public_link">Public link</string>
     <string name="chat_info_invite_link">Invite link</string>
     <string name="chat_info_qr_code">QR code</string>
     <string name="chat_info_share_link">Share link</string>
@@ -383,6 +386,8 @@
     <string name="chat_info_section_administration">Administration</string>
     <string name="chat_info_edit">Photo, name and description</string>
     <string name="chat_info_permissions">Permissions</string>
+    <!-- The Permissions row's supporting text (board 24e). %1$s of the %2$s switches of the permissions page are on. -->
+    <string name="chat_info_permissions_allowed">%1$s of %2$s allowed</string>
     <string name="chat_info_administrators">Administrators</string>
     <string name="chat_info_invite_links">Invite links</string>
     <string name="chat_info_restricted">Restricted users</string>
@@ -521,6 +526,8 @@
     <!-- Leaving, deleting and clearing -->
     <string name="chat_info_clear_history">Clear history</string>
     <string name="chat_info_delete_group">Delete group</string>
+    <!-- Under "Delete group" / "Delete channel", which only the owner sees (board 24e). -->
+    <string name="chat_info_delete_detail">For everyone · only the owner can do this</string>
     <string name="chat_info_delete_channel">Delete channel</string>
     <string name="chat_info_leave_group_title">Leave group?</string>
     <string name="chat_info_leave_channel_title">Leave channel?</string>

@@ -72,10 +72,7 @@ internal fun ProfileActionsRow(
     val hasChatPills =
         actions.canMessage || isMuted != null || actions.canDeleteChat || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-    ) {
+    ActionPillRow(modifier) {
         if (actions.canMessage) {
             ActionPill(
                 icon = UiR.drawable.ic_chat_filled,
@@ -368,7 +365,14 @@ internal fun ProfileMoreGroup(
         rows +=
             ProfileRow("block") { shapes ->
                 ActionRow(
-                    text = stringResource(if (isBlocked) R.string.profile_unblock else R.string.profile_block),
+                    text =
+                        stringResource(
+                            when {
+                                isBlocked -> R.string.profile_unblock
+                                actions.isBot -> R.string.profile_block_bot
+                                else -> R.string.profile_block
+                            },
+                        ),
                     shapes = shapes,
                     onClick = { onEvent(if (isBlocked) ProfileEvent.Unblock else ProfileEvent.Block) },
                     enabled = !actions.isChangingBlock,
