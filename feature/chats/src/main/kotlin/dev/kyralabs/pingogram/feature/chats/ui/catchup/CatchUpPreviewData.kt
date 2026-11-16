@@ -64,5 +64,5 @@ internal object CatchUpPreviewData {
         sender: String,
         text: String,
         time: String,
-    ) = CatchUpMessage(id, UiText.Plain(sender), UiText.Plain(text), time)
+    ) = CatchUpMessage(id, UiText.Plain(sender), UiText.Plain(text), time, senderHue = sender.length)
 }
