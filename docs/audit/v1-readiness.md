@@ -134,13 +134,13 @@ What blocks 1.0, in order:
 - **Kotlin warnings** (§7, "No deprecated APIs"), counted on 2026-10-27 with a fresh compile of every module's main
   and unit test sources (`--rerun-tasks`), each warning once. A module applies `pingogram.kotlin.warnings` in its
   build file once they are fixed. `core:data`, `feature:profile` and `feature:settings` fixed theirs and apply it
-  (2026-11-14), `feature:chat`, `feature:chats`, `core:notifications` and `core:ui` too (2026-11-15). The modules
+  (2026-11-14), `feature:chat`, `feature:chats`, `core:notifications` and `core:ui` too (2026-11-15), `benchmark` too (2026-11-16). The modules
   still without it:
 
   | Module | Main | Test | Mostly |
   |---|---|---|---|
   | `core:domain` | 1 | 0 | an unused expression (`RichMessage.kt`, counted 2026-11-14) |
-  | `core:datastore`, `core:navigation`, `core:testing`, `feature:auth`, `feature:contacts`, `benchmark` | 0 | 0 | can apply the plugin as they are |
+  | `core:datastore`, `core:navigation`, `core:testing`, `feature:auth`, `feature:contacts` | 0 | 0 | can apply the plugin as they are |
 
   One warning stays suppressed in `:app`'s `gms` source set, with its reason: firebase-messaging 26 deprecates
   `getToken` and `deleteToken` (and `onNewToken`) for `register`, whose token comes through the service's

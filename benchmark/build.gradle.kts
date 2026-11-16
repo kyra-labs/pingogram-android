@@ -3,6 +3,7 @@
 plugins {
     alias(libs.plugins.pingogram.android.test)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 android {

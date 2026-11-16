@@ -93,6 +93,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Widgets: a new Conversation widget asks you to sign in or unlock first where it needs to, before "Choose a chat";
   a forum's avatar is a rounded square there; the unread counter stacks its avatars and keeps only the number at the
   largest font size; buttons and the reply field follow the launcher's inner corners on Android 12 and later.
+- Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
+  starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
+  before showing its first chats.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
