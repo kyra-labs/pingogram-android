@@ -10,6 +10,9 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -30,6 +33,8 @@ import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.media.ui.MediaViewerUiState
+import dev.kyralabs.pingogram.feature.media.ui.MediaViewerViewModel
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA_TITLE
 import org.drinkless.tdlib.TdApi
@@ -41,8 +46,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 import java.lang.management.ManagementFactory
 import java.time.LocalTime
+import kotlin.reflect.KClass
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 import dev.kyralabs.pingogram.feature.media.R as MediaR
 
@@ -199,6 +206,8 @@ class MediaViewerTransitionTest {
                 .single { it.label == string(ChatR.string.content_open) }
         composeRule.runOnUiThread { open.action() }
         composeRule.waitForIdle()
+        awaitViewerPage()
+        composeRule.waitForIdle()
         composeRule.onNode(viewerPage).assertExists()
         composeRule.mainClock.autoAdvance = false
 
@@ -239,10 +248,50 @@ class MediaViewerTransitionTest {
             composeRule.mainClock.advanceTimeByFrame()
             composeRule.waitForIdle()
             val after = cpu.currentThreadCpuTime
+            awaitViewerPage()
             val bottomBar = composeRule.onAllNodes(moreButton).fetchSemanticsNodes().isNotEmpty()
             val recomposed = counter.recomposedOwn.map { it.shortName() }
             FrameRecord(index, (after - before) / NANOS_PER_MICRO, recomposed, time, bottomBar)
         }
+
+    /**
+     * Waits, in real time and without advancing the test clock, until the viewer shown has its first page, if it is
+     * still loading it. The page comes from TDLib (`ChatMediaRepository.opened`) through work that may leave the main
+     * thread, whose continuation [androidx.compose.ui.test.junit4.ComposeTestRule.waitForIdle] runs only if it is
+     * already queued: on a slow machine it came frames later on the test clock, holding the way in back
+     * (`PostponeOverlayEnter`) so long that the transition no longer settled within the frames this test watches.
+     * Waited for after each frame, it always comes in the frame after the viewer first composed, as on a phone, where
+     * TDLib answers from memory within a frame. `waitUntil` would not do: it does not run the main looper here.
+     */
+    private fun awaitViewerPage() {
+        val viewer = viewerViewModel() ?: return
+        val deadline = System.nanoTime() + TIMEOUT_MILLIS * NANOS_PER_MILLI
+        while (viewer.uiState.value is MediaViewerUiState.Loading) {
+            check(System.nanoTime() < deadline) { "the viewer's first page never came" }
+            // Runs what is due on the main looper (the answer's continuation, the view model's flows) without advancing
+            // the test clock: no frame passes while waiting.
+            ShadowLooper.idleMainLooper()
+            Thread.yield()
+        }
+    }
+
+    /** The shown viewer's view model, once its route created it; null before (and without a viewer). */
+    private fun viewerViewModel(): MediaViewerViewModel? {
+        val entry =
+            navController.currentBackStack.value.lastOrNull { it.destination.hasRoute<MediaViewerRoute>() }
+                ?: return null
+        return runCatching {
+            ViewModelProvider.create(entry.viewModelStore, NoNewViewModels)[MediaViewerViewModel::class]
+        }.getOrNull()
+    }
+
+    /** Hands out only the view models a store already holds: [ViewModelProvider] asks it only for missing ones. */
+    private object NoNewViewModels : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(
+            modelClass: KClass<T>,
+            extras: CreationExtras,
+        ): T = error("${modelClass.simpleName} is not created yet")
+    }
 
     /** The frames' table, for the review and for placing a JFR recording's samples (the clock is the JVM's). */
     private fun print(
@@ -339,6 +388,7 @@ class MediaViewerTransitionTest {
         const val TEXTS = 30
         const val NOT_FOUND = 404
         const val NANOS_PER_MICRO = 1_000L
+        const val NANOS_PER_MILLI = 1_000_000L
 
         /** Frames of the test clock (16 ms each) for each way: the springs settle well within them. */
         const val OPEN_FRAMES = 60
