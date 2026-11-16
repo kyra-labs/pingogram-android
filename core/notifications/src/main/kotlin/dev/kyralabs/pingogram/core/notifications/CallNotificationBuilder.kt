@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.getOrNull
+import dev.kyralabs.pingogram.core.domain.focus.FocusGate
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -28,7 +30,9 @@ import javax.inject.Inject
  * - **Incoming** ([incoming]): "Answer" and "Decline", in [PingogramChannel.Calls], which rings with the ringtone until
  *   it is answered, declined or gone (`FLAG_INSISTENT`). Its full-screen intent ([fullScreen]) opens the call screen
  *   over the lock screen; where Android does not let Pingogram use full-screen intents (Android 14+, the user's
- *   choice), the caller leaves it out and the notification shows as a heads-up notification.
+ *   choice), the caller leaves it out and the notification shows as a heads-up notification. While a Focus profile is
+ *   on that does not let the caller ring ([FocusGate.allowsCall]: only contacts, where the profile allows calls; board
+ *   31), it shows silently instead: no ringtone, no full-screen intent, "Incoming call · Focus is on".
  * - **Ongoing** ([ongoing]): the call the user is in, outgoing ringing included, with "Hang up" and the call's timer
  *   once connected, in the silent [PingogramChannel.OngoingCalls]; the foreground service's notification.
  * - **Voice chat** ([voiceChat], `docs/adr/0023-group-voice-chats-and-live-streams.md`): the voice chat or live stream
@@ -48,6 +52,7 @@ class CallNotificationBuilder
         private val graphs: AccountGraphs,
         private val appearance: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+        private val focus: FocusGate,
     ) {
         /**
          * Each other account's avatars, by slot, with the account they belong to: a slot that another account took
@@ -65,14 +70,19 @@ class CallNotificationBuilder
             fullScreen: Boolean,
             slot: Int? = null,
         ): Notification {
+            val user = user(userId, slot)
+            val rings = focus.allowsCall(isContact = user?.isContact == true)
+            val text = if (rings) R.string.call_notification_incoming else R.string.call_notification_incoming_focus
             val notification =
                 base(PingogramChannel.Calls, content)
-                    .setStyle(NotificationCompat.CallStyle.forIncomingCall(person(userId, slot), decline, answer))
-                    .setContentText(context.getString(R.string.call_notification_incoming))
-                    .apply { if (fullScreen) setFullScreenIntent(content, true) }
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setStyle(NotificationCompat.CallStyle.forIncomingCall(person(user, userId, slot), decline, answer))
+                    .setContentText(context.getString(text))
+                    .apply {
+                        if (rings && fullScreen) setFullScreenIntent(content, true)
+                        if (!rings) setSilent(true)
+                    }.setPriority(NotificationCompat.PRIORITY_MAX)
                     .build()
-            notification.flags = notification.flags or Notification.FLAG_INSISTENT
+            if (rings) notification.flags = notification.flags or Notification.FLAG_INSISTENT
             return notification
         }
 
@@ -169,9 +179,23 @@ class CallNotificationBuilder
         private suspend fun person(
             userId: Long,
             slot: Int?,
+        ): Person = person(user(userId, slot), userId, slot)
+
+        /** The caller, from the account in [slot] (the shown one without), asked of TDLib if not announced yet. */
+        private suspend fun user(
+            userId: Long,
+            slot: Int?,
+        ): User? {
+            val userRepository = slot?.let(graphs::repositories)?.userRepository() ?: userRepository
+            return userRepository.user(userId).first() ?: userRepository.getUser(userId).getOrNull()
+        }
+
+        private suspend fun person(
+            user: User?,
+            userId: Long,
+            slot: Int?,
         ): Person {
             val account = slot?.let(graphs::repositories)
-            val userRepository = account?.userRepository() ?: userRepository
             val avatars =
                 if (account == null) {
                     avatars
@@ -180,7 +204,6 @@ class CallNotificationBuilder
                         AvatarIcons(context, account.fileRepository(), appearance, ioDispatcher)
                     }
                 }
-            val user = userRepository.user(userId).first() ?: userRepository.getUser(userId).getOrNull()
             val name =
                 user?.fullName()?.resolve(context.resources)?.takeIf { it.isNotBlank() }
                     ?: context.getString(R.string.notification_someone)
