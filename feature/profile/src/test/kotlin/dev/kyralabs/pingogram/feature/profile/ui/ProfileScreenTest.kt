@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
@@ -78,6 +79,10 @@ class ProfileScreenTest {
     private fun string(
         @StringRes id: Int,
     ) = composeRule.activity.getString(id)
+
+    /** The block row's label as the screen builds it: "Block Ada", the name and the whole label isolated. */
+    private fun blockLabel(name: String) =
+        composeRule.activity.getString(R.string.profile_block_person, name.bidiIsolated()).bidiIsolated()
 
     private fun scrollTo(text: String) {
         composeRule.onNodeWithTag(PROFILE_GRID_TEST_TAG).performScrollToNode(hasText(text))
@@ -240,7 +245,7 @@ class ProfileScreenTest {
 
         scrollTo(string(R.string.profile_report))
         composeRule.onNodeWithText(string(R.string.profile_edit_contact)).performClick()
-        composeRule.onNodeWithText(string(R.string.profile_block)).performClick()
+        composeRule.onNodeWithText(blockLabel("Ada")).performClick()
         composeRule.onNodeWithText(string(R.string.profile_report)).performClick()
 
         assertEquals(1, editedContacts)
@@ -282,7 +287,7 @@ class ProfileScreenTest {
     fun `a deleted account offers only deleting the chat, and says what is kept`() {
         setScreen(state = ProfilePreviewData.deleted, media = ProfilePreviewData.emptyMedia)
 
-        composeRule.onNodeWithText(string(R.string.profile_block)).assertDoesNotExist()
+        composeRule.onNodeWithText("Block", substring = true).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_report)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_action_secret_chat)).assertDoesNotExist()
         composeRule.onNodeWithText(string(R.string.profile_action_message)).assertDoesNotExist()

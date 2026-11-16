@@ -34,7 +34,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.MainActivity
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
-import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,8 +58,9 @@ class ConversationWidget : GlanceAppWidget() {
         val setUp = actionStartActivity(ConversationWidgetSetup.intent(context, appWidgetIdOf(context, id)))
         val retry = actionRunCallback<RetryConversation>()
         provideContent {
-            val content by (key?.let { updater.content(it) } ?: flowOf(ConversationContent.NoChat))
-                .collectAsState(initial = key?.let(updater::currentContent) ?: ConversationContent.NoChat)
+            // A widget without a chat asks to sign in or unlock first, where Pingogram needs it (board 33).
+            val content by (key?.let { updater.content(it) } ?: updater.setUpContent)
+                .collectAsState(initial = key?.let(updater::currentContent) ?: ConversationContent.Loading)
             val settings by appearance.collectAsState(initial = null)
             GlanceTheme(colors = widgetColors(settings)) { ConversationWidgetContent(content, setUp, retry) }
         }

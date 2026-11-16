@@ -212,26 +212,29 @@ internal fun ColumnScope.AttachPreviewContent(
     when (preview.kind) {
         AttachmentKind.Media -> {
             val motionScheme = MaterialTheme.motionScheme
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = spacing.large),
-                horizontalArrangement = Arrangement.spacedBy(spacing.small),
-            ) {
-                itemsIndexed(preview.items, key = { _, item -> item.key }) { index, item ->
-                    MediaPreviewItem(
-                        item = item,
-                        position = index + 1,
-                        count = count,
-                        onRemove = { onRemove(item.key) },
-                        modifier =
-                            Modifier.animateItem(
-                                fadeInSpec = motionScheme.defaultEffectsSpec(),
-                                placementSpec = motionScheme.defaultSpatialSpec(),
-                                fadeOutSpec = motionScheme.fastEffectsSpec(),
-                            ),
-                    )
+            // Bounded by the sheet, so the caption row stays in view at large font scales (board 35b).
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = spacing.large),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                ) {
+                    itemsIndexed(preview.items, key = { _, item -> item.key }) { index, item ->
+                        MediaPreviewItem(
+                            item = item,
+                            position = index + 1,
+                            count = count,
+                            onRemove = { onRemove(item.key) },
+                            modifier =
+                                Modifier.animateItem(
+                                    fadeInSpec = motionScheme.defaultEffectsSpec(),
+                                    placementSpec = motionScheme.defaultSpatialSpec(),
+                                    fadeOutSpec = motionScheme.fastEffectsSpec(),
+                                ),
+                        )
+                    }
                 }
+                if (preview.offersOriginal) OriginalQualityRow(preview.original, onOriginalChange)
             }
-            if (preview.offersOriginal) OriginalQualityRow(preview.original, onOriginalChange)
         }
 
         AttachmentKind.Document, AttachmentKind.Original -> {

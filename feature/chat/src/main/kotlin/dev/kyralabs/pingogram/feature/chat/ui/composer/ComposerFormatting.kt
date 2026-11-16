@@ -218,7 +218,7 @@ internal fun TextContextMenuBuilderScope.aiItem(
 ) {
     if (onAiEdit == null || lineCount <= AI_MIN_LINES) return
     separator()
-    item(key = AI_ITEM, label = labels.ai, leadingIcon = UiR.drawable.ic_edit) {
+    item(key = AI_ITEM, label = labels.ai, leadingIcon = UiR.drawable.ic_auto_awesome) {
         onAiEdit()
         close()
     }

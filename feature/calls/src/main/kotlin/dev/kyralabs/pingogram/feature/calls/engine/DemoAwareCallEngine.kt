@@ -34,7 +34,8 @@ internal class DemoAwareCallEngine
         override suspend fun createGroupCall(
             groupCallId: Int,
             muted: Boolean,
-        ): GroupCallSession = engine.createGroupCall(groupCallId, muted)
+            withMicrophone: Boolean,
+        ): GroupCallSession = engine.createGroupCall(groupCallId, muted, withMicrophone)
 
         override suspend fun createConference(
             muted: Boolean,

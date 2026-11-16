@@ -39,7 +39,9 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -274,8 +276,14 @@ private fun OnThisPhoneNote(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RemindersEmpty() {
-    // EmptyState scrolls itself, so it takes a set height inside the page's own scroll.
-    Box(Modifier.fillMaxWidth().height(MaterialTheme.sizes.illustrationMaxSize * 2)) {
+    // EmptyState scrolls itself, so it takes a set height inside the page's own scroll. A polite live region, so
+    // deleting the last reminder is heard.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(MaterialTheme.sizes.illustrationMaxSize * 2)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
         EmptyState(
             illustration = MaterialShapes.Cookie12Sided,
             icon = UiR.drawable.ic_alarm,

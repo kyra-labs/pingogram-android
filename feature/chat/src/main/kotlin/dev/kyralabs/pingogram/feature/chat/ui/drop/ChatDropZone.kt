@@ -92,9 +92,9 @@ internal fun ChatDropZone(
 }
 
 /**
- * The attach symbol on a `MaterialShapes.Cookie9Sided` badge (`headlineBadge`) that grows while the drag is over the
- * messages (on the motion scheme's fast spatial spring, in its graphics layer), [title] ("Drop to send to Ada") in
- * `titleLargeEmphasized` over what is coming in `bodyMedium`.
+ * The download symbol (`sizes.avatarExtraSmall`, the board's) on a `MaterialShapes.Cookie9Sided` badge
+ * (`headlineBadge`) that grows while the drag is over the messages (on the motion scheme's fast spatial spring, in its
+ * graphics layer), [title] ("Drop to send to Ada") in `titleLargeEmphasized` over what is coming in `bodyMedium`.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -124,8 +124,9 @@ private fun DropZoneContent(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painter = painterResource(UiR.drawable.ic_add),
+                painter = painterResource(UiR.drawable.ic_download),
                 contentDescription = null,
+                modifier = Modifier.size(MaterialTheme.sizes.avatarExtraSmall),
                 tint = MaterialTheme.colorScheme.onPrimary,
             )
         }
