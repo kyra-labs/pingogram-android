@@ -90,6 +90,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
+  buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
+  avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
+  announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
+  without naming the chat or showing the message.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
