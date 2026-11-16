@@ -65,6 +65,7 @@ internal class DemoCallEngine
         override suspend fun createGroupCall(
             groupCallId: Int,
             muted: Boolean,
+            withMicrophone: Boolean,
         ): GroupCallSession = DemoGroupCallSession(DemoCamera(context))
 
         override suspend fun createConference(

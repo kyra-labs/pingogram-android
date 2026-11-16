@@ -172,8 +172,6 @@
     <string name="chat_list_archive_empty_body">Chats you archive show up here, out of your way.</string>
     <!-- The archive row's menu (a long press) and its swipe, and the snackbar after it was hidden. -->
     <string name="chat_list_archive_row_menu">Show options</string>
-    <string name="chat_list_archive_row_collapse">Make compact</string>
-    <string name="chat_list_archive_row_expand">Show chat names</string>
     <string name="chat_list_archive_row_hide">Hide from chat list</string>
     <string name="chat_list_archive_row_swipe_hide">Hide</string>
     <string name="chat_list_archive_row_hidden">Archived chats hidden. Open them from the top bar.</string>
