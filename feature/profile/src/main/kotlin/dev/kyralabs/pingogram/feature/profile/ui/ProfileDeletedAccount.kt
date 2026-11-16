@@ -21,6 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -34,8 +37,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * What a deleted account's profile says in place of its information (`docs/DESIGN_SYSTEM.md` §6 "Deleted account",
  * board 24): a card on the rows' container with `extraLarge` corners, the history symbol on a
  * `MaterialShapes.Cookie9Sided` badge (`sizes.headlineBadge`) in `surfaceContainerHighest`, "This account was deleted"
- * in `titleMediumEmphasized` and what is kept in `bodyMedium` `onSurfaceVariant`, centred. Screen readers hear it as
- * one item after the name.
+ * in `titleMediumEmphasized` (a heading) and what is kept in `bodyMedium` `onSurfaceVariant` (a polite live region,
+ * board 24g), centred.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -43,7 +46,7 @@ internal fun DeletedAccountCard(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val spacing = MaterialTheme.spacing
     Card(
-        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = profileRowContainerColor()),
     ) {
@@ -68,12 +71,14 @@ internal fun DeletedAccountCard(modifier: Modifier = Modifier) {
             }
             Text(
                 text = stringResource(R.string.profile_deleted_title),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMediumEmphasized,
                 color = colors.onSurface,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = stringResource(R.string.profile_deleted_text),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,

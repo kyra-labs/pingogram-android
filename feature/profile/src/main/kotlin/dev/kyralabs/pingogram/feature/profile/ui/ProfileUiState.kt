@@ -198,6 +198,8 @@ data class ProfileActions(
     val exportChatId: Long? = null,
     val canDeleteChat: Boolean = false,
     val shareUsername: String? = null,
+    /** A bot's: its block row says "Stop and block bot" (board 24d). */
+    val isBot: Boolean = false,
 )
 
 /** What the contact row does. */
