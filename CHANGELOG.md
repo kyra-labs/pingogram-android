@@ -92,6 +92,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
+  readers hear "Match 2 of 4" each time the match bar steps to another match.
 - Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
   for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
   its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
