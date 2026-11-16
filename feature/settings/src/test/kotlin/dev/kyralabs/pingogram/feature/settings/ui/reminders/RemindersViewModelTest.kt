@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -49,6 +50,7 @@ import java.util.Locale
 class RemindersViewModelTest {
     private val client = FakeTdlibClient()
     private val reminders = FakeReminderRepository()
+    private val chatLocks = FakeChatLockRepository()
 
     // TEST_NOW is Sunday, October 18, 2026, 9:41:30 AM UTC.
     private val tomorrow = Instant.parse("2026-10-19T09:00:00Z")
@@ -102,6 +104,7 @@ class RemindersViewModelTest {
             chats = chats,
             messages = messages,
             users = users,
+            chatLocks = chatLocks,
             clock = FakeWallClock(TEST_NOW),
             timePatterns = FakeTimePatterns(),
             locale = { Locale.US },
@@ -150,6 +153,20 @@ class RemindersViewModelTest {
                 assertEquals("Upload the scans", note)
             }
             assertEquals(listOf(3L), viewModel.content.done.map { it.messageId })
+        }
+
+    @Test
+    fun `a locked chat's reminders stay off the page until the chat is unlocked`() =
+        runTest {
+            reminders.saved.value = listOf(MessageReminder(5, 1, friday), MessageReminder(-100, 2, tomorrow))
+            chatLocks.lock(setOf(-100L))
+            val viewModel = viewModel()
+
+            assertEquals(listOf(1L), viewModel.content.upcoming.map { it.messageId })
+
+            chatLocks.setUnlocked(true)
+            runCurrent()
+            assertEquals(listOf(2L, 1L), viewModel.content.upcoming.map { it.messageId })
         }
 
     @Test

@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -156,6 +157,13 @@ private fun FocusPillSlot(focus: ChatListFocus) {
         },
         label = "focusPill",
     ) { pill ->
-        if (pill != null) FocusPillChip(pill, onOpen = focus.onOpen)
+        if (pill != null) {
+            val density = LocalDensity.current
+            FocusPillChip(
+                pill,
+                onOpen = focus.onOpen,
+                modifier = Modifier.onSizeChanged { focus.pillHeight = with(density) { it.height.toDp() } },
+            )
+        }
     }
 }
