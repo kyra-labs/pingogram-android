@@ -103,7 +103,7 @@ class StoryViewerScreenTest {
 
     /** The story, by its description: where it is among the chat's stories, and whose it is. */
     private fun story(): SemanticsNodeInteraction =
-        composeRule.onNode(hasContentDescription("Story 2 of 4 by", substring = true))
+        composeRule.onNode(hasContentDescription("Story 2 of 4", substring = true))
 
     private val taps get() = events.filter { it is StoryViewerEvent.Next || it is StoryViewerEvent.Previous }
 
@@ -164,7 +164,7 @@ class StoryViewerScreenTest {
         state = StoryViewerPreviewData.photo.copy(current = 1)
         composeRule.waitForIdle()
 
-        composeRule.onNode(hasContentDescription("Story 2 of 4 by", substring = true)).assertIsDisplayed()
+        composeRule.onNode(hasContentDescription("Story 2 of 4", substring = true)).assertIsDisplayed()
         assertTrue(events.filterIsInstance<StoryViewerEvent.PosterSettled>().any { it.index == 1 })
     }
 
@@ -315,13 +315,15 @@ class StoryViewerScreenTest {
         setScreen()
 
         val node = story().fetchSemanticsNode()
-        assertEquals(
-            "Story 2 of 4 by ⁨Ada Lovelace⁩",
-            node.config[SemanticsProperties.ContentDescription].single(),
-        )
+        val description = node.config[SemanticsProperties.ContentDescription].single()
+        assertTrue(description, description.startsWith("Photo story from ⁨Ada Lovelace⁩, "))
+        assertTrue(description, ". Story 2 of 4" in description)
         assertTrue(SemanticsProperties.LiveRegion in node.config)
         val actions = node.config[SemanticsActions.CustomActions].map { it.label }
-        assertEquals(listOf(string(R.string.story_previous), string(R.string.story_pause)), actions)
+        assertEquals(
+            listOf(string(R.string.story_previous), string(R.string.story_pause), string(R.string.story_react)),
+            actions,
+        )
         story().performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf(StoryViewerEvent.Next), taps)
         composeRule.assertAccessible()
