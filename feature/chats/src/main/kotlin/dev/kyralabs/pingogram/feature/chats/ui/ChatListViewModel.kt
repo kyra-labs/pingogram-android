@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -220,7 +221,12 @@ class ChatListViewModel internal constructor(
     /** How many chats the "Keyword alerts" tab lists; 0 hides it (always in the archive). */
     private val keywordMatchCount: Flow<Int> =
         if (kind == ChatListKind.Chats) {
-            keywordChats.matches.map { it.size }.distinctUntilChanged()
+            // No tab until the matches are read: the chat list's first content never waits for them (they read the
+            // settings file and a file of the account's), and the tab comes last, so it moves no other tab.
+            keywordChats.matches
+                .map { it.size }
+                .onStart { emit(0) }
+                .distinctUntilChanged()
         } else {
             flowOf(0)
         }

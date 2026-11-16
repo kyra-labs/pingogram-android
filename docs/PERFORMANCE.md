@@ -58,7 +58,14 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
-    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads.
+    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads. Since
+    2026-11-16 the widget updaters (recent chats, Conversation) also wait that long before asking the launcher which
+    widgets are placed (a binder call, then a Glance state read per widget) and loading their chats, unless a widget
+    asks for its content first (a process started for it).
+  - The chat list's folder tabs show no "Keyword alerts" tab until the matches are read (`ChatListViewModel`'s
+    `keywordMatchCount` starts at 0), and nothing reads them while the tab is turned off, so its first content never
+    waits for the account's `keyword_hits.txt`. Focus's header pill is a view model of its own over the settings file,
+    which the splash screen already waits for; the Quick Settings tiles bind only when Quick Settings opens.
 - Done after the v0.5.0 benchmarks (review of 2026-10-25), waiting for a trace before and after on the owner's phone
   (`tools/perfetto/startup.sh` or `startup.ps1`, below):
   - **Notifications at a cold start.** TDLib restores the active notifications at every start. `NotificationRenderer`
