@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.tile
 
 import android.content.Intent
+import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.net.toUri
@@ -18,6 +19,8 @@ class NewMessageTileService : TileService() {
         val tile = qsTile ?: return
         tile.state = Tile.STATE_INACTIVE
         tile.label = getString(R.string.tile_new_message)
+        // Its subtitle names the app, as the board shows it (board 31e), where Android shows subtitles.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tile.subtitle = getString(R.string.app_name)
         tile.updateTile()
     }
 
