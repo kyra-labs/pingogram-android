@@ -38,7 +38,7 @@ fun PasswordScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_password_title),
-        badgeShape = MaterialShapes.Gem,
+        badgeShape = MaterialShapes.Cookie12Sided,
         badgeIcon = UiR.drawable.ic_lock,
         description = stringResource(R.string.auth_password_description),
         isError = state.error != null,
@@ -49,6 +49,7 @@ fun PasswordScreen(
                 onClick = { onEvent(AuthEvent.SubmitPassword) },
                 enabled = canSubmit && state.password.isNotEmpty(),
                 inProgress = pendingAction == AuthAction.SubmitPassword,
+                progressText = stringResource(R.string.auth_checking),
             )
         },
         secondaryAction = {
