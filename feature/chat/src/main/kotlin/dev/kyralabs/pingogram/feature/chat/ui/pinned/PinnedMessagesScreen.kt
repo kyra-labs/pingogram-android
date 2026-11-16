@@ -104,7 +104,7 @@ private fun PinnedTopBar(
         title = {},
         navigationIcon = {
             IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
-                Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.scheduled_back))
+                Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.pinned_back))
             }
         },
         actions = {

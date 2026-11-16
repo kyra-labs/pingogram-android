@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatRef
 import dev.kyralabs.pingogram.feature.chat.ui.ChatTimeFormatter
 import dev.kyralabs.pingogram.feature.chat.ui.DayAndTime
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
+import dev.kyralabs.pingogram.feature.chat.ui.content.asPicture
 import dev.kyralabs.pingogram.feature.chat.ui.id
 import dev.kyralabs.pingogram.feature.chat.ui.isChannel
 import dev.kyralabs.pingogram.feature.chat.ui.refOf
@@ -105,7 +106,8 @@ private fun Message.toCard(
     val name = senderNameOf(this, sources.chat, sources.people)
     val content = content
     val text = content.textOrCaption
-    val photo = (content as? MessageContent.Photo)?.photo
+    val photo = (content as? MessageContent.Photo)?.takeUnless { it.hasSpoiler }?.photo
+    val clip = content.pinnedClip()
     val file = content.pinnedFile()
     val link =
         (content as? MessageContent.Text)?.linkPreview?.let { preview ->
@@ -133,13 +135,43 @@ private fun Message.toCard(
         dateTime = dateTimeOf(date, sources),
         text = text,
         // A message with nothing else to show says what it is ("Video", "Poll: …"), as its preview does.
-        kind = contentKindText(content).takeIf { text.text.isEmpty() && photo == null && file == null && link == null },
+        kind =
+            contentKindText(content).takeIf {
+                text.text.isEmpty() && photo == null && clip == null && file == null && link == null
+            },
         photo = photo,
+        clip = clip,
         file = file,
         link = link,
         canCopy = text.text.isNotEmpty() && !sources.chat.hasProtectedContent,
     )
 }
+
+/** The still picture and length of a video, GIF or round video; null without a picture or behind a spoiler. */
+private fun MessageContent.pinnedClip(): PinnedClip? =
+    when (this) {
+        is MessageContent.Video -> {
+            video.thumbnail?.asPicture()?.takeUnless { hasSpoiler }?.let {
+                PinnedClip(it.file.id, video.width, video.height, video.duration)
+            }
+        }
+
+        is MessageContent.Animation -> {
+            animation.thumbnail?.asPicture()?.takeUnless { hasSpoiler }?.let {
+                PinnedClip(it.file.id, animation.width, animation.height, animation.duration, isGif = true)
+            }
+        }
+
+        is MessageContent.VideoNote -> {
+            videoNote.thumbnail?.asPicture()?.let {
+                PinnedClip(it.file.id, videoNote.length, videoNote.length, videoNote.duration, isRound = true)
+            }
+        }
+
+        else -> {
+            null
+        }
+    }
 
 /** A file's name, size and kind ("APK", "PDF": its extension) for a file or a song. */
 private fun MessageContent.pinnedFile(): PinnedFile? =
