@@ -100,30 +100,44 @@ internal fun WidgetReplySheet(
     onSend: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val spacing = MaterialTheme.spacing
     PingogramBottomSheet(
         onDismissRequest = onDismiss,
         sheetState =
             rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
-                    .padding(horizontal = spacing.large)
-                    .padding(bottom = spacing.large),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        ) {
-            ReplyHeader(state)
-            ReplyField(state, text, onSend)
-            state.error?.let { error ->
-                Text(
-                    text = errorText(error),
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+        WidgetReplyContent(state, text, onSend)
+    }
+}
+
+/**
+ * What the reply sheet holds: the header, the field with its send button, and why the last reply failed. The field
+ * takes the focus as it first shows, unless [requestFocus] is false (goldens, without a blinking cursor).
+ */
+@Composable
+internal fun WidgetReplyContent(
+    state: WidgetReplyState,
+    text: TextFieldState,
+    onSend: (String) -> Unit,
+    requestFocus: Boolean = true,
+) {
+    val spacing = MaterialTheme.spacing
+    Column(
+        modifier =
+            Modifier
+                .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
+                .padding(horizontal = spacing.large)
+                .padding(bottom = spacing.large),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    ) {
+        ReplyHeader(state)
+        ReplyField(state, text, onSend, requestFocus)
+        state.error?.let { error ->
+            Text(
+                text = errorText(error),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }
@@ -168,9 +182,10 @@ private fun ReplyField(
     state: WidgetReplyState,
     text: TextFieldState,
     onSend: (String) -> Unit,
+    requestFocus: Boolean,
 ) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(focus) { focus.requestFocus() }
+    if (requestFocus) LaunchedEffect(focus) { focus.requestFocus() }
     Row(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         verticalAlignment = Alignment.Bottom,
