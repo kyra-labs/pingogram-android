@@ -99,6 +99,11 @@ class KeywordAlertNotifierTest {
             val bold = text.getSpans(0, text.length, StyleSpan::class.java).single()
             assertEquals("launch", text.substring(text.getSpanStart(bold), text.getSpanEnd(bold)))
             assertEquals(listOf("Open", "Mark as read"), notification.actions.map { it.title.toString() })
+            for (intent in listOf(notification.contentIntent, notification.actions.first().actionIntent)) {
+                val opened = shadowOf(intent).savedIntent
+                assertEquals(1L, NotificationIntents.chatIdOf(opened))
+                assertEquals(10L, NotificationIntents.messageIdOf(opened))
+            }
         }
 
     @Test

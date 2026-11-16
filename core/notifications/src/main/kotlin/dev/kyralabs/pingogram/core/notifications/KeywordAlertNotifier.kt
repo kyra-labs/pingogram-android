@@ -177,7 +177,8 @@ class KeywordAlertNotifier
             alert: KeywordAlert,
             icon: IconCompat?,
         ): Notification {
-            val open = NotificationIntents.openChatPendingIntent(context, chat.id, slot)
+            val open =
+                NotificationIntents.openChatPendingIntent(context, chat.id, slot, messageId = alert.hit.messageId)
             val text = highlighted(alert)
             val markAsRead =
                 NotificationAction.markAsReadIntent(

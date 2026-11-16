@@ -1738,7 +1738,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MessagingStyle`, Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car
   screen, no watch app.
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
-  hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
+  hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in. A reminder's
+  and a keyword alert's name their message too (`NotificationIntents.openChat`'s `messageId`, read back with
+  `messageIdOf`), which `ChatRoute.messageId` opens at.
 - Every account (`docs/adr/0031-multiple-accounts.md`): `NotificationRenderer` follows `core:domain`'s `AccountGraphs`
   (`DefaultAccountGraphs`, `core:data`: each account's `AccountRepositories`, once the registry is read) and runs an
   `AccountNotificationRenderer` per account, from that account's repositories. An account's notifications have their
