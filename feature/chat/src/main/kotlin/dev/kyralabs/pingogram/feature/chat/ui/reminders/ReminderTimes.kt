@@ -6,6 +6,8 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 /** The quick choices of the reminder sheet (the owner's board 29), and "Pick a date and time". */
 enum class ReminderChoice {
@@ -69,3 +71,6 @@ internal object ReminderTimes {
         }
     }
 }
+
+/** The first day of the week as this language counts it (owner decision 2026-11-16), for [ReminderChoice.NextWeek]. */
+internal fun Locale.firstDayOfWeek(): DayOfWeek = WeekFields.of(this).firstDayOfWeek

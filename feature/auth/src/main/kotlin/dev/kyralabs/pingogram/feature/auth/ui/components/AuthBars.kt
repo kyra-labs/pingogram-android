@@ -145,8 +145,8 @@ internal val isAppLanguageListAvailable: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
- * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with the "wifi off" symbol; announced
- * when it appears.
+ * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with the "wifi off" symbol;
+ * announced when it appears.
  */
 @Composable
 internal fun ConnectionBanner(
