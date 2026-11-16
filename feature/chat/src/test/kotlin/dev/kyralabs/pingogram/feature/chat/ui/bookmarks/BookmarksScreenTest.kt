@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.bookmarks
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -44,8 +45,8 @@ class BookmarksScreenTest {
     fun `the selected filter is selected and another selects its tag`() {
         show()
 
-        composeRule.onNodeWithText("All 3").assertIsSelected()
-        composeRule.onNodeWithText("Trips 2").performClick()
+        composeRule.onNode(hasText("All") and hasText("3")).assertIsSelected()
+        composeRule.onNode(hasText("Trips") and hasText("2")).performClick()
 
         assertEquals(listOf<BookmarksEvent>(BookmarksEvent.SelectTag(1)), events)
     }

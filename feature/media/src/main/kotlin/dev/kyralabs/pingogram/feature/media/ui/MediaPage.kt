@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewerBounds
 import dev.kyralabs.pingogram.feature.media.R
@@ -90,9 +91,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * not while the photo is zoomed in.
  *
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a tap near the start or end side
- * ([SIDE_TAP_FRACTION] of the width, mirrored right to left) calls [onSideTap] instead, with whether it was the end
- * side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap only where it
- * zooms. Screen readers get no semantics from here: the pager describes the page.
+ * (`sizes.sideTapZone`, at most a third of the width, mirrored right to left) calls [onSideTap] instead, with whether
+ * it was the end side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap
+ * only where it zooms. Screen readers get no semantics from here: the pager describes the page.
  */
 @Suppress("LongParameterList") // The item, its files and its player, its taps, the video's surface and the zoom.
 @Composable
@@ -175,6 +176,7 @@ private fun Modifier.pageGestures(
     val currentOnHold by rememberUpdatedState(onHold)
     val currentOnDragOut by rememberUpdatedState(onDragOut)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val sideZone = MaterialTheme.sizes.sideTapZone
     val holds = onHold != null
     val pinches = if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier
     // It consumes on the initial pass, before the taps and pinches see the move, wherever it sits in the chain.
@@ -189,7 +191,7 @@ private fun Modifier.pageGestures(
                 )
             }
         }
-    return pointerInput(zoom, rtl, holds) {
+    return pointerInput(zoom, rtl, holds, sideZone) {
         val holdAfter = viewConfiguration.longPressTimeoutMillis
         detectTapGestures(
             // A live photo plays while held: once held for a long press, until let go.
@@ -207,7 +209,15 @@ private fun Modifier.pageGestures(
             // A hold never toggles the chrome.
             onLongPress = if (holds) ({}) else null,
             onTap = { tap ->
-                val side = currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let { sideOf(tap.x, size.width, rtl) }
+                val side =
+                    currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let {
+                        sideOf(
+                            tap.x,
+                            size.width,
+                            sideZone.toPx(),
+                            rtl,
+                        )
+                    }
                 if (side == null) currentOnTap() else currentOnSideTap?.invoke(side)
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
