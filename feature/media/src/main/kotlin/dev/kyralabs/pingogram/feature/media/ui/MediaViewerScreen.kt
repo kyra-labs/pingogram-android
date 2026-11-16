@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaViewerPreviewStates
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
+import dev.kyralabs.pingogram.feature.media.ui.zoom.ViewerZoomIndicator
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -118,6 +119,7 @@ internal fun MediaViewerScreen(
         PredictiveBackDismiss(dismiss, onBack)
         ImmersiveSystemBars(hidden = content != null && !chrome.visible)
         val zoom = remember { ZoomState() }
+        val zoomed by remember(zoom) { derivedStateOf { zoom.isZoomed } }
         val scrim = MaterialTheme.colorScheme.scrim
         BoxWithConstraints(modifier.fillMaxSize().viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave)) {
             val height = constraints.maxHeight.toFloat()
@@ -130,7 +132,8 @@ internal fun MediaViewerScreen(
                 },
                 bottomBar = {
                     if (content != null) {
-                        Chrome(visible = chrome.visible, dismiss, height, afterEnter = true) {
+                        // While zoomed the zoom's indicator takes the toolbar's place (board 25).
+                        Chrome(visible = chrome.visible && !zoomed, dismiss, height, afterEnter = true) {
                             ViewerBottomBar(
                                 content.current,
                                 content.playback,
@@ -156,6 +159,7 @@ internal fun MediaViewerScreen(
                     if (content != null) CenterChrome(content, chrome, dismiss, height, onEvent)
                 }
             }
+            ViewerZoomIndicator(zoom, visible = chrome.visible)
         }
         if (content != null) ViewerDialogs(content, onEvent)
     }

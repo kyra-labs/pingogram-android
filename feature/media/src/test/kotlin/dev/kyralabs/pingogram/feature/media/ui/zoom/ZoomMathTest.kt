@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.ui.zoom
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -107,6 +108,31 @@ class ZoomMathTest {
     @Test
     fun `a double tap on a zoomed photo fits it again`() {
         assertEquals(Zoom.Fit, doubleTapTarget(bounds, Zoom(3f, Offset(400f, 100f)), tap = Offset(10f, 10f)))
+    }
+
+    // The mini-map
+
+    @Test
+    fun `fitted, the whole photo is on screen`() {
+        assertEquals(Rect(0f, 0f, 1f, 1f), visiblePart(bounds, Zoom.Fit))
+    }
+
+    @Test
+    fun `zoomed in at the center, the middle of the photo is on screen`() {
+        // At 4x the photo is 4000 × 3000 in a 1000 × 2000 page: its middle quarter across and two thirds down.
+        val part = visiblePart(bounds, Zoom(4f, Offset.Zero))
+        assertEquals(0.375f, part.left, DELTA)
+        assertEquals(0.625f, part.right, DELTA)
+        assertEquals(1f / 6, part.top, DELTA)
+        assertEquals(5f / 6, part.bottom, DELTA)
+    }
+
+    @Test
+    fun `panned to the left edge, the photo's left part is on screen`() {
+        val pan = maxPan(bounds, 4f)
+        val part = visiblePart(bounds, Zoom(4f, Offset(pan.x, 0f)))
+        assertEquals(0f, part.left, DELTA)
+        assertEquals(0.25f, part.right, DELTA)
     }
 
     // Gestures
