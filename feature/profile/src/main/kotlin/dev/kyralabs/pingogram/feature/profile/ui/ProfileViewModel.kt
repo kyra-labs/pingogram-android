@@ -639,6 +639,7 @@ class ProfileViewModel internal constructor(
             canDeleteChat = isDeleted && chat != null,
             shareUsername = botLinkOf(user),
             isBot = user.type == UserType.Bot,
+            blockName = user.firstName.ifBlank { user.lastName }.trim(),
         )
     }
 

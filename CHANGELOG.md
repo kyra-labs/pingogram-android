@@ -100,6 +100,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Forum topics' six colors are drawn in six of the theme's sender hues (blue, gold, green, violet, pink, red), so
   they all look different in light, dark, AMOLED and high contrast, in the topic list, the topic editor and the chat
   list's forum rows.
+- A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
+  "OK" and "NO" keep their bubble.
 - Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
   readers hear "Match 2 of 4" each time the match bar steps to another match.
 - Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
@@ -156,6 +158,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
+- Widgets: a new Conversation widget asks you to sign in or unlock first where it needs to, before "Choose a chat";
+  a forum's avatar is a rounded square there; the unread counter stacks its avatars and keeps only the number at the
+  largest font size; buttons and the reply field follow the launcher's inner corners on Android 12 and later.
 - Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
   Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
   can't be sure about, such as anonymous +888 ones, are never held back.
@@ -189,6 +194,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
 - The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
   so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
+- A profile's block row names the person: "Block Aisha" and "Unblock Aisha". A bot's still says "Stop and block bot".
 
 ### Fixed
 - The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.

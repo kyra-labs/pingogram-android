@@ -314,7 +314,7 @@ sealed interface ChatItem {
      * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
      *   without other formatting, link preview, reply or forward: shown large, without a bubble.
      * @property isShout an incoming group message that shouts ([isShout]: one word of up to six characters in capitals,
-     *   nothing else), shown large and italic without a bubble (§13.6).
+     *   at least three of them letters, nothing else), shown large and italic without a bubble (§13.6).
      * @property headlineLength the length of a channel post's first line where it is a short headline, wholly bold and
      *   followed by more text ([headlineLength]), set large (§13.7); 0 for none.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
