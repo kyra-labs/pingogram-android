@@ -95,6 +95,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
   announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
   without naming the chat or showing the message.
+- Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
+  starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
+  before showing its first chats.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
