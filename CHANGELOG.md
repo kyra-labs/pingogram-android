@@ -97,6 +97,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
+  Telegram", and a poll's "Retract vote" the undo symbol.
 - The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
   "Show chat names" are gone from its menu and from screen readers' actions.
 - Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
