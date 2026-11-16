@@ -16,7 +16,6 @@ import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.components.CircleIconButton
 import androidx.glance.appwidget.components.Scaffold
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -223,10 +222,8 @@ private fun ReplyRow(
                 GlanceModifier
                     .defaultWeight()
                     .height(ConversationTokens.reply)
-                    .background(
-                        ImageProvider(R.drawable.widget_button),
-                        colorFilter = ColorFilter.tint(colors.surfaceVariant),
-                    ).padding(horizontal = ConversationTokens.padding),
+                    .innerBackground(colors.surfaceVariant)
+                    .padding(horizontal = ConversationTokens.padding),
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
@@ -236,13 +233,25 @@ private fun ReplyRow(
             )
         }
         Spacer(GlanceModifier.width(ConversationTokens.gap))
-        CircleIconButton(
-            imageProvider = ImageProvider(UiR.drawable.ic_reply),
-            contentDescription = null,
-            onClick = reply,
-            backgroundColor = colors.primary,
-            contentColor = colors.onPrimary,
-        )
+        // Decorative, part of the row's one button: a button of its own would be a second, unnamed stop for screen
+        // readers.
+        Box(
+            modifier =
+                GlanceModifier
+                    .size(ConversationTokens.reply)
+                    .background(
+                        ImageProvider(R.drawable.widget_circle),
+                        colorFilter = ColorFilter.tint(colors.primary),
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                ImageProvider(UiR.drawable.ic_reply),
+                contentDescription = null,
+                modifier = GlanceModifier.size(ConversationTokens.noticeIcon),
+                colorFilter = ColorFilter.tint(colors.onPrimary),
+            )
+        }
     }
 }
 
@@ -315,7 +324,7 @@ internal object ConversationTokens {
     /** The chat's avatar: 32 dp ([AVATAR_SIZE_DP]). */
     val avatar = AVATAR_SIZE_DP.dp
 
-    /** The reply field: 40 dp tall, as the button beside it (widget_button's radius makes it a pill). */
+    /** The reply field: 40 dp tall, as the button beside it, with the launcher's inner corners ([innerBackground]). */
     val reply = 40.dp
 
     /** The notices' badge and its icon: 48 dp and 24 dp. */

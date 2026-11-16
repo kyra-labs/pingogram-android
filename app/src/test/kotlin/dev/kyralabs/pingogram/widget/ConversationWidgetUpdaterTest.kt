@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -242,6 +243,19 @@ class ConversationWidgetUpdaterTest {
             assertEquals(ConversationContent.Loading, updater.currentContent(KEY))
             assertEquals(0, widgets.updates)
             assertTrue(client.sentOf<TdApi.GetChatHistory>().isEmpty())
+        }
+
+    @Test
+    fun `a widget without a chat asks to sign in first, or to unlock, before a chat is chosen`() =
+        runTest {
+            val signedOut = updater(FakeWidgets(), authState = AuthState.WaitPhoneNumber)
+            assertEquals(ConversationContent.SignedOut, signedOut.setUpContent.first())
+
+            client.authState.value = AuthState.Ready
+            assertEquals(ConversationContent.NoChat, signedOut.setUpContent.first())
+
+            val locked = updater(FakeWidgets(), passcode = "1234")
+            assertEquals(ConversationContent.Locked, locked.setUpContent.first())
         }
 
     private companion object {

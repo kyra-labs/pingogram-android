@@ -117,6 +117,29 @@ class ConversationWidgetUpdater
             }
         }
 
+        /**
+         * What a widget that keeps no chat yet shows (board 33): "Choose a chat" once an account on the device is
+         * signed in and Pingogram is not locked with a passcode; asking to sign in first, or that it is locked,
+         * otherwise.
+         */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val setUpContent: Flow<ConversationContent> =
+            accounts
+                .flatMapLatest { known ->
+                    if (known.isEmpty()) {
+                        flowOf(listOf(AuthStep.Initializing))
+                    } else {
+                        combine(known.values.map { it.auth.authStep }) { it.toList() }
+                    }
+                }.combine(passcodeRepository.settings.map { it.isSet }.distinctUntilChanged()) { steps, passcode ->
+                    when {
+                        AuthStep.Ready !in steps && AuthStep.Initializing in steps -> ConversationContent.Loading
+                        AuthStep.Ready !in steps -> ConversationContent.SignedOut
+                        passcode -> ConversationContent.Locked
+                        else -> ConversationContent.NoChat
+                    }
+                }.distinctUntilChanged()
+
         /** A widget that keeps [key] asked for its content. */
         fun onWidgetShown(key: ConversationKey) {
             placed.update { (it ?: emptySet()) + key }
@@ -221,6 +244,12 @@ class ConversationWidgetUpdater
                                     isSecret = chat.type is ChatType.Secret,
                                 ),
                                 chat.photo,
+                                isForum =
+                                    (chat.type as? ChatType.Supergroup)
+                                        ?.let {
+                                            supergroups[it.supergroupId]
+                                        }?.isForum ==
+                                        true,
                             )
                         }
                     }
@@ -233,14 +262,18 @@ class ConversationWidgetUpdater
         /** The frame's content, a chat with its avatar drawn once the chat stayed as it is. */
         private suspend fun Frame.withAvatar(account: WidgetAccount): ConversationContent {
             val chat = content as? ConversationContent.Chat ?: return content
-            val size = (ConversationTokens.AVATAR_SIZE_DP * context.resources.displayMetrics.density).roundToInt()
-            return chat.copy(avatar = account.avatars.bitmap(photo, chat.chatId, chat.title, size))
+            val density = context.resources.displayMetrics.density
+            val size = (ConversationTokens.AVATAR_SIZE_DP * density).roundToInt()
+            // A forum's avatar is a rounded square, as the recent chats widget draws it (docs/DESIGN_SYSTEM.md §13.13).
+            val corner = (RecentChatsWidgetUpdater.AVATAR_FORUM_CORNER_DP * density).takeIf { isForum }
+            return chat.copy(avatar = account.avatars.bitmap(photo, chat.chatId, chat.title, size, corner))
         }
 
         /** What a widget shows, before its avatar is drawn, with the chat's [photo]: compared as a whole. */
         private data class Frame(
             val content: ConversationContent,
             val photo: ProfilePhoto? = null,
+            val isForum: Boolean = false,
         )
     }
 
