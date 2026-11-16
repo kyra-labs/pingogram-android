@@ -96,6 +96,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
+  "Show chat names" are gone from its menu and from screen readers' actions.
 - Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
   buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
   avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
