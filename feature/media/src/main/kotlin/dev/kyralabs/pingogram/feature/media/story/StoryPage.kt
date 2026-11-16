@@ -135,7 +135,13 @@ internal fun StoryPage(
         frame = {
             // Under the picture, which takes no input, so taps reach them; a failed story's "Try again" takes its own.
             StoryTapZones(poster, story, state.isPaused, onEvent)
-            StoryMediaContent(story.media, onRetry = { onEvent(StoryViewerEvent.Retry) }, videoSurface = videoSurface)
+            StoryMediaContent(
+                story.media,
+                onRetry = { onEvent(StoryViewerEvent.Retry) },
+                videoSurface = videoSurface,
+                posterName = poster.name,
+                onSkip = { onEvent(StoryViewerEvent.Next) },
+            )
             // Held, the chrome steps aside for the picture and a badge says to let go (board 26).
             HeldFade(visible = !state.isHeld, Modifier.align(Alignment.TopCenter)) {
                 StoryTopChrome(
@@ -147,6 +153,7 @@ internal fun StoryPage(
                     mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
                     onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
                     menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
+                    live = story.media is StoryMedia.Live,
                 )
             }
             if (story.caption.text.isNotEmpty()) {
@@ -171,7 +178,7 @@ internal fun StoryLeavingPage(
 ) {
     StoryPageLayout(
         frame = {
-            StoryMediaContent(story.media, onRetry = {}, videoSurface = {})
+            StoryMediaContent(story.media, onRetry = {}, videoSurface = {}, posterName = poster.name)
             StoryTopChrome(
                 poster = poster,
                 index = story.index,
@@ -259,8 +266,8 @@ private fun StoryPhoto(
 /**
  * What the story shows, filling the frame: a photo (decoded at the frame's size) or a video, each over its blurred
  * minithumbnail and with [StoryLoading] until its file is on the device; for a video its thumbnail until
- * its first frame. What the viewer cannot show says so as an [EmptyState]: a live stream, unsupported content, a
- * deleted story; a failure with "Try again" ([onRetry]).
+ * its first frame. A live story says so ([LiveStoryNotice], "Skip live story" being [onSkip]); what the viewer cannot
+ * show says so as an [EmptyState]: unsupported content, a deleted story; a failure with "Try again" ([onRetry]).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -268,6 +275,8 @@ private fun StoryMediaContent(
     media: StoryMedia,
     onRetry: () -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
+    posterName: String,
+    onSkip: () -> Unit = {},
 ) {
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val widthPx = constraints.maxWidth
@@ -293,7 +302,7 @@ private fun StoryMediaContent(
             }
 
             is StoryMedia.Live -> {
-                LiveStoryNotice(media)
+                LiveStoryNotice(media, posterName, onSkip)
             }
 
             StoryMedia.Unsupported -> {
@@ -319,34 +328,6 @@ private fun StoryMediaContent(
             }
         }
     }
-}
-
-/**
- * A live story (board 12): "Live now" over what watching does, and a default `Button` "Watch live" that opens the voice
- * chat screen on the poster's call ([LocalVoiceChats]); without them (previews), the notice alone. The button takes its
- * own taps, so the story's tap zones below it do not.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun LiveStoryNotice(media: StoryMedia.Live) {
-    val voiceChats = LocalVoiceChats.current
-    EmptyState(
-        illustration = MaterialShapes.Cookie9Sided,
-        icon = UiR.drawable.ic_live_tv,
-        title = stringResource(R.string.story_live_title),
-        body = stringResource(R.string.story_live_body),
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        action =
-            voiceChats?.let { chats ->
-                {
-                    Button(
-                        onClick = { chats.watchLiveStory(media.chatId, media.groupCallId) },
-                        shapes = ButtonDefaults.shapes(),
-                    ) { Text(stringResource(R.string.story_live_watch)) }
-                }
-            },
-    )
 }
 
 /** What a story that cannot be shown says instead: [title] and [body] under [illustration] with [icon]. */
