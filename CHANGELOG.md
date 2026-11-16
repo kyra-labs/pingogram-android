@@ -94,9 +94,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
-- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
-  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
-  timer every second, and the rating's stars as "Rating, 4 of 5".
 - The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
   0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
   during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
@@ -128,6 +125,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
   reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
