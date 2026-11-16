@@ -510,8 +510,11 @@
     <string name="bookmarks_title">Bookmarks</string>
     <string name="bookmarks_back">Back</string>
     <string name="bookmarks_all">All</string>
-    <!-- A filter chip: a tag's name (or "All") and how many bookmarks it holds, "Trips 4". -->
-    <string name="bookmarks_filter">%1$s %2$d</string>
+    <!-- Under the Bookmarks page's title. %d: how many messages are bookmarked -->
+    <plurals name="bookmarks_saved">
+        <item quantity="one">%d saved on this phone</item>
+        <item quantity="other">%d saved on this phone</item>
+    </plurals>
     <string name="bookmarks_open_in_chat">Open in chat</string>
     <string name="bookmarks_undo">Undo</string>
     <string name="bookmarks_empty_title">Nothing bookmarked yet</string>
@@ -961,8 +964,11 @@
         <item quantity="other">%d items</item>
     </plurals>
     <!-- The keyword match bar (board 30), where a keyword alert opened the conversation: the word, then which match
-         of how many, the newest first. -->
-    <string name="keyword_match_title">Keyword: %1$s · %2$d of %3$d</string>
+         of how many, the newest first. The word's trailing space, before the count ("2 of 4"), is kept by the quotes;
+         screen readers hear the count as "Match 2 of 4" each time it changes. -->
+    <string name="keyword_match_word">"Keyword: %1$s · "</string>
+    <string name="keyword_match_position">%1$d of %2$d</string>
+    <string name="keyword_match_position_spoken">Match %1$d of %2$d</string>
     <string name="keyword_match_pane">Keyword matches</string>
     <string name="keyword_match_older">Older match</string>
     <string name="keyword_match_newer">Newer match</string>

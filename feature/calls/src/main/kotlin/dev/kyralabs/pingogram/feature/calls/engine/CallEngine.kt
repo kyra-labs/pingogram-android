@@ -38,11 +38,14 @@ interface CallEngine {
     /**
      * Opens the microphone and the speaker for voice chat [groupCallId] and makes its join payload, which TDLib's
      * `joinVideoChat` takes (`docs/adr/0023-group-voice-chats-and-live-streams.md`). The microphone starts [muted] or
-     * not. Loads the engine's library like [protocol]. The session runs until [GroupCallSession.close].
+     * not; without [withMicrophone] (a live story, which the user only watches) it is never opened, so watching needs
+     * no microphone permission. Loads the engine's library like [protocol]. The session runs until
+     * [GroupCallSession.close].
      */
     suspend fun createGroupCall(
         groupCallId: Int,
         muted: Boolean,
+        withMicrophone: Boolean = true,
     ): GroupCallSession
 
     /**

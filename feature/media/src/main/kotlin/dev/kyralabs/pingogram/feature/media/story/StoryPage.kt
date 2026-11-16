@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.story
 
+import android.content.res.Resources
 import android.icu.text.MeasureFormat
 import android.icu.util.Measure
 import android.icu.util.MeasureUnit
@@ -7,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -66,10 +68,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
@@ -134,7 +138,7 @@ internal fun StoryPage(
     StoryPageLayout(
         frame = {
             // Under the picture, which takes no input, so taps reach them; a failed story's "Try again" takes its own.
-            StoryTapZones(poster, story, state.isPaused, onEvent)
+            StoryTapZones(poster, story, state.isPaused, canReact = state.reactions != null, onEvent)
             StoryMediaContent(
                 story.media,
                 onRetry = { onEvent(StoryViewerEvent.Retry) },
@@ -142,26 +146,46 @@ internal fun StoryPage(
                 posterName = poster.name,
                 onSkip = { onEvent(StoryViewerEvent.Next) },
             )
-            // Held, the chrome steps aside for the picture and a badge says to let go (board 26).
-            HeldFade(visible = !state.isHeld, Modifier.align(Alignment.TopCenter)) {
-                StoryTopChrome(
-                    poster = poster,
-                    index = story.index,
-                    progress = story.progress,
-                    ageSeconds = story.ageSeconds,
-                    onClose = onClose,
-                    mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
-                    onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
-                    menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
-                    live = story.media is StoryMedia.Live,
-                )
-            }
+            // Dimmed while the reactions show, so they stand out over the picture (board 26).
+            HeldFade(visible = state.reactions?.isOpen == true, Modifier.matchParentSize()) { ReactionsScrim() }
+            // Held, the chrome steps aside for the picture, the segments dimmed, and a badge says to let go (board 26).
+            StoryTopChrome(
+                held = state.isHeld,
+                poster =
+                    if (state.own !=
+                        null
+                    ) {
+                        poster.copy(name = stringResource(R.string.story_yours))
+                    } else {
+                        poster
+                    },
+                index = story.index,
+                progress = story.progress,
+                ageSeconds = story.ageSeconds,
+                onClose = onClose,
+                mute = (story.media as? StoryMedia.Video)?.takeIf { it.hasSound }?.let { state.isMuted },
+                onToggleMute = { onEvent(StoryViewerEvent.ToggleMute) },
+                menu = state.own?.let { own -> { OwnStoryMenu(own, onEvent) } },
+                live = story.media is StoryMedia.Live,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
             if (story.caption.text.isNotEmpty()) {
                 HeldFade(visible = !state.isHeld, Modifier.align(Alignment.BottomCenter)) { StoryCaption(story) }
             }
             HeldFade(visible = state.isHeld, Modifier.align(Alignment.Center)) { HeldBadge() }
         },
-        bottom = { StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views, state.canShare) },
+        bottom = {
+            // Held, the bar fades with the chrome and keeps its room, so the frame does not move (board 26).
+            val motion = MaterialTheme.motionScheme
+            val barAlpha by animateFloatAsState(
+                targetValue = if (state.isHeld) 0f else 1f,
+                animationSpec = if (state.isHeld) motion.fastEffectsSpec() else motion.defaultEffectsSpec(),
+                label = "heldBar",
+            )
+            Box(Modifier.graphicsLayer { alpha = barAlpha }) {
+                StoryBottomBar(state.reply, state.reactions, replyText, onEvent, state.views, state.canShare)
+            }
+        },
     )
 }
 
@@ -315,11 +339,13 @@ private fun StoryMediaContent(
             }
 
             StoryMedia.Unavailable -> {
+                // Said once as it shows, the viewer moving on by itself (board 26).
                 StoryNotice(
                     R.string.story_unavailable_title,
                     R.string.story_unavailable_body,
-                    MaterialShapes.Cookie9Sided,
+                    MaterialShapes.Cookie12Sided,
                     UiR.drawable.ic_web_stories_filled,
+                    Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
 
@@ -337,8 +363,10 @@ private fun StoryNotice(
     @StringRes body: Int,
     illustration: RoundedPolygon,
     @DrawableRes icon: Int,
+    modifier: Modifier = Modifier,
 ) {
     EmptyState(
+        modifier = modifier,
         illustration = illustration,
         icon = icon,
         title = stringResource(title),
@@ -359,9 +387,11 @@ private fun StoryTapZones(
     poster: StoryPosterUi,
     story: StoryUi,
     isPaused: Boolean,
+    canReact: Boolean,
     onEvent: (StoryViewerEvent) -> Unit,
 ) {
     val resources = LocalResources.current
+    val locale = LocalConfiguration.current.locales[0]
     val layoutDirection = LocalLayoutDirection.current
     val currentOnEvent by rememberUpdatedState(onEvent)
     Box(
@@ -384,13 +414,7 @@ private fun StoryTapZones(
                     )
                 }.semantics {
                     liveRegion = LiveRegionMode.Polite
-                    contentDescription =
-                        resources.getString(
-                            R.string.story_a11y_position,
-                            story.index + 1,
-                            story.count.coerceAtLeast(story.index + 1),
-                            poster.name.bidiIsolated(),
-                        )
+                    contentDescription = storyDescription(resources, locale, poster, story)
                     onClick(label = resources.getString(R.string.story_next)) {
                         currentOnEvent(StoryViewerEvent.Next)
                         true
@@ -407,6 +431,12 @@ private fun StoryTapZones(
                                 currentOnEvent(StoryViewerEvent.Hold(!isPaused))
                                 true
                             },
+                        ) +
+                        listOfNotNull(
+                            CustomAccessibilityAction(resources.getString(R.string.story_react)) {
+                                currentOnEvent(StoryViewerEvent.ReactionsOpen(true))
+                                true
+                            }.takeIf { canReact },
                         )
                 },
     )
@@ -431,9 +461,15 @@ private fun StoryCaption(
                     bottom = MaterialTheme.spacing.large,
                 ),
     ) {
-        ExpandableCaption(caption = story.caption, key = story.storyId.toLong())
+        // Four lines at 200% font (board 26), three otherwise, then "Show more".
+        val lines = if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) LARGE_CAPTION_LINES else CAPTION_LINES
+        ExpandableCaption(caption = story.caption, key = story.storyId.toLong(), collapsedLines = lines)
     }
 }
+
+private const val CAPTION_LINES = 3
+private const val LARGE_CAPTION_LINES = 4
+private const val LARGE_FONT_SCALE = 2f
 
 /** Stories are portrait, 9:16, as Telegram's apps record them. */
 private const val STORY_ASPECT_RATIO = 9f / 16f

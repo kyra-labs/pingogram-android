@@ -1,12 +1,14 @@
 package dev.kyralabs.pingogram.feature.media.story
 
 import android.icu.text.MeasureFormat
+import android.icu.text.RelativeDateTimeFormatter
 import android.icu.util.Measure
 import android.icu.util.MeasureUnit
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -64,6 +66,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -126,25 +129,32 @@ internal fun StoryTopChrome(
     onToggleMute: () -> Unit = {},
     menu: (@Composable () -> Unit)? = null,
     live: Boolean = false,
+    held: Boolean = false,
 ) {
     val colors = MaterialTheme.pingogramColors
     val spacing = MaterialTheme.spacing
+    // Held (board 26): the segments stay, dimmed, and the rest fades; read in the draw phase.
+    val motion = MaterialTheme.motionScheme
+    val heldSpec = if (held) motion.fastEffectsSpec<Float>() else motion.defaultEffectsSpec()
+    val rest by animateFloatAsState(if (held) 0f else 1f, heldSpec, label = "heldChrome")
+    val segments by animateFloatAsState(if (held) HELD_SEGMENTS_ALPHA else 1f, heldSpec, label = "heldSegments")
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(colors.mediaOverlay, Color.Transparent)))
-                .padding(start = spacing.small, end = spacing.extraSmall, top = spacing.small),
+                .drawBehind {
+                    drawRect(Brush.verticalGradient(listOf(colors.mediaOverlay, Color.Transparent)), alpha = rest)
+                }.padding(start = spacing.small, end = spacing.extraSmall, top = spacing.small),
         verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
     ) {
         StorySegments(
             count = poster.storyCount.coerceAtLeast(index + 1),
             index = index,
             progress = progress,
-            modifier = Modifier.padding(end = spacing.extraSmall),
+            modifier = Modifier.padding(end = spacing.extraSmall).graphicsLayer { alpha = segments },
             live = live,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.graphicsLayer { alpha = rest }, verticalAlignment = Alignment.CenterVertically) {
             Avatar(photo = poster.photo, name = poster.name, id = poster.chatId, size = MaterialTheme.sizes.avatarSmall)
             StoryTitle(poster.name, ageSeconds, live, Modifier.weight(1f).padding(horizontal = spacing.small))
             if (mute != null) {
@@ -281,11 +291,45 @@ internal fun storyAge(ageSeconds: Long): String {
     }
 }
 
+/** How long ago a story was posted, in words for screen readers: "now", "12 minutes ago", "2 hours ago". */
+internal fun storyAgeSpoken(
+    ageSeconds: Long,
+    locale: Locale,
+): String {
+    val formatter = RelativeDateTimeFormatter.getInstance(locale)
+    return when {
+        ageSeconds < SECONDS_PER_MINUTE -> {
+            formatter.format(RelativeDateTimeFormatter.Direction.PLAIN, RelativeDateTimeFormatter.AbsoluteUnit.NOW)
+        }
+
+        ageSeconds < SECONDS_PER_HOUR -> {
+            val minutes = (ageSeconds / SECONDS_PER_MINUTE).toDouble()
+            formatter.format(
+                minutes,
+                RelativeDateTimeFormatter.Direction.LAST,
+                RelativeDateTimeFormatter.RelativeUnit.MINUTES,
+            )
+        }
+
+        else -> {
+            val hours = (ageSeconds / SECONDS_PER_HOUR).toDouble()
+            formatter.format(
+                hours,
+                RelativeDateTimeFormatter.Direction.LAST,
+                RelativeDateTimeFormatter.RelativeUnit.HOURS,
+            )
+        }
+    }
+}
+
 private fun narrow(
     locale: Locale,
     amount: Long,
     unit: MeasureUnit,
 ): String = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.NARROW).format(Measure(amount, unit))
+
+/** The segments while the story is held (board 26: 60%). */
+private const val HELD_SEGMENTS_ALPHA = 0.6f
 
 /** The segments' track: Material's disabled opacity. */
 private const val TRACK_ALPHA = 0.38f

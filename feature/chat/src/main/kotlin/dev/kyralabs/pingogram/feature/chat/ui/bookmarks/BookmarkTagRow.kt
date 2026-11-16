@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -268,7 +269,7 @@ private fun HueSwatches(
 /**
  * The question before deleting [tag] (board 34c): an `AlertDialog` with the delete symbol, "Delete “Recipes”?", what
  * becomes of the bookmarks that have it (those with other tags keep them, those with only it will have none, none is
- * removed), "Cancel", which takes the focus, and "Delete tag" in `error`.
+ * removed), "Cancel", which takes the focus, and "Delete tag" as a filled `Button` in `error` / `onError` (board 34c).
  */
 @Composable
 internal fun DeleteTagDialog(
@@ -301,10 +302,14 @@ internal fun DeleteTagDialog(
             Text(text)
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { onEvent(BookmarkTagsEvent.ConfirmDelete) },
                 shapes = ButtonDefaults.shapes(),
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
             ) { Text(stringResource(R.string.bookmark_tag_delete_confirm)) }
         },
         dismissButton = {

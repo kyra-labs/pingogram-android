@@ -80,29 +80,39 @@ private fun Counts(content: RecentChatsContent.Chats) {
                     TextStyle(color = colors.onSurface, fontSize = CounterTokens.number, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
-            Text(
-                text =
-                    listOfNotNull(
-                        context.getString(R.string.widget_unread_unread),
-                        content.mentions.takeIf { it > 0 }?.let {
-                            context.resources.getQuantityString(R.plurals.widget_unread_mentions, it, it)
-                        },
-                    ).joinToString(" · "),
-                style = TextStyle(color = colors.onSurfaceVariant, fontSize = CounterTokens.label),
-                maxLines = 2,
-            )
-        }
-        content.chats
-            .filter { it.unreadCount > 0 && !it.isMuted && it.avatar != null }
-            .take(MAX_AVATARS)
-            .forEach { chat ->
-                Spacer(GlanceModifier.width(CounterTokens.avatarGap))
-                Image(
-                    ImageProvider(checkNotNull(chat.avatar)),
-                    contentDescription = null,
-                    modifier = GlanceModifier.size(CounterTokens.avatar),
+            // At 200% font the number keeps the room and the label goes (board 33); the description still says it.
+            if (context.resources.configuration.fontScale < LARGE_FONT_SCALE) {
+                Text(
+                    text =
+                        listOfNotNull(
+                            context.getString(R.string.widget_unread_unread),
+                            content.mentions.takeIf { it > 0 }?.let {
+                                context.resources.getQuantityString(R.plurals.widget_unread_mentions, it, it)
+                            },
+                        ).joinToString(" · "),
+                    style = TextStyle(color = colors.onSurfaceVariant, fontSize = CounterTokens.label),
+                    maxLines = 2,
                 )
             }
+        }
+        val avatars = content.chats.filter { it.unreadCount > 0 && !it.isMuted && it.avatar != null }.take(MAX_AVATARS)
+        if (avatars.isNotEmpty()) {
+            Spacer(GlanceModifier.width(CounterTokens.avatarGap))
+            // Stacked, each a third over the one before it, from the start side (mirrored right to left): each placed
+            // from the start by its offset, the later ones drawn over the earlier.
+            Box {
+                avatars.forEachIndexed { index, chat ->
+                    Image(
+                        ImageProvider(checkNotNull(chat.avatar)),
+                        contentDescription = null,
+                        modifier =
+                            GlanceModifier
+                                .padding(start = CounterTokens.avatarStep * index)
+                                .size(CounterTokens.avatar + CounterTokens.avatarStep * index, CounterTokens.avatar),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -192,14 +202,19 @@ private fun openChats(context: Context): Intent =
 
 private const val MAX_AVATARS = 3
 
+/** From this font scale on, the counter shows its number without the label. */
+private const val LARGE_FONT_SCALE = 2f
+
 /** The counter's sizes: Material 3 tokens in the units RemoteViews take, as [WidgetTokens]. */
 internal object CounterTokens {
     /** Inside the widget: `spacing.large`. */
     val padding = 16.dp
 
-    /** The avatars of unread chats: 24 dp (`sizes.avatarInline`), `spacing.small` apart. */
+    /** The avatars of unread chats: 24 dp (`sizes.avatarInline`), `spacing.small` after the counts, each overlapping
+     * the one before it by a third (16 dp steps). */
     val avatar = 24.dp
     val avatarGap = 8.dp
+    val avatarStep = 16.dp
 
     /** The "All read" cookie and its tick: 40 dp (`sizes.leadingIconContainer`) and 24 dp. */
     val badge = 40.dp

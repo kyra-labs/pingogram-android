@@ -1,10 +1,13 @@
 package dev.kyralabs.pingogram.feature.settings.ui.focus
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
@@ -18,15 +21,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
@@ -163,6 +171,7 @@ private fun FocusProfileRow(
         onClick = onOpen,
         shapes = shapes,
         colors = rowColors,
+        modifier = Modifier.cardSemantics(item.isOn) { toggle(haptics, !item.isOn, onToggle) },
         leadingContent = {
             FocusBadge(
                 icon = item.icon,
@@ -173,12 +182,6 @@ private fun FocusProfileRow(
         },
         supportingContent = {
             Column {
-                if (item.isOn) {
-                    Text(
-                        stringResource(R.string.settings_focus_on_now),
-                        style = MaterialTheme.typography.labelMediumEmphasized,
-                    )
-                }
                 Text(how)
                 Text(allows)
             }
@@ -187,14 +190,11 @@ private fun FocusProfileRow(
             CheckSwitch(
                 checked = item.isOn,
                 onCheckedChange = { checked -> toggle(haptics, checked, onToggle) },
-                modifier =
-                    Modifier.semantics {
-                        contentDescription = item.name
-                    },
+                modifier = Modifier.clearAndSetSemantics {},
             )
         },
     ) {
-        Text(item.name)
+        ProfileTitle(item.name, item.isOn)
     }
 }
 
@@ -246,10 +246,23 @@ private fun FocusTemplatesGroup(onOpenProfile: (id: Long, template: FocusTemplat
     SettingsGroup(title = stringResource(R.string.settings_focus_templates)) {
         FocusTemplate.entries.forEach { template ->
             item(key = template) { shapes ->
+                val colors = MaterialTheme.colorScheme
                 SettingsRow(
                     title = stringResource(template.title()),
                     shapes = shapes,
-                    icon = template.icon()?.symbol() ?: UiR.drawable.ic_add,
+                    // Each template's symbol on its shape, as its profile shows it (board 31f).
+                    icon = UiR.drawable.ic_add.takeIf { template.icon() == null },
+                    leading =
+                        template.icon()?.let { icon ->
+                            {
+                                FocusBadge(
+                                    icon,
+                                    MaterialTheme.sizes.leadingIconContainer,
+                                    colors.secondaryContainer,
+                                    colors.onSecondaryContainer,
+                                )
+                            }
+                        },
                     supportingContent = { Text(stringResource(template.summary())) },
                     onClick = { onOpenProfile(0, template) },
                     opensPage = true,
@@ -302,11 +315,20 @@ private fun WhileOnGroup(
 
 private const val NEW_PROFILE = "new"
 
+/** From this font scale on, the empty page's shapes are smaller. */
+private const val LARGE_FONT_SCALE = 1.5f
+
 /** Three profile shapes overlapping, decorative. */
 @Composable
 private fun EmptyShapes() {
     val colors = MaterialTheme.colorScheme
-    val size = MaterialTheme.sizes.avatarMedium
+    // Smaller from large font scales, so the title and the templates keep the room (board 31).
+    val size =
+        if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
+            MaterialTheme.sizes.leadingIconContainer
+        } else {
+            MaterialTheme.sizes.avatarMedium
+        }
     Row(
         modifier = Modifier.clearAndSetSemantics {},
         horizontalArrangement = Arrangement.spacedBy(-MaterialTheme.spacing.medium),

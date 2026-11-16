@@ -138,7 +138,7 @@ private fun RowScope.ComposeButton(
             GlanceModifier
                 .defaultWeight()
                 .fillMaxHeight()
-                .background(ImageProvider(R.drawable.widget_button), colorFilter = ColorFilter.tint(tone.container))
+                .innerBackground(tone.container)
                 .clickable(actionStartActivity(intent))
                 .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally,

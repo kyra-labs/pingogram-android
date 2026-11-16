@@ -88,7 +88,7 @@ private val MessageShortcuts.linkLabel: Int
     get() = if (linksInThread) R.string.message_action_copy_thread_link else R.string.message_action_copy_link
 
 /** Whether this bubble's message reached Telegram: not still being sent, nor failed. */
-private val ChatItem.Bubble.isSent: Boolean
+internal val ChatItem.Bubble.isSent: Boolean
     get() = status != OutgoingStatus.Pending && status != OutgoingStatus.Failed
 
 /** Cancelling the [uploads] of a bubble's messages being sent, all at once; null while none uploads. */

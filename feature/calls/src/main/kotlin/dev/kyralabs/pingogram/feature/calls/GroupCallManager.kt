@@ -317,7 +317,9 @@ class GroupCallManager
         suspend fun setMuted(muted: Boolean) {
             mutex.withLock {
                 val call = live ?: return
-                if (call.isStream || (!muted && !call.canUnmute())) return
+                // A live story is only watched: its microphone was never opened (#611).
+                val watchOnly = call.isStream || call.isLiveStory
+                if (watchOnly || (!muted && !call.canUnmute())) return
                 applyMuted(call, muted, tellTdlib = true)
             }
         }
@@ -500,7 +502,7 @@ class GroupCallManager
                 if (call.isConference) {
                     createConferenceOrNull(call)
                 } else {
-                    createSessionOrNull(call.groupCallId)
+                    createSessionOrNull(call.groupCallId, withMicrophone = !call.isLiveStory)
                 }
             if (session == null) {
                 mutex.withLock { finish(call, GroupCallEndReason.Failed(ENGINE_FAILED)) }
@@ -883,9 +885,12 @@ class GroupCallManager
 
         /** The engine's group call; null if its library could not load or the microphone could not open. */
         @Suppress("TooGenericExceptionCaught", "SwallowedException") // Any failure ends the voice chat with a reason.
-        private suspend fun createSessionOrNull(groupCallId: Int): GroupCallSession? =
+        private suspend fun createSessionOrNull(
+            groupCallId: Int,
+            withMicrophone: Boolean,
+        ): GroupCallSession? =
             try {
-                engine.createGroupCall(groupCallId, muted = true)
+                engine.createGroupCall(groupCallId, muted = true, withMicrophone = withMicrophone)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
