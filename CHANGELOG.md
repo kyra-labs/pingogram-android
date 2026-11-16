@@ -90,6 +90,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
