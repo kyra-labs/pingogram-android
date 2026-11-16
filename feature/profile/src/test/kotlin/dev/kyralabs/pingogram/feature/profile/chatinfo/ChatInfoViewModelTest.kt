@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeIdVisibilityRepository
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaEvent
@@ -115,12 +116,14 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 assertEquals(R.string.chat_info_status, status.id)
                 assertEquals(UiText.resource(R.string.chat_info_public_group), status.args[0])
                 assertEquals(GroupKind.Supergroup, kind)
+                // A group's avatar takes its kind's shape (board 24e).
+                assertEquals(AvatarShape.Group, header.avatarShape)
                 assertEquals("https://t.me/rustberlin", link?.url)
                 assertEquals("Meetups", description?.text)
                 assertEquals(1_024, members?.totalCount)
                 assertEquals(UiText.Plain("Ada Lovelace"), members?.items?.single()?.name)
                 with(checkNotNull(administration)) {
-                    assertTrue(canEditInfo && canEditPermissions && canManageInviteLinks)
+                    assertTrue(canEditInfo && allowedPermissions != null && canManageInviteLinks)
                     assertEquals(3, administratorCount)
                     assertEquals(2, bannedCount)
                     assertEquals(1, restrictedCount)
