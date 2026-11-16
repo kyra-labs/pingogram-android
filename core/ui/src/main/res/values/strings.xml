@@ -366,7 +366,7 @@
 
     <!-- A login code (FR-A3, and changing the number); %1$s is the phone number. -->
     <string name="login_code_label">Code</string>
-    <string name="login_code_sent_telegram">We sent the code to your Telegram app on another device.</string>
+    <string name="login_code_sent_telegram">Open Telegram on a device where you\'re already signed in. The code is in a message from Telegram.</string>
     <string name="login_code_sent_sms">We sent an SMS with the code to %1$s.</string>
     <string name="login_code_sent_sms_word">We sent an SMS with a code word to %1$s.</string>
     <string name="login_code_sent_sms_phrase">We sent an SMS with a code phrase to %1$s.</string>
@@ -389,6 +389,10 @@
     <string name="login_code_resend_fragment">Get the code on Fragment</string>
     <!-- %1$s: the remaining time, e.g. "42 seconds". -->
     <string name="login_code_resend_in">You can get a new code in %1$s.</string>
+    <!-- The resend countdown by the way the next code comes; %1$s is the time left, e.g. "0:42". -->
+    <string name="login_code_resend_sms_in">Resend code by SMS in %1$s</string>
+    <string name="login_code_resend_call_in">Call me with the code in %1$s</string>
+    <string name="login_code_resend_telegram_in">Resend code to Telegram in %1$s</string>
     <!-- The birthday picker (Edit profile, suggesting a birthday to a contact): its default title. -->
     <string name="birthday_title">Birthday</string>
     <string name="birthday_show_year">Show the year</string>
