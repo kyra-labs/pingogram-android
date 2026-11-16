@@ -200,6 +200,8 @@ data class ProfileActions(
     val shareUsername: String? = null,
     /** A bot's: its block row says "Stop and block bot" (board 24d). */
     val isBot: Boolean = false,
+    /** Whom the block row names: "Block Aisha", "Unblock Aisha" (owner decision 2026-11-16). */
+    val blockName: String = "",
 )
 
 /** What the contact row does. */

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.component.CallButtonMenu
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
@@ -339,7 +340,7 @@ private fun PhoneRow(
 /**
  * What else can be done with the account, segmented rows without icons: "Add to contacts" or "Edit contact" (only with
  * [onEditContact], the app's contact editor), "Export chat" (only with [onExportChat], the app's export page),
- * "Block user" in `error` (after a confirmation) or "Unblock user", and "Report" in `error`, which opens the report
+ * "Block Aisha" in `error` (after a confirmation) or "Unblock Aisha", and "Report" in `error`, which opens the report
  * sheet. Rows that do not apply are left out.
  */
 @Composable
@@ -364,15 +365,15 @@ internal fun ProfileMoreGroup(
     actions.isBlocked?.let { isBlocked ->
         rows +=
             ProfileRow("block") { shapes ->
+                // "Block Aisha": the name isolated, and the label too, as its text keeps the layout's direction (§9).
+                val name = actions.blockName.bidiIsolated()
                 ActionRow(
                     text =
-                        stringResource(
-                            when {
-                                isBlocked -> R.string.profile_unblock
-                                actions.isBot -> R.string.profile_block_bot
-                                else -> R.string.profile_block
-                            },
-                        ),
+                        when {
+                            isBlocked -> stringResource(R.string.profile_unblock_person, name).bidiIsolated()
+                            actions.isBot -> stringResource(R.string.profile_block_bot)
+                            else -> stringResource(R.string.profile_block_person, name).bidiIsolated()
+                        },
                     shapes = shapes,
                     onClick = { onEvent(if (isBlocked) ProfileEvent.Unblock else ProfileEvent.Block) },
                     enabled = !actions.isChangingBlock,
