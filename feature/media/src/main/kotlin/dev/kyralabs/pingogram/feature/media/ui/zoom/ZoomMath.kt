@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.ui.zoom
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import kotlin.math.max
 import kotlin.math.min
@@ -128,3 +129,33 @@ internal fun steppedZoom(
     bounds: ZoomBounds,
     step: Float,
 ): Zoom = transformed(zoom, bounds, centroid = Offset.Zero, scaleChange = step, panChange = Offset.Zero)
+
+/**
+ * The part of the photo the page shows at [zoom], as fractions of the fitted photo (0 to 1 on each axis, left and top
+ * first), for the mini-map: the page's corners mapped back through the zoom, within the photo.
+ */
+internal fun visiblePart(
+    bounds: ZoomBounds,
+    zoom: Zoom,
+): Rect {
+    val content = bounds.content
+    if (content.width <= 0f || content.height <= 0f) return Rect(0f, 0f, 1f, 1f)
+    val half = Offset(bounds.container.width / 2, bounds.container.height / 2)
+    // A point q of the page (from its center) shows the photo's point (q - pan) / scale (from the photo's center).
+    val topLeft = (-half - zoom.pan) / zoom.scale
+    val bottomRight = (half - zoom.pan) / zoom.scale
+
+    fun fraction(
+        value: Float,
+        size: Float,
+    ) = (value / size + HALF).coerceIn(0f, 1f)
+    return Rect(
+        left = fraction(topLeft.x, content.width),
+        top = fraction(topLeft.y, content.height),
+        right = fraction(bottomRight.x, content.width),
+        bottom = fraction(bottomRight.y, content.height),
+    )
+}
+
+/** Half of the photo lies on each side of its center. */
+private const val HALF = 0.5f
