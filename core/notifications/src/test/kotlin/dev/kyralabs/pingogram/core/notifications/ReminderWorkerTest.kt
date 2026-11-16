@@ -59,18 +59,22 @@ class ReminderWorkerTest {
         NotificationChannels(context).ensureCreated()
     }
 
-    private fun TestScope.account() =
-        ReminderAccountParts(
-            reminders = reminders,
-            auth = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
-            chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats()),
-            messages =
-                TdlibMessageRepository(
-                    client,
-                    backgroundScope,
-                    SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
-                ),
-        )
+    private fun TestScope.account(
+        locked: Set<Long> = emptySet(),
+        userName: (Long) -> String? = { null },
+    ) = ReminderAccountParts(
+        reminders = reminders,
+        auth = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+        chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats()),
+        messages =
+            TdlibMessageRepository(
+                client,
+                backgroundScope,
+                SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+            ),
+        lockedChatIds = { locked },
+        userName = { userName(it) },
+    )
 
     private suspend fun runWorker(
         scheduled: MessageReminder = reminder,
@@ -121,6 +125,45 @@ class ReminderWorkerTest {
         }
 
     @Test
+    fun `in a group the message follows its sender's name`() =
+        runTest {
+            loggedInWithMessage()
+            client.on(
+                TdApi.GetChat::class,
+                TdResult.Success(TdApiFixtures.chat(id = 100, type = TdApi.ChatTypeBasicGroup(7), title = "Trip")),
+            )
+            val account = account(userName = { if (it == 42L) "Aisha" else null })
+
+            runWorker { account }
+
+            val text = requireNotNull(posted()).extras.getCharSequence(NotificationCompat.EXTRA_TEXT).toString()
+            assertEquals("Aisha: Lunch?", text.filterNot { it in BIDI_ISOLATES })
+        }
+
+    @Test
+    fun `a locked chat's reminder names nothing of the chat and opens the locked chats`() =
+        runTest {
+            loggedInWithMessage()
+            val account = account(locked = setOf(100L))
+
+            runWorker { account }
+
+            val notification = requireNotNull(posted())
+            val extras = notification.extras
+            assertEquals("Reminder", extras.getCharSequence(NotificationCompat.EXTRA_TITLE).toString())
+            assertEquals(
+                context.getString(R.string.reminder_notification_locked),
+                extras.getCharSequence(NotificationCompat.EXTRA_TEXT).toString(),
+            )
+            val shown =
+                listOf(NotificationCompat.EXTRA_TITLE, NotificationCompat.EXTRA_TEXT, NotificationCompat.EXTRA_BIG_TEXT)
+                    .joinToString { extras.getCharSequence(it).toString() }
+            assertTrue("Ada Lovelace" !in shown && "Lunch?" !in shown && "Call back" !in shown)
+            assertNull(notification.getLargeIcon())
+            assertEquals(NotificationCompat.VISIBILITY_PUBLIC, notification.visibility)
+        }
+
+    @Test
     fun `a deleted message still rings, saying so`() =
         runTest {
             loggedInWithMessage()
@@ -155,6 +198,11 @@ class ReminderWorkerTest {
             assertEquals(ListenableWorker.Result.success(), runWorker { null })
             assertNull(posted())
         }
+
+    private companion object {
+        /** Unicode's first-strong isolate and pop directional isolate, which wrap names in built strings. */
+        const val BIDI_ISOLATES = "\u2068\u2069"
+    }
 
     /** Reminders in memory, set as a test needs them. */
     private class InMemoryReminders(

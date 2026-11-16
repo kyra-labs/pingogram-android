@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -266,26 +267,50 @@ private fun SheetButtons(
     onEvent: (ReminderEvent) -> Unit,
     onSet: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    // From 150% font the two no longer fit side by side: they stack, "Set reminder" above, each as wide as the sheet.
+    val stacked = LocalDensity.current.fontScale >= STACKED_FONT_SCALE
+    val secondary: @Composable (Modifier) -> Unit = { modifier ->
         if (state.isExisting) {
             TextButton(
                 onClick = { onEvent(ReminderEvent.Delete) },
+                modifier = modifier,
                 enabled = !state.isSaving,
                 shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) { Text(stringResource(R.string.reminder_delete)) }
         } else {
-            TextButton(onClick = { onEvent(ReminderEvent.Dismiss) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.reminder_cancel))
-            }
+            TextButton(
+                onClick = { onEvent(ReminderEvent.Dismiss) },
+                modifier = modifier,
+                shapes = ButtonDefaults.shapes(),
+            ) { Text(stringResource(R.string.reminder_cancel)) }
         }
-        val ready = state.chosen != null && state.options.any { it.choice == state.chosen && it.time != null }
-        Button(onClick = onSet, enabled = !state.isSaving && ready, shapes = ButtonDefaults.shapes()) {
-            Text(stringResource(R.string.reminder_set), style = MaterialTheme.typography.labelLargeEmphasized)
+    }
+    val ready = state.chosen != null && state.options.any { it.choice == state.chosen && it.time != null }
+    val primary: @Composable (Modifier) -> Unit = { modifier ->
+        Button(
+            onClick = onSet,
+            modifier = modifier,
+            enabled = !state.isSaving && ready,
+            shapes = ButtonDefaults.shapes(),
+        ) { Text(stringResource(R.string.reminder_set), style = MaterialTheme.typography.labelLargeEmphasized) }
+    }
+    if (stacked) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        ) {
+            primary(Modifier.fillMaxWidth())
+            secondary(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            secondary(Modifier)
+            primary(Modifier)
         }
     }
 }
@@ -305,9 +330,13 @@ private val ReminderChoice.label: Int
 private val ReminderChoice.icon: Int
     get() =
         when (this) {
-            ReminderChoice.InOneHour, ReminderChoice.ThisEvening -> UiR.drawable.ic_schedule
-            ReminderChoice.TomorrowMorning, ReminderChoice.NextWeek -> UiR.drawable.ic_alarm
-            ReminderChoice.Custom -> R.drawable.ic_calendar_month
+            ReminderChoice.InOneHour -> UiR.drawable.ic_schedule
+            ReminderChoice.ThisEvening -> UiR.drawable.ic_bedtime
+            ReminderChoice.TomorrowMorning -> UiR.drawable.ic_wb_sunny
+            ReminderChoice.NextWeek -> UiR.drawable.ic_date_range
+            ReminderChoice.Custom -> UiR.drawable.ic_edit_calendar
         }
 
 private const val NOTE_LINES = 4
+
+private const val STACKED_FONT_SCALE = 1.5f

@@ -96,6 +96,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
+  buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
+  avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
+  announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
+  without naming the chat or showing the message.
 - The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
   0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
   during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
