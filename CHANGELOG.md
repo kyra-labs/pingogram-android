@@ -139,6 +139,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   speed while it is not 1×.
 - Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
   edge, outside the code, so every scanner reads it.
+- Settings → Focus: "ON NOW" is a pill beside the profile's name, screen readers hear each profile as one card
+  with its switch as an action, the templates show their symbols on their shapes, and the Weekend template turns on
+  by hand. In the editor every icon sits on its own shape, the days fit one row, and From and To are tiles side by
+  side.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for

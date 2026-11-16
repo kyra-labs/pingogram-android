@@ -1,10 +1,13 @@
 package dev.kyralabs.pingogram.feature.settings.ui.focus
 
 import android.text.format.DateFormat
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
@@ -20,6 +23,7 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -32,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +47,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.component.shape
@@ -56,6 +62,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import kotlinx.collections.immutable.persistentListOf
 import java.time.format.TextStyle
+import java.util.Locale
 
 // The parts of the Focus profile editor (FocusEditScreen), board 31.
 
@@ -102,10 +109,13 @@ internal fun FocusIconGroup(
     onEvent: (FocusEditEvent) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
+    // Every symbol on its own shape (board 31b), the chosen one filled in `primary`.
     val colors =
         IconButtonDefaults.iconToggleButtonColors(
-            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            checkedContainerColor = MaterialTheme.colorScheme.primary,
+            checkedContentColor = MaterialTheme.colorScheme.onPrimary,
         )
     SettingsGroup(title = stringResource(R.string.settings_focus_icon)) {
         item { shapes ->
@@ -126,7 +136,11 @@ internal fun FocusIconGroup(
                                 }
                             },
                             enabled = enabled,
-                            shapes = IconButtonDefaults.toggleableShapes(checkedShape = icon.shape()),
+                            shapes =
+                                IconButtonDefaults.toggleableShapes(
+                                    shape = icon.shape(),
+                                    checkedShape = icon.shape(),
+                                ),
                             colors = colors,
                             modifier =
                                 Modifier.semantics {
@@ -226,16 +240,7 @@ internal fun FocusScheduleGroup(
         }
         if (draft.scheduled) {
             item(key = DAYS) { shapes -> FocusDays(draft, enabled, shapes, onEvent) }
-            item(key = FROM) { shapes ->
-                SettingsRow(
-                    title = stringResource(R.string.settings_focus_from),
-                    shapes = shapes,
-                    supportingContent = { Text(focusTime(draft.startMinute, locale)) },
-                    onClick = { onEvent(FocusEditEvent.Pick(FocusTimeEnd.Start)) },
-                    enabled = enabled,
-                )
-            }
-            item(key = TO) { shapes -> FocusEndRow(draft, enabled, shapes, onEvent) }
+            item(key = TIMES) { shapes -> FocusTimes(draft, enabled, shapes, locale, onEvent) }
         }
     }
 }
@@ -251,10 +256,13 @@ private fun FocusDays(
 ) {
     val locale = appLocale()
     val haptics = LocalHapticFeedback.current
+    // One row of the days' narrow names sharing the width (board 31b); from large font scales their short names wrap.
+    val large = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     SettingsSegment(shapes) {
         FlowRow(
-            modifier = Modifier.padding(MaterialTheme.spacing.small),
+            modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            maxItemsInEachRow = if (large) Int.MAX_VALUE else DAYS_IN_WEEK,
         ) {
             weekDays(locale).forEach { day ->
                 val name = day.getDisplayName(TextStyle.FULL, locale)
@@ -265,45 +273,92 @@ private fun FocusDays(
                         onEvent(FocusEditEvent.Day(day, it))
                     },
                     enabled = enabled,
+                    contentPadding = PaddingValues(0.dp),
                     modifier =
-                        Modifier.semantics {
+                        (if (large) Modifier else Modifier.weight(1f)).semantics {
                             role = Role.Checkbox
                             contentDescription = name
                         },
                 ) {
-                    Text(day.getDisplayName(TextStyle.SHORT, locale))
+                    Text(day.getDisplayName(if (large) TextStyle.SHORT else TextStyle.NARROW, locale), maxLines = 1)
                 }
             }
         }
     }
 }
 
-/** "To", the end of the schedule, "next day" when it is at or before the start. */
+/**
+ * "From" and "To" as two tonal tiles side by side, each its label over the time and opening the time picker (board
+ * 31b); stacked from large font scales. An end at or before the start reads "next day".
+ */
 @Composable
-private fun FocusEndRow(
+private fun FocusTimes(
     draft: FocusDraft,
     enabled: Boolean,
     shapes: ListItemShapes,
+    locale: Locale,
     onEvent: (FocusEditEvent) -> Unit,
 ) {
-    val end = focusTime(draft.endMinute, appLocale())
-    SettingsRow(
-        title = stringResource(R.string.settings_focus_to),
-        shapes = shapes,
-        supportingContent = {
-            Text(
-                if (draft.endMinute <=
-                    draft.startMinute
-                ) {
-                    stringResource(R.string.settings_focus_next_day, end)
-                } else {
-                    end
-                },
-            )
-        },
-        onClick = { onEvent(FocusEditEvent.Pick(FocusTimeEnd.End)) },
+    val end = focusTime(draft.endMinute, locale)
+    val endText =
+        if (draft.endMinute <=
+            draft.startMinute
+        ) {
+            stringResource(R.string.settings_focus_next_day, end)
+        } else {
+            end
+        }
+    val from: @Composable (Modifier) -> Unit = { modifier ->
+        TimeTile(R.string.settings_focus_from, focusTime(draft.startMinute, locale), enabled, modifier) {
+            onEvent(FocusEditEvent.Pick(FocusTimeEnd.Start))
+        }
+    }
+    val to: @Composable (Modifier) -> Unit = { modifier ->
+        TimeTile(
+            R.string.settings_focus_to,
+            endText,
+            enabled,
+            modifier,
+        ) { onEvent(FocusEditEvent.Pick(FocusTimeEnd.End)) }
+    }
+    SettingsSegment(shapes) {
+        val spacing = MaterialTheme.spacing
+        if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
+            Column(Modifier.padding(spacing.small), verticalArrangement = Arrangement.spacedBy(spacing.small)) {
+                from(Modifier.fillMaxWidth())
+                to(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(Modifier.padding(spacing.small), horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
+                from(Modifier.weight(1f))
+                to(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** One end of the schedule: its [label] over its [time], a tonal tile that opens the time picker; one button. */
+@Composable
+private fun TimeTile(
+    @StringRes label: Int,
+    time: String,
+    enabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
         enabled = enabled,
-    )
+        shape = MaterialTheme.shapes.large,
+        color = colors.surfaceContainerHighest,
+        modifier = modifier,
+    ) {
+        Column(Modifier.padding(MaterialTheme.spacing.medium)) {
+            Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+            Text(time, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
+        }
+    }
 }
 
 /** "Allow calls from contacts", a switch row. */
@@ -367,5 +422,9 @@ internal fun FocusTimeDialog(
 private val ScheduleModes = persistentListOf(true, false)
 private const val MODE = "mode"
 private const val DAYS = "days"
-private const val FROM = "from"
-private const val TO = "to"
+private const val TIMES = "times"
+
+/** From this font scale on, the days wrap and the times stack. */
+private const val LARGE_FONT_SCALE = 1.5f
+
+private const val DAYS_IN_WEEK = 7
