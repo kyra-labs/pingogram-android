@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -181,13 +182,7 @@ internal fun BookmarksScreen(
                 BookmarksSearchBar(content.query.orEmpty(), onEvent, focusSearch)
             } else {
                 TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.bookmarks_title),
-                            modifier = Modifier.semantics { heading() },
-                            style = MaterialTheme.typography.titleLargeEmphasized,
-                        )
-                    },
+                    title = { BookmarksTitle(content) },
                     navigationIcon = {
                         IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                             Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.bookmarks_back))
@@ -255,7 +250,7 @@ private fun BookmarksList(
     }
 }
 
-/** "All 27", then each tag with a dot of its hue and its count; one choice at a time. */
+/** "All 27", then each tag with a dot of its hue and its count; one radio group. */
 @Composable
 private fun TagFilters(
     state: BookmarksUiState.Content,
@@ -264,6 +259,7 @@ private fun TagFilters(
     val resources = LocalResources.current
     val hues = MaterialTheme.pingogramColors.senderHues
     LazyRow(
+        modifier = Modifier.selectableGroup(),
         contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.medium),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
     ) {
@@ -272,12 +268,7 @@ private fun TagFilters(
             FilterChip(
                 selected = state.selectedTagId == filter.tagId,
                 onClick = { onEvent(BookmarksEvent.SelectTag(filter.tagId)) },
-                label = {
-                    Text(
-                        text = resources.getString(R.string.bookmarks_filter, name, filter.count),
-                        style = MaterialTheme.typography.labelLarge.userContent,
-                    )
-                },
+                label = { FilterLabel(name, filter.count) },
                 leadingIcon =
                     filter.tagId?.let {
                         {

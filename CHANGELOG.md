@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
 - A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
   asks you to choose its chat in the app.
 - The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
