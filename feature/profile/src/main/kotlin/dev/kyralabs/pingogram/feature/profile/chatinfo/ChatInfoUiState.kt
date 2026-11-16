@@ -103,7 +103,8 @@ data class MembersPreview(
 @Immutable
 data class ChatAdministration(
     val canEditInfo: Boolean = false,
-    val canEditPermissions: Boolean = false,
+    /** How many of [Permission]'s switches members have on, where the user may change them (board 24e). */
+    val allowedPermissions: Int? = null,
     val administratorCount: Int? = null,
     val canManageInviteLinks: Boolean = false,
     val bannedCount: Int? = null,
@@ -118,7 +119,7 @@ data class ChatAdministration(
 ) {
     val isEmpty: Boolean
         get() =
-            !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
+            !canEditInfo && allowedPermissions == null && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
                 joinRequestCount == null && !canViewRecentActions && !canViewStatistics && !canManageWelcomeMessages
 }

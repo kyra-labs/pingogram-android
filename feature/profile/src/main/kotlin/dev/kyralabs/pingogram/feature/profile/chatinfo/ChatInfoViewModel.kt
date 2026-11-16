@@ -532,7 +532,10 @@ class ChatInfoViewModel internal constructor(
             administration =
                 ChatAdministration(
                     canEditInfo = rights.canChangeInfo,
-                    canEditPermissions = restrict && info.kind != GroupKind.Channel,
+                    allowedPermissions =
+                        Permission.entries
+                            .count { it.of(info.defaultPermissions) }
+                            .takeIf { restrict && info.kind != GroupKind.Channel },
                     administratorCount = details?.administratorCount?.takeIf { isAdmin },
                     canManageInviteLinks = rights.canInviteUsers,
                     bannedCount = details?.bannedCount?.takeIf { restrict && info.kind != GroupKind.BasicGroup },
@@ -598,7 +601,12 @@ class ChatInfoViewModel internal constructor(
                     info.isFake -> ProfileWarning.Fake
                     else -> null
                 },
-            avatarShape = AvatarShape.ofChat(info.isForum),
+            avatarShape =
+                AvatarShape.ofChat(
+                    isForum = info.isForum,
+                    isGroup = info.kind != GroupKind.Channel,
+                    isChannel = info.kind == GroupKind.Channel,
+                ),
             // The chat's own profile color where it set one, none otherwise (owner decision 2026-11-15, board 24).
             profileColor = chat.profileAccentColorId,
         )
