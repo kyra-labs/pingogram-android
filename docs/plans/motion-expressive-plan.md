@@ -304,7 +304,7 @@ same file go one after the other.
 Sessions, as the owner set them: **A** `feature:chats` and `feature:chat`; **B** `feature:calls` and
 `feature:media`; **C** `feature:profile`, `feature:contacts`, `feature:settings` and `feature:auth`; **Shared**
 `:app` and `core:ui`, with the helpers. `feature:scanner` and `feature:feedback` were not named: this plan puts them
-with session B, which has kept them before. Owner decision to confirm (2026-11-11).
+with session B, which has kept them before. Owner decision (2026-11-11, confirmed 2026-11-16).
 
 Paths below are relative to the module's `src/main/kotlin/dev/kyralabs/pingogram/...` root, as in the audit's tables.
 

@@ -161,7 +161,7 @@ private fun RowScope.TranslationMark(
     if (translation.isPending) {
         LoadingIndicator(modifier = iconModifier, color = color)
     } else {
-        val icon = if (translation.isSummary) UiR.drawable.ic_format_list_bulleted else R.drawable.ic_translate
+        val icon = if (translation.isSummary) UiR.drawable.ic_summarize else R.drawable.ic_translate
         Icon(painterResource(icon), contentDescription = null, modifier = iconModifier, tint = color)
     }
     Text(

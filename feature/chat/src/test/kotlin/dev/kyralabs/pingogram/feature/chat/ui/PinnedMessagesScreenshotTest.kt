@@ -65,7 +65,9 @@ class PinnedMessagesScreenshotTest(
 
     companion object {
         val STATES: Map<String, ChatUiState> =
-            with(PinnedPreviewData) { mapOf("one" to privateWithPin, "many" to groupWithPins) }
+            with(PinnedPreviewData) {
+                mapOf("one" to privateWithPin, "many" to groupWithPins, "file" to groupWithFile)
+            }
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")

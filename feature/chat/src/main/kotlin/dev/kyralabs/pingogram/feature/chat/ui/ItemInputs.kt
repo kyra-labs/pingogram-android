@@ -208,8 +208,8 @@ internal fun ItemInputs.showsLargeEmoji(
 
 /**
  * Whether the message shouts (`docs/DESIGN_SYSTEM.md` §13.6): an incoming group text of one word of at most
- * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least one of them, without formatting, link preview,
- * reply or forward ("LOL", "OK!"), shown large and italic.
+ * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least [SHOUT_MIN_LETTERS] of them, without formatting,
+ * link preview, reply or forward ("LOL", "YES!"), shown large and italic; "OK" and "NO" keep their bubble.
  */
 internal fun ItemInputs.isShout(
     content: MessageContent,
@@ -219,7 +219,7 @@ internal fun ItemInputs.isShout(
     return kind == ChatKind.Group && !message.isOutgoing && content is MessageContent.Text &&
         content.linkPreview == null && reply == null && message.forwardInfo == null && text.entities.isEmpty() &&
         value.length in 1..SHOUT_MAX_LENGTH && value.none { it.isWhitespace() } &&
-        value.any { it.isLetter() } && value == value.uppercase() && value != value.lowercase()
+        value.count { it.isLetter() } >= SHOUT_MIN_LETTERS && value == value.uppercase() && value != value.lowercase()
 }
 
 /**
@@ -235,6 +235,7 @@ internal fun ItemInputs.headlineLength(text: FormattedText): Int {
 }
 
 private const val SHOUT_MAX_LENGTH = 6
+private const val SHOUT_MIN_LETTERS = 3
 private const val HEADLINE_MAX_LENGTH = 32
 
 /**

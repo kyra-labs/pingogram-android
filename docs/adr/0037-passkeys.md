@@ -51,8 +51,8 @@ the `gms` APK has about 1.6 MB left of its budget (`docs/PERFORMANCE.md` §8).
    `PasskeyRepository` (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache).
 2. **Adding and signing in from Android 14, both flavors**: the Passkeys page shows on every Android version, as
    listing and removing go through TDLib alone; before Android 14 it leaves "Add passkey" out and its footer says that
-   adding one needs Android 14, and the sign-in leaves its button out, in `foss` and `gms` alike. Owner decisions to
-   confirm (2026-11-10): the page on every version (this ADR first left the row out before Android 14); the button left
+   adding one needs Android 14, and the sign-in leaves its button out, in `foss` and `gms` alike. Owner decisions
+   (2026-11-10, confirmed 2026-11-16): the page on every version (this ADR first left the row out before Android 14); the button left
    out rather than shown disabled; and no passkeys made before Android 14 in `gms`, which the Play services provider
    would have given at the cost above.
 3. **No new dependency**: nothing is added to `gradle/libs.versions.toml`; the approval given for `androidx.credentials`

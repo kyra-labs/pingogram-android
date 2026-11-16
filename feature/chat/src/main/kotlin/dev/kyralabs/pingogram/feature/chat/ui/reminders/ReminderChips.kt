@@ -27,7 +27,10 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
+import dev.kyralabs.pingogram.feature.chat.ui.MessageShortcuts
 import dev.kyralabs.pingogram.feature.chat.ui.ReminderEvent
+import dev.kyralabs.pingogram.feature.chat.ui.isSent
 import dev.kyralabs.pingogram.feature.chat.ui.openTarget
 import kotlinx.collections.immutable.ImmutableMap
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -103,22 +106,27 @@ internal fun ReminderChip(
 }
 
 /**
- * The bubble's custom action for its reminder chip, as the chip hides inside the bubble's merged semantics: "Change
- * reminder", which opens message [messageId]'s reminder in the sheet; none without a [reminder].
+ * The bubble's custom action for its reminder, opening [bubble]'s reminder sheet: "Change reminder" for its chip
+ * ([reminder]), which hides inside the bubble's merged semantics, or "Remind me" where it has none, for a sent message
+ * where [shortcuts] allow it (not in a secret chat), as the actions menu offers it (the owner's board 29a).
  */
 internal fun reminderActions(
     resources: Resources,
-    messageId: Long,
+    bubble: ChatItem.Bubble,
     reminder: UiText?,
+    shortcuts: MessageShortcuts,
     onEvent: (ChatEvent) -> Unit,
-): List<CustomAccessibilityAction> =
-    if (reminder == null) {
-        emptyList()
-    } else {
-        listOf(
-            CustomAccessibilityAction(resources.getString(R.string.reminder_chip_open)) {
-                onEvent(ReminderEvent.Open(messageId))
-                true
-            },
-        )
-    }
+): List<CustomAccessibilityAction> {
+    val label =
+        when {
+            reminder != null -> R.string.reminder_chip_open
+            shortcuts.canRemind && bubble.isSent -> R.string.message_action_remind
+            else -> return emptyList()
+        }
+    return listOf(
+        CustomAccessibilityAction(resources.getString(label)) {
+            onEvent(ReminderEvent.Open(bubble.id))
+            true
+        },
+    )
+}

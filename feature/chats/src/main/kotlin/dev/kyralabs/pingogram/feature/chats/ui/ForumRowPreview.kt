@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.topicHue
 import kotlinx.collections.immutable.ImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -175,17 +176,10 @@ private fun PreviewPill(
     }
 }
 
-/** A topic's symbol: General's hash, the others' speech bubble in the role of their color (§2.2). */
+/** A topic's symbol on a surface: General's hash, the others' speech bubble in the ink of their sender hue (§2.2). */
 @Composable
 private fun TopicSymbol(color: TopicColor?) {
-    val colors = MaterialTheme.colorScheme
-    val tint =
-        when (color) {
-            null -> colors.onSurfaceVariant
-            TopicColor.Blue -> colors.primary
-            TopicColor.Green, TopicColor.Yellow -> colors.secondary
-            TopicColor.Violet, TopicColor.Rose, TopicColor.Red -> colors.tertiary
-        }
+    val tint = if (color == null) MaterialTheme.colorScheme.onSurfaceVariant else topicHue(color).ink
     val icon = if (color == null) UiR.drawable.ic_tag else UiR.drawable.ic_mode_comment_filled
     InlineIcon(icon, tint, MaterialTheme.sizes.inlineIconSmall)
 }

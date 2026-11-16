@@ -102,8 +102,9 @@
     <string name="profile_section_more">More</string>
     <string name="profile_add_contact">Add to contacts</string>
     <string name="profile_edit_contact">Edit contact</string>
-    <string name="profile_block">Block user</string>
-    <string name="profile_unblock">Unblock user</string>
+    <!-- The block row of a person's profile; %1$s is their first name (owner decision 2026-11-16). -->
+    <string name="profile_block_person">Block %1$s</string>
+    <string name="profile_unblock_person">Unblock %1$s</string>
     <!-- A bot's block row (board 24d). -->
     <string name="profile_block_bot">Stop and block bot</string>
     <string name="profile_report">Report</string>
