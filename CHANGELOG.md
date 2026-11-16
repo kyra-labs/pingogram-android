@@ -118,6 +118,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A bot's profile has Message, Mute and Share, which shares the bot's link.
 - The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
   The top bar's "3 of 128" is a chip.
+- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
+  message tile in Quick Settings says "Pingogram" under its name.
 - Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
 - Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
   speed while it is not 1×.
@@ -125,8 +127,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   edge, outside the code, so every scanner reads it.
 - A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
   by itself.
-- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
-  message tile in Quick Settings says "Pingogram" under its name.
 - Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
   reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
