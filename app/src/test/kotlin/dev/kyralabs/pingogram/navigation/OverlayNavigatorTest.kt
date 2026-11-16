@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.navigation
 
+import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute as Screen
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute as Picture
 
@@ -42,6 +44,7 @@ import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute as Picture
  * content is ready.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class OverlayNavigatorTest {
     @get:Rule(order = 0)
     val activityRegistration = ActivityRegistration(ComponentActivity::class.java)

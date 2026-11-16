@@ -24,7 +24,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - With "Show Keyword alerts in the chat list" on, the folder tabs end in "Keyword alerts" while chats had a match in
   the last week: those chats, the newest match first, each with its word, opening at the match.
 - A chat opened from a keyword alert shows "Keyword: launch · 1 of 4" at the top, whose arrows step through the chat's
-  matches of the last week.
+  matches of the last week; the message shown is outlined, its word highlighted.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All

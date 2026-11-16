@@ -330,6 +330,8 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property keywordMatches where its text has the word of the keyword alert match the match bar shows (board 30,
+     *   `docs/DESIGN_SYSTEM.md` §13.13), marked and the bubble ringed; empty for every other bubble.
      * @property rich how its rich message shows where the user changed it: the sections opened or closed, all of a long
      *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
@@ -392,6 +394,7 @@ sealed interface ChatItem {
         /** A voice or round video message's transcript, made on the device; null while its text is not shown. */
         val transcript: BubbleTranscript? = null,
         val searchMatch: MatchHighlight? = null,
+        val keywordMatches: ImmutableList<IntRange> = persistentListOf(),
         val pollChoices: ImmutableSet<Int>? = null,
         val pollClosesIn: Long? = null,
         val pollAdding: PollAdding? = null,

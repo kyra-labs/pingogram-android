@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
@@ -62,6 +63,13 @@ sealed interface ChatEvent {
      */
     data class OpenReply(
         val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * The keyword match bar shows [match] (board 30), whose words its bubble marks; null once there is no bar.
+     */
+    data class KeywordMatchShown(
+        val match: KeywordShown?,
     ) : ChatEvent
 
     /** "Try again" after finding the chat or loading messages failed. */

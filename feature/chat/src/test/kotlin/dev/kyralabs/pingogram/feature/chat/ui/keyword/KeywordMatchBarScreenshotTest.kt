@@ -27,8 +27,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of the keyword match bar (board 30) at the top of a group's conversation on a compact phone, light, dark,
- * right to left and at 200% font, and its buttons' events.
+ * Goldens of the keyword match bar (board 30) at the top of a group's conversation, its match's word marked in its
+ * bubble, on a compact phone, light, dark, right to left and at 200% font, and its buttons' events.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -74,7 +74,7 @@ class KeywordMatchBarScreenshotTest {
                         KeywordMatchBarRow(BAR, { events += it }, Modifier.padding(padding).padding(small))
                     },
                 ) {
-                    ChatScreen(state = ChatPreviewData.groupChat, onEvent = {}, onBack = {})
+                    ChatScreen(state = STATE, onEvent = {}, onBack = {})
                 }
             }
         }
@@ -92,6 +92,7 @@ class KeywordMatchBarScreenshotTest {
 
     private companion object {
         const val FONT_SCALE_200 = 2f
-        val BAR = KeywordMatchBar("launch", messageId = 30, position = 1, count = 4)
+        val STATE = ChatPreviewData.groupChat.withKeywordMatch(KeywordShown(messageId = 24, word = "Motion"))
+        val BAR = KeywordMatchBar("motion", messageId = 24, position = 1, count = 4)
     }
 }

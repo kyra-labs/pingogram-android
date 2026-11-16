@@ -99,6 +99,9 @@ private fun bubbleContent(
             resources.getQuantityString(R.plurals.bot_buttons_count, count, count)
         },
         bubble.searchMatch?.let { resources.getString(R.string.chat_bubble_search_match) },
+        bubble.keywordMatches.takeIf { it.isNotEmpty() }?.let {
+            resources.getString(R.string.chat_bubble_keyword_match)
+        },
     )
 
 /** [text] of [bubble] as screen readers hear it: its hidden spoilers read "spoiler". */
