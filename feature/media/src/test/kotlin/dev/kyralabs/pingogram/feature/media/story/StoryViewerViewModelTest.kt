@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -37,6 +38,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -534,6 +537,20 @@ internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
         }
 
     @Test
+    fun `a live story names its call and how many watch, as TDLib knows them`() =
+        runViewModelTest {
+            stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Live(groupCallId = 77)))
+            val call = MutableStateFlow<GroupCall?>(null)
+            val viewModel = viewModel(liveCall = { id -> call.takeIf { id == 77 } ?: flowOf(null) })
+            assertEquals(StoryMedia.Live(ADA, 77), viewModel.content.story.media)
+
+            call.value = liveCall(title = "Sunset from the ferry", watching = 128)
+            runCurrent()
+
+            assertEquals(StoryMedia.Live(ADA, 77, "Sunset from the ferry", 128), viewModel.content.story.media)
+        }
+
+    @Test
     fun `a live story offers its group call to watch, then moves on`() =
         runViewModelTest {
             stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Live(groupCallId = 77)))
@@ -678,3 +695,22 @@ internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
             assertEquals(CHANNEL to 21, restored.shownStory)
         }
 }
+
+private fun liveCall(
+    title: String,
+    watching: Int,
+) = GroupCall(
+    id = 77,
+    title = title,
+    isActive = true,
+    scheduledStartDate = 0,
+    isRtmpStream = false,
+    isJoined = false,
+    needRejoin = false,
+    canBeManaged = false,
+    participantCount = watching,
+    loadedAllParticipants = false,
+    recentSpeakers = persistentListOf(),
+    muteNewParticipants = false,
+    duration = 0,
+)

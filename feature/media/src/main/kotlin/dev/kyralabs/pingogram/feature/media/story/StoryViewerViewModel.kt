@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
@@ -26,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.StoryList
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -79,6 +81,7 @@ import kotlin.time.TimeSource
  *   During a back gesture nothing closes the viewer or moves it to the next chat but the gesture itself.
  * - **Reactions**: the emoji TDLib offers for stories without Telegram Premium; a tap sets one or takes it back,
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
+ * - **Live stories** (board 26): the call's title and how many watch, from [liveCall] (`GroupCallRepository`).
  * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
  *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat.
  * - **Saved state**: the chats, the one shown and its story, so after process death the viewer opens where it was.
@@ -104,6 +107,7 @@ class StoryViewerViewModel internal constructor(
     private val applicationScope: CoroutineScope,
     private val videoPlayer: VideoPlayer,
     private val albumRepository: StoryAlbumRepository? = null,
+    private val liveCall: (groupCallId: Int) -> Flow<GroupCall?> = { flowOf(null) },
 ) : ViewModel() {
     @Inject
     constructor(
@@ -116,6 +120,7 @@ class StoryViewerViewModel internal constructor(
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
         albumRepository: StoryAlbumRepository,
+        groupCallRepository: GroupCallRepository,
     ) : this(
         savedStateHandle.toRoute<StoryViewerRoute>(),
         savedStateHandle,
@@ -128,6 +133,7 @@ class StoryViewerViewModel internal constructor(
         applicationScope,
         videoPlayer,
         albumRepository,
+        groupCallRepository::groupCall,
     )
 
     /** The reply field's text, never saved. */
@@ -527,7 +533,18 @@ class StoryViewerViewModel internal constructor(
             }
 
             is StoryContent.Live -> {
-                flowOf(Shown.still(key, story, StoryMedia.Live(key.chatId, content.groupCallId)))
+                // The call's title and how many watch (board 26), as TDLib knows them; the notice shows without them.
+                liveCall(content.groupCallId)
+                    .onStart { emit(null) }
+                    .map { call ->
+                        StoryMedia.Live(
+                            chatId = key.chatId,
+                            groupCallId = content.groupCallId,
+                            title = call?.title.orEmpty(),
+                            watching = call?.participantCount ?: 0,
+                        )
+                    }.distinctUntilChanged()
+                    .map { Shown.still(key, story, it) }
             }
 
             StoryContent.Unsupported -> {

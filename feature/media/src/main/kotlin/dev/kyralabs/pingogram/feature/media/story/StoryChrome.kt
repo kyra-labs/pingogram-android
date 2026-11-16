@@ -110,7 +110,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (`sizes.avatarSmall`), its name in `titleSmallEmphasized` and the story's age in `bodySmall` (one heading for screen
  * readers), and the mute button ([mute] is whether the video is muted; null without one), the ⋮ menu of the user's own
  * story ([menu], null for others) and the close button (`IconButton`s with `IconButtonDefaults.shapes()`), in
- * `onMediaOverlay`.
+ * `onMediaOverlay`. A [live] story (board 26) has "LIVE" after the name, `labelSmallEmphasized` in `onError` on an
+ * `error` pill, and its segment is a solid `error` bar rather than progress.
  */
 @Suppress("LongParameterList") // The chat, its story's place and progress, its age, and the buttons.
 @Composable
@@ -124,6 +125,7 @@ internal fun StoryTopChrome(
     mute: Boolean? = null,
     onToggleMute: () -> Unit = {},
     menu: (@Composable () -> Unit)? = null,
+    live: Boolean = false,
 ) {
     val colors = MaterialTheme.pingogramColors
     val spacing = MaterialTheme.spacing
@@ -140,10 +142,11 @@ internal fun StoryTopChrome(
             index = index,
             progress = progress,
             modifier = Modifier.padding(end = spacing.extraSmall),
+            live = live,
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(photo = poster.photo, name = poster.name, id = poster.chatId, size = MaterialTheme.sizes.avatarSmall)
-            StoryTitle(poster.name, ageSeconds, Modifier.weight(1f).padding(horizontal = spacing.small))
+            StoryTitle(poster.name, ageSeconds, live, Modifier.weight(1f).padding(horizontal = spacing.small))
             if (mute != null) {
                 IconButton(onClick = onToggleMute, shapes = IconButtonDefaults.shapes()) {
                     Icon(
@@ -168,22 +171,42 @@ internal fun StoryTopChrome(
     }
 }
 
-/** The chat's name and the story's age ([ageSeconds], null to leave it out), one heading for screen readers. */
+/**
+ * The chat's name, "LIVE" after it for a [live] story, and the story's age ([ageSeconds], null to leave it out), one
+ * heading for screen readers.
+ */
 @Composable
 private fun StoryTitle(
     name: String,
     ageSeconds: Long?,
+    live: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val color = MaterialTheme.pingogramColors.onMediaOverlay
     Column(modifier.semantics(mergeDescendants = true) { heading() }) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.titleSmallEmphasized.userContent,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = name,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MaterialTheme.typography.titleSmallEmphasized.userContent,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (live) {
+                Text(
+                    text = stringResource(R.string.story_live_chip),
+                    modifier =
+                        Modifier
+                            .padding(start = MaterialTheme.spacing.small)
+                            .background(MaterialTheme.colorScheme.error, CircleShape)
+                            .padding(horizontal = MaterialTheme.spacing.small),
+                    color = MaterialTheme.colorScheme.onError,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelSmallEmphasized,
+                )
+            }
+        }
         if (ageSeconds != null) {
             Text(text = storyAge(ageSeconds), style = MaterialTheme.typography.bodySmall, color = color, maxLines = 1)
         }
@@ -194,6 +217,7 @@ private fun StoryTitle(
  * One segment per story of the chat, `sizes.mediaAlbumGap` apart, `sizes.pinnedIndicator` tall with round ends: those
  * before [index] full, the current one filling with [progress], the others empty, in `onMediaOverlay` on its 38% track.
  * Drawn in the draw phase, so the progress never recomposes. Decorative: the story's own description says where it is.
+ * A [live] story's segment is a solid `error` bar: it has no length to fill.
  */
 @Composable
 private fun StorySegments(
@@ -201,8 +225,10 @@ private fun StorySegments(
     index: Int,
     progress: () -> Float,
     modifier: Modifier = Modifier,
+    live: Boolean = false,
 ) {
     val fill = MaterialTheme.pingogramColors.onMediaOverlay
+    val liveFill = MaterialTheme.colorScheme.error
     val track = fill.copy(alpha = TRACK_ALPHA)
     val gap = MaterialTheme.sizes.mediaAlbumGap
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -224,13 +250,14 @@ private fun StorySegments(
                         val filled =
                             when {
                                 segment < index -> 1f
-                                segment == index -> progress()
+                                segment == index -> if (live) 1f else progress()
                                 else -> 0f
                             }
                         if (filled > 0f) {
                             val filledWidth = width * filled
                             val filledLeft = if (rtl) left + width - filledWidth else left
-                            drawRoundRect(fill, Offset(filledLeft, 0f), Size(filledWidth, size.height), radius)
+                            val color = if (live && segment == index) liveFill else fill
+                            drawRoundRect(color, Offset(filledLeft, 0f), Size(filledWidth, size.height), radius)
                         }
                     }
                 },

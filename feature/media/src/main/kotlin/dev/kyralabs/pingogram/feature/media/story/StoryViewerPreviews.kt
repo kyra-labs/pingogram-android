@@ -93,7 +93,12 @@ internal object StoryViewerPreviewData {
         )
 
     /** A live story, with "Watch live" where the app provides voice chats. */
-    val live = content(StoryMedia.Live(chatId = 42, groupCallId = 11), reply = null, reactions = null)
+    val live =
+        content(
+            StoryMedia.Live(chatId = 42, groupCallId = 11, title = "Sunset from the ferry", watching = 128),
+            reply = null,
+            reactions = null,
+        )
 
     /** Content Pingogram cannot show. */
     val unsupported = content(StoryMedia.Unsupported, reply = null, reactions = null)
