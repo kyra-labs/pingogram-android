@@ -1,16 +1,26 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
@@ -70,8 +80,10 @@ fun EmailAddressScreen(
                     .fieldError(error)
                     .semantics { contentType = ContentType.EmailAddress },
             label = { Text(stringResource(R.string.auth_email_label)) },
+            leadingIcon = { Icon(painterResource(R.drawable.ic_mail), contentDescription = null) },
             isError = error != null,
-            supportingText = error?.let { { Text(it) } },
+            // Why the address is asked for (board 23i), until an error takes its place.
+            supportingText = { Text(error ?: stringResource(R.string.auth_email_supporting)) },
             singleLine = true,
             keyboardOptions =
                 KeyboardOptions(
@@ -98,9 +110,7 @@ fun EmailCodeScreen(
         title = stringResource(R.string.auth_email_code_title),
         badgeShape = MaterialShapes.Flower,
         badgeIcon = UiR.drawable.ic_alternate_email,
-        description =
-            stringResource(R.string.auth_email_code_description, state.emailAddressPattern.bidiIsolated())
-                .bidiIsolated(),
+        description = emailCodeDescription(state),
         isError = state.error != null,
         modifier = modifier,
         primaryAction = {
@@ -126,6 +136,7 @@ fun EmailCodeScreen(
             onDone = { onEvent(AuthEvent.SubmitEmailCode) },
             contentType = EmailOtpCode,
         )
+        OpenEmailAppButton()
         if (state.canResendCode) {
             AuthTextButton(
                 text = stringResource(R.string.auth_email_resend),
@@ -195,3 +206,49 @@ private fun EmailCodeScreenPreview() {
 private fun EmailCodeScreenResetPendingPreview() {
     AuthScreenPreview(AuthPreviewData.emailCodeResetPending)
 }
+
+/**
+ * "Open email app" under the code (board 23j): the phone's email app, through Android's chooser of the email category,
+ * so the code can be read and the user come back. Where no app handles it, the tap does nothing more.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun OpenEmailAppButton() {
+    val context = LocalContext.current
+    TextButton(
+        onClick = {
+            val intent =
+                Intent
+                    .makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_EMAIL)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try {
+                context.startActivity(intent)
+            } catch (_: ActivityNotFoundException) {
+                // No email app on the phone: the code still arrives wherever the user reads mail.
+            }
+        },
+        shapes = ButtonDefaults.shapes(),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_open_in_new),
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+        )
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+        Text(stringResource(R.string.auth_email_open_app))
+    }
+}
+
+/** "We sent a 6-digit code to a***@example.org." (board 23j), without the length where Telegram does not give it. */
+@Composable
+private fun emailCodeDescription(state: AuthStepUiState.EmailCode): String =
+    if (state.codeLength > 0) {
+        pluralStringResource(
+            R.plurals.auth_email_code_description_digits,
+            state.codeLength,
+            state.codeLength,
+            state.emailAddressPattern.bidiIsolated(),
+        )
+    } else {
+        stringResource(R.string.auth_email_code_description, state.emailAddressPattern.bidiIsolated())
+    }.bidiIsolated()

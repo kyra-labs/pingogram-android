@@ -32,8 +32,8 @@
     <string name="reminder_action_snooze">Snooze 1 h</string>
     <string name="notification_channel_keyword_alerts">Keyword alerts</string>
     <string name="notification_channel_keyword_alerts_description">Messages with your keyword alert words from muted chats, matched on this phone.</string>
-    <!-- A keyword alert's subtext, beside the app's name: the word that matched. -->
-    <string name="keyword_alert_subtext">Keyword: %1$s</string>
+    <!-- A keyword alert's subtext, beside the app's name: the word that matched, and that its chat is muted (alerts come for muted chats only). -->
+    <string name="keyword_alert_subtext">Keyword: %1$s · muted</string>
     <string name="keyword_alert_open">Open</string>
     <string name="keyword_alert_mark_as_read">Mark as read</string>
     <!-- The title of the notification that groups several keyword alerts. -->
