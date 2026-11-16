@@ -20,6 +20,9 @@
     <string name="media_zoom_in">Zoom in</string>
     <string name="media_zoom_out">Zoom out</string>
     <string name="media_zoomed_in">Zoomed in</string>
+    <!-- The zoom level while a photo is zoomed in: "2.5×". -->
+    <string name="media_zoom_level">%1$s×</string>
+    <string name="media_zoom_fit_hint">Double-tap to fit</string>
     <string name="media_show_older">Show older</string>
     <string name="media_show_newer">Show newer</string>
     <string name="media_play">Play</string>
