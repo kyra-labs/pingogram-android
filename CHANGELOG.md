@@ -90,6 +90,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   languages).
 
 ### Changed
+- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
+  opens the microphone there. Voice chats and group calls still ask as before.
 - Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
   starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
   before showing its first chats.
