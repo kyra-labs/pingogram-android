@@ -484,6 +484,39 @@ internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
         }
 
     @Test
+    fun `a story that may be sent on has the share button, which pauses it until the screen is back`() =
+        runViewModelTest {
+            stories.setStory(photoStory(11, ADA, canBeForwarded = true))
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.canShare)
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Share.Open)
+                runCurrent()
+                assertEquals(StoryViewerEffect.Share(ADA, 11), awaitItem())
+            }
+            assertTrue(viewModel.content.isPaused)
+
+            viewModel.onEvent(StoryViewerEvent.Share.Resumed(true))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
+    fun `a story that may not be sent on has no share button, and sharing it does nothing`() =
+        runViewModelTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.canShare)
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Share.Open)
+                runCurrent()
+                expectNoEvents()
+            }
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
     fun `a video the player cannot play says so and moves on after a photo's time`() =
         runViewModelTest {
             val video = StoryContent.Video(12_000, 720, 1280, false, null, null, FileRef(fileOf(11), 1))

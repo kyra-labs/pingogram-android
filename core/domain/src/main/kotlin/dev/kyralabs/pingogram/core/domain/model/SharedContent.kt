@@ -14,6 +14,8 @@ import kotlinx.collections.immutable.persistentListOf
  *   upload cache only once a chat is picked; at most [MAX_FILES].
  * @property kind how the files go: [AttachmentKind.Media] (photos and videos, grouped into albums) when the sharing
  *   app said every one is an image or a video ([kindOf]), otherwise [AttachmentKind.Document], as they are.
+ * @property story a story the stories viewer shares (td_api.tl `inputMessageStory`), sent to each chat picked; such
+ *   a share has no text or files.
  *
  * `toString()` leaves the text and the URIs out (`REQUIREMENTS.md` §6.2).
  */
@@ -21,11 +23,13 @@ data class SharedContent(
     val text: FormattedText = FormattedText.Empty,
     val files: ImmutableList<String> = persistentListOf(),
     val kind: AttachmentKind = AttachmentKind.Document,
+    val story: SharedStory? = null,
 ) {
-    /** Nothing to share: no text, no file. */
-    val isEmpty: Boolean get() = text.text.isBlank() && files.isEmpty()
+    /** Nothing to share: no text, no file, no story. */
+    val isEmpty: Boolean get() = text.text.isBlank() && files.isEmpty() && story == null
 
-    override fun toString() = "SharedContent(textLength=${text.text.length}, files=${files.size}, kind=$kind)"
+    override fun toString() =
+        "SharedContent(textLength=${text.text.length}, files=${files.size}, kind=$kind, story=${story != null})"
 
     companion object {
         /** The most files one share takes; more are left out. */
@@ -46,6 +50,12 @@ data class SharedContent(
         }
     }
 }
+
+/** Story [storyId] of chat [posterChatId], shared from the stories viewer. */
+data class SharedStory(
+    val posterChatId: Long,
+    val storyId: Int,
+)
 
 /**
  * What came of sending a share to several chats (`ShareRepository`):

@@ -109,8 +109,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Below the frame, as tall as the composer's pill whether or not it shows anything, so pages line up as they slide:
  * the reply field ("Reply privately…", the rounded tonal field in `extraLarge` corners as the composer's, user
  * content), which pauses the story while it has the keyboard, with its send button once it holds text; and the
- * reaction button with the row of reactions above it ([StoryReactionsRow]). The user's own story shows its views pill
- * ([StoryViewsPill]) across the bar instead.
+ * reaction button with the row of reactions above it ([StoryReactionsRow]), then the share button where the story may
+ * be sent to chats ([canShare], board 26). The user's own story shows its views pill ([StoryViewsPill]) across the bar
+ * instead.
  */
 @Composable
 internal fun StoryBottomBar(
@@ -119,6 +120,7 @@ internal fun StoryBottomBar(
     replyText: TextFieldState,
     onEvent: (StoryViewerEvent) -> Unit,
     views: StoryViewsUi? = null,
+    canShare: Boolean = false,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxWidth()) {
@@ -164,6 +166,14 @@ internal fun StoryBottomBar(
             }
             if (reactions != null) {
                 StoryReactionButton(reactions, onClick = { onEvent(StoryViewerEvent.ReactionsOpen(!reactions.isOpen)) })
+            }
+            if (canShare) {
+                IconButton(onClick = { onEvent(StoryViewerEvent.Share.Open) }, shapes = IconButtonDefaults.shapes()) {
+                    Icon(
+                        painter = painterResource(UiR.drawable.ic_share),
+                        contentDescription = stringResource(R.string.story_share),
+                    )
+                }
             }
         }
     }

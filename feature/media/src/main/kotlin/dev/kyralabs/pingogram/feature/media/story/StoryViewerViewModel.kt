@@ -312,6 +312,10 @@ class StoryViewerViewModel internal constructor(
                 onSheetOpen(event)
             }
 
+            is StoryViewerEvent.Share -> {
+                onShareEvent(event)
+            }
+
             is StoryViewerEvent.React -> {
                 react(event.reaction)
             }
@@ -321,11 +325,16 @@ class StoryViewerViewModel internal constructor(
             }
 
             StoryViewerEvent.Retry -> {
-                failedPlayback = null
-                requestedFiles.clear()
-                retries.update { it + 1 }
+                retry()
             }
         }
+    }
+
+    /** "Try again" on a story that failed: its file is asked for anew, and the player tries it again. */
+    private fun retry() {
+        failedPlayback = null
+        requestedFiles.clear()
+        retries.update { it + 1 }
     }
 
     override fun onCleared() {
@@ -732,6 +741,21 @@ class StoryViewerViewModel internal constructor(
         ownStory.onEvent(event, key) { deleted -> if (currentKeyNow() == deleted) next() }
     }
 
+    /**
+     * The share button pauses the story and opens the share sheet for it, where the user may send it to chats; the
+     * screen resumed again, once the sheet closed, plays it on.
+     */
+    private fun onShareEvent(event: StoryViewerEvent.Share) {
+        if (event is StoryViewerEvent.Share.Resumed) {
+            if (event.resumed) setPaused(Pause.Sharing, false)
+            return
+        }
+        val canShare = (uiState.value as? StoryViewerUiState.Content)?.canShare == true
+        val key = currentKeyNow()?.takeIf { canShare } ?: return
+        setPaused(Pause.Sharing, true)
+        effectChannel.trySend(StoryViewerEffect.Share(key.chatId, key.storyId))
+    }
+
     private fun react(reaction: ReactionType.Emoji) {
         val key = currentKeyNow() ?: return
         val chosen = (uiState.value as? StoryViewerUiState.Content)?.reactions?.chosen
@@ -786,6 +810,7 @@ class StoryViewerViewModel internal constructor(
             reply = replyOf(story, chat, isOwn, chrome.interaction),
             reactions = story?.takeUnless { isOwn }?.let { reactionsOf(it, chrome) },
             own = chrome.own.takeIf { story?.canBeDeleted == true },
+            canShare = story?.canBeForwarded == true && !isOwn,
             views =
                 story?.interactions?.takeIf { isOwn }?.let {
                     viewsOf(
@@ -971,4 +996,5 @@ private enum class Pause {
     Menu,
     Viewers,
     Back,
+    Sharing,
 }
