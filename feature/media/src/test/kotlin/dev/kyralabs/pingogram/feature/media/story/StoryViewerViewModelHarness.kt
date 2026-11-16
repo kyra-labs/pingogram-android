@@ -131,6 +131,7 @@ internal abstract class StoryViewerViewModelHarness {
         canBeReplied: Boolean = true,
         chosen: ReactionType? = null,
         canBeDeleted: Boolean = false,
+        canBeForwarded: Boolean = false,
     ) = Story(
         id = id,
         posterChatId = chatId,
@@ -140,6 +141,7 @@ internal abstract class StoryViewerViewModelHarness {
         canBeReplied = canBeReplied,
         chosenReaction = chosen,
         canBeDeleted = canBeDeleted,
+        canBeForwarded = canBeForwarded,
     )
 
     protected fun fileOf(storyId: Int) = FILE_BASE + storyId

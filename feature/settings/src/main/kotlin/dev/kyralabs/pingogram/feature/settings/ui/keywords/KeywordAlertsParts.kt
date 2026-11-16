@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui.keywords
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
 import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
+import dev.kyralabs.pingogram.core.notifications.PingogramChannel
 import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -60,7 +64,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.PickerDone
 import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
 import dev.kyralabs.pingogram.feature.settings.ui.RadioItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
+import dev.kyralabs.pingogram.feature.settings.ui.openSystemSettings
 import dev.kyralabs.pingogram.feature.settings.ui.pickerRowLook
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -280,7 +286,11 @@ internal fun KeywordAlertGroup(
     settings: KeywordAlertSettings,
     onEvent: (KeywordAlertsEvent) -> Unit,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_keyword_alerts_alert)) {
+    val context = LocalContext.current
+    SettingsGroup(
+        title = stringResource(R.string.settings_keyword_alerts_alert),
+        footer = stringResource(R.string.settings_keyword_alerts_muted_note),
+    ) {
         item { shapes ->
             SwitchItem(
                 title = stringResource(R.string.settings_keyword_alerts_when_muted),
@@ -297,6 +307,20 @@ internal fun KeywordAlertGroup(
                 checked = settings.showInChatList,
                 shapes = shapes,
                 onCheckedChange = { onEvent(KeywordAlertsEvent.ShowInChatList(it)) },
+            )
+        }
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_notifications_sound),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_notifications_sound_summary)) },
+                onClick = {
+                    context.openSystemSettings(
+                        Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            .putExtra(Settings.EXTRA_CHANNEL_ID, PingogramChannel.KeywordAlerts.id),
+                    )
+                },
             )
         }
     }

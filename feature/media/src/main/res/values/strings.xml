@@ -171,6 +171,8 @@
     <!-- Snackbar once the user's own story was deleted. -->
     <string name="story_deleted">Story deleted</string>
     <string name="story_react">React</string>
+    <!-- The stories viewer's share button, which sends the story to chats. -->
+    <string name="story_share">Share story</string>
     <!-- %1$s is the emoji the user reacted with. -->
     <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>
     <string name="story_playback_failed">This video can\'t be played</string>

@@ -685,7 +685,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   accents, and where in the text they are, so a notification and the conversation can mark them. Nothing leaves the
   phone. `feature:settings`' `KeywordAlertsRoute` (`KeywordAlertsViewModel`: the words, the empty page's suggestions
   from `ProfileRepository.editableProfile`, read on the phone, and the folders being chosen in saved state) is a page
-  of Settings home's "On this phone" and of Settings → Notifications.
+  of Settings home's "On this phone" and of Settings → Notifications. The matches are the account's:
+  `KeywordHitRepository` (`TdlibKeywordHitRepository`, `core:data`, account-scoped, a `TdlibUpdateCache` of
+  `updateNewMessage`) matches each new message someone else sent, in the chats the settings look at, as TDLib announces
+  it while Pingogram is connected, keeps the last week's matches in `keyword_hits.txt` of the account's TDLib directory
+  (deleted at logout; the demo's in memory) and announces each with its text (`alerts`, never written or logged).
+  `core:notifications`' `KeywordAlertNotifier` (started by `PingogramApplication`) posts those of muted chats in the
+  `KeywordAlerts` channel while "Alert even when the chat is muted" is on, never for a locked chat or the chat on screen,
+  and cancels each once its message is read.
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -1817,6 +1824,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Hand-over**: `feature:chat`'s `ShareInbox` (singleton): `offer` keeps a share for the share sheet by id
   (`ShareRoute(shareId)`), `deliver` keeps one for a chat. `:app`'s `openShare` opens the sheet, or a Direct Share
   target's chat above the chat list.
+- **Stories**: the stories viewer's share button (board 26) offers `SharedContent.story` (a `SharedStory`) through
+  `:app`'s `openShare`; the sheet sends it to every chat picked, one or several (`inputMessageStory`), never into a
+  composer, secret chats left out. The viewer pauses while the sheet shows (`StoryViewerEvent.Share`, resumed with the
+  screen).
 - **Share sheet** (`ShareRoute`, a dialog destination like the forward sheet, `ShareViewModel`): the forward sheet's
   chat list (`ChatTargets`: Saved Messages first, the chat list, search; chats where the user can write) and parts. One
   chat picked opens it with the share delivered to it; several get it at once after "Send" with an optional comment,

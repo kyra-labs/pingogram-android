@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -107,6 +108,7 @@ internal fun PingogramNavHost(
     pageToOpen: PageToOpen? = null,
     onPageOpened: () -> Unit = {},
     onOpenLinkTarget: (LinkTarget) -> Unit = {},
+    shares: ShareInbox? = null,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
@@ -129,7 +131,7 @@ internal fun PingogramNavHost(
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions)
+        mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions, shares)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
@@ -210,6 +212,7 @@ private fun NavGraphBuilder.mainGraph(
     besideList: State<Boolean>,
     onOpenLinkTarget: (LinkTarget) -> Unit,
     headerActions: ChatListHeaderActions?,
+    shares: ShareInbox? = null,
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
@@ -271,7 +274,7 @@ private fun NavGraphBuilder.mainGraph(
         chatFolderInvite(navController)
         oauthLogin(navController)
         mediaViewer(navController)
-        stories(navController)
+        stories(navController, shares)
         share(navController)
     }
 }

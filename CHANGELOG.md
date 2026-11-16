@@ -10,13 +10,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
+  an optional comment, where Telegram lets it be sent on.
 - A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
   until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
 - The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
   once on the phone.
 - Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
   letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
-  muted chats alert too. Its suggestions offer your first name and username. Alerts themselves follow.
+  muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
+  muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" and "Mark as read"; matching runs
+  on the phone while Pingogram is connected.
 - With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
   turn through their actions.
 - An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All

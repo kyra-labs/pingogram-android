@@ -53,6 +53,7 @@ internal fun TdApi.Story.toStory(): Story =
         canBeReplied = canBeReplied,
         chosenReaction = chosenReactionType?.toReactionType()?.takeUnless { it == ReactionType.Paid },
         canBeDeleted = canBeDeleted,
+        canBeForwarded = canBeForwarded,
         interactions = interactionInfo?.takeIf { canGetInteractions }?.toInteractionInfo(),
     )
 

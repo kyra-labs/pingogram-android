@@ -332,6 +332,16 @@ class TdlibStoryRepositoryTest {
         }
 
     @Test
+    fun `a story the user may send to chats says so`() =
+        runTest {
+            client.on(TdApi.GetStory::class, TdResult.Success(story(id = 3, canBeForwarded = true)))
+
+            val story = (repository().story(42, 3).first() as Outcome.Success).value
+
+            assertTrue(story!!.canBeForwarded)
+        }
+
+    @Test
     fun `lists who saw the user's own story, users only, with their reactions`() =
         runTest {
             val view = { reaction: TdApi.ReactionType? -> TdApi.StoryInteractionTypeView(reaction) }

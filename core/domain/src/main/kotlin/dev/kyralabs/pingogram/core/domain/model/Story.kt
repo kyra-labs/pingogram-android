@@ -62,6 +62,8 @@ data class Story(
     val chosenReaction: ReactionType?,
     /** Whether the user may delete it: their own story (td_api.tl `story.can_be_deleted`). */
     val canBeDeleted: Boolean = false,
+    /** Whether the user may send it to chats (td_api.tl `story.can_be_forwarded`), the viewer's share button. */
+    val canBeForwarded: Boolean = false,
     /** Who saw and reacted, for the user's own story (td_api.tl `story.interaction_info`); null for others. */
     val interactions: StoryInteractionInfo? = null,
 ) {

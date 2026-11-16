@@ -208,6 +208,8 @@ interface AccountRepositories {
 
     fun bookmarkRepository(): BookmarkRepository
 
+    fun keywordHitRepository(): KeywordHitRepository
+
     fun customEmojiRepository(): CustomEmojiRepository
 
     fun chatExportRepository(): ChatExportRepository

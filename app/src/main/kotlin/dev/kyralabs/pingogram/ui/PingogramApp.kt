@@ -246,6 +246,7 @@ fun PingogramApp(
                                     pageToOpen = pageToOpen,
                                     onPageOpened = onPageOpened,
                                     onOpenLinkTarget = { target -> links?.show(target) },
+                                    shares = shares,
                                 )
                             }
                         }
