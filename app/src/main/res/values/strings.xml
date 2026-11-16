@@ -49,6 +49,7 @@
     <string name="widget_compose_voice_description">New voice message</string>
     <!-- The Conversation widget (board 33): one chat's newest messages and a reply. -->
     <string name="widget_conversation_label">Conversation</string>
+    <string name="widget_conversation_description">One chat and reply</string>
     <string name="widget_conversation_choose">Choose a chat</string>
     <string name="widget_conversation_sign_in">Sign in to Pingogram first</string>
     <string name="widget_conversation_failed">Can\'t update right now</string>
@@ -58,6 +59,11 @@
     <string name="widget_conversation_reply">Reply…</string>
     <!-- Spoken by screen readers for the reply button: "Reply to Trip" -->
     <string name="widget_conversation_reply_to">Reply to %1$s</string>
+    <!-- The chat picker the widget's "Choose a chat" opens in the app -->
+    <string name="widget_conversation_picker_title">Choose a chat for the widget</string>
+    <string name="widget_conversation_picker_search">Search chats</string>
+    <string name="widget_conversation_picker_clear">Clear search</string>
+    <string name="widget_conversation_picker_none">No chats found</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>

@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
+  asks you to choose its chat in the app.
 - A Quick compose widget for the home screen: "New" at 1 × 1, "Message" and "Voice" from 2 × 1. "Voice" asks which
   chat to record in, then opens it already recording a voice message, locked, for you to send or delete.
 - The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
