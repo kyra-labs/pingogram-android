@@ -106,6 +106,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.withKeywordMatch
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
@@ -1189,6 +1191,9 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    /** The keyword alert match the match bar shows, whose words its bubble marks (board 30); null without a bar. */
+    private val keywordShown = MutableStateFlow<KeywordShown?>(null)
+
     private val search =
         ChatSearch(
             chatId = chatId,
@@ -1262,6 +1267,7 @@ class ChatViewModel internal constructor(
             .combine(transcripts?.bubbles ?: flowOf(persistentMapOf())) { state, transcripts ->
                 state.withTranscripts(transcripts, canTranscribe = this.transcripts?.isAvailable == true)
             }.combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
+            .combine(keywordShown) { state, shown -> state.withKeywordMatch(shown) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
             .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
@@ -1311,6 +1317,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.SetMuted -> headerActions.setMuted(event.isMuted)
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
+            is ChatEvent.KeywordMatchShown -> keywordShown.value = event.match
             is ChatEvent.OpenThread -> thread.open(event.messageId)
             ChatEvent.Retry -> retry()
             ChatEvent.JoinChat -> joining.join()
