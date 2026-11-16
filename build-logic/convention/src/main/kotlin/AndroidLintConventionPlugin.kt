@@ -52,5 +52,12 @@ private fun Lint.configure() {
             "AndroidGradlePluginVersion",
             "GradleDependency",
             "NewerVersionAvailable",
+            // AGP 9.5's lint cannot load the lint checks some AndroidX libraries bundle, built against an older
+            // lint API: androidx.lifecycle:lifecycle-runtime 2.11.0's LifecycleRuntimeIssueRegistry ("Library lint
+            // checks reference invalid APIs; these checks will be skipped!"). It reports that as a warning about
+            // the library, which nothing in Pingogram can fix, and skips those checks either way; 2.11.0 is
+            // Lifecycle's newest stable release (2026-11-16). Remove once a stable Lifecycle ships checks AGP's lint
+            // loads.
+            "ObsoleteLintCustomCheck",
         )
 }

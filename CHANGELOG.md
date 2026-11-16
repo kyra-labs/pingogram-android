@@ -131,6 +131,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
 - Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
   has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
+- The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
+  so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
 
 ### Fixed
 - Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
