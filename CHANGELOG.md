@@ -153,6 +153,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   reactions and contacts.
 - Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
   post. For someone who hides their account, a message says so.
+- Widgets: a new Conversation widget asks you to sign in or unlock first where it needs to, before "Choose a chat";
+  a forum's avatar is a rounded square there; the unread counter stacks its avatars and keeps only the number at the
+  largest font size; buttons and the reply field follow the launcher's inner corners on Android 12 and later.
 - Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
   Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
   can't be sure about, such as anonymous +888 ones, are never held back.
