@@ -94,6 +94,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
   video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
   actions read "Previous" and "Next".
+- Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
+  starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
+  before showing its first chats.
 - In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
 - The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
   Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and

@@ -39,9 +39,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -109,6 +111,9 @@ class RecentChatsWidgetUpdater
             // §2). The system shows the widget's last content meanwhile.
             val started = scope.async { delay(START_UPDATE_DELAY) }
             scope.launch {
+                // Asking the launcher which widgets are placed (a binder call, then a state read per widget) and
+                // loading their content wait too, unless a widget asks first (a process started for it).
+                merge(flow { emit(started.await()) }, placed.filterNotNull().map { }).first()
                 if (placed.value == null) placed.compareAndSet(null, widgets.slots())
                 placed
                     .filterNotNull()
@@ -121,7 +126,10 @@ class RecentChatsWidgetUpdater
                         widgets.updateAll()
                     }
             }
-            scope.launch { accounts.collect { known -> moveWidgetsOfGone(known.keys) } }
+            // Once the placed widgets are known: those of an account that left the device meanwhile move too.
+            scope.launch {
+                combine(accounts, placed.filterNotNull()) { known, _ -> known.keys }.collect(::moveWidgetsOfGone)
+            }
         }
 
         /** A widget of the account in [slot] asked for its content. */
